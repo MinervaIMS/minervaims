@@ -86,12 +86,12 @@ export function Header() {
                       <span className="ml-1 text-xs">▾</span>
                     </button>
                     {openDropdown === item.label && (
-                      <div className="absolute top-full left-0 mt-1 bg-background shadow-elevated border border-separator min-w-[280px] py-2">
+                      <div className="absolute top-full left-0 mt-1 bg-background shadow-elevated border border-separator min-w-[280px] py-2 z-50">
                         {item.dropdown.map((subItem) => (
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className="block px-4 py-2 text-small font-body text-foreground hover:bg-muted hover:text-primary transition-colors"
+                            className="block px-4 py-2 text-small font-serif text-foreground hover:bg-muted hover:text-primary transition-colors"
                           >
                             {subItem.label}
                           </Link>
@@ -140,7 +140,7 @@ export function Header() {
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className="block text-small font-body text-muted-foreground hover:text-primary py-1"
+                            className="block text-small font-serif text-muted-foreground hover:text-primary py-1"
                           >
                             {subItem.label}
                           </Link>
