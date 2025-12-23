@@ -26,7 +26,7 @@ const CookiePolicy = () => {
           </div>
 
           <p className="font-body text-small text-muted-foreground">
-            Last updated: [DD Month YYYY]
+            Last updated: January 1st, 2026
           </p>
 
           <section>
