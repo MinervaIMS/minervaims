@@ -84,30 +84,30 @@ export function CookiePreferences() {
       
       {/* Modal */}
       <div className="relative bg-background border border-border shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 space-y-6">
+        <div className="p-6 md:p-8 space-y-6">
           <div>
-            <h2 className="font-serif text-heading text-foreground mb-2">
+            <h2 className="font-serif text-[22px] md:text-[24px] text-foreground mb-2">
               Cookie Settings
             </h2>
-            <p className="font-body text-small text-muted-foreground">
+            <p className="font-body text-[15px] text-muted-foreground leading-[1.55]">
               Manage your cookie preferences. Non-essential cookies are only used with your consent.
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {cookieCategories.map((category) => (
               <div 
                 key={category.id} 
-                className="flex items-start justify-between gap-4 py-3 border-b border-border last:border-b-0"
+                className="flex items-start justify-between gap-4 py-4 border-b border-border last:border-b-0"
               >
                 <div className="flex-1">
                   <Label 
                     htmlFor={category.id}
-                    className="font-serif text-body font-semibold text-foreground cursor-pointer"
+                    className="font-serif text-[18px] font-semibold text-foreground cursor-pointer block mb-1"
                   >
                     {category.name}
                   </Label>
-                  <p className="font-body text-xs text-muted-foreground mt-1">
+                  <p className="font-body text-[14px] md:text-[15px] text-muted-foreground leading-[1.55]">
                     {category.description}
                   </p>
                 </div>
@@ -117,6 +117,7 @@ export function CookiePreferences() {
                   onCheckedChange={() => handleToggle(category.id)}
                   disabled={category.required}
                   aria-describedby={`${category.id}-description`}
+                  className="data-[state=checked]:bg-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                 />
               </div>
             ))}
@@ -126,21 +127,21 @@ export function CookiePreferences() {
             <Button
               onClick={rejectNonEssential}
               variant="outline"
-              className="font-body text-small flex-1"
+              className="font-body text-[14px] md:text-[15px] flex-1"
             >
               Reject All
             </Button>
             <Button
               onClick={handleSave}
               variant="outline"
-              className="font-body text-small flex-1"
+              className="font-body text-[14px] md:text-[15px] flex-1"
             >
               Save Preferences
             </Button>
             <Button
               onClick={acceptAll}
               variant="default"
-              className="font-body text-small flex-1"
+              className="font-body text-[14px] md:text-[15px] flex-1 text-white"
             >
               Accept All
             </Button>
