@@ -1,5 +1,6 @@
 import { PageIntroduction } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
+import { Button } from '@/components/ui/button';
 
 const CookiePolicy = () => {
   const { openPreferences } = useCookieConsent();
@@ -13,6 +14,17 @@ const CookiePolicy = () => {
 
       <div className="container py-section-sm md:py-section">
         <div className="max-w-3xl space-y-8">
+          {/* Manage Cookie Preferences Button */}
+          <div className="pb-6 border-b border-border">
+            <Button
+              onClick={openPreferences}
+              variant="default"
+              className="font-body text-[15px] text-white"
+            >
+              Manage Cookie Preferences
+            </Button>
+          </div>
+
           <p className="font-body text-small text-muted-foreground">
             Last updated: [DD Month YYYY]
           </p>
@@ -58,14 +70,14 @@ const CookiePolicy = () => {
                 <li>Customise choices by category,</li>
               </ul>
               <p className="mt-2">
-                at any time via{' '}
+                at any time via the{' '}
                 <button 
                   onClick={openPreferences}
                   className="text-accent underline hover:text-accent/80"
                 >
-                  Cookie Settings
+                  Manage Cookie Preferences
                 </button>
-                {' '}in the footer.
+                {' '}button above.
               </p>
               <p className="mt-2">
                 You can also control cookies via your browser settings, but blocking necessary cookies may 
@@ -136,13 +148,14 @@ const CookiePolicy = () => {
 
           <section className="pt-4 border-t border-border">
             <p className="font-body text-body text-muted-foreground">
-              To manage your cookie preferences at any time, click{' '}
+              To manage your cookie preferences at any time, click the{' '}
               <button 
                 onClick={openPreferences}
                 className="text-accent underline hover:text-accent/80"
               >
-                Cookie Settings
-              </button>.
+                Manage Cookie Preferences
+              </button>
+              {' '}button.
             </p>
           </section>
         </div>

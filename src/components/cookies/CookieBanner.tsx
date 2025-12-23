@@ -17,7 +17,7 @@ export function CookieBanner() {
             <p className="font-body text-small text-muted-foreground max-w-3xl">
               We use cookies to ensure the website functions correctly and to improve your experience. 
               Non-essential cookies are used only with your consent. You can change your preferences 
-              at any time via "Cookie Settings" in the footer.
+              at any time via the Cookie Policy page.
             </p>
           </div>
           
@@ -39,7 +39,7 @@ export function CookieBanner() {
             <Button
               onClick={acceptAll}
               variant="default"
-              className="font-body text-small"
+              className="font-body text-small text-white"
             >
               Accept All
             </Button>
