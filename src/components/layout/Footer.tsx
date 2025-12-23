@@ -24,14 +24,14 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
         {/* Main Footer Content - Logo + 3 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-8 md:gap-12 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-[120px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-8 md:gap-8 mb-8">
           {/* Logo */}
           <div className="flex items-start">
             <Link to="/" aria-label="MIMS Home">
               <img 
                 src={logoWhite} 
                 alt="Minerva Investment Management Society" 
-                className="h-7 md:h-8 w-auto"
+                className="h-10 md:h-12 w-auto"
               />
             </Link>
           </div>
@@ -96,11 +96,11 @@ export function Footer() {
         {/* Disclaimer - Full Width */}
         <div className="mb-8 py-4">
           <h4 className="font-serif text-[15px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
-            Disclaimer — Educational Purpose Only
+            Disclaimer
           </h4>
           <div className="font-body text-[14px] md:text-[14px] text-[#D6D6D6] leading-[1.6] space-y-4">
             <p>
-              Minerva Investment Management Society (MIMS) is an Associazione promossa e gestita da studenti dell'Università Bocconi. 
+              Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
               This website and any documents made available through it (including reports, presentations, virtual portfolio materials 
               and event content) are provided solely for educational and academic purposes. They do not constitute investment advice, 
               investment research, a personal recommendation, or an offer or solicitation to buy or sell any security or financial 

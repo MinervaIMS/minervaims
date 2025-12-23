@@ -11,7 +11,7 @@ const TermsOfUse = () => {
       <div className="container py-section-sm md:py-section">
         <div className="max-w-3xl space-y-8">
           <p className="font-body text-small text-muted-foreground">
-            Last updated: [DD Month YYYY]
+            Last updated: January 1st, 2026
           </p>
 
           <section>
