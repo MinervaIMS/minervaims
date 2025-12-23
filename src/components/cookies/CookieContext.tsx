@@ -139,15 +139,11 @@ export function CookieProvider({ children }: { children: React.ReactNode }) {
     }
   }, [consent]);
 
-  if (!isInitialized) {
-    return <>{children}</>;
-  }
-
   return (
     <CookieContext.Provider
       value={{
         consent,
-        showBanner,
+        showBanner: isInitialized ? showBanner : false,
         showPreferences,
         acceptAll,
         rejectNonEssential,
