@@ -1,24 +1,27 @@
 import { Link } from 'react-router-dom';
+import { useCookieConsent } from '@/components/cookies';
 
 const exploreLinks = [
   { label: 'Join Us', href: '/join' },
   { label: 'Archive', href: '/archive' },
-  { label: 'Sitemap', href: '/sitemap' },
+  { label: 'Site Map', href: '/sitemap' },
 ];
 
 const connectLinks = [
-  { label: 'Email', href: 'mailto:contact@mims-placeholder.org' },
-  { label: 'LinkedIn', href: '#' },
-  { label: 'Instagram', href: '#' },
+  { label: 'Mail', href: 'mailto:as.minerva@unibocconi.it' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/minerva-investment-management-society/', external: true },
+  { label: 'Instagram', href: 'https://www.instagram.com/mims_bocconi/', external: true },
 ];
 
 const legalLinks = [
-  { label: 'Terms of Use', href: '/terms' },
-  { label: 'Privacy Policy', href: '/privacy' },
-  { label: 'Cookie Policy', href: '/cookies' },
+  { label: 'Terms of Use', href: '/terms-of-use' },
+  { label: 'Privacy Policy', href: '/privacy-policy' },
+  { label: 'Cookie Policy', href: '/cookie-policy' },
 ];
 
 export function Footer() {
+  const { openPreferences } = useCookieConsent();
+
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
@@ -26,13 +29,13 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-12">
           {/* Explore */}
           <div>
-            <h3 className="font-serif text-subheading mb-4">Explore</h3>
+            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Explore</h3>
             <ul className="space-y-2">
               {exploreLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}
-                    className="font-body text-small text-background/80 hover:text-background transition-colors"
+                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -43,15 +46,15 @@ export function Footer() {
 
           {/* Connect */}
           <div>
-            <h3 className="font-serif text-subheading mb-4">Connect</h3>
+            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Connect</h3>
             <ul className="space-y-2">
               {connectLinks.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="font-body text-small text-background/80 hover:text-background transition-colors"
-                    target={link.href.startsWith('http') || link.href === '#' ? '_blank' : undefined}
-                    rel={link.href.startsWith('http') || link.href === '#' ? 'noopener noreferrer' : undefined}
+                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
+                    target={link.external ? '_blank' : undefined}
+                    rel={link.external ? 'noopener noreferrer' : undefined}
                   >
                     {link.label}
                   </a>
@@ -62,18 +65,26 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="font-serif text-subheading mb-4">Legal</h3>
+            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Legal</h3>
             <ul className="space-y-2">
               {legalLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}
-                    className="font-body text-small text-background/80 hover:text-background transition-colors"
+                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
                   >
                     {link.label}
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  onClick={openPreferences}
+                  className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors text-left"
+                >
+                  Cookie Settings
+                </button>
+              </li>
             </ul>
           </div>
         </div>
@@ -82,33 +93,26 @@ export function Footer() {
         <div className="border-t border-background/20 mb-8" />
 
         {/* Disclaimer */}
-        <div className="space-y-4">
-          <h4 className="font-serif text-body font-semibold">Important Notice</h4>
+        <div className="space-y-4 mb-8">
           <div className="font-body text-xs text-background/70 space-y-3 max-w-4xl">
             <p>
-              The content provided on this website is for educational and informational purposes only. 
-              Nothing contained herein constitutes investment advice, a recommendation, or a solicitation 
-              to buy or sell any financial instruments. All opinions, analyses, and projections are 
-              those of Minerva Investment Management Society (MIMS) and do not represent the views of 
-              Università Bocconi.
+              MIMS (Minerva Investment Management Society) is an Associazione promossa e gestita da studenti dell'Università Bocconi. 
+              The content published on this website and in any linked documents is produced for educational and academic purposes only. 
+              It does not constitute investment advice, investment research, a recommendation, or an offer/solicitation to buy or sell 
+              any security or to adopt any investment strategy. Any opinions are those of the authors and may change without notice. 
+              Bocconi University does not review, approve, endorse, or monitor the contents of this website and is not responsible 
+              for any content, activities, or outcomes connected to it. Use of this website is at your own risk.
             </p>
-            <p>
-              MIMS is an association promoted and run by students of Università Bocconi. Università 
-              Bocconi does not endorse, approve, or assume responsibility for the activities, views, 
-              or content produced by this association. The use of the University's name or affiliation 
-              is solely to identify the academic context in which members of the association are enrolled.
-            </p>
-            <p>
-              Past performance is not indicative of future results. Any investment decisions should be 
-              made after consulting with a qualified financial professional.
+            <p className="text-background/50 text-[10px]">
+              All investments involve risk, including the possible loss of capital.
             </p>
           </div>
         </div>
 
         {/* Copyright */}
-        <div className="border-t border-background/20 mt-8 pt-8">
+        <div className="border-t border-background/20 pt-6">
           <p className="font-body text-xs text-background/50">
-            © {new Date().getFullYear()} Minerva Investment Management Society. All rights reserved.
+            © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
           </p>
         </div>
       </div>
