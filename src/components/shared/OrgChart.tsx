@@ -262,7 +262,6 @@ export const OrgChart = () => {
         <RoleCard 
           id={NODE_IDS.president}
           title="President" 
-          description="Overall leadership and strategic direction of the Society."
           isRoot 
           nodeRefs={nodeRefs}
         />
@@ -275,7 +274,6 @@ export const OrgChart = () => {
               <RoleCard 
                 id={NODE_IDS.vp}
                 title="Vice President" 
-                description="Supports the President and coordinates the Operations Team."
                 nodeRefs={nodeRefs}
               />
             </div>
@@ -295,7 +293,6 @@ export const OrgChart = () => {
         <RoleCard 
           id={NODE_IDS.hoa}
           title="Head of Asset Management" 
-          description="Oversight and coordination of funds management and research activities."
           nodeRefs={nodeRefs}
         />
 

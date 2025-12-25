@@ -144,6 +144,6 @@
 
   /* Page link styling - Times New Roman italic underlined, larger for readability */
   .page-link {
-    @apply font-serif italic underline text-lg;
+    @apply font-serif italic underline text-xl;
   }
 }
