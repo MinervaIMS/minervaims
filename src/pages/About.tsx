@@ -18,10 +18,10 @@ const About = () => {
         </div>
       </div>
 
-      {/* SECTION 1 - Black background / White text */}
-      <section className="bg-foreground text-background py-section-sm md:py-section">
+      {/* SECTION 1 - White background / Black text */}
+      <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-background/20 text-left">What we do</h2>
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left">What we do</h2>
           <div className=" mx-auto text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed">
               Minerva Investment Management Society (MIMS) is society promoted and run by students of Bocconi
@@ -46,7 +46,7 @@ const About = () => {
             <div className="pt-6 text-center">
               <Link
                 to="/divisions"
-                className="inline-block px-10 py-4 bg-foreground text-background border border-background font-serif text-lg hover:opacity-90 transition-opacity"
+                className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
               >
                 Explore Our Divisions
               </Link>
