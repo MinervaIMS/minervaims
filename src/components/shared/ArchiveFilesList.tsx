@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
-import { Download, FileText, Eye } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ArchiveFile {
@@ -49,12 +49,13 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
             <div className="flex flex-col md:flex-row md:items-start gap-4">
               {/* PDF Preview Thumbnail */}
               <div 
-                className="flex-shrink-0 w-20 h-28 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex-shrink-0 w-20 h-28 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
                 onClick={() => setPreviewFile(file)}
+                title="Click to preview PDF"
               >
-                <div className="w-full h-full flex flex-col items-center justify-center bg-destructive/5">
+                <div className="w-full h-full flex flex-col items-center justify-center bg-destructive/5 group-hover:bg-destructive/10 transition-colors">
                   <FileText className="h-8 w-8 text-destructive mb-1" />
-                  <span className="text-[10px] text-muted-foreground font-body">PDF</span>
+                  <span className="text-[10px] text-muted-foreground font-body">Preview</span>
                 </div>
               </div>
 
@@ -85,14 +86,6 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
 
               {/* Actions */}
               <div className="flex gap-2 mt-2 md:mt-6">
-                <button
-                  onClick={() => setPreviewFile(file)}
-                  className="inline-flex items-center gap-1.5 font-body text-small text-muted-foreground hover:text-foreground transition-colors"
-                  title="Preview PDF"
-                >
-                  <Eye className="h-4 w-4" />
-                  <span className="hidden sm:inline">Preview</span>
-                </button>
                 <a
                   href={file.file_url}
                   target="_blank"
