@@ -109,10 +109,14 @@ export function EventsListNew({ events }: EventsListNewProps) {
                   </span>
                 )}
                 {event.guest && event.guest.length > 0 && (
-                  <span className="block">
-                    <span className="font-medium">Guest{event.guest.length > 1 ? 's' : ''}:</span>{' '}
-                    {event.guest.join(', ')}
-                  </span>
+                  <div className="block">
+                    <span className="font-medium">Guest{event.guest.length > 1 ? 's' : ''}:</span>
+                    <ul className="list-disc list-inside ml-1 mt-1">
+                      {event.guest.map((g, idx) => (
+                        <li key={idx}>{g}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>
