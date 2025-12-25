@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.admin-events]
 verify_jwt = false
+
+[functions.admin-files]
+verify_jwt = false
