@@ -51,7 +51,7 @@ export function ReportsList({ reports, showDivision = false }: ReportsListProps)
             <div className="mt-2 md:mt-6">
               <Link
                 to={report.pdfUrl}
-                className="inline-block font-body text-small text-primary hover:underline"
+                className="page-link text-small text-primary"
               >
                 Download PDF
               </Link>

@@ -70,7 +70,7 @@ const DivisionDetail = () => {
             </p>
             <Link 
               to="/archive" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="page-link text-body text-primary"
             >
               View archive
             </Link>
@@ -79,7 +79,7 @@ const DivisionDetail = () => {
           <section>
             <Link 
               to="/members/team?division=portfolio" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="page-link text-body text-primary"
             >
               View current Portfolio Management team
             </Link>
@@ -107,7 +107,7 @@ const DivisionDetail = () => {
         <section>
           <Link 
             to={`/members/team?division=${divisionKey}`}
-            className="inline-block font-body text-body text-primary hover:underline"
+            className="page-link text-body text-primary"
           >
             View current {divisionLabels[divisionKey]} team
           </Link>

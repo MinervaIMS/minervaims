@@ -24,14 +24,14 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
         {/* Main Footer Content - Logo + 3 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-[120px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-8 md:gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-[200px_80px_80px_80px] gap-8 md:gap-12 mb-8">
           {/* Logo */}
           <div className="flex items-start">
             <Link to="/" aria-label="MIMS Home">
               <img 
                 src={logoWhite} 
                 alt="Minerva Investment Management Society" 
-                className="h-10 md:h-12 w-auto"
+                className="h-20 md:h-24 w-auto"
               />
             </Link>
           </div>
