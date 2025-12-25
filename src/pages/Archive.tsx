@@ -9,8 +9,6 @@ const Archive = () => {
       <div className="relative">
         {/* Background image layer */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBg})` }} />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-foreground/60" />
         {/* Content */}
         <div className="relative z-10">
           <PageIntroduction
