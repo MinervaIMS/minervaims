@@ -9,7 +9,7 @@ interface DbEvent {
   date: string;
   place: string;
   moderator?: string | null;
-  guest?: string | null;
+  guest?: string[] | null;
   description?: string | null;
 }
 

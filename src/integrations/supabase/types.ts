@@ -40,7 +40,7 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
-          guest: string | null
+          guest: string[] | null
           id: string
           moderator: string | null
           place: string
@@ -51,7 +51,7 @@ export type Database = {
           created_at?: string
           date: string
           description?: string | null
-          guest?: string | null
+          guest?: string[] | null
           id?: string
           moderator?: string | null
           place: string
@@ -62,7 +62,7 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
-          guest?: string | null
+          guest?: string[] | null
           id?: string
           moderator?: string | null
           place?: string
