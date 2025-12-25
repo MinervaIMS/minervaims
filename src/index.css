@@ -142,8 +142,8 @@
     text-wrap: balance;
   }
 
-  /* Page link styling - Times New Roman italic underlined */
+  /* Page link styling - Times New Roman italic underlined, regular text size */
   .page-link {
-    @apply font-serif italic underline;
+    @apply font-serif italic underline text-body;
   }
 }
