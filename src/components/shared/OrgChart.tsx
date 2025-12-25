@@ -66,7 +66,7 @@ const RoleCard = ({ id, title, description, isRoot = false, nodeRefs }: RoleCard
   </div>
 );
 
-// Helper functions for connector calculations
+// Anchors
 function anchorTopCenter(rect: DOMRect) {
   return { x: rect.left + rect.width / 2, y: rect.top };
 }
@@ -85,6 +85,7 @@ function toLocal(pt: { x: number; y: number }, containerRect: DOMRect) {
 
 export const OrgChart = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const divisionsScrollRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [paths, setPaths] = useState<PathData[]>([]);
   const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
@@ -94,20 +95,24 @@ export const OrgChart = () => {
     if (!container) return;
 
     const containerRect = container.getBoundingClientRect();
-    setSvgSize({ width: containerRect.width, height: containerRect.height });
+
+    // Make SVG large enough even if inner content overflows horizontally/vertically
+    const width = Math.max(container.clientWidth, container.scrollWidth);
+    const height = Math.max(container.clientHeight, container.scrollHeight);
+    setSvgSize({ width, height });
 
     const getRect = (id: NodeId): DOMRect | null => {
       const el = nodeRefs.current[id];
       if (!el) return null;
 
-      // Use direct child as the card box (stable + avoids grabbing nested divs)
+      // Ensure we measure the actual card box (first direct child)
       const cardBox = el.querySelector(":scope > div") as HTMLElement | null;
       return (cardBox ?? el).getBoundingClientRect();
     };
 
     const newPaths: PathData[] = [];
 
-    // Helper: orthogonal connector (parent bottom-centre to child top-centre)
+    // Orthogonal connector: parent bottom-centre -> child top-centre
     const createVerticalConnector = (parentId: NodeId, childId: NodeId): void => {
       const parentRect = getRect(parentId);
       const childRect = getRect(childId);
@@ -116,11 +121,14 @@ export const OrgChart = () => {
       const from = toLocal(anchorBottomCenter(parentRect), containerRect);
       const to = toLocal(anchorTopCenter(childRect), containerRect);
 
-      // If perfectly aligned, this becomes a straight vertical line automatically
-      newPaths.push({ d: `M ${from.x} ${from.y} L ${from.x} ${to.y} L ${to.x} ${to.y}` });
+      // Clean orthogonal elbow (keeps shape stable even if X differs)
+      const midY = from.y + (to.y - from.y) * 0.55;
+      newPaths.push({
+        d: `M ${from.x} ${from.y} L ${from.x} ${midY} L ${to.x} ${midY} L ${to.x} ${to.y}`,
+      });
     };
 
-    // Helper: bus connector (one parent to multiple children)
+    // Bus connector (one parent -> multiple children)
     const createBusConnector = (parentId: NodeId, childIds: NodeId[]): void => {
       const parentRect = getRect(parentId);
       const childRects = childIds
@@ -133,7 +141,10 @@ export const OrgChart = () => {
       const childTops = childRects.map((c) => toLocal(anchorTopCenter(c.rect), containerRect));
 
       const minChildY = Math.min(...childTops.map((p) => p.y));
-      const busY = from.y + (minChildY - from.y) * 0.5;
+
+      // Put the bus just above the children row (prevents "floating" buses)
+      const desiredBusY = minChildY - 18;
+      const busY = Math.max(from.y + 18, Math.min(desiredBusY, from.y + (minChildY - from.y) * 0.6));
 
       // Vertical from parent to bus
       newPaths.push({ d: `M ${from.x} ${from.y} L ${from.x} ${busY}` });
@@ -143,13 +154,11 @@ export const OrgChart = () => {
       const rightX = Math.max(...childTops.map((p) => p.x));
       newPaths.push({ d: `M ${leftX} ${busY} L ${rightX} ${busY}` });
 
-      // Drops to children
-      childTops.forEach((p) => {
-        newPaths.push({ d: `M ${p.x} ${busY} L ${p.x} ${p.y}` });
-      });
+      // Drops
+      childTops.forEach((p) => newPaths.push({ d: `M ${p.x} ${busY} L ${p.x} ${p.y}` }));
     };
 
-    // Helper: dashed “reporting” connector (parent right-centre → ops left-centre)
+    // Dotted reporting: parent right-centre -> ops left-centre (keeps OPS clearly "aside")
     const createDashedReportingToOps = (parentId: NodeId): void => {
       const opsRect = getRect(NODE_IDS.ops);
       const parentRect = getRect(parentId);
@@ -158,7 +167,9 @@ export const OrgChart = () => {
       const from = toLocal(anchorRightCenter(parentRect), containerRect);
       const to = toLocal(anchorLeftCenter(opsRect), containerRect);
 
-      const midX = from.x + (to.x - from.x) * 0.5;
+      // Route outward first, then down/up, then into OPS (no fake vertical spine)
+      const pad = 18;
+      const midX = Math.max(from.x + pad, from.x + (to.x - from.x) * 0.6);
 
       newPaths.push({
         d: `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`,
@@ -166,11 +177,11 @@ export const OrgChart = () => {
       });
     };
 
-    // Main vertical chain (now visually aligned due to layout fix)
+    // --- Main chain: vertically stacked in the centre ---
     createVerticalConnector(NODE_IDS.president, NODE_IDS.vp);
     createVerticalConnector(NODE_IDS.vp, NODE_IDS.hoa);
 
-    // HOA -> Division Heads (bus)
+    // --- HOA to Division Heads ---
     createBusConnector(NODE_IDS.hoa, [
       NODE_IDS.dh_pm,
       NODE_IDS.dh_macro,
@@ -179,34 +190,27 @@ export const OrgChart = () => {
       NODE_IDS.dh_quant,
     ]);
 
-    // PM head -> Portfolio Managers (bus)
+    // --- Portfolio Management ---
     createBusConnector(NODE_IDS.dh_pm, [NODE_IDS.pm_ma, NODE_IDS.pm_ls]);
-
-    // PM Multi Asset chain
     createVerticalConnector(NODE_IDS.pm_ma, NODE_IDS.sa_pm_ma);
     createVerticalConnector(NODE_IDS.sa_pm_ma, NODE_IDS.a_pm_ma);
-
-    // PM Long/Short chain
     createVerticalConnector(NODE_IDS.pm_ls, NODE_IDS.sa_pm_ls);
     createVerticalConnector(NODE_IDS.sa_pm_ls, NODE_IDS.a_pm_ls);
 
-    // Macro chain
+    // --- Other Divisions ---
     createVerticalConnector(NODE_IDS.dh_macro, NODE_IDS.sa_macro);
     createVerticalConnector(NODE_IDS.sa_macro, NODE_IDS.a_macro);
 
-    // Investment chain
     createVerticalConnector(NODE_IDS.dh_inv, NODE_IDS.sa_inv);
     createVerticalConnector(NODE_IDS.sa_inv, NODE_IDS.a_inv);
 
-    // Equity chain
     createVerticalConnector(NODE_IDS.dh_eq, NODE_IDS.sa_eq);
     createVerticalConnector(NODE_IDS.sa_eq, NODE_IDS.a_eq);
 
-    // Quant chain
     createVerticalConnector(NODE_IDS.dh_quant, NODE_IDS.sa_quant);
     createVerticalConnector(NODE_IDS.sa_quant, NODE_IDS.a_quant);
 
-    // Ops dotted reporting (now connects cleanly side-to-side)
+    // --- OPS dotted reporting (clearly lateral) ---
     createDashedReportingToOps(NODE_IDS.president);
     createDashedReportingToOps(NODE_IDS.vp);
 
@@ -217,18 +221,23 @@ export const OrgChart = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    const timeoutId = window.setTimeout(computeConnectors, 50);
+    const t = window.setTimeout(computeConnectors, 60);
 
-    const resizeObserver = new ResizeObserver(() => computeConnectors());
-    resizeObserver.observe(container);
-    Object.values(nodeRefs.current).forEach((node) => node && resizeObserver.observe(node));
+    const ro = new ResizeObserver(() => computeConnectors());
+    ro.observe(container);
+    Object.values(nodeRefs.current).forEach((node) => node && ro.observe(node));
 
     window.addEventListener("resize", computeConnectors);
 
+    const scroller = divisionsScrollRef.current;
+    const onScroll = () => computeConnectors();
+    if (scroller) scroller.addEventListener("scroll", onScroll, { passive: true });
+
     return () => {
-      window.clearTimeout(timeoutId);
-      resizeObserver.disconnect();
+      window.clearTimeout(t);
+      ro.disconnect();
       window.removeEventListener("resize", computeConnectors);
+      if (scroller) scroller.removeEventListener("scroll", onScroll);
     };
   }, [computeConnectors]);
 
@@ -239,6 +248,7 @@ export const OrgChart = () => {
         className="absolute inset-0 pointer-events-none overflow-visible"
         width={svgSize.width}
         height={svgSize.height}
+        viewBox={`0 0 ${svgSize.width} ${svgSize.height}`}
         style={{ width: "100%", height: "100%" }}
       >
         {paths.map((path, index) => (
@@ -253,42 +263,47 @@ export const OrgChart = () => {
         ))}
       </svg>
 
-      {/* Nodes Layout */}
+      {/* Nodes */}
       <div className="flex flex-col items-center gap-10">
-        {/* Top area: perfectly centred main chain, ops shifted aside */}
+        {/* TOP: strict 3-row centre stack, OPS in VP row on the side */}
         <div className="w-full">
-          <div className="grid w-full grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-y-10">
-            {/* Main chain is ALWAYS in the middle column and does not move */}
-            <div className="md:col-start-2 flex flex-col items-center gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_1fr] md:grid-rows-3 gap-y-10 md:gap-x-24 items-start">
+            {/* President (centre column, row 1) */}
+            <div className="md:col-start-2 md:row-start-1 justify-self-center">
               <RoleCard id={NODE_IDS.president} title="President" isRoot nodeRefs={nodeRefs} />
+            </div>
+
+            {/* Vice President (centre column, row 2) */}
+            <div className="md:col-start-2 md:row-start-2 justify-self-center">
               <RoleCard id={NODE_IDS.vp} title="Vice President" nodeRefs={nodeRefs} />
+            </div>
+
+            {/* Head of Asset Management (centre column, row 3) */}
+            <div className="md:col-start-2 md:row-start-3 justify-self-center">
               <RoleCard id={NODE_IDS.hoa} title="Head of Asset Management" nodeRefs={nodeRefs} />
             </div>
 
-            {/* Ops: shifted aside on its own (right column), aligned around VP level */}
-            <div className="md:col-start-3 md:row-start-2 md:justify-self-start flex justify-center md:justify-start">
+            {/* OPS: side column, aligned to VP row (row 2) */}
+            <div className="md:col-start-3 md:row-start-2 justify-self-start">
               <RoleCard id={NODE_IDS.ops} title="Operations & Media Team" nodeRefs={nodeRefs} />
             </div>
           </div>
         </div>
 
-        {/* Division Heads */}
-        <div className="w-full overflow-x-auto">
+        {/* DIVISIONS */}
+        <div ref={divisionsScrollRef} className="w-full overflow-x-auto">
           <div className="flex justify-center gap-3 md:gap-6 min-w-max px-4">
-            {/* Portfolio Management Division */}
+            {/* Portfolio Management */}
             <div className="flex flex-col items-center gap-6">
               <RoleCard id={NODE_IDS.dh_pm} title="Head of Portfolio Management" nodeRefs={nodeRefs} />
 
-              {/* Portfolio Managers */}
               <div className="flex gap-3 md:gap-4">
-                {/* Multi Asset Stream */}
                 <div className="flex flex-col items-center gap-6">
                   <RoleCard id={NODE_IDS.pm_ma} title="Portfolio Manager: Multi Asset" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.sa_pm_ma} title="Senior Analysts" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.a_pm_ma} title="Analysts" nodeRefs={nodeRefs} />
                 </div>
 
-                {/* Long/Short Stream */}
                 <div className="flex flex-col items-center gap-6">
                   <RoleCard id={NODE_IDS.pm_ls} title="Portfolio Manager: Long/Short" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.sa_pm_ls} title="Senior Analysts" nodeRefs={nodeRefs} />
@@ -297,28 +312,28 @@ export const OrgChart = () => {
               </div>
             </div>
 
-            {/* Macro Research Division */}
+            {/* Macro */}
             <div className="flex flex-col items-center gap-6">
               <RoleCard id={NODE_IDS.dh_macro} title="Head of Macro Research" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.sa_macro} title="Senior Analysts" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.a_macro} title="Analysts" nodeRefs={nodeRefs} />
             </div>
 
-            {/* Investment Research Division */}
+            {/* Investment */}
             <div className="flex flex-col items-center gap-6">
               <RoleCard id={NODE_IDS.dh_inv} title="Head of Investment Research" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.sa_inv} title="Senior Analysts" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.a_inv} title="Analysts" nodeRefs={nodeRefs} />
             </div>
 
-            {/* Equity Research Division */}
+            {/* Equity */}
             <div className="flex flex-col items-center gap-6">
               <RoleCard id={NODE_IDS.dh_eq} title="Head of Equity Research" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.sa_eq} title="Senior Analysts" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.a_eq} title="Analysts" nodeRefs={nodeRefs} />
             </div>
 
-            {/* Quant Research Division */}
+            {/* Quant */}
             <div className="flex flex-col items-center gap-6">
               <RoleCard id={NODE_IDS.dh_quant} title="Head of Quant Research" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.sa_quant} title="Senior Analysts" nodeRefs={nodeRefs} />
