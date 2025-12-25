@@ -142,3 +142,10 @@
     text-wrap: balance;
   }
 }
+
+/* Internal link styling - Times New Roman italic underlined */
+@layer components {
+  .link-internal {
+    @apply font-serif italic underline decoration-1 underline-offset-2 hover:opacity-70 transition-opacity;
+  }
+}
