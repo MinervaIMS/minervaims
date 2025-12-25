@@ -48,7 +48,7 @@ const FundDetail = () => {
           <section>
             <Link 
               to={`/members/team?fund=${fundKey}`}
-              className="page-link text-body text-primary"
+              className="inline-block font-body text-body text-primary hover:underline"
             >
               View current fund team
             </Link>

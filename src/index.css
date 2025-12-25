@@ -142,14 +142,3 @@
     text-wrap: balance;
   }
 }
-
-/* Internal page links - Times New Roman italic underlined */
-@layer components {
-  .page-link {
-    @apply font-serif italic underline decoration-1 underline-offset-2;
-  }
-  
-  .page-link:hover {
-    @apply opacity-70;
-  }
-}
