@@ -51,7 +51,7 @@ const About = () => {
       </section>
 
       {/* SECTION 3 - Organisational Structure */}
-      <section className="bg-muted py-section-sm md:py-section">
+      <section className="bg-background py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Organisational Structure</h2>
           
@@ -64,7 +64,7 @@ const About = () => {
           <div className="text-center">
             <Link 
               to="/members/team" 
-              className="inline-block px-8 py-3 bg-accent text-accent-foreground font-body text-sm uppercase tracking-wider hover:opacity-90 transition-opacity"
+              className="inline-block px-8 py-3 bg-accent text-accent-foreground font-serif text-sm hover:opacity-90 transition-opacity"
             >
               Meet the Team
             </Link>

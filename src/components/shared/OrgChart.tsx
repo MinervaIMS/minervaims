@@ -51,13 +51,13 @@ const RoleCard = ({ id, title, description, isRoot = false, nodeRefs }: RoleCard
       className={`px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm font-body text-center border ${
         isRoot 
           ? 'bg-foreground text-background border-foreground font-medium' 
-          : 'bg-background text-foreground border-border'
+          : 'bg-muted text-foreground border-border'
       } min-w-[120px] md:min-w-[160px] max-w-[160px] md:max-w-[180px]`}
     >
       {title}
     </div>
     {description && (
-      <p className="text-xs text-muted-foreground mt-2 max-w-[160px] md:max-w-[180px] text-center font-body">
+      <p className="text-sm text-muted-foreground mt-3 max-w-[200px] md:max-w-[220px] text-center font-body leading-relaxed">
         {description}
       </p>
     )}
@@ -99,19 +99,16 @@ export const OrgChart = () => {
     };
 
     const newPaths: PathData[] = [];
-    const SPACING = 16;
 
-    // Helper to create orthogonal path from parent bottom to child top
-    const createOrthogonalPath = (parentId: NodeId, childId: NodeId, midYOffset = 0.5): string | null => {
+    // Helper to create simple vertical connector
+    const createVerticalConnector = (parentId: NodeId, childId: NodeId): void => {
       const parentRect = getRect(parentId);
       const childRect = getRect(childId);
-      if (!parentRect || !childRect) return null;
+      if (!parentRect || !childRect) return;
 
       const from = toLocal(anchorBottomCenter(parentRect), containerRect);
       const to = toLocal(anchorTopCenter(childRect), containerRect);
-      const midY = from.y + (to.y - from.y) * midYOffset;
-
-      return `M ${from.x} ${from.y} L ${from.x} ${midY} L ${to.x} ${midY} L ${to.x} ${to.y}`;
+      newPaths.push({ d: `M ${from.x} ${from.y} L ${from.x} ${to.y} L ${to.x} ${to.y}` });
     };
 
     // Helper to create bus connector (one parent to multiple children)
@@ -139,17 +136,6 @@ export const OrgChart = () => {
       childTops.forEach(p => {
         newPaths.push({ d: `M ${p.x} ${busY} L ${p.x} ${p.y}` });
       });
-    };
-
-    // Helper to create simple vertical connector
-    const createVerticalConnector = (parentId: NodeId, childId: NodeId): void => {
-      const parentRect = getRect(parentId);
-      const childRect = getRect(childId);
-      if (!parentRect || !childRect) return;
-
-      const from = toLocal(anchorBottomCenter(parentRect), containerRect);
-      const to = toLocal(anchorTopCenter(childRect), containerRect);
-      newPaths.push({ d: `M ${from.x} ${from.y} L ${from.x} ${to.y} L ${to.x} ${to.y}` });
     };
 
     // 1. President -> VP
@@ -271,7 +257,7 @@ export const OrgChart = () => {
       </svg>
 
       {/* Nodes Layout */}
-      <div className="flex flex-col items-center gap-8">
+      <div className="flex flex-col items-center gap-10">
         {/* Level 1: President */}
         <RoleCard 
           id={NODE_IDS.president}
@@ -281,25 +267,27 @@ export const OrgChart = () => {
           nodeRefs={nodeRefs}
         />
 
-        {/* Level 2: VP + OPS side by side */}
-        <div className="flex items-start justify-center gap-12 md:gap-20 w-full">
-          {/* Operations - outside hierarchy */}
-          <div className="flex-shrink-0">
-            <RoleCard 
-              id={NODE_IDS.ops}
-              title="Operations & Media Team" 
-              nodeRefs={nodeRefs}
-            />
-          </div>
+        {/* Level 2: VP centered with OPS to the right */}
+        <div className="flex items-start justify-center w-full">
+          <div className="flex items-start gap-16 md:gap-24">
+            {/* VP - centered in main hierarchy */}
+            <div className="flex-shrink-0">
+              <RoleCard 
+                id={NODE_IDS.vp}
+                title="Vice President" 
+                description="Supports the President and coordinates the Operations Team."
+                nodeRefs={nodeRefs}
+              />
+            </div>
 
-          {/* VP */}
-          <div className="flex-shrink-0">
-            <RoleCard 
-              id={NODE_IDS.vp}
-              title="Vice President" 
-              description="Supports the President and coordinates the Operations Team."
-              nodeRefs={nodeRefs}
-            />
+            {/* Operations - to the right, outside hierarchy */}
+            <div className="flex-shrink-0">
+              <RoleCard 
+                id={NODE_IDS.ops}
+                title="Operations & Media Team" 
+                nodeRefs={nodeRefs}
+              />
+            </div>
           </div>
         </div>
 
