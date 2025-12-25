@@ -3,6 +3,7 @@ export { ReportsList } from './ReportsList';
 export { TeamDirectory } from './TeamDirectory';
 export { AlumniTable } from './AlumniTable';
 export { EventsList } from './EventsList';
+export { EventsListNew } from './EventsListNew';
 export { ArchiveFilters } from './ArchiveFilters';
 export { DivisionCard } from './DivisionCard';
 export { FundCard } from './FundCard';

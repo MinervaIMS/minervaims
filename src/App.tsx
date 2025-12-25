@@ -22,6 +22,8 @@ import CookiePolicy from "./pages/CookiePolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import Sitemap from "./pages/Sitemap";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,8 @@ const App = () => (
               <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route path="/terms-of-use" element={<TermsOfUse />} />
               <Route path="/sitemap" element={<Sitemap />} />
+              <Route path="/admin" element={<AdminLogin />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
