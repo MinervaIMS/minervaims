@@ -299,13 +299,13 @@ export const OrgChart = () => {
 
               <div className="flex gap-3 md:gap-4">
                 <div className="flex flex-col items-center gap-6">
-                  <RoleCard id={NODE_IDS.pm_ma} title="Portfolio Manager: Multi Asset" nodeRefs={nodeRefs} />
+                  <RoleCard id={NODE_IDS.pm_ma} title="Portfolio Manager: Multi Asset Fund" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.sa_pm_ma} title="Senior Analysts" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.a_pm_ma} title="Analysts" nodeRefs={nodeRefs} />
                 </div>
 
                 <div className="flex flex-col items-center gap-6">
-                  <RoleCard id={NODE_IDS.pm_ls} title="Portfolio Manager: Long/Short" nodeRefs={nodeRefs} />
+                  <RoleCard id={NODE_IDS.pm_ls} title="Portfolio Manager: Long/Short Fund" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.sa_pm_ls} title="Senior Analysts" nodeRefs={nodeRefs} />
                   <RoleCard id={NODE_IDS.a_pm_ls} title="Analysts" nodeRefs={nodeRefs} />
                 </div>
