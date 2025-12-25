@@ -5,6 +5,7 @@ const exploreLinks = [
   { label: 'Join Us', href: '/join' },
   { label: 'Archive', href: '/archive' },
   { label: 'Site Map', href: '/sitemap' },
+  { label: 'Admin', href: '/admin' },
 ];
 
 const connectLinks = [
