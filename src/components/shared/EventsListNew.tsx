@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, MapPin, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DbEvent {
   id: string;
@@ -100,25 +100,22 @@ export function EventsListNew({ events }: EventsListNewProps) {
 
           {/* Moderator and Guests */}
           {(event.moderator || (event.guest && event.guest.length > 0)) && (
-            <div className="flex items-start gap-2 text-muted-foreground">
-              <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <div className="font-body text-sm">
-                {event.moderator && (
-                  <span className="block">
-                    <span className="font-medium">Moderator:</span> {event.moderator}
-                  </span>
-                )}
-                {event.guest && event.guest.length > 0 && (
-                  <div className="block">
-                    <span className="font-medium">Guest{event.guest.length > 1 ? 's' : ''}:</span>
-                    <ul className="list-disc list-inside ml-1 mt-1">
-                      {event.guest.map((g, idx) => (
-                        <li key={idx}>{g}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+            <div className="font-body text-sm text-muted-foreground">
+              {event.moderator && (
+                <span className="block">
+                  <span className="font-medium text-foreground">Moderator:</span> {event.moderator}
+                </span>
+              )}
+              {event.guest && event.guest.length > 0 && (
+                <div className="block mt-1">
+                  <span className="font-medium text-foreground">Guest{event.guest.length > 1 ? 's' : ''}:</span>
+                  <ul className="list-disc list-inside ml-1 mt-1">
+                    {event.guest.map((g, idx) => (
+                      <li key={idx}>{g}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </article>
