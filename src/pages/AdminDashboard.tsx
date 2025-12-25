@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText } from 'lucide-react';
 import { EventsListNew } from '@/components/shared/EventsListNew';
+import FileManagement from '@/components/admin/FileManagement';
 
 interface DbEvent {
   id: string;
@@ -223,15 +225,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="container py-section-sm md:py-section">
@@ -245,173 +238,196 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-display mb-2">Events Management</h1>
+          <h1 className="font-serif text-display mb-2">Admin Dashboard</h1>
           <p className="font-body text-muted-foreground">
             Logged in as: {sessionStorage.getItem('adminUsername')}
           </p>
         </div>
-        <div className="flex gap-4">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog} className="font-body">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Event
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="font-serif">
-                  {editingEvent ? 'Edit Event' : 'Add New Event'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="font-body">Title *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Event title"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date" className="font-body">Date *</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="place" className="font-body">Place *</Label>
-                  <Input
-                    id="place"
-                    value={formData.place}
-                    onChange={(e) => setFormData({ ...formData, place: e.target.value })}
-                    placeholder="Event location"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
-                  <Input
-                    id="moderator"
-                    value={formData.moderator}
-                    onChange={(e) => setFormData({ ...formData, moderator: e.target.value })}
-                    placeholder="e.g., John Smith, CEO at Company"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-body">Guests (optional)</Label>
-                  {formData.guests.map((guest, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={guest}
-                        onChange={(e) => updateGuest(index, e.target.value)}
-                        placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`}
-                      />
-                      {formData.guests.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeGuestField(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addGuestField}
-                    className="font-body"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add another guest
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="font-body">Description (optional)</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Event description"
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <Button type="submit" className="flex-1 font-body">
-                    {editingEvent ? 'Update Event' : 'Create Event'}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                    className="font-body"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" onClick={handleLogout} className="font-body">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
+        <Button variant="outline" onClick={handleLogout} className="font-body">
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
       </div>
 
-      {/* Events List */}
-      {events.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="font-body text-muted-foreground">
-              No events yet. Click "Add Event" to create one.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-0">
-          {events.map((event, index) => (
-            <div 
-              key={event.id}
-              className={`py-8 ${index !== events.length - 1 ? 'border-b border-separator' : ''}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <EventsListNew events={[event]} />
+      {/* Tabs */}
+      <Tabs defaultValue="events" className="w-full">
+        <TabsList className="mb-8">
+          <TabsTrigger value="events" className="font-body">
+            <Calendar className="h-4 w-4 mr-2" />
+            Events
+          </TabsTrigger>
+          <TabsTrigger value="files" className="font-body">
+            <FileText className="h-4 w-4 mr-2" />
+            Archive Files
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="events">
+          {/* Events Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="font-serif text-title">Events Management</h2>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreateDialog} className="font-body">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Event
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-serif">
+                    {editingEvent ? 'Edit Event' : 'Add New Event'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="font-body">Title *</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Event title"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="date" className="font-body">Date *</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="place" className="font-body">Place *</Label>
+                    <Input
+                      id="place"
+                      value={formData.place}
+                      onChange={(e) => setFormData({ ...formData, place: e.target.value })}
+                      placeholder="Event location"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
+                    <Input
+                      id="moderator"
+                      value={formData.moderator}
+                      onChange={(e) => setFormData({ ...formData, moderator: e.target.value })}
+                      placeholder="e.g., John Smith, CEO at Company"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-body">Guests (optional)</Label>
+                    {formData.guests.map((guest, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          value={guest}
+                          onChange={(e) => updateGuest(index, e.target.value)}
+                          placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`}
+                        />
+                        {formData.guests.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeGuestField(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addGuestField}
+                      className="font-body"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add another guest
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="font-body">Description (optional)</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Event description"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <Button type="submit" className="flex-1 font-body">
+                      {editingEvent ? 'Update Event' : 'Create Event'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsDialogOpen(false)}
+                      className="font-body"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Events List */}
+          {events.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="font-body text-muted-foreground">
+                  No events yet. Click "Add Event" to create one.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-0">
+              {events.map((event, index) => (
+                <div 
+                  key={event.id}
+                  className={`py-8 ${index !== events.length - 1 ? 'border-b border-separator' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <EventsListNew events={[event]} />
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-8">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => openEditDialog(event)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDelete(event.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                
-                {/* Actions */}
-                <div className="flex gap-2 pt-8">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => openEditDialog(event)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(event.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
+        </TabsContent>
+
+        <TabsContent value="files">
+          <FileManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

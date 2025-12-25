@@ -35,6 +35,42 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_files: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          division: string
+          file_url: string
+          fund: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          division: string
+          file_url: string
+          fund?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          division?: string
+          file_url?: string
+          fund?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
