@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
+import { compareSync } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 import { create } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
@@ -153,8 +153,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Verify password with bcrypt
-    const passwordValid = await bcrypt.compare(password, adminUser.password_hash)
+    // Verify password with bcrypt (using sync version for Edge Functions compatibility)
+    const passwordValid = compareSync(password, adminUser.password_hash)
     
     if (!passwordValid) {
       console.log('Invalid password for username:', username)
