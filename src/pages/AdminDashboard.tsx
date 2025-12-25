@@ -1,0 +1,396 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Plus, Edit, Trash2, LogOut, Calendar, MapPin, Users } from 'lucide-react';
+
+interface DbEvent {
+  id: string;
+  title: string;
+  date: string;
+  place: string;
+  moderator?: string | null;
+  guest?: string | null;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const AdminDashboard = () => {
+  const [events, setEvents] = useState<DbEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    date: '',
+    place: '',
+    moderator: '',
+    guest: '',
+    description: '',
+  });
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const adminToken = sessionStorage.getItem('adminToken');
+
+  useEffect(() => {
+    if (!adminToken) {
+      navigate('/admin');
+      return;
+    }
+    fetchEvents();
+  }, [adminToken, navigate]);
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch events",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminUsername');
+    navigate('/admin');
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      date: '',
+      place: '',
+      moderator: '',
+      guest: '',
+      description: '',
+    });
+    setEditingEvent(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (event: DbEvent) => {
+    setEditingEvent(event);
+    setFormData({
+      title: event.title,
+      date: event.date,
+      place: event.place,
+      moderator: event.moderator || '',
+      guest: event.guest || '',
+      description: event.description || '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title.trim() || !formData.date || !formData.place.trim()) {
+      toast({
+        title: "Error",
+        description: "Title, date, and place are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const action = editingEvent ? 'update' : 'create';
+      const eventData = editingEvent 
+        ? { ...formData, id: editingEvent.id }
+        : formData;
+
+      const { data, error } = await supabase.functions.invoke('admin-events', {
+        body: { action, event: eventData },
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: `Event ${editingEvent ? 'updated' : 'created'} successfully`,
+      });
+
+      setIsDialogOpen(false);
+      resetForm();
+      fetchEvents();
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (eventId: string) => {
+    if (!confirm('Are you sure you want to delete this event?')) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-events', {
+        body: { action: 'delete', event: { id: eventId } },
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+
+      fetchEvents();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container py-section-sm md:py-section">
+        <p className="font-body text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container py-section-sm md:py-section">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-serif text-display mb-2">Events Management</h1>
+          <p className="font-body text-muted-foreground">
+            Logged in as: {sessionStorage.getItem('adminUsername')}
+          </p>
+        </div>
+        <div className="flex gap-4">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="font-body">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-serif">
+                  {editingEvent ? 'Edit Event' : 'Add New Event'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="font-body">Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Event title"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date" className="font-body">Date *</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="place" className="font-body">Place *</Label>
+                  <Input
+                    id="place"
+                    value={formData.place}
+                    onChange={(e) => setFormData({ ...formData, place: e.target.value })}
+                    placeholder="Event location"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
+                  <Input
+                    id="moderator"
+                    value={formData.moderator}
+                    onChange={(e) => setFormData({ ...formData, moderator: e.target.value })}
+                    placeholder="e.g., John Smith, CEO at Company"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="guest" className="font-body">Guest (optional)</Label>
+                  <Input
+                    id="guest"
+                    value={formData.guest}
+                    onChange={(e) => setFormData({ ...formData, guest: e.target.value })}
+                    placeholder="e.g., Jane Doe, Partner at Firm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="font-body">Description (optional)</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Event description"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <Button type="submit" className="flex-1 font-body">
+                    {editingEvent ? 'Update Event' : 'Create Event'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsDialogOpen(false)}
+                    className="font-body"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" onClick={handleLogout} className="font-body">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+      </div>
+
+      {/* Events List */}
+      {events.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="font-body text-muted-foreground">
+              No events yet. Click "Add Event" to create one.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {events.map((event) => (
+            <Card key={event.id}>
+              <CardContent className="py-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    {/* Date and Location */}
+                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                      <Calendar className="h-4 w-4" />
+                      <span className="font-body text-sm">{formatDate(event.date)}</span>
+                      <span className="mx-2">|</span>
+                      <MapPin className="h-4 w-4" />
+                      <span className="font-body text-sm">{event.place}</span>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="font-serif text-subheading mb-2">{event.title}</h3>
+
+                    {/* Description */}
+                    {event.description && (
+                      <p className="font-body text-body text-muted-foreground mb-2">
+                        {event.description}
+                      </p>
+                    )}
+
+                    {/* Moderator/Guest */}
+                    {(event.moderator || event.guest) && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span className="font-body text-sm">
+                          {[event.moderator, event.guest].filter(Boolean).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => openEditDialog(event)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDelete(event.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard;
