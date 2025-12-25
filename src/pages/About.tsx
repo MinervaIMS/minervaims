@@ -35,20 +35,17 @@ const About = () => {
       <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Mission</h2>
-          <div className="max-w-3xl">
-            <div className="space-y-4">
-              <h3 className="font-serif text-subheading">Purpose</h3>
-              <p className="font-body text-body text-foreground">
-                MIMS aims to and succeed in:
-              </p>
-              <ol className="font-body text-body text-foreground list-decimal list-inside space-y-2 pl-4">
-                <li>develop disciplined investors through rigorous peer learning, structured debate and continuous feedback;</li>
-                <li>build technical capability through recurring internal work, targeted trainings and practical application;</li>
-                <li>convert research into decision-making through repeatable processes, explicit assumptions and risk awareness;</li>
-                <li>set clear standards of transparency and accountability in portfolio construction and reporting; and</li>
-                <li>connect members with the investment industry through trainings, competitions, public events and an active Alumni Network.</li>
-              </ol>
-            </div>
+          <div className="space-y-4">
+            <p className="font-body text-body text-foreground">
+              MIMS aims to and succeed in:
+            </p>
+            <ol className="font-body text-body text-foreground list-decimal list-inside space-y-2 pl-4">
+              <li>develop disciplined investors through rigorous peer learning, structured debate and continuous feedback;</li>
+              <li>build technical capability through recurring internal work, targeted trainings and practical application;</li>
+              <li>convert research into decision-making through repeatable processes, explicit assumptions and risk awareness;</li>
+              <li>set clear standards of transparency and accountability in portfolio construction and reporting; and</li>
+              <li>connect members with the investment industry through trainings, competitions, public events and an active Alumni Network.</li>
+            </ol>
           </div>
         </div>
       </section>
@@ -58,31 +55,7 @@ const About = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Organisational Structure</h2>
           
-          {/* Role Cards */}
-          <div className="max-w-4xl mb-12">
-            <div className="space-y-6">
-              <div className="py-4 border-b border-separator">
-                <h3 className="font-serif text-subheading">President</h3>
-                <p className="font-body text-small text-muted-foreground mt-1">
-                  Overall leadership and strategic direction of the Society.
-                </p>
-              </div>
-              <div className="py-4 border-b border-separator">
-                <h3 className="font-serif text-subheading">Vice President</h3>
-                <p className="font-body text-small text-muted-foreground mt-1">
-                  Supports the President and coordinates the Operations Team.
-                </p>
-              </div>
-              <div className="py-4 border-b border-separator">
-                <h3 className="font-serif text-subheading">Head of Asset Management</h3>
-                <p className="font-body text-small text-muted-foreground mt-1">
-                  Oversight and coordination of funds management and research activities.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Org Chart */}
+          {/* Org Chart with integrated role descriptions */}
           <div className="mb-12">
             <OrgChart />
           </div>

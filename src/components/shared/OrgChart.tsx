@@ -1,135 +1,151 @@
 import React from 'react';
 
-interface OrgNodeProps {
+interface RoleCardProps {
   title: string;
-  children?: React.ReactNode;
+  description?: string;
   isRoot?: boolean;
-  isDotted?: boolean;
 }
 
-const OrgNode = ({ title, children, isRoot = false, isDotted = false }: OrgNodeProps) => (
+const RoleCard = ({ title, description, isRoot = false }: RoleCardProps) => (
   <div className="flex flex-col items-center">
     <div 
-      className={`px-3 py-2 text-xs md:text-sm font-body text-center border ${
+      className={`px-4 py-3 text-xs md:text-sm font-body text-center border ${
         isRoot 
           ? 'bg-foreground text-background border-foreground font-medium' 
           : 'bg-background text-foreground border-border'
-      } ${isDotted ? 'border-dashed' : ''} min-w-[120px] md:min-w-[160px]`}
+      } min-w-[140px] md:min-w-[180px]`}
     >
       {title}
     </div>
-    {children && (
-      <div className="flex flex-col items-center">
-        <div className={`w-px h-4 ${isDotted ? 'border-l border-dashed border-muted-foreground' : 'bg-border'}`} />
-        {children}
-      </div>
+    {description && (
+      <p className="text-xs text-muted-foreground mt-2 max-w-[180px] text-center font-body">
+        {description}
+      </p>
     )}
   </div>
 );
 
-const VerticalConnector = ({ isDotted = false }: { isDotted?: boolean }) => (
-  <div className={`w-px h-4 ${isDotted ? 'border-l border-dashed border-muted-foreground' : 'bg-border'}`} />
+const VerticalLine = ({ height = 'h-6', dashed = false }: { height?: string; dashed?: boolean }) => (
+  <div className={`w-px ${height} ${dashed ? 'border-l border-dashed border-muted-foreground' : 'bg-border'}`} />
 );
 
-const HorizontalBranch = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col items-center">
-    <div className="flex items-start">
-      {React.Children.map(children, (child, index) => (
-        <div key={index} className="flex flex-col items-center px-1 md:px-2">
-          <VerticalConnector />
-          {child}
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const DivisionBranch = ({ headTitle, children }: { headTitle: string; children: React.ReactNode }) => (
-  <div className="flex flex-col items-center">
-    <OrgNode title={headTitle} />
-    <VerticalConnector />
-    {children}
-  </div>
-);
-
-const AnalystChain = ({ divisionName }: { divisionName: string }) => (
-  <div className="flex flex-col items-center">
-    <OrgNode title={`Senior Analysts (${divisionName})`} />
-    <VerticalConnector />
-    <OrgNode title={`Analysts (${divisionName})`} />
-  </div>
+const HorizontalLine = ({ width }: { width: string }) => (
+  <div className={`h-px bg-border ${width}`} />
 );
 
 export const OrgChart = () => {
   return (
     <div className="w-full overflow-x-auto pb-4">
-      <div className="min-w-[900px] md:min-w-[1100px] flex flex-col items-center">
-        {/* President */}
-        <OrgNode title="President" isRoot />
+      <div className="min-w-[1000px] flex flex-col items-center gap-1">
         
-        {/* Lines to VP and HoAM */}
-        <VerticalConnector />
+        {/* Level 1: President */}
+        <RoleCard 
+          title="President" 
+          description="Overall leadership and strategic direction of the Society."
+          isRoot 
+        />
+        <VerticalLine />
         
-        {/* VP and HoAM level */}
-        <div className="flex items-start gap-8 md:gap-16">
-          {/* Operations (dotted line from President/VP) */}
-          <div className="flex flex-col items-center mt-8">
-            <div className="border-l border-dashed border-muted-foreground h-8" />
-            <OrgNode title="Operations & Media Team" isDotted />
+        {/* Level 2: VP and Operations side by side */}
+        <div className="flex items-start gap-16">
+          {/* Operations - dotted line connection */}
+          <div className="flex flex-col items-center mt-6">
+            <VerticalLine height="h-8" dashed />
+            <RoleCard title="Operations & Media Team" />
           </div>
           
-          {/* Main hierarchy */}
+          {/* Main hierarchy continues */}
           <div className="flex flex-col items-center">
-            <OrgNode title="Vice President" />
-            <VerticalConnector />
-            <OrgNode title="Head of Asset Management" />
-            <VerticalConnector />
+            <RoleCard 
+              title="Vice President" 
+              description="Supports the President and coordinates the Operations Team."
+            />
+            <VerticalLine />
             
-            {/* Division Heads */}
-            <div className="relative">
-              {/* Horizontal connector line */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px bg-border w-[95%]" />
-              
-              <div className="flex items-start gap-2 md:gap-4 pt-4">
-                {/* Portfolio Management */}
-                <div className="flex flex-col items-center">
-                  <DivisionBranch headTitle="Head of Division: Portfolio Management">
-                    <div className="flex items-start gap-2">
-                      {/* Multi Asset PM */}
-                      <div className="flex flex-col items-center">
-                        <OrgNode title="PM: Multi Asset" />
-                        <VerticalConnector />
-                        <AnalystChain divisionName="Portfolio Management" />
-                      </div>
-                      {/* Long/Short PM */}
-                      <div className="flex flex-col items-center">
-                        <OrgNode title="PM: Long/Short" />
-                        <VerticalConnector />
-                        <AnalystChain divisionName="Portfolio Management" />
-                      </div>
-                    </div>
-                  </DivisionBranch>
+            {/* Level 3: Head of Asset Management */}
+            <RoleCard 
+              title="Head of Asset Management" 
+              description="Oversight and coordination of funds management and research activities."
+            />
+            <VerticalLine />
+            
+            {/* Horizontal connector to division heads */}
+            <div className="relative w-full flex justify-center">
+              <HorizontalLine width="w-[850px]" />
+            </div>
+            
+            {/* Level 4: Division Heads */}
+            <div className="flex gap-4 mt-1">
+              {/* Portfolio Management Division */}
+              <div className="flex flex-col items-center">
+                <VerticalLine height="h-4" />
+                <RoleCard title="Head of Portfolio Management" />
+                <VerticalLine />
+                
+                {/* Portfolio Managers */}
+                <div className="relative flex justify-center">
+                  <HorizontalLine width="w-[200px]" />
                 </div>
-                
-                {/* Macro Research */}
-                <DivisionBranch headTitle="Head of Division: Macro Research">
-                  <AnalystChain divisionName="Macro" />
-                </DivisionBranch>
-                
-                {/* Investment Research */}
-                <DivisionBranch headTitle="Head of Division: Investment Research">
-                  <AnalystChain divisionName="Investment" />
-                </DivisionBranch>
-                
-                {/* Equity Research */}
-                <DivisionBranch headTitle="Head of Division: Equity Research">
-                  <AnalystChain divisionName="Equity" />
-                </DivisionBranch>
-                
-                {/* Quant Research */}
-                <DivisionBranch headTitle="Head of Division: Quant Research">
-                  <AnalystChain divisionName="Quant" />
-                </DivisionBranch>
+                <div className="flex gap-4 mt-1">
+                  {/* Multi Asset */}
+                  <div className="flex flex-col items-center">
+                    <VerticalLine height="h-4" />
+                    <RoleCard title="Portfolio Manager: Multi Asset" />
+                    <VerticalLine />
+                    <RoleCard title="Senior Analysts" />
+                    <VerticalLine />
+                    <RoleCard title="Analysts" />
+                  </div>
+                  {/* Long/Short */}
+                  <div className="flex flex-col items-center">
+                    <VerticalLine height="h-4" />
+                    <RoleCard title="Portfolio Manager: Long/Short" />
+                    <VerticalLine />
+                    <RoleCard title="Senior Analysts" />
+                    <VerticalLine />
+                    <RoleCard title="Analysts" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Macro Research Division */}
+              <div className="flex flex-col items-center">
+                <VerticalLine height="h-4" />
+                <RoleCard title="Head of Macro Research" />
+                <VerticalLine />
+                <RoleCard title="Senior Analysts" />
+                <VerticalLine />
+                <RoleCard title="Analysts" />
+              </div>
+              
+              {/* Investment Research Division */}
+              <div className="flex flex-col items-center">
+                <VerticalLine height="h-4" />
+                <RoleCard title="Head of Investment Research" />
+                <VerticalLine />
+                <RoleCard title="Senior Analysts" />
+                <VerticalLine />
+                <RoleCard title="Analysts" />
+              </div>
+              
+              {/* Equity Research Division */}
+              <div className="flex flex-col items-center">
+                <VerticalLine height="h-4" />
+                <RoleCard title="Head of Equity Research" />
+                <VerticalLine />
+                <RoleCard title="Senior Analysts" />
+                <VerticalLine />
+                <RoleCard title="Analysts" />
+              </div>
+              
+              {/* Quant Research Division */}
+              <div className="flex flex-col items-center">
+                <VerticalLine height="h-4" />
+                <RoleCard title="Head of Quant Research" />
+                <VerticalLine />
+                <RoleCard title="Senior Analysts" />
+                <VerticalLine />
+                <RoleCard title="Analysts" />
               </div>
             </div>
           </div>
