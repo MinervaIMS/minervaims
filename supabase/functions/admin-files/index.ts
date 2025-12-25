@@ -31,7 +31,7 @@ const FileMetadataSchema = z.object({
   division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant'], {
     errorMap: () => ({ message: 'Invalid division' })
   }),
-  fund: z.enum(['long-short', 'multi-asset'])
+  fund: z.enum(['long-short', 'multi-asset', 'dps', 'pir'])
     .nullable()
     .optional()
 })
