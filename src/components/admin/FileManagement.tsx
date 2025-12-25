@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, FileText, Upload } from 'lucide-react';
-import { divisionLabels, fundLabels, activeFunds, Division, Fund } from '@/lib/types';
+import { divisionLabels, fundLabels, activeFunds, inactiveFunds, Division, Fund } from '@/lib/types';
 
 interface ArchiveFile {
   id: string;
@@ -346,7 +346,18 @@ const FileManagement = () => {
                       <SelectValue placeholder="Select fund" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="__active_label__" disabled className="font-semibold text-muted-foreground">
+                        Active Funds
+                      </SelectItem>
                       {activeFunds.map((fund) => (
+                        <SelectItem key={fund} value={fund}>
+                          {fundLabels[fund]}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__inactive_label__" disabled className="font-semibold text-muted-foreground mt-2">
+                        Inactive Funds
+                      </SelectItem>
+                      {inactiveFunds.map((fund) => (
                         <SelectItem key={fund} value={fund}>
                           {fundLabels[fund]}
                         </SelectItem>
