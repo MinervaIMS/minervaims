@@ -1,168 +1,346 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Input validation schemas
+const EventSchema = z.object({
+  id: z.string().uuid().optional(),
+  title: z.string()
+    .min(1, 'Title is required')
+    .max(200, 'Title too long')
+    .trim(),
+  date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD required)')
+    .refine(val => {
+      const date = new Date(val)
+      return !isNaN(date.getTime()) && date.getFullYear() >= 2000 && date.getFullYear() <= 2100
+    }, 'Invalid date'),
+  place: z.string()
+    .min(1, 'Place is required')
+    .max(200, 'Place too long')
+    .trim(),
+  moderator: z.string()
+    .max(200, 'Moderator name too long')
+    .trim()
+    .nullable()
+    .optional(),
+  guest: z.array(
+    z.string()
+      .max(200, 'Guest name too long')
+      .trim()
+  )
+    .max(20, 'Too many guests')
+    .nullable()
+    .optional(),
+  description: z.string()
+    .max(5000, 'Description too long')
+    .trim()
+    .nullable()
+    .optional()
+})
+
+const ActionSchema = z.enum(['create', 'update', 'delete'])
+
+const DeleteEventSchema = z.object({
+  id: z.string().uuid('Invalid event ID')
+})
+
+// Rate limiting
+interface RateLimitRecord {
+  count: number
+  resetAt: number
+}
+
+const rateLimitStore = new Map<string, RateLimitRecord>()
+
+function checkRateLimit(identifier: string, maxRequests: number, windowMs: number): { 
+  allowed: boolean
+  remaining: number
+  resetAt: number 
+} {
+  const now = Date.now()
+  const record = rateLimitStore.get(identifier)
+  
+  if (!record || now > record.resetAt) {
+    const resetAt = now + windowMs
+    rateLimitStore.set(identifier, { count: 1, resetAt })
+    return { allowed: true, remaining: maxRequests - 1, resetAt }
+  }
+  
+  if (record.count >= maxRequests) {
+    return { allowed: false, remaining: 0, resetAt: record.resetAt }
+  }
+  
+  record.count++
+  return { 
+    allowed: true, 
+    remaining: maxRequests - record.count, 
+    resetAt: record.resetAt 
+  }
+}
+
+// Create HMAC key for JWT verification
+async function getJwtKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const encoder = new TextEncoder()
+  return await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  )
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Rate limiting: 30 requests per minute per IP
+    const ip = req.headers.get('x-forwarded-for') || 
+               req.headers.get('cf-connecting-ip') || 
+               'anonymous'
+    
+    const rateLimit = checkRateLimit(`events:${ip}`, 30, 60 * 1000)
+    
+    if (!rateLimit.allowed) {
+      console.warn('Rate limit exceeded for IP:', ip)
+      const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000)
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': String(retryAfter)
+          } 
+        }
+      )
+    }
 
     // Verify admin token from header
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      )
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '')
     
-    // Simple token validation - decode and check format
+    // Verify JWT signature and claims
+    let payload: { sub?: string; exp?: number }
     try {
-      const decoded = atob(token);
-      const [adminId, timestamp] = decoded.split(':');
+      const key = await getJwtKey()
+      payload = await verify(token, key) as { sub?: string; exp?: number }
       
-      if (!adminId || !timestamp) {
-        throw new Error('Invalid token format');
+      if (!payload.sub) {
+        throw new Error('Invalid token payload')
       }
       
-      // Check if token is not older than 24 hours
-      const tokenAge = Date.now() - parseInt(timestamp);
-      if (tokenAge > 24 * 60 * 60 * 1000) {
+      // Check expiration
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
         return new Response(
           JSON.stringify({ error: 'Token expired' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        )
       }
 
-      // Verify admin exists
+      // Verify admin still exists
       const { data: admin } = await supabase
         .from('admin_users')
         .select('id')
-        .eq('id', adminId)
-        .maybeSingle();
+        .eq('id', payload.sub)
+        .maybeSingle()
 
       if (!admin) {
         return new Response(
           JSON.stringify({ error: 'Invalid admin' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        )
       }
-    } catch {
+    } catch (err) {
+      console.error('Token verification failed:', err)
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      )
     }
 
-    const body = await req.json();
-    const { action, event } = body;
+    // Parse request body
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    console.log('Admin events action:', action);
+    // Validate action
+    const actionResult = ActionSchema.safeParse((body as { action?: string }).action)
+    if (!actionResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid action. Must be create, update, or delete.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const action = actionResult.data
+    const event = (body as { event?: unknown }).event
+
+    console.log('Admin events action:', action)
 
     switch (action) {
       case 'create': {
+        // Validate event data
+        const eventResult = EventSchema.safeParse(event)
+        if (!eventResult.success) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid event data',
+              details: eventResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        const validatedEvent = eventResult.data
         const { data, error } = await supabase
           .from('events')
           .insert({
-            title: event.title,
-            date: event.date,
-            place: event.place,
-            moderator: event.moderator || null,
-            guest: event.guest || null,
-            description: event.description || null,
+            title: validatedEvent.title,
+            date: validatedEvent.date,
+            place: validatedEvent.place,
+            moderator: validatedEvent.moderator || null,
+            guest: validatedEvent.guest || null,
+            description: validatedEvent.description || null,
           })
           .select()
-          .single();
+          .single()
 
         if (error) {
-          console.error('Create event error:', error);
+          console.error('Create event error:', error)
           return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: 'Failed to create event' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          )
         }
 
-        console.log('Event created:', data.id);
+        console.log('Event created:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        )
       }
 
       case 'update': {
+        // Validate event data including id
+        const eventWithIdSchema = EventSchema.extend({
+          id: z.string().uuid('Invalid event ID')
+        })
+        
+        const eventResult = eventWithIdSchema.safeParse(event)
+        if (!eventResult.success) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid event data',
+              details: eventResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        const validatedEvent = eventResult.data
         const { data, error } = await supabase
           .from('events')
           .update({
-            title: event.title,
-            date: event.date,
-            place: event.place,
-            moderator: event.moderator || null,
-            guest: event.guest || null,
-            description: event.description || null,
+            title: validatedEvent.title,
+            date: validatedEvent.date,
+            place: validatedEvent.place,
+            moderator: validatedEvent.moderator || null,
+            guest: validatedEvent.guest || null,
+            description: validatedEvent.description || null,
           })
-          .eq('id', event.id)
+          .eq('id', validatedEvent.id)
           .select()
-          .single();
+          .single()
 
         if (error) {
-          console.error('Update event error:', error);
+          console.error('Update event error:', error)
           return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: 'Failed to update event' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          )
         }
 
-        console.log('Event updated:', data.id);
+        console.log('Event updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        )
       }
 
       case 'delete': {
+        // Validate event id
+        const deleteResult = DeleteEventSchema.safeParse(event)
+        if (!deleteResult.success) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid event ID',
+              details: deleteResult.error.errors.map(e => e.message)
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
         const { error } = await supabase
           .from('events')
           .delete()
-          .eq('id', event.id);
+          .eq('id', deleteResult.data.id)
 
         if (error) {
-          console.error('Delete event error:', error);
+          console.error('Delete event error:', error)
           return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: 'Failed to delete event' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          )
         }
 
-        console.log('Event deleted:', event.id);
+        console.log('Event deleted:', deleteResult.data.id)
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        )
       }
 
       default:
         return new Response(
           JSON.stringify({ error: 'Invalid action' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        )
     }
 
   } catch (error) {
-    console.error('Error in admin-events:', error);
+    console.error('Error in admin-events:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    )
   }
-});
+})
