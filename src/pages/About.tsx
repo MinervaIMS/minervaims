@@ -1,15 +1,22 @@
 import { Link } from "react-router-dom";
 import { PageIntroduction } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
+import aboutBg from "@/assets/about-bg.png";
 
 const About = () => {
   return (
     <>
       {/* SECTION 0 - Hero with title and photo background */}
-      <PageIntroduction
-        title="About Us"
-        description="Understanding what we do, our mission, and organisational structure."
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${aboutBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="About Us"
+            description="Understanding what we do, our mission, and organisational structure."
+            transparentBackground
+          />
+        </div>
+      </div>
 
       {/* SECTION 1 - Black background / White text */}
       <section className="bg-foreground text-background py-section-sm md:py-section">

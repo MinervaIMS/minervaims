@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { PageIntroduction } from '@/components/shared';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import { supabase } from '@/integrations/supabase/client';
+import eventsBg from "@/assets/events-bg.png";
 
 interface DbEvent {
   id: string;
@@ -43,10 +44,16 @@ const Events = () => {
 
   return (
     <>
-      <PageIntroduction
-        title="Events"
-        description="Conferences, workshops, and seminars organised by MIMS."
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${eventsBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="Events"
+            description="Conferences, workshops, and seminars organised by MIMS."
+            transparentBackground
+          />
+        </div>
+      </div>
 
       <div className="container py-section-sm md:py-section">
         {isLoading ? (
