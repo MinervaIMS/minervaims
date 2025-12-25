@@ -81,23 +81,6 @@ const Archive = () => {
           {/* Filters */}
           <div className="mb-8 pb-6 border-b border-separator">
             <div className="flex flex-col sm:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1">
-                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                  Search
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search by title or description..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 font-body text-small"
-                  />
-                </div>
-              </div>
-
               {/* Division filter */}
               <div>
                 <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
@@ -111,13 +94,30 @@ const Archive = () => {
                       setFundFilter('all');
                     }
                   }}
-                  className="font-body text-small bg-background border border-separator px-3 py-2 min-w-[200px]"
+                  className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
                 >
                   <option value="all">All Divisions</option>
                   {Object.entries(divisionLabels).map(([key, label]) => (
                     <option key={key} value={key}>{label}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Search */}
+              <div className="flex-1">
+                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                  Search
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search by title or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 font-body text-small h-10"
+                  />
+                </div>
               </div>
 
               {divisionFilter === 'portfolio' && (
