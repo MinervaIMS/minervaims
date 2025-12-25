@@ -36,6 +36,14 @@ const About = () => {
               Over time, MIMS has built an international Alumni community. Former members have progressed to leading
               investment banks, hedge funds and asset managers across global financial centres.
             </p>
+            <div className="pt-6">
+              <Link
+                to="/divisions"
+                className="inline-block px-10 py-4 bg-foreground text-background font-serif text-lg hover:opacity-90 transition-opacity"
+              >
+                Explore Our Divisions
+              </Link>
+            </div>
           </div>
         </div>
       </section>

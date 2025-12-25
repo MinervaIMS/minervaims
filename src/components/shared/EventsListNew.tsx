@@ -15,17 +15,51 @@ interface EventsListNewProps {
   events: DbEvent[];
 }
 
-function ExpandableDescription({ description }: { description: string }) {
+interface ExpandableContentProps {
+  description?: string | null;
+  moderator?: string | null;
+  guest?: string[] | null;
+}
+
+function ExpandableContent({ description, moderator, guest }: ExpandableContentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const hasModeratorOrGuests = moderator || (guest && guest.length > 0);
+  const hasExpandableContent = (description && description.length > 150) || hasModeratorOrGuests;
+
+  if (!description && !hasModeratorOrGuests) return null;
 
   return (
     <div className="mb-6">
-      <p 
-        className={`font-body text-body text-muted-foreground ${!isExpanded ? 'line-clamp-2' : ''}`}
-      >
-        {description}
-      </p>
-      {description.length > 150 && (
+      {description && (
+        <p 
+          className={`font-body text-body text-muted-foreground ${!isExpanded ? 'line-clamp-2' : ''}`}
+        >
+          {description}
+        </p>
+      )}
+      
+      {/* Moderator and Guests - only visible when expanded */}
+      {isExpanded && hasModeratorOrGuests && (
+        <div className="font-body text-sm text-muted-foreground mt-4">
+          {moderator && (
+            <span className="block">
+              <span className="font-medium text-foreground">Moderator:</span> {moderator}
+            </span>
+          )}
+          {guest && guest.length > 0 && (
+            <div className="block mt-1">
+              <span className="font-medium text-foreground">Guest{guest.length > 1 ? 's' : ''}:</span>
+              <ul className="list-disc list-inside ml-1 mt-1">
+                {guest.map((g, idx) => (
+                  <li key={idx}>{g}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasExpandableContent && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-1 font-body text-sm text-primary hover:text-primary/80 mt-2 transition-colors"
@@ -93,31 +127,12 @@ export function EventsListNew({ events }: EventsListNewProps) {
             {event.title}
           </h3>
 
-          {/* Description - expandable */}
-          {event.description && (
-            <ExpandableDescription description={event.description} />
-          )}
-
-          {/* Moderator and Guests */}
-          {(event.moderator || (event.guest && event.guest.length > 0)) && (
-            <div className="font-body text-sm text-muted-foreground">
-              {event.moderator && (
-                <span className="block">
-                  <span className="font-medium text-foreground">Moderator:</span> {event.moderator}
-                </span>
-              )}
-              {event.guest && event.guest.length > 0 && (
-                <div className="block mt-1">
-                  <span className="font-medium text-foreground">Guest{event.guest.length > 1 ? 's' : ''}:</span>
-                  <ul className="list-disc list-inside ml-1 mt-1">
-                    {event.guest.map((g, idx) => (
-                      <li key={idx}>{g}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Description, Moderator and Guests - expandable */}
+          <ExpandableContent 
+            description={event.description}
+            moderator={event.moderator}
+            guest={event.guest}
+          />
         </article>
       ))}
     </div>
