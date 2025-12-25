@@ -279,7 +279,7 @@ const FileManagement = () => {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-title">Archive Files</h2>
+        <h2 className="font-serif text-heading">Archive Files</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} className="font-body">

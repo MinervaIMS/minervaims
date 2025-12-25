@@ -49,14 +49,15 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
             <div className="flex flex-col md:flex-row md:items-start gap-4">
               {/* PDF Preview Thumbnail */}
               <div 
-                className="flex-shrink-0 w-20 h-28 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
+                className="flex-shrink-0 w-28 h-36 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
                 onClick={() => setPreviewFile(file)}
                 title="Click to preview PDF"
               >
-                <div className="w-full h-full flex flex-col items-center justify-center bg-destructive/5 group-hover:bg-destructive/10 transition-colors">
-                  <FileText className="h-8 w-8 text-destructive mb-1" />
-                  <span className="text-[10px] text-muted-foreground font-body">Preview</span>
-                </div>
+                <iframe
+                  src={`${file.file_url}#view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
+                  className="w-full h-full pointer-events-none"
+                  title={`Preview of ${file.title}`}
+                />
               </div>
 
               {/* Content */}
@@ -78,7 +79,7 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
                   {file.title}
                 </h3>
                 {file.description && (
-                  <p className="font-body text-body text-muted-foreground">
+                  <p className="font-body text-body text-muted-foreground line-clamp-2">
                     {file.description}
                   </p>
                 )}

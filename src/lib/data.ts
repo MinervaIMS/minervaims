@@ -197,7 +197,7 @@ export const teamMembers: TeamMember[] = [
     id: 'tm-008',
     name: 'Placeholder',
     surname: 'Quant Head',
-    position: 'Head of Quant Research',
+    position: 'Head of Quantitative Research',
     division: 'quant',
     isBoard: false,
     linkedinUrl: '#',

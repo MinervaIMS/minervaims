@@ -10,7 +10,7 @@ export type Position =
   | 'Head of Investment Research'
   | 'Head of Macro Research'
   | 'Head of Portfolio Management'
-  | 'Head of Quant Research'
+  | 'Head of Quantitative Research'
   | 'Portfolio Manager'
   | 'Senior Analyst'
   | 'Analyst'
@@ -65,7 +65,7 @@ export const divisionLabels: Record<Division, string> = {
   investment: 'Investment Research',
   macro: 'Macro Research',
   portfolio: 'Portfolio Management',
-  quant: 'Quant Research',
+  quant: 'Quantitative Research',
 };
 
 export const fundLabels: Record<Fund, string> = {

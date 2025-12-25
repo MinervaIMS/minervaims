@@ -22,7 +22,7 @@ const navItems: NavItem[] = [
       { label: 'Investment Research', href: '/divisions/investment' },
       { label: 'Macro Research', href: '/divisions/macro' },
       { label: 'Portfolio Management', href: '/divisions/portfolio' },
-      { label: 'Quant Research', href: '/divisions/quant' },
+      { label: 'Quantitative Research', href: '/divisions/quant' },
     ],
   },
   {
