@@ -1,6 +1,6 @@
 import { PageIntroduction, ArchiveFilters } from "@/components/shared";
 import { reports } from "@/lib/data";
-import archiveBg from "@/assets/archive-bg-3.png";
+import archiveBg from "@/assets/archive-bg-4.png";
 
 const Archive = () => {
   return (
