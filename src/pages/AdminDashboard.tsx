@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, Calendar, MapPin, Users, X } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X } from 'lucide-react';
+import { EventsListNew } from '@/components/shared/EventsListNew';
 
 interface DbEvent {
   id: string;
@@ -378,69 +379,36 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {events.map((event) => (
-            <Card key={event.id}>
-              <CardContent className="py-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    {/* Date and Location */}
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                      <Calendar className="h-4 w-4" />
-                      <span className="font-body text-sm">{formatDate(event.date)}</span>
-                      <span className="mx-2">|</span>
-                      <MapPin className="h-4 w-4" />
-                      <span className="font-body text-sm">{event.place}</span>
-                    </div>
-
-                    {/* Title */}
-                    <h3 className="font-serif text-subheading mb-2">{event.title}</h3>
-
-                    {/* Description */}
-                    {event.description && (
-                      <p className="font-body text-body text-muted-foreground mb-4 line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
-
-                    {/* Moderator/Guests */}
-                    {(event.moderator || (event.guest && event.guest.length > 0)) && (
-                      <div className="flex items-start gap-2 text-muted-foreground">
-                        <Users className="h-4 w-4 mt-0.5" />
-                        <div className="font-body text-sm">
-                          {event.moderator && (
-                            <span className="block">Moderator: {event.moderator}</span>
-                          )}
-                          {event.guest && event.guest.length > 0 && (
-                            <span className="block">
-                              Guest{event.guest.length > 1 ? 's' : ''}: {event.guest.join(', ')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => openEditDialog(event)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDelete(event.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+        <div className="space-y-0">
+          {events.map((event, index) => (
+            <div 
+              key={event.id}
+              className={`py-8 ${index !== events.length - 1 ? 'border-b border-separator' : ''}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <EventsListNew events={[event]} />
                 </div>
-              </CardContent>
-            </Card>
+                
+                {/* Actions */}
+                <div className="flex gap-2 pt-8">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => openEditDialog(event)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleDelete(event.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
