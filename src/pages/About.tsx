@@ -8,7 +8,7 @@ const About = () => {
       {/* SECTION 0 - Hero with title and photo background */}
       <PageIntroduction
         title="About Us"
-        description="Understanding hat we do, our mission, and organisational structure."
+        description="Understanding what we do, our mission, and organisational structure."
       />
 
       {/* SECTION 1 - Black background / White text */}
