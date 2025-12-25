@@ -10,7 +10,7 @@ const Archive = () => {
         className="bg-cover bg-center relative"
         style={{ backgroundImage: `url(${archiveBg})` }}
       >
-        <div className="bg-background/90">
+        <div className="bg-foreground/60">
           <PageIntroduction
             title="Archive"
             description="Browse all research reports and publications."
