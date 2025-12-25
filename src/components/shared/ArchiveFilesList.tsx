@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
-import { Download, FileText } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ArchiveFile {
@@ -20,6 +20,19 @@ interface ArchiveFilesListProps {
 
 export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesListProps) {
   const [previewFile, setPreviewFile] = useState<ArchiveFile | null>(null);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+
+  const toggleDescription = (fileId: string) => {
+    setExpandedDescriptions(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) {
+        next.delete(fileId);
+      } else {
+        next.add(fileId);
+      }
+      return next;
+    });
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -49,13 +62,13 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
             <div className="flex flex-col md:flex-row md:items-start gap-4">
               {/* PDF Preview Thumbnail */}
               <div 
-                className="flex-shrink-0 w-28 h-36 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
+                className="flex-shrink-0 w-36 h-36 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
                 onClick={() => setPreviewFile(file)}
                 title="Click to preview PDF"
               >
                 <iframe
-                  src={`${file.file_url}#view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                  className="w-full h-full pointer-events-none"
+                  src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
+                  className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
                   title={`Preview of ${file.title}`}
                 />
               </div>
@@ -79,9 +92,32 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
                   {file.title}
                 </h3>
                 {file.description && (
-                  <p className="font-body text-body text-muted-foreground line-clamp-2">
-                    {file.description}
-                  </p>
+                  <div>
+                    <p className={`font-body text-body text-muted-foreground ${expandedDescriptions.has(file.id) ? '' : 'line-clamp-2'}`}>
+                      {file.description}
+                    </p>
+                    {file.description.length > 150 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDescription(file.id);
+                        }}
+                        className="inline-flex items-center gap-1 font-body text-small text-primary hover:underline mt-1"
+                      >
+                        {expandedDescriptions.has(file.id) ? (
+                          <>
+                            <ChevronUp className="h-3 w-3" />
+                            Show less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3" />
+                            Read more
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 

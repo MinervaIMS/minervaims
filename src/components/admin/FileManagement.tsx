@@ -429,52 +429,50 @@ const FileManagement = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="divide-y divide-separator">
           {files.map((file) => (
-            <Card key={file.id}>
-              <CardContent className="py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-body text-sm text-muted-foreground">
-                        {formatDate(file.date)}
+            <div key={file.id} className="py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="font-body text-sm text-muted-foreground">
+                      {formatDate(file.date)}
+                    </span>
+                    <span className="font-body text-xs px-2 py-0.5 bg-muted rounded">
+                      {divisionLabels[file.division as Division]}
+                    </span>
+                    {file.fund && (
+                      <span className="font-body text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        {fundLabels[file.fund as Fund]}
                       </span>
-                      <span className="font-body text-xs px-2 py-0.5 bg-muted rounded">
-                        {divisionLabels[file.division as Division]}
-                      </span>
-                      {file.fund && (
-                        <span className="font-body text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
-                          {fundLabels[file.fund as Fund]}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-serif text-lg font-medium truncate">{file.title}</h3>
-                    {file.description && (
-                      <p className="font-body text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {file.description}
-                      </p>
                     )}
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => openEditDialog(file)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDelete(file.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <h3 className="font-serif text-lg font-medium truncate">{file.title}</h3>
+                  {file.description && (
+                    <p className="font-body text-sm text-muted-foreground line-clamp-2 mt-1">
+                      {file.description}
+                    </p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => openEditDialog(file)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleDelete(file.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
