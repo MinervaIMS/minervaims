@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, Calendar, MapPin, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, Calendar, MapPin, Users, X } from 'lucide-react';
 
 interface DbEvent {
   id: string;
@@ -16,7 +16,7 @@ interface DbEvent {
   date: string;
   place: string;
   moderator?: string | null;
-  guest?: string | null;
+  guest?: string[] | null;
   description?: string | null;
   created_at: string;
   updated_at: string;
@@ -32,7 +32,7 @@ const AdminDashboard = () => {
     date: '',
     place: '',
     moderator: '',
-    guest: '',
+    guests: [''],
     description: '',
   });
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ const AdminDashboard = () => {
       date: '',
       place: '',
       moderator: '',
-      guest: '',
+      guests: [''],
       description: '',
     });
     setEditingEvent(null);
@@ -99,10 +99,27 @@ const AdminDashboard = () => {
       date: event.date,
       place: event.place,
       moderator: event.moderator || '',
-      guest: event.guest || '',
+      guests: event.guest && event.guest.length > 0 ? event.guest : [''],
       description: event.description || '',
     });
     setIsDialogOpen(true);
+  };
+
+  const addGuestField = () => {
+    setFormData({ ...formData, guests: [...formData.guests, ''] });
+  };
+
+  const removeGuestField = (index: number) => {
+    if (formData.guests.length > 1) {
+      const newGuests = formData.guests.filter((_, i) => i !== index);
+      setFormData({ ...formData, guests: newGuests });
+    }
+  };
+
+  const updateGuest = (index: number, value: string) => {
+    const newGuests = [...formData.guests];
+    newGuests[index] = value;
+    setFormData({ ...formData, guests: newGuests });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,9 +136,17 @@ const AdminDashboard = () => {
 
     try {
       const action = editingEvent ? 'update' : 'create';
-      const eventData = editingEvent 
-        ? { ...formData, id: editingEvent.id }
-        : formData;
+      const filteredGuests = formData.guests.filter(g => g.trim() !== '');
+      
+      const eventData = {
+        title: formData.title,
+        date: formData.date,
+        place: formData.place,
+        moderator: formData.moderator || null,
+        guest: filteredGuests.length > 0 ? filteredGuests : null,
+        description: formData.description || null,
+        ...(editingEvent && { id: editingEvent.id }),
+      };
 
       const { data, error } = await supabase.functions.invoke('admin-events', {
         body: { action, event: eventData },
@@ -232,7 +257,7 @@ const AdminDashboard = () => {
                 Add Event
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-serif">
                   {editingEvent ? 'Edit Event' : 'Add New Event'}
@@ -279,13 +304,36 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="guest" className="font-body">Guest (optional)</Label>
-                  <Input
-                    id="guest"
-                    value={formData.guest}
-                    onChange={(e) => setFormData({ ...formData, guest: e.target.value })}
-                    placeholder="e.g., Jane Doe, Partner at Firm"
-                  />
+                  <Label className="font-body">Guests (optional)</Label>
+                  {formData.guests.map((guest, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={guest}
+                        onChange={(e) => updateGuest(index, e.target.value)}
+                        placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`}
+                      />
+                      {formData.guests.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => removeGuestField(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addGuestField}
+                    className="font-body"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add another guest
+                  </Button>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description" className="font-body">Description (optional)</Label>
@@ -350,18 +398,25 @@ const AdminDashboard = () => {
 
                     {/* Description */}
                     {event.description && (
-                      <p className="font-body text-body text-muted-foreground mb-2">
+                      <p className="font-body text-body text-muted-foreground mb-4 line-clamp-2">
                         {event.description}
                       </p>
                     )}
 
-                    {/* Moderator/Guest */}
-                    {(event.moderator || event.guest) && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span className="font-body text-sm">
-                          {[event.moderator, event.guest].filter(Boolean).join(', ')}
-                        </span>
+                    {/* Moderator/Guests */}
+                    {(event.moderator || (event.guest && event.guest.length > 0)) && (
+                      <div className="flex items-start gap-2 text-muted-foreground">
+                        <Users className="h-4 w-4 mt-0.5" />
+                        <div className="font-body text-sm">
+                          {event.moderator && (
+                            <span className="block">Moderator: {event.moderator}</span>
+                          )}
+                          {event.guest && event.guest.length > 0 && (
+                            <span className="block">
+                              Guest{event.guest.length > 1 ? 's' : ''}: {event.guest.join(', ')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

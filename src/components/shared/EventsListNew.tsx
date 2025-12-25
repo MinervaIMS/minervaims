@@ -1,4 +1,5 @@
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, MapPin, Users, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DbEvent {
   id: string;
@@ -6,12 +7,42 @@ interface DbEvent {
   date: string;
   place: string;
   moderator?: string | null;
-  guest?: string | null;
+  guest?: string[] | null;
   description?: string | null;
 }
 
 interface EventsListNewProps {
   events: DbEvent[];
+}
+
+function ExpandableDescription({ description }: { description: string }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="mb-6">
+      <p 
+        className={`font-body text-body text-muted-foreground ${!isExpanded ? 'line-clamp-2' : ''}`}
+      >
+        {description}
+      </p>
+      {description.length > 150 && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1 font-body text-sm text-primary hover:text-primary/80 mt-2 transition-colors"
+        >
+          {isExpanded ? (
+            <>
+              Show less <ChevronUp className="h-4 w-4" />
+            </>
+          ) : (
+            <>
+              Read more <ChevronDown className="h-4 w-4" />
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function EventsListNew({ events }: EventsListNewProps) {
@@ -62,20 +93,28 @@ export function EventsListNew({ events }: EventsListNewProps) {
             {event.title}
           </h3>
 
-          {/* Description */}
+          {/* Description - expandable */}
           {event.description && (
-            <p className="font-body text-body text-muted-foreground mb-3">
-              {event.description}
-            </p>
+            <ExpandableDescription description={event.description} />
           )}
 
-          {/* Moderator and Guest */}
-          {(event.moderator || event.guest) && (
+          {/* Moderator and Guests */}
+          {(event.moderator || (event.guest && event.guest.length > 0)) && (
             <div className="flex items-start gap-2 text-muted-foreground">
               <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span className="font-body text-sm">
-                {[event.moderator, event.guest].filter(Boolean).join(', ')}
-              </span>
+              <div className="font-body text-sm">
+                {event.moderator && (
+                  <span className="block">
+                    <span className="font-medium">Moderator:</span> {event.moderator}
+                  </span>
+                )}
+                {event.guest && event.guest.length > 0 && (
+                  <span className="block">
+                    <span className="font-medium">Guest{event.guest.length > 1 ? 's' : ''}:</span>{' '}
+                    {event.guest.join(', ')}
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </article>
