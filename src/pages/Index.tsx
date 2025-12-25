@@ -62,7 +62,7 @@ const Index = () => {
             </p>
             <Link 
               to="/about" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="page-link text-body text-primary"
             >
               Learn more about our mission
             </Link>
@@ -104,7 +104,7 @@ const Index = () => {
           <div className="mt-8">
             <Link 
               to="/divisions" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="page-link text-body text-primary"
             >
               View all divisions
             </Link>
@@ -124,7 +124,7 @@ const Index = () => {
             </p>
             <Link 
               to="/events" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="page-link text-body text-primary"
             >
               View upcoming events
             </Link>
