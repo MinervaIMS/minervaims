@@ -62,7 +62,7 @@ const Index = () => {
             </p>
             <Link 
               to="/about" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="inline-block font-serif italic underline text-primary hover:opacity-80 transition-opacity"
             >
               Learn more about our mission
             </Link>
@@ -104,7 +104,7 @@ const Index = () => {
           <div className="mt-8">
             <Link 
               to="/divisions" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="inline-block font-serif italic underline text-primary hover:opacity-80 transition-opacity"
             >
               View all divisions
             </Link>
@@ -124,7 +124,7 @@ const Index = () => {
             </p>
             <Link 
               to="/events" 
-              className="inline-block font-body text-body text-primary hover:underline"
+              className="inline-block font-serif italic underline text-primary hover:opacity-80 transition-opacity"
             >
               View upcoming events
             </Link>
