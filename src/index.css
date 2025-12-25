@@ -141,4 +141,9 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Page link styling - Times New Roman italic underlined */
+  .page-link {
+    @apply font-serif italic underline;
+  }
 }
