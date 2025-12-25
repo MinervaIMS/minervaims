@@ -64,7 +64,7 @@ const About = () => {
           <div className="text-center">
             <Link 
               to="/members/team" 
-              className="inline-block font-serif text-body italic underline hover:text-primary transition-colors"
+              className="inline-block px-8 py-3 bg-accent text-accent-foreground font-body text-sm uppercase tracking-wider hover:opacity-90 transition-opacity"
             >
               Meet the Team
             </Link>
