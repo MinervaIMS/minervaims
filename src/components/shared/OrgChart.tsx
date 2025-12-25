@@ -335,7 +335,7 @@ export const OrgChart = () => {
 
             {/* Quant */}
             <div className="flex flex-col items-center gap-6">
-              <RoleCard id={NODE_IDS.dh_quant} title="Head of Quant Research" nodeRefs={nodeRefs} />
+              <RoleCard id={NODE_IDS.dh_quant} title="Head of Quantitative Research" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.sa_quant} title="Senior Analysts" nodeRefs={nodeRefs} />
               <RoleCard id={NODE_IDS.a_quant} title="Analysts" nodeRefs={nodeRefs} />
             </div>

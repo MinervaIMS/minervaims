@@ -265,7 +265,7 @@ const AdminDashboard = () => {
         <TabsContent value="events">
           {/* Events Header */}
           <div className="flex items-center justify-between mb-8">
-            <h2 className="font-serif text-title">Events Management</h2>
+            <h2 className="font-serif text-heading">Events Management</h2>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={openCreateDialog} className="font-body">

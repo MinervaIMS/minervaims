@@ -3,6 +3,8 @@ import { PageIntroduction } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, inactiveFunds } from "@/lib/types";
 import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import archiveBg from "@/assets/archive-bg-3.png";
 
 interface ArchiveFile {
@@ -20,6 +22,7 @@ const Archive = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
   const [fundFilter, setFundFilter] = useState<Fund | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchFiles();
@@ -43,11 +46,20 @@ const Archive = () => {
 
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
+      // Division filter
       if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
+      // Fund filter (only when portfolio division is selected)
       if (divisionFilter === 'portfolio' && fundFilter !== 'all' && file.fund !== fundFilter) return false;
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = file.title.toLowerCase().includes(query);
+        const matchesDescription = file.description?.toLowerCase().includes(query) || false;
+        if (!matchesTitle && !matchesDescription) return false;
+      }
       return true;
     });
-  }, [files, divisionFilter, fundFilter]);
+  }, [files, divisionFilter, fundFilter, searchQuery]);
 
   return (
     <>
@@ -69,6 +81,24 @@ const Archive = () => {
           {/* Filters */}
           <div className="mb-8 pb-6 border-b border-separator">
             <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1">
+                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                  Search
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search by title or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 font-body text-small"
+                  />
+                </div>
+              </div>
+
+              {/* Division filter */}
               <div>
                 <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                   Division

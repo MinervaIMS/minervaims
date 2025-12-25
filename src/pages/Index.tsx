@@ -96,7 +96,7 @@ const Index = () => {
               description="Management of simulated investment portfolios."
             />
             <DivisionPreview 
-              title="Quant Research" 
+              title="Quantitative Research" 
               href="/divisions/quant"
               description="Quantitative strategies and systematic investment research."
             />
