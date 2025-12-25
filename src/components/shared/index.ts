@@ -6,4 +6,3 @@ export { EventsList } from './EventsList';
 export { ArchiveFilters } from './ArchiveFilters';
 export { DivisionCard } from './DivisionCard';
 export { FundCard } from './FundCard';
-export { OrgChart } from './OrgChart';
