@@ -4,21 +4,27 @@ import archiveBg from '@/assets/archive-bg.png';
 
 const Archive = () => {
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-fixed"
-      style={{ backgroundImage: `url(${archiveBg})` }}
-    >
-      <div className="bg-background/90 min-h-screen">
-        <PageIntroduction
-          title="Archive"
-          description="Browse all research reports and publications."
-        />
+    <>
+      {/* Hero section with background image */}
+      <div 
+        className="bg-cover bg-center relative"
+        style={{ backgroundImage: `url(${archiveBg})` }}
+      >
+        <div className="bg-background/90">
+          <PageIntroduction
+            title="Archive"
+            description="Browse all research reports and publications."
+          />
+        </div>
+      </div>
 
+      {/* Content section without background image */}
+      <div className="bg-background">
         <div className="container py-section-sm md:py-section">
           <ArchiveFilters reports={reports} />
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
