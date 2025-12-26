@@ -1,10 +1,24 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+// Create HMAC key for JWT verification
+async function getJwtKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const encoder = new TextEncoder();
+  return await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+}
 
 // Rate limiting
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
@@ -47,19 +61,27 @@ Deno.serve(async (req) => {
 
     const token = authHeader.split(' ')[1];
 
-    // Verify JWT token
-    const [headerB64, payloadB64] = token.split('.');
-    if (!headerB64 || !payloadB64) {
+    // Properly verify JWT token with cryptographic signature verification
+    let payload: { sub?: string; exp?: number };
+    try {
+      const key = await getJwtKey();
+      payload = await verify(token, key) as { sub?: string; exp?: number };
+      
+      if (!payload.sub) {
+        throw new Error('Invalid token payload');
+      }
+      
+      // Check expiration (djwt does this automatically, but explicit check is fine)
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        return new Response(
+          JSON.stringify({ error: 'Token expired' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (err) {
+      console.error('Token verification failed:', err);
       return new Response(
-        JSON.stringify({ error: 'Invalid token format' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const payload = JSON.parse(atob(payloadB64));
-    if (payload.exp < Date.now() / 1000) {
-      return new Response(
-        JSON.stringify({ error: 'Token expired' }),
+        JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -68,8 +90,25 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Verify admin still exists in database
+    const { data: admin } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', payload.sub)
+      .maybeSingle();
+
+    if (!admin) {
+      console.error('Admin not found for sub:', payload.sub);
+      return new Response(
+        JSON.stringify({ error: 'Invalid admin' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await req.json();
     const { action, member } = body;
+
+    console.log(`Admin ${payload.sub} performing action: ${action}`);
 
     if (action === 'create') {
       const { data, error } = await supabase
