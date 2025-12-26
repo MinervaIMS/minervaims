@@ -56,7 +56,7 @@ const Index = () => {
       </section>
 
       {/* About Preview */}
-      <section className="py-section-sm md:py-section border-t border-separator">
+      <section className="py-section-sm md:py-section">
         <div className="container">
           <div className="max-w-3xl">
             <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About MIMS</h2>
@@ -67,7 +67,7 @@ const Index = () => {
             </p>
             <Link 
               to="/about" 
-              className="inline-block font-serif italic underline text-xl text-primary hover:opacity-80 transition-opacity"
+              className="inline-block font-body underline text-xl text-primary hover:opacity-80 transition-opacity"
             >
               Learn more about our mission
             </Link>
@@ -76,7 +76,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Preview */}
-      <section className="py-section-sm md:py-section border-t border-separator bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -109,7 +109,7 @@ const Index = () => {
           <div className="mt-8">
             <Link 
               to="/divisions" 
-              className="inline-block font-serif italic underline text-xl text-primary hover:opacity-80 transition-opacity"
+              className="inline-block font-body underline text-xl text-primary hover:opacity-80 transition-opacity"
             >
               View all divisions
             </Link>
@@ -118,14 +118,14 @@ const Index = () => {
       </section>
 
       {/* Latest Reports */}
-      <section className="py-section-sm md:py-section border-t border-separator">
+      <section className="py-section-sm md:py-section bg-foreground">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Latest Reports</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">Latest Reports</h2>
           <LatestArchiveCarousel />
           <div className="mt-8">
             <Link 
               to="/archive" 
-              className="inline-block font-serif italic underline text-xl text-primary hover:opacity-80 transition-opacity"
+              className="inline-block font-body underline text-xl text-background hover:opacity-80 transition-opacity"
             >
               Browse full archive
             </Link>
@@ -133,22 +133,43 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Activities Preview */}
-      <section className="py-section-sm md:py-section border-t border-separator bg-background">
+      {/* Activities & Join Section */}
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <div className="max-w-3xl">
-            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Events & Activities</h2>
-            <p className="font-body text-body-lg text-muted-foreground mb-6">
-              We organise conferences, workshops, and seminars featuring industry professionals 
-              and academics. Our events provide members with networking opportunities and 
-              exposure to current market themes.
-            </p>
-            <Link 
-              to="/events" 
-              className="inline-block font-serif italic underline text-xl text-primary hover:opacity-80 transition-opacity"
-            >
-              View upcoming events
-            </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
+            {/* Activities & Events */}
+            <div>
+              <div className="w-12 h-0.5 bg-foreground mb-6" />
+              <h2 className="font-serif text-heading mb-6">Activities & Events</h2>
+              <p className="font-body text-body-lg text-muted-foreground mb-6">
+                Beyond research and portfolio management, MIMS organises events connecting members 
+                with industry professionals, workshops developing practical skills, and our annual 
+                investment conference.
+              </p>
+              <Link 
+                to="/events" 
+                className="inline-flex items-center gap-2 font-body underline text-lg text-foreground hover:opacity-80 transition-opacity"
+              >
+                View upcoming events
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+
+            {/* Join MIMS */}
+            <div className="md:border-l md:border-separator md:pl-16">
+              <h2 className="font-serif text-heading mb-6">Join MIMS</h2>
+              <p className="font-body text-body-lg text-muted-foreground mb-6">
+                Recruitment is open to all Bocconi students. We seek motivated individuals with 
+                genuine interest in financial markets, regardless of academic background or prior experience.
+              </p>
+              <Link 
+                to="/join" 
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-10 py-4 text-lg font-body hover:opacity-90 transition-opacity"
+              >
+                APPLY NOW
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
