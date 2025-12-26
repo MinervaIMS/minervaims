@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { TeamMember, Division, divisionLabels } from '@/lib/types';
+import { Linkedin } from 'lucide-react';
 
 interface TeamDirectoryProps {
   members: TeamMember[];
@@ -118,11 +119,22 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
 function MemberCard({ member }: { member: TeamMember }) {
   return (
     <article className="group">
-      {/* Photo placeholder */}
-      <div className="aspect-[3/4] bg-muted mb-4 flex items-center justify-center">
+      {/* Photo placeholder - squared */}
+      <div className="relative aspect-square bg-muted mb-4 flex items-center justify-center">
         <span className="font-serif text-muted-foreground text-heading">
           {member.name.charAt(0)}{member.surname.charAt(0)}
         </span>
+        {member.linkedinUrl && (
+          <Link
+            to={member.linkedinUrl}
+            className="absolute bottom-2 right-2 w-8 h-8 bg-primary flex items-center justify-center hover:opacity-80 transition-opacity"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${member.name} ${member.surname} LinkedIn profile`}
+          >
+            <Linkedin className="w-4 h-4 text-primary-foreground" />
+          </Link>
+        )}
       </div>
       <h3 className="font-serif text-body-lg">
         {member.name} {member.surname}
@@ -130,16 +142,6 @@ function MemberCard({ member }: { member: TeamMember }) {
       <p className="font-body text-small text-muted-foreground mt-1">
         {member.position}
       </p>
-      {member.linkedinUrl && (
-        <Link
-          to={member.linkedinUrl}
-          className="inline-block font-body text-small text-primary hover:underline mt-2"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          LinkedIn
-        </Link>
-      )}
     </article>
   );
 }

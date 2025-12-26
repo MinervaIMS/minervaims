@@ -58,20 +58,12 @@ const Index = () => {
       {/* About Preview */}
       <section className="py-section-sm md:py-section">
         <div className="container">
-          <div className="max-w-3xl">
-            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About MIMS</h2>
-            <p className="font-body text-body-lg text-muted-foreground mb-6">
-              Minerva Investment Management Society is an association promoted and run by students 
-              of Università Bocconi. We provide hands-on experience in financial research, portfolio 
-              management, and investment analysis through rigorous academic and practical training.
-            </p>
-            <Link 
-              to="/about" 
-              className="inline-block font-body underline text-xl text-primary hover:opacity-80 transition-opacity"
-            >
-              Learn more about our mission
-            </Link>
-          </div>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About MIMS</h2>
+          <p className="font-body text-body-lg text-muted-foreground">
+            Minerva Investment Management Society is an association promoted and run by students 
+            of Università Bocconi. We provide hands-on experience in financial research, portfolio 
+            management, and investment analysis through rigorous academic and practical training.
+          </p>
         </div>
       </section>
 
@@ -106,14 +98,6 @@ const Index = () => {
               description="Quantitative strategies and systematic investment research."
             />
           </div>
-          <div className="mt-8">
-            <Link 
-              to="/divisions" 
-              className="inline-block font-body underline text-xl text-primary hover:opacity-80 transition-opacity"
-            >
-              View all divisions
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -122,14 +106,6 @@ const Index = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">Latest Reports</h2>
           <LatestArchiveCarousel />
-          <div className="mt-8">
-            <Link 
-              to="/archive" 
-              className="inline-block font-body underline text-xl text-background hover:opacity-80 transition-opacity"
-            >
-              Browse full archive
-            </Link>
-          </div>
         </div>
       </section>
 
