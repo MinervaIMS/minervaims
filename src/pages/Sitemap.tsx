@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PageIntroduction } from '@/components/shared';
+import sitemapBg from '@/assets/sitemap-bg.png';
 
 const Sitemap = () => {
   const sections = [
@@ -42,10 +43,16 @@ const Sitemap = () => {
 
   return (
     <>
-      <PageIntroduction
-        title="Sitemap"
-        description="Complete overview of all pages on this website."
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sitemapBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="Sitemap"
+            description="Complete overview of all pages on this website."
+            transparentBackground
+          />
+        </div>
+      </div>
 
       <div className="container py-section-sm md:py-section">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">

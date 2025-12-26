@@ -1,12 +1,19 @@
 import { PageIntroduction } from '@/components/shared';
+import privacyBg from '@/assets/privacy-bg.png';
 
 const PrivacyPolicy = () => {
   return (
     <>
-      <PageIntroduction
-        title="Privacy Policy"
-        description="This Privacy Policy explains how MIMS collects and uses personal data when you visit our website, contact us, register for events, or apply to join the Society. We are committed to lawful, transparent processing and to protecting your rights."
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${privacyBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="Privacy Policy"
+            description="This Privacy Policy explains how MIMS collects and uses personal data when you visit our website, contact us, register for events, or apply to join the Society. We are committed to lawful, transparent processing and to protecting your rights."
+            transparentBackground
+          />
+        </div>
+      </div>
 
       <div className="container py-section-sm md:py-section">
         <div className="max-w-3xl space-y-8">
