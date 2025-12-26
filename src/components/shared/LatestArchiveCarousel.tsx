@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Division, divisionLabels } from '@/lib/types';
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface ArchiveFile {
   id: string;
@@ -16,7 +16,6 @@ export function LatestArchiveCarousel() {
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
@@ -40,34 +39,25 @@ export function LatestArchiveCarousel() {
     }
   };
 
-  const updateScrollButtons = () => {
+  const updateScrollState = () => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
     }
   };
 
   useEffect(() => {
-    updateScrollButtons();
+    updateScrollState();
     const container = scrollContainerRef.current;
     if (container) {
-      container.addEventListener('scroll', updateScrollButtons);
-      window.addEventListener('resize', updateScrollButtons);
+      container.addEventListener('scroll', updateScrollState);
+      window.addEventListener('resize', updateScrollState);
       return () => {
-        container.removeEventListener('scroll', updateScrollButtons);
-        window.removeEventListener('resize', updateScrollButtons);
+        container.removeEventListener('scroll', updateScrollState);
+        window.removeEventListener('resize', updateScrollState);
       };
     }
   }, [files]);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const cardWidth = 340;
-      const scrollAmount = direction === 'left' ? -cardWidth : cardWidth;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -92,26 +82,6 @@ export function LatestArchiveCarousel() {
 
   return (
     <div className="relative">
-      {/* Scroll buttons */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-foreground border border-background/20 flex items-center justify-center hover:bg-background/10 transition-colors -ml-5"
-          aria-label="Scroll left"
-        >
-          <ChevronLeft className="w-5 h-5 text-background" />
-        </button>
-      )}
-      {canScrollRight && (
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-foreground border border-background/20 flex items-center justify-center hover:bg-background/10 transition-colors -mr-5"
-          aria-label="Scroll right"
-        >
-          <ChevronRight className="w-5 h-5 text-background" />
-        </button>
-      )}
-
       {/* Scrollable container */}
       <div
         ref={scrollContainerRef}
@@ -161,6 +131,15 @@ export function LatestArchiveCarousel() {
           </Link>
         </div>
       </div>
+
+      {/* Scroll hint */}
+      {canScrollRight && (
+        <div className="flex justify-end mt-2">
+          <span className="font-body text-sm text-background/60 flex items-center gap-2">
+            Scroll <ArrowRight className="w-4 h-4" />
+          </span>
+        </div>
+      )}
     </div>
   );
 }

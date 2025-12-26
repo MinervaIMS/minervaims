@@ -16,20 +16,11 @@ const Sitemap = () => {
     {
       title: 'Divisions',
       links: [
-        { label: 'All Divisions', href: '/divisions' },
         { label: 'Equity Research', href: '/divisions/equity' },
         { label: 'Investment Research', href: '/divisions/investment' },
         { label: 'Macro Research', href: '/divisions/macro' },
         { label: 'Portfolio Management', href: '/divisions/portfolio' },
         { label: 'Quantitative Research', href: '/divisions/quant' },
-      ],
-    },
-    {
-      title: 'Funds',
-      links: [
-        { label: 'All Funds', href: '/funds' },
-        { label: 'Long Short Equity Fund', href: '/funds/long-short' },
-        { label: 'Multi Asset Global Opportunities Fund', href: '/funds/multi-asset' },
       ],
     },
     {

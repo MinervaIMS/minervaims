@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PageIntroduction, TeamDirectory } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
+import teamBg from '@/assets/team-bg.png';
 
 interface DbTeamMember {
   id: string;
@@ -62,6 +63,7 @@ const Team = () => {
       <PageIntroduction
         title="Our Team"
         description="The people behind our research and portfolio management activities."
+        backgroundImage={teamBg}
       />
 
       <div className="container py-section-sm md:py-section">
