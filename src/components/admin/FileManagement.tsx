@@ -43,8 +43,6 @@ const FileManagement = () => {
   });
   const { toast } = useToast();
 
-  const adminToken = sessionStorage.getItem('adminToken');
-
   useEffect(() => {
     fetchFiles();
   }, []);
@@ -237,10 +235,11 @@ const FileManagement = () => {
         ...(editingFile && { id: editingFile.id }),
       };
 
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-files', {
         body: { action, file: fileData },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -277,10 +276,11 @@ const FileManagement = () => {
     if (!confirm('Are you sure you want to delete this file?')) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-files', {
         body: { action: 'delete', file: { id: fileId } },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
