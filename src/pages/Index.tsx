@@ -47,11 +47,11 @@ const Index = () => {
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
-              <p className="font-serif text-hero text-primary mb-2">150+</p>
+              <p className="font-serif text-hero text-primary mb-2">{keyFigures.totalReports}+</p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </div>
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
-              <p className="font-serif text-hero text-primary mb-2">{keyFigures.totalMembers}+</p>
+              <p className="font-serif text-hero text-primary mb-2">70+</p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
             </div>
             <div className="text-center py-6">
@@ -96,7 +96,7 @@ const Index = () => {
       <section className="py-section-sm md:py-section bg-foreground">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            Latest Reports & Publications
+            Latest Reports
           </h2>
           <LatestArchiveCarousel />
         </div>
@@ -131,7 +131,7 @@ const Index = () => {
             to="/join"
             className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
           >
-            Apply Now
+            APPLY NOW
           </Link>
         </div>
       </section>
