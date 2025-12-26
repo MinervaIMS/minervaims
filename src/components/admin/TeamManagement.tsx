@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, Upload, X } from 'lucide-react';
@@ -72,6 +73,7 @@ export default function TeamManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -113,6 +115,23 @@ export default function TeamManagement() {
     }
   };
 
+  // Group members by division
+  const membersByDivision = useMemo(() => {
+    const boardMembers = members.filter(m => m.is_board);
+    const divisionGroups: Record<string, TeamMember[]> = {};
+    
+    members.filter(m => !m.is_board && m.division).forEach(member => {
+      const div = member.division!;
+      if (!divisionGroups[div]) divisionGroups[div] = [];
+      divisionGroups[div].push(member);
+    });
+
+    // Members without division (operations/media heads without division assignment)
+    const noDivision = members.filter(m => !m.is_board && !m.division);
+
+    return { boardMembers, divisionGroups, noDivision };
+  }, [members]);
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -126,6 +145,7 @@ export default function TeamManagement() {
       display_order: 0,
     });
     setEditingMember(null);
+    setUploadProgress(0);
   };
 
   const openCreateDialog = () => {
@@ -172,6 +192,18 @@ export default function TeamManagement() {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
+
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
@@ -181,6 +213,8 @@ export default function TeamManagement() {
         .from('team-photos')
         .upload(filePath, file);
 
+      clearInterval(progressInterval);
+
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
@@ -188,17 +222,20 @@ export default function TeamManagement() {
         .getPublicUrl(filePath);
 
       setFormData({ ...formData, photo_url: publicUrl });
+      setUploadProgress(100);
       toast({
         title: "Success",
         description: "Photo uploaded successfully",
       });
     } catch (error) {
+      clearInterval(progressInterval);
       console.error('Upload error:', error);
       toast({
         title: "Error",
         description: "Failed to upload photo",
         variant: "destructive",
       });
+      setUploadProgress(0);
     } finally {
       setIsUploading(false);
     }
@@ -309,11 +346,6 @@ export default function TeamManagement() {
   if (isLoading) {
     return <p className="font-body text-muted-foreground">Loading team members...</p>;
   }
-
-  // Group members by category
-  const boardMembers = members.filter(m => m.is_board);
-  const divisionHeads = members.filter(m => !m.is_board && m.position.startsWith('Head of'));
-  const otherMembers = members.filter(m => !m.is_board && !m.position.startsWith('Head of'));
 
   return (
     <div>
@@ -447,7 +479,7 @@ export default function TeamManagement() {
                       <span className="text-muted-foreground text-xs">No photo</span>
                     </div>
                   )}
-                  <div>
+                  <div className="flex-1">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -464,6 +496,12 @@ export default function TeamManagement() {
                       <Upload className="h-4 w-4 mr-2" />
                       {isUploading ? 'Uploading...' : 'Upload Photo'}
                     </Button>
+                    {isUploading && (
+                      <div className="mt-2">
+                        <Progress value={uploadProgress} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">{uploadProgress}%</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -506,7 +544,7 @@ export default function TeamManagement() {
         </Dialog>
       </div>
 
-      {/* Members List */}
+      {/* Members List grouped by division */}
       {members.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -518,35 +556,35 @@ export default function TeamManagement() {
       ) : (
         <div className="space-y-8">
           {/* Board Members */}
-          {boardMembers.length > 0 && (
+          {membersByDivision.boardMembers.length > 0 && (
             <div>
               <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">Executive Board</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {boardMembers.map((member) => (
+                {membersByDivision.boardMembers.map((member) => (
                   <MemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Division Heads */}
-          {divisionHeads.length > 0 && (
-            <div>
-              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">Division Heads</h3>
+          {/* Members by Division */}
+          {DIVISIONS.filter(d => membersByDivision.divisionGroups[d.value]?.length > 0).map((division) => (
+            <div key={division.value}>
+              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">{division.label}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {divisionHeads.map((member) => (
+                {membersByDivision.divisionGroups[division.value].map((member) => (
                   <MemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
                 ))}
               </div>
             </div>
-          )}
+          ))}
 
-          {/* Other Members */}
-          {otherMembers.length > 0 && (
+          {/* Members without division */}
+          {membersByDivision.noDivision.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">Team Members</h3>
+              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">Other</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {otherMembers.map((member) => (
+                {membersByDivision.noDivision.map((member) => (
                   <MemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
                 ))}
               </div>
@@ -594,9 +632,9 @@ function MemberCard({
             <p className="font-body text-small text-muted-foreground truncate">
               {member.position}
             </p>
-            {member.division && (
+            {member.fund && (
               <p className="font-body text-xs text-muted-foreground truncate">
-                {divisionLabels[member.division as keyof typeof divisionLabels] || member.division}
+                {FUNDS.find(f => f.value === member.fund)?.label || member.fund}
               </p>
             )}
           </div>

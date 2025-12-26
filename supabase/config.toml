@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.admin-team]
 verify_jwt = false
+
+[functions.admin-alumni]
+verify_jwt = false
