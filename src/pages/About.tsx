@@ -21,7 +21,7 @@ const About = () => {
       {/* SECTION 1 - White background / Black text */}
       <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left">What we do</h2>
+          <h2 className="font-serif text-display mb-8 text-left">What we do</h2>
           <div className=" mx-auto text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed">
               Minerva Investment Management Society (MIMS) is society promoted and run by students of Bocconi
@@ -58,7 +58,7 @@ const About = () => {
       {/* SECTION 2 - White background / Black text - Mission */}
       <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Mission</h2>
+          <h2 className="font-serif text-display mb-8">Mission</h2>
           <div className="space-y-4">
             <p className="font-body text-body text-foreground">MIMS aims to and succeed in:</p>
             <ol className="font-body text-body text-foreground list-decimal list-inside space-y-2 pl-4">
@@ -88,7 +88,7 @@ const About = () => {
       {/* SECTION 3 - Organisational Structure */}
       <section className="bg-background py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Organisational Structure</h2>
+          <h2 className="font-serif text-display mb-8">Organisational Structure</h2>
 
           {/* Org Chart with integrated role descriptions */}
           <div className="mb-12">

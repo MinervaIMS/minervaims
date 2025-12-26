@@ -38,7 +38,7 @@ const FundDetail = () => {
         )}
 
         <section className="mb-12">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+          <h2 className="font-serif text-display mb-6">
             Fund Reports
           </h2>
           <ReportsList reports={fundReports} />
