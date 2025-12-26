@@ -113,20 +113,12 @@ const Index = () => {
             Beyond research and portfolio management, MIMS organises events connecting members with industry
             professionals, workshops developing practical skills, and our annual investment conference.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link
-              to="/events"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
-            >
-              View Upcoming Events
-            </Link>
-            <Link
-              to="/events?view=past"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
-            >
-              View Past Events
-            </Link>
-          </div>
+          <Link
+            to="/events?view=past"
+            className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+          >
+            View Past Events
+          </Link>
         </div>
       </section>
 
