@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap } from 'lucide-react';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
 import TeamManagement from '@/components/admin/TeamManagement';
+import AlumniManagement from '@/components/admin/AlumniManagement';
 
 interface DbEvent {
   id: string;
@@ -251,8 +252,12 @@ const AdminDashboard = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="events" className="w-full">
+      <Tabs defaultValue="alumni" className="w-full">
         <TabsList className="mb-8">
+          <TabsTrigger value="alumni" className="font-body">
+            <GraduationCap className="h-4 w-4 mr-2" />
+            Alumni
+          </TabsTrigger>
           <TabsTrigger value="events" className="font-body">
             <Calendar className="h-4 w-4 mr-2" />
             Events
@@ -266,6 +271,10 @@ const AdminDashboard = () => {
             Team
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="alumni">
+          <AlumniManagement />
+        </TabsContent>
 
         <TabsContent value="events">
           {/* Events Header */}

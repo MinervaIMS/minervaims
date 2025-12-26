@@ -1,16 +1,23 @@
 import { PageIntroduction } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
 import { Button } from '@/components/ui/button';
+import cookieBg from '@/assets/cookie-bg.png';
 
 const CookiePolicy = () => {
   const { openPreferences } = useCookieConsent();
 
   return (
     <>
-      <PageIntroduction
-        title="Cookie Policy"
-        description="This Cookie Policy explains how MIMS uses cookies and similar technologies on this website, and how you can control them. Non-essential cookies are set only with your consent."
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${cookieBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="Cookie Policy"
+            description="This Cookie Policy explains how MIMS uses cookies and similar technologies on this website, and how you can control them. Non-essential cookies are set only with your consent."
+            transparentBackground
+          />
+        </div>
+      </div>
 
       <div className="container py-section-sm md:py-section">
         <div className="max-w-3xl space-y-8">

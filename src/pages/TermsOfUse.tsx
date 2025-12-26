@@ -1,12 +1,19 @@
 import { PageIntroduction } from '@/components/shared';
+import termsBg from '@/assets/terms-bg.png';
 
 const TermsOfUse = () => {
   return (
     <>
-      <PageIntroduction
-        title="Terms of Use"
-        description="These Terms govern use of the MIMS website and any content made available through it. By accessing the website, you agree to these Terms."
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${termsBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="Terms of Use"
+            description="These Terms govern use of the MIMS website and any content made available through it. By accessing the website, you agree to these Terms."
+            transparentBackground
+          />
+        </div>
+      </div>
 
       <div className="container py-section-sm md:py-section">
         <div className="max-w-3xl space-y-8">

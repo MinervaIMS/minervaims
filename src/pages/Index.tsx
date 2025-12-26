@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoWhite from "@/assets/logo-white.png";
 import homepageBg from "@/assets/homepage-bg.png";
@@ -9,21 +8,6 @@ import { Division, divisionLabels } from "@/lib/types";
 const divisions: Division[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
 const Index = () => {
-  const divisionsRef = useRef<HTMLDivElement>(null);
-  const [showScrollHint, setShowScrollHint] = useState(true);
-
-  useEffect(() => {
-    const container = divisionsRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      setShowScrollHint(scrollLeft < scrollWidth - clientWidth - 10);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
 
   return (
     <>
@@ -80,35 +64,23 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Divisions Section - Simple Carousel */}
+      {/* Divisions Section */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-        </div>
-        <div className="relative">
-          <div
-            ref={divisionsRef}
-            className="flex overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-6 md:px-12 gap-6 md:gap-10 py-4"
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {divisions.map((division) => (
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="flex-shrink-0 snap-start group"
+                className="block bg-secondary p-6 hover:bg-secondary/80 transition-colors text-center"
               >
-                <span className="font-serif text-2xl md:text-3xl text-foreground hover:text-primary transition-colors whitespace-nowrap">
+                <span className="font-serif text-lg md:text-xl text-foreground">
                   {divisionLabels[division]}
                 </span>
               </Link>
             ))}
           </div>
-          {showScrollHint && (
-            <div className="flex justify-end px-6 md:px-12 mt-2">
-              <span className="font-body text-sm text-muted-foreground flex items-center gap-2">
-                Scroll <span className="text-lg">→</span>
-              </span>
-            </div>
-          )}
         </div>
       </section>
 
@@ -122,42 +94,39 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Activities & Join Section */}
+      {/* Activities & Events Section */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
-            {/* Activities & Events */}
-            <div>
-              <h2 className="font-serif text-heading mb-6">Activities & Events</h2>
-              <p className="font-body text-body-lg text-muted-foreground mb-6">
-                Beyond research and portfolio management, MIMS organises events connecting members with industry
-                professionals, workshops developing practical skills, and our annual investment conference.
-              </p>
-              <Link
-                to="/events"
-                className="inline-flex items-center gap-2 font-body underline text-lg text-foreground hover:opacity-80 transition-opacity"
-              >
-                View upcoming events
-                <span aria-hidden="true">→</span>
-              </Link>
-            </div>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
+          <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
+            Beyond research and portfolio management, MIMS organises events connecting members with industry
+            professionals, workshops developing practical skills, and our annual investment conference.
+          </p>
+          <Link
+            to="/events"
+            className="inline-flex items-center gap-2 font-body underline text-lg text-foreground hover:opacity-80 transition-opacity"
+          >
+            View upcoming events
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </section>
 
-            {/* Join MIMS */}
-            <div className="md:border-l md:border-separator md:pl-16">
-              <h2 className="font-serif text-heading mb-6">Join MIMS</h2>
-              <p className="font-body text-body-lg text-muted-foreground mb-6">
-                Recruitment is open to all Bocconi students. We seek motivated individuals with genuine interest in
-                financial markets, regardless of academic background or prior experience.
-              </p>
-              <Link
-                to="/join"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-10 py-4 text-lg font-serif hover:opacity-90 transition-opacity"
-              >
-                APPLY NOW
-                <span aria-hidden="true">→</span>
-              </Link>
-            </div>
-          </div>
+      {/* Join MIMS Section */}
+      <section className="py-section-sm md:py-section bg-background border-t border-separator">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
+          <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
+            Recruitment is open to all Bocconi students. We seek motivated individuals with genuine interest in
+            financial markets, regardless of academic background or prior experience.
+          </p>
+          <Link
+            to="/join"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-10 py-4 text-lg font-serif hover:opacity-90 transition-opacity"
+          >
+            APPLY NOW
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       </section>
     </>

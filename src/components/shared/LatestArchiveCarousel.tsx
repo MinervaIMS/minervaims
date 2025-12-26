@@ -136,7 +136,7 @@ export function LatestArchiveCarousel() {
       {canScrollRight && (
         <div className="flex justify-end mt-2">
           <span className="font-body text-sm text-background/60 flex items-center gap-2">
-            Scroll <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" />
           </span>
         </div>
       )}
