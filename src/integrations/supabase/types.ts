@@ -184,6 +184,13 @@ export type Database = {
         | "Head of Media"
         | "Operations"
         | "Media"
+        | "Co-Head of Equity Research"
+        | "Co-Head of Investment Research"
+        | "Co-Head of Macro Research"
+        | "Co-Head of Portfolio Management"
+        | "Co-Head of Quantitative Research"
+        | "Co-Head of Operations"
+        | "Co-Head of Media"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -336,6 +343,13 @@ export const Constants = {
         "Head of Media",
         "Operations",
         "Media",
+        "Co-Head of Equity Research",
+        "Co-Head of Investment Research",
+        "Co-Head of Macro Research",
+        "Co-Head of Portfolio Management",
+        "Co-Head of Quantitative Research",
+        "Co-Head of Operations",
+        "Co-Head of Media",
       ],
     },
   },

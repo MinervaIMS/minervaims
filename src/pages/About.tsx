@@ -99,7 +99,7 @@ const About = () => {
           <div className="text-center">
             <Link
               to="/members/team"
-              className="inline-block px-10 py-4 bg-accent text-accent-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
             >
               Meet the Team
             </Link>

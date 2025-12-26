@@ -110,7 +110,6 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
             {/* Activities & Events */}
             <div>
-              <div className="w-12 h-0.5 bg-foreground mb-6" />
               <h2 className="font-serif text-heading mb-6">Activities & Events</h2>
               <p className="font-body text-body-lg text-muted-foreground mb-6">
                 Beyond research and portfolio management, MIMS organises events connecting members with industry
@@ -134,7 +133,7 @@ const Index = () => {
               </p>
               <Link
                 to="/join"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-10 py-4 text-lg font-body hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-10 py-4 text-lg font-serif hover:opacity-90 transition-opacity"
               >
                 APPLY NOW
                 <span aria-hidden="true">→</span>
