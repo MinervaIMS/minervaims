@@ -143,6 +143,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string
@@ -188,14 +212,66 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      app_role:
+        | "admin"
+        | "president"
+        | "vice_president"
+        | "head_of_asset_management"
+        | "head_of_equity"
+        | "head_of_investment"
+        | "head_of_macro"
+        | "head_of_portfolio"
+        | "head_of_quant"
+        | "head_of_operations"
+        | "head_of_media"
+        | "co_head_of_equity"
+        | "co_head_of_investment"
+        | "co_head_of_macro"
+        | "co_head_of_portfolio"
+        | "co_head_of_quant"
+        | "co_head_of_operations"
+        | "co_head_of_media"
+        | "member"
+        | "pending"
       team_division:
         | "equity"
         | "investment"
@@ -354,6 +430,28 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: [
+        "admin",
+        "president",
+        "vice_president",
+        "head_of_asset_management",
+        "head_of_equity",
+        "head_of_investment",
+        "head_of_macro",
+        "head_of_portfolio",
+        "head_of_quant",
+        "head_of_operations",
+        "head_of_media",
+        "co_head_of_equity",
+        "co_head_of_investment",
+        "co_head_of_macro",
+        "co_head_of_portfolio",
+        "co_head_of_quant",
+        "co_head_of_operations",
+        "co_head_of_media",
+        "member",
+        "pending",
+      ],
       team_division: [
         "equity",
         "investment",

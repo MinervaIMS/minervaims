@@ -16,10 +16,9 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify admin token
+    // Verify Supabase Auth token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.log('No authorization header');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -28,16 +27,28 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Verify token matches stored admin session
-    const { data: adminUser, error: authError } = await supabase
-      .from('admin_users')
-      .select('id')
-      .limit(1);
-
-    if (authError || !adminUser || adminUser.length === 0) {
-      console.log('Admin verification failed:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    // Verify user with Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user is admin
+    const isAdmin = user.email === 'as.minerva@unibocconi.it';
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!isAdmin && !adminRole) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
