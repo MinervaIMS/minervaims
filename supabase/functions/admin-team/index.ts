@@ -43,6 +43,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
     if (!checkRateLimit(clientIp)) {
       return new Response(
@@ -87,7 +92,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Admin ${user.email} performing action`);
+    // Parse request body
+    const body = await req.json();
+    const { action, member } = body;
+
+    console.log(`Admin ${user.email} performing action: ${action}`);
 
     if (action === 'create') {
       const { data, error } = await supabase
