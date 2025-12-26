@@ -1,7 +1,17 @@
 import { Link } from "react-router-dom";
 import { PageIntroduction } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
+import { DivisionCard } from "@/components/shared/DivisionCard";
+import { Division } from "@/lib/types";
 import aboutBg from "@/assets/about-bg.png";
+
+const divisionDescriptions: Record<Division, string> = {
+  equity: 'Fundamental analysis of public equities across sectors and geographies, producing initiations of coverage and sector reports.',
+  investment: 'Analysis of private market opportunities, M&A transactions, and alternative investments.',
+  macro: 'Macroeconomic analysis covering monetary policy, inflation dynamics, and global growth.',
+  portfolio: 'Management of simulated investment portfolios with defined risk parameters and investment mandates.',
+  quant: 'Quantitative research on factor strategies, systematic investing, and machine learning applications.',
+};
 
 const About = () => {
   return (
@@ -43,44 +53,22 @@ const About = () => {
               Over time, MIMS has built an international Alumni community. Former members have progressed to leading
               investment banks, hedge funds and asset managers across global financial centres.
             </p>
-            <div className="pt-6 text-center">
-              <Link
-                to="/divisions"
-                className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
-              >
-                Explore Our Divisions
-              </Link>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 2 - White background / Black text - Mission */}
-      <section className="bg-background text-foreground py-section-sm md:py-section">
+      {/* SECTION 2 - Our Divisions */}
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Mission</h2>
-          <div className="space-y-4">
-            <p className="font-body text-body text-foreground">MIMS aims to and succeed in:</p>
-            <ol className="font-body text-body text-foreground list-decimal list-inside space-y-2 pl-4">
-              <li>
-                develop disciplined investors through rigorous peer learning, structured debate and continuous feedback;
-              </li>
-              <li>
-                build technical capability through recurring internal work, targeted trainings and practical
-                application;
-              </li>
-              <li>
-                convert research into decision-making through repeatable processes, explicit assumptions and risk
-                awareness;
-              </li>
-              <li>
-                set clear standards of transparency and accountability in portfolio construction and reporting; and
-              </li>
-              <li>
-                connect members with the investment industry through trainings, competitions, public events and an
-                active Alumni Network.
-              </li>
-            </ol>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
+          <div className="max-w-3xl">
+            {(Object.keys(divisionDescriptions) as Division[]).map((division) => (
+              <DivisionCard
+                key={division}
+                division={division}
+                description={divisionDescriptions[division]}
+              />
+            ))}
           </div>
         </div>
       </section>

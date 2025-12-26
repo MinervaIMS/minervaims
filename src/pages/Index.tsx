@@ -1,20 +1,30 @@
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoWhite from "@/assets/logo-white.png";
 import homepageBg from "@/assets/homepage-bg.png";
 import { keyFigures } from "@/lib/data";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
-import { DivisionCard } from "@/components/shared/DivisionCard";
-import { Division } from "@/lib/types";
+import { Division, divisionLabels } from "@/lib/types";
 
-const divisionDescriptions: Record<Division, string> = {
-  equity: 'Fundamental analysis of public equities across sectors and geographies, producing initiations of coverage and sector reports.',
-  investment: 'Analysis of private market opportunities, M&A transactions, and alternative investments.',
-  macro: 'Macroeconomic analysis covering monetary policy, inflation dynamics, and global growth.',
-  portfolio: 'Management of simulated investment portfolios with defined risk parameters and investment mandates.',
-  quant: 'Quantitative research on factor strategies, systematic investing, and machine learning applications.',
-};
+const divisions: Division[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
 const Index = () => {
+  const divisionsRef = useRef<HTMLDivElement>(null);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+
+  useEffect(() => {
+    const container = divisionsRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setShowScrollHint(scrollLeft < scrollWidth - clientWidth - 10);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <>
       {/* Hero Section */}
@@ -70,19 +80,35 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Divisions Section - moved from Divisions page */}
+      {/* Divisions Section - Simple Carousel */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="max-w-3xl">
-            {(Object.keys(divisionDescriptions) as Division[]).map((division) => (
-              <DivisionCard
+        </div>
+        <div className="relative">
+          <div
+            ref={divisionsRef}
+            className="flex overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-6 md:px-12 gap-6 md:gap-10 py-4"
+          >
+            {divisions.map((division) => (
+              <Link
                 key={division}
-                division={division}
-                description={divisionDescriptions[division]}
-              />
+                to={`/divisions/${division}`}
+                className="flex-shrink-0 snap-start group"
+              >
+                <span className="font-serif text-2xl md:text-3xl text-foreground hover:text-primary transition-colors whitespace-nowrap">
+                  {divisionLabels[division]}
+                </span>
+              </Link>
             ))}
           </div>
+          {showScrollHint && (
+            <div className="flex justify-end px-6 md:px-12 mt-2">
+              <span className="font-body text-sm text-muted-foreground flex items-center gap-2">
+                Scroll <span className="text-lg">→</span>
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
