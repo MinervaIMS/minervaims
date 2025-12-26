@@ -15,16 +15,15 @@ const Index = () => {
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background image */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
-        <div className="absolute inset-0 bg-black/30" />
 
         {/* Content */}
         <div className="relative z-10 text-center px-6 py-20">
           <img
             src={logoWhite}
             alt="MIMS"
-            className="h-32 md:h-40 lg:h-48 w-auto mx-auto mb-8 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+            className="h-32 md:h-40 lg:h-48 w-auto mx-auto mb-8 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
           />
-          <h1 className="font-serif text-hero md:text-[4.5rem] text-background tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">
+          <h1 className="font-serif text-hero md:text-[4.5rem] text-background tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             Minerva Investment
             <br />
             Management Society
@@ -113,7 +112,7 @@ const Index = () => {
       </section>
 
       {/* Join MIMS Section */}
-      <section className="py-section-sm md:py-section bg-background border-t border-separator">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
