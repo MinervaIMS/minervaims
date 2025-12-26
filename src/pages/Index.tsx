@@ -5,10 +5,9 @@ import { keyFigures } from "@/lib/data";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
 import { Division, divisionLabels } from "@/lib/types";
 
-const divisions: Division[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
 const Index = () => {
-
   return (
     <>
       {/* Preload LCP image for faster discovery */}
@@ -19,7 +18,7 @@ const Index = () => {
         aria-hidden="true"
         className="absolute w-0 h-0 opacity-0 pointer-events-none"
       />
-      
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background image */}
@@ -48,7 +47,7 @@ const Index = () => {
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
-              <p className="font-serif text-hero text-primary mb-2">{keyFigures.totalReports}+</p>
+              <p className="font-serif text-hero text-primary mb-2">150+</p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </div>
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
@@ -86,9 +85,7 @@ const Index = () => {
                 to={`/divisions/${division}`}
                 className="block bg-secondary p-6 text-center transition-all duration-300 hover:bg-foreground hover:text-background hover:shadow-lg hover:-translate-y-1"
               >
-                <span className="font-serif text-lg md:text-xl">
-                  {divisionLabels[division]}
-                </span>
+                <span className="font-serif text-lg md:text-xl">{divisionLabels[division]}</span>
               </Link>
             ))}
           </div>
@@ -99,7 +96,7 @@ const Index = () => {
       <section className="py-section-sm md:py-section bg-foreground">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            Latest Reports
+            Latest Reports & Publications
           </h2>
           <LatestArchiveCarousel />
         </div>
@@ -134,7 +131,7 @@ const Index = () => {
             to="/join"
             className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
           >
-            APPLY NOW
+            Apply Now
           </Link>
         </div>
       </section>
