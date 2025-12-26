@@ -3,6 +3,16 @@ import logoWhite from "@/assets/logo-white.png";
 import homepageBg from "@/assets/homepage-bg.png";
 import { keyFigures } from "@/lib/data";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
+import { DivisionCard } from "@/components/shared/DivisionCard";
+import { Division } from "@/lib/types";
+
+const divisionDescriptions: Record<Division, string> = {
+  equity: 'Fundamental analysis of public equities across sectors and geographies, producing initiations of coverage and sector reports.',
+  investment: 'Analysis of private market opportunities, M&A transactions, and alternative investments.',
+  macro: 'Macroeconomic analysis covering monetary policy, inflation dynamics, and global growth.',
+  portfolio: 'Management of simulated investment portfolios with defined risk parameters and investment mandates.',
+  quant: 'Quantitative research on factor strategies, systematic investing, and machine learning applications.',
+};
 
 const Index = () => {
   return (
@@ -60,36 +70,18 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Divisions Preview */}
+      {/* Divisions Section - moved from Divisions page */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DivisionPreview
-              title="Equity Research"
-              href="/divisions/equity"
-              description="Fundamental analysis of public equities across sectors and geographies."
-            />
-            <DivisionPreview
-              title="Investment Research"
-              href="/divisions/investment"
-              description="Analysis of private market opportunities and M&A transactions."
-            />
-            <DivisionPreview
-              title="Macro Research"
-              href="/divisions/macro"
-              description="Macroeconomic analysis and monetary policy research."
-            />
-            <DivisionPreview
-              title="Portfolio Management"
-              href="/divisions/portfolio"
-              description="Management of simulated investment portfolios."
-            />
-            <DivisionPreview
-              title="Quantitative Research"
-              href="/divisions/quant"
-              description="Quantitative strategies and systematic investment research."
-            />
+          <div className="max-w-3xl">
+            {(Object.keys(divisionDescriptions) as Division[]).map((division) => (
+              <DivisionCard
+                key={division}
+                division={division}
+                description={divisionDescriptions[division]}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -145,14 +137,5 @@ const Index = () => {
     </>
   );
 };
-
-function DivisionPreview({ title, href, description }: { title: string; href: string; description: string }) {
-  return (
-    <Link to={href} className="group block bg-secondary p-6 shadow-subtle hover:shadow-elevated transition-shadow">
-      <h3 className="font-serif text-subheading group-hover:text-primary transition-colors mb-2">{title}</h3>
-      <p className="font-body text-small text-muted-foreground">{description}</p>
-    </Link>
-  );
-}
 
 export default Index;

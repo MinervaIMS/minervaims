@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, FileText, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, inactiveFunds, Division, Fund } from '@/lib/types';
 
 interface ArchiveFile {
@@ -29,6 +29,10 @@ const FileManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<ArchiveFile | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -66,6 +70,21 @@ const FileManagement = () => {
     }
   };
 
+  const filteredFiles = useMemo(() => {
+    return files.filter(file => {
+      // Division filter
+      if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = file.title.toLowerCase().includes(query);
+        const matchesDescription = file.description?.toLowerCase().includes(query) || false;
+        if (!matchesTitle && !matchesDescription) return false;
+      }
+      return true;
+    });
+  }, [files, divisionFilter, searchQuery]);
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -76,6 +95,7 @@ const FileManagement = () => {
       fund: '',
     });
     setEditingFile(null);
+    setUploadProgress(0);
   };
 
   const openCreateDialog = () => {
@@ -94,6 +114,18 @@ const FileManagement = () => {
       fund: (file.fund as Fund) || '',
     });
     setIsDialogOpen(true);
+  };
+
+  const toggleDescription = (id: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +151,18 @@ const FileManagement = () => {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
+
+    // Simulate progress since Supabase doesn't provide real upload progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
 
     try {
       const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -130,6 +174,8 @@ const FileManagement = () => {
           upsert: false,
         });
 
+      clearInterval(progressInterval);
+
       if (error) throw error;
 
       const { data: urlData } = supabase.storage
@@ -137,18 +183,21 @@ const FileManagement = () => {
         .getPublicUrl(data.path);
 
       setFormData({ ...formData, file_url: urlData.publicUrl });
+      setUploadProgress(100);
       
       toast({
         title: "Success",
         description: "File uploaded successfully",
       });
     } catch (error) {
+      clearInterval(progressInterval);
       console.error('Upload error:', error);
       toast({
         title: "Error",
         description: "Failed to upload file",
         variant: "destructive",
       });
+      setUploadProgress(0);
     } finally {
       setIsUploading(false);
     }
@@ -278,7 +327,7 @@ const FileManagement = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading">Archive Files</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -369,25 +418,27 @@ const FileManagement = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="file" className="font-body">PDF File *</Label>
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   <Input
                     id="file"
                     type="file"
                     accept=".pdf"
                     onChange={handleFileUpload}
                     disabled={isUploading}
-                    className="flex-1"
                   />
+                  {isUploading && (
+                    <div className="space-y-1">
+                      <Progress value={uploadProgress} className="h-2" />
+                      <p className="text-sm text-muted-foreground">Uploading... {uploadProgress}%</p>
+                    </div>
+                  )}
+                  {formData.file_url && !isUploading && (
+                    <p className="text-sm text-muted-foreground truncate">
+                      <FileText className="inline h-4 w-4 mr-1" />
+                      File uploaded
+                    </p>
+                  )}
                 </div>
-                {formData.file_url && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    <FileText className="inline h-4 w-4 mr-1" />
-                    File uploaded
-                  </p>
-                )}
-                {isUploading && (
-                  <p className="text-sm text-muted-foreground">Uploading...</p>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -419,23 +470,82 @@ const FileManagement = () => {
         </Dialog>
       </div>
 
-      {/* Files List */}
+      {/* Filters - matching Archive page UI */}
+      <div className="mb-8 pb-6 border-b border-separator">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Division filter */}
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Division
+            </label>
+            <select
+              value={divisionFilter}
+              onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
+              className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+            >
+              <option value="all">All Divisions</option>
+              {Object.entries(divisionLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Search */}
+          <div className="flex-1">
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Search
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by title or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 font-body text-small h-10"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Results count */}
+      <p className="font-body text-small text-muted-foreground mb-6">
+        Showing {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
+      </p>
+
+      {/* Files List - matching Archive page UI */}
       {files.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="font-body text-muted-foreground">
-              No archive files yet. Click "Add File" to upload one.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="py-12 text-center border border-separator">
+          <p className="font-body text-muted-foreground">
+            No archive files yet. Click "Add File" to upload one.
+          </p>
+        </div>
+      ) : filteredFiles.length === 0 ? (
+        <div className="py-12 text-center border border-separator">
+          <p className="font-body text-muted-foreground">
+            No files match your filters.
+          </p>
+        </div>
       ) : (
         <div className="divide-y divide-separator">
-          {files.map((file) => (
-            <div key={file.id} className="py-4">
-              <div className="flex items-start justify-between gap-4">
+          {filteredFiles.map((file) => (
+            <div key={file.id} className="py-6">
+              <div className="flex gap-4">
+                {/* PDF Preview Thumbnail */}
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-muted border border-separator overflow-hidden">
+                    <iframe
+                      src={`${file.file_url}#page=1&view=FitH`}
+                      className="w-[200px] h-[200px] origin-top-left scale-[0.32] pointer-events-none"
+                      title={`Preview of ${file.title}`}
+                    />
+                  </div>
+                </div>
+
+                {/* File Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="font-body text-sm text-muted-foreground">
                       {formatDate(file.date)}
                     </span>
@@ -448,13 +558,40 @@ const FileManagement = () => {
                       </span>
                     )}
                   </div>
-                  <h3 className="font-serif text-lg font-medium truncate">{file.title}</h3>
+                  <h3 className="font-serif text-lg font-medium mb-1">{file.title}</h3>
                   {file.description && (
-                    <p className="font-body text-sm text-muted-foreground line-clamp-2 mt-1">
-                      {file.description}
-                    </p>
+                    <div>
+                      <p className={`font-body text-sm text-muted-foreground ${!expandedDescriptions.has(file.id) ? 'line-clamp-2' : ''}`}>
+                        {file.description}
+                      </p>
+                      {file.description.length > 150 && (
+                        <button
+                          onClick={() => toggleDescription(file.id)}
+                          className="font-body text-xs text-primary hover:underline mt-1 flex items-center gap-1"
+                        >
+                          {expandedDescriptions.has(file.id) ? (
+                            <>Read less <ChevronUp className="h-3 w-3" /></>
+                          ) : (
+                            <>Read more <ChevronDown className="h-3 w-3" /></>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   )}
+                  <div className="mt-3 flex items-center gap-2">
+                    <a
+                      href={file.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-body text-xs text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Download className="h-3 w-3" />
+                      Download PDF
+                    </a>
+                  </div>
                 </div>
+
+                {/* Actions */}
                 <div className="flex gap-2 flex-shrink-0">
                   <Button
                     variant="outline"

@@ -35,6 +35,42 @@ export type Database = {
         }
         Relationships: []
       }
+      alumni: {
+        Row: {
+          city: string | null
+          company: string
+          created_at: string
+          graduation_year: number
+          id: string
+          linkedin_url: string | null
+          name: string
+          surname: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          company: string
+          created_at?: string
+          graduation_year: number
+          id?: string
+          linkedin_url?: string | null
+          name: string
+          surname: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          company?: string
+          created_at?: string
+          graduation_year?: number
+          id?: string
+          linkedin_url?: string | null
+          name?: string
+          surname?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       archive_files: {
         Row: {
           created_at: string

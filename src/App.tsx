@@ -7,9 +7,7 @@ import { Layout } from "@/components/layout";
 import { CookieProvider, CookieBanner, CookiePreferences } from "@/components/cookies";
 import Index from "./pages/Index";
 import About from "./pages/About";
-import Divisions from "./pages/Divisions";
 import DivisionDetail from "./pages/DivisionDetail";
-import Funds from "./pages/Funds";
 import FundDetail from "./pages/FundDetail";
 import MembersIndex from "./pages/MembersIndex";
 import Team from "./pages/Team";
@@ -38,9 +36,7 @@ const App = () => (
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
-              <Route path="/divisions" element={<Divisions />} />
               <Route path="/divisions/:division" element={<DivisionDetail />} />
-              <Route path="/funds" element={<Funds />} />
               <Route path="/funds/:fund" element={<FundDetail />} />
               <Route path="/members" element={<MembersIndex />} />
               <Route path="/members/team" element={<Team />} />
