@@ -9,11 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2 } from 'lucide-react';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
 import TeamManagement from '@/components/admin/TeamManagement';
 import AlumniManagement from '@/components/admin/AlumniManagement';
+import UserManagement from '@/components/admin/UserManagement';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DbEvent {
   id: string;
@@ -42,16 +44,26 @@ const AdminDashboard = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const adminToken = sessionStorage.getItem('adminToken');
+  const { user, isAdmin, isLoading: authLoading, signOut, session } = useAuth();
 
   useEffect(() => {
-    if (!adminToken) {
-      navigate('/admin');
-      return;
+    if (!authLoading) {
+      if (!user) {
+        navigate('/auth', { state: { from: '/admin' } });
+        return;
+      }
+      if (!isAdmin) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin dashboard.",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+      fetchEvents();
     }
-    fetchEvents();
-  }, [adminToken, navigate]);
+  }, [user, isAdmin, authLoading, navigate]);
 
   const fetchEvents = async () => {
     try {
@@ -74,10 +86,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('adminToken');
-    sessionStorage.removeItem('adminUsername');
-    navigate('/admin');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   const resetForm = () => {
@@ -156,7 +167,7 @@ const AdminDashboard = () => {
       const { data, error } = await supabase.functions.invoke('admin-events', {
         body: { action, event: eventData },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -196,7 +207,7 @@ const AdminDashboard = () => {
       const { data, error } = await supabase.functions.invoke('admin-events', {
         body: { action: 'delete', event: { id: eventId } },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -227,12 +238,16 @@ const AdminDashboard = () => {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
-      <div className="container py-section-sm md:py-section">
-        <p className="font-body text-muted-foreground">Loading...</p>
+      <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (!user || !isAdmin) {
+    return null;
   }
 
   return (
@@ -242,7 +257,7 @@ const AdminDashboard = () => {
         <div>
           <h1 className="font-serif text-display mb-2">Admin Dashboard</h1>
           <p className="font-body text-muted-foreground">
-            Logged in as: {sessionStorage.getItem('adminUsername')}
+            Logged in as: {user.email}
           </p>
         </div>
         <Button variant="outline" onClick={handleLogout} className="font-body">
@@ -252,8 +267,12 @@ const AdminDashboard = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="alumni" className="w-full">
+      <Tabs defaultValue="users" className="w-full">
         <TabsList className="mb-8">
+          <TabsTrigger value="users" className="font-body">
+            <UserCog className="h-4 w-4 mr-2" />
+            Users
+          </TabsTrigger>
           <TabsTrigger value="alumni" className="font-body">
             <GraduationCap className="h-4 w-4 mr-2" />
             Alumni
@@ -271,6 +290,10 @@ const AdminDashboard = () => {
             Team
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="users">
+          <UserManagement />
+        </TabsContent>
 
         <TabsContent value="alumni">
           <AlumniManagement />

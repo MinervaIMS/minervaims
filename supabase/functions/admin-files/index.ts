@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Verify admin token from header
+    // Verify Supabase Auth token
     const authHeader = req.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
@@ -134,42 +134,29 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '')
     
-    // Verify JWT signature and claims
-    let payload: { sub?: string; exp?: number }
-    try {
-      const key = await getJwtKey()
-      payload = await verify(token, key) as { sub?: string; exp?: number }
-      
-      if (!payload.sub) {
-        throw new Error('Invalid token payload')
-      }
-      
-      // Check expiration
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        return new Response(
-          JSON.stringify({ error: 'Token expired' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // Verify admin still exists
-      const { data: admin } = await supabase
-        .from('admin_users')
-        .select('id')
-        .eq('id', payload.sub)
-        .maybeSingle()
-
-      if (!admin) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid admin' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    } catch (err) {
-      console.error('Token verification failed:', err)
+    // Verify user with Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if user is admin
+    const isAdmin = user.email === 'as.minerva@unibocconi.it'
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle()
+
+    if (!isAdmin && !adminRole) {
+      return new Response(
+        JSON.stringify({ error: 'Access denied' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

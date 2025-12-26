@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { CookieProvider, CookieBanner, CookiePreferences } from "@/components/cookies";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Eagerly load the homepage for best LCP
 import Index from "./pages/Index";
@@ -25,7 +26,7 @@ const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const Auth = lazy(() => import("./pages/Auth"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 const queryClient = new QueryClient();
@@ -34,33 +35,35 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CookieProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<Suspense fallback={null}><About /></Suspense>} />
-              <Route path="/divisions/:division" element={<Suspense fallback={null}><DivisionDetail /></Suspense>} />
-              <Route path="/funds/:fund" element={<Suspense fallback={null}><FundDetail /></Suspense>} />
-              <Route path="/members" element={<Suspense fallback={null}><MembersIndex /></Suspense>} />
-              <Route path="/members/team" element={<Suspense fallback={null}><Team /></Suspense>} />
-              <Route path="/members/alumni" element={<Suspense fallback={null}><Alumni /></Suspense>} />
-              <Route path="/events" element={<Suspense fallback={null}><Events /></Suspense>} />
-              <Route path="/join" element={<Suspense fallback={null}><Join /></Suspense>} />
-              <Route path="/archive" element={<Suspense fallback={null}><Archive /></Suspense>} />
-              <Route path="/privacy-policy" element={<Suspense fallback={null}><PrivacyPolicy /></Suspense>} />
-              <Route path="/cookie-policy" element={<Suspense fallback={null}><CookiePolicy /></Suspense>} />
-              <Route path="/terms-of-use" element={<Suspense fallback={null}><TermsOfUse /></Suspense>} />
-              <Route path="/sitemap" element={<Suspense fallback={null}><Sitemap /></Suspense>} />
-              <Route path="/admin" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
-              <Route path="/admin/dashboard" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
-              <Route path="*" element={<Suspense fallback={null}><NotFound /></Suspense>} />
-            </Route>
-          </Routes>
-          <CookieBanner />
-          <CookiePreferences />
-        </BrowserRouter>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<Suspense fallback={null}><About /></Suspense>} />
+                <Route path="/divisions/:division" element={<Suspense fallback={null}><DivisionDetail /></Suspense>} />
+                <Route path="/funds/:fund" element={<Suspense fallback={null}><FundDetail /></Suspense>} />
+                <Route path="/members" element={<Suspense fallback={null}><MembersIndex /></Suspense>} />
+                <Route path="/members/team" element={<Suspense fallback={null}><Team /></Suspense>} />
+                <Route path="/members/alumni" element={<Suspense fallback={null}><Alumni /></Suspense>} />
+                <Route path="/events" element={<Suspense fallback={null}><Events /></Suspense>} />
+                <Route path="/join" element={<Suspense fallback={null}><Join /></Suspense>} />
+                <Route path="/archive" element={<Suspense fallback={null}><Archive /></Suspense>} />
+                <Route path="/privacy-policy" element={<Suspense fallback={null}><PrivacyPolicy /></Suspense>} />
+                <Route path="/cookie-policy" element={<Suspense fallback={null}><CookiePolicy /></Suspense>} />
+                <Route path="/terms-of-use" element={<Suspense fallback={null}><TermsOfUse /></Suspense>} />
+                <Route path="/sitemap" element={<Suspense fallback={null}><Sitemap /></Suspense>} />
+                <Route path="/auth" element={<Suspense fallback={null}><Auth /></Suspense>} />
+                <Route path="/admin" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
+                <Route path="*" element={<Suspense fallback={null}><NotFound /></Suspense>} />
+              </Route>
+            </Routes>
+            <CookieBanner />
+            <CookiePreferences />
+          </BrowserRouter>
+        </AuthProvider>
       </CookieProvider>
     </TooltipProvider>
   </QueryClientProvider>
