@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { TeamMember, Division, divisionLabels } from '@/lib/types';
 import linkedinIcon from '@/assets/linkedin-icon.png';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface TeamDirectoryProps {
   members: TeamMember[];
@@ -35,6 +37,7 @@ const POSITION_ORDER: Record<string, number> = {
 export function TeamDirectory({ members, showFilters = false, initialDivisionFilter }: TeamDirectoryProps) {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>(initialDivisionFilter || 'all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const roles = useMemo(() => {
     const uniqueRoles = [...new Set(members.map(m => m.position))];
@@ -45,9 +48,15 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
     return members.filter(member => {
       if (divisionFilter !== 'all' && member.division !== divisionFilter) return false;
       if (roleFilter !== 'all' && member.position !== roleFilter) return false;
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const fullName = `${member.name} ${member.surname}`.toLowerCase();
+        if (!fullName.includes(query)) return false;
+      }
       return true;
     });
-  }, [members, divisionFilter, roleFilter]);
+  }, [members, divisionFilter, roleFilter, searchQuery]);
 
   // Board members: sorted by display_order (manual ordering)
   const boardMembers = filteredMembers.filter(m => m.isBoard);
@@ -80,6 +89,22 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
       {showFilters && (
         <div className="mb-8 pb-6 border-b border-separator">
           <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 font-body text-small h-10"
+                />
+              </div>
+            </div>
             <div>
               <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                 Division
@@ -87,7 +112,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
               <select
                 value={divisionFilter}
                 onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
-                className="font-body text-small bg-background border border-separator px-3 py-2 min-w-[200px]"
+                className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
               >
                 <option value="all">All Divisions</option>
                 {Object.entries(divisionLabels).map(([key, label]) => (
@@ -102,7 +127,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="font-body text-small bg-background border border-separator px-3 py-2 min-w-[200px]"
+                className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
               >
                 <option value="all">All Roles</option>
                 {roles.map((role) => (
@@ -120,7 +145,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Board
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {boardMembers.map((member) => (
               <MemberCard key={member.id} member={member} />
             ))}
@@ -134,7 +159,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             {divisionLabels[division as Division] || 'Operations & Media'}
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {members.map((member) => (
               <MemberCard key={member.id} member={member} />
             ))}
@@ -154,8 +179,8 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
 function MemberCard({ member }: { member: TeamMember }) {
   return (
     <article className="group">
-      {/* Photo - squared, smaller size */}
-      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden max-w-[200px]">
+      {/* Photo - squared */}
+      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
         {member.photoUrl ? (
           <img 
             src={member.photoUrl} 
@@ -168,25 +193,24 @@ function MemberCard({ member }: { member: TeamMember }) {
           </span>
         )}
       </div>
-      {/* Name, position, and LinkedIn icon below image */}
-      <div className="flex items-start justify-between mt-4">
-        <div>
-          <h3 className="font-serif text-body-lg">
-            {member.name} {member.surname}
-          </h3>
-          <p className="font-body text-small text-muted-foreground mt-1">
-            {member.position}
-          </p>
-        </div>
+      {/* Name and position */}
+      <div className="mt-3">
+        <h3 className="font-serif text-body-lg">
+          {member.name} {member.surname}
+        </h3>
+        <p className="font-body text-small text-muted-foreground mt-1">
+          {member.position}
+        </p>
+        {/* LinkedIn icon below */}
         {member.linkedinUrl && (
           <Link
             to={member.linkedinUrl}
-            className="flex-shrink-0 ml-2 hover:opacity-80 transition-opacity"
+            className="inline-block mt-2 hover:opacity-80 transition-opacity"
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${member.name} ${member.surname} LinkedIn profile`}
           >
-            <img src={linkedinIcon} alt="LinkedIn" className="w-7 h-7" />
+            <img src={linkedinIcon} alt="LinkedIn" className="w-6 h-6" />
           </Link>
         )}
       </div>
