@@ -1,13 +1,36 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { TeamMember, Division, divisionLabels } from '@/lib/types';
-import { Linkedin } from 'lucide-react';
+import linkedinIcon from '@/assets/linkedin-icon.png';
 
 interface TeamDirectoryProps {
   members: TeamMember[];
   showFilters?: boolean;
   initialDivisionFilter?: Division;
 }
+
+// Position priority for sorting division members
+const POSITION_ORDER: Record<string, number> = {
+  'Head of Equity Research': 1,
+  'Co-Head of Equity Research': 1,
+  'Head of Investment Research': 1,
+  'Co-Head of Investment Research': 1,
+  'Head of Macro Research': 1,
+  'Co-Head of Macro Research': 1,
+  'Head of Portfolio Management': 1,
+  'Co-Head of Portfolio Management': 1,
+  'Head of Quantitative Research': 1,
+  'Co-Head of Quantitative Research': 1,
+  'Head of Operations': 1,
+  'Co-Head of Operations': 1,
+  'Head of Media': 1,
+  'Co-Head of Media': 1,
+  'Portfolio Manager': 2,
+  'Senior Analyst': 3,
+  'Analyst': 4,
+  'Operations': 5,
+  'Media': 5,
+};
 
 export function TeamDirectory({ members, showFilters = false, initialDivisionFilter }: TeamDirectoryProps) {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>(initialDivisionFilter || 'all');
@@ -26,8 +49,20 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
     });
   }, [members, divisionFilter, roleFilter]);
 
+  // Board members: sorted by display_order (manual ordering)
   const boardMembers = filteredMembers.filter(m => m.isBoard);
-  const divisionMembers = filteredMembers.filter(m => !m.isBoard);
+  
+  // Division members: sorted by position priority, then alphabetically by surname
+  const divisionMembers = useMemo(() => {
+    return filteredMembers
+      .filter(m => !m.isBoard)
+      .sort((a, b) => {
+        const orderA = POSITION_ORDER[a.position] || 99;
+        const orderB = POSITION_ORDER[b.position] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.surname.localeCompare(b.surname);
+      });
+  }, [filteredMembers]);
 
   const groupedByDivision = useMemo(() => {
     const groups: Record<string, TeamMember[]> = {};
@@ -120,7 +155,7 @@ function MemberCard({ member }: { member: TeamMember }) {
   return (
     <article className="group">
       {/* Photo - squared */}
-      <div className="relative aspect-square bg-muted mb-4 flex items-center justify-center overflow-hidden">
+      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
         {member.photoUrl ? (
           <img 
             src={member.photoUrl} 
@@ -132,24 +167,29 @@ function MemberCard({ member }: { member: TeamMember }) {
             {member.name.charAt(0)}{member.surname.charAt(0)}
           </span>
         )}
+      </div>
+      {/* Name, position, and LinkedIn icon below image */}
+      <div className="flex items-start justify-between mt-4">
+        <div>
+          <h3 className="font-serif text-body-lg">
+            {member.name} {member.surname}
+          </h3>
+          <p className="font-body text-small text-muted-foreground mt-1">
+            {member.position}
+          </p>
+        </div>
         {member.linkedinUrl && (
           <Link
             to={member.linkedinUrl}
-            className="absolute bottom-2 right-2 w-8 h-8 bg-primary flex items-center justify-center hover:opacity-80 transition-opacity"
+            className="flex-shrink-0 ml-2 hover:opacity-80 transition-opacity"
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${member.name} ${member.surname} LinkedIn profile`}
           >
-            <Linkedin className="w-4 h-4 text-primary-foreground" />
+            <img src={linkedinIcon} alt="LinkedIn" className="w-7 h-7" />
           </Link>
         )}
       </div>
-      <h3 className="font-serif text-body-lg">
-        {member.name} {member.surname}
-      </h3>
-      <p className="font-body text-small text-muted-foreground mt-1">
-        {member.position}
-      </p>
     </article>
   );
 }
