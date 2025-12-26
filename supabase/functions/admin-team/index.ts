@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,18 +7,44 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Create HMAC key for JWT verification
-async function getJwtKey(): Promise<CryptoKey> {
-  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const encoder = new TextEncoder();
-  return await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  );
-}
+// Validation schemas
+const TeamMemberSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
+  surname: z.string().min(1, 'Surname is required').max(100, 'Surname too long').trim(),
+  position: z.enum([
+    'President',
+    'Vice President',
+    'Head of Asset Management',
+    'Head of Equity Research',
+    'Head of Investment Research',
+    'Head of Macro Research',
+    'Head of Portfolio Management',
+    'Head of Quantitative Research',
+    'Portfolio Manager',
+    'Senior Analyst',
+    'Analyst',
+    'Head of Operations',
+    'Head of Media',
+    'Operations',
+    'Media',
+    'Co-Head of Equity Research',
+    'Co-Head of Investment Research',
+    'Co-Head of Macro Research',
+    'Co-Head of Portfolio Management',
+    'Co-Head of Quantitative Research',
+    'Co-Head of Operations',
+    'Co-Head of Media',
+  ]),
+  division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant', 'operations']).nullable().optional(),
+  fund: z.enum(['long-short', 'multi-asset', 'dps', 'pir']).nullable().optional(),
+  photo_url: z.string().url('Invalid photo URL').max(500, 'Photo URL too long').nullable().optional().or(z.literal('')),
+  linkedin_url: z.string().url('Invalid LinkedIn URL').max(500, 'LinkedIn URL too long').nullable().optional().or(z.literal('')),
+  is_board: z.boolean().optional(),
+  display_order: z.number().int().min(0).optional(),
+});
+
+const ActionSchema = z.enum(['create', 'update', 'delete']);
 
 // Rate limiting
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
@@ -92,9 +118,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse and validate request body
     const body = await req.json();
-    const { action, member } = body;
+    
+    // Validate action
+    const actionResult = ActionSchema.safeParse(body.action);
+    if (!actionResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid action', details: actionResult.error.format() }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const action = actionResult.data;
+
+    // Validate member data
+    const memberResult = TeamMemberSchema.safeParse(body.member);
+    if (!memberResult.success) {
+      console.error('Validation error:', memberResult.error.format());
+      return new Response(
+        JSON.stringify({ error: 'Validation failed', details: memberResult.error.format() }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const member = memberResult.data;
 
     console.log(`Admin ${user.email} performing action: ${action}`);
 
@@ -123,6 +169,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update') {
+      if (!member.id) {
+        return new Response(
+          JSON.stringify({ error: 'Member ID is required for update' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { data, error } = await supabase
         .from('team_members')
         .update({
@@ -148,6 +201,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'delete') {
+      if (!member.id) {
+        return new Response(
+          JSON.stringify({ error: 'Member ID is required for delete' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { error } = await supabase
         .from('team_members')
         .delete()

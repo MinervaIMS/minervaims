@@ -1,9 +1,23 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Validation schemas
+const AlumniSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
+  surname: z.string().min(1, 'Surname is required').max(100, 'Surname too long').trim(),
+  graduation_year: z.number().int().min(1950, 'Graduation year too early').max(2100, 'Graduation year too far in future'),
+  company: z.string().min(1, 'Company is required').max(200, 'Company name too long').trim(),
+  city: z.string().max(100, 'City name too long').trim().nullable().optional().or(z.literal('')),
+  linkedin_url: z.string().url('Invalid LinkedIn URL').max(500, 'LinkedIn URL too long').nullable().optional().or(z.literal('')),
+});
+
+const ActionSchema = z.enum(['create', 'update', 'delete']);
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -53,7 +67,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { action, alumni } = await req.json();
+    // Parse request body
+    const body = await req.json();
+    
+    // Validate action
+    const actionResult = ActionSchema.safeParse(body.action);
+    if (!actionResult.success) {
+      return new Response(JSON.stringify({ error: 'Invalid action', details: actionResult.error.format() }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const action = actionResult.data;
+
+    // Validate alumni data
+    const alumniResult = AlumniSchema.safeParse(body.alumni);
+    if (!alumniResult.success) {
+      console.error('Validation error:', alumniResult.error.format());
+      return new Response(JSON.stringify({ error: 'Validation failed', details: alumniResult.error.format() }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const alumni = alumniResult.data;
+
     console.log('Action:', action, 'Alumni:', alumni);
 
     let result;
@@ -75,6 +112,12 @@ Deno.serve(async (req) => {
         break;
 
       case 'update':
+        if (!alumni.id) {
+          return new Response(JSON.stringify({ error: 'Alumni ID is required for update' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         result = await supabase
           .from('alumni')
           .update({
@@ -91,6 +134,12 @@ Deno.serve(async (req) => {
         break;
 
       case 'delete':
+        if (!alumni.id) {
+          return new Response(JSON.stringify({ error: 'Alumni ID is required for delete' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         result = await supabase
           .from('alumni')
           .delete()
