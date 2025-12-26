@@ -154,8 +154,8 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
 function MemberCard({ member }: { member: TeamMember }) {
   return (
     <article className="group">
-      {/* Photo - squared */}
-      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+      {/* Photo - squared, smaller size */}
+      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden max-w-[200px]">
         {member.photoUrl ? (
           <img 
             src={member.photoUrl} 
@@ -163,7 +163,7 @@ function MemberCard({ member }: { member: TeamMember }) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <span className="font-serif text-muted-foreground text-heading">
+          <span className="font-serif text-muted-foreground text-subheading">
             {member.name.charAt(0)}{member.surname.charAt(0)}
           </span>
         )}

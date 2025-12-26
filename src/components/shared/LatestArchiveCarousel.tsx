@@ -90,10 +90,10 @@ export function LatestArchiveCarousel() {
         {files.map((file) => (
           <article
             key={file.id}
-            className="flex-shrink-0 w-[400px] px-8 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
+            className="flex-shrink-0 w-[450px] px-8 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
           >
             {/* PDF Preview - Larger vertical preview */}
-            <div className="w-full h-96 bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors">
+            <div className="w-full h-[480px] bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors">
               <iframe
                 src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
                 className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
@@ -119,10 +119,10 @@ export function LatestArchiveCarousel() {
         ))}
 
         {/* Archive button as last item */}
-        <div className="flex-shrink-0 w-[400px] px-8 flex items-center justify-center snap-start">
+        <div className="flex-shrink-0 w-[450px] px-8 flex items-center justify-center snap-start">
           <Link
             to="/archive"
-            className="flex flex-col items-center justify-center gap-4 w-full h-96 border border-background/30 hover:border-background/60 hover:bg-background/10 transition-all group"
+            className="flex flex-col items-center justify-center gap-4 w-full h-[480px] border border-background/30 hover:border-background/60 hover:bg-background/10 transition-all group"
           >
             <ArrowRight className="w-8 h-8 text-background/60 group-hover:text-background transition-colors" />
             <span className="font-body text-lg text-background/80 group-hover:text-background transition-colors uppercase tracking-wider">
