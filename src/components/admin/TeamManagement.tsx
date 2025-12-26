@@ -87,7 +87,6 @@ export default function TeamManagement() {
     display_order: 0,
   });
   const { toast } = useToast();
-  const adminToken = sessionStorage.getItem('adminToken');
 
   useEffect(() => {
     fetchMembers();
@@ -269,10 +268,11 @@ export default function TeamManagement() {
         ...(editingMember && { id: editingMember.id }),
       };
 
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-team', {
         body: { action, member: memberData },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -309,10 +309,11 @@ export default function TeamManagement() {
     if (!confirm('Are you sure you want to delete this team member?')) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-team', {
         body: { action: 'delete', member: { id: memberId } },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 

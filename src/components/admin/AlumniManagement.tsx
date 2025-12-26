@@ -36,7 +36,6 @@ export default function AlumniManagement() {
     linkedin_url: '',
   });
   const { toast } = useToast();
-  const adminToken = sessionStorage.getItem('adminToken');
 
   useEffect(() => {
     fetchAlumni();
@@ -119,10 +118,11 @@ export default function AlumniManagement() {
         ...(editingAlumni && { id: editingAlumni.id }),
       };
 
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-alumni', {
         body: { action, alumni: alumniData },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -159,10 +159,11 @@ export default function AlumniManagement() {
     if (!confirm('Are you sure you want to delete this alumni?')) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-alumni', {
         body: { action: 'delete', alumni: { id: alumniId } },
         headers: {
-          Authorization: `Bearer ${adminToken}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
