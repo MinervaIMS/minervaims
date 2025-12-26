@@ -11,6 +11,7 @@ const Index = () => {
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background image */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
+        <div className="absolute inset-0 hero-overlay" />
 
         {/* Content */}
         <div className="relative z-10 text-center px-6 py-20">
@@ -50,7 +51,7 @@ const Index = () => {
       {/* About Preview */}
       <section className="py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About MIMS</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
           <p className="font-body text-body-lg text-muted-foreground">
             Minerva Investment Management Society is an association promoted and run by students of Università Bocconi.
             We provide hands-on experience in financial research, portfolio management, and investment analysis through
