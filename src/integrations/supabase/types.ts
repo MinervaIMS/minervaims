@@ -107,6 +107,51 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string
+          display_order: number
+          division: Database["public"]["Enums"]["team_division"] | null
+          fund: Database["public"]["Enums"]["team_fund"] | null
+          id: string
+          is_board: boolean
+          linkedin_url: string | null
+          name: string
+          photo_url: string | null
+          position: Database["public"]["Enums"]["team_position"]
+          surname: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          division?: Database["public"]["Enums"]["team_division"] | null
+          fund?: Database["public"]["Enums"]["team_fund"] | null
+          id?: string
+          is_board?: boolean
+          linkedin_url?: string | null
+          name: string
+          photo_url?: string | null
+          position: Database["public"]["Enums"]["team_position"]
+          surname: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          division?: Database["public"]["Enums"]["team_division"] | null
+          fund?: Database["public"]["Enums"]["team_fund"] | null
+          id?: string
+          is_board?: boolean
+          linkedin_url?: string | null
+          name?: string
+          photo_url?: string | null
+          position?: Database["public"]["Enums"]["team_position"]
+          surname?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -115,7 +160,30 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      team_division:
+        | "equity"
+        | "investment"
+        | "macro"
+        | "portfolio"
+        | "quant"
+        | "operations"
+      team_fund: "long-short" | "multi-asset" | "dps" | "pir"
+      team_position:
+        | "President"
+        | "Vice President"
+        | "Head of Asset Management"
+        | "Head of Equity Research"
+        | "Head of Investment Research"
+        | "Head of Macro Research"
+        | "Head of Portfolio Management"
+        | "Head of Quantitative Research"
+        | "Portfolio Manager"
+        | "Senior Analyst"
+        | "Analyst"
+        | "Head of Operations"
+        | "Head of Media"
+        | "Operations"
+        | "Media"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -242,6 +310,33 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      team_division: [
+        "equity",
+        "investment",
+        "macro",
+        "portfolio",
+        "quant",
+        "operations",
+      ],
+      team_fund: ["long-short", "multi-asset", "dps", "pir"],
+      team_position: [
+        "President",
+        "Vice President",
+        "Head of Asset Management",
+        "Head of Equity Research",
+        "Head of Investment Research",
+        "Head of Macro Research",
+        "Head of Portfolio Management",
+        "Head of Quantitative Research",
+        "Portfolio Manager",
+        "Senior Analyst",
+        "Analyst",
+        "Head of Operations",
+        "Head of Media",
+        "Operations",
+        "Media",
+      ],
+    },
   },
 } as const

@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users } from 'lucide-react';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
+import TeamManagement from '@/components/admin/TeamManagement';
 
 interface DbEvent {
   id: string;
@@ -260,6 +261,10 @@ const AdminDashboard = () => {
             <FileText className="h-4 w-4 mr-2" />
             Archive Files
           </TabsTrigger>
+          <TabsTrigger value="team" className="font-body">
+            <Users className="h-4 w-4 mr-2" />
+            Team
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="events">
@@ -426,6 +431,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="files">
           <FileManagement />
+        </TabsContent>
+
+        <TabsContent value="team">
+          <TeamManagement />
         </TabsContent>
       </Tabs>
     </div>

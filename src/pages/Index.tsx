@@ -115,7 +115,6 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
             {/* Activities & Events */}
             <div>
-              <div className="w-12 h-0.5 bg-foreground mb-6" />
               <h2 className="font-serif text-heading mb-6">Activities & Events</h2>
               <p className="font-body text-body-lg text-muted-foreground mb-6">
                 Beyond research and portfolio management, MIMS organises events connecting members 

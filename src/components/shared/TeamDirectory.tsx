@@ -119,11 +119,19 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
 function MemberCard({ member }: { member: TeamMember }) {
   return (
     <article className="group">
-      {/* Photo placeholder - squared */}
-      <div className="relative aspect-square bg-muted mb-4 flex items-center justify-center">
-        <span className="font-serif text-muted-foreground text-heading">
-          {member.name.charAt(0)}{member.surname.charAt(0)}
-        </span>
+      {/* Photo - squared */}
+      <div className="relative aspect-square bg-muted mb-4 flex items-center justify-center overflow-hidden">
+        {member.photoUrl ? (
+          <img 
+            src={member.photoUrl} 
+            alt={`${member.name} ${member.surname}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="font-serif text-muted-foreground text-heading">
+            {member.name.charAt(0)}{member.surname.charAt(0)}
+          </span>
+        )}
         {member.linkedinUrl && (
           <Link
             to={member.linkedinUrl}
