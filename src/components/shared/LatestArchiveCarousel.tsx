@@ -96,36 +96,36 @@ export function LatestArchiveCarousel() {
       {canScrollLeft && (
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-background border border-separator shadow-elevated flex items-center justify-center hover:bg-secondary transition-colors -ml-5"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-foreground border border-background/20 flex items-center justify-center hover:bg-background/10 transition-colors -ml-5"
           aria-label="Scroll left"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5 text-background" />
         </button>
       )}
       {canScrollRight && (
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-background border border-separator shadow-elevated flex items-center justify-center hover:bg-secondary transition-colors -mr-5"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-foreground border border-background/20 flex items-center justify-center hover:bg-background/10 transition-colors -mr-5"
           aria-label="Scroll right"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5 text-background" />
         </button>
       )}
 
       {/* Scrollable container */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2"
+        className="flex overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 divide-x divide-background/30"
         style={{ scrollSnapType: 'x mandatory' }}
       >
         {files.map((file) => (
           <article
             key={file.id}
-            className="flex-shrink-0 w-80 bg-secondary p-6 shadow-subtle"
+            className="flex-shrink-0 w-80 px-6 first:pl-0"
             style={{ scrollSnapAlign: 'start' }}
           >
             {/* PDF Preview */}
-            <div className="w-full h-44 bg-muted border border-separator overflow-hidden mb-4">
+            <div className="w-full h-44 bg-background/10 overflow-hidden mb-4">
               <iframe
                 src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
                 className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
@@ -135,16 +135,16 @@ export function LatestArchiveCarousel() {
 
             {/* Meta */}
             <div className="flex items-center gap-3 mb-2">
-              <time className="font-body text-xs text-muted-foreground uppercase tracking-wider">
+              <time className="font-body text-xs text-background/60 uppercase tracking-wider">
                 {formatDate(file.date)}
               </time>
-              <span className="font-body text-xs text-primary uppercase tracking-wider">
+              <span className="font-body text-xs text-background/80 uppercase tracking-wider">
                 {divisionLabels[file.division as Division]}
               </span>
             </div>
 
             {/* Title */}
-            <h3 className="font-serif text-lg leading-tight line-clamp-2">
+            <h3 className="font-serif text-lg leading-tight line-clamp-2 text-background">
               {file.title}
             </h3>
           </article>

@@ -142,9 +142,9 @@
     text-wrap: balance;
   }
 
-  /* Page link styling - Times New Roman italic underlined, larger for readability */
+  /* Page link styling - body font, underlined, larger for readability */
   .page-link {
-    @apply font-serif italic underline text-xl;
+    @apply font-body underline text-xl;
   }
 
   /* Hide scrollbar but keep functionality */
