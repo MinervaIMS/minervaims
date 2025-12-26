@@ -21,7 +21,10 @@ const Index = () => {
           <img
             src={logoWhite}
             alt="MIMS"
+            width={192}
+            height={192}
             className="h-32 md:h-40 lg:h-48 w-auto mx-auto mb-8 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+            fetchPriority="high"
           />
           <h1 className="font-serif text-hero md:text-[4.5rem] text-background tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             Minerva Investment

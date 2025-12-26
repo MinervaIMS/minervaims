@@ -32,7 +32,11 @@ export function Footer() {
               <img 
                 src={logoWhite} 
                 alt="Minerva Investment Management Society" 
+                width={96}
+                height={96}
                 className="h-20 md:h-24 w-auto"
+                loading="lazy"
+                decoding="async"
               />
             </Link>
           </div>
