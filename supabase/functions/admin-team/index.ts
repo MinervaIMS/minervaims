@@ -44,6 +44,11 @@ const TeamMemberSchema = z.object({
   display_order: z.number().int().min(0).optional(),
 });
 
+// For delete operations, only id is required
+const DeleteMemberSchema = z.object({
+  id: z.string().uuid('Valid member ID is required'),
+});
+
 const ActionSchema = z.enum(['create', 'update', 'delete']);
 
 // Rate limiting
@@ -131,7 +136,33 @@ Deno.serve(async (req) => {
     }
     const action = actionResult.data;
 
-    // Validate member data
+    // Validate member data based on action
+    if (action === 'delete') {
+      // For delete, only validate id
+      const deleteResult = DeleteMemberSchema.safeParse(body.member);
+      if (!deleteResult.success) {
+        console.error('Validation error:', deleteResult.error.format());
+        return new Response(
+          JSON.stringify({ error: 'Validation failed', details: deleteResult.error.format() }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Admin ${user.email} performing action: ${action}`);
+
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', deleteResult.data.id);
+
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // For create/update, validate full member data
     const memberResult = TeamMemberSchema.safeParse(body.member);
     if (!memberResult.success) {
       console.error('Validation error:', memberResult.error.format());
@@ -200,25 +231,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (action === 'delete') {
-      if (!member.id) {
-        return new Response(
-          JSON.stringify({ error: 'Member ID is required for delete' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('id', member.id);
-
-      if (error) throw error;
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     return new Response(
       JSON.stringify({ error: 'Invalid action' }),
