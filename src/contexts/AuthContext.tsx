@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAdmin = user?.email === 'as.minerva@unibocconi.it' || roles.some(r => r.role === 'admin');
+  const isAdmin = user?.email === 'as.minerva@unibocconi.it' || roles.some(r => r.role === 'admin' || r.role === 'president');
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
