@@ -84,9 +84,9 @@ const Index = () => {
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="block bg-secondary p-6 hover:bg-secondary/80 transition-colors text-center"
+                className="block bg-secondary p-6 text-center transition-all duration-300 hover:bg-foreground hover:text-background hover:shadow-lg hover:-translate-y-1"
               >
-                <span className="font-serif text-lg md:text-xl text-foreground">
+                <span className="font-serif text-lg md:text-xl">
                   {divisionLabels[division]}
                 </span>
               </Link>
@@ -113,13 +113,20 @@ const Index = () => {
             Beyond research and portfolio management, MIMS organises events connecting members with industry
             professionals, workshops developing practical skills, and our annual investment conference.
           </p>
-          <Link
-            to="/events"
-            className="inline-flex items-center gap-2 font-body underline text-lg text-foreground hover:opacity-80 transition-opacity"
-          >
-            View upcoming events
-            <span aria-hidden="true">→</span>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link
+              to="/events"
+              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+            >
+              View Upcoming Events
+            </Link>
+            <Link
+              to="/events?view=past"
+              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+            >
+              View Past Events
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -133,10 +140,9 @@ const Index = () => {
           </p>
           <Link
             to="/join"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-10 py-4 text-lg font-serif hover:opacity-90 transition-opacity"
+            className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
           >
             APPLY NOW
-            <span aria-hidden="true">→</span>
           </Link>
         </div>
       </section>

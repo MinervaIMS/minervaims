@@ -102,7 +102,7 @@ const Join = () => {
         <section>
           <a
             href="#"
-            className="inline-block bg-primary text-primary-foreground font-body text-body px-8 py-3 hover:opacity-90 transition-opacity"
+            className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
           >
             Apply Now
           </a>
