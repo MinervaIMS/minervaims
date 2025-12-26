@@ -11,7 +11,7 @@ const Join = () => {
       <div className="container py-section-sm md:py-section">
         {/* Application Instructions */}
         <section className="mb-16">
-          <h2 className="font-serif text-display mb-6">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Application Process
           </h2>
           <div className="max-w-3xl">
@@ -25,7 +25,7 @@ const Join = () => {
 
         {/* Steps */}
         <section className="mb-16">
-          <h2 className="font-serif text-display mb-6">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Application Steps
           </h2>
           <div className="max-w-3xl space-y-0">
@@ -77,7 +77,7 @@ const Join = () => {
 
         {/* Eligibility */}
         <section className="mb-16">
-          <h2 className="font-serif text-display mb-6">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Eligibility Requirements
           </h2>
           <div className="max-w-3xl">

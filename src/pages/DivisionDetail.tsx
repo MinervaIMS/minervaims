@@ -32,7 +32,7 @@ const DivisionDetail = () => {
 
         <div className="container py-section-sm md:py-section">
           <section className="mb-12">
-            <h2 className="font-serif text-display mb-6">
+            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
               Active Funds
             </h2>
             <div className="space-y-4">
@@ -62,7 +62,7 @@ const DivisionDetail = () => {
           </section>
 
           <section className="mb-12">
-            <h2 className="font-serif text-display mb-6">
+            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
               Previous Funds
             </h2>
             <p className="font-body text-body text-muted-foreground mb-4">
@@ -98,7 +98,7 @@ const DivisionDetail = () => {
 
       <div className="container py-section-sm md:py-section">
         <section className="mb-12">
-          <h2 className="font-serif text-display mb-6">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             {divisionKey === 'quant' ? 'Publications' : 'Reports'}
           </h2>
           <ReportsList reports={divisionReports} />
