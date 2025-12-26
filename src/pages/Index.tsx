@@ -11,7 +11,7 @@ const Index = () => {
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background image */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
-        <div className="absolute inset-0 hero-overlay" />
+        <div className="absolute inset-0 bg-black/10" />
 
         {/* Content */}
         <div className="relative z-10 text-center px-6 py-20">
