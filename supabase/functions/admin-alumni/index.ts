@@ -13,10 +13,12 @@ const AlumniSchema = z.object({
   surname: z.string().min(1, 'Surname is required').max(100, 'Surname too long').trim(),
   graduation_year: z.number().int().min(1950, 'Graduation year too early').max(2100, 'Graduation year too far in future'),
   company: z.string().min(1, 'Company is required').max(200, 'Company name too long').trim(),
-  city: z.string().max(100, 'City name too long').trim().nullable().optional(),
-  linkedin_url: z.string().max(500, 'LinkedIn URL too long').nullable().optional()
-    .refine((val) => !val || val === '' || val.startsWith('https://') || val.startsWith('http://'), 
-      'LinkedIn URL must be a valid URL'),
+  city: z.preprocess((val) => val === '' ? null : val, 
+    z.string().max(100, 'City name too long').trim().nullable().optional()),
+  linkedin_url: z.preprocess((val) => val === '' ? null : val,
+    z.string().max(500, 'LinkedIn URL too long').nullable().optional()
+      .refine((val) => !val || val.startsWith('https://') || val.startsWith('http://'), 
+        'LinkedIn URL must be a valid URL')),
 });
 
 const DeleteAlumniSchema = z.object({
