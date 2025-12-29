@@ -127,8 +127,7 @@ const Index = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
-            Beyond research and portfolio management, MIMS organises events connecting members with industry
-            professionals, workshops developing practical skills, and our annual investment conference.
+            Each semester we host one flagship event with industry professionals, organise company visits, and hold internal sessions where teams present their work and debate markets. Regular aperitivos and frequent alumni calls strengthen relationships and provide guidance on academic and career paths.
           </p>
           <Link
             to="/events?view=past"
