@@ -57,7 +57,6 @@ const Sitemap = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Sitemap"
-            description="Complete overview of all pages on this website."
             transparentBackground
           />
         </div>
