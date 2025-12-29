@@ -9,7 +9,7 @@ import {
 
 // Configuration
 const APPLICATION_CONFIG = {
-  applicationsOpen: true,
+  applicationsOpen: false,
   semesterLabel: "Spring 2026",
   applyFormUrl: "https://forms.google.com/your-form-url",
 };
