@@ -85,35 +85,27 @@ const Index = () => {
       {/* About Preview */}
       <section className="py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva Investment Management Society</h2>
-          <div className="font-body text-xl md:text-2xl text-muted-foreground space-y-4 max-w-4xl">
-            <p>
-              Minerva Investment Management Society (MIMS) is an association promoted and run by students of Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured research and portfolio management processes. Members work across specialist research divisions and Portfolio Management, producing professional-standard reports and documenting decisions through due diligence and risk analysis.
-            </p>
-            <p>
-              MIMS complements its investment work with a targeted programme of engagement. The Society hosts one event per semester with industry professionals, alongside company visits and internal presentations where teams share their work and debate key market questions. Regular division and association-wide aperitivos strengthen relationships across the membership.
-            </p>
-            <p>
-              MIMS has also developed an international alumni network. Former members work across major financial centres in investment banking, hedge funds and asset management, including Goldman Sachs, J.P. Morgan, Citi, UBS and other leading institutions.
-            </p>
-          </div>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
+          <p className="font-body text-body-lg text-muted-foreground">
+            Minerva Investment Management Society is an association promoted and run by students of Università Bocconi.
+            We provide hands-on experience in financial research, portfolio management, and investment analysis through
+            rigorous academic and practical training.
+          </p>
         </div>
       </section>
 
       {/* Divisions Section */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="flex flex-row flex-wrap md:flex-nowrap gap-2 md:gap-3">
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Our Divisions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {divisions.map((division) => (
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="group bg-secondary px-4 md:px-5 py-3 md:py-4 transition-all duration-300 hover:bg-foreground hover:shadow-lg whitespace-nowrap"
+                className="block bg-secondary p-6 text-center transition-all duration-300 hover:bg-foreground hover:text-background hover:shadow-lg hover:-translate-y-1"
               >
-                <span className="font-serif text-base md:text-lg lg:text-xl group-hover:text-background transition-colors duration-300">
-                  {divisionLabels[division]}
-                </span>
+                <span className="font-serif text-lg md:text-xl">{divisionLabels[division]}</span>
               </Link>
             ))}
           </div>
@@ -135,7 +127,8 @@ const Index = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
-            Each semester we host one flagship event with industry professionals, organise company visits, and hold internal sessions where teams present their work and debate markets. Regular aperitivos and frequent alumni calls strengthen relationships and provide guidance on academic and career paths.
+            Beyond research and portfolio management, MIMS organises events connecting members with industry
+            professionals, workshops developing practical skills, and our annual investment conference.
           </p>
           <Link
             to="/events?view=past"
@@ -158,7 +151,7 @@ const Index = () => {
             to="/join"
             className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
           >
-            Apply Now
+            APPLY NOW
           </Link>
         </div>
       </section>
