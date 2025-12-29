@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { PageIntroduction } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
@@ -141,49 +140,61 @@ const Alumni = () => {
         )}
 
         {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search by name, company, or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+        <div className="mb-8 pb-6 border-b border-separator">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, company, or city..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 font-body text-small h-10"
+                />
+              </div>
+            </div>
+            
+            {/* Company Filter */}
+            <div>
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                Company
+              </label>
+              <select
+                value={companyFilter}
+                onChange={(e) => setCompanyFilter(e.target.value)}
+                className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+              >
+                <option value="all">All Companies</option>
+                {uniqueCompanies.map((company) => (
+                  <option key={company} value={company}>{company}</option>
+                ))}
+              </select>
             </div>
 
-            <Select value={companyFilter} onValueChange={setCompanyFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by company" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Companies</SelectItem>
-                {uniqueCompanies.map((company) => (
-                  <SelectItem key={company} value={company}>
-                    {company}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by city" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Cities</SelectItem>
+            {/* City Filter */}
+            <div>
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                City
+              </label>
+              <select
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+              >
+                <option value="all">All Cities</option>
                 {uniqueCities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
+                  <option key={city} value={city}>{city}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+            </div>
           </div>
-
-          <p className="text-small text-muted-foreground">
+          
+          <p className="text-small text-muted-foreground mt-4">
             Showing {filteredAlumni.length} of {alumni.length} alumni
           </p>
         </div>
