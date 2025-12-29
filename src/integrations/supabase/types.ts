@@ -71,6 +71,33 @@ export type Database = {
         }
         Relationships: []
       }
+      application_settings: {
+        Row: {
+          applications_open: boolean
+          apply_form_url: string
+          id: string
+          semester_label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          applications_open?: boolean
+          apply_form_url?: string
+          id?: string
+          semester_label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          applications_open?: boolean
+          apply_form_url?: string
+          id?: string
+          semester_label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       archive_files: {
         Row: {
           created_at: string

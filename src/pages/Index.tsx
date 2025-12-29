@@ -5,13 +5,8 @@ import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel
 import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Import application config - keep in sync with Join.tsx
-const APPLICATION_CONFIG = {
-  applicationsOpen: false,
-  applyFormUrl: "https://forms.google.com/your-form-url",
-};
 
 const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
@@ -27,6 +22,7 @@ const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolea
 
 const Index = () => {
   const { counts, isLoading } = useKeyFigures();
+  const { settings: appSettings } = useApplicationSettings();
 
   return (
     <>
@@ -59,7 +55,7 @@ const Index = () => {
             <br />
             Management Society
           </h1>
-          {APPLICATION_CONFIG.applicationsOpen && (
+          {appSettings.applicationsOpen && (
             <Link
               to="/join"
               className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"

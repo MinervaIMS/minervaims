@@ -55,6 +55,7 @@ export interface Permissions {
   canAccessEvents: boolean;
   canAccessFiles: boolean;
   canAccessTeam: boolean;
+  canAccessSettings: boolean;
   
   // Division restrictions (null = all divisions, array = specific divisions only)
   allowedDivisions: Division[] | null;
@@ -83,6 +84,7 @@ export const usePermissions = (): Permissions => {
         canAccessEvents: true,
         canAccessFiles: true,
         canAccessTeam: true,
+        canAccessSettings: true,
         allowedDivisions: null, // null means all divisions
         hasAnyAccess: true,
         isFullAccess: true,
@@ -99,6 +101,7 @@ export const usePermissions = (): Permissions => {
         canAccessEvents: true,
         canAccessFiles: true,
         canAccessTeam: false, // No team management
+        canAccessSettings: false,
         allowedDivisions: null, // All divisions for files
         hasAnyAccess: true,
         isFullAccess: false,
@@ -120,6 +123,7 @@ export const usePermissions = (): Permissions => {
         canAccessEvents: true,
         canAccessFiles: true,
         canAccessTeam: false,
+        canAccessSettings: false,
         allowedDivisions: allowedDivisions.length > 0 ? allowedDivisions : null,
         hasAnyAccess: true,
         isFullAccess: false,
@@ -133,6 +137,7 @@ export const usePermissions = (): Permissions => {
       canAccessEvents: false,
       canAccessFiles: false,
       canAccessTeam: false,
+      canAccessSettings: false,
       allowedDivisions: null,
       hasAnyAccess: false,
       isFullAccess: false,
