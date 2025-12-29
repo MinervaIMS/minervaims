@@ -49,10 +49,22 @@ const Events = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Events"
-            description="Conferences, workshops, and seminars organised by MIMS."
             transparentBackground
           />
         </div>
+      </div>
+
+      {/* Description Section */}
+      <div className="container py-section-sm md:py-section border-b border-separator">
+        <h2 className="font-serif text-h3 mb-6">
+          Professional Exposure, Strong Network, Personal Development
+        </h2>
+        <p className="font-body text-body text-muted-foreground leading-relaxed max-w-4xl">
+          Beyond research and portfolio management, MIMS delivers a year-round programme designed to develop technical judgement and long-term connections across the membership. Each semester, the Society hosts one flagship event with industry professionals, offering direct exposure to real-world investment processes. We complement this with company visits and internal forums where each team presents its work to the full Society, followed by structured discussion and debate to challenge assumptions and improve decision-making.
+        </p>
+        <p className="font-body text-body text-muted-foreground leading-relaxed max-w-4xl mt-4">
+          To strengthen cohesion, MIMS also organises division-only and association-wide aperitivos, creating consistent touchpoints between members. Finally, frequent alumni calls give current members direct access to a truly international network, enabling candid Q&A on academic choices, recruitment pathways, and the realities of roles across banks, boutiques, hedge funds and asset managers.
+        </p>
       </div>
 
       <div className="container py-section-sm md:py-section">
