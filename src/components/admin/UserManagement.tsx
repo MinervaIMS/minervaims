@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, UserCheck, Clock } from 'lucide-react';
+import { Loader2, UserCheck, Clock, Info } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 type AppRole = 
   | 'admin'
@@ -20,15 +33,7 @@ type AppRole =
   | 'head_of_quant'
   | 'head_of_operations'
   | 'head_of_media'
-  | 'co_head_of_equity'
-  | 'co_head_of_investment'
-  | 'co_head_of_macro'
-  | 'co_head_of_portfolio'
-  | 'co_head_of_quant'
-  | 'co_head_of_operations'
-  | 'co_head_of_media'
-  | 'member'
-  | 'pending';
+  | 'member';
 
 interface UserWithRole {
   id: string;
@@ -51,15 +56,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   head_of_quant: 'Head of Quantitative Research',
   head_of_operations: 'Head of Operations',
   head_of_media: 'Head of Media',
-  co_head_of_equity: 'Co-Head of Equity Research',
-  co_head_of_investment: 'Co-Head of Investment Research',
-  co_head_of_macro: 'Co-Head of Macro Research',
-  co_head_of_portfolio: 'Co-Head of Portfolio Management',
-  co_head_of_quant: 'Co-Head of Quantitative Research',
-  co_head_of_operations: 'Co-Head of Operations',
-  co_head_of_media: 'Co-Head of Media',
   member: 'Member',
-  pending: 'Pending Approval',
 };
 
 const ASSIGNABLE_ROLES: AppRole[] = [
@@ -73,20 +70,26 @@ const ASSIGNABLE_ROLES: AppRole[] = [
   'head_of_quant',
   'head_of_operations',
   'head_of_media',
-  'co_head_of_equity',
-  'co_head_of_investment',
-  'co_head_of_macro',
-  'co_head_of_portfolio',
-  'co_head_of_quant',
-  'co_head_of_operations',
-  'co_head_of_media',
   'member',
+];
+
+// Role access matrix for the explanatory table
+const ROLE_ACCESS_MATRIX = [
+  { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: 'All', files: 'All divisions', team: true },
+  { role: 'Head of Operations / Head of Media', users: true, alumni: true, events: 'All', files: 'All divisions', team: false },
+  { role: 'Head of Equity', users: false, alumni: false, events: 'All', files: 'Equity only', team: false },
+  { role: 'Head of Investment', users: false, alumni: false, events: 'All', files: 'Investment only', team: false },
+  { role: 'Head of Macro', users: false, alumni: false, events: 'All', files: 'Macro only', team: false },
+  { role: 'Head of Portfolio', users: false, alumni: false, events: 'All', files: 'Portfolio only', team: false },
+  { role: 'Head of Quant', users: false, alumni: false, events: 'All', files: 'Quant only', team: false },
+  { role: 'Member', users: false, alumni: false, events: false, files: false, team: false },
 ];
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [showAccessTable, setShowAccessTable] = useState(false);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
@@ -114,7 +117,7 @@ const UserManagement = () => {
           email: profile.email,
           full_name: profile.full_name,
           created_at: profile.created_at,
-          role: (userRole?.role as AppRole) || 'pending',
+          role: (userRole?.role as AppRole) || 'member',
           role_id: userRole?.id || '',
         };
       });
@@ -169,8 +172,8 @@ const UserManagement = () => {
     }
   };
 
-  const pendingUsers = users.filter(u => u.role === 'pending');
-  const approvedUsers = users.filter(u => u.role !== 'pending');
+  const pendingUsers = users.filter(u => u.role === 'member');
+  const approvedUsers = users.filter(u => u.role !== 'member');
 
   if (isLoading) {
     return (
@@ -182,7 +185,70 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-8">
-      {/* Pending Approvals */}
+      {/* Role Access Table */}
+      <Collapsible open={showAccessTable} onOpenChange={setShowAccessTable}>
+        <Card>
+          <CardContent className="py-4">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  <span className="font-serif text-heading">Role Access Permissions</span>
+                </span>
+                <span className="text-xs">{showAccessTable ? '▴' : '▾'}</span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-serif">Role</TableHead>
+                      <TableHead className="font-serif text-center">Users</TableHead>
+                      <TableHead className="font-serif text-center">Alumni</TableHead>
+                      <TableHead className="font-serif text-center">Events</TableHead>
+                      <TableHead className="font-serif text-center">Files</TableHead>
+                      <TableHead className="font-serif text-center">Team</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ROLE_ACCESS_MATRIX.map((row, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-body font-medium">{row.role}</TableCell>
+                        <TableCell className="text-center">
+                          {row.users ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row.alumni ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row.events === 'All' ? <span className="text-green-600">✓ All</span> : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {typeof row.files === 'string' ? (
+                            <span className="text-green-600 text-sm">{row.files}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row.team ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-sm text-muted-foreground mt-4 font-body">
+                <strong>Note:</strong> as.minerva@unibocconi.it always has full access regardless of role. 
+                Multiple users can have the same role.
+              </p>
+            </CollapsibleContent>
+          </CardContent>
+        </Card>
+      </Collapsible>
+
+      {/* Pending Approvals (Members without dashboard access) */}
       <div>
         <h2 className="font-serif text-heading mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5" />

@@ -71,11 +71,11 @@ const AdminDashboard = () => {
         return;
       }
       
-      // Check if user has pending role or no roles at all
-      const isPending = roles.some(r => r.role === 'pending');
+      // Check if user is only a member (pending approval) or has no roles
+      const isMemberOnly = roles.length > 0 && roles.every(r => r.role === 'member');
       const hasNoRoles = roles.length === 0;
       
-      if (isPending || hasNoRoles) {
+      if (isMemberOnly || hasNoRoles) {
         navigate('/pending-approval');
         return;
       }
@@ -293,15 +293,46 @@ const AdminDashboard = () => {
     return 'events';
   };
 
+  // Get user's primary role for display
+  const getUserRoleLabel = () => {
+    if (!roles.length) return 'No Role';
+    const roleLabels: Record<string, string> = {
+      admin: 'Admin',
+      president: 'President',
+      vice_president: 'Vice President',
+      head_of_asset_management: 'Head of Asset Management',
+      head_of_equity: 'Head of Equity Research',
+      head_of_investment: 'Head of Investment Research',
+      head_of_macro: 'Head of Macro Research',
+      head_of_portfolio: 'Head of Portfolio Management',
+      head_of_quant: 'Head of Quantitative Research',
+      head_of_operations: 'Head of Operations',
+      head_of_media: 'Head of Media',
+      member: 'Member',
+    };
+    // Get the highest priority role
+    const priorityOrder: string[] = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
+      'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
+      'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'member'];
+    const userRoleNames: string[] = roles.map(r => r.role);
+    const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || String(roles[0].role);
+    return roleLabels[primaryRole] || primaryRole;
+  };
+
   return (
     <div className="container py-section-sm md:py-section">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-display mb-2">Admin Dashboard</h1>
-          <p className="font-body text-muted-foreground">
-            Logged in as: {user.email}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="font-body text-muted-foreground">
+              {user.email}
+            </p>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+              {getUserRoleLabel()}
+            </span>
+          </div>
         </div>
         <Button variant="outline" onClick={handleLogout} className="font-body">
           <LogOut className="h-4 w-4 mr-2" />

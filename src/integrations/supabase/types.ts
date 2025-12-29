@@ -263,15 +263,7 @@ export type Database = {
         | "head_of_quant"
         | "head_of_operations"
         | "head_of_media"
-        | "co_head_of_equity"
-        | "co_head_of_investment"
-        | "co_head_of_macro"
-        | "co_head_of_portfolio"
-        | "co_head_of_quant"
-        | "co_head_of_operations"
-        | "co_head_of_media"
         | "member"
-        | "pending"
       team_division:
         | "equity"
         | "investment"
@@ -442,15 +434,7 @@ export const Constants = {
         "head_of_quant",
         "head_of_operations",
         "head_of_media",
-        "co_head_of_equity",
-        "co_head_of_investment",
-        "co_head_of_macro",
-        "co_head_of_portfolio",
-        "co_head_of_quant",
-        "co_head_of_operations",
-        "co_head_of_media",
         "member",
-        "pending",
       ],
       team_division: [
         "equity",
