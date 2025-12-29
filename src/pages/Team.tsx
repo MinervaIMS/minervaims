@@ -62,7 +62,6 @@ const Team = () => {
     <>
       <PageIntroduction
         title="Our Team"
-        description="The people behind our research and portfolio management activities."
         backgroundImage={teamBg}
       />
 
