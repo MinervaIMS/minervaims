@@ -86,13 +86,13 @@ const Index = () => {
       <section className="py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
-          <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
+          <p className="font-body text-body-lg text-muted-foreground mb-6">
             Minerva Investment Management Society (MIMS) is an association promoted and run by students of Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured research and portfolio management processes. Members work across specialist research divisions and Portfolio Management, producing professional-standard reports and documenting decisions through due diligence and risk analysis.
           </p>
-          <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
+          <p className="font-body text-body-lg text-muted-foreground mb-6">
             MIMS complements its investment work with a targeted programme of engagement. The Society hosts one event per semester with industry professionals, alongside company visits and internal presentations where teams share their work and debate key market questions. Regular division and association-wide aperitivos strengthen relationships across the membership.
           </p>
-          <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+          <p className="font-body text-body-lg text-muted-foreground">
             MIMS has also developed an international alumni network. Former members work across major financial centres in investment banking, hedge funds and asset management, including Goldman Sachs, J.P. Morgan, Citi, UBS and other leading institutions.
           </p>
         </div>
