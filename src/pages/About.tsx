@@ -45,8 +45,8 @@ const About = () => {
       {/* SECTION 1 - White background / Black text */}
       <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left">What we do</h2>
-          <div className=" mx-auto text-left space-y-6">
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left">What We Do</h2>
+          <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed">
               Minerva Investment Management Society (MIMS) is society promoted and run by students of Bocconi
               University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and
