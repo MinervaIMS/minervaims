@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageIntroduction } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
 interface AlumniRecord {
@@ -13,14 +16,12 @@ interface AlumniRecord {
   linkedin_url: string | null;
 }
 
-type SortKey = 'name' | 'graduationYear' | 'company' | 'city';
-type SortDirection = 'asc' | 'desc';
-
 const Alumni = () => {
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortKey, setSortKey] = useState<SortKey>('graduationYear');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [cityFilter, setCityFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchAlumni();
@@ -42,42 +43,53 @@ const Alumni = () => {
     }
   };
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(key);
-      setSortDirection('asc');
-    }
-  };
+  // Get unique companies and cities for filters
+  const uniqueCompanies = useMemo(() => {
+    const companies = [...new Set(alumni.map(a => a.company))].sort();
+    return companies;
+  }, [alumni]);
 
-  const sortedAlumni = useMemo(() => {
-    return [...alumni].sort((a, b) => {
-      let comparison = 0;
+  const uniqueCities = useMemo(() => {
+    const cities = [...new Set(alumni.map(a => a.city).filter(Boolean))].sort() as string[];
+    return cities;
+  }, [alumni]);
+
+  // Filter alumni based on search and filters
+  const filteredAlumni = useMemo(() => {
+    return alumni.filter(alumnus => {
+      const matchesSearch = searchQuery === '' || 
+        `${alumnus.name} ${alumnus.surname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alumnus.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (alumnus.city?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
       
-      switch (sortKey) {
-        case 'name':
-          comparison = `${a.surname} ${a.name}`.localeCompare(`${b.surname} ${b.name}`);
-          break;
-        case 'graduationYear':
-          comparison = a.graduation_year - b.graduation_year;
-          break;
-        case 'company':
-          comparison = a.company.localeCompare(b.company);
-          break;
-        case 'city':
-          comparison = (a.city || '').localeCompare(b.city || '');
-          break;
-      }
+      const matchesCompany = companyFilter === 'all' || alumnus.company === companyFilter;
+      const matchesCity = cityFilter === 'all' || alumnus.city === cityFilter;
       
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return matchesSearch && matchesCompany && matchesCity;
     });
-  }, [alumni, sortKey, sortDirection]);
+  }, [alumni, searchQuery, companyFilter, cityFilter]);
 
-  const SortIndicator = ({ columnKey }: { columnKey: SortKey }) => {
-    if (sortKey !== columnKey) return <span className="ml-1 text-muted-foreground">(sort)</span>;
-    return <span className="ml-1">{sortDirection === 'asc' ? '▲' : '▼'}</span>;
-  };
+  // Group filtered alumni by graduation year
+  const groupedAlumni = useMemo(() => {
+    const groups: Record<number, AlumniRecord[]> = {};
+    filteredAlumni.forEach(alumnus => {
+      if (!groups[alumnus.graduation_year]) {
+        groups[alumnus.graduation_year] = [];
+      }
+      groups[alumnus.graduation_year].push(alumnus);
+    });
+    return groups;
+  }, [filteredAlumni]);
+
+  // Sort years descending
+  const sortedYears = useMemo(() => {
+    return Object.keys(groupedAlumni).map(Number).sort((a, b) => b - a);
+  }, [groupedAlumni]);
+
+  // Get spotlight alumni (first 3 with LinkedIn profiles)
+  const spotlightAlumni = useMemo(() => {
+    return alumni.filter(a => a.linkedin_url).slice(0, 3);
+  }, [alumni]);
 
   return (
     <>
@@ -87,97 +99,146 @@ const Alumni = () => {
       />
 
       <div className="container py-section-sm md:py-section">
+        {/* Alumni Spotlight */}
+        {spotlightAlumni.length > 0 && (
+          <div className="mb-12">
+            <h2 className="font-serif text-h3 mb-6">Alumni Spotlight</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {spotlightAlumni.map((alumnus) => (
+                <div
+                  key={alumnus.id}
+                  className="border border-separator p-6 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="font-serif text-body-lg font-medium">
+                        {alumnus.name} {alumnus.surname}
+                      </h3>
+                      <p className="text-muted-foreground text-small">
+                        Class of {alumnus.graduation_year}
+                      </p>
+                    </div>
+                    {alumnus.linkedin_url && (
+                      <a
+                        href={alumnus.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block"
+                      >
+                        <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                  <p className="font-body text-body">{alumnus.company}</p>
+                  {alumnus.city && (
+                    <p className="font-body text-small text-muted-foreground">
+                      {alumnus.city}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by name, company, or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Select value={companyFilter} onValueChange={setCompanyFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Filter by company" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Companies</SelectItem>
+                {uniqueCompanies.map((company) => (
+                  <SelectItem key={company} value={company}>
+                    {company}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={cityFilter} onValueChange={setCityFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Filter by city" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Cities</SelectItem>
+                {uniqueCities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <p className="text-small text-muted-foreground">
+            Showing {filteredAlumni.length} of {alumni.length} alumni
+          </p>
+        </div>
+
+        {/* Alumni List */}
         {isLoading ? (
           <p className="font-body text-muted-foreground">Loading alumni...</p>
         ) : alumni.length === 0 ? (
           <p className="font-body text-muted-foreground">No alumni data available yet.</p>
+        ) : filteredAlumni.length === 0 ? (
+          <p className="font-body text-muted-foreground">No alumni match your search criteria.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-separator">
-                  <th className="text-left py-4 pr-4">
-                    <button
-                      onClick={() => handleSort('name')}
-                      className="font-serif text-small uppercase tracking-wider hover:text-primary transition-colors"
-                    >
-                      Name
-                      <SortIndicator columnKey="name" />
-                    </button>
-                  </th>
-                  <th className="text-left py-4 pr-4 w-12">
-                    <span className="font-serif text-small uppercase tracking-wider">
-                      LinkedIn
-                    </span>
-                  </th>
-                  <th className="text-left py-4 pr-4">
-                    <button
-                      onClick={() => handleSort('graduationYear')}
-                      className="font-serif text-small uppercase tracking-wider hover:text-primary transition-colors"
-                    >
-                      Year
-                      <SortIndicator columnKey="graduationYear" />
-                    </button>
-                  </th>
-                  <th className="text-left py-4 pr-4">
-                    <button
-                      onClick={() => handleSort('company')}
-                      className="font-serif text-small uppercase tracking-wider hover:text-primary transition-colors"
-                    >
-                      Company
-                      <SortIndicator columnKey="company" />
-                    </button>
-                  </th>
-                  <th className="text-left py-4">
-                    <button
-                      onClick={() => handleSort('city')}
-                      className="font-serif text-small uppercase tracking-wider hover:text-primary transition-colors"
-                    >
-                      City
-                      <SortIndicator columnKey="city" />
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedAlumni.map((alumnus) => (
-                  <tr key={alumnus.id} className="border-b border-separator">
-                    <td className="py-4 pr-4">
-                      <span className="font-body text-body">
-                        {alumnus.name} {alumnus.surname}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-4">
-                      {alumnus.linkedin_url && (
-                        <a
-                          href={alumnus.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block"
-                        >
-                          <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
-                        </a>
-                      )}
-                    </td>
-                    <td className="py-4 pr-4">
-                      <span className="font-body text-body text-muted-foreground">
-                        {alumnus.graduation_year}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-4">
-                      <span className="font-body text-body">
-                        {alumnus.company}
-                      </span>
-                    </td>
-                    <td className="py-4">
-                      <span className="font-body text-body text-muted-foreground">
-                        {alumnus.city || '-'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-8">
+            {sortedYears.map((year) => (
+              <div key={year}>
+                <h3 className="font-serif text-h4 mb-4 pb-2 border-b border-separator">
+                  Class of {year}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {groupedAlumni[year]
+                    .sort((a, b) => a.surname.localeCompare(b.surname))
+                    .map((alumnus) => (
+                      <div
+                        key={alumnus.id}
+                        className="flex items-center justify-between p-4 border border-separator hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-body text-body font-medium truncate">
+                            {alumnus.name} {alumnus.surname}
+                          </p>
+                          <p className="text-small text-muted-foreground truncate">
+                            {alumnus.company}
+                          </p>
+                          {alumnus.city && (
+                            <p className="text-small text-muted-foreground truncate">
+                              {alumnus.city}
+                            </p>
+                          )}
+                        </div>
+                        {alumnus.linkedin_url && (
+                          <a
+                            href={alumnus.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-4 shrink-0"
+                          >
+                            <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
