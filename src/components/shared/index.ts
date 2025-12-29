@@ -1,5 +1,4 @@
 export { PageIntroduction } from './PageIntroduction';
-export { FundArchiveCarousel } from './FundArchiveCarousel';
 export { ReportsList } from './ReportsList';
 export { TeamDirectory } from './TeamDirectory';
 export { AlumniTable } from './AlumniTable';
