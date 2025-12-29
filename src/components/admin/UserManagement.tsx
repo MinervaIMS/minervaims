@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, UserCheck, Clock, Info } from 'lucide-react';
+import { Loader2, UserCheck, Clock, Info, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -14,6 +15,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 type AppRole = 
   | 'admin'
@@ -70,7 +82,7 @@ const ASSIGNABLE_ROLES: AppRole[] = [
 // Role access matrix for the explanatory table
 const ROLE_ACCESS_MATRIX = [
   { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: 'All', files: 'All divisions', team: true },
-  { role: 'Head of Operations / Head of Media', users: true, alumni: true, events: 'All', files: 'All divisions', team: false },
+  { role: 'Head of Operations / Head of Media', users: false, alumni: true, events: 'All', files: 'All divisions', team: false },
   { role: 'Head of Equity', users: false, alumni: false, events: 'All', files: 'Equity only', team: false },
   { role: 'Head of Investment', users: false, alumni: false, events: 'All', files: 'Investment only', team: false },
   { role: 'Head of Macro', users: false, alumni: false, events: 'All', files: 'Macro only', team: false },
@@ -83,8 +95,9 @@ const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, session } = useAuth();
 
   const fetchUsers = async () => {
     try {
@@ -162,6 +175,56 @@ const UserManagement = () => {
       });
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    // Prevent deleting admin email
+    if (userEmail === 'as.minerva@unibocconi.it') {
+      toast({
+        title: "Cannot Delete",
+        description: "The admin account cannot be deleted.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeletingUserId(userId);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { action: 'delete', userId },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -281,6 +344,39 @@ const UserManagement = () => {
                     {updatingUserId === user.id && (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="text-destructive hover:bg-destructive/10"
+                          disabled={deletingUserId === user.id}
+                        >
+                          {deletingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete User</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete {user.full_name || user.email}? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
@@ -318,25 +414,60 @@ const UserManagement = () => {
                       {ROLE_LABELS[user.role]}
                     </Badge>
                     {user.email !== 'as.minerva@unibocconi.it' && (
-                      <Select
-                        value={user.role}
-                        onValueChange={(value) => handleRoleChange(user.id, user.role_id, value as AppRole)}
-                        disabled={updatingUserId === user.id}
-                      >
-                        <SelectTrigger className="w-[220px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ASSIGNABLE_ROLES.map(role => (
-                            <SelectItem key={role} value={role}>
-                              {ROLE_LABELS[role]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {updatingUserId === user.id && (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Select
+                          value={user.role}
+                          onValueChange={(value) => handleRoleChange(user.id, user.role_id, value as AppRole)}
+                          disabled={updatingUserId === user.id}
+                        >
+                          <SelectTrigger className="w-[220px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ASSIGNABLE_ROLES.map(role => (
+                              <SelectItem key={role} value={role}>
+                                {ROLE_LABELS[role]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {updatingUserId === user.id && (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              className="text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.id}
+                            >
+                              {deletingUserId === user.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {user.full_name || user.email}? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteUser(user.id, user.email)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     )}
                   </div>
                 </CardContent>
