@@ -17,6 +17,7 @@ import TeamManagement from '@/components/admin/TeamManagement';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface DbEvent {
   id: string;
@@ -46,7 +47,8 @@ const AdminDashboard = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin, isLoading: authLoading, signOut, session, isSessionExpired, refreshSession, roles } = useAuth();
+  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
+  const permissions = usePermissions();
 
   // Handle session expiry
   useEffect(() => {
@@ -78,7 +80,8 @@ const AdminDashboard = () => {
         return;
       }
       
-      if (!isAdmin) {
+      // Check if user has any dashboard access
+      if (!permissions.hasAnyAccess) {
         toast({
           title: "Access Denied",
           description: "You don't have permission to access the admin dashboard.",
@@ -89,7 +92,7 @@ const AdminDashboard = () => {
       }
       fetchEvents();
     }
-  }, [user, isAdmin, authLoading, navigate, roles]);
+  }, [user, authLoading, navigate, roles, permissions.hasAnyAccess]);
 
   const fetchEvents = async () => {
     try {
@@ -276,9 +279,19 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !permissions.hasAnyAccess) {
     return null;
   }
+
+  // Determine default tab based on permissions
+  const getDefaultTab = () => {
+    if (permissions.canAccessUsers) return 'users';
+    if (permissions.canAccessAlumni) return 'alumni';
+    if (permissions.canAccessEvents) return 'events';
+    if (permissions.canAccessFiles) return 'files';
+    if (permissions.canAccessTeam) return 'team';
+    return 'events';
+  };
 
   return (
     <div className="container py-section-sm md:py-section">
@@ -297,218 +310,238 @@ const AdminDashboard = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="users" className="w-full">
+      <Tabs defaultValue={getDefaultTab()} className="w-full">
         <TabsList className="mb-8">
-          <TabsTrigger value="users" className="font-body">
-            <UserCog className="h-4 w-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="alumni" className="font-body">
-            <GraduationCap className="h-4 w-4 mr-2" />
-            Alumni
-          </TabsTrigger>
-          <TabsTrigger value="events" className="font-body">
-            <Calendar className="h-4 w-4 mr-2" />
-            Events
-          </TabsTrigger>
-          <TabsTrigger value="files" className="font-body">
-            <FileText className="h-4 w-4 mr-2" />
-            Archive Files
-          </TabsTrigger>
-          <TabsTrigger value="team" className="font-body">
-            <Users className="h-4 w-4 mr-2" />
-            Team
-          </TabsTrigger>
+          {permissions.canAccessUsers && (
+            <TabsTrigger value="users" className="font-body">
+              <UserCog className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+          )}
+          {permissions.canAccessAlumni && (
+            <TabsTrigger value="alumni" className="font-body">
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Alumni
+            </TabsTrigger>
+          )}
+          {permissions.canAccessEvents && (
+            <TabsTrigger value="events" className="font-body">
+              <Calendar className="h-4 w-4 mr-2" />
+              Events
+            </TabsTrigger>
+          )}
+          {permissions.canAccessFiles && (
+            <TabsTrigger value="files" className="font-body">
+              <FileText className="h-4 w-4 mr-2" />
+              Archive Files
+            </TabsTrigger>
+          )}
+          {permissions.canAccessTeam && (
+            <TabsTrigger value="team" className="font-body">
+              <Users className="h-4 w-4 mr-2" />
+              Team
+            </TabsTrigger>
+          )}
         </TabsList>
 
-        <TabsContent value="users">
-          <UserManagement />
-        </TabsContent>
+        {permissions.canAccessUsers && (
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+        )}
 
-        <TabsContent value="alumni">
-          <AlumniManagement />
-        </TabsContent>
+        {permissions.canAccessAlumni && (
+          <TabsContent value="alumni">
+            <AlumniManagement />
+          </TabsContent>
+        )}
 
-        <TabsContent value="events">
-          {/* Events Header */}
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="font-serif text-heading">Events Management</h2>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="font-body">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Event
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="font-serif">
-                    {editingEvent ? 'Edit Event' : 'Add New Event'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title" className="font-body">Title *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Event title"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="date" className="font-body">Date *</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="place" className="font-body">Place *</Label>
-                    <Input
-                      id="place"
-                      value={formData.place}
-                      onChange={(e) => setFormData({ ...formData, place: e.target.value })}
-                      placeholder="Event location"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
-                    <Input
-                      id="moderator"
-                      value={formData.moderator}
-                      onChange={(e) => setFormData({ ...formData, moderator: e.target.value })}
-                      placeholder="e.g., John Smith, CEO at Company"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-body">Guests (optional)</Label>
-                    {formData.guests.map((guest, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          value={guest}
-                          onChange={(e) => updateGuest(index, e.target.value)}
-                          placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`}
-                        />
-                        {formData.guests.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => removeGuestField(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addGuestField}
-                      className="font-body"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add another guest
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description" className="font-body">Description (optional)</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Event description"
-                      rows={3}
-                    />
-                  </div>
-                  {isSubmitting && (
+        {permissions.canAccessEvents && (
+          <TabsContent value="events">
+            {/* Events Header */}
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="font-serif text-heading">Events Management</h2>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateDialog} className="font-body">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Event
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="font-serif">
+                      {editingEvent ? 'Edit Event' : 'Add New Event'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Progress value={100} className="h-1 animate-pulse" />
-                      <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p>
+                      <Label htmlFor="title" className="font-body">Title *</Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Event title"
+                        required
+                      />
                     </div>
-                  )}
-                  <div className="flex gap-4 pt-4">
-                    <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (editingEvent ? 'Update Event' : 'Create Event')}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsDialogOpen(false)}
-                      className="font-body"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Events List */}
-          {events.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="font-body text-muted-foreground">
-                  No events yet. Click "Add Event" to create one.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-0">
-              {events.map((event, index) => (
-                <div 
-                  key={event.id}
-                  className={`py-8 ${index !== events.length - 1 ? 'border-b border-separator' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <EventsListNew events={[event]} />
+                    <div className="space-y-2">
+                      <Label htmlFor="date" className="font-body">Date *</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        required
+                      />
                     </div>
-                    
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-8">
+                    <div className="space-y-2">
+                      <Label htmlFor="place" className="font-body">Place *</Label>
+                      <Input
+                        id="place"
+                        value={formData.place}
+                        onChange={(e) => setFormData({ ...formData, place: e.target.value })}
+                        placeholder="Event location"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
+                      <Input
+                        id="moderator"
+                        value={formData.moderator}
+                        onChange={(e) => setFormData({ ...formData, moderator: e.target.value })}
+                        placeholder="e.g., John Smith, CEO at Company"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-body">Guests (optional)</Label>
+                      {formData.guests.map((guest, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            value={guest}
+                            onChange={(e) => updateGuest(index, e.target.value)}
+                            placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`}
+                          />
+                          {formData.guests.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => removeGuestField(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                       <Button
+                        type="button"
                         variant="outline"
-                        size="icon"
-                        onClick={() => openEditDialog(event)}
+                        size="sm"
+                        onClick={addGuestField}
+                        className="font-body"
                       >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDelete(event.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add another guest
                       </Button>
                     </div>
-                  </div>
-                </div>
-              ))}
+                    <div className="space-y-2">
+                      <Label htmlFor="description" className="font-body">Description (optional)</Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Event description"
+                        rows={3}
+                      />
+                    </div>
+                    {isSubmitting && (
+                      <div className="space-y-2">
+                        <Progress value={100} className="h-1 animate-pulse" />
+                        <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p>
+                      </div>
+                    )}
+                    <div className="flex gap-4 pt-4">
+                      <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (editingEvent ? 'Update Event' : 'Create Event')}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsDialogOpen(false)}
+                        className="font-body"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
-          )}
-        </TabsContent>
 
-        <TabsContent value="files">
-          <FileManagement />
-        </TabsContent>
+            {/* Events List */}
+            {events.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="font-body text-muted-foreground">
+                    No events yet. Click "Add Event" to create one.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-0">
+                {events.map((event, index) => (
+                  <div 
+                    key={event.id}
+                    className={`py-8 ${index !== events.length - 1 ? 'border-b border-separator' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <EventsListNew events={[event]} />
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-8">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openEditDialog(event)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleDelete(event.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        )}
 
-        <TabsContent value="team">
-          <TeamManagement />
-        </TabsContent>
+        {permissions.canAccessFiles && (
+          <TabsContent value="files">
+            <FileManagement allowedDivisions={permissions.allowedDivisions} />
+          </TabsContent>
+        )}
+
+        {permissions.canAccessTeam && (
+          <TabsContent value="team">
+            <TeamManagement />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
