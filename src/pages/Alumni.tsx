@@ -143,20 +143,9 @@ const Alumni = () => {
 
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search by name, company, or city..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <Select value={companyFilter} onValueChange={setCompanyFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Filter by company" />
               </SelectTrigger>
               <SelectContent>
@@ -170,7 +159,7 @@ const Alumni = () => {
             </Select>
 
             <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Filter by city" />
               </SelectTrigger>
               <SelectContent>
@@ -182,6 +171,17 @@ const Alumni = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by name, company, or city..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           <p className="text-small text-muted-foreground">
@@ -203,37 +203,36 @@ const Alumni = () => {
                 <h3 className="font-serif text-h4 mb-4 pb-2 border-b border-separator">
                   Class of {year}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
                   {groupedAlumni[year]
                     .sort((a, b) => a.surname.localeCompare(b.surname))
                     .map((alumnus) => (
                       <div
                         key={alumnus.id}
-                        className="flex items-center justify-between p-4 border border-separator hover:bg-muted/50 transition-colors"
+                        className="flex items-center px-4 py-3 border border-separator hover:bg-muted/50 transition-colors"
                       >
-                        <div className="min-w-0 flex-1">
-                          <p className="font-body text-body font-medium truncate">
-                            {alumnus.name} {alumnus.surname}
-                          </p>
-                          <p className="text-small text-muted-foreground truncate">
-                            {alumnus.company}
-                          </p>
-                          {alumnus.city && (
-                            <p className="text-small text-muted-foreground truncate">
-                              {alumnus.city}
-                            </p>
+                        <span className="font-body text-body font-medium w-1/4 truncate">
+                          {alumnus.name} {alumnus.surname}
+                        </span>
+                        <span className="w-1/4 flex justify-center">
+                          {alumnus.linkedin_url ? (
+                            <a
+                              href={alumnus.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
-                        </div>
-                        {alumnus.linkedin_url && (
-                          <a
-                            href={alumnus.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-4 shrink-0"
-                          >
-                            <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
-                          </a>
-                        )}
+                        </span>
+                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-center">
+                          {alumnus.company}
+                        </span>
+                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-right">
+                          {alumnus.city || '—'}
+                        </span>
                       </div>
                     ))}
                 </div>

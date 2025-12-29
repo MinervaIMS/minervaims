@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,8 +6,18 @@ import { Clock, Mail, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PendingApproval = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, roles, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if user has a role other than 'member'
+  useEffect(() => {
+    if (!isLoading && roles.length > 0) {
+      const hasNonMemberRole = roles.some(r => r.role !== 'member');
+      if (hasNonMemberRole) {
+        navigate('/');
+      }
+    }
+  }, [roles, isLoading, navigate]);
 
   const handleLogout = async () => {
     await signOut();
@@ -15,6 +26,12 @@ const PendingApproval = () => {
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || 'User';
   const displayEmail = user?.email || '';
+
+  // If user has non-member role, don't render the page
+  const hasNonMemberRole = roles.some(r => r.role !== 'member');
+  if (hasNonMemberRole) {
+    return null;
+  }
 
   return (
     <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
