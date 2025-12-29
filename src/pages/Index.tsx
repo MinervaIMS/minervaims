@@ -99,7 +99,7 @@ const Index = () => {
               </p>
             </div>
             <Link
-              to="/alumni"
+              to="/members/alumni"
               className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
             >
               Discover Alumni Network
