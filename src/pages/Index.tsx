@@ -86,7 +86,7 @@ const Index = () => {
       <section className="py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva Investment Management Society</h2>
-          <div className="font-body text-body-lg text-muted-foreground space-y-4 max-w-4xl">
+          <div className="font-body text-xl md:text-2xl text-muted-foreground space-y-4 max-w-4xl">
             <p>
               Minerva Investment Management Society (MIMS) is an association promoted and run by students of Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured research and portfolio management processes. Members work across specialist research divisions and Portfolio Management, producing professional-standard reports and documenting decisions through due diligence and risk analysis.
             </p>
@@ -104,14 +104,14 @@ const Index = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="flex flex-row gap-4 overflow-x-auto">
+          <div className="flex flex-row flex-wrap md:flex-nowrap gap-2 md:gap-3">
             {divisions.map((division) => (
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="group bg-secondary px-6 py-4 transition-all duration-300 hover:bg-foreground hover:shadow-lg whitespace-nowrap"
+                className="group bg-secondary px-4 md:px-5 py-3 md:py-4 transition-all duration-300 hover:bg-foreground hover:shadow-lg whitespace-nowrap"
               >
-                <span className="font-serif text-xl md:text-2xl group-hover:text-background transition-colors duration-300">
+                <span className="font-serif text-base md:text-lg lg:text-xl group-hover:text-background transition-colors duration-300">
                   {divisionLabels[division]}
                 </span>
               </Link>
@@ -135,8 +135,7 @@ const Index = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
-            Beyond research and portfolio management, MIMS organises events connecting members with industry
-            professionals, workshops developing practical skills, and our annual investment conference.
+            Each semester we host one flagship event with industry professionals, organise company visits, and hold internal sessions where teams present their work and debate markets. Regular aperitivos and frequent alumni calls strengthen relationships and provide guidance on academic and career paths.
           </p>
           <Link
             to="/events?view=past"
