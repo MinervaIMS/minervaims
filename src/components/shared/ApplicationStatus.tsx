@@ -1,0 +1,54 @@
+interface ApplicationStatusProps {
+  applicationsOpen: boolean;
+  semesterLabel?: string;
+  applyFormUrl?: string;
+}
+
+const ApplicationStatus = ({
+  applicationsOpen,
+  semesterLabel = "the upcoming semester",
+  applyFormUrl = "#",
+}: ApplicationStatusProps) => {
+  if (applicationsOpen) {
+    return (
+      <div className="border border-separator p-8 md:p-12 mb-16">
+        <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl mb-6">
+          APPLICATIONS ARE NOW OPEN
+        </h2>
+        <p className="font-body text-body text-muted-foreground mb-2">
+          We recruit at the beginning of each academic semester.
+        </p>
+        <p className="font-body text-body text-muted-foreground mb-8">
+          Submit your application for {semesterLabel}.
+        </p>
+        <a
+          href={applyFormUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity mb-8"
+        >
+          Apply Now
+        </a>
+        <p className="font-body text-small text-muted-foreground">
+          For questions, with respect, contact society members on LinkedIn.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-separator p-8 md:p-12 mb-16">
+      <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl mb-6">
+        APPLICATIONS ARE CURRENTLY CLOSED
+      </h2>
+      <p className="font-body text-body text-muted-foreground mb-2">
+        The dates and deadlines of the next intake will be announced at the start of the upcoming semester.
+      </p>
+      <p className="font-body text-small text-muted-foreground mt-6">
+        For questions, with respect, contact society members on LinkedIn.
+      </p>
+    </div>
+  );
+};
+
+export default ApplicationStatus;
