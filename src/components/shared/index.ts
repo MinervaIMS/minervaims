@@ -8,3 +8,4 @@ export { ArchiveFilesList } from './ArchiveFilesList';
 export { DivisionCard } from './DivisionCard';
 export { FundCard } from './FundCard';
 export { OrgChart } from './OrgChart';
+export { DivisionArchiveCarousel } from './DivisionArchiveCarousel';
