@@ -99,7 +99,7 @@ const DivisionDetail = () => {
       {isPortfolio && (
         <section className="py-section-sm md:py-section bg-background">
           <div className="container">
-            <h2 className="font-serif text-heading mb-8">
+            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">
               MIMS Virtual Portfolios
             </h2>
             <div className="flex flex-col gap-4 max-w-4xl">
