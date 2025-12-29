@@ -29,8 +29,8 @@ const navItems: NavItem[] = [
   {
     label: 'FUNDS',
     dropdown: [
-      { label: 'Long Short Equity Fund', href: '/funds/long-short' },
       { label: 'Multi Asset Global Opportunities Fund', href: '/funds/multi-asset' },
+      { label: 'Long Short Equity Fund', href: '/funds/long-short' },
     ],
   },
   {
