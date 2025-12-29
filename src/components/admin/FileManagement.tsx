@@ -26,6 +26,7 @@ interface ArchiveFile {
 const FileManagement = () => {
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<ArchiveFile | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -203,6 +204,7 @@ const FileManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!formData.title.trim() || !formData.date || !formData.division || !formData.file_url) {
       toast({
@@ -222,92 +224,85 @@ const FileManagement = () => {
       return;
     }
 
-    try {
-      const action = editingFile ? 'update' : 'create';
-      
-      const fileData = {
-        title: formData.title,
-        description: formData.description || null,
-        file_url: formData.file_url,
-        date: formData.date,
-        division: formData.division,
-        fund: formData.division === 'portfolio' ? formData.fund : null,
-        ...(editingFile && { id: editingFile.id }),
-      };
+    setIsSubmitting(true);
+    const action = editingFile ? 'update' : 'create';
+    
+    const fileData = {
+      title: formData.title.trim(),
+      description: formData.description.trim() || null,
+      file_url: formData.file_url,
+      date: formData.date,
+      division: formData.division,
+      fund: formData.division === 'portfolio' ? formData.fund : null,
+      ...(editingFile && { id: editingFile.id }),
+    };
 
+    // Optimistic update
+    const tempId = editingFile?.id || crypto.randomUUID();
+    const optimisticFile: ArchiveFile = {
+      id: tempId,
+      ...fileData,
+      created_at: editingFile?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as ArchiveFile;
+
+    if (editingFile) {
+      setFiles(prev => prev.map(f => f.id === editingFile.id ? optimisticFile : f));
+    } else {
+      setFiles(prev => [optimisticFile, ...prev]);
+    }
+
+    setIsDialogOpen(false);
+    resetForm();
+
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-files', {
         body: { action, file: fileData },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
+      if (error || data?.error) {
+        fetchFiles();
+        toast({ title: "Error", description: data?.error || "Failed to save file", variant: "destructive" });
         return;
       }
 
-      toast({
-        title: "Success",
-        description: `File ${editingFile ? 'updated' : 'created'} successfully`,
-      });
-
-      setIsDialogOpen(false);
-      resetForm();
+      toast({ title: "Success", description: `File ${editingFile ? 'updated' : 'created'} successfully` });
       fetchFiles();
     } catch (error) {
       console.error('Submit error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save file",
-        variant: "destructive",
-      });
+      fetchFiles();
+      toast({ title: "Error", description: "Failed to save file", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (fileId: string) => {
     if (!confirm('Are you sure you want to delete this file?')) return;
 
+    const previousFiles = files;
+    setFiles(prev => prev.filter(f => f.id !== fileId));
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-files', {
         body: { action: 'delete', file: { id: fileId } },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
+      if (error || data?.error) {
+        setFiles(previousFiles);
+        toast({ title: "Error", description: data?.error || "Failed to delete file", variant: "destructive" });
         return;
       }
 
-      toast({
-        title: "Success",
-        description: "File deleted successfully",
-      });
-
-      fetchFiles();
+      toast({ title: "Success", description: "File deleted successfully" });
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete file",
-        variant: "destructive",
-      });
+      setFiles(previousFiles);
+      toast({ title: "Error", description: "Failed to delete file", variant: "destructive" });
     }
   };
 
@@ -453,8 +448,8 @@ const FileManagement = () => {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1 font-body" disabled={isUploading}>
-                  {editingFile ? 'Update File' : 'Create File'}
+                <Button type="submit" className="flex-1 font-body" disabled={isUploading || isSubmitting}>
+                  {isSubmitting ? 'Saving...' : (editingFile ? 'Update File' : 'Create File')}
                 </Button>
                 <Button 
                   type="button" 

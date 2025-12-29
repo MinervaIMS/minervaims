@@ -1,33 +1,26 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import logoWhite from "@/assets/logo-white.png";
 import homepageBg from "@/assets/homepage-bg.png";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
 import { Division, divisionLabels } from "@/lib/types";
-import { supabase } from "@/integrations/supabase/client";
+import { useKeyFigures } from "@/hooks/useKeyFigures";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
-const roundDownToTen = (n: number) => Math.floor(n / 10) * 10;
+const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
+  const animatedValue = useAnimatedCounter(value, 1500, !isLoading && value > 0);
+
+  if (isLoading) {
+    return <Skeleton className="h-16 w-24 mx-auto" />;
+  }
+
+  return <>{animatedValue}+</>;
+};
 
 const Index = () => {
-  const [counts, setCounts] = useState({ reports: 0, members: 0, alumni: 0 });
-
-  useEffect(() => {
-    const fetchCounts = async () => {
-      const [reportsRes, membersRes, alumniRes] = await Promise.all([
-        supabase.from('archive_files').select('id', { count: 'exact', head: true }),
-        supabase.from('team_members').select('id', { count: 'exact', head: true }),
-        supabase.from('alumni').select('id', { count: 'exact', head: true }),
-      ]);
-      setCounts({
-        reports: roundDownToTen(reportsRes.count || 0),
-        members: roundDownToTen(membersRes.count || 0),
-        alumni: roundDownToTen(alumniRes.count || 0),
-      });
-    };
-    fetchCounts();
-  }, []);
+  const { counts, isLoading } = useKeyFigures();
 
   return (
     <>
@@ -68,15 +61,21 @@ const Index = () => {
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
-              <p className="font-serif text-hero text-primary mb-2">{counts.reports}+</p>
+              <p className="font-serif text-hero text-primary mb-2">
+                <AnimatedFigure value={counts.reports} isLoading={isLoading} />
+              </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </div>
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
-              <p className="font-serif text-hero text-primary mb-2">{counts.members}+</p>
+              <p className="font-serif text-hero text-primary mb-2">
+                <AnimatedFigure value={counts.members} isLoading={isLoading} />
+              </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
             </div>
             <div className="text-center py-6">
-              <p className="font-serif text-hero text-primary mb-2">{counts.alumni}+</p>
+              <p className="font-serif text-hero text-primary mb-2">
+                <AnimatedFigure value={counts.alumni} isLoading={isLoading} />
+              </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
             </div>
           </div>
