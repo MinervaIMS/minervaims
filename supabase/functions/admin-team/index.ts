@@ -38,8 +38,12 @@ const TeamMemberSchema = z.object({
   ]),
   division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant', 'operations']).nullable().optional(),
   fund: z.enum(['long-short', 'multi-asset', 'dps', 'pir']).nullable().optional(),
-  photo_url: z.string().url('Invalid photo URL').max(500, 'Photo URL too long').nullable().optional().or(z.literal('')),
-  linkedin_url: z.string().url('Invalid LinkedIn URL').max(500, 'LinkedIn URL too long').nullable().optional().or(z.literal('')),
+  photo_url: z.string().max(500, 'Photo URL too long').nullable().optional()
+    .refine((val) => !val || val === '' || val.startsWith('https://') || val.startsWith('http://'), 
+      'Photo URL must be a valid URL'),
+  linkedin_url: z.string().max(500, 'LinkedIn URL too long').nullable().optional()
+    .refine((val) => !val || val === '' || val.startsWith('https://') || val.startsWith('http://'), 
+      'LinkedIn URL must be a valid URL'),
   is_board: z.boolean().optional(),
   display_order: z.number().int().min(0).optional(),
 });
