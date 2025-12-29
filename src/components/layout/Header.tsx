@@ -119,13 +119,15 @@ export function Header() {
               </div>
             ))}
             
-            {/* Login/Dashboard Button */}
-            <Link
-              to={user ? '/admin' : '/auth'}
-              className="font-serif text-small tracking-wider text-foreground hover:text-primary transition-colors py-2"
-            >
-              {user ? 'DASHBOARD' : 'LOGIN'}
-            </Link>
+            {/* Dashboard Button - only shown when logged in */}
+            {user && (
+              <Link
+                to="/admin"
+                className="font-serif text-small tracking-wider bg-foreground text-background border border-foreground px-4 py-2 hover:bg-background hover:text-foreground transition-colors"
+              >
+                DASHBOARD
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -176,15 +178,17 @@ export function Header() {
               </div>
             ))}
             
-            {/* Mobile Login/Dashboard */}
-            <div className="py-2">
-              <Link
-                to={user ? '/admin' : '/auth'}
-                className="font-serif text-small tracking-wider text-foreground block py-2"
-              >
-                {user ? 'DASHBOARD' : 'LOGIN'}
-              </Link>
-            </div>
+            {/* Mobile Dashboard - only shown when logged in */}
+            {user && (
+              <div className="py-2">
+                <Link
+                  to="/admin"
+                  className="font-serif text-small tracking-wider bg-foreground text-background border border-foreground px-4 py-2 inline-block"
+                >
+                  DASHBOARD
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>

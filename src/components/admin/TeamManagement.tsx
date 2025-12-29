@@ -466,16 +466,6 @@ export default function TeamManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="linkedin" className="font-body">LinkedIn URL</Label>
-                <Input
-                  id="linkedin"
-                  value={formData.linkedin_url}
-                  onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
-                  placeholder="https://linkedin.com/in/..."
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label className="font-body">Photo</Label>
                 <div className="flex gap-4 items-center">
                   {formData.photo_url ? (
