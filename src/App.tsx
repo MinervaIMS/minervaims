@@ -27,6 +27,7 @@ const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/terms-of-use" element={<Suspense fallback={null}><TermsOfUse /></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={null}><Sitemap /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={null}><Auth /></Suspense>} />
+                <Route path="/reset-password" element={<Suspense fallback={null}><ResetPassword /></Suspense>} />
                 <Route path="/admin" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={null}><NotFound /></Suspense>} />
               </Route>
