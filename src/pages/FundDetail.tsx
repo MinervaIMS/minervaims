@@ -1,60 +1,90 @@
-import { useParams, Link, Navigate } from 'react-router-dom';
-import { PageIntroduction, ReportsList } from '@/components/shared';
+import { useParams, Navigate } from 'react-router-dom';
+import { PageIntroduction } from '@/components/shared';
 import { Fund, fundLabels, activeFunds } from '@/lib/types';
-import { reports } from '@/lib/data';
+import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
 
-const fundDescriptions: Record<Fund, string> = {
-  'long-short': 'European equity long/short strategy targeting absolute returns.',
-  'multi-asset': 'Global multi-asset strategy with tactical allocation.',
-  'dps': 'Diversified passive selection strategy.',
-  'pir': 'Italian equity strategy with PIR compliance.',
+// Fund content configuration
+interface FundContent {
+  title: string;
+  subtitle: string;
+  description: string;
+  sectionTitle: string;
+}
+
+const fundContent: Record<Fund, FundContent> = {
+  'multi-asset': {
+    title: 'Multi Asset Global Opportunities Fund',
+    subtitle: 'Global diversified portfolio across equities, bonds, commodities.',
+    description: 'The Multi Asset Global Opportunities Fund is MIMS\' actively managed, disclosed portfolio investing in listed equities, sovereign and credit instruments, and commodities. The mandate targets long-term capital growth with controlled volatility through diversified, opportunity-driven allocation across geographies, currencies and sectors. Position sizing is guided by marginal risk contribution, correlations and liquidity, typically across ~30 holdings. The team publishes semi-annual rebalancing reports and interim adjustments around market dislocations. Derivatives are used only for currency and tail-risk hedging, never for net leverage.',
+    sectionTitle: 'Latest Fund Updates',
+  },
+  'long-short': {
+    title: 'Long Short Equity Fund',
+    subtitle: 'Market-neutral equity strategy driven by multi-factor signals.',
+    description: 'MIMS\' Long Short Equity Fund is a semi-automated, actively managed, zero-net-investment portfolio designed to deliver positive absolute returns across market regimes. The team builds a market-neutral book across US and European equities by ranking stocks through a proprietary multi-factor model (value, momentum, quality, low volatility and size) and taking offsetting long and short positions. Signals are standardised and winsorised, with sector and geographic balance checks. Allocations are reviewed at each rebalancing and documented in periodic reports.',
+    sectionTitle: 'Latest Fund Updates',
+  },
+  'dps': {
+    title: 'Diversified Passive Selection Fund',
+    subtitle: 'ETF-based allocation delivering diversified, low-idiosyncratic exposure.',
+    description: 'ETF-only portfolio selecting UCITS instruments to express sector and macro themes while minimising idiosyncratic risk. The team sets strategic weights across equities, fixed income and commodities, diversified by region, sector and duration, and implements currency hedging where appropriate. Allocation is reviewed through semi-annual reports and interim adjustment notes when regimes shift (e.g., tariffs, fiscal shocks, rate repricing). Risk is monitored via VaR/Expected Shortfall and stress-aware duration management.',
+    sectionTitle: 'Latest Fund Updates',
+  },
+  'pir': {
+    title: 'Italian Equity PIR Fund',
+    subtitle: 'Italian equity portfolio aligned with PIR investment rules.',
+    description: 'The Italian Equity PIR Fund is MIMS\' actively managed, long-only portfolio investing exclusively in Italian equities within the PIR (Piano Individuale di Risparmio) framework. Portfolio construction combines a top-down view on the Italian macro backdrop with bottom-up single-name selection, while respecting PIR constraints on domestic issuers and minimum exposure to non-FTSE MIB constituents. Performance is assessed versus a blended FTSE MIB / FTSE Italia Mid-Small PIR benchmark, supported by VaR/Expected Shortfall risk monitoring.',
+    sectionTitle: 'Latest Fund Updates',
+  },
 };
 
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
 
   if (!fund || !fundLabels[fund as Fund]) {
-    return <Navigate to="/funds" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const fundKey = fund as Fund;
-  const fundReports = reports.filter(r => r.fund === fundKey);
+  const content = fundContent[fundKey];
   const isActive = activeFunds.includes(fundKey);
 
   return (
     <>
+      {/* First Section: Title and Subtitle with Background */}
       <PageIntroduction
-        title={fundLabels[fundKey]}
-        description={fundDescriptions[fundKey]}
+        title={content.title}
+        description={content.subtitle}
       />
 
-      <div className="container py-section-sm md:py-section">
-        {!isActive && (
-          <div className="mb-8 p-4 bg-muted border-l-2 border-primary">
-            <p className="font-body text-small text-muted-foreground">
-              This fund is no longer active. Historical reports are available below.
-            </p>
-          </div>
-        )}
-
-        <section className="mb-12">
+      {/* Second Section: Fund Overview */}
+      <section className="py-section-sm md:py-section bg-background">
+        <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
-            Fund Reports
+            Fund Overview
           </h2>
-          <ReportsList reports={fundReports} />
-        </section>
+          {!isActive && (
+            <div className="mb-6 p-4 bg-muted border-l-2 border-primary">
+              <p className="font-body text-small text-muted-foreground">
+                This fund is no longer active. Historical reports are available below.
+              </p>
+            </div>
+          )}
+          <p className="font-body text-body-lg text-muted-foreground max-w-4xl">
+            {content.description}
+          </p>
+        </div>
+      </section>
 
-        {isActive && (
-          <section>
-            <Link 
-              to={`/members/team?fund=${fundKey}`}
-              className="inline-block font-serif italic underline text-primary hover:opacity-80 transition-opacity"
-            >
-              View current fund team
-            </Link>
-          </section>
-        )}
-      </div>
+      {/* Third Section: Latest Fund Updates */}
+      <section className="py-section-sm md:py-section bg-foreground">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
+            {content.sectionTitle}
+          </h2>
+          <FundArchiveCarousel fund={fundKey} />
+        </div>
+      </section>
     </>
   );
 };
