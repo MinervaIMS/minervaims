@@ -46,7 +46,21 @@ const AdminDashboard = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin, isLoading: authLoading, signOut, session } = useAuth();
+  const { user, isAdmin, isLoading: authLoading, signOut, session, isSessionExpired, refreshSession } = useAuth();
+
+  // Handle session expiry
+  useEffect(() => {
+    if (isSessionExpired) {
+      toast({
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive",
+      });
+      signOut().then(() => {
+        navigate('/auth', { state: { from: '/admin', sessionExpired: true } });
+      });
+    }
+  }, [isSessionExpired, signOut, navigate, toast]);
 
   useEffect(() => {
     if (!authLoading) {

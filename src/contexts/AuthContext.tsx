@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type AppRole = 
   | 'admin'
@@ -44,10 +45,12 @@ interface AuthContextType {
   roles: UserRole[];
   isLoading: boolean;
   isAdmin: boolean;
+  isSessionExpired: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,6 +73,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const { toast } = useToast();
 
   const isAdmin = user?.email === 'as.minerva@unibocconi.it' || roles.some(r => r.role === 'admin' || r.role === 'president');
 
@@ -98,35 +103,101 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Manual session refresh function
+  const refreshSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session) {
+        console.error('Failed to refresh session:', error);
+        setIsSessionExpired(true);
+        return false;
+      }
+      setSession(data.session);
+      setUser(data.session.user);
+      setIsSessionExpired(false);
+      return true;
+    } catch (error) {
+      console.error('Session refresh error:', error);
+      setIsSessionExpired(true);
+      return false;
+    }
+  }, []);
+
+  // Check if session is about to expire and refresh proactively
+  const checkAndRefreshSession = useCallback(async () => {
+    if (!session?.expires_at) return;
+    
+    const expiresAt = session.expires_at * 1000; // Convert to milliseconds
+    const now = Date.now();
+    const timeUntilExpiry = expiresAt - now;
+    
+    // Refresh if less than 5 minutes until expiry
+    if (timeUntilExpiry < 5 * 60 * 1000 && timeUntilExpiry > 0) {
+      console.log('Session expiring soon, refreshing...');
+      await refreshSession();
+    } else if (timeUntilExpiry <= 0) {
+      console.log('Session has expired');
+      setIsSessionExpired(true);
+      toast({
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive",
+      });
+    }
+  }, [session, refreshSession, toast]);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        // Defer Supabase calls with setTimeout
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            fetchRoles(session.user.id);
-          }, 0);
-        } else {
+      (event, currentSession) => {
+        console.log('Auth state change:', event);
+        
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
           setProfile(null);
           setRoles([]);
+          setIsSessionExpired(false);
+          return;
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+          setIsSessionExpired(false);
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          setIsSessionExpired(false);
+
+          // Defer Supabase calls with setTimeout
+          if (currentSession?.user) {
+            setTimeout(() => {
+              fetchProfile(currentSession.user.id);
+              fetchRoles(currentSession.user.id);
+            }, 0);
+          }
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: existingSession }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        setIsSessionExpired(true);
+        setIsLoading(false);
+        return;
+      }
+
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
       
-      if (session?.user) {
+      if (existingSession?.user) {
         Promise.all([
-          fetchProfile(session.user.id),
-          fetchRoles(session.user.id)
+          fetchProfile(existingSession.user.id),
+          fetchRoles(existingSession.user.id)
         ]).finally(() => setIsLoading(false));
       } else {
         setIsLoading(false);
@@ -136,7 +207,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Set up periodic session check (every 1 minute)
+  useEffect(() => {
+    if (!session) return;
+
+    const intervalId = setInterval(() => {
+      checkAndRefreshSession();
+    }, 60 * 1000); // Check every minute
+
+    // Also check immediately
+    checkAndRefreshSession();
+
+    return () => clearInterval(intervalId);
+  }, [session, checkAndRefreshSession]);
+
   const signIn = async (email: string, password: string) => {
+    setIsSessionExpired(false);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -176,6 +262,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setSession(null);
     setProfile(null);
     setRoles([]);
+    setIsSessionExpired(false);
   };
 
   return (
@@ -187,10 +274,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         roles,
         isLoading,
         isAdmin,
+        isSessionExpired,
         signIn,
         signUp,
         signOut,
         refreshProfile,
+        refreshSession,
       }}
     >
       {children}
