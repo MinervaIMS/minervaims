@@ -379,7 +379,7 @@ const AdminDashboard = () => {
           {permissions.canAccessSettings && (
             <TabsTrigger value="settings" className="font-body">
               <Settings className="h-4 w-4 mr-2" />
-              Settings
+              Applications
             </TabsTrigger>
           )}
         </TabsList>

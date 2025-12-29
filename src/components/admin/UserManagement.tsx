@@ -81,14 +81,14 @@ const ASSIGNABLE_ROLES: AppRole[] = [
 
 // Role access matrix for the explanatory table
 const ROLE_ACCESS_MATRIX = [
-  { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: 'All', files: 'All divisions', team: true },
-  { role: 'Head of Operations / Head of Media', users: false, alumni: true, events: 'All', files: 'All divisions', team: false },
-  { role: 'Head of Equity', users: false, alumni: false, events: 'All', files: 'Equity only', team: false },
-  { role: 'Head of Investment', users: false, alumni: false, events: 'All', files: 'Investment only', team: false },
-  { role: 'Head of Macro', users: false, alumni: false, events: 'All', files: 'Macro only', team: false },
-  { role: 'Head of Portfolio', users: false, alumni: false, events: 'All', files: 'Portfolio only', team: false },
-  { role: 'Head of Quant', users: false, alumni: false, events: 'All', files: 'Quant only', team: false },
-  { role: 'Member', users: false, alumni: false, events: false, files: false, team: false },
+  { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: 'All', files: 'All divisions', team: true, applications: true },
+  { role: 'Head of Operations / Head of Media', users: false, alumni: true, events: 'All', files: 'All divisions', team: false, applications: false },
+  { role: 'Head of Equity', users: false, alumni: false, events: 'All', files: 'Equity only', team: false, applications: false },
+  { role: 'Head of Investment', users: false, alumni: false, events: 'All', files: 'Investment only', team: false, applications: false },
+  { role: 'Head of Macro', users: false, alumni: false, events: 'All', files: 'Macro only', team: false, applications: false },
+  { role: 'Head of Portfolio', users: false, alumni: false, events: 'All', files: 'Portfolio only', team: false, applications: false },
+  { role: 'Head of Quant', users: false, alumni: false, events: 'All', files: 'Quant only', team: false, applications: false },
+  { role: 'Member', users: false, alumni: false, events: false, files: false, team: false, applications: false },
 ];
 
 const UserManagement = () => {
@@ -258,6 +258,7 @@ const UserManagement = () => {
                   <TableHead className="font-serif text-center">Events</TableHead>
                   <TableHead className="font-serif text-center">Files</TableHead>
                   <TableHead className="font-serif text-center">Team</TableHead>
+                  <TableHead className="font-serif text-center">Applications</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -282,6 +283,9 @@ const UserManagement = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       {row.team ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {row.applications ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                   </TableRow>
                 ))}

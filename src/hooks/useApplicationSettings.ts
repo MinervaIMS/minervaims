@@ -20,11 +20,12 @@ export const useApplicationSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        // Use raw query to avoid type issues with new table
         const { data, error } = await supabase
-          .from('application_settings')
+          .from('application_settings' as any)
           .select('applications_open, semester_label, apply_form_url')
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching application settings:', error);
@@ -32,10 +33,11 @@ export const useApplicationSettings = () => {
         }
 
         if (data) {
+          const typedData = data as unknown as { applications_open: boolean; semester_label: string; apply_form_url: string };
           setSettings({
-            applicationsOpen: data.applications_open,
-            semesterLabel: data.semester_label,
-            applyFormUrl: data.apply_form_url,
+            applicationsOpen: typedData.applications_open,
+            semesterLabel: typedData.semester_label,
+            applyFormUrl: typedData.apply_form_url,
           });
         }
       } catch (error) {
