@@ -83,7 +83,7 @@ const Index = () => {
       </section>
 
       {/* About Preview */}
-      <section className="py-section-sm md:py-section">
+      <section className="pt-section-sm md:pt-section pb-8 md:pb-12">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6">
@@ -99,7 +99,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Section */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-8 md:pt-12 pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -127,7 +127,7 @@ const Index = () => {
       </section>
 
       {/* Activities & Events Section */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-section-sm md:pt-section pb-8 md:pb-12 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
@@ -143,7 +143,7 @@ const Index = () => {
       </section>
 
       {/* Join MIMS Section */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-8 md:pt-12 pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
           <p className="font-body text-body-lg text-muted-foreground mb-6 max-w-3xl">
