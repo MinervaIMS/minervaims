@@ -9,7 +9,7 @@ import {
 
 // Configuration
 const APPLICATION_CONFIG = {
-  applicationsOpen: false,
+  applicationsOpen: true,
   semesterLabel: "Spring 2026",
   applyFormUrl: "https://forms.google.com/your-form-url",
 };
@@ -70,7 +70,7 @@ const Join = () => {
     <>
       <PageIntroduction title="Join Us" />
 
-      <div className="container py-section-sm md:py-section">
+      <div className="container py-section md:py-section-lg">
         {/* Application Status */}
         <ApplicationStatus
           applicationsOpen={APPLICATION_CONFIG.applicationsOpen}
@@ -79,7 +79,7 @@ const Join = () => {
         />
 
         {/* Eligibility Criteria */}
-        <section className="mb-16">
+        <section className="mb-20 md:mb-24">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Eligibility Criteria
           </h2>
@@ -97,64 +97,70 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Application Process */}
-        <section className="mb-16">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+      {/* Application Process */}
+      <section className="mb-20 md:mb-24 bg-foreground text-background -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-12 md:py-16">
+        <div className="container px-0">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20">
             Application Process
           </h2>
           <div className="max-w-3xl space-y-0">
             {APPLICATION_STEPS.map((step, index) => (
               <div
                 key={step.step}
-                className={`py-6 ${index < APPLICATION_STEPS.length - 1 ? 'border-b border-separator' : ''}`}
+                className={`py-6 ${index < APPLICATION_STEPS.length - 1 ? 'border-b border-background/20' : ''}`}
               >
-                <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
+                <p className="font-body text-xs text-background/60 uppercase tracking-wider mb-2">
                   Step {step.step}
                 </p>
-                <h3 className="font-serif text-subheading mb-2">{step.title}</h3>
-                <p className="font-body text-body text-muted-foreground">
+                <h3 className="font-serif text-subheading mb-2 text-background">{step.title}</h3>
+                <p className="font-body text-body text-background/80">
                   {step.description}
                 </p>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* How To Prepare For The Interview */}
-        <section className="mb-16">
+        <section className="mb-20 md:mb-24">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             How To Prepare For The Interview
           </h2>
-          <div className="max-w-3xl">
-            <p className="font-body text-body text-muted-foreground mb-6">
-              To prepare effectively, we recommend reviewing our division-specific publications to
-              understand our analytical standards, writing style, and recurring themes. This will
-              help you align your reasoning, structure, and level of depth with the work produced
-              within MIMS.
-            </p>
-            <p className="font-body text-body text-muted-foreground mb-4">
-              In addition, candidates are expected to demonstrate a clear awareness of the current
-              market environment. In practice, this means being comfortable discussing:
-            </p>
-            <ul className="space-y-3 mb-8">
-              <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                Macroeconomic data (inflation, growth, labour market dynamics, central bank stance).
-              </li>
-              <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                Relevant market data and recent performance (rates, credit, equities, FX,
-                commodities; key moves and drivers).
-              </li>
-              <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                The most relevant market news from the last two weeks and its implications across
-                asset classes.
-              </li>
-            </ul>
-            <Link
-              to="/archive"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
-            >
-              View Divisions Reports
-            </Link>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
+            <div className="lg:flex-1">
+              <p className="font-body text-body text-muted-foreground mb-6">
+                To prepare effectively, we recommend reviewing our division-specific publications to
+                understand our analytical standards, writing style, and recurring themes. This will
+                help you align your reasoning, structure, and level of depth with the work produced
+                within MIMS.
+              </p>
+              <p className="font-body text-body text-muted-foreground mb-4">
+                In addition, candidates are expected to demonstrate a clear awareness of the current
+                market environment. In practice, this means being comfortable discussing:
+              </p>
+              <ul className="space-y-3">
+                <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                  Macroeconomic data (inflation, growth, labour market dynamics, central bank stance).
+                </li>
+                <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                  Relevant market data and recent performance (rates, credit, equities, FX,
+                  commodities; key moves and drivers).
+                </li>
+                <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                  The most relevant market news from the last two weeks and its implications across
+                  asset classes.
+                </li>
+              </ul>
+            </div>
+            <div className="lg:flex-shrink-0">
+              <Link
+                to="/archive"
+                className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+              >
+                View Divisions Reports
+              </Link>
+            </div>
           </div>
         </section>
 
