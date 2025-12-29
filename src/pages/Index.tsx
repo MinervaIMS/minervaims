@@ -7,6 +7,12 @@ import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Import application config - keep in sync with Join.tsx
+const APPLICATION_CONFIG = {
+  applicationsOpen: true,
+  applyFormUrl: "https://forms.google.com/your-form-url",
+};
+
 const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
 const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
@@ -53,6 +59,16 @@ const Index = () => {
             <br />
             Management Society
           </h1>
+          {APPLICATION_CONFIG.applicationsOpen && (
+            <a
+              href={APPLICATION_CONFIG.applyFormUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-10 px-10 py-4 bg-background text-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+            >
+              Apply Now
+            </a>
+          )}
         </div>
       </section>
 
