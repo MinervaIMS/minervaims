@@ -9,6 +9,7 @@ import {
   Preview,
   Section,
   Text,
+  Hr,
 } from 'https://esm.sh/@react-email/components@0.0.22'
 import * as React from 'https://esm.sh/react@18.3.1'
 
@@ -34,37 +35,44 @@ export const AuthEmail = ({
   const isMagicLink = email_action_type === 'magiclink';
 
   const getSubject = () => {
-    if (isSignUp) return 'Confirm your MIMS membership';
-    if (isPasswordReset) return 'Reset your MIMS password';
-    if (isMagicLink) return 'Your MIMS login link';
-    return 'MIMS Authentication';
+    if (isSignUp) return 'Welcome to Minerva Investment Management Society';
+    if (isPasswordReset) return 'Reset Your MIMS Account Password';
+    if (isMagicLink) return 'Your Secure Login Link - MIMS';
+    return 'MIMS Account Verification';
   };
 
   const getHeading = () => {
-    if (isSignUp) return 'Welcome to Minerva IMS';
-    if (isPasswordReset) return 'Reset Your Password';
-    if (isMagicLink) return 'Login to MIMS';
-    return 'Authentication Required';
+    if (isSignUp) return 'Welcome to MIMS';
+    if (isPasswordReset) return 'Password Reset Request';
+    if (isMagicLink) return 'Secure Login';
+    return 'Account Verification';
   };
 
   const getDescription = () => {
     if (isSignUp) {
-      return 'Thank you for registering with Minerva Investment Management Society. Please confirm your email address to complete your registration and join our community of finance enthusiasts.';
+      return 'Thank you for joining Minerva Investment Management Society, Bocconi University\'s premier student-led investment fund. Your membership gives you access to our exclusive research, events, and networking opportunities with finance professionals.';
     }
     if (isPasswordReset) {
-      return 'We received a request to reset your password. Click the button below to choose a new password.';
+      return 'We received a request to reset your MIMS account password. Click the button below to create a new secure password and regain access to your account.';
     }
     if (isMagicLink) {
-      return 'Use the link below to securely log in to your MIMS account.';
+      return 'Use the secure link below to access your MIMS member portal. This link will expire shortly for your security.';
     }
-    return 'Please click the button below to continue.';
+    return 'Please verify your email address to continue accessing your MIMS account.';
+  };
+
+  const getSecondaryDescription = () => {
+    if (isSignUp) {
+      return 'Please confirm your email address to complete your registration and unlock full access to our member resources, including market analyses, investment reports, and upcoming events.';
+    }
+    return null;
   };
 
   const getButtonText = () => {
-    if (isSignUp) return 'Confirm Email';
+    if (isSignUp) return 'Confirm My Email';
     if (isPasswordReset) return 'Reset Password';
-    if (isMagicLink) return 'Log In';
-    return 'Continue';
+    if (isMagicLink) return 'Access My Account';
+    return 'Verify Email';
   };
 
   return (
@@ -73,55 +81,79 @@ export const AuthEmail = ({
       <Preview>{getSubject()}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Logo */}
-          <Section style={logoSection}>
+          {/* Header with Logo */}
+          <Section style={headerSection}>
             <Img
               src="https://asjudzdgsccacpjbzsue.supabase.co/storage/v1/object/public/archive-files/mims-logo.png"
-              width="80"
-              height="80"
+              width="72"
+              height="72"
               alt="Minerva IMS"
               style={logo}
             />
+            <Text style={brandName}>MINERVA IMS</Text>
           </Section>
-
-          {/* Header */}
-          <Heading style={h1}>{getHeading()}</Heading>
-
-          {/* Description */}
-          <Text style={text}>
-            {getDescription()}
-          </Text>
-
-          {/* CTA Button */}
-          <Section style={buttonSection}>
-            <Link href={confirmationUrl} style={button}>
-              {getButtonText()}
-            </Link>
-          </Section>
-
-          {/* OTP Code */}
-          {token && (
-            <>
-              <Text style={textSmall}>
-                Or use this verification code:
-              </Text>
-              <code style={code}>{token}</code>
-            </>
-          )}
 
           {/* Divider */}
-          <Section style={divider} />
+          <Hr style={dividerTop} />
+
+          {/* Main Content */}
+          <Section style={contentSection}>
+            <Heading style={h1}>{getHeading()}</Heading>
+            
+            <Text style={text}>
+              {getDescription()}
+            </Text>
+
+            {getSecondaryDescription() && (
+              <Text style={text}>
+                {getSecondaryDescription()}
+              </Text>
+            )}
+
+            {/* CTA Button */}
+            <Section style={buttonSection}>
+              <Link href={confirmationUrl} style={button}>
+                {getButtonText()}
+              </Link>
+            </Section>
+
+            {/* OTP Code */}
+            {token && (
+              <Section style={codeSection}>
+                <Text style={codeLabel}>
+                  Alternatively, enter this verification code:
+                </Text>
+                <code style={code}>{token}</code>
+              </Section>
+            )}
+          </Section>
+
+          {/* Divider */}
+          <Hr style={dividerBottom} />
 
           {/* Footer */}
-          <Text style={footer}>
-            Minerva Investment Management Society
-          </Text>
-          <Text style={footerSmall}>
-            Bocconi University, Milan
-          </Text>
-          <Text style={footerSmall}>
-            If you didn't request this email, you can safely ignore it.
-          </Text>
+          <Section style={footerSection}>
+            <Text style={footerBrand}>
+              Minerva Investment Management Society
+            </Text>
+            <Text style={footerTagline}>
+              Bocconi University's Premier Student Investment Fund
+            </Text>
+            <Text style={footerLocation}>
+              Via Röntgen 1, 20136 Milano, Italy
+            </Text>
+            
+            <Hr style={footerDivider} />
+            
+            <Text style={footerDisclaimer}>
+              If you did not create an account with MIMS, please disregard this email. 
+              This is an automated message—please do not reply directly to this email.
+            </Text>
+            
+            <Text style={footerCopyright}>
+              © {new Date().getFullYear()} Minerva Investment Management Society. All rights reserved.
+            </Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -130,104 +162,161 @@ export const AuthEmail = ({
 
 export default AuthEmail
 
+// Design tokens matching MIMS website
+const primaryColor = '#1F0F4D'; // Deep navy (hsl 252 68% 18%)
+const textColor = '#141414'; // Near black (hsl 0 0% 8%)
+const mutedTextColor = '#737373'; // Muted (hsl 0 0% 45%)
+const borderColor = '#E0E0E0'; // Light border
+const backgroundColor = '#FFFFFF';
+
 const main = {
-  backgroundColor: '#ffffff',
-  fontFamily: "'Times New Roman', Georgia, serif",
+  backgroundColor: '#F5F5F5',
+  fontFamily: "'Calibri', 'Helvetica Neue', Arial, sans-serif",
 }
 
 const container = {
-  margin: '0 auto',
-  padding: '40px 20px',
+  margin: '40px auto',
+  padding: '0',
   maxWidth: '560px',
+  backgroundColor: backgroundColor,
+  border: `1px solid ${borderColor}`,
 }
 
-const logoSection = {
+const headerSection = {
   textAlign: 'center' as const,
-  marginBottom: '32px',
+  padding: '40px 40px 24px',
 }
 
 const logo = {
-  margin: '0 auto',
+  margin: '0 auto 16px',
+}
+
+const brandName = {
+  color: primaryColor,
+  fontSize: '13px',
+  fontWeight: '600',
+  letterSpacing: '3px',
+  margin: '0',
+  fontFamily: "'EB Garamond', Georgia, serif",
+}
+
+const dividerTop = {
+  borderColor: borderColor,
+  margin: '0 40px',
+}
+
+const contentSection = {
+  padding: '32px 40px',
 }
 
 const h1 = {
-  color: '#1a1a1a',
+  color: textColor,
   fontSize: '28px',
   fontWeight: '400',
   letterSpacing: '-0.5px',
-  lineHeight: '1.3',
+  lineHeight: '1.2',
   margin: '0 0 24px',
   padding: '0',
-  textAlign: 'center' as const,
-  fontFamily: "'Times New Roman', Georgia, serif",
+  textAlign: 'left' as const,
+  fontFamily: "'EB Garamond', Georgia, serif",
 }
 
 const text = {
-  color: '#4a4a4a',
-  fontSize: '16px',
-  lineHeight: '1.6',
-  margin: '0 0 24px',
-  fontFamily: "Calibri, Arial, sans-serif",
-}
-
-const textSmall = {
-  color: '#6a6a6a',
-  fontSize: '14px',
-  lineHeight: '1.5',
-  margin: '24px 0 8px',
-  textAlign: 'center' as const,
-  fontFamily: "Calibri, Arial, sans-serif",
+  color: textColor,
+  fontSize: '15px',
+  lineHeight: '1.7',
+  margin: '0 0 20px',
+  textAlign: 'left' as const,
 }
 
 const buttonSection = {
-  textAlign: 'center' as const,
+  textAlign: 'left' as const,
   margin: '32px 0',
 }
 
 const button = {
-  backgroundColor: '#1a1a1a',
-  border: '1px solid #1a1a1a',
-  color: '#ffffff',
+  backgroundColor: primaryColor,
+  border: 'none',
+  color: '#FFFFFF',
   display: 'inline-block',
-  fontSize: '16px',
-  fontWeight: '400',
-  letterSpacing: '1px',
-  padding: '16px 40px',
+  fontSize: '13px',
+  fontWeight: '500',
+  letterSpacing: '1.5px',
+  padding: '16px 32px',
   textDecoration: 'none',
   textTransform: 'uppercase' as const,
-  fontFamily: "'Times New Roman', Georgia, serif",
+  fontFamily: "'Calibri', 'Helvetica Neue', Arial, sans-serif",
+}
+
+const codeSection = {
+  textAlign: 'center' as const,
+  margin: '24px 0 0',
+  padding: '24px',
+  backgroundColor: '#FAFAFA',
+  border: `1px solid ${borderColor}`,
+}
+
+const codeLabel = {
+  color: mutedTextColor,
+  fontSize: '13px',
+  margin: '0 0 12px',
+  textAlign: 'center' as const,
 }
 
 const code = {
   display: 'block',
+  color: primaryColor,
+  fontSize: '28px',
+  letterSpacing: '6px',
+  fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace",
+  fontWeight: '500',
+}
+
+const dividerBottom = {
+  borderColor: borderColor,
+  margin: '0 40px',
+}
+
+const footerSection = {
+  padding: '32px 40px',
   textAlign: 'center' as const,
-  padding: '16px',
-  margin: '0 auto',
-  backgroundColor: '#f5f5f5',
-  border: '1px solid #e0e0e0',
-  color: '#1a1a1a',
-  fontSize: '24px',
-  letterSpacing: '4px',
-  fontFamily: "monospace",
 }
 
-const divider = {
-  borderTop: '1px solid #e0e0e0',
-  margin: '40px 0 24px',
-}
-
-const footer = {
-  color: '#1a1a1a',
+const footerBrand = {
+  color: textColor,
   fontSize: '14px',
-  margin: '0',
-  textAlign: 'center' as const,
-  fontFamily: "'Times New Roman', Georgia, serif",
+  fontWeight: '500',
+  margin: '0 0 4px',
+  fontFamily: "'EB Garamond', Georgia, serif",
 }
 
-const footerSmall = {
-  color: '#8a8a8a',
+const footerTagline = {
+  color: mutedTextColor,
   fontSize: '12px',
-  margin: '8px 0 0',
-  textAlign: 'center' as const,
-  fontFamily: "Calibri, Arial, sans-serif",
+  fontStyle: 'italic' as const,
+  margin: '0 0 4px',
+}
+
+const footerLocation = {
+  color: mutedTextColor,
+  fontSize: '12px',
+  margin: '0',
+}
+
+const footerDivider = {
+  borderColor: borderColor,
+  margin: '20px 0',
+}
+
+const footerDisclaimer = {
+  color: mutedTextColor,
+  fontSize: '11px',
+  lineHeight: '1.6',
+  margin: '0 0 12px',
+}
+
+const footerCopyright = {
+  color: mutedTextColor,
+  fontSize: '11px',
+  margin: '0',
 }
