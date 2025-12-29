@@ -111,18 +111,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is admin
-    const isAdmin = user.email === 'as.minerva@unibocconi.it';
-    const { data: adminRole } = await supabase
+    // Check if user has team management access
+    // Full access roles: admin, president, vice_president, head_of_asset_management
+    const teamAccessRoles = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
+    const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
+    
+    const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
+      .in('role', teamAccessRoles)
       .maybeSingle();
 
-    if (!isAdmin && !adminRole) {
+    if (!isAdminEmail && !userRole) {
       return new Response(
-        JSON.stringify({ error: 'Access denied' }),
+        JSON.stringify({ error: 'Access denied - insufficient permissions for team management' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
