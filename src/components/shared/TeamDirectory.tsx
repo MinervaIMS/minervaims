@@ -143,7 +143,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
       {boardMembers.length > 0 && (
         <section className="mb-12">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
-            Board
+            Executive Board
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {boardMembers.map((member) => (
