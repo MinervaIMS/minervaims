@@ -24,6 +24,7 @@ interface AlumniRecord {
 export default function AlumniManagement() {
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAlumni, setEditingAlumni] = useState<AlumniRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +96,7 @@ export default function AlumniManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!formData.name.trim() || !formData.surname.trim() || !formData.company.trim()) {
       toast({
@@ -105,92 +107,94 @@ export default function AlumniManagement() {
       return;
     }
 
-    try {
-      const action = editingAlumni ? 'update' : 'create';
-      
-      const alumniData = {
-        name: formData.name,
-        surname: formData.surname,
-        graduation_year: formData.graduation_year,
-        company: formData.company,
-        city: formData.city || null,
-        linkedin_url: formData.linkedin_url || null,
-        ...(editingAlumni && { id: editingAlumni.id }),
-      };
+    setIsSubmitting(true);
+    const action = editingAlumni ? 'update' : 'create';
+    
+    const alumniData = {
+      name: formData.name.trim(),
+      surname: formData.surname.trim(),
+      graduation_year: formData.graduation_year,
+      company: formData.company.trim(),
+      city: formData.city.trim() || null,
+      linkedin_url: formData.linkedin_url.trim() || null,
+      ...(editingAlumni && { id: editingAlumni.id }),
+    };
 
+    // Optimistic update
+    const tempId = editingAlumni?.id || crypto.randomUUID();
+    const optimisticRecord: AlumniRecord = {
+      id: tempId,
+      ...alumniData,
+      city: alumniData.city,
+      linkedin_url: alumniData.linkedin_url,
+      created_at: editingAlumni?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (editingAlumni) {
+      setAlumni(prev => prev.map(a => a.id === editingAlumni.id ? optimisticRecord : a));
+    } else {
+      setAlumni(prev => [optimisticRecord, ...prev]);
+    }
+    
+    setIsDialogOpen(false);
+    resetForm();
+
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-alumni', {
         body: { action, alumni: alumniData },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
-
-      if (data.error) {
+      if (error || data?.error) {
+        // Revert optimistic update
+        fetchAlumni();
         toast({
           title: "Error",
-          description: data.error,
+          description: data?.error || "Failed to save alumni",
           variant: "destructive",
         });
         return;
       }
 
-      toast({
-        title: "Success",
-        description: `Alumni ${editingAlumni ? 'updated' : 'created'} successfully`,
-      });
-
-      setIsDialogOpen(false);
-      resetForm();
+      toast({ title: "Success", description: `Alumni ${editingAlumni ? 'updated' : 'created'} successfully` });
+      // Refresh to get real data
       fetchAlumni();
     } catch (error) {
       console.error('Submit error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save alumni",
-        variant: "destructive",
-      });
+      fetchAlumni();
+      toast({ title: "Error", description: "Failed to save alumni", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (alumniId: string) => {
     if (!confirm('Are you sure you want to delete this alumni?')) return;
 
+    // Optimistic delete
+    const previousAlumni = alumni;
+    setAlumni(prev => prev.filter(a => a.id !== alumniId));
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-alumni', {
         body: { action: 'delete', alumni: { id: alumniId } },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
+      if (error || data?.error) {
+        setAlumni(previousAlumni);
+        toast({ title: "Error", description: data?.error || "Failed to delete alumni", variant: "destructive" });
         return;
       }
 
-      toast({
-        title: "Success",
-        description: "Alumni deleted successfully",
-      });
-
-      fetchAlumni();
+      toast({ title: "Success", description: "Alumni deleted successfully" });
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete alumni",
-        variant: "destructive",
-      });
+      setAlumni(previousAlumni);
+      toast({ title: "Error", description: "Failed to delete alumni", variant: "destructive" });
     }
   };
 
@@ -306,8 +310,8 @@ export default function AlumniManagement() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1 font-body">
-                  {editingAlumni ? 'Update Alumni' : 'Add Alumni'}
+                <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : (editingAlumni ? 'Update Alumni' : 'Add Alumni')}
                 </Button>
                 <Button 
                   type="button" 

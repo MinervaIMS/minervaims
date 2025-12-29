@@ -70,6 +70,7 @@ interface TeamMember {
 export default function TeamManagement() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -242,6 +243,7 @@ export default function TeamManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!formData.name.trim() || !formData.surname.trim() || !formData.position) {
       toast({
@@ -252,95 +254,83 @@ export default function TeamManagement() {
       return;
     }
 
-    try {
-      const action = editingMember ? 'update' : 'create';
-      
-      const memberData = {
-        name: formData.name,
-        surname: formData.surname,
-        position: formData.position,
-        division: formData.division || null,
-        fund: formData.fund || null,
-        photo_url: formData.photo_url || null,
-        linkedin_url: formData.linkedin_url || null,
-        is_board: formData.is_board,
-        display_order: formData.display_order,
-        ...(editingMember && { id: editingMember.id }),
-      };
+    setIsSubmitting(true);
+    const action = editingMember ? 'update' : 'create';
+    
+    const memberData = {
+      name: formData.name.trim(),
+      surname: formData.surname.trim(),
+      position: formData.position,
+      division: formData.division || null,
+      fund: formData.fund || null,
+      photo_url: formData.photo_url || null,
+      linkedin_url: formData.linkedin_url.trim() || null,
+      is_board: formData.is_board,
+      display_order: formData.display_order,
+      ...(editingMember && { id: editingMember.id }),
+    };
 
+    // Optimistic update
+    const tempId = editingMember?.id || crypto.randomUUID();
+    const optimisticMember: TeamMember = { id: tempId, ...memberData } as TeamMember;
+
+    if (editingMember) {
+      setMembers(prev => prev.map(m => m.id === editingMember.id ? optimisticMember : m));
+    } else {
+      setMembers(prev => [...prev, optimisticMember]);
+    }
+
+    setIsDialogOpen(false);
+    resetForm();
+
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-team', {
         body: { action, member: memberData },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
+      if (error || data?.error) {
+        fetchMembers();
+        toast({ title: "Error", description: data?.error || "Failed to save team member", variant: "destructive" });
         return;
       }
 
-      toast({
-        title: "Success",
-        description: `Team member ${editingMember ? 'updated' : 'created'} successfully`,
-      });
-
-      setIsDialogOpen(false);
-      resetForm();
+      toast({ title: "Success", description: `Team member ${editingMember ? 'updated' : 'created'} successfully` });
       fetchMembers();
     } catch (error) {
       console.error('Submit error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save team member",
-        variant: "destructive",
-      });
+      fetchMembers();
+      toast({ title: "Error", description: "Failed to save team member", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (memberId: string) => {
     if (!confirm('Are you sure you want to delete this team member?')) return;
 
+    const previousMembers = members;
+    setMembers(prev => prev.filter(m => m.id !== memberId));
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('admin-team', {
         body: { action: 'delete', member: { id: memberId } },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
+      if (error || data?.error) {
+        setMembers(previousMembers);
+        toast({ title: "Error", description: data?.error || "Failed to delete team member", variant: "destructive" });
         return;
       }
 
-      toast({
-        title: "Success",
-        description: "Team member deleted successfully",
-      });
-
-      fetchMembers();
+      toast({ title: "Success", description: "Team member deleted successfully" });
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete team member",
-        variant: "destructive",
-      });
+      setMembers(previousMembers);
+      toast({ title: "Error", description: "Failed to delete team member", variant: "destructive" });
     }
   };
 
@@ -528,8 +518,8 @@ export default function TeamManagement() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1 font-body">
-                  {editingMember ? 'Update Member' : 'Add Member'}
+                <Button type="submit" className="flex-1 font-body" disabled={isSubmitting || isUploading}>
+                  {isSubmitting ? 'Saving...' : (editingMember ? 'Update Member' : 'Add Member')}
                 </Button>
                 <Button 
                   type="button" 
