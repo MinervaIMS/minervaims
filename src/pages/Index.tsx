@@ -64,7 +64,7 @@ const Index = () => {
               to="/join"
               className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"
             >
-              Apply Now
+              How To Apply
             </Link>
           )}
         </div>
@@ -181,7 +181,7 @@ const Index = () => {
               to="/join"
               className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
             >
-              APPLY NOW
+              HOW TO APPLY
             </Link>
           </div>
         </div>
