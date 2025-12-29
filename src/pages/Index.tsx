@@ -64,7 +64,7 @@ const Index = () => {
               href={APPLICATION_CONFIG.applyFormUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-10 px-10 py-4 bg-background text-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+              className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"
             >
               Apply Now
             </a>
