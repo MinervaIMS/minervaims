@@ -1,6 +1,6 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { PageIntroduction } from '@/components/shared';
-import { Fund, fundLabels, activeFunds } from '@/lib/types';
+import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
 
 // Fund content configuration
@@ -21,7 +21,7 @@ const fundContent: Record<Fund, FundContent> = {
   'long-short': {
     title: 'Long Short Equity Fund',
     subtitle: 'Market-neutral equity strategy driven by multi-factor signals.',
-    description: 'MIMS\' Long Short Equity Fund is a semi-automated, actively managed, zero-net-investment portfolio designed to deliver positive absolute returns across market regimes. The team builds a market-neutral book across US and European equities by ranking stocks through a proprietary multi-factor model (value, momentum, quality, low volatility and size) and taking offsetting long and short positions. Signals are standardised and winsorised, with sector and geographic balance checks. Allocations are reviewed at each rebalancing and documented in periodic reports.',
+    description: 'MIMS\' Long Short Equity Fund is a semi-automated, actively managed, zero-net-investment portfolio designed to deliver positive absolute returns across market regimes. The team builds a market-neutral book across US and European equities by ranking stocks through a proprietary multi-factor model (value, momentum, quality, low volatility, yield and illiquidity) and taking offsetting long and short positions. Signals are standardised and winsorised, with sector and geographic balance checks. Allocations are reviewed at each rebalancing and documented in periodic reports.',
     sectionTitle: 'Latest Fund Updates',
   },
   'dps': {
@@ -47,7 +47,7 @@ const FundDetail = () => {
 
   const fundKey = fund as Fund;
   const content = fundContent[fundKey];
-  const isActive = activeFunds.includes(fundKey);
+  const isClosed = closedFunds.includes(fundKey);
 
   return (
     <>
@@ -63,10 +63,10 @@ const FundDetail = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Fund Overview
           </h2>
-          {!isActive && (
+          {isClosed && (
             <div className="mb-6 p-4 bg-muted border-l-2 border-primary">
               <p className="font-body text-small text-muted-foreground">
-                This fund is no longer active. Historical reports are available below.
+                This fund is now closed. Historical reports are available below.
               </p>
             </div>
           )}

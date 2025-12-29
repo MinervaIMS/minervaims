@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Report, Division, Fund, divisionLabels, fundLabels, activeFunds, inactiveFunds } from '@/lib/types';
+import { Report, Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { ReportsList } from './ReportsList';
 
 interface ArchiveFiltersProps {
@@ -67,8 +67,8 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
                     <option key={fund} value={fund}>{fundLabels[fund]}</option>
                   ))}
                 </optgroup>
-                <optgroup label="Inactive Funds">
-                  {inactiveFunds.map((fund) => (
+                <optgroup label="Closed Funds">
+                  {closedFunds.map((fund) => (
                     <option key={fund} value={fund}>{fundLabels[fund]}</option>
                   ))}
                 </optgroup>

@@ -1,6 +1,6 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { PageIntroduction } from '@/components/shared';
-import { Division, divisionLabels } from '@/lib/types';
+import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
 
 // Division content configuration
@@ -44,6 +44,14 @@ const divisionContent: Record<Division, DivisionContent> = {
   },
 };
 
+// Fund descriptions for the Portfolio Management page
+const fundDescriptions: Record<Fund, string> = {
+  'multi-asset': 'Global diversified portfolio across equities, bonds, commodities.',
+  'long-short': 'Market-neutral equity strategy driven by multi-factor signals.',
+  'dps': 'ETF-based allocation delivering diversified, low-idiosyncratic exposure.',
+  'pir': 'Italian equity portfolio aligned with PIR investment rules.',
+};
+
 const DivisionDetail = () => {
   const { division } = useParams<{ division: string }>();
 
@@ -53,6 +61,13 @@ const DivisionDetail = () => {
 
   const divisionKey = division as Division;
   const content = divisionContent[divisionKey];
+  const isPortfolio = divisionKey === 'portfolio';
+
+  // Combine active and closed funds for the portfolio section
+  const allFunds: { fund: Fund; isActive: boolean }[] = [
+    ...activeFunds.map(f => ({ fund: f, isActive: true })),
+    ...closedFunds.map(f => ({ fund: f, isActive: false })),
+  ];
 
   return (
     <>
@@ -79,6 +94,47 @@ const DivisionDetail = () => {
           </Link>
         </div>
       </section>
+
+      {/* Portfolio Management: MIMS Virtual Portfolios Section */}
+      {isPortfolio && (
+        <section className="py-section-sm md:py-section bg-muted">
+          <div className="container">
+            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">
+              MIMS Virtual Portfolios
+            </h2>
+            <div className="flex flex-col gap-4 max-w-4xl">
+              {allFunds.map(({ fund, isActive }) => (
+                <Link
+                  key={fund}
+                  to={`/funds/${fund}`}
+                  className="group block p-6 bg-background border border-separator hover:border-foreground transition-all"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-serif text-xl md:text-2xl text-foreground group-hover:text-primary transition-colors">
+                          {fundLabels[fund]}
+                        </h3>
+                        {!isActive && (
+                          <span className="px-2 py-0.5 text-xs font-body uppercase tracking-wider bg-muted text-muted-foreground border border-separator">
+                            Closed
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-body text-body text-muted-foreground">
+                        {fundDescriptions[fund]}
+                      </p>
+                    </div>
+                    <span className="font-serif text-2xl text-muted-foreground group-hover:text-foreground transition-colors">
+                      →
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Third Section: Latest Reports/Publications */}
       <section className="py-section-sm md:py-section bg-foreground">
