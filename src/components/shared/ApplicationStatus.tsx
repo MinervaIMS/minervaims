@@ -44,7 +44,7 @@ const ApplicationStatus = ({
       <p className="font-body text-body text-muted-foreground mb-2">
         The dates and deadlines of the next intake will be announced at the start of the upcoming semester.
       </p>
-      <p className="font-body text-small text-muted-foreground mt-6">
+      <p className="font-body text-body text-muted-foreground">
         For questions, with respect, contact society members on LinkedIn.
       </p>
     </div>
