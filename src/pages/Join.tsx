@@ -97,30 +97,28 @@ const Join = () => {
           </div>
         </section>
 
-      {/* Application Process */}
-      <section className="mb-20 md:mb-24 bg-foreground text-background -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-12 md:py-16">
-        <div className="container px-0">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20">
+        {/* Application Process */}
+        <section className="mb-20 md:mb-24">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Application Process
           </h2>
           <div className="max-w-3xl space-y-0">
             {APPLICATION_STEPS.map((step, index) => (
               <div
                 key={step.step}
-                className={`py-6 ${index < APPLICATION_STEPS.length - 1 ? 'border-b border-background/20' : ''}`}
+                className={`py-6 ${index < APPLICATION_STEPS.length - 1 ? 'border-b border-separator' : ''}`}
               >
-                <p className="font-body text-xs text-background/60 uppercase tracking-wider mb-2">
+                <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
                   Step {step.step}
                 </p>
-                <h3 className="font-serif text-subheading mb-2 text-background">{step.title}</h3>
-                <p className="font-body text-body text-background/80">
+                <h3 className="font-serif text-subheading mb-2">{step.title}</h3>
+                <p className="font-body text-body text-muted-foreground">
                   {step.description}
                 </p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
         {/* How To Prepare For The Interview */}
         <section className="mb-20 md:mb-24">
