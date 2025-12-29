@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageIntroduction } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
-import { Division, Fund, divisionLabels, fundLabels, activeFunds, inactiveFunds } from "@/lib/types";
+import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from "@/lib/types";
 import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -210,8 +210,8 @@ const Archive = () => {
                         <option key={fund} value={fund}>{fundLabels[fund]}</option>
                       ))}
                     </optgroup>
-                    <optgroup label="Inactive Funds">
-                      {inactiveFunds.map((fund) => (
+                    <optgroup label="Closed Funds">
+                      {closedFunds.map((fund) => (
                         <option key={fund} value={fund}>{fundLabels[fund]}</option>
                       ))}
                     </optgroup>

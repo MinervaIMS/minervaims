@@ -25,6 +25,15 @@ const Sitemap = () => {
       ],
     },
     {
+      title: 'Funds',
+      links: [
+        { label: 'Long Short Equity Fund', href: '/funds/long-short' },
+        { label: 'Multi Asset Global Opportunities Fund', href: '/funds/multi-asset' },
+        { label: 'Diversified Passive Selection Fund (Closed)', href: '/funds/dps' },
+        { label: 'Italian Equity PIR Fund (Closed)', href: '/funds/pir' },
+      ],
+    },
+    {
       title: 'Members',
       links: [
         { label: 'Our Team', href: '/members/team' },

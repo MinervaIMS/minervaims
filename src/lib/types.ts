@@ -76,4 +76,4 @@ export const fundLabels: Record<Fund, string> = {
 };
 
 export const activeFunds: Fund[] = ['long-short', 'multi-asset'];
-export const inactiveFunds: Fund[] = ['dps', 'pir'];
+export const closedFunds: Fund[] = ['dps', 'pir'];

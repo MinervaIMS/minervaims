@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
-import { divisionLabels, fundLabels, activeFunds, inactiveFunds, Division, Fund } from '@/lib/types';
+import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 
 interface ArchiveFile {
   id: string;
@@ -419,10 +419,10 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                           {fundLabels[fund]}
                         </SelectItem>
                       ))}
-                      <SelectItem value="__inactive_label__" disabled className="font-semibold text-muted-foreground mt-2">
-                        Inactive Funds
+                      <SelectItem value="__closed_label__" disabled className="font-semibold text-muted-foreground mt-2">
+                        Closed Funds
                       </SelectItem>
-                      {inactiveFunds.map((fund) => (
+                      {closedFunds.map((fund) => (
                         <SelectItem key={fund} value={fund}>
                           {fundLabels[fund]}
                         </SelectItem>
