@@ -23,7 +23,11 @@ interface ArchiveFile {
   updated_at: string;
 }
 
-const FileManagement = () => {
+interface FileManagementProps {
+  allowedDivisions?: Division[] | null;
+}
+
+const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,12 +38,16 @@ const FileManagement = () => {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  
+  // If user has restricted divisions, default form to first allowed division
+  const defaultDivision = allowedDivisions && allowedDivisions.length > 0 ? allowedDivisions[0] : '' as Division | '';
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     file_url: '',
     date: '',
-    division: '' as Division | '',
+    division: defaultDivision,
     fund: '' as Fund | '',
   });
   const { toast } = useToast();
@@ -71,6 +79,8 @@ const FileManagement = () => {
 
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
+      // Allowed divisions filter (for restricted users)
+      if (allowedDivisions && !allowedDivisions.includes(file.division as Division)) return false;
       // Division filter
       if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
       // Search filter
@@ -82,7 +92,17 @@ const FileManagement = () => {
       }
       return true;
     });
-  }, [files, divisionFilter, searchQuery]);
+  }, [files, divisionFilter, searchQuery, allowedDivisions]);
+
+  // Get divisions available for filtering/selection based on permissions
+  const availableDivisions = useMemo(() => {
+    if (allowedDivisions) {
+      return Object.entries(divisionLabels).filter(([key]) => 
+        allowedDivisions.includes(key as Division)
+      );
+    }
+    return Object.entries(divisionLabels);
+  }, [allowedDivisions]);
 
   const resetForm = () => {
     setFormData({
@@ -90,7 +110,7 @@ const FileManagement = () => {
       description: '',
       file_url: '',
       date: '',
-      division: '',
+      division: defaultDivision,
       fund: '',
     });
     setEditingFile(null);
@@ -365,12 +385,13 @@ const FileManagement = () => {
                 <Select
                   value={formData.division}
                   onValueChange={(value: Division) => setFormData({ ...formData, division: value, fund: '' })}
+                  disabled={allowedDivisions?.length === 1}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select division" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(divisionLabels).map(([key, label]) => (
+                    {availableDivisions.map(([key, label]) => (
                       <SelectItem key={key} value={key}>
                         {label}
                       </SelectItem>
@@ -478,8 +499,9 @@ const FileManagement = () => {
               onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
               className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
             >
-              <option value="all">All Divisions</option>
-              {Object.entries(divisionLabels).map(([key, label]) => (
+              {!allowedDivisions && <option value="all">All Divisions</option>}
+              {allowedDivisions && allowedDivisions.length > 1 && <option value="all">All Divisions</option>}
+              {availableDivisions.map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </select>
