@@ -72,10 +72,12 @@ const AdminDashboard = () => {
       }
       
       // Check if user is only a member (pending approval) or has no roles
+      // Skip this check for admin email
+      const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
       const isMemberOnly = roles.length > 0 && roles.every(r => r.role === 'member');
       const hasNoRoles = roles.length === 0;
       
-      if (isMemberOnly || hasNoRoles) {
+      if (!isAdminEmail && (isMemberOnly || hasNoRoles)) {
         navigate('/pending-approval');
         return;
       }
