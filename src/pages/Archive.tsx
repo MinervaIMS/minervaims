@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageIntroduction } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, inactiveFunds } from "@/lib/types";
@@ -28,12 +29,47 @@ interface ArchiveFile {
 const ITEMS_PER_PAGE = 20;
 
 const Archive = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
-  const [fundFilter, setFundFilter] = useState<Fund | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Read division filter from URL params, default to 'all'
+  const divisionFromUrl = searchParams.get('division');
+  const divisionFilter: Division | 'all' = divisionFromUrl && divisionLabels[divisionFromUrl as Division] 
+    ? divisionFromUrl as Division 
+    : 'all';
+  
+  // Read fund filter from URL params
+  const fundFromUrl = searchParams.get('fund');
+  const fundFilter: Fund | 'all' = fundFromUrl && fundLabels[fundFromUrl as Fund]
+    ? fundFromUrl as Fund
+    : 'all';
+
+  const setDivisionFilter = (division: Division | 'all') => {
+    const newParams = new URLSearchParams(searchParams);
+    if (division === 'all') {
+      newParams.delete('division');
+      newParams.delete('fund');
+    } else {
+      newParams.set('division', division);
+      if (division !== 'portfolio') {
+        newParams.delete('fund');
+      }
+    }
+    setSearchParams(newParams);
+  };
+
+  const setFundFilter = (fund: Fund | 'all') => {
+    const newParams = new URLSearchParams(searchParams);
+    if (fund === 'all') {
+      newParams.delete('fund');
+    } else {
+      newParams.set('fund', fund);
+    }
+    setSearchParams(newParams);
+  };
 
   useEffect(() => {
     fetchFiles();
@@ -131,12 +167,7 @@ const Archive = () => {
                 </label>
                 <select
                   value={divisionFilter}
-                  onChange={(e) => {
-                    setDivisionFilter(e.target.value as Division | 'all');
-                    if (e.target.value !== 'portfolio') {
-                      setFundFilter('all');
-                    }
-                  }}
+                  onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
                   className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
                 >
                   <option value="all">All Divisions</option>
