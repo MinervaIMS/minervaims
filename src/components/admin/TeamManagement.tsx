@@ -284,15 +284,31 @@ export default function TeamManagement() {
     resetForm();
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        toast({ 
+          title: "Session Expired", 
+          description: "Please log out and log back in to continue.", 
+          variant: "destructive" 
+        });
+        fetchMembers();
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-team', {
         body: { action, member: memberData },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (error || data?.error) {
         fetchMembers();
-        toast({ title: "Error", description: data?.error || "Failed to save team member", variant: "destructive" });
+        const errorMsg = data?.error || error?.message || "Failed to save team member";
+        if (errorMsg.includes('Invalid token') || errorMsg.includes('401')) {
+          toast({ title: "Session Expired", description: "Please log out and log back in.", variant: "destructive" });
+        } else {
+          toast({ title: "Error", description: errorMsg, variant: "destructive" });
+        }
         return;
       }
 
