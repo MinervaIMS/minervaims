@@ -1,114 +1,180 @@
-import { PageIntroduction } from '@/components/shared';
+import { Link } from 'react-router-dom';
+import { PageIntroduction, ApplicationStatus } from '@/components/shared';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+
+// Configuration
+const APPLICATION_CONFIG = {
+  applicationsOpen: false,
+  semesterLabel: "Spring 2026",
+  applyFormUrl: "https://forms.google.com/your-form-url",
+};
+
+const ELIGIBILITY_CRITERIA = [
+  "Undoubtable academic integrity, humility, hunger to learn, respect for other members, and full compliance with Università Bocconi's Honor Code.",
+  "Currently enrolled at Università Bocconi (undergraduate or postgraduate).",
+  "Demonstrated interest in financial markets and investment research.",
+  "Commitment to participate actively in Society activities.",
+];
+
+const APPLICATION_STEPS = [
+  {
+    step: 1,
+    title: "Online Application",
+    description:
+      "Complete the application form and submit your CV, motivation letter, and the required written financial analysis for the division you are applying for.",
+  },
+  {
+    step: 2,
+    title: "Interview",
+    description:
+      "Selected candidates are invited to interview with current members and Board representatives to discuss their application, assess cultural fit, and test hard skills and market knowledge. Historically, more than 50% of applicants are invited to interview.",
+  },
+  {
+    step: 3,
+    title: "Onboarding",
+    description:
+      "Successful candidates join MIMS and begin the training programme, including research methodology and financial modelling. Historically, c.4% of applicants are selected; intake capacity is typically higher at the start of the academic year.",
+  },
+];
+
+const FAQS = [
+  {
+    question: "Are undergraduate first-year students considered in the application process?",
+    answer:
+      "Yes. We value potential, especially at the start of an academic journey. Admission may be more challenging due to limited prior exposure to finance.",
+  },
+  {
+    question: "Are questions different based on experience?",
+    answer:
+      "Yes. Questions vary by academic year and individual profile. We assess both current knowledge and long-term potential.",
+  },
+  {
+    question: "Is it possible to apply again?",
+    answer:
+      "Yes. We encourage reapplication, particularly for first-year undergraduates. The February intake is typically more competitive due to fewer available places.",
+  },
+  {
+    question: "Are referrals a thing?",
+    answer:
+      "No. Members are not permitted to refer candidates during the application process. All candidates follow the same assessment. We still encourage applicants to connect with members on LinkedIn.",
+  },
+];
 
 const Join = () => {
   return (
     <>
-      <PageIntroduction
-        title="Join Us"
-        description="Information on how to apply and become a member of MIMS."
-      />
+      <PageIntroduction title="Join Us" />
 
       <div className="container py-section-sm md:py-section">
-        {/* Application Instructions */}
+        {/* Application Status */}
+        <ApplicationStatus
+          applicationsOpen={APPLICATION_CONFIG.applicationsOpen}
+          semesterLabel={APPLICATION_CONFIG.semesterLabel}
+          applyFormUrl={APPLICATION_CONFIG.applyFormUrl}
+        />
+
+        {/* Eligibility Criteria */}
         <section className="mb-16">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
-            Application Process
+            Eligibility Criteria
           </h2>
           <div className="max-w-3xl">
-            <p className="font-body text-body-lg text-muted-foreground mb-6">
-              We recruit new members at the beginning of each academic year. The application 
-              process is designed to assess analytical skills, motivation, and fit with our 
-              research-focused culture.
-            </p>
-          </div>
-        </section>
-
-        {/* Steps */}
-        <section className="mb-16">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
-            Application Steps
-          </h2>
-          <div className="max-w-3xl space-y-0">
-            <div className="py-6 border-b border-separator">
-              <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                Step 1
-              </p>
-              <h3 className="font-serif text-subheading mb-2">Online Application</h3>
-              <p className="font-body text-body text-muted-foreground">
-                Submit your CV and complete the application form with details of your 
-                academic background and interest in financial markets.
-              </p>
-            </div>
-
-            <div className="py-6 border-b border-separator">
-              <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                Step 2
-              </p>
-              <h3 className="font-serif text-subheading mb-2">Written Assessment</h3>
-              <p className="font-body text-body text-muted-foreground">
-                Shortlisted candidates complete a written assessment covering financial 
-                analysis, market knowledge, and analytical reasoning.
-              </p>
-            </div>
-
-            <div className="py-6 border-b border-separator">
-              <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                Step 3
-              </p>
-              <h3 className="font-serif text-subheading mb-2">Interview</h3>
-              <p className="font-body text-body text-muted-foreground">
-                Final candidates are invited for interviews with current members to 
-                discuss their application and assess cultural fit.
-              </p>
-            </div>
-
-            <div className="py-6">
-              <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                Step 4
-              </p>
-              <h3 className="font-serif text-subheading mb-2">Onboarding</h3>
-              <p className="font-body text-body text-muted-foreground">
-                Successful candidates join MIMS and begin their training programme, 
-                which includes research methodology and financial modelling.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Eligibility */}
-        <section className="mb-16">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
-            Eligibility Requirements
-          </h2>
-          <div className="max-w-3xl">
-            <ul className="space-y-3">
-              <li className="font-body text-body text-muted-foreground">
-                Currently enrolled at Università Bocconi (undergraduate or postgraduate)
-              </li>
-              <li className="font-body text-body text-muted-foreground">
-                Strong academic performance
-              </li>
-              <li className="font-body text-body text-muted-foreground">
-                Demonstrated interest in financial markets and investment research
-              </li>
-              <li className="font-body text-body text-muted-foreground">
-                Commitment to participate actively in Society activities
-              </li>
+            <ul className="space-y-4">
+              {ELIGIBILITY_CRITERIA.map((criterion, index) => (
+                <li
+                  key={index}
+                  className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground"
+                >
+                  {criterion}
+                </li>
+              ))}
             </ul>
           </div>
         </section>
 
-        {/* Apply Button */}
+        {/* Application Process */}
+        <section className="mb-16">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+            Application Process
+          </h2>
+          <div className="max-w-3xl space-y-0">
+            {APPLICATION_STEPS.map((step, index) => (
+              <div
+                key={step.step}
+                className={`py-6 ${index < APPLICATION_STEPS.length - 1 ? 'border-b border-separator' : ''}`}
+              >
+                <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
+                  Step {step.step}
+                </p>
+                <h3 className="font-serif text-subheading mb-2">{step.title}</h3>
+                <p className="font-body text-body text-muted-foreground">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* How To Prepare For The Interview */}
+        <section className="mb-16">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+            How To Prepare For The Interview
+          </h2>
+          <div className="max-w-3xl">
+            <p className="font-body text-body text-muted-foreground mb-6">
+              To prepare effectively, we recommend reviewing our division-specific publications to
+              understand our analytical standards, writing style, and recurring themes. This will
+              help you align your reasoning, structure, and level of depth with the work produced
+              within MIMS.
+            </p>
+            <p className="font-body text-body text-muted-foreground mb-4">
+              In addition, candidates are expected to demonstrate a clear awareness of the current
+              market environment. In practice, this means being comfortable discussing:
+            </p>
+            <ul className="space-y-3 mb-8">
+              <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                Macroeconomic data (inflation, growth, labour market dynamics, central bank stance).
+              </li>
+              <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                Relevant market data and recent performance (rates, credit, equities, FX,
+                commodities; key moves and drivers).
+              </li>
+              <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                The most relevant market news from the last two weeks and its implications across
+                asset classes.
+              </li>
+            </ul>
+            <Link
+              to="/archive"
+              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+            >
+              View Divisions Reports
+            </Link>
+          </div>
+        </section>
+
+        {/* FAQs */}
         <section>
-          <a
-            href="#"
-            className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
-          >
-            Apply Now
-          </a>
-          <p className="font-body text-small text-muted-foreground mt-4">
-            Applications for the next intake will open in September.
-          </p>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">FAQs</h2>
+          <div className="max-w-3xl">
+            <Accordion type="single" collapsible className="w-full">
+              {FAQS.map((faq, index) => (
+                <AccordionItem key={index} value={`item-${index}`} className="border-separator">
+                  <AccordionTrigger className="font-serif text-subheading text-left hover:no-underline py-6 [&>svg]:hidden">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="font-body text-body text-muted-foreground pb-6">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </section>
       </div>
     </>
