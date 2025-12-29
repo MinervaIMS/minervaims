@@ -1,17 +1,31 @@
 import { Link } from "react-router-dom";
 import { PageIntroduction } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
-import { DivisionCard } from "@/components/shared/DivisionCard";
-import { Division } from "@/lib/types";
+import { Division, divisionLabels } from "@/lib/types";
 import aboutBg from "@/assets/about-bg.png";
 
-const divisionDescriptions: Record<Division, string> = {
-  equity: 'Fundamental analysis of public equities across sectors and geographies, producing initiations of coverage and sector reports.',
-  investment: 'Analysis of private market opportunities, M&A transactions, and alternative investments.',
-  macro: 'Macroeconomic analysis covering monetary policy, inflation dynamics, and global growth.',
-  portfolio: 'Management of simulated investment portfolios with defined risk parameters and investment mandates.',
-  quant: 'Quantitative research on factor strategies, systematic investing, and machine learning applications.',
-};
+const divisionData: { division: Division; description: string }[] = [
+  {
+    division: "equity",
+    description: "Equity Research covers listed companies through fundamental analysis. The team studies business models, industry dynamics and financial statements, builds valuation models, and publishes clear investment theses with key catalysts and risks."
+  },
+  {
+    division: "investment",
+    description: "Investment Research provides cross-asset market views. The team analyses macro conditions and valuations across equities, fixed income, FX and commodities, and publishes outlooks and trade ideas to guide portfolio positioning and risk-taking."
+  },
+  {
+    division: "macro",
+    description: "Macro Research analyses global growth, inflation and policy. The team develops scenarios on central banks, fiscal policy and structural trends, and explains how these drivers affect markets, asset prices and portfolio risks."
+  },
+  {
+    division: "portfolio",
+    description: "Portfolio Management runs MIMS' student-managed portfolios. The team turns research into allocations, sizes positions, monitors exposures and performance, and documents rebalancing decisions through due diligence and transparent reporting."
+  },
+  {
+    division: "quant",
+    description: "Quantitative Research builds data-driven models and tools. The team applies statistics, machine learning and derivatives modelling to support forecasting, portfolio construction and risk measurement, publishing technical research and practical frameworks."
+  }
+];
 
 const About = () => {
   return (
@@ -61,13 +75,20 @@ const About = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="max-w-3xl">
-            {(Object.keys(divisionDescriptions) as Division[]).map((division) => (
-              <DivisionCard
+          <div className="flex flex-col gap-4 max-w-4xl">
+            {divisionData.map(({ division, description }) => (
+              <Link
                 key={division}
-                division={division}
-                description={divisionDescriptions[division]}
-              />
+                to={`/divisions/${division}`}
+                className="group block bg-secondary p-6 transition-all duration-300 hover:bg-foreground hover:shadow-lg"
+              >
+                <h3 className="font-serif text-xl md:text-2xl mb-2 group-hover:text-background transition-colors duration-300">
+                  {divisionLabels[division]}
+                </h3>
+                <p className="font-body text-body-lg text-muted-foreground group-hover:text-background/80 transition-colors duration-300">
+                  {description}
+                </p>
+              </Link>
             ))}
           </div>
         </div>

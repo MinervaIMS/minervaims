@@ -97,38 +97,24 @@ const DivisionDetail = () => {
 
       {/* Portfolio Management: MIMS Virtual Portfolios Section */}
       {isPortfolio && (
-        <section className="py-section-sm md:py-section bg-muted">
+        <section className="py-section-sm md:py-section bg-background">
           <div className="container">
-            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">
+            <h2 className="font-serif text-heading mb-8">
               MIMS Virtual Portfolios
             </h2>
             <div className="flex flex-col gap-4 max-w-4xl">
-              {allFunds.map(({ fund, isActive }) => (
+              {allFunds.map(({ fund }) => (
                 <Link
                   key={fund}
                   to={`/funds/${fund}`}
-                  className="group block p-6 bg-background border border-separator hover:border-foreground transition-all"
+                  className="group block bg-secondary p-6 transition-all duration-300 hover:bg-foreground hover:shadow-lg"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-serif text-xl md:text-2xl text-foreground group-hover:text-primary transition-colors">
-                          {fundLabels[fund]}
-                        </h3>
-                        {!isActive && (
-                          <span className="px-2 py-0.5 text-xs font-body uppercase tracking-wider bg-muted text-muted-foreground border border-separator">
-                            Closed
-                          </span>
-                        )}
-                      </div>
-                      <p className="font-body text-body text-muted-foreground">
-                        {fundDescriptions[fund]}
-                      </p>
-                    </div>
-                    <span className="font-serif text-2xl text-muted-foreground group-hover:text-foreground transition-colors">
-                      →
-                    </span>
-                  </div>
+                  <h3 className="font-serif text-xl md:text-2xl mb-2 group-hover:text-background transition-colors duration-300">
+                    {fundLabels[fund]}
+                  </h3>
+                  <p className="font-body text-body-lg text-muted-foreground group-hover:text-background/80 transition-colors duration-300">
+                    {fundDescriptions[fund]}
+                  </p>
                 </Link>
               ))}
             </div>
