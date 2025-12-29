@@ -46,7 +46,7 @@ const AdminDashboard = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin, isLoading: authLoading, signOut, session, isSessionExpired, refreshSession } = useAuth();
+  const { user, isAdmin, isLoading: authLoading, signOut, session, isSessionExpired, refreshSession, roles } = useAuth();
 
   // Handle session expiry
   useEffect(() => {
@@ -68,6 +68,16 @@ const AdminDashboard = () => {
         navigate('/auth', { state: { from: '/admin' } });
         return;
       }
+      
+      // Check if user has pending role or no roles at all
+      const isPending = roles.some(r => r.role === 'pending');
+      const hasNoRoles = roles.length === 0;
+      
+      if (isPending || hasNoRoles) {
+        navigate('/pending-approval');
+        return;
+      }
+      
       if (!isAdmin) {
         toast({
           title: "Access Denied",
@@ -79,7 +89,7 @@ const AdminDashboard = () => {
       }
       fetchEvents();
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, navigate, roles]);
 
   const fetchEvents = async () => {
     try {
