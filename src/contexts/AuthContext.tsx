@@ -46,7 +46,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   isSessionExpired: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -221,8 +221,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => clearInterval(intervalId);
   }, [session, checkAndRefreshSession]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe = false) => {
     setIsSessionExpired(false);
+    
+    // Store remember me preference
+    if (rememberMe) {
+      localStorage.setItem('mims_remember_me', 'true');
+    } else {
+      localStorage.removeItem('mims_remember_me');
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { CookieProvider, CookieBanner, CookiePreferences } from "@/components/cookies";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 
 // Eagerly load the homepage for best LCP
 import Index from "./pages/Index";
@@ -29,6 +30,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
 const queryClient = new QueryClient();
 
@@ -59,11 +61,13 @@ const App = () => (
                 <Route path="/auth" element={<Suspense fallback={null}><Auth /></Suspense>} />
                 <Route path="/reset-password" element={<Suspense fallback={null}><ResetPassword /></Suspense>} />
                 <Route path="/admin" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
+                <Route path="/pending-approval" element={<Suspense fallback={null}><PendingApproval /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={null}><NotFound /></Suspense>} />
               </Route>
             </Routes>
             <CookieBanner />
             <CookiePreferences />
+            <SessionWarningModal warningThresholdMinutes={2} />
           </BrowserRouter>
         </AuthProvider>
       </CookieProvider>

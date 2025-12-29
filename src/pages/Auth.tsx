@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -20,12 +21,13 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
   
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, isLoading, signIn, signUp, isAdmin } = useAuth();
+  const { user, isLoading, signIn, signUp } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -71,7 +73,7 @@ const Auth = () => {
 
     try {
       if (activeTab === 'login') {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(email, password, rememberMe);
         
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
@@ -135,7 +137,7 @@ const Auth = () => {
 
         toast({
           title: "Check Your Email",
-          description: "We've sent you a verification link. Please check your email to complete registration.",
+          description: "We've sent you a verification link. Please check your inbox, and also the spam/junk folder.",
         });
         
         // Switch to login tab after successful signup
@@ -239,16 +241,28 @@ const Auth = () => {
                   <p className="text-sm text-destructive">{errors.password}</p>
                 )}
                 {activeTab === 'login' && (
-                  <Link 
-                    to="/reset-password" 
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="rememberMe" 
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      />
+                      <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                        Remember me
+                      </Label>
+                    </div>
+                    <Link 
+                      to="/reset-password" 
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                 )}
               </div>
 
-              <Button 
+              <Button
                 type="submit" 
                 className="w-full font-body text-lg px-10 py-4 mt-6"
                 disabled={isSubmitting}
