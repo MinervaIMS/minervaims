@@ -7,7 +7,28 @@ import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
+const divisionData: { division: Division; description: string }[] = [
+  {
+    division: "equity",
+    description: "Equity Research covers listed companies through fundamental analysis. The team studies business models, industry dynamics and financial statements, builds valuation models, and publishes clear investment theses with key catalysts and risks."
+  },
+  {
+    division: "investment",
+    description: "Investment Research provides cross-asset market views. The team analyses macro conditions and valuations across equities, fixed income, FX and commodities, and publishes outlooks and trade ideas to guide portfolio positioning and risk-taking."
+  },
+  {
+    division: "macro",
+    description: "Macro Research analyses global growth, inflation and policy. The team develops scenarios on central banks, fiscal policy and structural trends, and explains how these drivers affect markets, asset prices and portfolio risks."
+  },
+  {
+    division: "portfolio",
+    description: "Portfolio Management runs MIMS' student-managed portfolios. The team turns research into allocations, sizes positions, monitors exposures and performance, and documents rebalancing decisions through due diligence and transparent reporting."
+  },
+  {
+    division: "quant",
+    description: "Quantitative Research builds data-driven models and tools. The team applies statistics, machine learning and derivatives modelling to support forecasting, portfolio construction and risk measurement, publishing technical research and practical frameworks."
+  }
+];
 
 const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
   const animatedValue = useAnimatedCounter(value, 1500, !isLoading && value > 0);
@@ -85,12 +106,18 @@ const Index = () => {
       {/* About Preview */}
       <section className="py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
-          <p className="font-body text-body-lg text-muted-foreground">
-            Minerva Investment Management Society is an association promoted and run by students of Università Bocconi.
-            We provide hands-on experience in financial research, portfolio management, and investment analysis through
-            rigorous academic and practical training.
-          </p>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva Investment Management Society</h2>
+          <div className="font-body text-body-lg text-muted-foreground space-y-4">
+            <p>
+              Minerva Investment Management Society (MIMS) is an association promoted and run by students of Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured research and portfolio management processes. Members work across specialist research divisions and Portfolio Management, producing professional-standard reports and documenting decisions through due diligence and risk analysis.
+            </p>
+            <p>
+              MIMS complements its investment work with a targeted programme of engagement. The Society hosts one event per semester with industry professionals, alongside company visits and internal presentations where teams share their work and debate key market questions. Regular division and association-wide aperitivos strengthen relationships across the membership.
+            </p>
+            <p>
+              MIMS has also developed an international alumni network. Former members work across major financial centres in investment banking, hedge funds and asset management, including Goldman Sachs, J.P. Morgan, Citi, UBS and other leading institutions.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -98,14 +125,19 @@ const Index = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {divisions.map((division) => (
+          <div className="flex flex-col gap-4">
+            {divisionData.map(({ division, description }) => (
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="block bg-secondary p-6 text-center transition-all duration-300 hover:bg-foreground hover:text-background hover:shadow-lg hover:-translate-y-1"
+                className="group block bg-secondary p-6 transition-all duration-300 hover:bg-foreground hover:shadow-lg"
               >
-                <span className="font-serif text-lg md:text-xl">{divisionLabels[division]}</span>
+                <h3 className="font-serif text-lg md:text-xl mb-2 group-hover:text-background transition-colors duration-300">
+                  {divisionLabels[division]}
+                </h3>
+                <p className="font-body text-body text-muted-foreground group-hover:text-background/80 transition-colors duration-300">
+                  {description}
+                </p>
               </Link>
             ))}
           </div>
