@@ -47,23 +47,23 @@ const About = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
-            <p className="font-body text-body-lg leading-relaxed">
+            <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               Minerva Investment Management Society (MIMS) is society promoted and run by students of Bocconi
               University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and
               the only with student-managed virtual funds.
             </p>
-            <p className="font-body text-body-lg leading-relaxed">
+            <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               We are organised as an investment management firm. Members work in specialised research divisions and in
               portfolio management. Each research team meets weekly to discuss markets, review ideas and develop
               investment theses. The output of this work is written research and publications produced to professional
               standards.
             </p>
-            <p className="font-body text-body-lg leading-relaxed">
+            <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               Portfolio management sits at the centre of the structure. It uses the research work to build and update
               propriety funds allocations. Decisions are documented and reviewed through strict due diligence and
               evaluated with risk-metrics analysis. The Society publishes outputs in line with market standards.
             </p>
-            <p className="font-body text-body-lg leading-relaxed">
+            <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               Over time, MIMS has built an international Alumni community. Former members have progressed to leading
               investment banks, hedge funds and asset managers across global financial centres.
             </p>
