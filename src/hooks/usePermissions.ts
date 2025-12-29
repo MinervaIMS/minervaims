@@ -94,7 +94,7 @@ export const usePermissions = (): Permissions => {
     
     if (hasOperationsMediaRole) {
       return {
-        canAccessUsers: true,
+        canAccessUsers: false, // No user management
         canAccessAlumni: true,
         canAccessEvents: true,
         canAccessFiles: true,
