@@ -95,7 +95,6 @@ const Alumni = () => {
     <>
       <PageIntroduction
         title="Alumni"
-        description="Our alumni network spans leading financial institutions globally."
       />
 
       <div className="container py-section-sm md:py-section">
@@ -200,21 +199,21 @@ const Alumni = () => {
           <div className="space-y-8">
             {sortedYears.map((year) => (
               <div key={year}>
-                <h3 className="font-serif text-h4 mb-4 pb-2 border-b border-separator">
+                <h3 className="font-serif text-heading mb-4 pb-2 border-b border-separator">
                   Class of {year}
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {groupedAlumni[year]
                     .sort((a, b) => a.surname.localeCompare(b.surname))
                     .map((alumnus) => (
                       <div
                         key={alumnus.id}
-                        className="flex items-center px-4 py-3 border border-separator hover:bg-muted/50 transition-colors"
+                        className="flex items-center px-4 py-3 hover:bg-muted/50 transition-colors"
                       >
-                        <span className="font-body text-body font-medium w-1/4 truncate">
+                        <span className="font-body text-body font-medium w-1/4 truncate text-left">
                           {alumnus.name} {alumnus.surname}
                         </span>
-                        <span className="w-1/4 flex justify-center">
+                        <span className="w-1/4 flex justify-start">
                           {alumnus.linkedin_url ? (
                             <a
                               href={alumnus.linkedin_url}
@@ -227,10 +226,10 @@ const Alumni = () => {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </span>
-                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-center">
+                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
                           {alumnus.company}
                         </span>
-                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-right">
+                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
                           {alumnus.city || '—'}
                         </span>
                       </div>
