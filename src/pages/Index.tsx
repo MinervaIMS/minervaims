@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Import application config - keep in sync with Join.tsx
 const APPLICATION_CONFIG = {
-  applicationsOpen: true,
+  applicationsOpen: false,
   applyFormUrl: "https://forms.google.com/your-form-url",
 };
 
