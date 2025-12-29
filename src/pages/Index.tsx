@@ -104,12 +104,12 @@ const Index = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
-          <div className="flex flex-wrap gap-4 max-w-4xl">
+          <div className="flex flex-row gap-4 overflow-x-auto">
             {divisions.map((division) => (
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="group bg-secondary px-6 py-4 transition-all duration-300 hover:bg-foreground hover:shadow-lg"
+                className="group bg-secondary px-6 py-4 transition-all duration-300 hover:bg-foreground hover:shadow-lg whitespace-nowrap"
               >
                 <span className="font-serif text-xl md:text-2xl group-hover:text-background transition-colors duration-300">
                   {divisionLabels[division]}
