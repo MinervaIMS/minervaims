@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logoColor from '@/assets/logo-color.png';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DropdownItem {
   label: string;
@@ -47,6 +48,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     setOpenDropdown(null);
@@ -116,6 +118,14 @@ export function Header() {
                 )}
               </div>
             ))}
+            
+            {/* Login/Dashboard Button */}
+            <Link
+              to={user ? '/admin' : '/auth'}
+              className="font-serif text-small tracking-wider text-foreground hover:text-primary transition-colors py-2"
+            >
+              {user ? 'DASHBOARD' : 'LOGIN'}
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -165,6 +175,16 @@ export function Header() {
                 )}
               </div>
             ))}
+            
+            {/* Mobile Login/Dashboard */}
+            <div className="py-2">
+              <Link
+                to={user ? '/admin' : '/auth'}
+                className="font-serif text-small tracking-wider text-foreground block py-2"
+              >
+                {user ? 'DASHBOARD' : 'LOGIN'}
+              </Link>
+            </div>
           </div>
         )}
       </div>

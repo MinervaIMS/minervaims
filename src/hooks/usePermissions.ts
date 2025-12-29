@@ -14,28 +14,15 @@ type AppRole =
   | 'head_of_quant'
   | 'head_of_operations'
   | 'head_of_media'
-  | 'co_head_of_equity'
-  | 'co_head_of_investment'
-  | 'co_head_of_macro'
-  | 'co_head_of_portfolio'
-  | 'co_head_of_quant'
-  | 'co_head_of_operations'
-  | 'co_head_of_media'
-  | 'member'
-  | 'pending';
+  | 'member';
 
 // Map roles to their associated divisions (using the Division type from types.ts)
 const roleToDivision: Partial<Record<AppRole, Division>> = {
   head_of_equity: 'equity',
-  co_head_of_equity: 'equity',
   head_of_investment: 'investment',
-  co_head_of_investment: 'investment',
   head_of_macro: 'macro',
-  co_head_of_macro: 'macro',
   head_of_portfolio: 'portfolio',
-  co_head_of_portfolio: 'portfolio',
   head_of_quant: 'quant',
-  co_head_of_quant: 'quant',
 };
 
 // Roles with full dashboard access
@@ -49,23 +36,16 @@ const fullAccessRoles: AppRole[] = [
 // Operations and media roles - all except team management
 const operationsMediaRoles: AppRole[] = [
   'head_of_operations',
-  'co_head_of_operations',
   'head_of_media',
-  'co_head_of_media',
 ];
 
 // Division head roles - only events and files for their division
 const divisionHeadRoles: AppRole[] = [
   'head_of_equity',
-  'co_head_of_equity',
   'head_of_investment',
-  'co_head_of_investment',
   'head_of_macro',
-  'co_head_of_macro',
   'head_of_portfolio',
-  'co_head_of_portfolio',
   'head_of_quant',
-  'co_head_of_quant',
 ];
 
 export interface Permissions {
@@ -94,7 +74,7 @@ export const usePermissions = (): Permissions => {
     const userRoles = roles.map(r => r.role);
     
     // Check for full access roles
-    const hasFullAccess = isAdminEmail || userRoles.some(role => fullAccessRoles.includes(role));
+    const hasFullAccess = isAdminEmail || userRoles.some(role => fullAccessRoles.includes(role as AppRole));
     
     if (hasFullAccess) {
       return {
@@ -110,7 +90,7 @@ export const usePermissions = (): Permissions => {
     }
     
     // Check for operations/media roles
-    const hasOperationsMediaRole = userRoles.some(role => operationsMediaRoles.includes(role));
+    const hasOperationsMediaRole = userRoles.some(role => operationsMediaRoles.includes(role as AppRole));
     
     if (hasOperationsMediaRole) {
       return {
@@ -126,12 +106,12 @@ export const usePermissions = (): Permissions => {
     }
     
     // Check for division head roles
-    const divisionHeadUserRoles = userRoles.filter(role => divisionHeadRoles.includes(role));
+    const divisionHeadUserRoles = userRoles.filter(role => divisionHeadRoles.includes(role as AppRole));
     
     if (divisionHeadUserRoles.length > 0) {
       // Get all divisions the user has access to
       const allowedDivisions = divisionHeadUserRoles
-        .map(role => roleToDivision[role])
+        .map(role => roleToDivision[role as AppRole])
         .filter((div): div is Division => div !== undefined);
       
       return {
@@ -146,7 +126,7 @@ export const usePermissions = (): Permissions => {
       };
     }
     
-    // No special roles - no access
+    // No special roles (member) - no dashboard access
     return {
       canAccessUsers: false,
       canAccessAlumni: false,
