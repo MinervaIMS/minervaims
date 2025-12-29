@@ -14,12 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
 
 type AppRole = 
   | 'admin'
@@ -89,7 +83,6 @@ const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
-  const [showAccessTable, setShowAccessTable] = useState(false);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
@@ -185,68 +178,59 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-8">
-      {/* Role Access Table */}
-      <Collapsible open={showAccessTable} onOpenChange={setShowAccessTable}>
-        <Card>
-          <CardContent className="py-4">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  <span className="font-serif text-heading">Role Access Permissions</span>
-                </span>
-                <span className="text-xs">{showAccessTable ? '▴' : '▾'}</span>
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-4">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-serif">Role</TableHead>
-                      <TableHead className="font-serif text-center">Users</TableHead>
-                      <TableHead className="font-serif text-center">Alumni</TableHead>
-                      <TableHead className="font-serif text-center">Events</TableHead>
-                      <TableHead className="font-serif text-center">Files</TableHead>
-                      <TableHead className="font-serif text-center">Team</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ROLE_ACCESS_MATRIX.map((row, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-body font-medium">{row.role}</TableCell>
-                        <TableCell className="text-center">
-                          {row.users ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {row.alumni ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {row.events === 'All' ? <span className="text-green-600">✓ All</span> : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {typeof row.files === 'string' ? (
-                            <span className="text-green-600 text-sm">{row.files}</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {row.team ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <p className="text-sm text-muted-foreground mt-4 font-body">
-                <strong>Note:</strong> as.minerva@unibocconi.it always has full access regardless of role. 
-                Multiple users can have the same role.
-              </p>
-            </CollapsibleContent>
-          </CardContent>
-        </Card>
-      </Collapsible>
+      {/* Role Access Table - Always visible */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Info className="h-4 w-4" />
+            <span className="font-serif text-heading">Role Access Permissions</span>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-serif">Role</TableHead>
+                  <TableHead className="font-serif text-center">Users</TableHead>
+                  <TableHead className="font-serif text-center">Alumni</TableHead>
+                  <TableHead className="font-serif text-center">Events</TableHead>
+                  <TableHead className="font-serif text-center">Files</TableHead>
+                  <TableHead className="font-serif text-center">Team</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ROLE_ACCESS_MATRIX.map((row, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="font-body font-medium">{row.role}</TableCell>
+                    <TableCell className="text-center">
+                      {row.users ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {row.alumni ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {row.events === 'All' ? <span className="text-green-600">✓ All</span> : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {typeof row.files === 'string' ? (
+                        <span className="text-green-600 text-sm">{row.files}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {row.team ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4 font-body">
+            <strong>Note:</strong> as.minerva@unibocconi.it always has full access regardless of role. 
+            Multiple users can have the same role.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Pending Approvals (Members without dashboard access) */}
       <div>
