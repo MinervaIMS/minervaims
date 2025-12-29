@@ -1,18 +1,12 @@
 import { Link } from 'react-router-dom';
 import { PageIntroduction, ApplicationStatus } from '@/components/shared';
+import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-
-// Configuration
-const APPLICATION_CONFIG = {
-  applicationsOpen: false,
-  semesterLabel: "Spring 2026",
-  applyFormUrl: "https://forms.google.com/your-form-url",
-};
 
 const ELIGIBILITY_CRITERIA = [
   "Undoubtable academic integrity, humility, hunger to learn, respect for other members, and full compliance with Università Bocconi's Honor Code.",
@@ -66,6 +60,7 @@ const FAQS = [
 ];
 
 const Join = () => {
+  const { settings } = useApplicationSettings();
   return (
     <>
       <PageIntroduction title="Join Us" />
@@ -73,9 +68,9 @@ const Join = () => {
       <div className="container py-section md:py-section-lg">
         {/* Application Status */}
         <ApplicationStatus
-          applicationsOpen={APPLICATION_CONFIG.applicationsOpen}
-          semesterLabel={APPLICATION_CONFIG.semesterLabel}
-          applyFormUrl={APPLICATION_CONFIG.applyFormUrl}
+          applicationsOpen={settings.applicationsOpen}
+          semesterLabel={settings.semesterLabel}
+          applyFormUrl={settings.applyFormUrl}
         />
 
         {/* Eligibility Criteria */}
