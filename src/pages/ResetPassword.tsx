@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
+import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -204,6 +205,7 @@ const ResetPassword = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <PasswordStrengthIndicator password={password} />
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password}</p>
                 )}

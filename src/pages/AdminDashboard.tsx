@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
 import TeamManagement from '@/components/admin/TeamManagement';
@@ -32,6 +33,7 @@ interface DbEvent {
 const AdminDashboard = () => {
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
   const [formData, setFormData] = useState({
@@ -150,6 +152,8 @@ const AdminDashboard = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       const action = editingEvent ? 'update' : 'create';
       const filteredGuests = formData.guests.filter(g => g.trim() !== '');
@@ -197,6 +201,8 @@ const AdminDashboard = () => {
         description: "Failed to save event",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -398,9 +404,20 @@ const AdminDashboard = () => {
                       rows={3}
                     />
                   </div>
+                  {isSubmitting && (
+                    <div className="space-y-2">
+                      <Progress value={100} className="h-1 animate-pulse" />
+                      <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p>
+                    </div>
+                  )}
                   <div className="flex gap-4 pt-4">
-                    <Button type="submit" className="flex-1 font-body">
-                      {editingEvent ? 'Update Event' : 'Create Event'}
+                    <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (editingEvent ? 'Update Event' : 'Create Event')}
                     </Button>
                     <Button 
                       type="button" 

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Upload, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, X, Loader2 } from 'lucide-react';
 import { divisionLabels } from '@/lib/types';
 
 // Position options with their board status
@@ -403,7 +403,7 @@ export default function TeamManagement() {
                 <Label className="font-body">Division</Label>
                 <Select
                   value={formData.division}
-                  onValueChange={(value) => setFormData({ ...formData, division: value })}
+                  onValueChange={(value) => setFormData({ ...formData, division: value, fund: value !== 'portfolio' ? '' : formData.fund })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select division (optional)" />
@@ -418,23 +418,35 @@ export default function TeamManagement() {
                 </Select>
               </div>
 
+              {formData.division === 'portfolio' && (
+                <div className="space-y-2">
+                  <Label className="font-body">Fund</Label>
+                  <Select
+                    value={formData.fund}
+                    onValueChange={(value) => setFormData({ ...formData, fund: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select fund" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FUNDS.map((fund) => (
+                        <SelectItem key={fund.value} value={fund.value}>
+                          {fund.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label className="font-body">Fund</Label>
-                <Select
-                  value={formData.fund}
-                  onValueChange={(value) => setFormData({ ...formData, fund: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select fund (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FUNDS.map((fund) => (
-                      <SelectItem key={fund.value} value={fund.value}>
-                        {fund.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="linkedin" className="font-body">LinkedIn URL</Label>
+                <Input
+                  id="linkedin"
+                  value={formData.linkedin_url}
+                  onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                  placeholder="https://linkedin.com/in/..."
+                />
               </div>
 
               <div className="space-y-2">
@@ -517,9 +529,21 @@ export default function TeamManagement() {
                 <Label htmlFor="is_board" className="font-body">Executive Board Member</Label>
               </div>
 
+              {isSubmitting && (
+                <div className="space-y-2">
+                  <Progress value={100} className="h-1 animate-pulse" />
+                  <p className="text-xs text-muted-foreground text-center font-body">Saving team member...</p>
+                </div>
+              )}
+
               <div className="flex gap-4 pt-4">
                 <Button type="submit" className="flex-1 font-body" disabled={isSubmitting || isUploading}>
-                  {isSubmitting ? 'Saving...' : (editingMember ? 'Update Member' : 'Add Member')}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (editingMember ? 'Update Member' : 'Add Member')}
                 </Button>
                 <Button 
                   type="button" 

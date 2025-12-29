@@ -6,8 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
+import { Progress } from '@/components/ui/progress';
 
 interface AlumniRecord {
   id: string;
@@ -309,9 +310,21 @@ export default function AlumniManagement() {
                 />
               </div>
 
+              {isSubmitting && (
+                <div className="space-y-2">
+                  <Progress value={100} className="h-1 animate-pulse" />
+                  <p className="text-xs text-muted-foreground text-center font-body">Saving alumni...</p>
+                </div>
+              )}
+
               <div className="flex gap-4 pt-4">
                 <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : (editingAlumni ? 'Update Alumni' : 'Add Alumni')}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (editingAlumni ? 'Update Alumni' : 'Add Alumni')}
                 </Button>
                 <Button 
                   type="button" 
