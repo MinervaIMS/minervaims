@@ -153,16 +153,27 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if user is admin
-    const isAdmin = user.email === 'as.minerva@unibocconi.it'
-    const { data: adminRole } = await supabase
+    // Check if user has event access
+    const isAdminEmail = user.email === 'as.minerva@unibocconi.it'
+    
+    // Roles that can access events
+    const eventAccessRoles = [
+      'admin', 'president', 'vice_president', 'head_of_asset_management',
+      'head_of_operations', 'co_head_of_operations', 'head_of_media', 'co_head_of_media',
+      'head_of_equity', 'co_head_of_equity', 'head_of_investment', 'co_head_of_investment',
+      'head_of_macro', 'co_head_of_macro', 'head_of_portfolio', 'co_head_of_portfolio',
+      'head_of_quant', 'co_head_of_quant'
+    ]
+    
+    const { data: userRoles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle()
+    
+    const hasEventAccess = isAdminEmail || 
+      (userRoles && userRoles.some(r => eventAccessRoles.includes(r.role)))
 
-    if (!isAdmin && !adminRole) {
+    if (!hasEventAccess) {
       return new Response(
         JSON.stringify({ error: 'Access denied' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
