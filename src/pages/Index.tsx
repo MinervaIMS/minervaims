@@ -166,7 +166,7 @@ const Index = () => {
       </section>
 
       {/* Join MIMS Section */}
-      <section className="py-12 md:py-16 bg-background">
+      <section className="py-12 md:py-16 pb-20 md:pb-28 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
