@@ -128,7 +128,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Section */}
-      <section className="pt-8 md:pt-12 pb-section-sm md:pb-section bg-background">
+      <section className="pt-8 md:pt-12 pb-8 md:pb-12 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
