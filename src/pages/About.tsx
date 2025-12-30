@@ -107,7 +107,7 @@ const About = () => {
           <div className="text-center">
             <Link
               to="/members/team"
-              className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300"
+              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200"
             >
               Meet the Team
             </Link>
