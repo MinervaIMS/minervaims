@@ -170,13 +170,13 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className={`lg:hidden border-t py-4 ${isTransparent ? 'border-background/20 bg-foreground/95' : 'border-separator bg-background'}`}>
+          <div className={`lg:hidden border-t py-4 ${isTransparent ? 'border-background/20 bg-foreground/90' : 'border-separator'}`}>
             {navItems.map((item) => (
               <div key={item.label} className="py-2">
                 {item.dropdown ? (
                   <>
                     <button
-                      className={`font-serif text-base tracking-wider w-full text-left py-2 ${isTransparent ? 'text-background' : 'text-accent'}`}
+                      className="font-serif text-base tracking-wider text-accent w-full text-left py-2"
                       onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
                     >
                       {item.label}
@@ -188,7 +188,7 @@ export function Header() {
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className={`block text-base font-serif py-1 ${isTransparent ? 'text-background/70 hover:text-background' : 'text-muted-foreground hover:text-accent'}`}
+                            className="block text-base font-serif text-muted-foreground hover:text-accent py-1"
                           >
                             {subItem.label}
                           </Link>
@@ -199,7 +199,7 @@ export function Header() {
                 ) : (
                   <Link
                     to={item.href!}
-                    className={`font-serif text-base tracking-wider block py-2 ${isTransparent ? 'text-background' : 'text-accent'}`}
+                    className="font-serif text-base tracking-wider text-accent block py-2"
                   >
                     {item.label}
                   </Link>

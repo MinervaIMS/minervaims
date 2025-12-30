@@ -39,7 +39,7 @@ export function CookieBanner() {
             <Button
               onClick={acceptAll}
               variant="default"
-              className="font-body text-small"
+              className="font-body text-small text-white"
             >
               Accept All
             </Button>

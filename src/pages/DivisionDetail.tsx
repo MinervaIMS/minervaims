@@ -107,12 +107,12 @@ const DivisionDetail = () => {
                 <Link
                   key={fund}
                   to={`/funds/${fund}`}
-                  className="group block bg-secondary p-6 transition-all duration-300 hover:bg-accent hover:shadow-lg"
+                  className="group block bg-secondary p-6 transition-all duration-300 hover:bg-foreground hover:shadow-lg"
                 >
-                  <h3 className="font-serif text-xl md:text-2xl mb-2 group-hover:text-accent-foreground transition-colors duration-300">
+                  <h3 className="font-serif text-xl md:text-2xl mb-2 group-hover:text-background transition-colors duration-300">
                     {fundLabels[fund]}
                   </h3>
-                  <p className="font-body text-body-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                  <p className="font-body text-body-lg text-muted-foreground group-hover:text-background/80 transition-colors duration-300">
                     {fundDescriptions[fund]}
                   </p>
                 </Link>
