@@ -96,6 +96,18 @@ const Alumni = () => {
         title="Alumni"
       />
 
+      {/* Description Section */}
+      <section className="py-section-sm md:py-section bg-background">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+            A Global Network, Still Close
+          </h2>
+          <p className="font-body text-body-lg text-muted-foreground max-w-4xl">
+            MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
+          </p>
+        </div>
+      </section>
+
       <div className="container py-section-sm md:py-section">
         {/* Alumni Spotlight */}
         {spotlightAlumni.length > 0 && (
