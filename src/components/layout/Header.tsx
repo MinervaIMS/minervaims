@@ -15,7 +15,7 @@ interface NavItem {
   dropdown?: DropdownItem[];
 }
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { label: 'ABOUT US', href: '/about' },
   {
     label: 'DIVISIONS',
@@ -53,6 +53,11 @@ export function Header() {
   const { user } = useAuth();
 
   const isHomepage = location.pathname === '/';
+
+  // Add HOME link when not on homepage
+  const navItems = isHomepage 
+    ? baseNavItems 
+    : [{ label: 'HOME', href: '/' }, ...baseNavItems];
 
   useEffect(() => {
     setOpenDropdown(null);
@@ -92,15 +97,15 @@ export function Header() {
   return (
     <header className={`z-50 transition-all duration-500 ease-in-out ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background shadow-subtle'}`}>
       <div className="container">
-        <nav className="flex items-center justify-between h-16 md:h-20">
+        <nav className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
               src={isTransparent ? logoWhite : logoColor} 
               alt="MIMS" 
-              width={48}
-              height={48}
-              className="h-10 md:h-12 w-auto transition-opacity duration-300" 
+              width={56}
+              height={56}
+              className="h-12 md:h-14 w-auto transition-opacity duration-300" 
               decoding="async"
             />
           </Link>
@@ -112,7 +117,7 @@ export function Header() {
                 {item.dropdown ? (
                   <>
                     <button
-                      className={`font-serif text-small tracking-wider transition-colors py-2 ${isTransparent ? 'text-background hover:text-background/80' : 'text-foreground hover:text-primary'}`}
+                      className={`font-serif text-base tracking-wider transition-colors py-2 ${isTransparent ? 'text-background hover:text-background/80' : 'text-accent hover:text-accent/80'}`}
                       onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
                     >
                       {item.label}
@@ -124,7 +129,7 @@ export function Header() {
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className="block px-4 py-2 text-small font-serif text-foreground hover:bg-muted hover:text-primary transition-colors"
+                            className="block px-4 py-2 text-base font-serif text-foreground hover:bg-muted hover:text-accent transition-colors"
                           >
                             {subItem.label}
                           </Link>
@@ -135,7 +140,7 @@ export function Header() {
                 ) : (
                   <Link
                     to={item.href!}
-                    className={`font-serif text-small tracking-wider transition-colors py-2 ${isTransparent ? 'text-background hover:text-background/80' : 'text-foreground hover:text-primary'}`}
+                    className={`font-serif text-base tracking-wider transition-colors py-2 ${isTransparent ? 'text-background hover:text-background/80' : 'text-accent hover:text-accent/80'}`}
                   >
                     {item.label}
                   </Link>
@@ -147,7 +152,7 @@ export function Header() {
             {user && (
               <Link
                 to="/admin"
-                className={`font-serif text-small tracking-wider border px-4 py-2 transition-colors ${isTransparent ? 'bg-background text-foreground border-background hover:bg-transparent hover:text-background' : 'bg-foreground text-background border-foreground hover:bg-background hover:text-foreground'}`}
+                className={`font-serif text-base tracking-wider border px-4 py-2 transition-all duration-300 ${isTransparent ? 'bg-background text-foreground border-background hover:bg-transparent hover:text-background' : 'bg-background text-accent border-accent hover:bg-accent hover:text-background hover:shadow-md'}`}
               >
                 DASHBOARD
               </Link>
@@ -156,7 +161,7 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className={`lg:hidden font-serif text-small tracking-wider p-2 ${isTransparent ? 'text-background' : 'text-foreground'}`}
+            className={`lg:hidden font-serif text-base tracking-wider p-2 ${isTransparent ? 'text-background' : 'text-accent'}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? 'CLOSE' : 'MENU'}
@@ -171,7 +176,7 @@ export function Header() {
                 {item.dropdown ? (
                   <>
                     <button
-                      className="font-serif text-small tracking-wider text-foreground w-full text-left py-2"
+                      className="font-serif text-base tracking-wider text-accent w-full text-left py-2"
                       onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
                     >
                       {item.label}
@@ -183,7 +188,7 @@ export function Header() {
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className="block text-small font-serif text-muted-foreground hover:text-primary py-1"
+                            className="block text-base font-serif text-muted-foreground hover:text-accent py-1"
                           >
                             {subItem.label}
                           </Link>
@@ -194,7 +199,7 @@ export function Header() {
                 ) : (
                   <Link
                     to={item.href!}
-                    className="font-serif text-small tracking-wider text-foreground block py-2"
+                    className="font-serif text-base tracking-wider text-accent block py-2"
                   >
                     {item.label}
                   </Link>
@@ -207,7 +212,7 @@ export function Header() {
               <div className="py-2">
                 <Link
                   to="/admin"
-                  className="font-serif text-small tracking-wider bg-foreground text-background border border-foreground px-4 py-2 inline-block"
+                  className="font-serif text-base tracking-wider bg-background text-accent border border-accent px-4 py-2 inline-block hover:bg-accent hover:text-background hover:shadow-md transition-all duration-300"
                 >
                   DASHBOARD
                 </Link>

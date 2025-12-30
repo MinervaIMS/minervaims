@@ -66,7 +66,7 @@ const Sitemap = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
           {sections.map((section) => (
             <div key={section.title}>
-              <h2 className="font-serif text-heading mb-4 pb-2 border-b border-separator">
+              <h2 className="font-serif text-heading mb-4 pb-2 border-b border-separator text-accent">
                 {section.title}
               </h2>
               <ul className="space-y-2">

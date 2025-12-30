@@ -10,6 +10,7 @@ import { Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
+import homepageBg from '@/assets/homepage-bg.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -135,8 +136,12 @@ const ResetPassword = () => {
   // Email sent confirmation screen
   if (emailSent) {
     return (
-      <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-md">
+      <div 
+        className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${homepageBg})` }}
+      >
+        <div className="container flex items-center justify-center">
+          <Card className="w-full max-w-md shadow-elevated">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Mail className="h-6 w-6 text-primary" />
@@ -167,6 +172,7 @@ const ResetPassword = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
@@ -174,8 +180,12 @@ const ResetPassword = () => {
   // Password update form (after clicking email link)
   if (isResetMode) {
     return (
-      <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-md">
+      <div 
+        className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${homepageBg})` }}
+      >
+        <div className="container flex items-center justify-center">
+          <Card className="w-full max-w-md shadow-elevated">
           <CardHeader className="text-center">
             <CardTitle className="font-serif text-heading">Set New Password</CardTitle>
             <CardDescription className="font-body">
@@ -254,14 +264,19 @@ const ResetPassword = () => {
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
 
   // Request password reset form
   return (
-    <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${homepageBg})` }}
+    >
+      <div className="container flex items-center justify-center">
+        <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">
           <CardTitle className="font-serif text-heading">Reset Password</CardTitle>
           <CardDescription className="font-body">
@@ -310,6 +325,7 @@ const ResetPassword = () => {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
