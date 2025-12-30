@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logoColor from '@/assets/logo-color.png';
+import logoWhite from '@/assets/logo-white.png';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DropdownItem {
@@ -46,9 +47,12 @@ const navItems: NavItem[] = [
 export function Header() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  const isHomepage = location.pathname === '/';
 
   useEffect(() => {
     setOpenDropdown(null);
@@ -65,18 +69,38 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isHomepage) {
+      setIsScrolled(true);
+      return;
+    }
+
+    const handleScroll = () => {
+      // Switch to solid header after scrolling past ~80% of viewport height
+      const threshold = window.innerHeight * 0.8;
+      setIsScrolled(window.scrollY > threshold);
+    };
+
+    handleScroll(); // Check initial position
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isHomepage]);
+
+  // Determine if we should use transparent styling (only on homepage when not scrolled)
+  const isTransparent = isHomepage && !isScrolled;
+
   return (
-    <header className="bg-background shadow-subtle sticky top-0 z-50">
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${isTransparent ? 'bg-transparent' : 'bg-background shadow-subtle'}`}>
       <div className="container">
         <nav className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
-              src={logoColor} 
+              src={isTransparent ? logoWhite : logoColor} 
               alt="MIMS" 
               width={48}
               height={48}
-              className="h-10 md:h-12 w-auto" 
+              className="h-10 md:h-12 w-auto transition-opacity duration-300" 
               decoding="async"
             />
           </Link>
@@ -88,7 +112,7 @@ export function Header() {
                 {item.dropdown ? (
                   <>
                     <button
-                      className="font-serif text-small tracking-wider text-foreground hover:text-primary transition-colors py-2"
+                      className={`font-serif text-small tracking-wider transition-colors py-2 ${isTransparent ? 'text-background hover:text-background/80' : 'text-foreground hover:text-primary'}`}
                       onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
                     >
                       {item.label}
@@ -111,7 +135,7 @@ export function Header() {
                 ) : (
                   <Link
                     to={item.href!}
-                    className="font-serif text-small tracking-wider text-foreground hover:text-primary transition-colors py-2"
+                    className={`font-serif text-small tracking-wider transition-colors py-2 ${isTransparent ? 'text-background hover:text-background/80' : 'text-foreground hover:text-primary'}`}
                   >
                     {item.label}
                   </Link>
@@ -123,7 +147,7 @@ export function Header() {
             {user && (
               <Link
                 to="/admin"
-                className="font-serif text-small tracking-wider bg-foreground text-background border border-foreground px-4 py-2 hover:bg-background hover:text-foreground transition-colors"
+                className={`font-serif text-small tracking-wider border px-4 py-2 transition-colors ${isTransparent ? 'bg-background text-foreground border-background hover:bg-transparent hover:text-background' : 'bg-foreground text-background border-foreground hover:bg-background hover:text-foreground'}`}
               >
                 DASHBOARD
               </Link>
@@ -132,7 +156,7 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden font-serif text-small tracking-wider p-2"
+            className={`lg:hidden font-serif text-small tracking-wider p-2 ${isTransparent ? 'text-background' : 'text-foreground'}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? 'CLOSE' : 'MENU'}
@@ -141,7 +165,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-separator py-4">
+          <div className={`lg:hidden border-t py-4 ${isTransparent ? 'border-background/20 bg-foreground/90' : 'border-separator'}`}>
             {navItems.map((item) => (
               <div key={item.label} className="py-2">
                 {item.dropdown ? (
@@ -192,7 +216,7 @@ export function Header() {
           </div>
         )}
       </div>
-      <div className="hairline" />
+      {!isTransparent && <div className="hairline" />}
     </header>
   );
 }
