@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { compareSync } from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 import { create } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
@@ -18,6 +17,13 @@ const LoginSchema = z.object({
     .min(1, 'Password is required')
     .max(100, 'Password too long')
 })
+
+// Type for verify_admin_credentials RPC result
+interface VerifyCredentialsResult {
+  admin_id: string
+  admin_username: string
+  is_valid: boolean
+}
 
 // Rate limiting - in-memory store
 interface RateLimitRecord {
@@ -129,12 +135,14 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Fetch admin user by username only (password verified separately with bcrypt)
-    const { data: adminUser, error } = await supabase
-      .from('admin_users')
-      .select('id, username, password_hash')
-      .eq('username', username)
-      .maybeSingle()
+    // Use secure database function to verify credentials
+    // This function never exposes password hashes to the edge function
+    const { data: verifyResult, error } = await supabase
+      .rpc('verify_admin_credentials', { 
+        _username: username, 
+        _password: password 
+      })
+      .single() as { data: VerifyCredentialsResult | null, error: Error | null }
 
     if (error) {
       console.error('Database error:', error)
@@ -144,24 +152,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (!adminUser) {
-      console.log('User not found:', username)
-      // Use constant-time comparison messaging to prevent timing attacks
+    if (!verifyResult || !verifyResult.is_valid) {
+      console.log('Invalid credentials for username:', username)
       return new Response(
         JSON.stringify({ error: 'Invalid credentials' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Verify password with bcrypt (using sync version for Edge Functions compatibility)
-    const passwordValid = compareSync(password, adminUser.password_hash)
-    
-    if (!passwordValid) {
-      console.log('Invalid password for username:', username)
-      return new Response(
-        JSON.stringify({ error: 'Invalid credentials' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const adminUser = {
+      id: verifyResult.admin_id,
+      username: verifyResult.admin_username
     }
 
     // Generate cryptographically signed JWT
