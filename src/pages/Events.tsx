@@ -55,7 +55,7 @@ const Events = () => {
       </div>
 
       {/* Description Section */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             Professional Exposure, Strong Network, Personal Development

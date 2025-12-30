@@ -36,7 +36,6 @@ const About = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="About Us"
-            description="Understanding what we do, our mission, and organisational structure."
             transparentBackground
           />
         </div>
