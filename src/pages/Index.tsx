@@ -95,7 +95,7 @@ const Index = () => {
       {/* About Preview */}
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">About Minerva IMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="max-w-3xl">
               <p className="font-body text-body-lg text-muted-foreground mb-6">
@@ -119,7 +119,7 @@ const Index = () => {
             </div>
             <Link
               to="/members/alumni"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
+              className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300 whitespace-nowrap shrink-0"
             >
               Discover Alumni Network
             </Link>
@@ -130,7 +130,7 @@ const Index = () => {
       {/* Divisions Section */}
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Our Divisions</h2>
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {divisions.map((division) => (
               <Link
@@ -148,7 +148,7 @@ const Index = () => {
       {/* Activities & Events Section */}
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Activities & Events</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
               Each semester we host one flagship event with industry professionals, organise company visits, and hold
@@ -157,7 +157,7 @@ const Index = () => {
             </p>
             <Link
               to="/events?view=past"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
+              className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300 whitespace-nowrap shrink-0"
             >
               View Past Events
             </Link>
@@ -168,7 +168,7 @@ const Index = () => {
       {/* Join MIMS Section */}
       <section className="py-12 md:py-16 pb-20 md:pb-28 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Join MIMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
               We select candidates with strong academic integrity, a clear interest in financial markets, and the
@@ -177,7 +177,7 @@ const Index = () => {
             </p>
             <Link
               to="/join"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
+              className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300 whitespace-nowrap shrink-0"
             >
               How To Apply
             </Link>

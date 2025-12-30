@@ -25,7 +25,7 @@ const ApplicationStatus = ({
           href={applyFormUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block px-10 py-4 bg-background text-foreground font-serif text-lg hover:opacity-90 transition-opacity mb-8"
+          className="inline-block px-10 py-4 bg-background text-accent font-serif text-lg hover:bg-background/90 hover:scale-[1.02] transition-all duration-300 mb-8"
         >
           Apply Now
         </a>

@@ -57,7 +57,7 @@ const Events = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Professional Exposure, Strong Network, Personal Development
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mb-4 max-w-4xl">
@@ -70,7 +70,7 @@ const Events = () => {
       </section>
 
       <div className="container py-section-sm md:py-section">
-        <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">
+        <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
           Minerva Events, since 2019 bridging the gap between students and professionals
         </h2>
         {isLoading ? (
