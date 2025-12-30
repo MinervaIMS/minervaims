@@ -30,21 +30,32 @@ const ApplicationSettings = () => {
   const { session } = useAuth();
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (session?.access_token) {
+      fetchSettings();
+    }
+  }, [session?.access_token]);
 
   const fetchSettings = async () => {
+    if (!session?.access_token) {
+      console.log('No session token available for fetching settings');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      console.log('Fetching application settings...');
       const { data, error } = await supabase.functions.invoke('admin-settings', {
         body: { action: 'get' },
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
+      console.log('Fetch response:', { data, error });
+
       if (error) throw error;
 
-      if (data.error) {
+      if (data?.error) {
         toast({
           title: "Error",
           description: data.error,
@@ -53,12 +64,14 @@ const ApplicationSettings = () => {
         return;
       }
 
-      setSettings(data.data);
-      setFormData({
-        applications_open: data.data.applications_open,
-        semester_label: data.data.semester_label,
-        apply_form_url: data.data.apply_form_url,
-      });
+      if (data?.data) {
+        setSettings(data.data);
+        setFormData({
+          applications_open: data.data.applications_open,
+          semester_label: data.data.semester_label,
+          apply_form_url: data.data.apply_form_url,
+        });
+      }
     } catch (error) {
       console.error('Error fetching settings:', error);
       toast({
@@ -72,21 +85,36 @@ const ApplicationSettings = () => {
   };
 
   const handleSave = async () => {
+    if (!session?.access_token) {
+      toast({
+        title: "Error",
+        description: "No active session. Please log in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSaving(true);
     try {
+      console.log('Saving application settings...', formData);
       const { data, error } = await supabase.functions.invoke('admin-settings', {
         body: { 
           action: 'update',
           settings: formData,
         },
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (error) throw error;
+      console.log('Save response:', { data, error });
 
-      if (data.error) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
         toast({
           title: "Error",
           description: data.error,
@@ -95,7 +123,9 @@ const ApplicationSettings = () => {
         return;
       }
 
-      setSettings(data.data);
+      if (data?.data) {
+        setSettings(data.data);
+      }
       toast({
         title: "Success",
         description: "Application settings updated successfully",
@@ -104,7 +134,7 @@ const ApplicationSettings = () => {
       console.error('Error saving settings:', error);
       toast({
         title: "Error",
-        description: "Failed to save application settings",
+        description: `Failed to save application settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
