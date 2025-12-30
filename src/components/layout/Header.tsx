@@ -90,7 +90,7 @@ export function Header() {
   const isTransparent = isHomepage && !isScrolled;
 
   return (
-    <header className={`z-50 transition-all duration-300 ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background shadow-subtle'}`}>
+    <header className={`z-50 transition-all duration-500 ease-in-out ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background/95 backdrop-blur-sm shadow-subtle'}`}>
       <div className="container">
         <nav className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
