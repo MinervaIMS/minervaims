@@ -90,10 +90,10 @@ export function LatestArchiveCarousel() {
         {files.map((file) => (
           <article
             key={file.id}
-            className="flex-shrink-0 w-[450px] px-8 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
+            className="flex-shrink-0 w-[450px] px-8 first:pl-0 border-r border-accent-foreground/20 last:border-r-0 group cursor-pointer snap-start"
           >
             {/* PDF Preview - Larger vertical preview */}
-            <div className="w-full h-[480px] bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors">
+            <div className="w-full h-[480px] bg-accent-foreground/10 overflow-hidden mb-5 group-hover:bg-accent-foreground/20 transition-colors">
               <iframe
                 src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
                 className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
@@ -103,16 +103,16 @@ export function LatestArchiveCarousel() {
 
             {/* Meta */}
             <div className="flex items-center gap-3 mb-3">
-              <time className="font-body text-sm text-background/60 uppercase tracking-wider group-hover:text-background/80 transition-colors">
+              <time className="font-body text-sm text-accent-foreground/60 uppercase tracking-wider group-hover:text-accent-foreground/80 transition-colors">
                 {formatDate(file.date)}
               </time>
-              <span className="font-body text-sm text-background/80 uppercase tracking-wider">
+              <span className="font-body text-sm text-accent-foreground/80 uppercase tracking-wider">
                 {divisionLabels[file.division as Division]}
               </span>
             </div>
 
             {/* Title */}
-            <h3 className="font-serif text-xl leading-tight line-clamp-2 text-background group-hover:text-background/80 transition-colors">
+            <h3 className="font-serif text-xl leading-tight line-clamp-2 text-accent-foreground group-hover:text-accent-foreground/80 transition-colors">
               {file.title}
             </h3>
           </article>
@@ -122,10 +122,10 @@ export function LatestArchiveCarousel() {
         <div className="flex-shrink-0 w-[450px] px-8 flex items-center justify-center snap-start">
           <Link
             to="/archive"
-            className="flex flex-col items-center justify-center gap-4 w-full h-[480px] border border-background/30 hover:border-background/60 hover:bg-background/10 transition-all group"
+            className="flex flex-col items-center justify-center gap-4 w-full h-[480px] border border-accent-foreground/30 hover:border-accent-foreground/60 hover:bg-accent-foreground/10 transition-all group"
           >
-            <ArrowRight className="w-8 h-8 text-background/60 group-hover:text-background transition-colors" />
-            <span className="font-body text-lg text-background/80 group-hover:text-background transition-colors uppercase tracking-wider">
+            <ArrowRight className="w-8 h-8 text-accent-foreground/60 group-hover:text-accent-foreground transition-colors" />
+            <span className="font-body text-lg text-accent-foreground/80 group-hover:text-accent-foreground transition-colors uppercase tracking-wider">
               Browse Archive
             </span>
           </Link>
@@ -135,7 +135,7 @@ export function LatestArchiveCarousel() {
       {/* Scroll hint */}
       {canScrollRight && (
         <div className="flex justify-end mt-2">
-          <span className="font-body text-sm text-background/60 flex items-center gap-2">
+          <span className="font-body text-sm text-accent-foreground/60 flex items-center gap-2">
             <ArrowRight className="w-4 h-4" />
           </span>
         </div>

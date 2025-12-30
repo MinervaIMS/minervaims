@@ -188,7 +188,7 @@ const Index = () => {
       {/* Latest Reports */}
       <section className="py-12 md:py-16 bg-accent">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-accent-foreground/20 text-accent-foreground">
             Latest Reports
           </h2>
           <LatestArchiveCarousel />
