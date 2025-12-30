@@ -11,14 +11,14 @@ const ApplicationStatus = ({
 }: ApplicationStatusProps) => {
   if (applicationsOpen) {
     return (
-      <div className="bg-foreground text-background p-8 md:p-12 mb-16">
+      <div className="bg-accent text-accent-foreground p-8 md:p-12 mb-16">
         <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl mb-6">
           APPLICATIONS ARE NOW OPEN
         </h2>
-        <p className="font-body text-body text-background/80 mb-2">
+        <p className="font-body text-body text-accent-foreground/80 mb-2">
           We recruit at the beginning of each academic semester.
         </p>
-        <p className="font-body text-body text-background/80 mb-8">
+        <p className="font-body text-body text-accent-foreground/80 mb-8">
           Submit your application for {semesterLabel}.
         </p>
         <a
@@ -29,7 +29,7 @@ const ApplicationStatus = ({
         >
           Apply Now
         </a>
-        <p className="font-body text-body text-background/80">
+        <p className="font-body text-body text-accent-foreground/80">
           For questions, with respect, contact society members on LinkedIn.
         </p>
       </div>
@@ -37,14 +37,14 @@ const ApplicationStatus = ({
   }
 
   return (
-    <div className="bg-foreground text-background p-8 md:p-12 mb-16">
+    <div className="bg-accent text-accent-foreground p-8 md:p-12 mb-16">
       <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl mb-6">
         APPLICATIONS ARE CURRENTLY CLOSED
       </h2>
-      <p className="font-body text-body text-background/80 mb-2">
+      <p className="font-body text-body text-accent-foreground/80 mb-2">
         The dates and deadlines of the next intake will be announced at the start of the upcoming semester.
       </p>
-      <p className="font-body text-body text-background/80">
+      <p className="font-body text-body text-accent-foreground/80">
         For questions, with respect, contact society members on LinkedIn.
       </p>
     </div>

@@ -77,7 +77,7 @@ const FundDetail = () => {
       </section>
 
       {/* Third Section: Latest Fund Updates */}
-      <section className="py-section-sm md:py-section bg-foreground">
+      <section className="py-section-sm md:py-section bg-accent">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
             {content.sectionTitle}
