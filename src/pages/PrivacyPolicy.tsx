@@ -9,7 +9,6 @@ const PrivacyPolicy = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Privacy Policy"
-            description="This Privacy Policy explains how MIMS collects and uses personal data when you visit our website, contact us, register for events, or apply to join the Society. We are committed to lawful, transparent processing and to protecting your rights."
             transparentBackground
           />
         </div>

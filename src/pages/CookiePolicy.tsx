@@ -13,7 +13,6 @@ const CookiePolicy = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Cookie Policy"
-            description="This Cookie Policy explains how MIMS uses cookies and similar technologies on this website, and how you can control them. Non-essential cookies are set only with your consent."
             transparentBackground
           />
         </div>
