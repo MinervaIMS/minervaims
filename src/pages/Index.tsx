@@ -138,7 +138,7 @@ const Index = () => {
                 to={`/divisions/${division}`}
                 className="block bg-secondary p-6 text-center transition-all duration-300 hover:bg-foreground hover:text-background hover:shadow-lg hover:-translate-y-1"
               >
-                <span className="font-serif text-lg md:text-xl">{divisionLabels[division]}</span>
+                <span className="font-serif text-lg md:text-xl text-accent">{divisionLabels[division]}</span>
               </Link>
             ))}
           </div>

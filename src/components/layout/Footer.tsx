@@ -9,7 +9,7 @@ const exploreLinks = [
 ];
 
 const connectLinks = [
-  { label: 'Mail', href: 'mailto:as.minerva@unibocconi.it' },
+  { label: 'as.minerva@unibocconi.it', href: 'mailto:as.minerva@unibocconi.it' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/company/minerva-investment-management/', external: true },
   { label: 'Instagram', href: 'https://www.instagram.com/minerva.ims/', external: true },
 ];

@@ -143,16 +143,16 @@ const ResetPassword = () => {
         <div className="container flex items-center justify-center">
           <Card className="w-full max-w-md shadow-elevated">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Mail className="h-6 w-6 text-primary" />
+            <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+              <Mail className="h-6 w-6 text-accent" />
             </div>
-            <CardTitle className="font-serif text-heading">Check Your Email</CardTitle>
-            <CardDescription className="font-body">
-              We've sent a password reset link to <strong>{email}</strong>
+            <CardTitle className="font-serif text-heading text-accent">Check Your Email</CardTitle>
+            <CardDescription className="font-body font-normal">
+              We've sent a password reset link to <span className="text-foreground">{email}</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-sm text-muted-foreground text-center font-normal">
               Click the link in the email to reset your password. If you don't see the email, check your spam folder.
             </p>
             <div className="flex flex-col gap-2">
@@ -187,15 +187,15 @@ const ResetPassword = () => {
         <div className="container flex items-center justify-center">
           <Card className="w-full max-w-md shadow-elevated">
           <CardHeader className="text-center">
-            <CardTitle className="font-serif text-heading">Set New Password</CardTitle>
-            <CardDescription className="font-body">
+            <CardTitle className="font-serif text-heading text-accent">Set New Password</CardTitle>
+            <CardDescription className="font-body font-normal">
               Enter your new password below
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password" className="font-body">New Password</Label>
+                <Label htmlFor="password" className="font-body font-normal">New Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -222,7 +222,7 @@ const ResetPassword = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="font-body">Confirm Password</Label>
+                <Label htmlFor="confirmPassword" className="font-body font-normal">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -278,15 +278,15 @@ const ResetPassword = () => {
       <div className="container flex items-center justify-center">
         <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">
-          <CardTitle className="font-serif text-heading">Reset Password</CardTitle>
-          <CardDescription className="font-body">
+          <CardTitle className="font-serif text-heading text-accent">Reset Password</CardTitle>
+          <CardDescription className="font-body font-normal">
             Enter your email address and we'll send you a link to reset your password
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRequestReset} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-body">Email</Label>
+              <Label htmlFor="email" className="font-body font-normal">Email</Label>
               <Input
                 id="email"
                 type="email"

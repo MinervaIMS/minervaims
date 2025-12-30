@@ -166,8 +166,8 @@ const Auth = () => {
       <div className="container flex items-center justify-center">
         <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">
-          <CardTitle className="font-serif text-heading">Welcome</CardTitle>
-          <CardDescription className="font-body">
+          <CardTitle className="font-serif text-heading text-accent">Welcome</CardTitle>
+          <CardDescription className="font-body font-normal">
             {activeTab === 'login' 
               ? 'Sign in to access your account'
               : 'Create an account with your Bocconi email'
@@ -177,14 +177,14 @@ const Auth = () => {
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login" className="font-body">Login</TabsTrigger>
-              <TabsTrigger value="signup" className="font-body">Sign Up</TabsTrigger>
+              <TabsTrigger value="login" className="font-body font-normal">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="font-body font-normal">Sign Up</TabsTrigger>
             </TabsList>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <TabsContent value="signup" className="mt-0 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="font-body">Full Name</Label>
+                  <Label htmlFor="fullName" className="font-body font-normal">Full Name</Label>
                   <Input
                     id="fullName"
                     type="text"
@@ -201,7 +201,7 @@ const Auth = () => {
               </TabsContent>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="font-body">Email</Label>
+                <Label htmlFor="email" className="font-body font-normal">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -222,7 +222,7 @@ const Auth = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="font-body">Password</Label>
+                <Label htmlFor="password" className="font-body font-normal">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -253,7 +253,7 @@ const Auth = () => {
                         checked={rememberMe}
                         onCheckedChange={(checked) => setRememberMe(checked === true)}
                       />
-                      <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                      <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer text-muted-foreground">
                         Remember me
                       </Label>
                     </div>
