@@ -36,7 +36,7 @@ const Index = () => {
       />
 
       {/* Hero Section */}
-      <section className="relative min-h-[55vh] flex items-center justify-center">
+      <section className="relative min-h-[60vh] flex items-center justify-center">
         {/* Background image */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
 
