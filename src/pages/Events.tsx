@@ -70,6 +70,9 @@ const Events = () => {
       </section>
 
       <div className="container py-section-sm md:py-section">
+        <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">
+          Minerva Events, since 2019 bridging the gap between students and professionals
+        </h2>
         {isLoading ? (
           <p className="font-body text-muted-foreground py-8">Loading events...</p>
         ) : (
