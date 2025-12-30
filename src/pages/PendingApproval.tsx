@@ -43,12 +43,12 @@ const PendingApproval = () => {
         <Card className="w-full max-w-lg text-center shadow-elevated">
         <CardHeader>
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-muted p-4">
-              <Clock className="h-8 w-8 text-muted-foreground" />
+            <div className="rounded-full bg-accent/10 p-4">
+              <Clock className="h-8 w-8 text-accent" />
             </div>
           </div>
-          <CardTitle className="font-serif text-heading">Approval Pending</CardTitle>
-          <CardDescription className="font-body text-base mt-2">
+          <CardTitle className="font-serif text-heading text-accent">Approval Pending</CardTitle>
+          <CardDescription className="font-body font-normal text-base mt-2">
             Your account is awaiting approval
           </CardDescription>
         </CardHeader>
@@ -64,7 +64,7 @@ const PendingApproval = () => {
             </div>
           </div>
 
-          <p className="text-muted-foreground font-body">
+          <p className="text-muted-foreground font-body font-normal">
             You need approval to access the dashboard to manage events, team members, alumni network and reports uploaded. 
             Please contact the current president of the MIMS.
           </p>
