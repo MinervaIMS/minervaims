@@ -99,13 +99,22 @@ const Index = () => {
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="max-w-3xl">
               <p className="font-body text-body-lg text-muted-foreground mb-6">
-                Minerva Investment Management Society (MIMS) is an association promoted and run by students of Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured research and portfolio management processes. Members work across specialist research divisions and Portfolio Management, producing professional-standard reports and documenting decisions through due diligence and risk analysis.
+                Minerva Investment Management Society (MIMS) is an association promoted and run by students of
+                Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured
+                research and portfolio management processes. Members work across specialist research divisions and
+                Portfolio Management, producing professional-standard reports and documenting decisions through due
+                diligence and risk analysis.
               </p>
               <p className="font-body text-body-lg text-muted-foreground mb-6">
-                MIMS complements its investment work with a targeted programme of engagement. The Society hosts one event per semester with industry professionals, alongside company visits and internal presentations where teams share their work and debate key market questions. Regular division and association-wide aperitivos strengthen relationships across the membership.
+                MIMS complements its investment work with a targeted programme of engagement. The Society hosts one
+                event per semester with industry professionals, alongside company visits and internal presentations
+                where teams share their work and debate key market questions. Regular division and association-wide
+                aperitivos strengthen relationships across the membership.
               </p>
               <p className="font-body text-body-lg text-muted-foreground">
-                MIMS has also developed an international alumni network. Former members work across major financial centres in investment banking, hedge funds and asset management, including Goldman Sachs, J.P. Morgan, Citi, UBS and other leading institutions.
+                MIMS has also developed an international alumni network. Former members work across major financial
+                centres in investment banking, hedge funds and asset management, including Goldman Sachs, J.P. Morgan,
+                Citi, UBS and other leading institutions.
               </p>
             </div>
             <Link
@@ -152,7 +161,9 @@ const Index = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              Each semester we host one flagship event with industry professionals, organise company visits, and hold internal sessions where teams present their work and debate markets. Regular aperitivos and frequent alumni calls strengthen relationships and provide guidance on academic and career paths.
+              Each semester we host one flagship event with industry professionals, organise company visits, and hold
+              internal sessions where teams present their work and debate markets. Regular aperitivos and frequent
+              alumni calls strengthen relationships and provide guidance on academic and career paths.
             </p>
             <Link
               to="/events?view=past"
@@ -170,14 +181,15 @@ const Index = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              Recruitment is open to all Bocconi students. We seek motivated individuals with genuine interest in
-              financial markets, regardless of academic background or prior experience.
+              We select candidates with strong academic integrity, a clear interest in financial markets, and the
+              discipline to contribute to a research-driven community. Prior experience is not required; we value
+              potential, rigour, and a consistent commitment to learning.
             </p>
             <Link
               to="/join"
               className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
             >
-              HOW TO APPLY
+              How To Apply
             </Link>
           </div>
         </div>
