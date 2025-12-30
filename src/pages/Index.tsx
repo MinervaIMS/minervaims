@@ -145,16 +145,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Latest Reports */}
-      <section className="py-section-sm md:py-section bg-foreground">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            Latest Reports
-          </h2>
-          <LatestArchiveCarousel />
-        </div>
-      </section>
-
       {/* Activities & Events Section */}
       <section className="pt-section-sm md:pt-section pb-8 md:pb-12 bg-background">
         <div className="container">
@@ -192,6 +182,16 @@ const Index = () => {
               How To Apply
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Latest Reports */}
+      <section className="py-section-sm md:py-section bg-foreground">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
+            Latest Reports
+          </h2>
+          <LatestArchiveCarousel />
         </div>
       </section>
     </>
