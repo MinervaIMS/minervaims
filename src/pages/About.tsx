@@ -75,13 +75,13 @@ const About = () => {
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="flex flex-col gap-4 max-w-4xl">
-            {divisionData.map(({ division, description }) => (
+          {divisionData.map(({ division, description }) => (
               <Link
                 key={division}
                 to={`/divisions/${division}`}
                 className="group block bg-secondary p-6 transition-all duration-300 hover:bg-foreground hover:shadow-lg"
               >
-                <h3 className="font-serif text-xl md:text-2xl mb-2 group-hover:text-background transition-colors duration-300">
+                <h3 className="font-serif text-xl md:text-2xl mb-2 text-accent group-hover:text-background transition-colors duration-300">
                   {divisionLabels[division]}
                 </h3>
                 <p className="font-body text-body-lg text-muted-foreground group-hover:text-background/80 transition-colors duration-300">

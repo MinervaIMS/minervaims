@@ -52,7 +52,7 @@ const RoleCard = ({ id, title, description, isRoot = false, nodeRefs }: RoleCard
     <div
       className={`px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm font-body text-center border ${
         isRoot
-          ? "bg-foreground text-background border-foreground font-medium"
+          ? "bg-accent text-background border-accent font-medium"
           : "bg-muted text-foreground border-border"
       } min-w-[120px] md:min-w-[160px] max-w-[160px] md:max-w-[180px]`}
     >
@@ -275,12 +275,12 @@ export const OrgChart = () => {
 
             {/* Vice President (centre column, row 2) */}
             <div className="md:col-start-2 md:row-start-2 justify-self-center">
-              <RoleCard id={NODE_IDS.vp} title="Vice President" nodeRefs={nodeRefs} />
+              <RoleCard id={NODE_IDS.vp} title="Vice President" isRoot nodeRefs={nodeRefs} />
             </div>
 
             {/* Head of Asset Management (centre column, row 3) */}
             <div className="md:col-start-2 md:row-start-3 justify-self-center">
-              <RoleCard id={NODE_IDS.hoa} title="Head of Asset Management" nodeRefs={nodeRefs} />
+              <RoleCard id={NODE_IDS.hoa} title="Head of Asset Management" isRoot nodeRefs={nodeRefs} />
             </div>
 
             {/* OPS: side column, aligned to VP row (row 2) */}

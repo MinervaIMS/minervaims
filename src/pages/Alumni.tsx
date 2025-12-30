@@ -222,7 +222,7 @@ const Alumni = () => {
           <div className="space-y-8">
             {sortedYears.map((year) => (
               <div key={year}>
-                <h3 className="font-serif text-heading mb-4 pb-2 border-b border-separator">
+                <h3 className="font-serif text-heading mb-4 pb-2 border-b border-separator text-accent">
                   Class of {year}
                 </h3>
                 <div className="space-y-1">

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Mail, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import homepageBg from '@/assets/homepage-bg.png';
 
 const PendingApproval = () => {
   const { user, profile, roles, signOut, isLoading } = useAuth();
@@ -34,8 +35,12 @@ const PendingApproval = () => {
   }
 
   return (
-    <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
-      <Card className="w-full max-w-lg text-center">
+    <div 
+      className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${homepageBg})` }}
+    >
+      <div className="container flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center shadow-elevated">
         <CardHeader>
           <div className="flex justify-center mb-4">
             <div className="rounded-full bg-muted p-4">
@@ -76,6 +81,7 @@ const PendingApproval = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
