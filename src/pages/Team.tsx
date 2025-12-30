@@ -65,6 +65,18 @@ const Team = () => {
         backgroundImage={teamBg}
       />
 
+      {/* Description Section */}
+      <section className="py-section-sm md:py-section bg-background">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+            The Team Behind the Work
+          </h2>
+          <p className="font-body text-body-lg text-muted-foreground max-w-4xl">
+            Our members operate in a structured, professional environment across research divisions and portfolio management. Each team meets regularly to develop investment views, produce publishable outputs, and support disciplined portfolio decisions.
+          </p>
+        </div>
+      </section>
+
       <div className="container py-section-sm md:py-section">
         {isLoading ? (
           <p className="font-body text-muted-foreground">Loading team...</p>
