@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { User } from 'lucide-react';
+import { User, Sun, Moon, Monitor } from 'lucide-react';
 import logoWhite from '@/assets/logo-white.png';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const exploreLinks = [
   { label: 'Join Us', href: '/join' },
@@ -19,6 +20,39 @@ const legalLinks = [
   { label: 'Privacy Policy', href: '/privacy-policy' },
   { label: 'Cookie Policy', href: '/cookie-policy' },
 ];
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className="flex items-center gap-1 bg-background/10 p-1 rounded">
+      <button
+        onClick={() => setTheme('light')}
+        className={`p-2 rounded transition-colors ${theme === 'light' ? 'bg-background/20 text-background' : 'text-background/60 hover:text-background'}`}
+        aria-label="Light mode"
+        title="Light mode"
+      >
+        <Sun size={16} />
+      </button>
+      <button
+        onClick={() => setTheme('dark')}
+        className={`p-2 rounded transition-colors ${theme === 'dark' ? 'bg-background/20 text-background' : 'text-background/60 hover:text-background'}`}
+        aria-label="Dark mode"
+        title="Dark mode"
+      >
+        <Moon size={16} />
+      </button>
+      <button
+        onClick={() => setTheme('system')}
+        className={`p-2 rounded transition-colors ${theme === 'system' ? 'bg-background/20 text-background' : 'text-background/60 hover:text-background'}`}
+        aria-label="System preference"
+        title="System preference"
+      >
+        <Monitor size={16} />
+      </button>
+    </div>
+  );
+}
 
 export function Footer() {
   return (
@@ -100,10 +134,10 @@ export function Footer() {
 
         {/* Disclaimer - Full Width */}
         <div className="mb-8 py-4">
-          <h4 className="font-serif text-[15px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
+          <h4 className="font-serif text-[15px] font-semibold text-background/80 mb-3 uppercase tracking-wide">
             Disclaimer
           </h4>
-          <div className="font-body text-[14px] md:text-[14px] text-[#D6D6D6] leading-[1.6] space-y-4">
+          <div className="font-body text-[14px] md:text-[14px] text-background/80 leading-[1.6] space-y-4">
             <p>
               Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
               This website and any documents made available through it (including reports, presentations, virtual portfolio materials 
@@ -128,18 +162,21 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Copyright and Admin Login */}
+        {/* Copyright, Theme Toggle and Admin Login */}
         <div className="border-t border-background/20 pt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <p className="font-body text-[13px] text-[#9A9A9A] leading-[1.4]">
+          <p className="font-body text-[13px] text-background/60 leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
           </p>
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded font-body text-small hover:bg-background/90 transition-colors"
-          >
-            <User size={16} />
-            Login
-          </Link>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Link
+              to="/admin"
+              className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded font-body text-small hover:bg-background/90 transition-colors"
+            >
+              <User size={16} />
+              Login
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
