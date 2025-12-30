@@ -80,7 +80,7 @@ const DivisionDetail = () => {
       {/* Second Section: Our Expertise */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Expertise
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-4xl">
@@ -88,7 +88,7 @@ const DivisionDetail = () => {
           </p>
           <Link
             to="/members/team"
-            className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:bg-foreground hover:text-background transition-colors"
+            className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300"
           >
             Meet the Team
           </Link>
@@ -99,7 +99,7 @@ const DivisionDetail = () => {
       {isPortfolio && (
         <section className="py-section-sm md:py-section bg-background">
           <div className="container">
-            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">
+            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
               MIMS Virtual Portfolios
             </h2>
             <div className="flex flex-col gap-4 max-w-4xl">

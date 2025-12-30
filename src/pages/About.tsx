@@ -44,7 +44,7 @@ const About = () => {
       {/* SECTION 1 - White background / Black text */}
       <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left">What We Do</h2>
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               Minerva Investment Management Society (MIMS) is society promoted and run by students of Bocconi
@@ -73,7 +73,7 @@ const About = () => {
       {/* SECTION 2 - Our Divisions */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Our Divisions</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="flex flex-col gap-4 max-w-4xl">
             {divisionData.map(({ division, description }) => (
               <Link
@@ -96,7 +96,7 @@ const About = () => {
       {/* SECTION 3 - Organisational Structure */}
       <section className="bg-background py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Organisational Structure</h2>
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
 
           {/* Org Chart with integrated role descriptions */}
           <div className="mb-12">
@@ -107,7 +107,7 @@ const About = () => {
           <div className="text-center">
             <Link
               to="/members/team"
-              className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+              className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300"
             >
               Meet the Team
             </Link>

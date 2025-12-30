@@ -75,7 +75,7 @@ const Join = () => {
 
         {/* Eligibility Criteria */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Eligibility Criteria
           </h2>
           <div className="max-w-3xl">
@@ -94,7 +94,7 @@ const Join = () => {
 
         {/* Application Process */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Application Process
           </h2>
           <div className="max-w-3xl space-y-0">
@@ -117,7 +117,7 @@ const Join = () => {
 
         {/* How To Prepare For The Interview */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             How To Prepare For The Interview
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
@@ -149,7 +149,7 @@ const Join = () => {
             <div className="lg:flex-shrink-0">
               <Link
                 to="/archive"
-                className="inline-block px-10 py-4 bg-background text-foreground border border-foreground font-serif text-lg hover:opacity-90 transition-opacity"
+                className="inline-block px-10 py-4 bg-accent text-accent-foreground border border-accent font-serif text-lg hover:bg-accent/80 hover:scale-[1.02] transition-all duration-300"
               >
                 View Divisions Reports
               </Link>
@@ -159,7 +159,7 @@ const Join = () => {
 
         {/* FAQs */}
         <section>
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">FAQs</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
           <div className="max-w-3xl">
             <Accordion type="single" collapsible className="w-full">
               {FAQS.map((faq, index) => (
