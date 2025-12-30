@@ -67,7 +67,7 @@ const Index = () => {
       </section>
 
       {/* Key Figures */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
@@ -93,7 +93,7 @@ const Index = () => {
       </section>
 
       {/* About Preview */}
-      <section className="pt-section-sm md:pt-section pb-8 md:pb-12">
+      <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">About Minerva IMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -128,7 +128,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Section */}
-      <section className="pt-8 md:pt-12 pb-8 md:pb-12 bg-background">
+      <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -146,7 +146,7 @@ const Index = () => {
       </section>
 
       {/* Activities & Events Section */}
-      <section className="pt-section-sm md:pt-section pb-8 md:pb-12 bg-background">
+      <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Activities & Events</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -166,7 +166,7 @@ const Index = () => {
       </section>
 
       {/* Join MIMS Section */}
-      <section className="pt-8 md:pt-12 pb-section-sm md:pb-section bg-background">
+      <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">Join MIMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -186,7 +186,7 @@ const Index = () => {
       </section>
 
       {/* Latest Reports */}
-      <section className="py-section-sm md:py-section bg-foreground">
+      <section className="py-12 md:py-16 bg-foreground">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
             Latest Reports
