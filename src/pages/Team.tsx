@@ -66,7 +66,7 @@ const Team = () => {
       />
 
       {/* Description Section */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             The Team Behind the Work
@@ -77,7 +77,7 @@ const Team = () => {
         </div>
       </section>
 
-      <div className="container py-section-sm md:py-section">
+      <div className="container pb-section-sm md:pb-section">
         {isLoading ? (
           <p className="font-body text-muted-foreground">Loading team...</p>
         ) : (
