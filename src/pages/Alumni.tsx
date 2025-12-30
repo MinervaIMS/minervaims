@@ -97,7 +97,7 @@ const Alumni = () => {
       />
 
       {/* Description Section */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator">
             A Global Network, Still Close
@@ -108,7 +108,7 @@ const Alumni = () => {
         </div>
       </section>
 
-      <div className="container py-section-sm md:py-section">
+      <div className="container pb-section-sm md:pb-section">
         {/* Alumni Spotlight */}
         {spotlightAlumni.length > 0 && (
           <div className="mb-12">
