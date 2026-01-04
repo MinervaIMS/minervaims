@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PageIntroduction } from '@/components/shared';
-import sitemapBg from '@/assets/sitemap-bg.png';
+import sitemapBg from '@/assets/sitemap-bg.webp';
 
 const Sitemap = () => {
   const sections = [

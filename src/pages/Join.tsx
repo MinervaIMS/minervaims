@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PageIntroduction, ApplicationStatus } from '@/components/shared';
+import joinBg from '@/assets/join-bg.webp';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import {
   Accordion,

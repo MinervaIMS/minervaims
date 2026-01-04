@@ -1,5 +1,5 @@
 import { PageIntroduction } from '@/components/shared';
-import privacyBg from '@/assets/privacy-bg.png';
+import privacyBg from '@/assets/privacy-bg.webp';
 
 const PrivacyPolicy = () => {
   return (

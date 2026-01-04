@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { PageIntroduction } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import { Division, divisionLabels } from "@/lib/types";
-import aboutBg from "@/assets/about-bg.png";
+import aboutBg from "@/assets/about-bg.webp";
 
 const divisionData: { division: Division; description: string }[] = [
   {

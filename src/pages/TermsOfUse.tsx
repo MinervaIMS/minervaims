@@ -1,5 +1,5 @@
 import { PageIntroduction } from '@/components/shared';
-import termsBg from '@/assets/terms-bg.png';
+import termsBg from '@/assets/terms-bg.webp';
 
 const TermsOfUse = () => {
   return (

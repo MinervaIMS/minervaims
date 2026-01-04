@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageIntroduction } from '@/components/shared';
+import alumniBg from '@/assets/alumni-bg.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
