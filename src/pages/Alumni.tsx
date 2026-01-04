@@ -93,9 +93,15 @@ const Alumni = () => {
 
   return (
     <>
-      <PageIntroduction
-        title="Alumni"
-      />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${alumniBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction
+            title="Alumni"
+            transparentBackground
+          />
+        </div>
+      </div>
 
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
