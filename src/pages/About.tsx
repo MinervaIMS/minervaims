@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { PageIntroduction } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import { Division, divisionLabels } from "@/lib/types";
-import aboutBg from "@/assets/about-bg.png";
+import aboutBg from "@/assets/about-bg.webp";
 
 const divisionData: { division: Division; description: string }[] = [
   {
@@ -33,6 +33,7 @@ const About = () => {
       {/* SECTION 0 - Hero with title and photo background */}
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${aboutBg})` }} />
+        <div className="relative z-10">
           <PageIntroduction
             title="About Us"
             transparentBackground
