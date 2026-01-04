@@ -1,7 +1,7 @@
 import { PageIntroduction } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
 import { Button } from '@/components/ui/button';
-import cookieBg from '@/assets/cookie-bg.png';
+import cookieBg from '@/assets/cookie-bg.webp';
 
 const CookiePolicy = () => {
   const { openPreferences } = useCookieConsent();

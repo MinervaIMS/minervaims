@@ -6,7 +6,7 @@ import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } 
 import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import archiveBg from "@/assets/archive-bg-3.png";
+import archiveBg from "@/assets/archive-bg.webp";
 import {
   Pagination,
   PaginationContent,

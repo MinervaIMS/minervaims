@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { PageIntroduction } from '@/components/shared';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import { supabase } from '@/integrations/supabase/client';
-import eventsBg from "@/assets/events-bg.png";
+import eventsBg from "@/assets/events-bg.webp";
 
 interface DbEvent {
   id: string;

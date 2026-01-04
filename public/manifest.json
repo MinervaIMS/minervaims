@@ -1,0 +1,22 @@
+{
+  "name": "Minerva Investment Management Society",
+  "short_name": "MIMS",
+  "description": "Student-run investment research society at Università Bocconi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1E2047",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

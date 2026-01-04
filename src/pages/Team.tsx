@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PageIntroduction, TeamDirectory } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
-import teamBg from '@/assets/team-bg.png';
+import teamBg from '@/assets/team-bg.webp';
 
 interface DbTeamMember {
   id: string;

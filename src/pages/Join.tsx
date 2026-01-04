@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PageIntroduction, ApplicationStatus } from '@/components/shared';
+import joinBg from '@/assets/join-bg.webp';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import {
   Accordion,
@@ -63,7 +64,12 @@ const Join = () => {
   const { settings } = useApplicationSettings();
   return (
     <>
-      <PageIntroduction title="Join Us" />
+      <div className="relative">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg})` }} />
+        <div className="relative z-10">
+          <PageIntroduction title="Join Us" transparentBackground />
+        </div>
+      </div>
 
       <div className="container py-section md:py-section-lg">
         {/* Application Status */}
