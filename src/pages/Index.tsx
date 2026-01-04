@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import logoWhite from "@/assets/logo-white.png";
-import homepageBg from "@/assets/homepage-bg.png";
+import logoWhite from "@/assets/logo-white.svg";
+import homepageBg from "@/assets/homepage-bg.webp";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
 import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";

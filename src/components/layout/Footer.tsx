@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { User } from 'lucide-react';
-import logoWhite from '@/assets/logo-white.png';
+import logoWhite from '@/assets/logo-white.svg';
 
 const exploreLinks = [
   { label: 'Join Us', href: '/join' },
