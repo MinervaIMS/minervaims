@@ -10,7 +10,7 @@ import { Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
-import homepageBg from '@/assets/homepage-bg.png';
+import resetPasswordBg from '@/assets/reset-password-bg.webp';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -138,7 +138,7 @@ const ResetPassword = () => {
     return (
       <div 
         className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${homepageBg})` }}
+        style={{ backgroundImage: `url(${resetPasswordBg})` }}
       >
         <div className="container flex items-center justify-center">
           <Card className="w-full max-w-md shadow-elevated">
@@ -182,7 +182,7 @@ const ResetPassword = () => {
     return (
       <div 
         className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${homepageBg})` }}
+        style={{ backgroundImage: `url(${resetPasswordBg})` }}
       >
         <div className="container flex items-center justify-center">
           <Card className="w-full max-w-md shadow-elevated">
@@ -273,7 +273,7 @@ const ResetPassword = () => {
   return (
     <div 
       className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${homepageBg})` }}
+      style={{ backgroundImage: `url(${resetPasswordBg})` }}
     >
       <div className="container flex items-center justify-center">
         <Card className="w-full max-w-md shadow-elevated">

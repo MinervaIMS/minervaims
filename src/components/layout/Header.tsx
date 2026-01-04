@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import logoColor from '@/assets/logo-color.png';
-import logoWhite from '@/assets/logo-white.png';
+import logoColor from '@/assets/logo-color.svg';
+import logoWhite from '@/assets/logo-white.svg';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DropdownItem {
