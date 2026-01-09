@@ -26,7 +26,7 @@ interface ArchiveFile {
   fund: string | null;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 15;
 
 const Archive = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,6 +46,10 @@ const Archive = () => {
   const fundFilter: Fund | 'all' = fundFromUrl && fundLabels[fundFromUrl as Fund]
     ? fundFromUrl as Fund
     : 'all';
+
+  // Read year filter from URL params
+  const yearFromUrl = searchParams.get('year');
+  const yearFilter: string = yearFromUrl || 'all';
 
   const setDivisionFilter = (division: Division | 'all') => {
     const newParams = new URLSearchParams(searchParams);
@@ -71,6 +75,16 @@ const Archive = () => {
     setSearchParams(newParams);
   };
 
+  const setYearFilter = (year: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (year === 'all') {
+      newParams.delete('year');
+    } else {
+      newParams.set('year', year);
+    }
+    setSearchParams(newParams);
+  };
+
   useEffect(() => {
     fetchFiles();
   }, []);
@@ -78,7 +92,7 @@ const Archive = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [divisionFilter, fundFilter, searchQuery]);
+  }, [divisionFilter, fundFilter, yearFilter, searchQuery]);
 
   const fetchFiles = async () => {
     try {
@@ -96,12 +110,27 @@ const Archive = () => {
     }
   };
 
+  // Extract unique years from files
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    files.forEach(file => {
+      const year = new Date(file.date).getFullYear();
+      years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [files]);
+
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
       // Division filter
       if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
       // Fund filter (only when portfolio division is selected)
       if (divisionFilter === 'portfolio' && fundFilter !== 'all' && file.fund !== fundFilter) return false;
+      // Year filter
+      if (yearFilter !== 'all') {
+        const fileYear = new Date(file.date).getFullYear().toString();
+        if (fileYear !== yearFilter) return false;
+      }
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -111,7 +140,7 @@ const Archive = () => {
       }
       return true;
     });
-  }, [files, divisionFilter, fundFilter, searchQuery]);
+  }, [files, divisionFilter, fundFilter, yearFilter, searchQuery]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
@@ -159,7 +188,7 @@ const Archive = () => {
         <div className="container py-section-sm md:py-section">
           {/* Filters */}
           <div className="mb-8 pb-6 border-b border-separator">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               {/* Division filter */}
               <div>
                 <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
@@ -177,8 +206,25 @@ const Archive = () => {
                 </select>
               </div>
 
+              {/* Year filter */}
+              <div>
+                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                  Year
+                </label>
+                <select
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(e.target.value)}
+                  className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[120px]"
+                >
+                  <option value="all">All Years</option>
+                  {availableYears.map((year) => (
+                    <option key={year} value={year.toString()}>{year}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Search */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-[200px]">
                 <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                   Search
                 </label>
@@ -202,7 +248,7 @@ const Archive = () => {
                   <select
                     value={fundFilter}
                     onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
-                    className="font-body text-small bg-background border border-separator px-3 py-2 min-w-[280px]"
+                    className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[280px]"
                   >
                     <option value="all">All Funds</option>
                     <optgroup label="Active Funds">
@@ -223,7 +269,7 @@ const Archive = () => {
 
           {/* Results count */}
           <p className="font-body text-small text-muted-foreground mb-6">
-            Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredFiles.length)} of {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
+            Showing {filteredFiles.length > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredFiles.length)} of {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
           </p>
 
           {/* Files list */}

@@ -3,6 +3,14 @@ import { PageIntroduction } from '@/components/shared';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import { supabase } from '@/integrations/supabase/client';
 import eventsBg from "@/assets/events-bg.webp";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface DbEvent {
   id: string;
@@ -14,9 +22,12 @@ interface DbEvent {
   description?: string | null;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const Events = () => {
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -41,6 +52,33 @@ const Events = () => {
 
     fetchEvents();
   }, []);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(events.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedEvents = events.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+      }
+    }
+    return pages;
+  };
 
   return (
     <>
@@ -73,10 +111,57 @@ const Events = () => {
         <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
           Minerva Events, since 2019 bridging the gap between students and professionals
         </h2>
+        
+        {/* Results count */}
+        {!isLoading && events.length > 0 && (
+          <p className="font-body text-small text-muted-foreground mb-6">
+            Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, events.length)} of {events.length} events
+          </p>
+        )}
+        
         {isLoading ? (
           <p className="font-body text-muted-foreground py-8">Loading events...</p>
         ) : (
-          <EventsListNew events={events} />
+          <>
+            <EventsListNew events={paginatedEvents} />
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination className="mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {getPageNumbers().map((page, index) => (
+                    <PaginationItem key={index}>
+                      {page === 'ellipsis' ? (
+                        <span className="px-3 py-2">...</span>
+                      ) : (
+                        <PaginationLink
+                          isActive={currentPage === page}
+                          onClick={() => handlePageChange(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </>
         )}
       </div>
     </>

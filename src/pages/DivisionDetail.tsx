@@ -3,6 +3,12 @@ import { PageIntroduction } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
 
+// Background images for divisions
+import equityBg from '@/assets/division-equity-bg.webp';
+import investmentBg from '@/assets/division-investment-bg.webp';
+import macroBg from '@/assets/division-macro-bg.webp';
+import teamBg from '@/assets/team-bg.webp'; // Fallback for portfolio and quant
+
 // Division content configuration
 interface DivisionContent {
   title: string;
@@ -44,6 +50,15 @@ const divisionContent: Record<Division, DivisionContent> = {
   },
 };
 
+// Background images mapping
+const divisionBackgrounds: Record<Division, string> = {
+  equity: equityBg,
+  investment: investmentBg,
+  macro: macroBg,
+  portfolio: teamBg,
+  quant: teamBg,
+};
+
 // Fund descriptions for the Portfolio Management page
 const fundDescriptions: Record<Fund, string> = {
   'multi-asset': 'Global diversified portfolio across equities, bonds, commodities.',
@@ -62,6 +77,7 @@ const DivisionDetail = () => {
   const divisionKey = division as Division;
   const content = divisionContent[divisionKey];
   const isPortfolio = divisionKey === 'portfolio';
+  const backgroundImage = divisionBackgrounds[divisionKey];
 
   // Combine active and closed funds for the portfolio section
   const allFunds: { fund: Fund; isActive: boolean }[] = [
@@ -72,10 +88,19 @@ const DivisionDetail = () => {
   return (
     <>
       {/* First Section: Title and Subtitle with Background */}
-      <PageIntroduction
-        title={content.title}
-        description={content.subtitle}
-      />
+      <div className="relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center" 
+          style={{ backgroundImage: `url(${backgroundImage})` }} 
+        />
+        <div className="relative z-10">
+          <PageIntroduction
+            title={content.title}
+            description={content.subtitle}
+            transparentBackground
+          />
+        </div>
+      </div>
 
       {/* Second Section: Our Expertise */}
       <section className="py-section-sm md:py-section bg-background">
