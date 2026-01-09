@@ -7,7 +7,7 @@ import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
 import longShortBg from '@/assets/fund-long-short-bg.webp';
 import multiAssetBg from '@/assets/fund-multi-asset-bg.webp';
 import pirBg from '@/assets/fund-pir-bg.webp';
-import teamBg from '@/assets/team-bg.webp'; // Fallback for DPS
+import dpsBg from '@/assets/fund-dps-bg.webp';
 
 // Fund content configuration
 interface FundContent {
@@ -48,7 +48,7 @@ const fundContent: Record<Fund, FundContent> = {
 const fundBackgrounds: Record<Fund, string> = {
   'multi-asset': multiAssetBg,
   'long-short': longShortBg,
-  'dps': teamBg,
+  'dps': dpsBg,
   'pir': pirBg,
 };
 
