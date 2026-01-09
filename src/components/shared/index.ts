@@ -11,3 +11,4 @@ export { OrgChart } from './OrgChart';
 export { DivisionArchiveCarousel } from './DivisionArchiveCarousel';
 export { FundArchiveCarousel } from './FundArchiveCarousel';
 export { default as ApplicationStatus } from './ApplicationStatus';
+export { ResponsiveBackground } from './ResponsiveBackground';

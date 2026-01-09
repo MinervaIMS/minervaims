@@ -3,6 +3,12 @@ import { PageIntroduction } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
 
+// Background images for funds
+import longShortBg from '@/assets/fund-long-short-bg.webp';
+import multiAssetBg from '@/assets/fund-multi-asset-bg.webp';
+import pirBg from '@/assets/fund-pir-bg.webp';
+import teamBg from '@/assets/team-bg.webp'; // Fallback for DPS
+
 // Fund content configuration
 interface FundContent {
   title: string;
@@ -38,6 +44,14 @@ const fundContent: Record<Fund, FundContent> = {
   },
 };
 
+// Background images mapping
+const fundBackgrounds: Record<Fund, string> = {
+  'multi-asset': multiAssetBg,
+  'long-short': longShortBg,
+  'dps': teamBg,
+  'pir': pirBg,
+};
+
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
 
@@ -48,14 +62,24 @@ const FundDetail = () => {
   const fundKey = fund as Fund;
   const content = fundContent[fundKey];
   const isClosed = closedFunds.includes(fundKey);
+  const backgroundImage = fundBackgrounds[fundKey];
 
   return (
     <>
       {/* First Section: Title and Subtitle with Background */}
-      <PageIntroduction
-        title={content.title}
-        description={content.subtitle}
-      />
+      <div className="relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center" 
+          style={{ backgroundImage: `url(${backgroundImage})` }} 
+        />
+        <div className="relative z-10">
+          <PageIntroduction
+            title={content.title}
+            description={content.subtitle}
+            transparentBackground
+          />
+        </div>
+      </div>
 
       {/* Second Section: Fund Overview */}
       <section className="py-section-sm md:py-section bg-background">
