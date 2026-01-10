@@ -7,7 +7,8 @@ import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCaro
 import equityBg from '@/assets/division-equity-bg.webp';
 import investmentBg from '@/assets/division-investment-bg.webp';
 import macroBg from '@/assets/division-macro-bg.webp';
-import teamBg from '@/assets/team-bg.webp'; // Fallback for portfolio and quant
+import quantBg from '@/assets/division-quant-bg.webp';
+import teamBg from '@/assets/team-bg.webp'; // Fallback for portfolio
 
 // Division content configuration
 interface DivisionContent {
@@ -56,7 +57,7 @@ const divisionBackgrounds: Record<Division, string> = {
   investment: investmentBg,
   macro: macroBg,
   portfolio: teamBg,
-  quant: teamBg,
+  quant: quantBg,
 };
 
 // Fund descriptions for the Portfolio Management page
