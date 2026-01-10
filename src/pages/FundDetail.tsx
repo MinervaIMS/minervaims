@@ -89,7 +89,7 @@ const FundDetail = () => {
           </h2>
           {isClosed && (
             <div className="mb-6 p-4 bg-muted border-l-2 border-primary">
-              <p className="font-body text-small text-muted-foreground">
+              <p className="font-body text-body-lg text-muted-foreground">
                 This fund is now closed. Historical reports are available below.
               </p>
             </div>
