@@ -108,15 +108,17 @@ const DivisionDetail = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Expertise
           </h2>
-          <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-4xl">
-            {content.description}
-          </p>
-          <Link
-            to="/members/team"
-            className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200"
-          >
-            Meet the Team
-          </Link>
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-12">
+            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+              {content.description}
+            </p>
+            <Link
+              to="/members/team"
+              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+            >
+              Meet the Team
+            </Link>
+          </div>
         </div>
       </section>
 
