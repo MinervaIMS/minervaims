@@ -27,8 +27,8 @@ export function PageIntroduction({
       )}
 
       <div className="container relative z-10 py-12 md:py-16">
-        <h1 className="font-serif text-hero md:text-[4.5rem] text-background mb-4 text-balance drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">{title}</h1>
-        {description && <p className="font-body text-body-lg md:text-xl text-background/90 max-w-2xl drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)]">{description}</p>}
+        <h1 className="font-serif text-hero md:text-[4.5rem] text-background mb-4 text-balance drop-shadow-[0_6px_16px_rgba(0,0,0,1)]">{title}</h1>
+        {description && <p className="font-body text-body-lg md:text-xl text-background/90 max-w-2xl drop-shadow-[0_4px_12px_rgba(0,0,0,1)]">{description}</p>}
       </div>
     </section>
   );
