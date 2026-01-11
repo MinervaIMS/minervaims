@@ -19,7 +19,7 @@ const PrivacyPolicy = () => {
             <h2 className="font-serif text-heading mb-4">1. Who We Are</h2>
             <p className="font-body text-body text-muted-foreground">
               Minerva Investment Management Society (MIMS) ("we", "us", "our") is a society promoted and run by students
-              of Bocconi University. This website is operated by MIMS and is independent from Università Bocconi.
+              of Bocconi University. This website is operated by MIMS and is independent from Bocconi University.
             </p>
           </section>
 
