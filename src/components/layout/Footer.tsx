@@ -128,7 +128,7 @@ export function Footer() {
           <h4 className="font-serif text-[17px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
             Disclaimer
           </h4>
-          <div className="font-body text-[15px] md:text-[15px] text-[#D6D6D6] leading-[1.6] space-y-4">
+          <div className="font-body text-[15px] md:text-[15px] text-[#D6D6D6] leading-[1.6] space-y-4 text-justify">
             <p>
               Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
               This website and any documents made available through it (including reports, presentations, virtual portfolio materials 

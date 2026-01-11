@@ -66,7 +66,7 @@ const Team = () => {
       />
 
       {/* Description Section */}
-      <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
+      <section className="pt-section-sm md:pt-section pb-12 md:pb-16 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Team Behind the Work
@@ -79,7 +79,7 @@ const Team = () => {
               to="/about#organisational-structure"
               className="hidden md:inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
             >
-              How are we structured
+              How Are We Structured
             </Link>
           </div>
         </div>

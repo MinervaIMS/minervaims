@@ -70,13 +70,13 @@ const Index = () => {
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <Link to="/members/archive" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
+            <Link to="/archive" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.reports} isLoading={isLoading} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </Link>
-            <Link to="/team" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
+            <Link to="/members/team" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.members} isLoading={isLoading} />
               </p>
