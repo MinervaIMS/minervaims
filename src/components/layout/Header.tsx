@@ -176,19 +176,28 @@ export function Header() {
                 {item.dropdown ? (
                   <>
                     <button
+                      type="button"
                       className="font-serif text-base tracking-wider text-accent w-full text-left py-2 flex items-center justify-between"
-                      onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setOpenDropdown(openDropdown === item.label ? null : item.label);
+                      }}
                     >
                       <span>{item.label}</span>
                       <span className="text-xs">{openDropdown === item.label ? '▴' : '▾'}</span>
                     </button>
                     {openDropdown === item.label && (
-                      <div className="pl-4 py-2 space-y-2 bg-muted/50 rounded-md mt-1">
+                      <div className="pl-4 py-2 space-y-1 bg-muted/50 rounded-md mt-1">
                         {item.dropdown.map((subItem) => (
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className="block text-base font-serif text-muted-foreground hover:text-accent py-2 px-2"
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              setOpenDropdown(null);
+                            }}
+                            className="block text-base font-serif text-muted-foreground hover:text-accent py-3 px-3"
                           >
                             {subItem.label}
                           </Link>
@@ -199,6 +208,7 @@ export function Header() {
                 ) : (
                   <Link
                     to={item.href!}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="font-serif text-base tracking-wider text-accent block py-2"
                   >
                     {item.label}
@@ -212,6 +222,7 @@ export function Header() {
               <div className="py-2 mt-2">
                 <Link
                   to="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
                   className="font-serif text-base tracking-wider bg-background text-accent border border-accent px-4 py-2 inline-block hover:bg-accent hover:text-background hover:shadow-md transition-all duration-300"
                 >
                   DASHBOARD
