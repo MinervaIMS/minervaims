@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import { CookieProvider, CookieBanner, CookiePreferences } from "@/components/cookies";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
+import { ScrollToTop } from "@/components/shared/ScrollToTop";
 
 // Eagerly load the homepage for best LCP
 import Index from "./pages/Index";
@@ -42,6 +43,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Index />} />
