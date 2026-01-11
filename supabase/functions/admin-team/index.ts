@@ -53,7 +53,13 @@ const DeleteMemberSchema = z.object({
   id: z.string().uuid('Valid member ID is required'),
 });
 
-const ActionSchema = z.enum(['create', 'update', 'delete']);
+// For reorder operations
+const ReorderItemSchema = z.object({
+  id: z.string().uuid(),
+  display_order: z.number().int().min(0),
+});
+
+const ActionSchema = z.enum(['create', 'update', 'delete', 'reorder']);
 
 // Rate limiting
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
@@ -163,6 +169,35 @@ Deno.serve(async (req) => {
         .eq('id', deleteResult.data.id);
 
       if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'reorder') {
+      // Validate reorder items
+      const reorderResult = z.array(ReorderItemSchema).safeParse(body.items);
+      if (!reorderResult.success) {
+        console.error('Validation error:', reorderResult.error.format());
+        return new Response(
+          JSON.stringify({ error: 'Validation failed', details: reorderResult.error.format() }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Admin ${user.email} performing bulk reorder of ${reorderResult.data.length} members`);
+
+      // Update each member's display_order
+      for (const item of reorderResult.data) {
+        const { error } = await supabase
+          .from('team_members')
+          .update({ display_order: item.display_order })
+          .eq('id', item.id);
+
+        if (error) throw error;
+      }
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
