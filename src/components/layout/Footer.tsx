@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { User } from 'lucide-react';
+import { User, Instagram } from 'lucide-react';
 import footerLogo from '@/assets/footer-logo.svg';
+import linkedinIcon from '@/assets/linkedin-icon.png';
 
 const exploreLinks = [
   { label: 'Join Us', href: '/join' },
@@ -8,10 +9,13 @@ const exploreLinks = [
   { label: 'Site Map', href: '/sitemap' },
 ];
 
-const connectLinks = [
+const contactLinks = [
   { label: 'as.minerva@unibocconi.it', href: 'mailto:as.minerva@unibocconi.it' },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/minerva-investment-management/', external: true },
-  { label: 'Instagram', href: 'https://www.instagram.com/minerva.ims/', external: true },
+];
+
+const socialLinks = [
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/minerva-investment-management/', icon: 'linkedin' },
+  { label: 'Instagram', href: 'https://www.instagram.com/minerva.ims/', icon: 'instagram' },
 ];
 
 const legalLinks = [
@@ -24,24 +28,24 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
-        {/* Main Footer Content - Logo + 3 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-[200px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-8 md:gap-6 mb-8">
-          {/* Logo */}
+        {/* Main Footer Content - 4 Equal Quarters */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-6 mb-8">
+          {/* Quarter 1: Logo */}
           <div className="flex items-start">
             <Link to="/" aria-label="MIMS Home">
               <img 
                 src={footerLogo} 
                 alt="Minerva Investment Management Society" 
-                width={128}
-                height={128}
-                className="h-28 md:h-32 w-auto"
+                width={160}
+                height={160}
+                className="h-36 md:h-40 w-auto"
                 loading="lazy"
                 decoding="async"
               />
             </Link>
           </div>
 
-          {/* Explore */}
+          {/* Quarter 2: Explore */}
           <div>
             <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Explore</h3>
             <ul className="space-y-2">
@@ -58,26 +62,47 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Quarter 3: Contact */}
           <div>
             <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Contact</h3>
             <ul className="space-y-2">
-              {connectLinks.map((link) => (
+              {contactLinks.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
                     className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
-                    target={link.external ? '_blank' : undefined}
-                    rel={link.external ? 'noopener noreferrer' : undefined}
                   >
                     {link.label}
                   </a>
                 </li>
               ))}
             </ul>
+            {/* Social Icons */}
+            <div className="flex items-center gap-4 mt-4">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="text-background/80 hover:text-background transition-colors"
+                >
+                  {social.icon === 'linkedin' ? (
+                    <img 
+                      src={linkedinIcon} 
+                      alt="LinkedIn" 
+                      className="h-5 w-5 opacity-80 hover:opacity-100 transition-opacity"
+                    />
+                  ) : (
+                    <Instagram size={20} />
+                  )}
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Legal */}
+          {/* Quarter 4: Legal */}
           <div>
             <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Legal</h3>
             <ul className="space-y-2">
