@@ -66,7 +66,13 @@ export function Header() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // Only handle click outside for desktop navigation
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        // Don't close if clicking in mobile menu
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenu && mobileMenu.contains(event.target as Node)) {
+          return;
+        }
         setOpenDropdown(null);
       }
     }
@@ -170,7 +176,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className={`lg:hidden border-t py-4 bg-background ${isTransparent ? 'border-background/20' : 'border-separator'}`}>
+          <div id="mobile-menu" className={`lg:hidden border-t py-4 bg-background ${isTransparent ? 'border-background/20' : 'border-separator'}`}>
             {navItems.map((item) => (
               <div key={item.label} className="py-2">
                 {item.dropdown ? (
