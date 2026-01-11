@@ -835,20 +835,29 @@ function SortableMemberCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <Card className="relative">
+    <div ref={setNodeRef} style={style} className="relative">
+      {/* Placeholder shown when dragging */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-muted/50 border-2 border-dashed border-primary/40 rounded-lg" />
+      )}
+      <Card className={`relative transition-all duration-200 ${
+        isDragging 
+          ? 'shadow-2xl shadow-primary/20 scale-105 ring-2 ring-primary/30 bg-background' 
+          : 'hover:shadow-md'
+      }`}>
         <CardContent className="p-4">
           <div className="flex gap-4">
             {/* Drag Handle */}
             <div
               {...attributes}
               {...listeners}
-              className="flex items-center cursor-grab active:cursor-grabbing"
+              className={`flex items-center cursor-grab active:cursor-grabbing transition-colors ${
+                isDragging ? 'text-primary' : 'hover:text-primary/70'
+              }`}
             >
               <GripVertical className="h-5 w-5 text-muted-foreground" />
             </div>
