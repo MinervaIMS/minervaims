@@ -89,7 +89,7 @@ const Join = () => {
               {ELIGIBILITY_CRITERIA.map((criterion, index) => (
                 <li
                   key={index}
-                  className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground"
+                  className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground"
                 >
                   {criterion}
                 </li>
@@ -113,7 +113,7 @@ const Join = () => {
                   Step {step.step}
                 </p>
                 <h3 className="font-serif text-subheading mb-2">{step.title}</h3>
-                <p className="font-body text-body text-muted-foreground">
+                <p className="font-body text-body-lg text-muted-foreground">
                   {step.description}
                 </p>
               </div>
@@ -128,25 +128,25 @@ const Join = () => {
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
             <div className="lg:flex-1">
-              <p className="font-body text-body text-muted-foreground mb-6">
+              <p className="font-body text-body-lg text-muted-foreground mb-6">
                 To prepare effectively, we recommend reviewing our division-specific publications to
                 understand our analytical standards, writing style, and recurring themes. This will
                 help you align your reasoning, structure, and level of depth with the work produced
                 within MIMS.
               </p>
-              <p className="font-body text-body text-muted-foreground mb-4">
+              <p className="font-body text-body-lg text-muted-foreground mb-4">
                 In addition, candidates are expected to demonstrate a clear awareness of the current
                 market environment. In practice, this means being comfortable discussing:
               </p>
               <ul className="space-y-3">
-                <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                   Macroeconomic data (inflation, growth, labour market dynamics, central bank stance).
                 </li>
-                <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                   Relevant market data and recent performance (rates, credit, equities, FX,
                   commodities; key moves and drivers).
                 </li>
-                <li className="font-body text-body text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                   The most relevant market news from the last two weeks and its implications across
                   asset classes.
                 </li>
@@ -173,7 +173,7 @@ const Join = () => {
                   <AccordionTrigger className="font-serif text-subheading text-left hover:no-underline py-6 [&>svg]:hidden">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="font-body text-body text-muted-foreground pb-6">
+                  <AccordionContent className="font-body text-body-lg text-muted-foreground pb-6">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
