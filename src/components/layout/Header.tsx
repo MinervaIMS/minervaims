@@ -170,25 +170,25 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className={`lg:hidden border-t py-4 ${isTransparent ? 'border-background/20 bg-foreground/90' : 'border-separator'}`}>
+          <div className={`lg:hidden border-t py-4 bg-background ${isTransparent ? 'border-background/20' : 'border-separator'}`}>
             {navItems.map((item) => (
               <div key={item.label} className="py-2">
                 {item.dropdown ? (
                   <>
                     <button
-                      className="font-serif text-base tracking-wider text-accent w-full text-left py-2"
+                      className="font-serif text-base tracking-wider text-accent w-full text-left py-2 flex items-center justify-between"
                       onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
                     >
-                      {item.label}
-                      <span className="ml-1 text-xs">{openDropdown === item.label ? '▴' : '▾'}</span>
+                      <span>{item.label}</span>
+                      <span className="text-xs">{openDropdown === item.label ? '▴' : '▾'}</span>
                     </button>
                     {openDropdown === item.label && (
-                      <div className="pl-4 py-2 space-y-2">
+                      <div className="pl-4 py-2 space-y-2 bg-muted/50 rounded-md mt-1">
                         {item.dropdown.map((subItem) => (
                           <Link
                             key={subItem.href}
                             to={subItem.href}
-                            className="block text-base font-serif text-muted-foreground hover:text-accent py-1"
+                            className="block text-base font-serif text-muted-foreground hover:text-accent py-2 px-2"
                           >
                             {subItem.label}
                           </Link>
@@ -209,7 +209,7 @@ export function Header() {
             
             {/* Mobile Dashboard - only shown when logged in */}
             {user && (
-              <div className="py-2">
+              <div className="py-2 mt-2">
                 <Link
                   to="/admin"
                   className="font-serif text-base tracking-wider bg-background text-accent border border-accent px-4 py-2 inline-block hover:bg-accent hover:text-background hover:shadow-md transition-all duration-300"
