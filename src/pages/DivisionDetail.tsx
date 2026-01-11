@@ -3,7 +3,7 @@ import { PageIntroduction } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
 
-// Background images for divisions
+// Background images for each division
 import equityBg from '@/assets/division-equity-bg.webp';
 import investmentBg from '@/assets/division-investment-bg.webp';
 import macroBg from '@/assets/division-macro-bg.webp';
