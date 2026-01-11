@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { PageIntroduction, TeamDirectory } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
 import teamBg from '@/assets/team-bg.webp';
-
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 interface DbTeamMember {
   id: string;
   name: string;
@@ -71,9 +72,17 @@ const Team = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Team Behind the Work
           </h2>
-          <p className="font-body text-body-lg text-muted-foreground max-w-4xl">
-            Our members operate in a structured, professional environment across research divisions and portfolio management. Each team meets regularly to develop investment views, produce publishable outputs, and support disciplined portfolio decisions.
-          </p>
+          <div className="flex items-start justify-between gap-8">
+            <p className="font-body text-body-lg text-muted-foreground max-w-4xl flex-1">
+              Our members operate in a structured, professional environment across research divisions and portfolio management. Each team meets regularly to develop investment views, produce publishable outputs, and support disciplined portfolio decisions.
+            </p>
+            <Button asChild variant="outline" className="hidden md:inline-flex flex-shrink-0">
+              <Link to="/about#organisational-structure">
+                How are we structured
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
