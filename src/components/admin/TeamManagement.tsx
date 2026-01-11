@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +9,25 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Upload, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical } from 'lucide-react';
 import { divisionLabels } from '@/lib/types';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Position options with their board status
 const POSITIONS = [
@@ -115,9 +132,45 @@ export default function TeamManagement() {
     }
   };
 
-  // Group members by division
+  // Position hierarchy for sorting (lower = higher priority)
+  const POSITION_ORDER: Record<string, number> = {
+    'President': 1,
+    'Vice President': 2,
+    'Head of Asset Management': 3,
+    'Head of Equity Research': 10,
+    'Co-Head of Equity Research': 11,
+    'Head of Investment Research': 10,
+    'Co-Head of Investment Research': 11,
+    'Head of Macro Research': 10,
+    'Co-Head of Macro Research': 11,
+    'Head of Portfolio Management': 10,
+    'Co-Head of Portfolio Management': 11,
+    'Head of Quantitative Research': 10,
+    'Co-Head of Quantitative Research': 11,
+    'Head of Operations': 10,
+    'Co-Head of Operations': 11,
+    'Head of Media': 10,
+    'Co-Head of Media': 11,
+    'Portfolio Manager': 20,
+    'Senior Analyst': 30,
+    'Analyst': 40,
+    'Operations': 50,
+    'Media': 50,
+  };
+
+  // Group members by division with position-aware sorting
   const membersByDivision = useMemo(() => {
-    const boardMembers = members.filter(m => m.is_board);
+    const sortByPositionThenOrder = (a: TeamMember, b: TeamMember) => {
+      const posA = POSITION_ORDER[a.position] ?? 100;
+      const posB = POSITION_ORDER[b.position] ?? 100;
+      if (posA !== posB) return posA - posB;
+      return a.display_order - b.display_order;
+    };
+
+    const boardMembers = members
+      .filter(m => m.is_board)
+      .sort(sortByPositionThenOrder);
+    
     const divisionGroups: Record<string, TeamMember[]> = {};
     
     members.filter(m => !m.is_board && m.division).forEach(member => {
@@ -126,11 +179,118 @@ export default function TeamManagement() {
       divisionGroups[div].push(member);
     });
 
+    // Sort each division group by position hierarchy then display_order
+    Object.keys(divisionGroups).forEach(div => {
+      divisionGroups[div].sort(sortByPositionThenOrder);
+    });
+
     // Members without division (operations/media heads without division assignment)
-    const noDivision = members.filter(m => !m.is_board && !m.division);
+    const noDivision = members
+      .filter(m => !m.is_board && !m.division)
+      .sort(sortByPositionThenOrder);
 
     return { boardMembers, divisionGroups, noDivision };
   }, [members]);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Save reordered members to backend
+  const saveReorder = useCallback(async (reorderedMembers: TeamMember[]) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Session Expired", description: "Please log out and log back in.", variant: "destructive" });
+        return;
+      }
+
+      const items = reorderedMembers.map((m, index) => ({
+        id: m.id,
+        display_order: index,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('admin-team', {
+        body: { action: 'reorder', items },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error || data?.error) {
+        toast({ title: "Error", description: data?.error || "Failed to save order", variant: "destructive" });
+        fetchMembers();
+        return;
+      }
+
+      toast({ title: "Success", description: "Order updated successfully" });
+    } catch (error) {
+      console.error('Reorder error:', error);
+      toast({ title: "Error", description: "Failed to save order", variant: "destructive" });
+      fetchMembers();
+    }
+  }, [toast]);
+
+  // Handle drag end for a specific group
+  const handleDragEnd = useCallback((groupKey: string, groupMembers: TeamMember[]) => (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = groupMembers.findIndex(m => m.id === active.id);
+    const newIndex = groupMembers.findIndex(m => m.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const draggedMember = groupMembers[oldIndex];
+    const targetMember = groupMembers[newIndex];
+
+    // Check position hierarchy - can't move PM after Senior Analyst, etc.
+    const draggedPriority = POSITION_ORDER[draggedMember.position] ?? 100;
+    const targetPriority = POSITION_ORDER[targetMember.position] ?? 100;
+
+    // Only allow reordering within same position tier or if moving up in hierarchy
+    if (draggedPriority !== targetPriority) {
+      // Check if the move would violate hierarchy
+      const reordered = arrayMove(groupMembers, oldIndex, newIndex);
+      let prevPriority = 0;
+      for (const m of reordered) {
+        const priority = POSITION_ORDER[m.position] ?? 100;
+        if (priority < prevPriority) {
+          toast({ 
+            title: "Invalid Order", 
+            description: "Portfolio Managers must come before Senior Analysts, and Senior Analysts before Analysts.", 
+            variant: "destructive" 
+          });
+          return;
+        }
+        prevPriority = priority;
+      }
+    }
+
+    const reorderedGroup = arrayMove(groupMembers, oldIndex, newIndex);
+
+    // Update local state
+    setMembers(prev => {
+      const newMembers = [...prev];
+      reorderedGroup.forEach((member, index) => {
+        const idx = newMembers.findIndex(m => m.id === member.id);
+        if (idx !== -1) {
+          newMembers[idx] = { ...newMembers[idx], display_order: index };
+        }
+      });
+      return newMembers;
+    });
+
+    // Save to backend
+    saveReorder(reorderedGroup);
+  }, [toast, saveReorder]);
 
   const resetForm = () => {
     setFormData({
@@ -579,36 +739,72 @@ export default function TeamManagement() {
           {/* Board Members */}
           {membersByDivision.boardMembers.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">Executive Board</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {membersByDivision.boardMembers.map((member) => (
-                  <MemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
-                ))}
-              </div>
+              <h3 className="font-serif text-subheading mb-2 pb-2 border-b border-separator">Executive Board</h3>
+              <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this group</p>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd('board', membersByDivision.boardMembers)}
+              >
+                <SortableContext
+                  items={membersByDivision.boardMembers.map(m => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {membersByDivision.boardMembers.map((member) => (
+                      <SortableMemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           )}
 
           {/* Members by Division */}
           {DIVISIONS.filter(d => membersByDivision.divisionGroups[d.value]?.length > 0).map((division) => (
             <div key={division.value}>
-              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">{division.label}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {membersByDivision.divisionGroups[division.value].map((member) => (
-                  <MemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
-                ))}
-              </div>
+              <h3 className="font-serif text-subheading mb-2 pb-2 border-b border-separator">{division.label}</h3>
+              <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this division</p>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd(division.value, membersByDivision.divisionGroups[division.value])}
+              >
+                <SortableContext
+                  items={membersByDivision.divisionGroups[division.value].map(m => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {membersByDivision.divisionGroups[division.value].map((member) => (
+                      <SortableMemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           ))}
 
           {/* Members without division */}
           {membersByDivision.noDivision.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">Other</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {membersByDivision.noDivision.map((member) => (
-                  <MemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
-                ))}
-              </div>
+              <h3 className="font-serif text-subheading mb-2 pb-2 border-b border-separator">Other</h3>
+              <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this group</p>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd('other', membersByDivision.noDivision)}
+              >
+                <SortableContext
+                  items={membersByDivision.noDivision.map(m => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {membersByDivision.noDivision.map((member) => (
+                      <SortableMemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           )}
         </div>
@@ -617,7 +813,8 @@ export default function TeamManagement() {
   );
 }
 
-function MemberCard({ 
+// Sortable MemberCard wrapper
+function SortableMemberCard({ 
   member, 
   onEdit, 
   onDelete 
@@ -626,61 +823,88 @@ function MemberCard({
   onEdit: (member: TeamMember) => void; 
   onDelete: (id: string) => void;
 }) {
-  return (
-    <Card className="relative">
-      <CardContent className="p-4">
-        <div className="flex gap-4">
-          {/* Photo */}
-          <div className="w-16 h-16 flex-shrink-0 bg-muted flex items-center justify-center">
-            {member.photo_url ? (
-              <img 
-                src={member.photo_url} 
-                alt={`${member.name} ${member.surname}`}
-                className="w-16 h-16 object-cover"
-              />
-            ) : (
-              <span className="font-serif text-muted-foreground text-lg">
-                {member.name.charAt(0)}{member.surname.charAt(0)}
-              </span>
-            )}
-          </div>
-          
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <h4 className="font-serif text-body-lg truncate">
-              {member.name} {member.surname}
-            </h4>
-            <p className="font-body text-small text-muted-foreground truncate">
-              {member.position}
-            </p>
-            {member.fund && (
-              <p className="font-body text-xs text-muted-foreground truncate">
-                {FUNDS.find(f => f.value === member.fund)?.label || member.fund}
-              </p>
-            )}
-          </div>
-        </div>
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: member.id });
 
-        {/* Actions */}
-        <div className="absolute top-2 right-2 flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onEdit(member)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={() => onDelete(member.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className="relative">
+        <CardContent className="p-4">
+          <div className="flex gap-4">
+            {/* Drag Handle */}
+            <div
+              {...attributes}
+              {...listeners}
+              className="flex items-center cursor-grab active:cursor-grabbing"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            {/* Photo */}
+            <div className="w-16 h-16 flex-shrink-0 bg-muted flex items-center justify-center">
+              {member.photo_url ? (
+                <img 
+                  src={member.photo_url} 
+                  alt={`${member.name} ${member.surname}`}
+                  className="w-16 h-16 object-cover"
+                />
+              ) : (
+                <span className="font-serif text-muted-foreground text-lg">
+                  {member.name.charAt(0)}{member.surname.charAt(0)}
+                </span>
+              )}
+            </div>
+            
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <h4 className="font-serif text-body-lg truncate">
+                {member.name} {member.surname}
+              </h4>
+              <p className="font-body text-small text-muted-foreground truncate">
+                {member.position}
+              </p>
+              {member.fund && (
+                <p className="font-body text-xs text-muted-foreground truncate">
+                  {FUNDS.find(f => f.value === member.fund)?.label || member.fund}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEdit(member)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onDelete(member.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
