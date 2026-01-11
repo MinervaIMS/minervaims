@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 
 interface ArchiveFile {
@@ -38,6 +38,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
   
   // If user has restricted divisions, default form to first allowed division
   const defaultDivision = allowedDivisions && allowedDivisions.length > 0 ? allowedDivisions[0] : '' as Division | '';
@@ -93,6 +95,36 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       return true;
     });
   }, [files, divisionFilter, searchQuery, allowedDivisions]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedFiles = filteredFiles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [divisionFilter, searchQuery]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('ellipsis');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('ellipsis');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   // Get divisions available for filtering/selection based on permissions
   const availableDivisions = useMemo(() => {
@@ -528,7 +560,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
       {/* Results count */}
       <p className="font-body text-small text-muted-foreground mb-6">
-        Showing {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
+        Showing {paginatedFiles.length} of {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
+        {totalPages > 1 && ` (page ${currentPage} of ${totalPages})`}
       </p>
 
       {/* Files List - matching Archive page UI */}
@@ -545,90 +578,143 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-separator">
-          {filteredFiles.map((file) => (
-            <div key={file.id} className="py-6">
-              <div className="flex gap-4">
-                {/* PDF Preview Thumbnail */}
-                <div className="flex-shrink-0">
-                  <div className="w-16 h-16 bg-muted border border-separator overflow-hidden">
-                    <iframe
-                      src={`${file.file_url}#page=1&view=FitH`}
-                      className="w-[200px] h-[200px] origin-top-left scale-[0.32] pointer-events-none"
-                      title={`Preview of ${file.title}`}
-                    />
+        <>
+          <div className="divide-y divide-separator">
+            {paginatedFiles.map((file) => (
+              <div key={file.id} className="py-6">
+                <div className="flex gap-4">
+                  {/* PDF Preview Thumbnail */}
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-muted border border-separator overflow-hidden">
+                      <iframe
+                        src={`${file.file_url}#page=1&view=FitH`}
+                        className="w-[200px] h-[200px] origin-top-left scale-[0.32] pointer-events-none"
+                        title={`Preview of ${file.title}`}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* File Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-body text-sm text-muted-foreground">
-                      {formatDate(file.date)}
-                    </span>
-                    <span className="font-body text-xs px-2 py-0.5 bg-muted rounded">
-                      {divisionLabels[file.division as Division]}
-                    </span>
-                    {file.fund && (
-                      <span className="font-body text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
-                        {fundLabels[file.fund as Fund]}
+                  {/* File Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-body text-sm text-muted-foreground">
+                        {formatDate(file.date)}
                       </span>
-                    )}
-                  </div>
-                  <h3 className="font-serif text-lg font-medium mb-1">{file.title}</h3>
-                  {file.description && (
-                    <div>
-                      <p className={`font-body text-sm text-muted-foreground ${!expandedDescriptions.has(file.id) ? 'line-clamp-2' : ''}`}>
-                        {file.description}
-                      </p>
-                      {file.description.length > 150 && (
-                        <button
-                          onClick={() => toggleDescription(file.id)}
-                          className="font-body text-xs text-primary hover:underline mt-1 flex items-center gap-1"
-                        >
-                          {expandedDescriptions.has(file.id) ? (
-                            <>Read less <ChevronUp className="h-3 w-3" /></>
-                          ) : (
-                            <>Read more <ChevronDown className="h-3 w-3" /></>
-                          )}
-                        </button>
+                      <span className="font-body text-xs px-2 py-0.5 bg-muted rounded">
+                        {divisionLabels[file.division as Division]}
+                      </span>
+                      {file.fund && (
+                        <span className="font-body text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                          {fundLabels[file.fund as Fund]}
+                        </span>
                       )}
                     </div>
-                  )}
-                  <div className="mt-3 flex items-center gap-2">
-                    <a
-                      href={file.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-body text-xs text-primary hover:underline flex items-center gap-1"
+                    <h3 className="font-serif text-lg font-medium mb-1">{file.title}</h3>
+                    {file.description && (
+                      <div>
+                        <p className={`font-body text-sm text-muted-foreground ${!expandedDescriptions.has(file.id) ? 'line-clamp-2' : ''}`}>
+                          {file.description}
+                        </p>
+                        {file.description.length > 150 && (
+                          <button
+                            onClick={() => toggleDescription(file.id)}
+                            className="font-body text-xs text-primary hover:underline mt-1 flex items-center gap-1"
+                          >
+                            {expandedDescriptions.has(file.id) ? (
+                              <>Read less <ChevronUp className="h-3 w-3" /></>
+                            ) : (
+                              <>Read more <ChevronDown className="h-3 w-3" /></>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="mt-3 flex items-center gap-2">
+                      <a
+                        href={file.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-body text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download PDF
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => openEditDialog(file)}
                     >
-                      <Download className="h-3 w-3" />
-                      Download PDF
-                    </a>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDelete(file.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => openEditDialog(file)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(file.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <nav className="flex justify-center mt-8" aria-label="Pagination">
+              <ul className="flex items-center gap-1">
+                <li>
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Go to previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                </li>
+                {getPageNumbers().map((page, index) => (
+                  <li key={index}>
+                    {page === 'ellipsis' ? (
+                      <span className="flex h-9 w-9 items-center justify-center" aria-hidden>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handlePageChange(page)}
+                        className={`h-9 w-9 font-body text-sm border rounded ${
+                          currentPage === page
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-separator hover:bg-muted'
+                        }`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    )}
+                  </li>
+                ))}
+                <li>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Go to next page"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+        </>
       )}
     </div>
   );
