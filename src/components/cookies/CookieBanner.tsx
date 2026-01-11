@@ -25,14 +25,16 @@ export function CookieBanner() {
             <Button
               onClick={rejectNonEssential}
               variant="outline"
-              className="font-body text-small"
+              className="text-small text-accent hover:text-white"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Reject Non-Essential
             </Button>
             <Button
               onClick={openPreferences}
               variant="outline"
-              className="font-body text-small"
+              className="text-small text-accent hover:text-white"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Manage Settings
             </Button>
