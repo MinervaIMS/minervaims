@@ -92,10 +92,10 @@ export function Footer() {
                     <img 
                       src={linkedinIcon} 
                       alt="LinkedIn" 
-                      className="h-5 w-5 opacity-80 hover:opacity-100 transition-opacity"
+                      className="h-8 w-8 opacity-80 hover:opacity-100 transition-opacity"
                     />
                   ) : (
-                    <Instagram size={20} />
+                    <Instagram size={32} />
                   )}
                 </a>
               ))}
