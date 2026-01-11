@@ -127,14 +127,16 @@ export function CookiePreferences() {
             <Button
               onClick={rejectNonEssential}
               variant="outline"
-              className="font-body text-[14px] md:text-[15px] flex-1"
+              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-white"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Reject All
             </Button>
             <Button
               onClick={handleSave}
               variant="outline"
-              className="font-body text-[14px] md:text-[15px] flex-1"
+              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-white"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Save Preferences
             </Button>
