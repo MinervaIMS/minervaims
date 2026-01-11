@@ -39,7 +39,8 @@ export function CookieBanner() {
             <Button
               onClick={acceptAll}
               variant="default"
-              className="font-body text-small text-white"
+              className="text-small text-accent hover:text-white"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Accept All
             </Button>
