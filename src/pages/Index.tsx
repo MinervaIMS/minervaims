@@ -70,24 +70,24 @@ const Index = () => {
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
+            <Link to="/members/archive" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.reports} isLoading={isLoading} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
-            </div>
-            <div className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0">
+            </Link>
+            <Link to="/team" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.members} isLoading={isLoading} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
-            </div>
-            <div className="text-center py-6">
+            </Link>
+            <Link to="/members/alumni" className="text-center py-6 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.alumni} isLoading={isLoading} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
