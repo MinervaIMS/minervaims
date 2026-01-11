@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -46,6 +46,8 @@ const AdminDashboard = () => {
     guests: [''],
     description: '',
   });
+  const [eventsCurrentPage, setEventsCurrentPage] = useState(1);
+  const EVENTS_PER_PAGE = 15;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
@@ -116,6 +118,34 @@ const AdminDashboard = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Events pagination logic
+  const eventsTotalPages = Math.ceil(events.length / EVENTS_PER_PAGE);
+  const eventsStartIndex = (eventsCurrentPage - 1) * EVENTS_PER_PAGE;
+  const paginatedEvents = useMemo(() => 
+    events.slice(eventsStartIndex, eventsStartIndex + EVENTS_PER_PAGE),
+    [events, eventsStartIndex, EVENTS_PER_PAGE]
+  );
+
+  const handleEventsPageChange = (page: number) => {
+    setEventsCurrentPage(page);
+  };
+
+  const getEventsPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (eventsTotalPages <= 7) {
+      for (let i = 1; i <= eventsTotalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (eventsCurrentPage > 3) pages.push('ellipsis');
+      for (let i = Math.max(2, eventsCurrentPage - 1); i <= Math.min(eventsTotalPages - 1, eventsCurrentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (eventsCurrentPage < eventsTotalPages - 2) pages.push('ellipsis');
+      pages.push(eventsTotalPages);
+    }
+    return pages;
   };
 
   const handleLogout = async () => {
@@ -525,6 +555,12 @@ const AdminDashboard = () => {
               </Dialog>
             </div>
 
+            {/* Results count */}
+            <p className="font-body text-small text-muted-foreground mb-6">
+              Showing {paginatedEvents.length} of {events.length} {events.length === 1 ? 'event' : 'events'}
+              {eventsTotalPages > 1 && ` (page ${eventsCurrentPage} of ${eventsTotalPages})`}
+            </p>
+
             {/* Events List */}
             {events.length === 0 ? (
               <Card>
@@ -535,38 +571,91 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-0">
-                {events.map((event, index) => (
-                  <div 
-                    key={event.id}
-                    className={`py-8 ${index !== events.length - 1 ? 'border-b border-separator' : ''}`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <EventsListNew events={[event]} />
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-8">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openEditDialog(event)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => handleDelete(event.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+              <>
+                <div className="space-y-0">
+                  {paginatedEvents.map((event, index) => (
+                    <div 
+                      key={event.id}
+                      className={`py-8 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <EventsListNew events={[event]} />
+                        </div>
+                        
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-8">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openEditDialog(event)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleDelete(event.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {eventsTotalPages > 1 && (
+                  <nav className="flex justify-center mt-8" aria-label="Events Pagination">
+                    <ul className="flex items-center gap-1">
+                      <li>
+                        <button
+                          onClick={() => handleEventsPageChange(eventsCurrentPage - 1)}
+                          disabled={eventsCurrentPage === 1}
+                          className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                          aria-label="Go to previous page"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </button>
+                      </li>
+                      {getEventsPageNumbers().map((page, index) => (
+                        <li key={index}>
+                          {page === 'ellipsis' ? (
+                            <span className="flex h-9 w-9 items-center justify-center" aria-hidden>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleEventsPageChange(page)}
+                              className={`h-9 w-9 font-body text-sm border rounded ${
+                                eventsCurrentPage === page
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'border-separator hover:bg-muted'
+                              }`}
+                              aria-current={eventsCurrentPage === page ? 'page' : undefined}
+                            >
+                              {page}
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                      <li>
+                        <button
+                          onClick={() => handleEventsPageChange(eventsCurrentPage + 1)}
+                          disabled={eventsCurrentPage === eventsTotalPages}
+                          className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                          aria-label="Go to next page"
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
+              </>
             )}
           </TabsContent>
         )}
