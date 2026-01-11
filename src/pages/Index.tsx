@@ -70,13 +70,19 @@ const Index = () => {
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <Link to="/archive" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
+            <Link
+              to="/archive"
+              className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity"
+            >
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.reports} isLoading={isLoading} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </Link>
-            <Link to="/members/team" className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity">
+            <Link
+              to="/members/team"
+              className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity"
+            >
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.members} isLoading={isLoading} />
               </p>
@@ -99,11 +105,11 @@ const Index = () => {
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="max-w-3xl">
               <p className="font-body text-body-lg text-muted-foreground mb-6">
-                Minerva Investment Management Society (MIMS) is an association promoted and run by students of
-                Università Bocconi. Founded in 2017, it operates student-managed virtual funds supported by structured
-                research and portfolio management processes. Members work across specialist research divisions and
-                Portfolio Management, producing professional-standard reports and documenting decisions through due
-                diligence and risk analysis.
+                Minerva Investment Management Society (MIMS) is an association promoted and run by students of Bocconi
+                University. Founded in 2017, it operates student-managed virtual funds supported by structured research
+                and portfolio management processes. Members work across specialist research divisions and Portfolio
+                Management, producing professional-standard reports and documenting decisions through due diligence and
+                risk analysis.
               </p>
               <p className="font-body text-body-lg text-muted-foreground mb-6">
                 MIMS complements its investment work with a targeted programme of engagement. The Society hosts one
@@ -148,7 +154,9 @@ const Index = () => {
       {/* Activities & Events Section */}
       <section className="py-12 md:py-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Activities & Events</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+            Activities & Events
+          </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
               Each semester we host one flagship event with industry professionals, organise company visits, and hold
