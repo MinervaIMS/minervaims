@@ -25,7 +25,7 @@ const CookiePolicy = () => {
             <Button
               onClick={openPreferences}
               variant="default"
-              className="text-[15px] text-accent hover:text-white"
+              className="text-[17px] text-accent hover:text-white"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Manage Cookie Preferences
