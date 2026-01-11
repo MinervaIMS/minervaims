@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { User } from 'lucide-react';
-import logoWhite from '@/assets/logo-white.svg';
+import footerLogo from '@/assets/footer-logo.svg';
 
 const exploreLinks = [
   { label: 'Join Us', href: '/join' },
@@ -30,11 +30,11 @@ export function Footer() {
           <div className="flex items-start">
             <Link to="/" aria-label="MIMS Home">
               <img 
-                src={logoWhite} 
+                src={footerLogo} 
                 alt="Minerva Investment Management Society" 
-                width={96}
-                height={96}
-                className="h-20 md:h-24 w-auto"
+                width={128}
+                height={128}
+                className="h-28 md:h-32 w-auto"
                 loading="lazy"
                 decoding="async"
               />
@@ -58,9 +58,9 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Connect */}
+          {/* Contact */}
           <div>
-            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Connect</h3>
+            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Contact</h3>
             <ul className="space-y-2">
               {connectLinks.map((link) => (
                 <li key={link.label}>
@@ -100,10 +100,10 @@ export function Footer() {
 
         {/* Disclaimer - Full Width */}
         <div className="mb-8 py-4">
-          <h4 className="font-serif text-[15px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
+          <h4 className="font-serif text-[17px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
             Disclaimer
           </h4>
-          <div className="font-body text-[14px] md:text-[14px] text-[#D6D6D6] leading-[1.6] space-y-4">
+          <div className="font-body text-[15px] md:text-[15px] text-[#D6D6D6] leading-[1.6] space-y-4">
             <p>
               Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
               This website and any documents made available through it (including reports, presentations, virtual portfolio materials 
