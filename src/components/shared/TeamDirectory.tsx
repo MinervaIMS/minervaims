@@ -87,7 +87,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
     <div>
       {/* Filters */}
       {showFilters && (
-        <div className="mb-8 pb-6 border-b border-separator">
+        <div className="mb-8 pb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">

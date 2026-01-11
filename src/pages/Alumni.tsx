@@ -116,7 +116,7 @@ const Alumni = () => {
             <img 
               src={alumniCommunityLogo} 
               alt="MIMS Alumni Community" 
-              className="hidden md:block w-32 h-32 flex-shrink-0 -ml-16"
+              className="hidden md:block w-32 h-32 flex-shrink-0 ml-8"
             />
           </div>
         </div>
@@ -166,7 +166,7 @@ const Alumni = () => {
         )}
 
         {/* Search and Filters */}
-        <div className="mb-8 pb-6 border-b border-separator">
+        <div className="mb-8 pb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
