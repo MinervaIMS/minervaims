@@ -668,7 +668,10 @@ const AdminDashboard = () => {
 
         {permissions.canAccessTeam && (
           <TabsContent value="team">
-            <TeamManagement />
+            <TeamManagement 
+              allowedDivisions={permissions.allowedDivisions} 
+              isFullAccess={permissions.isFullAccess}
+            />
           </TabsContent>
         )}
 

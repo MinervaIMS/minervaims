@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical } from 'lucide-react';
-import { divisionLabels } from '@/lib/types';
+import { divisionLabels, Division } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -86,7 +86,23 @@ interface TeamMember {
   display_order: number;
 }
 
-export default function TeamManagement() {
+interface TeamManagementProps {
+  allowedDivisions?: Division[] | null;
+  isFullAccess?: boolean;
+}
+
+// Positions that division heads can assign (restricted roles)
+const DIVISION_HEAD_ALLOWED_POSITIONS = [
+  'Analyst',
+  'Senior Analyst',
+];
+
+// Additional position for head of portfolio
+const PORTFOLIO_HEAD_ADDITIONAL_POSITIONS = [
+  'Portfolio Manager',
+];
+
+export default function TeamManagement({ allowedDivisions, isFullAccess = true }: TeamManagementProps) {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,6 +183,27 @@ export default function TeamManagement() {
     'Media': 50,
   };
 
+  // Get positions available based on user permissions
+  const availablePositions = useMemo(() => {
+    if (isFullAccess) return POSITIONS;
+    
+    // Division heads can only assign certain positions
+    let allowed = [...DIVISION_HEAD_ALLOWED_POSITIONS];
+    
+    // Head of portfolio can also add Portfolio Managers
+    if (allowedDivisions?.includes('portfolio')) {
+      allowed = [...allowed, ...PORTFOLIO_HEAD_ADDITIONAL_POSITIONS];
+    }
+    
+    return POSITIONS.filter(p => allowed.includes(p.value));
+  }, [isFullAccess, allowedDivisions]);
+
+  // Get divisions available based on user permissions
+  const availableDivisions = useMemo(() => {
+    if (isFullAccess || !allowedDivisions) return DIVISIONS;
+    return DIVISIONS.filter(d => allowedDivisions.includes(d.value as Division));
+  }, [isFullAccess, allowedDivisions]);
+
   // Group members by division with position-aware sorting
   const membersByDivision = useMemo(() => {
     const sortByPositionThenOrder = (a: TeamMember, b: TeamMember) => {
@@ -176,13 +213,18 @@ export default function TeamManagement() {
       return a.display_order - b.display_order;
     };
 
-    const boardMembers = members
-      .filter(m => m.is_board)
-      .sort(sortByPositionThenOrder);
+    // Filter members based on allowed divisions if not full access
+    const filteredMembers = !isFullAccess && allowedDivisions 
+      ? members.filter(m => m.division && allowedDivisions.includes(m.division as Division))
+      : members;
+
+    const boardMembers = isFullAccess 
+      ? members.filter(m => m.is_board).sort(sortByPositionThenOrder)
+      : []; // Division heads can't see/edit board members
     
     const divisionGroups: Record<string, TeamMember[]> = {};
     
-    members.filter(m => !m.is_board && m.division).forEach(member => {
+    filteredMembers.filter(m => !m.is_board && m.division).forEach(member => {
       const div = member.division!;
       if (!divisionGroups[div]) divisionGroups[div] = [];
       divisionGroups[div].push(member);
@@ -194,12 +236,12 @@ export default function TeamManagement() {
     });
 
     // Members without division (operations/media heads without division assignment)
-    const noDivision = members
-      .filter(m => !m.is_board && !m.division)
-      .sort(sortByPositionThenOrder);
+    const noDivision = isFullAccess
+      ? members.filter(m => !m.is_board && !m.division).sort(sortByPositionThenOrder)
+      : [];
 
     return { boardMembers, divisionGroups, noDivision };
-  }, [members]);
+  }, [members, isFullAccess, allowedDivisions]);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -313,11 +355,16 @@ export default function TeamManagement() {
   }, []);
 
   const resetForm = () => {
+    // For division heads, pre-select their division
+    const defaultDivision = !isFullAccess && allowedDivisions?.length === 1 
+      ? allowedDivisions[0] 
+      : '';
+    
     setFormData({
       name: '',
       surname: '',
       position: '',
-      division: '',
+      division: defaultDivision,
       fund: '',
       photo_url: '',
       linkedin_url: '',
@@ -586,7 +633,7 @@ export default function TeamManagement() {
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
                   <SelectContent>
-                    {POSITIONS.map((pos) => (
+                    {availablePositions.map((pos) => (
                       <SelectItem key={pos.value} value={pos.value}>
                         {pos.label}
                       </SelectItem>
@@ -596,16 +643,17 @@ export default function TeamManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label className="font-body">Division</Label>
+                <Label className="font-body">Division{!isFullAccess ? ' *' : ''}</Label>
                 <Select
                   value={formData.division}
                   onValueChange={(value) => setFormData({ ...formData, division: value, fund: value !== 'portfolio' ? '' : formData.fund })}
+                  disabled={!isFullAccess && allowedDivisions?.length === 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select division (optional)" />
+                    <SelectValue placeholder={isFullAccess ? "Select division (optional)" : "Select division"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {DIVISIONS.map((div) => (
+                    {availableDivisions.map((div) => (
                       <SelectItem key={div.value} value={div.value}>
                         {div.label}
                       </SelectItem>
