@@ -20,6 +20,16 @@ import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
+// Role-based dashboard icons
+import dashboardIconAdmin from '@/assets/dashboard-icon-admin.svg';
+import dashboardIconMacro from '@/assets/dashboard-icon-macro.svg';
+import dashboardIconInvestment from '@/assets/dashboard-icon-investment.svg';
+import dashboardIconQuant from '@/assets/dashboard-icon-quant.svg';
+import dashboardIconEquity from '@/assets/dashboard-icon-equity.svg';
+import dashboardIconPortfolio from '@/assets/dashboard-icon-portfolio.svg';
+import dashboardIconPM from '@/assets/dashboard-icon-pm.svg';
+import dashboardIconOpsMedia from '@/assets/dashboard-icon-ops-media.svg';
+
 interface DbEvent {
   id: string;
   title: string;
@@ -346,18 +356,52 @@ const AdminDashboard = () => {
     // Get the highest priority role
     const priorityOrder: string[] = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
       'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
-      'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'member'];
+      'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member'];
     const userRoleNames: string[] = roles.map(r => r.role);
     const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || String(roles[0].role);
     return roleLabels[primaryRole] || primaryRole;
   };
+
+  // Get the appropriate dashboard icon based on user roles
+  const getDashboardIcon = () => {
+    const userRoleNames = roles.map(r => r.role);
+    
+    // Admin, president, vice_president, head_of_asset_management
+    if (userRoleNames.some(r => ['admin', 'president', 'vice_president', 'head_of_asset_management'].includes(r))) {
+      return dashboardIconAdmin;
+    }
+    // Head of operations or head of media
+    if (userRoleNames.some(r => ['head_of_operations', 'head_of_media'].includes(r))) {
+      return dashboardIconOpsMedia;
+    }
+    // Division heads
+    if (userRoleNames.includes('head_of_macro')) return dashboardIconMacro;
+    if (userRoleNames.includes('head_of_investment')) return dashboardIconInvestment;
+    if (userRoleNames.includes('head_of_quant')) return dashboardIconQuant;
+    if (userRoleNames.includes('head_of_equity')) return dashboardIconEquity;
+    if (userRoleNames.includes('head_of_portfolio')) return dashboardIconPortfolio;
+    if (userRoleNames.includes('portfolio_manager')) return dashboardIconPM;
+    
+    return null;
+  };
+
+  const dashboardIcon = getDashboardIcon();
 
   return (
     <div className="container py-section-sm md:py-section">
       {/* Header */}
       <div className="flex items-center justify-between mb-10 pb-6 border-b border-separator">
         <div>
-          <h1 className="font-serif text-display text-accent mb-2">Admin Dashboard</h1>
+          <div className="flex items-center gap-4 mb-2">
+            {dashboardIcon && (
+              <img 
+                src={dashboardIcon} 
+                alt="Dashboard icon" 
+                className="h-12 w-12 md:h-14 md:w-14"
+              />
+            )}
+            <h1 className="font-serif text-display text-accent">Admin Dashboard</h1>
+          </div>
           <div className="flex items-center gap-3">
             <p className="font-body text-muted-foreground">
               {user.email}
