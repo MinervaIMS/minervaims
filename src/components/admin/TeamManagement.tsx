@@ -589,7 +589,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-heading">Team Management</h2>
+        <h2 className="font-serif text-heading text-accent">Team Management</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} className="font-body">
@@ -800,7 +800,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {/* Board Members */}
           {membersByDivision.boardMembers.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading mb-2 pb-2 border-b border-separator">Executive Board</h3>
+              <h3 className="font-serif text-subheading text-accent mb-2 pb-2 border-b border-separator">Executive Board</h3>
               <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this group</p>
               <DndContext
                 sensors={sensors}
@@ -829,7 +829,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {/* Members by Division */}
           {DIVISIONS.filter(d => membersByDivision.divisionGroups[d.value]?.length > 0).map((division) => (
             <div key={division.value}>
-              <h3 className="font-serif text-subheading mb-2 pb-2 border-b border-separator">{division.label}</h3>
+              <h3 className="font-serif text-subheading text-accent mb-2 pb-2 border-b border-separator">{division.label}</h3>
               <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this division</p>
               <DndContext
                 sensors={sensors}
@@ -858,7 +858,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {/* Members without division */}
           {membersByDivision.noDivision.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading mb-2 pb-2 border-b border-separator">Other</h3>
+              <h3 className="font-serif text-subheading text-accent mb-2 pb-2 border-b border-separator">Other</h3>
               <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this group</p>
               <DndContext
                 sensors={sensors}
