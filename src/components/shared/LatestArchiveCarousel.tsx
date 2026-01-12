@@ -31,7 +31,7 @@ export function LatestArchiveCarousel() {
         .from('archive_files')
         .select('id, title, file_url, date, division')
         .order('date', { ascending: false })
-        .limit(8);
+        .limit(15);
 
       if (error) throw error;
       setFiles(data || []);

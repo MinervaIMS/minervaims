@@ -36,7 +36,7 @@ export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
         .select('id, title, file_url, date, fund')
         .eq('fund', fund)
         .order('date', { ascending: false })
-        .limit(5);
+        .limit(8);
 
       if (error) throw error;
       setFiles(data || []);
@@ -129,7 +129,7 @@ export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
             </div>
             
             <span className="font-serif text-sm text-background uppercase tracking-[0.2em]">
-              Discover More
+              Browse Archive
             </span>
           </Link>
         </div>
