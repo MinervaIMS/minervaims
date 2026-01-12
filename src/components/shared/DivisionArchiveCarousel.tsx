@@ -120,19 +120,16 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
         >
           <Link
             to={`/archive?division=${division}`}
-            className="relative flex flex-col items-center justify-center gap-5 w-full bg-background/5 hover:bg-background/15 border border-background/20 hover:border-background/40 transition-all duration-300 group overflow-hidden"
+            className="flex flex-col items-center justify-center gap-5 w-full transition-all duration-300 group"
             style={{ height: `${ITEM_WIDTH * 1.4142}px` }}
           >
-            {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Arrow with animated circle */}
-            <div className="relative flex items-center justify-center w-16 h-16 rounded-full border border-background/30 group-hover:border-background/50 group-hover:scale-110 transition-all duration-300">
-              <ArrowRight className="w-6 h-6 text-background/70 group-hover:text-background group-hover:translate-x-0.5 transition-all duration-300" />
+            {/* White circle with accent arrow */}
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-background group-hover:scale-110 transition-all duration-300">
+              <ArrowRight className="w-6 h-6 text-accent group-hover:translate-x-0.5 transition-all duration-300" />
             </div>
             
-            <span className="relative font-body text-sm text-background/70 group-hover:text-background transition-colors duration-300 uppercase tracking-[0.2em]">
-              Discover More
+            <span className="font-serif text-sm text-background uppercase tracking-[0.2em]">
+              Discover More Division Reports
             </span>
           </Link>
         </div>
