@@ -12,7 +12,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-auto items-center gap-1 border-b border-separator bg-transparent p-0",
+      "inline-flex h-auto items-center gap-1 bg-transparent p-0",
       className,
     )}
     {...props}
@@ -27,12 +27,11 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap px-4 py-3 text-sm font-medium text-muted-foreground transition-all relative",
+      "inline-flex items-center justify-center whitespace-nowrap px-4 py-3 text-base font-medium text-muted-foreground transition-all relative",
       "hover:text-accent hover:bg-accent/5",
       "data-[state=active]:text-accent-foreground data-[state=active]:bg-accent",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       "disabled:pointer-events-none disabled:opacity-50",
-      "-mb-px",
       className,
     )}
     {...props}

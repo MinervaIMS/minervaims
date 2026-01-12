@@ -585,10 +585,10 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                 <div className="flex gap-4">
                   {/* PDF Preview Thumbnail */}
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-muted border border-separator overflow-hidden">
+                    <div className="w-24 h-32 bg-muted border border-separator overflow-hidden">
                       <iframe
                         src={`${file.file_url}#page=1&view=FitH`}
-                        className="w-[200px] h-[200px] origin-top-left scale-[0.32] pointer-events-none"
+                        className="w-[300px] h-[400px] origin-top-left scale-[0.32] pointer-events-none"
                         title={`Preview of ${file.title}`}
                       />
                     </div>
@@ -672,7 +672,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-3 py-2 font-body text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Go to previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -704,7 +704,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-3 py-2 font-body text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Go to next page"
                   >
                     Next
