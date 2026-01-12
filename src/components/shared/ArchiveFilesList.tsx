@@ -16,9 +16,10 @@ interface ArchiveFile {
 interface ArchiveFilesListProps {
   files: ArchiveFile[];
   showDivision?: boolean;
+  highlightedFileId?: string | null;
 }
 
-export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesListProps) {
+export function ArchiveFilesList({ files, showDivision = false, highlightedFileId }: ArchiveFilesListProps) {
   const [previewFile, setPreviewFile] = useState<ArchiveFile | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
@@ -57,7 +58,8 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
         {files.map((file, index) => (
           <article
             key={file.id}
-            className={`py-6 ${index !== files.length - 1 ? 'border-b border-separator' : ''}`}
+            id={`file-${file.id}`}
+            className={`py-6 transition-colors duration-500 ${index !== files.length - 1 ? 'border-b border-separator' : ''} ${highlightedFileId === file.id ? 'bg-primary/10 -mx-4 px-4 rounded-lg' : ''}`}
           >
             <div className="flex flex-col md:flex-row md:items-start gap-4">
               {/* PDF Preview Thumbnail - A4 aspect ratio */}

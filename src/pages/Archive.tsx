@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageIntroduction } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,11 @@ const Archive = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
+  const hasScrolledToFile = useRef(false);
+
+  // Read fileId from URL params (for direct linking from carousels)
+  const fileIdFromUrl = searchParams.get('fileId');
 
   // Read division filter from URL params, default to 'all'
   const divisionFromUrl = searchParams.get('division');
@@ -62,6 +67,8 @@ const Archive = () => {
         newParams.delete('fund');
       }
     }
+    // Clear fileId when changing filters
+    newParams.delete('fileId');
     setSearchParams(newParams);
   };
 
@@ -72,6 +79,8 @@ const Archive = () => {
     } else {
       newParams.set('fund', fund);
     }
+    // Clear fileId when changing filters
+    newParams.delete('fileId');
     setSearchParams(newParams);
   };
 
@@ -82,6 +91,8 @@ const Archive = () => {
     } else {
       newParams.set('year', year);
     }
+    // Clear fileId when changing filters
+    newParams.delete('fileId');
     setSearchParams(newParams);
   };
 
@@ -89,9 +100,11 @@ const Archive = () => {
     fetchFiles();
   }, []);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (but not when fileId changes)
   useEffect(() => {
-    setCurrentPage(1);
+    if (!fileIdFromUrl) {
+      setCurrentPage(1);
+    }
   }, [divisionFilter, fundFilter, yearFilter, searchQuery]);
 
   const fetchFiles = async () => {
@@ -141,6 +154,37 @@ const Archive = () => {
       return true;
     });
   }, [files, divisionFilter, fundFilter, yearFilter, searchQuery]);
+
+  // Handle direct file linking - find the page containing the file and scroll to it
+  useEffect(() => {
+    if (fileIdFromUrl && files.length > 0 && !hasScrolledToFile.current) {
+      // Find the file in the unfiltered list
+      const fileIndex = files.findIndex(f => f.id === fileIdFromUrl);
+      if (fileIndex !== -1) {
+        // Calculate which page the file is on
+        const targetPage = Math.floor(fileIndex / ITEMS_PER_PAGE) + 1;
+        setCurrentPage(targetPage);
+        setHighlightedFileId(fileIdFromUrl);
+        hasScrolledToFile.current = true;
+
+        // Scroll to the file after a short delay to allow rendering
+        setTimeout(() => {
+          const element = document.getElementById(`file-${fileIdFromUrl}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            setHighlightedFileId(null);
+            // Clear fileId from URL
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('fileId');
+            setSearchParams(newParams, { replace: true });
+          }, 3000);
+        }, 300);
+      }
+    }
+  }, [fileIdFromUrl, files, searchParams, setSearchParams]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
@@ -277,7 +321,7 @@ const Archive = () => {
             <p className="font-body text-muted-foreground py-8">Loading reports...</p>
           ) : (
             <>
-              <ArchiveFilesList files={paginatedFiles} showDivision={divisionFilter === 'all'} />
+              <ArchiveFilesList files={paginatedFiles} showDivision={divisionFilter === 'all'} highlightedFileId={highlightedFileId} />
               
               {/* Pagination */}
               {totalPages > 1 && (

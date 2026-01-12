@@ -97,11 +97,9 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
         className="flex overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 scroll-smooth snap-x snap-mandatory"
       >
         {files.map((file) => (
-          <a
+          <Link
             key={file.id}
-            href={file.file_url}
-            target="_blank"
-            rel="noopener noreferrer"
+            to={`/archive?fileId=${file.id}`}
             className="flex-shrink-0 w-[350px] md:w-[400px] px-6 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
           >
             {/* PDF Preview - A4 aspect ratio */}
@@ -122,7 +120,7 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
             <h3 className="font-serif text-xl leading-tight line-clamp-2 text-background group-hover:text-background/80 transition-colors">
               {file.title}
             </h3>
-          </a>
+          </Link>
         ))}
 
         {/* Discover more button as last item */}
