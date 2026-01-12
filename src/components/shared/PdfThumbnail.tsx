@@ -7,18 +7,72 @@ interface PdfThumbnailProps {
   alt?: string;
 }
 
-// Use dynamic import to avoid top-level await issues
-let pdfjsLib: typeof import('pdfjs-dist') | null = null;
+// PDF.js types (minimal subset we need)
+interface PDFDocumentProxy {
+  getPage(pageNumber: number): Promise<PDFPageProxy>;
+}
 
-const loadPdfJs = async () => {
-  if (!pdfjsLib) {
-    // Use legacy build which doesn't require top-level await
-    pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    // Set worker from CDN (legacy version)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+interface PDFPageProxy {
+  getViewport(params: { scale: number }): PDFPageViewport;
+  render(params: { canvasContext: CanvasRenderingContext2D; viewport: PDFPageViewport }): { promise: Promise<void> };
+}
+
+interface PDFPageViewport {
+  width: number;
+  height: number;
+}
+
+interface PDFJSLib {
+  getDocument(params: { url: string; disableRange?: boolean; disableStream?: boolean }): { promise: Promise<PDFDocumentProxy> };
+  GlobalWorkerOptions: { workerSrc: string };
+}
+
+// Load PDF.js from CDN
+let pdfjsLib: PDFJSLib | null = null;
+let loadingPromise: Promise<PDFJSLib> | null = null;
+
+const loadPdfJs = (): Promise<PDFJSLib> => {
+  if (pdfjsLib) {
+    return Promise.resolve(pdfjsLib);
   }
-  return pdfjsLib;
+  
+  if (loadingPromise) {
+    return loadingPromise;
+  }
+
+  loadingPromise = new Promise((resolve, reject) => {
+    // Check if already loaded
+    if ((window as unknown as { pdfjsLib?: PDFJSLib }).pdfjsLib) {
+      pdfjsLib = (window as unknown as { pdfjsLib: PDFJSLib }).pdfjsLib;
+      resolve(pdfjsLib);
+      return;
+    }
+
+    const script = document.createElement('script');
+    // Use legacy build which is more compatible
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.async = true;
+    
+    script.onload = () => {
+      const lib = (window as unknown as { pdfjsLib?: PDFJSLib }).pdfjsLib;
+      if (lib) {
+        lib.GlobalWorkerOptions.workerSrc = 
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib = lib;
+        resolve(lib);
+      } else {
+        reject(new Error('PDF.js failed to load'));
+      }
+    };
+    
+    script.onerror = () => {
+      reject(new Error('Failed to load PDF.js script'));
+    };
+    
+    document.head.appendChild(script);
+  });
+
+  return loadingPromise;
 };
 
 export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfThumbnailProps) {
@@ -41,7 +95,6 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
         const loadingTask = pdfjs.getDocument({
           url,
-          // Disable range requests for better compatibility
           disableRange: true,
           disableStream: true,
         });
