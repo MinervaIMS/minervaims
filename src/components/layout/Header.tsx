@@ -238,7 +238,7 @@ export function Header() {
           </div>
         )}
       </div>
-      {!isTransparent && <div className="hairline" />}
+      
     </header>
   );
 }
