@@ -6,6 +6,6 @@
         <defs>
             <path id="path1" d="M 1175.214355 2275.699951 C 1783.873535 2261.758057 2273 1763.550659 2273 1151 L 2273 1151 C 2273 529.679688 1769.768066 26 1149 26 C 528.231873 26 25 529.679688 25 1151 C 25 1772.320313 528.231873 2276 1149 2276 C 1154.432251 2276 1159.855591 2275.961426 1165.269653 2275.884521"/>
         </defs>
-        <text id="MINERVA-INVESTMENT-MANAGEMENT-SOCIET" transform="matrix(0 1 -1 0 2300 2)" xml:space="preserve"><textPath xlink:href="#path1" startOffset="0"><tspan font-family="Times New Roman" font-size="248.04" fill="#ffffff" baseline-shift="75" letter-spacing="39.6864" xml:space="preserve">MINERVA INVESTMENT MANAGEMENT SOCIET </tspan></textPath></text>
+        <text id="-MINERVA-INVESTMENT-MANAGEMENT" transform="matrix(0 1 -1 0 2300 2)" xml:space="preserve"><textPath xlink:href="#path1" startOffset="0"><tspan font-family="Times New Roman" font-size="239.4" fill="#ffffff" baseline-shift="75" letter-spacing="38.304" xml:space="preserve"> MINERVA INVESTMENT MANAGEMENT SOCIETY</tspan></textPath></text>
     </g>
 </svg>
