@@ -19,6 +19,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -93,6 +95,7 @@ export default function TeamManagement() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
@@ -105,6 +108,12 @@ export default function TeamManagement() {
     display_order: 0,
   });
   const { toast } = useToast();
+
+  // Find the active member being dragged
+  const activeMember = useMemo(() => {
+    if (!activeDragId) return null;
+    return members.find(m => m.id === activeDragId) || null;
+  }, [activeDragId, members]);
 
   useEffect(() => {
     fetchMembers();
@@ -237,8 +246,14 @@ export default function TeamManagement() {
     }
   }, [toast]);
 
+  // Handle drag start
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  }, []);
+
   // Handle drag end for a specific group
   const handleDragEnd = useCallback((groupKey: string, groupMembers: TeamMember[]) => (event: DragEndEvent) => {
+    setActiveDragId(null);
     const { active, over } = event;
     
     if (!over || active.id === over.id) return;
@@ -291,6 +306,11 @@ export default function TeamManagement() {
     // Save to backend
     saveReorder(reorderedGroup);
   }, [toast, saveReorder]);
+
+  // Handle drag cancel
+  const handleDragCancel = useCallback(() => {
+    setActiveDragId(null);
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -675,17 +695,6 @@ export default function TeamManagement() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="order" className="font-body">Display Order</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  value={formData.display_order}
-                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                />
-              </div>
-
               <div className="flex items-center gap-2">
                 <Switch
                   id="is_board"
@@ -744,7 +753,9 @@ export default function TeamManagement() {
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd('board', membersByDivision.boardMembers)}
+                onDragCancel={handleDragCancel}
               >
                 <SortableContext
                   items={membersByDivision.boardMembers.map(m => m.id)}
@@ -756,6 +767,9 @@ export default function TeamManagement() {
                     ))}
                   </div>
                 </SortableContext>
+                <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+                  {activeMember ? <DragOverlayCard member={activeMember} /> : null}
+                </DragOverlay>
               </DndContext>
             </div>
           )}
@@ -768,7 +782,9 @@ export default function TeamManagement() {
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd(division.value, membersByDivision.divisionGroups[division.value])}
+                onDragCancel={handleDragCancel}
               >
                 <SortableContext
                   items={membersByDivision.divisionGroups[division.value].map(m => m.id)}
@@ -780,6 +796,9 @@ export default function TeamManagement() {
                     ))}
                   </div>
                 </SortableContext>
+                <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+                  {activeMember ? <DragOverlayCard member={activeMember} /> : null}
+                </DragOverlay>
               </DndContext>
             </div>
           ))}
@@ -792,7 +811,9 @@ export default function TeamManagement() {
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd('other', membersByDivision.noDivision)}
+                onDragCancel={handleDragCancel}
               >
                 <SortableContext
                   items={membersByDivision.noDivision.map(m => m.id)}
@@ -804,6 +825,9 @@ export default function TeamManagement() {
                     ))}
                   </div>
                 </SortableContext>
+                <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+                  {activeMember ? <DragOverlayCard member={activeMember} /> : null}
+                </DragOverlay>
               </DndContext>
             </div>
           )}
@@ -842,11 +866,11 @@ function SortableMemberCard({
     <div ref={setNodeRef} style={style} className="relative">
       {/* Placeholder shown when dragging */}
       {isDragging && (
-        <div className="absolute inset-0 bg-muted/50 border-2 border-dashed border-primary/40 rounded-lg" />
+        <div className="absolute inset-0 bg-muted/30 border-2 border-dashed border-primary/40 rounded-lg" />
       )}
       <Card className={`relative transition-all duration-200 ${
         isDragging 
-          ? 'shadow-2xl shadow-primary/20 scale-105 ring-2 ring-primary/30 bg-background' 
+          ? 'opacity-0' 
           : 'hover:shadow-md'
       }`}>
         <CardContent className="p-4">
@@ -915,5 +939,51 @@ function SortableMemberCard({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Drag overlay preview card - simplified version for the overlay
+function DragOverlayCard({ member }: { member: TeamMember }) {
+  return (
+    <Card className="shadow-2xl shadow-primary/30 ring-2 ring-primary bg-background rotate-2 cursor-grabbing">
+      <CardContent className="p-4">
+        <div className="flex gap-4">
+          {/* Drag Handle */}
+          <div className="flex items-center text-primary">
+            <GripVertical className="h-5 w-5" />
+          </div>
+
+          {/* Photo */}
+          <div className="w-16 h-16 flex-shrink-0 bg-muted flex items-center justify-center">
+            {member.photo_url ? (
+              <img 
+                src={member.photo_url} 
+                alt={`${member.name} ${member.surname}`}
+                className="w-16 h-16 object-cover"
+              />
+            ) : (
+              <span className="font-serif text-muted-foreground text-lg">
+                {member.name.charAt(0)}{member.surname.charAt(0)}
+              </span>
+            )}
+          </div>
+          
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-serif text-body-lg truncate">
+              {member.name} {member.surname}
+            </h4>
+            <p className="font-body text-small text-muted-foreground truncate">
+              {member.position}
+            </p>
+            {member.fund && (
+              <p className="font-body text-xs text-muted-foreground truncate">
+                {FUNDS.find(f => f.value === member.fund)?.label || member.fund}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
