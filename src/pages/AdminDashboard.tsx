@@ -397,7 +397,7 @@ const AdminDashboard = () => {
               <img 
                 src={dashboardIcon} 
                 alt="Dashboard icon" 
-                className="h-12 w-12 md:h-14 md:w-14"
+                className="h-[4.5rem] w-[4.5rem] md:h-[5.25rem] md:w-[5.25rem]"
               />
             )}
             <h1 className="font-serif text-display text-accent">Admin Dashboard</h1>
