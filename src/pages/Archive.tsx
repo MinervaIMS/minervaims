@@ -176,15 +176,11 @@ const Archive = () => {
           // Remove highlight after 3 seconds
           setTimeout(() => {
             setHighlightedFileId(null);
-            // Clear fileId from URL
-            const newParams = new URLSearchParams(searchParams);
-            newParams.delete('fileId');
-            setSearchParams(newParams, { replace: true });
           }, 3000);
         }, 300);
       }
     }
-  }, [fileIdFromUrl, files, searchParams, setSearchParams]);
+  }, [fileIdFromUrl, files]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
