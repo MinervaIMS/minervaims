@@ -295,7 +295,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
   }, []);
 
   // Handle drag end for a specific group
-  const handleDragEnd = useCallback((groupKey: string, groupMembers: TeamMember[]) => (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((groupKey: string, groupMembers: TeamMember[], isBoard: boolean = false) => (event: DragEndEvent) => {
     setActiveDragId(null);
     const { active, over } = event;
     
@@ -306,29 +306,32 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const draggedMember = groupMembers[oldIndex];
-    const targetMember = groupMembers[newIndex];
+    // Only apply position hierarchy validation to NON-board members (division sections)
+    if (!isBoard) {
+      const draggedMember = groupMembers[oldIndex];
+      const targetMember = groupMembers[newIndex];
 
-    // Check position hierarchy - can't move PM after Senior Analyst, etc.
-    const draggedPriority = POSITION_ORDER[draggedMember.position] ?? 100;
-    const targetPriority = POSITION_ORDER[targetMember.position] ?? 100;
+      // Check position hierarchy - can't move PM after Senior Analyst, etc.
+      const draggedPriority = POSITION_ORDER[draggedMember.position] ?? 100;
+      const targetPriority = POSITION_ORDER[targetMember.position] ?? 100;
 
-    // Only allow reordering within same position tier or if moving up in hierarchy
-    if (draggedPriority !== targetPriority) {
-      // Check if the move would violate hierarchy
-      const reordered = arrayMove(groupMembers, oldIndex, newIndex);
-      let prevPriority = 0;
-      for (const m of reordered) {
-        const priority = POSITION_ORDER[m.position] ?? 100;
-        if (priority < prevPriority) {
-          toast({ 
-            title: "Invalid Order", 
-            description: "Portfolio Managers must come before Senior Analysts, and Senior Analysts before Analysts.", 
-            variant: "destructive" 
-          });
-          return;
+      // Only allow reordering within same position tier or if moving up in hierarchy
+      if (draggedPriority !== targetPriority) {
+        // Check if the move would violate hierarchy
+        const reordered = arrayMove(groupMembers, oldIndex, newIndex);
+        let prevPriority = 0;
+        for (const m of reordered) {
+          const priority = POSITION_ORDER[m.position] ?? 100;
+          if (priority < prevPriority) {
+            toast({ 
+              title: "Invalid Order", 
+              description: "Portfolio Managers must come before Senior Analysts, and Senior Analysts before Analysts.", 
+              variant: "destructive" 
+            });
+            return;
+          }
+          prevPriority = priority;
         }
-        prevPriority = priority;
       }
     }
 
@@ -803,7 +806,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd('board', membersByDivision.boardMembers)}
+                onDragEnd={handleDragEnd('board', membersByDivision.boardMembers, true)}
                 onDragCancel={handleDragCancel}
               >
                 <SortableContext
@@ -832,7 +835,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd(division.value, membersByDivision.divisionGroups[division.value])}
+                onDragEnd={handleDragEnd(division.value, membersByDivision.divisionGroups[division.value], false)}
                 onDragCancel={handleDragCancel}
               >
                 <SortableContext
@@ -861,7 +864,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd('other', membersByDivision.noDivision)}
+                onDragEnd={handleDragEnd('other', membersByDivision.noDivision, false)}
                 onDragCancel={handleDragCancel}
               >
                 <SortableContext

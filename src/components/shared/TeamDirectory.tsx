@@ -11,28 +11,6 @@ interface TeamDirectoryProps {
   initialDivisionFilter?: Division;
 }
 
-// Position priority for sorting division members
-const POSITION_ORDER: Record<string, number> = {
-  'Head of Equity Research': 1,
-  'Co-Head of Equity Research': 1,
-  'Head of Investment Research': 1,
-  'Co-Head of Investment Research': 1,
-  'Head of Macro Research': 1,
-  'Co-Head of Macro Research': 1,
-  'Head of Portfolio Management': 1,
-  'Co-Head of Portfolio Management': 1,
-  'Head of Quantitative Research': 1,
-  'Co-Head of Quantitative Research': 1,
-  'Head of Operations': 1,
-  'Co-Head of Operations': 1,
-  'Head of Media': 1,
-  'Co-Head of Media': 1,
-  'Portfolio Manager': 2,
-  'Senior Analyst': 3,
-  'Analyst': 4,
-  'Operations': 5,
-  'Media': 5,
-};
 
 export function TeamDirectory({ members, showFilters = false, initialDivisionFilter }: TeamDirectoryProps) {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>(initialDivisionFilter || 'all');
@@ -58,19 +36,18 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
     });
   }, [members, divisionFilter, roleFilter, searchQuery]);
 
-  // Board members: sorted by display_order (manual ordering)
-  const boardMembers = filteredMembers.filter(m => m.isBoard);
+  // Board members: sorted by display_order only (manual ordering from admin)
+  const boardMembers = useMemo(() => {
+    return filteredMembers
+      .filter(m => m.isBoard)
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  }, [filteredMembers]);
   
-  // Division members: sorted by position priority, then alphabetically by surname
+  // Division members: sorted by display_order (respects admin drag-and-drop ordering)
   const divisionMembers = useMemo(() => {
     return filteredMembers
       .filter(m => !m.isBoard)
-      .sort((a, b) => {
-        const orderA = POSITION_ORDER[a.position] || 99;
-        const orderB = POSITION_ORDER[b.position] || 99;
-        if (orderA !== orderB) return orderA - orderB;
-        return a.surname.localeCompare(b.surname);
-      });
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }, [filteredMembers]);
 
   const groupedByDivision = useMemo(() => {
