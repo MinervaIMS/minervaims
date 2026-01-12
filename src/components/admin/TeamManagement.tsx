@@ -36,6 +36,7 @@ const POSITIONS = [
   { value: 'President', label: 'President', isBoard: true },
   { value: 'Vice President', label: 'Vice President', isBoard: true },
   { value: 'Head of Asset Management', label: 'Head of Asset Management', isBoard: true },
+  { value: 'Advisor', label: 'Advisor', isBoard: true },
   { value: 'Head of Equity Research', label: 'Head of Equity Research', isBoard: false },
   { value: 'Co-Head of Equity Research', label: 'Co-Head of Equity Research', isBoard: false },
   { value: 'Head of Investment Research', label: 'Head of Investment Research', isBoard: false },

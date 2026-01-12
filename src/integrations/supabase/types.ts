@@ -299,6 +299,7 @@ export type Database = {
         | "head_of_operations"
         | "head_of_media"
         | "member"
+        | "portfolio_manager"
       team_division:
         | "equity"
         | "investment"
@@ -330,6 +331,7 @@ export type Database = {
         | "Co-Head of Quantitative Research"
         | "Co-Head of Operations"
         | "Co-Head of Media"
+        | "Advisor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -470,6 +472,7 @@ export const Constants = {
         "head_of_operations",
         "head_of_media",
         "member",
+        "portfolio_manager",
       ],
       team_division: [
         "equity",
@@ -503,6 +506,7 @@ export const Constants = {
         "Co-Head of Quantitative Research",
         "Co-Head of Operations",
         "Co-Head of Media",
+        "Advisor",
       ],
     },
   },

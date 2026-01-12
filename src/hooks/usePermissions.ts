@@ -14,6 +14,7 @@ type AppRole =
   | 'head_of_quant'
   | 'head_of_operations'
   | 'head_of_media'
+  | 'portfolio_manager'
   | 'member';
 
 // Map roles to their associated divisions (using the Division type from types.ts)
@@ -47,6 +48,9 @@ const divisionHeadRoles: AppRole[] = [
   'head_of_portfolio',
   'head_of_quant',
 ];
+
+// Portfolio manager role - only files for portfolio division
+const portfolioManagerRole: AppRole = 'portfolio_manager';
 
 export interface Permissions {
   // Section access
@@ -125,6 +129,23 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: true, // Division heads can now manage team (restricted to their division)
         canAccessSettings: false,
         allowedDivisions: allowedDivisions.length > 0 ? allowedDivisions : null,
+        hasAnyAccess: true,
+        isFullAccess: false,
+      };
+    }
+    
+    // Check for portfolio manager role
+    const isPortfolioManager = userRoles.includes(portfolioManagerRole);
+    
+    if (isPortfolioManager) {
+      return {
+        canAccessUsers: false,
+        canAccessAlumni: false,
+        canAccessEvents: false,
+        canAccessFiles: true, // Can only upload files for portfolio division
+        canAccessTeam: false,
+        canAccessSettings: false,
+        allowedDivisions: ['portfolio'], // Restricted to portfolio division only
         hasAnyAccess: true,
         isFullAccess: false,
       };
