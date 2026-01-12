@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Division, divisionLabels } from '@/lib/types';
 import { ArrowRight } from 'lucide-react';
+import { PdfThumbnail } from './PdfThumbnail';
 
 interface ArchiveFile {
   id: string;
@@ -93,11 +94,13 @@ export function LatestArchiveCarousel() {
             className="flex-shrink-0 w-[450px] px-8 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
           >
             {/* PDF Preview - Larger vertical preview */}
-            <div className="w-full h-[480px] bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors">
-              <iframe
-                src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
+            <div className="w-full h-[480px] bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors flex items-center justify-center">
+              <PdfThumbnail
+                fileUrl={file.file_url}
+                width={340}
+                height={480}
                 title={`Preview of ${file.title}`}
+                className="group-hover:opacity-90 transition-opacity"
               />
             </div>
 

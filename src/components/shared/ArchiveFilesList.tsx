@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
 import { Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PdfThumbnail } from './PdfThumbnail';
 
 interface ArchiveFile {
   id: string;
@@ -62,13 +63,14 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
             <div className="flex flex-col md:flex-row md:items-start gap-4">
               {/* PDF Preview Thumbnail */}
               <div 
-                className="flex-shrink-0 w-36 h-36 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity group"
+                className="flex-shrink-0 w-36 h-48 bg-muted rounded border border-separator overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setPreviewFile(file)}
                 title="Click to preview PDF"
               >
-                <iframe
-                  src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                  className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
+                <PdfThumbnail
+                  fileUrl={file.file_url}
+                  width={144}
+                  height={192}
                   title={`Preview of ${file.title}`}
                 />
               </div>
