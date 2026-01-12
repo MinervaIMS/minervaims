@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
+import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 
 interface ArchiveFile {
   id: string;
@@ -585,13 +586,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                 <div className="flex gap-4">
                   {/* PDF Preview Thumbnail */}
                   <div className="flex-shrink-0">
-                    <div className="w-24 h-32 bg-muted border border-separator overflow-hidden">
-                      <iframe
-                        src={`${file.file_url}#page=1&view=FitH`}
-                        className="w-[300px] h-[400px] origin-top-left scale-[0.32] pointer-events-none"
-                        title={`Preview of ${file.title}`}
-                      />
-                    </div>
+                    <PdfThumbnail
+                      url={file.file_url}
+                      className="w-24 h-32 bg-muted border border-separator"
+                      alt={`Preview of ${file.title}`}
+                    />
                   </div>
 
                   {/* File Info */}
