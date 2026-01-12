@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Division, divisionLabels } from '@/lib/types';
+import { Division } from '@/lib/types';
 import { ArrowRight } from 'lucide-react';
 import { PdfThumbnail } from './PdfThumbnail';
+import { CarouselScrollIndicator } from './CarouselScrollIndicator';
+
+const ITEM_WIDTH = 320; // Consistent width for all items
+
 interface ArchiveFile {
   id: string;
   title: string;
@@ -20,7 +24,6 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     fetchLatestFiles();
@@ -43,26 +46,6 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
       setIsLoading(false);
     }
   };
-
-  const updateScrollState = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  };
-
-  useEffect(() => {
-    updateScrollState();
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', updateScrollState);
-      window.addEventListener('resize', updateScrollState);
-      return () => {
-        container.removeEventListener('scroll', updateScrollState);
-        window.removeEventListener('resize', updateScrollState);
-      };
-    }
-  }, [files]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -89,25 +72,31 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
     );
   }
 
+  // Total items including the "Discover More" button
+  const totalItems = files.length + 1;
+
   return (
     <div className="relative">
       {/* Scrollable container */}
       <div
         ref={scrollContainerRef}
-        className="flex overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 scroll-smooth snap-x snap-mandatory"
+        className="flex overflow-x-auto scrollbar-hide pb-4 scroll-smooth snap-x snap-mandatory"
       >
         {files.map((file) => (
           <Link
             key={file.id}
             to={`/archive?fileId=${file.id}`}
-            className="flex-shrink-0 w-[350px] md:w-[400px] px-6 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
+            className="flex-shrink-0 pr-6 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
+            style={{ width: `${ITEM_WIDTH}px` }}
           >
-            {/* PDF Preview - A4 aspect ratio */}
-            <PdfThumbnail
-              url={file.file_url}
-              className="w-full bg-white mb-5"
-              alt={`Preview of ${file.title}`}
-            />
+            {/* PDF Preview - fixed width container */}
+            <div className="w-full" style={{ width: `${ITEM_WIDTH - 24}px` }}>
+              <PdfThumbnail
+                url={file.file_url}
+                className="w-full bg-white mb-5"
+                alt={`Preview of ${file.title}`}
+              />
+            </div>
 
             {/* Meta */}
             <div className="flex items-center gap-3 mb-3">
@@ -124,10 +113,14 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
         ))}
 
         {/* Discover more button as last item */}
-        <div className="flex-shrink-0 w-[350px] md:w-[400px] px-6 flex items-center justify-center snap-start">
+        <div 
+          className="flex-shrink-0 flex items-center justify-center snap-start"
+          style={{ width: `${ITEM_WIDTH}px` }}
+        >
           <Link
             to={`/archive?division=${division}`}
-            className="flex flex-col items-center justify-center gap-4 w-full h-[400px] md:h-[450px] border border-background/30 hover:border-background/60 hover:bg-background/10 transition-all group"
+            className="flex flex-col items-center justify-center gap-4 w-full border border-background/30 hover:border-background/60 hover:bg-background/10 transition-all group"
+            style={{ height: `${(ITEM_WIDTH - 24) * 1.4142}px` }}
           >
             <ArrowRight className="w-8 h-8 text-background/60 group-hover:text-background transition-colors" />
             <span className="font-body text-lg text-background/80 group-hover:text-background transition-colors uppercase tracking-wider">
@@ -137,6 +130,12 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
         </div>
       </div>
 
+      {/* Scroll indicator dots */}
+      <CarouselScrollIndicator 
+        containerRef={scrollContainerRef}
+        itemCount={totalItems}
+        itemWidth={ITEM_WIDTH}
+      />
     </div>
   );
 }
