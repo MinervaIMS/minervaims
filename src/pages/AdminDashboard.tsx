@@ -391,24 +391,24 @@ const AdminDashboard = () => {
     <div className="container py-section-sm md:py-section">
       {/* Header */}
       <div className="flex items-center justify-between mb-10 pb-6 border-b border-separator">
-        <div>
-          <div className="flex items-center gap-4 mb-2">
-            {dashboardIcon && (
-              <img 
-                src={dashboardIcon} 
-                alt="Dashboard icon" 
-                className="h-[4.5rem] w-[4.5rem] md:h-[5.25rem] md:w-[5.25rem]"
-              />
-            )}
-            <h1 className="font-serif text-display text-accent">Admin Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <p className="font-body text-muted-foreground">
-              {user.email}
-            </p>
-            <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-accent text-accent-foreground">
-              {getUserRoleLabel()}
-            </span>
+        <div className="flex items-center gap-6">
+          {dashboardIcon && (
+            <img 
+              src={dashboardIcon} 
+              alt="Dashboard icon" 
+              className="h-[6.75rem] w-[6.75rem] md:h-[7.875rem] md:w-[7.875rem]"
+            />
+          )}
+          <div>
+            <h1 className="font-serif text-display text-accent mb-2">Admin Dashboard</h1>
+            <div className="flex items-center gap-3">
+              <p className="font-body text-muted-foreground text-lg">
+                {user.email}
+              </p>
+              <span className="inline-flex items-center px-4 py-1.5 text-sm font-medium bg-accent text-accent-foreground">
+                {getUserRoleLabel()}
+              </span>
+            </div>
           </div>
         </div>
         <Button 
