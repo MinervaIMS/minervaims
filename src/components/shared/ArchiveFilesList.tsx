@@ -68,7 +68,7 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
               >
                 <PdfThumbnail
                   url={file.file_url}
-                  className="w-28 aspect-[1/1.414] bg-white rounded border border-separator"
+                  className="w-28 bg-white rounded border border-separator"
                   alt={`Preview of ${file.title}`}
                 />
               </div>
