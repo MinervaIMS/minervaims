@@ -40,6 +40,7 @@ export interface TeamMember {
   photoUrl?: string;
   linkedinUrl?: string;
   isBoard: boolean;
+  displayOrder?: number;
 }
 
 export interface Alumni {

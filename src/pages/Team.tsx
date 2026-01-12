@@ -56,6 +56,7 @@ const Team = () => {
     photoUrl: m.photo_url || undefined,
     linkedinUrl: m.linkedin_url || undefined,
     isBoard: m.is_board,
+    displayOrder: m.display_order,
   }));
 
   return (
