@@ -116,7 +116,7 @@ const Alumni = () => {
             <img 
               src={alumniCommunityLogo} 
               alt="MIMS Alumni Community" 
-              className="hidden md:block w-32 h-32 flex-shrink-0 ml-8"
+              className="hidden md:block w-44 h-44 flex-shrink-0 ml-12"
             />
           </div>
         </div>
