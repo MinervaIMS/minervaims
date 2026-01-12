@@ -584,11 +584,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             {paginatedFiles.map((file) => (
               <div key={file.id} className="py-6">
                 <div className="flex gap-4">
-                  {/* PDF Preview Thumbnail */}
+                  {/* PDF Preview Thumbnail - A4 aspect ratio */}
                   <div className="flex-shrink-0">
                     <PdfThumbnail
                       url={file.file_url}
-                      className="w-24 h-32 bg-muted border border-separator"
+                      className="w-20 aspect-[1/1.414] bg-white border border-separator"
                       alt={`Preview of ${file.title}`}
                     />
                   </div>

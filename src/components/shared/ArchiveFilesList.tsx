@@ -60,7 +60,7 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
             className={`py-6 ${index !== files.length - 1 ? 'border-b border-separator' : ''}`}
           >
             <div className="flex flex-col md:flex-row md:items-start gap-4">
-              {/* PDF Preview Thumbnail */}
+              {/* PDF Preview Thumbnail - A4 aspect ratio */}
               <div 
                 className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setPreviewFile(file)}
@@ -68,7 +68,7 @@ export function ArchiveFilesList({ files, showDivision = false }: ArchiveFilesLi
               >
                 <PdfThumbnail
                   url={file.file_url}
-                  className="w-36 h-36 bg-muted rounded border border-separator"
+                  className="w-28 aspect-[1/1.414] bg-white rounded border border-separator"
                   alt={`Preview of ${file.title}`}
                 />
               </div>

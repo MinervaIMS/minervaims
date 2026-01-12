@@ -104,10 +104,10 @@ export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
             rel="noopener noreferrer"
             className="flex-shrink-0 w-[350px] md:w-[400px] px-6 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
           >
-            {/* PDF Preview */}
+            {/* PDF Preview - A4 aspect ratio */}
             <PdfThumbnail
               url={file.file_url}
-              className="w-full h-[400px] md:h-[450px] bg-background/10 mb-5 group-hover:bg-background/20 transition-colors"
+              className="w-full aspect-[1/1.414] bg-white mb-5"
               alt={`Preview of ${file.title}`}
             />
 
