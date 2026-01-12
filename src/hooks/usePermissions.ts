@@ -33,13 +33,13 @@ const fullAccessRoles: AppRole[] = [
   'head_of_asset_management',
 ];
 
-// Operations and media roles - all except team management
+// Operations and media roles - events, alumni, files access (no user management)
 const operationsMediaRoles: AppRole[] = [
   'head_of_operations',
   'head_of_media',
 ];
 
-// Division head roles - only events and files for their division
+// Division head roles - only files and team for their division (no events)
 const divisionHeadRoles: AppRole[] = [
   'head_of_equity',
   'head_of_investment',
@@ -120,9 +120,9 @@ export const usePermissions = (): Permissions => {
       return {
         canAccessUsers: false,
         canAccessAlumni: false,
-        canAccessEvents: true,
+        canAccessEvents: false, // Division heads no longer have events access
         canAccessFiles: true,
-        canAccessTeam: false,
+        canAccessTeam: true, // Division heads can now manage team (restricted to their division)
         canAccessSettings: false,
         allowedDivisions: allowedDivisions.length > 0 ? allowedDivisions : null,
         hasAnyAccess: true,
