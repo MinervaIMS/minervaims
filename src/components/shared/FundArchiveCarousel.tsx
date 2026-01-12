@@ -80,17 +80,18 @@ export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
       {/* Scrollable container */}
       <div
         ref={scrollContainerRef}
-        className="flex overflow-x-auto scrollbar-hide pb-4 scroll-smooth snap-x snap-mandatory"
+        className="flex overflow-x-auto scrollbar-hide pb-4 scroll-smooth snap-x snap-mandatory gap-6"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {files.map((file) => (
           <Link
             key={file.id}
             to={`/archive?fileId=${file.id}`}
-            className="flex-shrink-0 pr-6 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
+            className="flex-shrink-0 group cursor-pointer snap-start"
             style={{ width: `${ITEM_WIDTH}px` }}
           >
             {/* PDF Preview - fixed width container */}
-            <div className="w-full" style={{ width: `${ITEM_WIDTH - 24}px` }}>
+            <div className="w-full">
               <PdfThumbnail
                 url={file.file_url}
                 className="w-full bg-white mb-5"
@@ -120,7 +121,7 @@ export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
           <Link
             to={`/archive?fund=${fund}`}
             className="flex flex-col items-center justify-center gap-4 w-full border border-background/30 hover:border-background/60 hover:bg-background/10 transition-all group"
-            style={{ height: `${(ITEM_WIDTH - 24) * 1.4142}px` }}
+            style={{ height: `${ITEM_WIDTH * 1.4142}px` }}
           >
             <ArrowRight className="w-8 h-8 text-background/60 group-hover:text-background transition-colors" />
             <span className="font-body text-lg text-background/80 group-hover:text-background transition-colors uppercase tracking-wider">
