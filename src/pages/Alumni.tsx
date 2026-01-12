@@ -109,14 +109,14 @@ const Alumni = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             A Global Network, Still Close
           </h2>
-          <div className="flex items-start gap-8">
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl flex-1">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+            <p className="font-body text-body-lg text-muted-foreground max-w-3xl flex-1 order-2 md:order-1">
               MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
             </p>
             <img 
               src={alumniCommunityLogo} 
               alt="MIMS Alumni Community" 
-              className="hidden md:block w-44 h-44 flex-shrink-0 ml-12"
+              className="w-36 h-36 md:w-48 md:h-48 flex-shrink-0 md:ml-16 order-1 md:order-2"
             />
           </div>
         </div>
