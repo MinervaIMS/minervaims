@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Division, divisionLabels } from '@/lib/types';
-import { ArrowRight } from 'lucide-react';
 import { PdfThumbnail } from './PdfThumbnail';
 import { CarouselScrollIndicator } from './CarouselScrollIndicator';
 
@@ -63,8 +62,7 @@ export function LatestArchiveCarousel() {
     return null;
   }
 
-  // Total items including the "Browse Archive" button
-  const totalItems = files.length + 1;
+  const totalItems = files.length;
 
   return (
     <div className="relative">
@@ -107,29 +105,6 @@ export function LatestArchiveCarousel() {
           </Link>
         ))}
 
-        {/* Archive button as last item */}
-        <div 
-          className="flex-shrink-0 flex items-center justify-center snap-start"
-          style={{ width: `${ITEM_WIDTH}px` }}
-        >
-          <Link
-            to="/archive"
-            className="relative flex flex-col items-center justify-center gap-5 w-full bg-background/5 hover:bg-background/15 border border-background/20 hover:border-background/40 transition-all duration-300 group overflow-hidden"
-            style={{ height: `${ITEM_WIDTH * 1.4142}px` }}
-          >
-            {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Arrow with animated circle */}
-            <div className="relative flex items-center justify-center w-16 h-16 rounded-full border border-background/30 group-hover:border-background/50 group-hover:scale-110 transition-all duration-300">
-              <ArrowRight className="w-6 h-6 text-background/70 group-hover:text-background group-hover:translate-x-0.5 transition-all duration-300" />
-            </div>
-            
-            <span className="relative font-body text-sm text-background/70 group-hover:text-background transition-colors duration-300 uppercase tracking-[0.2em]">
-              Browse Archive
-            </span>
-          </Link>
-        </div>
       </div>
 
       {/* Scroll indicator dots */}
