@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     
     // Get user from auth header
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('No authorization header provided');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
@@ -31,16 +31,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Create a client with the user's auth header
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
     
-    if (userError || !user) {
-      console.log('Invalid token or user not found:', userError);
+    if (claimsError || !claimsData?.claims) {
+      console.log('Invalid token:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const userId = claimsData.claims.sub;
+    const userEmail = claimsData.claims.email as string | undefined;
+    
+    // Create a user-like object for compatibility
+    const user = { id: userId, email: userEmail };
 
     console.log('User authenticated:', user.id, user.email);
 
