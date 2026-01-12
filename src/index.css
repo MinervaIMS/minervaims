@@ -108,13 +108,18 @@
 
   /* Subtle shadow for elevated elements */
   .shadow-subtle {
-    box-shadow: 0 1px 3px 0 hsl(var(--overlay) / 0.04), 
-                0 1px 2px -1px hsl(var(--overlay) / 0.04);
+    box-shadow: 0 1px 3px 0 hsl(var(--overlay) / 0.06), 
+                0 1px 2px -1px hsl(var(--overlay) / 0.06);
   }
 
   .shadow-elevated {
-    box-shadow: 0 4px 6px -1px hsl(var(--overlay) / 0.06), 
-                0 2px 4px -2px hsl(var(--overlay) / 0.04);
+    box-shadow: 0 8px 16px -4px hsl(var(--overlay) / 0.1), 
+                0 4px 6px -2px hsl(var(--overlay) / 0.06);
+  }
+
+  .shadow-card-hover {
+    box-shadow: 0 10px 25px -5px hsl(var(--accent) / 0.08), 
+                0 6px 10px -3px hsl(var(--overlay) / 0.06);
   }
 
   /* Hero overlay */
