@@ -355,19 +355,23 @@ const AdminDashboard = () => {
   return (
     <div className="container py-section-sm md:py-section">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-10 pb-6 border-b border-separator">
         <div>
-          <h1 className="font-serif text-display mb-2">Admin Dashboard</h1>
+          <h1 className="font-serif text-display text-accent mb-2">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
             <p className="font-body text-muted-foreground">
               {user.email}
             </p>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+            <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-accent text-accent-foreground">
               {getUserRoleLabel()}
             </span>
           </div>
         </div>
-        <Button variant="outline" onClick={handleLogout} className="font-body">
+        <Button 
+          variant="outline" 
+          onClick={handleLogout} 
+          className="font-body border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-all"
+        >
           <LogOut className="h-4 w-4 mr-2" />
           Logout
         </Button>
@@ -430,7 +434,7 @@ const AdminDashboard = () => {
           <TabsContent value="events">
             {/* Events Header */}
             <div className="flex items-center justify-between mb-8">
-              <h2 className="font-serif text-heading">Events Management</h2>
+              <h2 className="font-serif text-heading text-accent">Events Management</h2>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={openCreateDialog} className="font-body">

@@ -228,7 +228,7 @@ export default function AlumniManagement() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-heading">Alumni Management</h2>
+        <h2 className="font-serif text-heading text-accent">Alumni Management</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} className="font-body">
@@ -372,7 +372,7 @@ export default function AlumniManagement() {
         <div className="space-y-8">
           {sortedYears.map((year) => (
             <div key={year}>
-              <h3 className="font-serif text-subheading mb-4 pb-2 border-b border-separator">
+              <h3 className="font-serif text-subheading text-accent mb-4 pb-2 border-b border-separator">
                 Class of {year}
               </h3>
               <div className="divide-y divide-separator">

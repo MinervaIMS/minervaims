@@ -157,7 +157,7 @@ const ApplicationSettings = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-serif text-heading">Application Settings</h2>
+        <h2 className="font-serif text-heading text-accent">Application Settings</h2>
       </div>
 
       <Card>

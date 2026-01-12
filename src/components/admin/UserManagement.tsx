@@ -249,8 +249,8 @@ const UserManagement = () => {
       <Card>
         <CardContent className="py-4">
           <div className="flex items-center gap-2 mb-4">
-            <Info className="h-4 w-4" />
-            <span className="font-serif text-heading">Role Access Permissions</span>
+            <Info className="h-4 w-4 text-accent" />
+            <span className="font-serif text-heading text-accent">Role Access Permissions</span>
           </div>
           <div className="overflow-x-auto">
             <Table>
@@ -311,7 +311,7 @@ const UserManagement = () => {
 
       {/* Pending Approvals (Members without dashboard access) */}
       <div>
-        <h2 className="font-serif text-heading mb-4 flex items-center gap-2">
+        <h2 className="font-serif text-heading text-accent mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5" />
           Pending Approvals ({pendingUsers.length})
         </h2>
@@ -401,7 +401,7 @@ const UserManagement = () => {
 
       {/* Approved Users */}
       <div>
-        <h2 className="font-serif text-heading mb-4 flex items-center gap-2">
+        <h2 className="font-serif text-heading text-accent mb-4 flex items-center gap-2">
           <UserCheck className="h-5 w-5" />
           Approved Users ({approvedUsers.length})
         </h2>
