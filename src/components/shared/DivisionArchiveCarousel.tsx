@@ -36,7 +36,7 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
         .select('id, title, file_url, date, division')
         .eq('division', division)
         .order('date', { ascending: false })
-        .limit(5);
+        .limit(8);
 
       if (error) throw error;
       setFiles(data || []);
@@ -129,7 +129,7 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
             </div>
             
             <span className="font-serif text-sm text-background uppercase tracking-[0.2em]">
-              Discover More Division Reports
+              Browse Archive
             </span>
           </Link>
         </div>
