@@ -79,7 +79,7 @@ const About = () => {
               <Link
                 key={division}
                 to={`/divisions/${division}`}
-                className="group block bg-secondary p-6 transition-all duration-300 hover:bg-accent hover:shadow-lg"
+                className="group block bg-secondary p-6 transition-all duration-300 hover:bg-accent hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]"
               >
                 <h3 className="font-serif text-xl md:text-2xl mb-2 text-accent group-hover:text-white transition-colors duration-300">
                   {divisionLabels[division]}
