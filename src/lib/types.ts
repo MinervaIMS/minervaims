@@ -6,6 +6,7 @@ export type Position =
   | 'President'
   | 'Vice President'
   | 'Head of Asset Management'
+  | 'Advisor'
   | 'Head of Equity Research'
   | 'Head of Investment Research'
   | 'Head of Macro Research'

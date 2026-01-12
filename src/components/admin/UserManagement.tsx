@@ -39,6 +39,7 @@ type AppRole =
   | 'head_of_quant'
   | 'head_of_operations'
   | 'head_of_media'
+  | 'portfolio_manager'
   | 'member';
 
 interface UserWithRole {
@@ -62,6 +63,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   head_of_quant: 'Head of Quantitative Research',
   head_of_operations: 'Head of Operations',
   head_of_media: 'Head of Media',
+  portfolio_manager: 'Portfolio Manager',
   member: 'Member',
 };
 
@@ -76,18 +78,20 @@ const ASSIGNABLE_ROLES: AppRole[] = [
   'head_of_quant',
   'head_of_operations',
   'head_of_media',
+  'portfolio_manager',
   'member',
 ];
 
 // Role access matrix for the explanatory table
 const ROLE_ACCESS_MATRIX = [
-  { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: 'All', files: 'All divisions', team: true, applications: true },
-  { role: 'Head of Operations / Head of Media', users: false, alumni: true, events: 'All', files: 'All divisions', team: false, applications: false },
-  { role: 'Head of Equity', users: false, alumni: false, events: 'All', files: 'Equity only', team: false, applications: false },
-  { role: 'Head of Investment', users: false, alumni: false, events: 'All', files: 'Investment only', team: false, applications: false },
-  { role: 'Head of Macro', users: false, alumni: false, events: 'All', files: 'Macro only', team: false, applications: false },
-  { role: 'Head of Portfolio', users: false, alumni: false, events: 'All', files: 'Portfolio only', team: false, applications: false },
-  { role: 'Head of Quant', users: false, alumni: false, events: 'All', files: 'Quant only', team: false, applications: false },
+  { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: true, files: 'All divisions', team: true, applications: true },
+  { role: 'Head of Operations / Head of Media', users: false, alumni: true, events: true, files: 'All divisions', team: false, applications: false },
+  { role: 'Head of Equity', users: false, alumni: false, events: false, files: 'Equity only', team: 'Equity only', applications: false },
+  { role: 'Head of Investment', users: false, alumni: false, events: false, files: 'Investment only', team: 'Investment only', applications: false },
+  { role: 'Head of Macro', users: false, alumni: false, events: false, files: 'Macro only', team: 'Macro only', applications: false },
+  { role: 'Head of Portfolio', users: false, alumni: false, events: false, files: 'Portfolio only', team: 'Portfolio only', applications: false },
+  { role: 'Head of Quant', users: false, alumni: false, events: false, files: 'Quant only', team: 'Quant only', applications: false },
+  { role: 'Portfolio Manager', users: false, alumni: false, events: false, files: 'Portfolio only', team: false, applications: false },
   { role: 'Member', users: false, alumni: false, events: false, files: false, team: false, applications: false },
 ];
 
@@ -272,7 +276,7 @@ const UserManagement = () => {
                       {row.alumni ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-center">
-                      {row.events === 'All' ? <span className="text-green-600">✓ All</span> : <span className="text-muted-foreground">—</span>}
+                      {row.events === true ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       {typeof row.files === 'string' ? (
@@ -282,7 +286,13 @@ const UserManagement = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      {row.team ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                      {typeof row.team === 'string' ? (
+                        <span className="text-green-600 text-sm">{row.team}</span>
+                      ) : row.team ? (
+                        <span className="text-green-600">✓</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       {row.applications ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}

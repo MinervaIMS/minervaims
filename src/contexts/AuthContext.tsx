@@ -15,6 +15,7 @@ type AppRole =
   | 'head_of_quant'
   | 'head_of_operations'
   | 'head_of_media'
+  | 'portfolio_manager'
   | 'member';
 
 interface Profile {

@@ -147,21 +147,50 @@ Deno.serve(async (req) => {
     // Check if user has file access
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it'
     
-    // Roles that can access files
-    const fileAccessRoles = [
+    // Full access roles - can manage files for all divisions
+    const fullAccessRoles = [
       'admin', 'president', 'vice_president', 'head_of_asset_management',
-      'head_of_operations', 'head_of_media',
+      'head_of_operations', 'head_of_media'
+    ]
+    
+    // Division head roles - can manage files for their division
+    const divisionHeadRoles = [
       'head_of_equity', 'head_of_investment',
       'head_of_macro', 'head_of_portfolio', 'head_of_quant'
     ]
+    
+    // Role to division mapping
+    const roleToDivision: Record<string, string> = {
+      head_of_equity: 'equity',
+      head_of_investment: 'investment',
+      head_of_macro: 'macro',
+      head_of_portfolio: 'portfolio',
+      head_of_quant: 'quant',
+      portfolio_manager: 'portfolio',
+    }
     
     const { data: userRoles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
     
-    const hasFileAccess = isAdminEmail || 
-      (userRoles && userRoles.some(r => fileAccessRoles.includes(r.role)))
+    const userRoleNames = userRoles?.map(r => r.role) || []
+    const hasFullAccess = isAdminEmail || userRoleNames.some(r => fullAccessRoles.includes(r))
+    const divisionHeadUserRoles = userRoleNames.filter(r => divisionHeadRoles.includes(r))
+    const isPortfolioManager = userRoleNames.includes('portfolio_manager')
+    const isDivisionHead = divisionHeadUserRoles.length > 0
+    
+    // Determine allowed divisions
+    let allowedDivisions: string[] | null = null
+    if (!hasFullAccess) {
+      if (isDivisionHead) {
+        allowedDivisions = divisionHeadUserRoles.map(r => roleToDivision[r]).filter(Boolean)
+      } else if (isPortfolioManager) {
+        allowedDivisions = ['portfolio']
+      }
+    }
+
+    const hasFileAccess = hasFullAccess || isDivisionHead || isPortfolioManager
 
     if (!hasFileAccess) {
       return new Response(
@@ -210,6 +239,14 @@ Deno.serve(async (req) => {
         }
 
         const validatedFile = fileResult.data
+        
+        // Check division restriction for non-full-access users
+        if (allowedDivisions && !allowedDivisions.includes(validatedFile.division)) {
+          return new Response(
+            JSON.stringify({ error: 'You can only upload files for your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         
         // Validate fund is only set for portfolio division
         if (validatedFile.division !== 'portfolio' && validatedFile.fund) {
@@ -266,6 +303,14 @@ Deno.serve(async (req) => {
 
         const validatedFile = fileResult.data
         
+        // Check division restriction for non-full-access users
+        if (allowedDivisions && !allowedDivisions.includes(validatedFile.division)) {
+          return new Response(
+            JSON.stringify({ error: 'You can only update files for your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
         // Validate fund is only set for portfolio division
         if (validatedFile.division !== 'portfolio' && validatedFile.fund) {
           return new Response(
@@ -316,12 +361,20 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Get file info first to delete from storage
+        // Get file info first to check division and delete from storage
         const { data: fileData } = await supabase
           .from('archive_files')
-          .select('file_url')
+          .select('file_url, division')
           .eq('id', deleteResult.data.id)
           .maybeSingle()
+        
+        // Check division restriction for non-full-access users
+        if (allowedDivisions && fileData && !allowedDivisions.includes(fileData.division)) {
+          return new Response(
+            JSON.stringify({ error: 'You can only delete files from your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
 
         // Delete from database
         const { error } = await supabase
