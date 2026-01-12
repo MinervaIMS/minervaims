@@ -81,7 +81,7 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
       <div
         ref={scrollContainerRef}
         className="flex overflow-x-auto scrollbar-hide pb-4 scroll-smooth snap-x snap-mandatory gap-6"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
         {files.map((file) => (
           <Link
