@@ -97,8 +97,8 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isHomepage]);
 
-  // Determine if we should use transparent styling (only on homepage when not scrolled)
-  const isTransparent = isHomepage && !isScrolled;
+  // Determine if we should use transparent styling (only on homepage when not scrolled and mobile menu closed)
+  const isTransparent = isHomepage && !isScrolled && !mobileMenuOpen;
 
   return (
     <header className={`z-50 transition-all duration-500 ease-in-out ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background shadow-subtle'}`}>
