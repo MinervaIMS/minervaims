@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
 import { FileText } from 'lucide-react';
-
-// Set worker path from CDN
-pdfjsLib.GlobalWorkerOptions.workerSrc = 
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
 
 interface PdfThumbnailProps {
   url: string;
   className?: string;
   alt?: string;
 }
+
+// Use dynamic import to avoid top-level await issues
+let pdfjsLib: typeof import('pdfjs-dist') | null = null;
+
+const loadPdfJs = async () => {
+  if (!pdfjsLib) {
+    // Use legacy build which doesn't require top-level await
+    pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    // Set worker from CDN (legacy version)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+  }
+  return pdfjsLib;
+};
 
 export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,7 +37,9 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
         setLoading(true);
         setError(false);
 
-        const loadingTask = pdfjsLib.getDocument({
+        const pdfjs = await loadPdfJs();
+
+        const loadingTask = pdfjs.getDocument({
           url,
           // Disable range requests for better compatibility
           disableRange: true,
