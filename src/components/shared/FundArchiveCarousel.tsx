@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Fund } from '@/lib/types';
 import { ArrowRight } from 'lucide-react';
-import { PdfThumbnail } from './PdfThumbnail';
 
 interface ArchiveFile {
   id: string;
@@ -106,13 +105,11 @@ export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
             className="flex-shrink-0 w-[350px] md:w-[400px] px-6 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
           >
             {/* PDF Preview */}
-            <div className="w-full h-[400px] md:h-[450px] bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors flex items-center justify-center">
-              <PdfThumbnail
-                fileUrl={file.file_url}
-                width={280}
-                height={400}
+            <div className="w-full h-[400px] md:h-[450px] bg-background/10 overflow-hidden mb-5 group-hover:bg-background/20 transition-colors">
+              <iframe
+                src={`${file.file_url}#page=1&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
+                className="w-[200%] h-[200%] scale-50 origin-top-left pointer-events-none"
                 title={`Preview of ${file.title}`}
-                className="group-hover:opacity-90 transition-opacity"
               />
             </div>
 
