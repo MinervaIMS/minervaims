@@ -92,10 +92,10 @@ export function LatestArchiveCarousel() {
             key={file.id}
             className="flex-shrink-0 w-[450px] px-8 first:pl-0 border-r border-background/20 last:border-r-0 group cursor-pointer snap-start"
           >
-            {/* PDF Preview - A4 aspect ratio (1:1.414) */}
+            {/* PDF Preview - A4 aspect ratio */}
             <PdfThumbnail
               url={file.file_url}
-              className="w-full aspect-[1/1.414] bg-white mb-5"
+              className="w-full bg-white mb-5"
               alt={`Preview of ${file.title}`}
             />
 

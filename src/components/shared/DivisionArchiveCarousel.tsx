@@ -107,7 +107,7 @@ export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselPro
             {/* PDF Preview - A4 aspect ratio */}
             <PdfThumbnail
               url={file.file_url}
-              className="w-full aspect-[1/1.414] bg-white mb-5"
+              className="w-full bg-white mb-5"
               alt={`Preview of ${file.title}`}
             />
 

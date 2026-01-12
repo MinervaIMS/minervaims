@@ -588,7 +588,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   <div className="flex-shrink-0">
                     <PdfThumbnail
                       url={file.file_url}
-                      className="w-20 aspect-[1/1.414] bg-white border border-separator"
+                      className="w-20 bg-white border border-separator"
                       alt={`Preview of ${file.title}`}
                     />
                   </div>

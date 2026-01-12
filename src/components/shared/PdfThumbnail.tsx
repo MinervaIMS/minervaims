@@ -27,6 +27,9 @@ interface PDFJSLib {
   GlobalWorkerOptions: { workerSrc: string };
 }
 
+// A4 aspect ratio: 1:√2 ≈ 1:1.4142
+const A4_ASPECT_RATIO = 1.4142;
+
 // Load PDF.js from CDN
 let pdfjsLib: PDFJSLib | null = null;
 let loadingPromise: Promise<PDFJSLib> | null = null;
@@ -107,12 +110,13 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
         
         if (cancelled) return;
 
-        // Get container dimensions
+        // Get container dimensions - enforce A4 aspect ratio
         const container = containerRef.current;
         const containerWidth = container.clientWidth || 200;
-        const containerHeight = container.clientHeight || 200;
+        // Calculate height based on A4 aspect ratio
+        const containerHeight = containerWidth * A4_ASPECT_RATIO;
 
-        // Calculate scale to fit container while maintaining aspect ratio
+        // Get PDF viewport and scale to fit the A4-proportioned container
         const viewport = page.getViewport({ scale: 1 });
         const scale = Math.min(
           containerWidth / viewport.width,
@@ -121,7 +125,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
         const scaledViewport = page.getViewport({ scale });
 
-        // Set canvas size
+        // Set canvas size to exactly fill A4 container
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         
@@ -131,12 +135,24 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
         // Use device pixel ratio for sharper rendering
         const pixelRatio = window.devicePixelRatio || 1;
-        canvas.width = scaledViewport.width * pixelRatio;
-        canvas.height = scaledViewport.height * pixelRatio;
-        canvas.style.width = `${scaledViewport.width}px`;
-        canvas.style.height = `${scaledViewport.height}px`;
+        
+        // Set canvas to A4 proportions (width x height based on container width)
+        canvas.width = containerWidth * pixelRatio;
+        canvas.height = containerHeight * pixelRatio;
+        canvas.style.width = `${containerWidth}px`;
+        canvas.style.height = `${containerHeight}px`;
 
         context.scale(pixelRatio, pixelRatio);
+        
+        // Fill with white background first
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, containerWidth, containerHeight);
+
+        // Center the PDF content within the A4 canvas
+        const offsetX = (containerWidth - scaledViewport.width) / 2;
+        const offsetY = (containerHeight - scaledViewport.height) / 2;
+        
+        context.translate(offsetX, offsetY);
 
         // Render the page
         await page.render({
@@ -166,22 +182,23 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
   return (
     <div 
       ref={containerRef} 
-      className={`relative flex items-center justify-center overflow-hidden ${className}`}
+      className={`relative overflow-hidden ${className}`}
+      style={{ aspectRatio: `1 / ${A4_ASPECT_RATIO}` }}
     >
       {loading && !error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
+        <div className="absolute inset-0 flex items-center justify-center bg-white animate-pulse">
           <FileText className="h-8 w-8 text-muted-foreground/50" />
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted gap-2">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-2">
           <FileText className="h-8 w-8 text-muted-foreground/50" />
           <span className="text-muted-foreground text-xs text-center px-2">Preview unavailable</span>
         </div>
       )}
       <canvas 
         ref={canvasRef} 
-        className={`max-w-full max-h-full object-contain ${loading || error ? 'opacity-0' : 'opacity-100'}`}
+        className={`w-full h-full ${loading || error ? 'opacity-0' : 'opacity-100'}`}
         title={alt}
       />
     </div>
