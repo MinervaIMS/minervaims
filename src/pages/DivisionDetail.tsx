@@ -106,7 +106,7 @@ const DivisionDetail = () => {
       {/* Second Section: Our Expertise */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Expertise
           </h2>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-12">
@@ -127,7 +127,7 @@ const DivisionDetail = () => {
       {isPortfolio && (
         <section className="py-section-sm md:py-section bg-background">
           <div className="container">
-            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
+            <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
               MIMS Virtual Portfolios
             </h2>
             <div className="flex flex-col gap-4 max-w-4xl">
@@ -153,7 +153,7 @@ const DivisionDetail = () => {
       {/* Third Section: Latest Reports/Publications */}
       <section className="py-section-sm md:py-section bg-accent">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
             {content.sectionTitle}
           </h2>
           <DivisionArchiveCarousel division={divisionKey} />
