@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
@@ -21,7 +20,8 @@ const FileMetadataSchema = z.object({
     .optional(),
   file_url: z.string()
     .url('Invalid file URL')
-    .max(500, 'URL too long'),
+    .max(500, 'URL too long')
+    .optional(),
   date: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD required)')
     .refine(val => {
@@ -36,7 +36,7 @@ const FileMetadataSchema = z.object({
     .optional()
 })
 
-const ActionSchema = z.enum(['create', 'update', 'delete'])
+const ActionSchema = z.enum(['create', 'update', 'delete', 'upload'])
 
 const DeleteFileSchema = z.object({
   id: z.string().uuid('Invalid file ID')
@@ -74,19 +74,6 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
     remaining: maxRequests - record.count, 
     resetAt: record.resetAt 
   }
-}
-
-// Create HMAC key for JWT verification
-async function getJwtKey(): Promise<CryptoKey> {
-  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const encoder = new TextEncoder()
-  return await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  )
 }
 
 Deno.serve(async (req) => {
@@ -199,7 +186,94 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Parse request body
+    // Check content type to handle file uploads vs JSON
+    const contentType = req.headers.get('content-type') || ''
+    
+    // Handle multipart form data (file uploads)
+    if (contentType.includes('multipart/form-data')) {
+      try {
+        const formData = await req.formData()
+        const file = formData.get('file') as File | null
+        const division = formData.get('division') as string | null
+        
+        if (!file) {
+          return new Response(
+            JSON.stringify({ error: 'No file provided' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+          return new Response(
+            JSON.stringify({ error: 'Only PDF files are allowed' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+          return new Response(
+            JSON.stringify({ error: 'File size must be less than 10MB' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Check division restriction
+        if (allowedDivisions && division && !allowedDivisions.includes(division)) {
+          return new Response(
+            JSON.stringify({ error: 'You can only upload files for your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Generate safe filename
+        const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+        const fileName = `${Date.now()}-${originalName}`
+        
+        // Upload to storage using service role
+        const arrayBuffer = await file.arrayBuffer()
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('archive-files')
+          .upload(fileName, arrayBuffer, {
+            contentType: 'application/pdf',
+            cacheControl: '3600',
+            upsert: false,
+          })
+        
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError)
+          return new Response(
+            JSON.stringify({ error: 'Failed to upload file to storage' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('archive-files')
+          .getPublicUrl(uploadData.path)
+        
+        console.log('File uploaded successfully:', uploadData.path)
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            file_url: urlData.publicUrl,
+            path: uploadData.path 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (formError) {
+        console.error('Form data processing error:', formError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to process file upload' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // Parse JSON request body for metadata operations
     let body: unknown
     try {
       body = await req.json()
@@ -214,7 +288,7 @@ Deno.serve(async (req) => {
     const actionResult = ActionSchema.safeParse((body as { action?: string }).action)
     if (!actionResult.success) {
       return new Response(
-        JSON.stringify({ error: 'Invalid action. Must be create, update, or delete.' }),
+        JSON.stringify({ error: 'Invalid action. Must be create, update, delete, or upload.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -226,8 +300,11 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'create': {
-        // Validate file data
-        const fileResult = FileMetadataSchema.safeParse(file)
+        // Validate file data - file_url is required for create
+        const createSchema = FileMetadataSchema.extend({
+          file_url: z.string().url('Invalid file URL').max(500, 'URL too long')
+        })
+        const fileResult = createSchema.safeParse(file)
         if (!fileResult.success) {
           return new Response(
             JSON.stringify({ 
@@ -285,12 +362,13 @@ Deno.serve(async (req) => {
       }
 
       case 'update': {
-        // Validate file data including id
-        const fileWithIdSchema = FileMetadataSchema.extend({
-          id: z.string().uuid('Invalid file ID')
+        // Validate file data including id and file_url
+        const updateSchema = FileMetadataSchema.extend({
+          id: z.string().uuid('Invalid file ID'),
+          file_url: z.string().url('Invalid file URL').max(500, 'URL too long')
         })
         
-        const fileResult = fileWithIdSchema.safeParse(file)
+        const fileResult = updateSchema.safeParse(file)
         if (!fileResult.success) {
           return new Response(
             JSON.stringify({ 
