@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/accordion';
 
 const ELIGIBILITY_CRITERIA = [
-  "Undoubtable academic integrity, humility, hunger to learn, respect for other members, and full compliance with Università Bocconi's Honor Code.",
+  "Undoubtable academic integrity, humility, eagerness to learn, respect for other members, and full compliance with Università Bocconi's Honor Code.",
   "Currently enrolled at Università Bocconi (undergraduate or postgraduate).",
   "Demonstrated interest in financial markets and investment research.",
   "Commitment to participate actively in Society activities.",

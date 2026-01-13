@@ -32,9 +32,6 @@ const PrivacyPolicy = () => {
                   <strong>Controller:</strong> Minerva Investment Management Society (MIMS)
                 </li>
                 <li>
-                  <strong>Address:</strong> [MIMS postal address, if any]
-                </li>
-                <li>
                   <strong>Email:</strong> as.minerva@unibocconi.it
                 </li>
               </ul>

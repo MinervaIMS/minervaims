@@ -47,9 +47,9 @@ const About = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              Minerva Investment Management Society (MIMS) is society promoted and run by students of Bocconi
+              Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi
               University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and
-              the only with student-managed virtual funds.
+              the only one with student-managed virtual funds.
             </p>
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               We are organised as an investment management firm. Members work in specialised research divisions and in
