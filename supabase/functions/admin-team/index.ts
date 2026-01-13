@@ -60,7 +60,7 @@ const ReorderItemSchema = z.object({
   display_order: z.number().int().min(0),
 });
 
-const ActionSchema = z.enum(['create', 'update', 'delete', 'reorder']);
+const ActionSchema = z.enum(['create', 'update', 'delete', 'reorder', 'upload-photo']);
 
 // Division head role to division mapping
 const roleToDivision: Record<string, string> = {
@@ -172,7 +172,94 @@ Deno.serve(async (req) => {
     };
     const allowedPositions = getAllowedPositions();
 
-    // Parse and validate request body
+    // Check content type to handle photo uploads vs JSON
+    const contentType = req.headers.get('content-type') || '';
+    
+    // Handle multipart form data (photo uploads)
+    if (contentType.includes('multipart/form-data')) {
+      try {
+        const formData = await req.formData();
+        const file = formData.get('file') as File | null;
+        const division = formData.get('division') as string | null;
+        
+        if (!file) {
+          return new Response(
+            JSON.stringify({ error: 'No file provided' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          return new Response(
+            JSON.stringify({ error: 'Only image files are allowed' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Validate file size (5MB max for images)
+        if (file.size > 5 * 1024 * 1024) {
+          return new Response(
+            JSON.stringify({ error: 'Image size must be less than 5MB' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Check division restriction for non-full-access users
+        if (allowedDivisions && division && !allowedDivisions.includes(division)) {
+          return new Response(
+            JSON.stringify({ error: 'You can only upload photos for members in your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Generate safe filename
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        // Upload to storage using service role
+        const arrayBuffer = await file.arrayBuffer();
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('team-photos')
+          .upload(fileName, arrayBuffer, {
+            contentType: file.type,
+            cacheControl: '3600',
+            upsert: false,
+          });
+        
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to upload photo to storage' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('team-photos')
+          .getPublicUrl(uploadData.path);
+        
+        console.log('Photo uploaded successfully:', uploadData.path);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            photo_url: urlData.publicUrl,
+            path: uploadData.path 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (formError) {
+        console.error('Form data processing error:', formError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to process photo upload' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Parse and validate JSON request body
     const body = await req.json();
     
     // Validate action

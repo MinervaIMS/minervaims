@@ -422,6 +422,15 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
       return;
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Image size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -436,23 +445,40 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
     }, 100);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // Get auth session for edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('team-photos')
-        .upload(filePath, file);
+      // Create FormData for photo upload through edge function
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      if (formData.division) {
+        uploadFormData.append('division', formData.division);
+      }
+
+      // Upload through edge function (uses service_role for storage access)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-team`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: uploadFormData,
+        }
+      );
 
       clearInterval(progressInterval);
 
-      if (uploadError) throw uploadError;
+      const result = await response.json();
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('team-photos')
-        .getPublicUrl(filePath);
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Upload failed');
+      }
 
-      setFormData({ ...formData, photo_url: publicUrl });
+      setFormData({ ...formData, photo_url: result.photo_url });
       setUploadProgress(100);
       toast({
         title: "Success",
@@ -463,7 +489,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
       console.error('Upload error:', error);
       toast({
         title: "Error",
-        description: "Failed to upload photo",
+        description: error instanceof Error ? error.message : "Failed to upload photo",
         variant: "destructive",
       });
       setUploadProgress(0);

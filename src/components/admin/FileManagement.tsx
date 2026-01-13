@@ -205,7 +205,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate progress since Supabase doesn't provide real upload progress
+    // Simulate progress since we can't track actual upload progress
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 90) {
@@ -217,24 +217,40 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     }, 200);
 
     try {
-      const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      
-      const { data, error } = await supabase.storage
-        .from('archive-files')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      // Get auth session for edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      // Create FormData for file upload through edge function
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      if (formData.division) {
+        uploadFormData.append('division', formData.division);
+      }
+
+      // Upload through edge function (uses service_role for storage access)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-files`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: uploadFormData,
+        }
+      );
 
       clearInterval(progressInterval);
 
-      if (error) throw error;
+      const result = await response.json();
 
-      const { data: urlData } = supabase.storage
-        .from('archive-files')
-        .getPublicUrl(data.path);
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Upload failed');
+      }
 
-      setFormData({ ...formData, file_url: urlData.publicUrl });
+      setFormData({ ...formData, file_url: result.file_url });
       setUploadProgress(100);
       
       toast({
@@ -246,7 +262,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       console.error('Upload error:', error);
       toast({
         title: "Error",
-        description: "Failed to upload file",
+        description: error instanceof Error ? error.message : "Failed to upload file",
         variant: "destructive",
       });
       setUploadProgress(0);
