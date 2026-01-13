@@ -245,30 +245,54 @@ const Alumni = () => {
                     .map((alumnus) => (
                       <div
                         key={alumnus.id}
-                        className="flex items-center px-4 py-3 hover:bg-muted/50 transition-colors"
+                        className="px-4 py-3 hover:bg-muted/50 transition-colors"
                       >
-                        <span className="font-body text-body font-medium w-1/4 truncate text-left">
-                          {alumnus.name} {alumnus.surname}
-                        </span>
-                        <span className="w-1/4 flex justify-start">
-                          {alumnus.linkedin_url ? (
-                            <a
-                              href={alumnus.linkedin_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </span>
-                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
-                          {alumnus.company}
-                        </span>
-                        <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
-                          {alumnus.city || '—'}
-                        </span>
+                        {/* Mobile layout - stacked */}
+                        <div className="sm:hidden">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-body text-body font-medium">
+                              {alumnus.name} {alumnus.surname}
+                            </span>
+                            {alumnus.linkedin_url ? (
+                              <a
+                                href={alumnus.linkedin_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                              </a>
+                            ) : null}
+                          </div>
+                          <p className="font-body text-small text-muted-foreground">
+                            {alumnus.company}{alumnus.city ? ` • ${alumnus.city}` : ''}
+                          </p>
+                        </div>
+                        
+                        {/* Desktop layout - 4 columns */}
+                        <div className="hidden sm:flex items-center">
+                          <span className="font-body text-body font-medium w-1/4 truncate text-left">
+                            {alumnus.name} {alumnus.surname}
+                          </span>
+                          <span className="w-1/4 flex justify-start">
+                            {alumnus.linkedin_url ? (
+                              <a
+                                href={alumnus.linkedin_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </span>
+                          <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
+                            {alumnus.company}
+                          </span>
+                          <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
+                            {alumnus.city || '—'}
+                          </span>
+                        </div>
                       </div>
                     ))}
                 </div>
