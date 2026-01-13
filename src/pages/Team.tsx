@@ -69,7 +69,7 @@ const Team = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section pb-12 md:pb-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Team Behind the Work
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">

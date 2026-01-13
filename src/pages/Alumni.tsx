@@ -106,7 +106,7 @@ const Alumni = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section pb-12 md:pb-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             A Global Network, Still Close
           </h2>
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
@@ -236,7 +236,7 @@ const Alumni = () => {
           <div className="space-y-8">
             {sortedYears.map((year) => (
               <div key={year}>
-                <h3 className="font-serif text-heading mb-4 pb-2 border-b border-separator text-accent">
+                <h3 className="font-serif text-xl sm:text-heading mb-4 pb-2 border-b border-separator text-accent">
                   Class of {year}
                 </h3>
                 <div className="space-y-1">

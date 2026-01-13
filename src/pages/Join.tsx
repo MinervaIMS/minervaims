@@ -81,7 +81,7 @@ const Join = () => {
 
         {/* Eligibility Criteria */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Eligibility Criteria
           </h2>
           <div className="max-w-3xl">
@@ -100,7 +100,7 @@ const Join = () => {
 
         {/* Application Process */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Application Process
           </h2>
           <div className="max-w-3xl space-y-0">
@@ -112,7 +112,7 @@ const Join = () => {
                 <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2">
                   Step {step.step}
                 </p>
-                <h3 className="font-serif text-subheading mb-2">{step.title}</h3>
+                <h3 className="font-serif text-lg sm:text-subheading mb-2">{step.title}</h3>
                 <p className="font-body text-body-lg text-muted-foreground">
                   {step.description}
                 </p>
@@ -123,7 +123,7 @@ const Join = () => {
 
         {/* How To Prepare For The Interview */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             How To Prepare For The Interview
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
@@ -165,12 +165,12 @@ const Join = () => {
 
         {/* FAQs */}
         <section>
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
           <div className="max-w-3xl">
             <Accordion type="single" collapsible className="w-full">
               {FAQS.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`} className="border-separator">
-                  <AccordionTrigger className="font-serif text-subheading text-left hover:no-underline py-6 [&>svg]:hidden">
+                  <AccordionTrigger className="font-serif text-lg sm:text-subheading text-left hover:no-underline py-6 [&>svg]:hidden">
                     {faq.question}
                   </AccordionTrigger>
                   <AccordionContent className="font-body text-body-lg text-muted-foreground pb-6">
