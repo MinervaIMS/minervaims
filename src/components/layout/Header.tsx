@@ -105,8 +105,8 @@ export function Header() {
 
   return (
     <>
-      {/* Spacer to prevent content jump when header is fixed */}
-      <div className="h-20 md:h-24" />
+      {/* Spacer to prevent content jump when header is fixed - hidden on homepage where hero extends behind header */}
+      {!isHomepage && <div className="h-20 md:h-24" />}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,box-shadow] duration-300 ease-in-out ${
           isTransparent 
