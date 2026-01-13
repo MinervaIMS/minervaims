@@ -101,7 +101,7 @@ export function Header() {
   const isTransparent = isHomepage && !isScrolled && !mobileMenuOpen;
 
   return (
-    <header className={`z-50 transition-all duration-500 ease-in-out ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background shadow-subtle'}`}>
+    <header className={`z-50 transition-all duration-500 ease-in-out ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background'}`}>
       <div className="container">
         <nav className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
@@ -176,7 +176,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div id="mobile-menu" className={`lg:hidden border-t py-4 bg-background ${isTransparent ? 'border-background/20' : 'border-separator'}`}>
+          <div id="mobile-menu" className="lg:hidden py-4 bg-background">
             {navItems.map((item) => (
               <div key={item.label} className="py-2">
                 {item.dropdown ? (
@@ -203,7 +203,7 @@ export function Header() {
                               setMobileMenuOpen(false);
                               setOpenDropdown(null);
                             }}
-                            className="block text-base font-serif text-muted-foreground hover:text-accent py-3 px-3"
+                            className="block text-base font-serif text-accent hover:text-accent/80 py-3 px-3"
                           >
                             {subItem.label}
                           </Link>
