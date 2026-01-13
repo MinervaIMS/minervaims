@@ -109,21 +109,25 @@ export function EventsListNew({ events }: EventsListNewProps) {
           key={event.id}
           className={`py-8 ${index !== sortedEvents.length - 1 ? 'border-b border-separator' : ''}`}
         >
-          {/* Date and Location row */}
-          <div className="flex items-center gap-2 text-muted-foreground mb-3">
-            <Calendar className="h-4 w-4" />
-            <span className="font-body text-sm tracking-wider">
-              {formatDate(event.date)}
-            </span>
-            <span className="mx-2">|</span>
-            <MapPin className="h-4 w-4" />
-            <span className="font-body text-sm tracking-wider uppercase">
-              {event.place}
-            </span>
+          {/* Date and Location row - stack on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-muted-foreground mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 flex-shrink-0" />
+              <span className="font-body text-sm tracking-wider">
+                {formatDate(event.date)}
+              </span>
+            </div>
+            <span className="hidden sm:inline mx-2">|</span>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <span className="font-body text-sm tracking-wider uppercase">
+                {event.place}
+              </span>
+            </div>
           </div>
 
           {/* Title */}
-          <h3 className="font-serif text-subheading mb-3">
+          <h3 className="font-serif text-xl sm:text-subheading mb-3 break-words">
             {event.title}
           </h3>
 
