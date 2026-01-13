@@ -86,6 +86,9 @@ export function Header() {
       return;
     }
 
+    // Reset to transparent state when on homepage
+    setIsScrolled(false);
+
     const handleScroll = () => {
       // Switch to solid header after scrolling past ~80% of viewport height
       const threshold = window.innerHeight * 0.8;
@@ -95,7 +98,7 @@ export function Header() {
     handleScroll(); // Check initial position
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isHomepage]);
+  }, [isHomepage, user]);
 
   // Determine if we should use transparent styling (only on homepage when not scrolled and mobile menu closed)
   const isTransparent = isHomepage && !isScrolled && !mobileMenuOpen;
