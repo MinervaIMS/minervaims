@@ -101,9 +101,18 @@ export function Header() {
   const isTransparent = isHomepage && !isScrolled && !mobileMenuOpen;
 
   return (
-    <header className={`z-50 transition-all duration-500 ease-in-out ${isTransparent ? 'fixed top-0 left-0 right-0 bg-transparent' : 'sticky top-0 bg-background'}`}>
-      <div className="container">
-        <nav className="flex items-center justify-between h-20 md:h-24">
+    <>
+      {/* Spacer to prevent content jump when header is fixed */}
+      <div className="h-20 md:h-24" />
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,box-shadow] duration-300 ease-in-out ${
+          isTransparent 
+            ? 'bg-transparent shadow-none' 
+            : 'bg-background shadow-sm'
+        }`}
+      >
+        <div className="container">
+          <nav className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
@@ -237,8 +246,8 @@ export function Header() {
             )}
           </div>
         )}
-      </div>
-      
-    </header>
+        </div>
+      </header>
+    </>
   );
 }
