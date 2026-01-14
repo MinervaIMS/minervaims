@@ -207,10 +207,10 @@ const Readings = () => {
       {/* Disclaimer Section */}
       <section className="py-8 bg-muted">
         <div className="container">
-          <h3 className="font-serif text-lg mb-4 text-foreground text-center">
+          <h3 className="font-serif text-xl mb-4 text-foreground text-center">
             Recommended Readings Disclaimer
           </h3>
-          <p className="font-body text-xs text-foreground text-center max-w-4xl mx-auto">
+          <p className="font-body text-sm text-foreground text-center max-w-4xl mx-auto">
             MIMS is not affiliated with, endorsed by, or associated with any authors, publishers, or editorial organisations referenced on this page. Recommendations are shared solely for educational purposes, reflecting the Society's commitment to knowledge-sharing across current members and alumni.
           </p>
         </div>
