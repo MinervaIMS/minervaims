@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, UserCheck, Clock, Info, Trash2, HelpCircle, Search } from 'lucide-react';
+import { Loader2, UserCheck, Clock, Info, Trash2, HelpCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -102,12 +102,15 @@ const ROLE_ACCESS_MATRIX = [
   { role: 'Member', users: false, alumni: false, events: false, files: false, team: false, readings: false, applications: false },
 ];
 
+const USERS_PER_PAGE = 10;
+
 const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const { user: currentUser, session } = useAuth();
 
@@ -252,6 +255,19 @@ const UserManagement = () => {
       ROLE_LABELS[user.role].toLowerCase().includes(query)
     );
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredApprovedUsers.length / USERS_PER_PAGE);
+  const paginatedUsers = filteredApprovedUsers.slice(
+    (currentPage - 1) * USERS_PER_PAGE,
+    currentPage * USERS_PER_PAGE
+  );
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   if (isLoading) {
     return (
@@ -512,7 +528,7 @@ const UserManagement = () => {
             <Input
               placeholder="Search by name, email or role..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -535,79 +551,115 @@ const UserManagement = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {filteredApprovedUsers.map(user => (
-              <Card key={user.id}>
-                <CardContent className="py-4 flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="font-body font-medium">{user.full_name || 'No name'}</p>
-                    <p className="font-body text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Badge variant="outline" className="bg-primary/10 text-primary">
-                      {ROLE_LABELS[user.role]}
-                    </Badge>
-                    {user.email !== 'as.minerva@unibocconi.it' && (
-                      <>
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) => handleRoleChange(user.id, user.role_id, value as AppRole)}
-                          disabled={updatingUserId === user.id}
-                        >
-                          <SelectTrigger className="w-[220px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ASSIGNABLE_ROLES.map(role => (
-                              <SelectItem key={role} value={role}>
-                                {ROLE_LABELS[role]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {updatingUserId === user.id && (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="icon"
-                              className="text-destructive hover:bg-destructive/10"
-                              disabled={deletingUserId === user.id}
+          <>
+            <Card>
+              <CardContent className="py-0">
+                <div className="divide-y divide-border">
+                  {paginatedUsers.map(user => (
+                    <div key={user.id} className="py-4 flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-body font-medium">{user.full_name || 'No name'}</p>
+                        <p className="font-body text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Badge variant="outline" className="bg-primary/10 text-primary">
+                          {ROLE_LABELS[user.role]}
+                        </Badge>
+                        {user.email !== 'as.minerva@unibocconi.it' && (
+                          <>
+                            <Select
+                              value={user.role}
+                              onValueChange={(value) => handleRoleChange(user.id, user.role_id, value as AppRole)}
+                              disabled={updatingUserId === user.id}
                             >
-                              {deletingUserId === user.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete {user.full_name || user.email}? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeleteUser(user.id, user.email)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                              <SelectTrigger className="w-[220px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ASSIGNABLE_ROLES.map(role => (
+                                  <SelectItem key={role} value={role}>
+                                    {ROLE_LABELS[role]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {updatingUserId === user.id && (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="icon"
+                                  className="text-destructive hover:bg-destructive/10"
+                                  disabled={deletingUserId === user.id}
+                                >
+                                  {deletingUserId === user.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete {user.full_name || user.email}? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteUser(user.id, user.email)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground font-body">
+                  Showing {((currentPage - 1) * USERS_PER_PAGE) + 1} to {Math.min(currentPage * USERS_PER_PAGE, filteredApprovedUsers.length)} of {filteredApprovedUsers.length} users
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  <span className="text-sm font-body px-2">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
