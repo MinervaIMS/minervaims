@@ -194,6 +194,48 @@ export type Database = {
         }
         Relationships: []
       }
+      readings: {
+        Row: {
+          author: string
+          contributor_name: string
+          contributor_role: string
+          contributor_surname: string
+          created_at: string
+          description: string
+          display_order: number
+          id: string
+          reading_type: Database["public"]["Enums"]["reading_type"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          contributor_name: string
+          contributor_role: string
+          contributor_surname: string
+          created_at?: string
+          description: string
+          display_order?: number
+          id?: string
+          reading_type: Database["public"]["Enums"]["reading_type"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          contributor_name?: string
+          contributor_role?: string
+          contributor_surname?: string
+          created_at?: string
+          description?: string
+          display_order?: number
+          id?: string
+          reading_type?: Database["public"]["Enums"]["reading_type"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string
@@ -300,6 +342,10 @@ export type Database = {
         | "head_of_media"
         | "member"
         | "portfolio_manager"
+      reading_type:
+        | "academic_papers"
+        | "technical_textbooks"
+        | "free_time_readings"
       team_division:
         | "equity"
         | "investment"
@@ -473,6 +519,11 @@ export const Constants = {
         "head_of_media",
         "member",
         "portfolio_manager",
+      ],
+      reading_type: [
+        "academic_papers",
+        "technical_textbooks",
+        "free_time_readings",
       ],
       team_division: [
         "equity",

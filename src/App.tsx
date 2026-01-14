@@ -24,6 +24,7 @@ const Alumni = lazy(() => import("./pages/Alumni"));
 const Events = lazy(() => import("./pages/Events"));
 const Join = lazy(() => import("./pages/Join"));
 const Archive = lazy(() => import("./pages/Archive"));
+const Readings = lazy(() => import("./pages/Readings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/events" element={<Suspense fallback={<PageLoader />}><Events /></Suspense>} />
                 <Route path="/join" element={<Suspense fallback={<PageLoader />}><Join /></Suspense>} />
                 <Route path="/archive" element={<Suspense fallback={<PageLoader />}><Archive /></Suspense>} />
+                <Route path="/readings" element={<Suspense fallback={<PageLoader />}><Readings /></Suspense>} />
                 <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
                 <Route path="/cookie-policy" element={<Suspense fallback={<PageLoader />}><CookiePolicy /></Suspense>} />
                 <Route path="/terms-of-use" element={<Suspense fallback={<PageLoader />}><TermsOfUse /></Suspense>} />

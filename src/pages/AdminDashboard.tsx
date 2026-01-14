@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -17,6 +17,7 @@ import TeamManagement from '@/components/admin/TeamManagement';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
+import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -333,6 +334,7 @@ const AdminDashboard = () => {
     if (permissions.canAccessEvents) return 'events';
     if (permissions.canAccessFiles) return 'files';
     if (permissions.canAccessTeam) return 'team';
+    if (permissions.canAccessReadings) return 'readings';
     return 'events';
   };
 
@@ -461,6 +463,12 @@ const AdminDashboard = () => {
             <TabsTrigger value="settings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <FileText className="h-4 w-4 mr-2" />
               Applications
+            </TabsTrigger>
+          )}
+          {permissions.canAccessReadings && (
+            <TabsTrigger value="readings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <BookOpen className="h-4 w-4 mr-2" />
+              Readings
             </TabsTrigger>
           )}
         </TabsList>
@@ -729,6 +737,12 @@ const AdminDashboard = () => {
         {permissions.canAccessSettings && (
           <TabsContent value="settings">
             <ApplicationSettings />
+          </TabsContent>
+        )}
+
+        {permissions.canAccessReadings && (
+          <TabsContent value="readings">
+            <ReadingsManagement />
           </TabsContent>
         )}
       </Tabs>
