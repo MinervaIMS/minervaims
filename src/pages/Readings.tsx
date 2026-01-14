@@ -83,7 +83,7 @@ const Readings = () => {
 
   return (
     <>
-      {/* First Section: Title and Subtitle with Background */}
+      {/* First Section: Title with Background */}
       <div className="relative">
         <div 
           className="absolute inset-0 bg-cover bg-center" 
@@ -92,7 +92,6 @@ const Readings = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Reading Recommendations"
-            description="Curated Readings to Share Knowledge"
             transparentBackground
           />
         </div>
@@ -102,7 +101,7 @@ const Readings = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            About Our Library
+            Curated Readings to Share Knowledge
           </h2>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-12">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
@@ -122,7 +121,7 @@ const Readings = () => {
                     Submit a Recommendation
                   </span>
                   <p className="font-body text-small text-muted-foreground mt-2 max-w-xs">
-                    Submissions are available to authorised contributors only.
+                    Submissions are available only to selected contributors in the society.
                   </p>
                 </div>
               )}
@@ -135,7 +134,7 @@ const Readings = () => {
       <section className="py-section-sm md:py-section bg-accent">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            Recommended Readings
+            Our Library
           </h2>
 
           {/* Category Filter */}
@@ -217,7 +216,10 @@ const Readings = () => {
       {/* Disclaimer Section */}
       <section className="py-8 bg-muted">
         <div className="container">
-          <p className="font-body text-small text-muted-foreground text-center max-w-4xl mx-auto">
+          <h3 className="font-serif text-lg mb-4 text-foreground text-center">
+            Recommended Readings Disclaimer
+          </h3>
+          <p className="font-body text-xs text-foreground text-center max-w-4xl mx-auto">
             MIMS is not affiliated with, endorsed by, or associated with any authors, publishers, or editorial organisations referenced on this page. Recommendations are shared solely for educational purposes, reflecting the Society's commitment to knowledge-sharing across current members and alumni.
           </p>
         </div>
