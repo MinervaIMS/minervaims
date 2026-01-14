@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Linkedin } from 'lucide-react';
 import { divisionLabels, Division } from '@/lib/types';
 import {
   DndContext,
@@ -981,9 +981,22 @@ function SortableMemberCard({
             
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <h4 className="font-serif text-body-lg truncate">
-                {member.name} {member.surname}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-serif text-body-lg truncate">
+                  {member.name} {member.surname}
+                </h4>
+                {member.linkedin_url && (
+                  <a
+                    href={member.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-accent transition-colors flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Linkedin className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
               <p className="font-body text-small text-muted-foreground truncate">
                 {member.position}
               </p>
