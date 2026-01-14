@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, UserCheck, Clock, Info, Trash2 } from 'lucide-react';
+import { Loader2, UserCheck, Clock, Info, Trash2, HelpCircle } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -26,6 +26,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type AppRole = 
   | 'admin'
@@ -253,19 +259,83 @@ const UserManagement = () => {
             <span className="font-serif text-heading text-accent">Role Access Permissions</span>
           </div>
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-serif">Role</TableHead>
-                  <TableHead className="font-serif text-center">Users</TableHead>
-                  <TableHead className="font-serif text-center">Alumni</TableHead>
-                  <TableHead className="font-serif text-center">Events</TableHead>
-                  <TableHead className="font-serif text-center">Files</TableHead>
-                  <TableHead className="font-serif text-center">Team</TableHead>
-                  <TableHead className="font-serif text-center">Readings</TableHead>
-                  <TableHead className="font-serif text-center">Applications</TableHead>
-                </TableRow>
-              </TableHeader>
+            <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-serif">Role</TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Users <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Manage user accounts, approve new registrations, and assign roles to team members.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Alumni <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Add, edit, and manage alumni records and their professional information.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Events <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Create and manage events, including dates, locations, and guest speakers.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Files <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Upload and manage archive files such as research reports and presentations.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Team <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Manage team member profiles, positions, and organizational structure.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Readings <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Add and manage recommended readings including books, papers, and articles.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-serif text-center">
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
+                          Applications <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Configure application settings, open/close applications, and manage form URLs.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {ROLE_ACCESS_MATRIX.map((row, idx) => (
                   <TableRow key={idx}>
@@ -304,7 +374,8 @@ const UserManagement = () => {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </TooltipProvider>
           </div>
           <p className="text-sm text-muted-foreground mt-4 font-body">
             <strong>Note:</strong> as.minerva@unibocconi.it always has full access regardless of role. 
