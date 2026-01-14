@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { TeamMember, Division, divisionLabels } from '@/lib/types';
+import { TeamMember, Division, divisionLabels, fundLabels } from '@/lib/types';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -177,6 +177,14 @@ function MemberCard({ member }: { member: TeamMember }) {
         </h3>
         <p className="font-body text-small text-muted-foreground mt-1">
           {member.position}
+          {/* Show fund for Portfolio Management members (except Head) */}
+          {member.division === 'portfolio' && 
+           member.fund && 
+           !member.position.includes('Head of Portfolio Management') && (
+            <span className="block text-xs mt-0.5">
+              {fundLabels[member.fund]}
+            </span>
+          )}
         </p>
         {/* LinkedIn icon below */}
         {member.linkedinUrl && (
