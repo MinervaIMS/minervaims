@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-import readingsBg from '@/assets/division-investment-bg.webp';
+import readingsBg from '@/assets/readings-bg.webp';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
 
