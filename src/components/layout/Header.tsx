@@ -188,7 +188,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div id="mobile-menu" className="lg:hidden py-4 bg-background animate-slide-down">
+          <div id="mobile-menu" className="lg:hidden py-4 bg-background">
             {navItems.map((item) => (
               <div key={item.label} className="py-2">
                 {item.dropdown ? (
