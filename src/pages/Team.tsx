@@ -80,7 +80,7 @@ const Team = () => {
               to="/about#organisational-structure"
               className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
             >
-              How Are We Structured
+              How We Are Structured
             </Link>
           </div>
         </div>
