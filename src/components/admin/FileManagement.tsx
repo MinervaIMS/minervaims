@@ -596,69 +596,76 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         </div>
       ) : (
         <>
-          <div className="divide-y divide-separator">
-            {paginatedFiles.map((file) => (
-              <div key={file.id} className="py-6">
-                <div className="flex gap-4">
+          <div className="space-y-0">
+            {paginatedFiles.map((file, index) => (
+              <article key={file.id} className={`py-6 ${index !== paginatedFiles.length - 1 ? 'border-b border-separator' : ''}`}>
+                <div className="flex flex-col md:flex-row md:items-start gap-4">
                   {/* PDF Preview Thumbnail - A4 aspect ratio */}
                   <div className="flex-shrink-0">
                     <PdfThumbnail
                       url={file.file_url}
-                      className="w-20 bg-white border border-separator"
+                      className="w-28 bg-white rounded border border-separator"
                       alt={`Preview of ${file.title}`}
                     />
                   </div>
 
-                  {/* File Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-body text-sm text-muted-foreground">
-                        {formatDate(file.date)}
-                      </span>
-                      <span className="font-body text-xs px-2 py-0.5 bg-muted rounded">
+                  {/* Content */}
+                  <div className="flex-1">
+                    <time className="font-body text-xs text-muted-foreground uppercase tracking-wider">
+                      {formatDate(file.date)}
+                      <span className="ml-4 text-primary">
                         {divisionLabels[file.division as Division]}
                       </span>
                       {file.fund && (
-                        <span className="font-body text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        <span className="ml-4 text-primary/70">
                           {fundLabels[file.fund as Fund]}
                         </span>
                       )}
-                    </div>
-                    <h3 className="font-serif text-lg font-medium mb-1">{file.title}</h3>
+                    </time>
+                    <h3 className="font-serif text-subheading mt-2 mb-2">
+                      {file.title}
+                    </h3>
                     {file.description && (
                       <div>
-                        <p className={`font-body text-sm text-muted-foreground ${!expandedDescriptions.has(file.id) ? 'line-clamp-2' : ''}`}>
+                        <p className={`font-body text-body text-muted-foreground ${expandedDescriptions.has(file.id) ? '' : 'line-clamp-2'}`}>
                           {file.description}
                         </p>
                         {file.description.length > 150 && (
                           <button
                             onClick={() => toggleDescription(file.id)}
-                            className="font-body text-xs text-primary hover:underline mt-1 flex items-center gap-1"
+                            className="inline-flex items-center gap-1 font-body text-small text-primary hover:underline mt-1"
                           >
                             {expandedDescriptions.has(file.id) ? (
-                              <>Read less <ChevronUp className="h-3 w-3" /></>
+                              <>
+                                <ChevronUp className="h-3 w-3" />
+                                Show less
+                              </>
                             ) : (
-                              <>Read more <ChevronDown className="h-3 w-3" /></>
+                              <>
+                                <ChevronDown className="h-3 w-3" />
+                                Read more
+                              </>
                             )}
                           </button>
                         )}
                       </div>
                     )}
-                    <div className="mt-3 flex items-center gap-2">
+                    <div className="mt-3">
                       <a
                         href={file.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-body text-xs text-primary hover:underline flex items-center gap-1"
+                        className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline"
+                        download
                       >
-                        <Download className="h-3 w-3" />
-                        Download PDF
+                        <Download className="h-4 w-4" />
+                        <span>Download</span>
                       </a>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2 flex-shrink-0">
+                  {/* Admin Actions */}
+                  <div className="flex gap-2 mt-2 md:mt-6 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="icon"
@@ -675,7 +682,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                     </Button>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
 
