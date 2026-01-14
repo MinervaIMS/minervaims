@@ -25,6 +25,7 @@ const ReadingSchema = z.object({
   contributor_name: z.string().max(100).trim(),
   contributor_surname: z.string().max(100).trim(),
   contributor_role: z.string().max(100).trim(),
+  publication_year: z.number().int().min(1900).max(new Date().getFullYear()).nullable().optional(),
 })
 
 const ActionSchema = z.enum(['create', 'update', 'delete', 'reorder'])
@@ -212,6 +213,7 @@ Deno.serve(async (req) => {
             contributor_name: validatedReading.contributor_name,
             contributor_surname: validatedReading.contributor_surname,
             contributor_role: validatedReading.contributor_role,
+            publication_year: validatedReading.publication_year || null,
             display_order: nextOrder,
           })
           .select()
@@ -260,6 +262,7 @@ Deno.serve(async (req) => {
             contributor_name: validatedReading.contributor_name,
             contributor_surname: validatedReading.contributor_surname,
             contributor_role: validatedReading.contributor_role,
+            publication_year: validatedReading.publication_year || null,
           })
           .eq('id', validatedReading.id)
           .select()

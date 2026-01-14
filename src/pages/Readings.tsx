@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageIntroduction } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, BookOpen, GraduationCap, Coffee } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import readingsBg from '@/assets/division-investment-bg.webp';
 
@@ -20,18 +20,13 @@ interface Reading {
   contributor_role: string;
   display_order: number;
   created_at: string;
+  publication_year?: number | null;
 }
 
 const readingTypeLabels: Record<ReadingType, string> = {
   academic_papers: 'Academic Papers',
   technical_textbooks: 'Technical Textbooks',
   free_time_readings: 'Free Time Readings',
-};
-
-const readingTypeIcons: Record<ReadingType, React.ReactNode> = {
-  academic_papers: <GraduationCap className="h-5 w-5" />,
-  technical_textbooks: <BookOpen className="h-5 w-5" />,
-  free_time_readings: <Coffee className="h-5 w-5" />,
 };
 
 // Roles that can access the readings dashboard section
@@ -141,11 +136,12 @@ const Readings = () => {
           <div className="flex flex-wrap gap-3 mb-8">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 font-body text-sm border transition-all duration-200 ${
+              className={`px-4 py-2 border transition-all duration-200 uppercase ${
                 activeCategory === 'all'
                   ? 'bg-background text-accent border-background'
                   : 'bg-transparent text-background border-background/40 hover:border-background'
               }`}
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               All
             </button>
@@ -153,13 +149,13 @@ const Readings = () => {
               <button
                 key={type}
                 onClick={() => setActiveCategory(type)}
-                className={`flex items-center gap-2 px-4 py-2 font-body text-sm border transition-all duration-200 ${
+                className={`px-4 py-2 border transition-all duration-200 uppercase ${
                   activeCategory === type
                     ? 'bg-background text-accent border-background'
                     : 'bg-transparent text-background border-background/40 hover:border-background'
                 }`}
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
-                {readingTypeIcons[type]}
                 {readingTypeLabels[type]}
               </button>
             ))}
@@ -182,29 +178,24 @@ const Readings = () => {
                   key={reading.id}
                   className="bg-background p-6 transition-all duration-300 hover:shadow-lg"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 mt-1 text-accent">
-                      {readingTypeIcons[reading.reading_type]}
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="text-xs font-body uppercase tracking-wider text-muted-foreground">
+                        {readingTypeLabels[reading.reading_type]}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="text-xs font-body uppercase tracking-wider text-muted-foreground">
-                          {readingTypeLabels[reading.reading_type]}
-                        </span>
-                      </div>
-                      <h3 className="font-serif text-xl md:text-2xl text-accent mb-1">
-                        {reading.title}
-                      </h3>
-                      <p className="font-body text-muted-foreground mb-3">
-                        by {reading.author}
-                      </p>
-                      <p className="font-body text-body text-foreground mb-4">
-                        {reading.description}
-                      </p>
-                      <p className="font-body text-small text-muted-foreground italic">
-                        Recommended by {reading.contributor_name} {reading.contributor_surname}, {reading.contributor_role}
-                      </p>
-                    </div>
+                    <h3 className="font-serif text-xl md:text-2xl text-accent mb-1">
+                      {reading.title}
+                    </h3>
+                    <p className="font-body text-muted-foreground mb-3">
+                      by {reading.author}{reading.reading_type === 'academic_papers' && reading.publication_year ? ` (${reading.publication_year})` : ''}
+                    </p>
+                    <p className="font-body text-body text-foreground mb-4">
+                      {reading.description}
+                    </p>
+                    <p className="font-body text-small text-muted-foreground italic">
+                      Recommended by {reading.contributor_name} {reading.contributor_surname}, {reading.contributor_role}
+                    </p>
                   </div>
                 </div>
               ))}

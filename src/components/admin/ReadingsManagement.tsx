@@ -42,6 +42,7 @@ interface Reading {
   contributor_role: string;
   display_order: number;
   created_at: string;
+  publication_year?: number | null;
 }
 
 const readingTypeLabels: Record<ReadingType, string> = {
@@ -144,6 +145,7 @@ const ReadingsManagement = () => {
     author: '',
     description: '',
     reading_type: 'academic_papers' as ReadingType,
+    publication_year: '' as string,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -236,6 +238,7 @@ const ReadingsManagement = () => {
       author: '',
       description: '',
       reading_type: 'academic_papers',
+      publication_year: '',
     });
     setEditingReading(null);
   };
@@ -252,6 +255,7 @@ const ReadingsManagement = () => {
       author: reading.author,
       description: reading.description,
       reading_type: reading.reading_type,
+      publication_year: reading.publication_year?.toString() || '',
     });
     setIsDialogOpen(true);
   };
@@ -263,6 +267,16 @@ const ReadingsManagement = () => {
       toast({
         title: "Error",
         description: "Title, author, and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate publication year for academic papers
+    if (formData.reading_type === 'academic_papers' && !formData.publication_year.trim()) {
+      toast({
+        title: "Error",
+        description: "Publication year is required for academic papers",
         variant: "destructive",
       });
       return;
@@ -282,6 +296,9 @@ const ReadingsManagement = () => {
         contributor_name: name,
         contributor_surname: surname,
         contributor_role: getPrimaryRole(),
+        publication_year: formData.reading_type === 'academic_papers' && formData.publication_year 
+          ? parseInt(formData.publication_year, 10) 
+          : null,
         ...(editingReading && { id: editingReading.id }),
       };
 
@@ -471,6 +488,21 @@ const ReadingsManagement = () => {
                   required
                 />
               </div>
+              {formData.reading_type === 'academic_papers' && (
+                <div className="space-y-2">
+                  <Label htmlFor="publication_year" className="font-body">Publication Year *</Label>
+                  <Input
+                    id="publication_year"
+                    type="number"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                    value={formData.publication_year}
+                    onChange={(e) => setFormData({ ...formData, publication_year: e.target.value })}
+                    placeholder="e.g., 2023"
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="description" className="font-body">Description / Rationale *</Label>
                 <Textarea
