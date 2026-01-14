@@ -160,10 +160,10 @@ export function Footer() {
           </p>
           <Link
             to="/admin"
-            className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded font-body text-small hover:bg-background/90 transition-colors"
+            className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded text-small hover:bg-background/90 transition-colors"
           >
             <User size={16} />
-            Login
+            <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
           </Link>
         </div>
       </div>
