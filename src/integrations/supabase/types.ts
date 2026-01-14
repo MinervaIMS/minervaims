@@ -204,6 +204,7 @@ export type Database = {
           description: string
           display_order: number
           id: string
+          publication_year: number | null
           reading_type: Database["public"]["Enums"]["reading_type"]
           title: string
           updated_at: string
@@ -217,6 +218,7 @@ export type Database = {
           description: string
           display_order?: number
           id?: string
+          publication_year?: number | null
           reading_type: Database["public"]["Enums"]["reading_type"]
           title: string
           updated_at?: string
@@ -230,6 +232,7 @@ export type Database = {
           description?: string
           display_order?: number
           id?: string
+          publication_year?: number | null
           reading_type?: Database["public"]["Enums"]["reading_type"]
           title?: string
           updated_at?: string
