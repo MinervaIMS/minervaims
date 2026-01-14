@@ -62,6 +62,11 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download complete",
+        description: `${file.title} has been downloaded.`,
+      });
     } catch (error) {
       console.error('Download error:', error);
       toast({
