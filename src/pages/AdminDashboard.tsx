@@ -428,37 +428,37 @@ const AdminDashboard = () => {
       <Tabs defaultValue={getDefaultTab()} className="w-full">
         <TabsList className="mb-8">
           {permissions.canAccessUsers && (
-            <TabsTrigger value="users" className="font-body">
+            <TabsTrigger value="users" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <UserCog className="h-4 w-4 mr-2" />
               Users
             </TabsTrigger>
           )}
           {permissions.canAccessAlumni && (
-            <TabsTrigger value="alumni" className="font-body">
+            <TabsTrigger value="alumni" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <GraduationCap className="h-4 w-4 mr-2" />
               Alumni
             </TabsTrigger>
           )}
           {permissions.canAccessEvents && (
-            <TabsTrigger value="events" className="font-body">
+            <TabsTrigger value="events" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <Calendar className="h-4 w-4 mr-2" />
               Events
             </TabsTrigger>
           )}
           {permissions.canAccessFiles && (
-            <TabsTrigger value="files" className="font-body">
+            <TabsTrigger value="files" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <FileText className="h-4 w-4 mr-2" />
               Archive Files
             </TabsTrigger>
           )}
           {permissions.canAccessTeam && (
-            <TabsTrigger value="team" className="font-body">
+            <TabsTrigger value="team" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <Users className="h-4 w-4 mr-2" />
               Team
             </TabsTrigger>
           )}
           {permissions.canAccessSettings && (
-            <TabsTrigger value="settings" className="font-body">
+            <TabsTrigger value="settings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <FileText className="h-4 w-4 mr-2" />
               Applications
             </TabsTrigger>
