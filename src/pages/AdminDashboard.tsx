@@ -20,6 +20,7 @@ import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useIsDesktop } from '@/hooks/use-desktop';
 
 // Role-based dashboard icons
 import dashboardIconAdmin from '@/assets/dashboard-icon-admin.svg';
@@ -30,6 +31,9 @@ import dashboardIconEquity from '@/assets/dashboard-icon-equity.svg';
 import dashboardIconPortfolio from '@/assets/dashboard-icon-portfolio.svg';
 import dashboardIconPM from '@/assets/dashboard-icon-pm.svg';
 import dashboardIconOpsMedia from '@/assets/dashboard-icon-ops-media.svg';
+
+// Restricted screen logo
+import dashboardRestrictedLogo from '@/assets/dashboard-restricted-logo.png';
 
 interface DbEvent {
   id: string;
@@ -63,6 +67,7 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
   const permissions = usePermissions();
+  const isDesktop = useIsDesktop();
 
   // Handle session expiry
   useEffect(() => {
@@ -319,6 +324,25 @@ const AdminDashboard = () => {
     return (
       <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Show desktop-only message for small screens
+  if (!isDesktop) {
+    return (
+      <div className="container py-section-sm md:py-section flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+        <img 
+          src={dashboardRestrictedLogo} 
+          alt="Minerva Investment Management Society" 
+          className="h-48 w-48 mb-8"
+        />
+        <h1 className="font-serif text-heading text-accent mb-4">
+          Desktop View Required
+        </h1>
+        <p className="font-body text-muted-foreground text-lg max-w-md">
+          The admin dashboard is optimized for larger screens. Please access this page from a desktop computer or a tablet in landscape mode.
+        </p>
       </div>
     );
   }
