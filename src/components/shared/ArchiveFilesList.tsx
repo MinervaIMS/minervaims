@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
-import { Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PdfThumbnail } from './PdfThumbnail';
+import { useToast } from '@/hooks/use-toast';
+
 interface ArchiveFile {
   id: string;
   title: string;
@@ -22,6 +24,8 @@ interface ArchiveFilesListProps {
 export function ArchiveFilesList({ files, showDivision = false, highlightedFileId }: ArchiveFilesListProps) {
   const [previewFile, setPreviewFile] = useState<ArchiveFile | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const toggleDescription = (fileId: string) => {
     setExpandedDescriptions(prev => {
@@ -33,6 +37,40 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
       }
       return next;
     });
+  };
+
+  const handleDownload = async (file: ArchiveFile) => {
+    if (downloadingFiles.has(file.id)) return;
+    
+    setDownloadingFiles(prev => new Set(prev).add(file.id));
+    
+    try {
+      const response = await fetch(file.file_url);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${file.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download failed",
+        description: "Please try again or right-click the link to save.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingFiles(prev => {
+        const next = new Set(prev);
+        next.delete(file.id);
+        return next;
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -125,16 +163,18 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
 
               {/* Actions */}
               <div className="flex gap-2 mt-2 md:mt-6">
-                <a
-                  href={file.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline"
-                  download
+                <button
+                  onClick={() => handleDownload(file)}
+                  disabled={downloadingFiles.has(file.id)}
+                  className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
                 >
-                  <Download className="h-4 w-4" />
-                  <span>Download</span>
-                </a>
+                  {downloadingFiles.has(file.id) ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  <span>{downloadingFiles.has(file.id) ? 'Downloading...' : 'Download'}</span>
+                </button>
               </div>
             </div>
           </article>
@@ -157,16 +197,18 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
             )}
           </div>
           <div className="flex justify-end pt-2">
-            <a
-              href={previewFile?.file_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body text-small rounded hover:opacity-90 transition-opacity"
-              download
+            <button
+              onClick={() => previewFile && handleDownload(previewFile)}
+              disabled={previewFile ? downloadingFiles.has(previewFile.id) : false}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body text-small rounded hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-wait"
             >
-              <Download className="h-4 w-4" />
-              Download PDF
-            </a>
+              {previewFile && downloadingFiles.has(previewFile.id) ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {previewFile && downloadingFiles.has(previewFile.id) ? 'Downloading...' : 'Download PDF'}
+            </button>
           </div>
         </DialogContent>
       </Dialog>
