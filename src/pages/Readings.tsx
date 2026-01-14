@@ -93,7 +93,7 @@ const Readings = () => {
       </div>
 
       {/* Second Section: Description */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Curated Readings to Share Knowledge
@@ -126,7 +126,7 @@ const Readings = () => {
       </section>
 
       {/* Third Section: Readings List */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pt-6 md:pt-8 pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Library
