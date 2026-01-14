@@ -126,9 +126,9 @@ const Readings = () => {
       </section>
 
       {/* Third Section: Readings List */}
-      <section className="py-section-sm md:py-section bg-accent">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Library
           </h2>
 
@@ -138,8 +138,8 @@ const Readings = () => {
               onClick={() => setActiveCategory('all')}
               className={`px-4 py-2 border transition-all duration-200 uppercase ${
                 activeCategory === 'all'
-                  ? 'bg-background text-accent border-background'
-                  : 'bg-transparent text-background border-background/40 hover:border-background'
+                  ? 'bg-accent text-background border-accent'
+                  : 'bg-transparent text-accent border-accent/40 hover:border-accent'
               }`}
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
@@ -151,8 +151,8 @@ const Readings = () => {
                 onClick={() => setActiveCategory(type)}
                 className={`px-4 py-2 border transition-all duration-200 uppercase ${
                   activeCategory === type
-                    ? 'bg-background text-accent border-background'
-                    : 'bg-transparent text-background border-background/40 hover:border-background'
+                    ? 'bg-accent text-background border-accent'
+                    : 'bg-transparent text-accent border-accent/40 hover:border-accent'
                 }`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
@@ -163,10 +163,10 @@ const Readings = () => {
 
           {isLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-background/60" />
+              <Loader2 className="h-8 w-8 animate-spin text-accent/60" />
             </div>
           ) : filteredReadings.length === 0 ? (
-            <p className="font-body text-body-lg text-background/80">
+            <p className="font-body text-body-lg text-muted-foreground">
               {activeCategory === 'all' 
                 ? 'No reading recommendations have been added yet.'
                 : `No ${readingTypeLabels[activeCategory].toLowerCase()} have been added yet.`}
