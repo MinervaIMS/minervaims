@@ -33,10 +33,9 @@ const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
-      const from = (location.state as { from?: string })?.from || '/';
-      navigate(from, { replace: true });
+      navigate('/admin', { replace: true });
     }
-  }, [user, isLoading, navigate, location]);
+  }, [user, isLoading, navigate]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
