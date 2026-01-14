@@ -60,6 +60,7 @@ export interface Permissions {
   canAccessFiles: boolean;
   canAccessTeam: boolean;
   canAccessSettings: boolean;
+  canAccessReadings: boolean;
   
   // Division restrictions (null = all divisions, array = specific divisions only)
   allowedDivisions: Division[] | null;
@@ -89,6 +90,7 @@ export const usePermissions = (): Permissions => {
         canAccessFiles: true,
         canAccessTeam: true,
         canAccessSettings: true,
+        canAccessReadings: true,
         allowedDivisions: null, // null means all divisions
         hasAnyAccess: true,
         isFullAccess: true,
@@ -106,6 +108,7 @@ export const usePermissions = (): Permissions => {
         canAccessFiles: true,
         canAccessTeam: false, // No team management
         canAccessSettings: false,
+        canAccessReadings: false, // No readings access for ops/media
         allowedDivisions: null, // All divisions for files
         hasAnyAccess: true,
         isFullAccess: false,
@@ -128,6 +131,7 @@ export const usePermissions = (): Permissions => {
         canAccessFiles: true,
         canAccessTeam: true, // Division heads can now manage team (restricted to their division)
         canAccessSettings: false,
+        canAccessReadings: true, // Division heads can access readings
         allowedDivisions: allowedDivisions.length > 0 ? allowedDivisions : null,
         hasAnyAccess: true,
         isFullAccess: false,
@@ -145,6 +149,7 @@ export const usePermissions = (): Permissions => {
         canAccessFiles: true, // Can only upload files for portfolio division
         canAccessTeam: false,
         canAccessSettings: false,
+        canAccessReadings: true, // Portfolio managers can access readings
         allowedDivisions: ['portfolio'], // Restricted to portfolio division only
         hasAnyAccess: true,
         isFullAccess: false,
@@ -159,6 +164,7 @@ export const usePermissions = (): Permissions => {
       canAccessFiles: false,
       canAccessTeam: false,
       canAccessSettings: false,
+      canAccessReadings: false,
       allowedDivisions: null,
       hasAnyAccess: false,
       isFullAccess: false,
