@@ -402,7 +402,7 @@ const AdminDashboard = () => {
             </div>
           )}
           <div className="flex flex-col">
-            <h1 className="font-serif text-display text-accent mb-2">Admin Dashboard</h1>
+            <h1 className="font-serif text-display text-accent mb-2">Dashboard</h1>
             <p className="font-body text-muted-foreground text-lg">
               {user.email}
             </p>
