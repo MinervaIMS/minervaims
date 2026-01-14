@@ -393,25 +393,25 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-between mb-10 pb-6 border-b border-separator">
         <div className="flex items-center gap-6">
           {dashboardIcon && (
-            <img 
-              src={dashboardIcon} 
-              alt="Dashboard icon" 
-              className="h-[6.75rem] w-[6.75rem] md:h-[7.875rem] md:w-[7.875rem]"
-            />
-          )}
-          <div>
-            <h1 className="font-serif text-display text-accent mb-2">Admin Dashboard</h1>
-            <div className="flex items-center gap-3">
-              <p className="font-body text-muted-foreground text-lg">
-                {user.email}
-              </p>
-              <span 
-                className="inline-flex items-center px-4 py-1.5 text-sm font-medium bg-accent text-accent-foreground italic"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
-              >
-                {getUserRoleLabel()}
-              </span>
+            <div className="flex items-center">
+              <img 
+                src={dashboardIcon} 
+                alt="Dashboard icon" 
+                className="h-[6.75rem] w-[6.75rem] md:h-[7.875rem] md:w-[7.875rem]"
+              />
             </div>
+          )}
+          <div className="flex flex-col">
+            <h1 className="font-serif text-display text-accent mb-2">Admin Dashboard</h1>
+            <p className="font-body text-muted-foreground text-lg">
+              {user.email}
+            </p>
+            <span 
+              className="inline-flex items-center px-4 py-1.5 text-base font-medium bg-accent text-accent-foreground italic mt-2 w-fit shadow-sm"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              {getUserRoleLabel()}
+            </span>
           </div>
         </div>
         <Button 
