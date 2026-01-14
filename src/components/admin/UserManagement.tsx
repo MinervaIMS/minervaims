@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, UserCheck, Clock, Info, Trash2, HelpCircle } from 'lucide-react';
+import { Loader2, UserCheck, Clock, Info, Trash2, HelpCircle, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -32,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
 
 type AppRole = 
   | 'admin'
@@ -106,6 +107,7 @@ const UserManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { user: currentUser, session } = useAuth();
 
@@ -240,6 +242,16 @@ const UserManagement = () => {
 
   const pendingUsers = users.filter(u => u.role === 'member');
   const approvedUsers = users.filter(u => u.role !== 'member');
+  
+  // Filter approved users by search query
+  const filteredApprovedUsers = approvedUsers.filter(user => {
+    const query = searchQuery.toLowerCase();
+    return (
+      user.email.toLowerCase().includes(query) ||
+      (user.full_name?.toLowerCase().includes(query) ?? false) ||
+      ROLE_LABELS[user.role].toLowerCase().includes(query)
+    );
+  });
 
   if (isLoading) {
     return (
@@ -259,78 +271,92 @@ const UserManagement = () => {
             <span className="font-serif text-heading text-accent">Role Access Permissions</span>
           </div>
           <div className="overflow-x-auto">
-            <TooltipProvider>
+            <TooltipProvider delayDuration={0}>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="font-serif">Role</TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Users <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Users <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Manage user accounts, approve new registrations, and assign roles to team members.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Manage user accounts, approve new registrations, and assign roles to team members.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Alumni <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Alumni <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Add, edit, and manage alumni records and their professional information.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Add, edit, and manage alumni records and their professional information.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Events <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Events <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Create and manage events, including dates, locations, and guest speakers.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Create and manage events, including dates, locations, and guest speakers.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Files <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Files <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Upload and manage archive files such as research reports and presentations.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Upload and manage archive files such as research reports and presentations.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Team <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Team <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Manage team member profiles, positions, and organizational structure.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Manage team member profiles, positions, and organizational structure.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Readings <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Readings <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Add and manage recommended readings including books, papers, and articles.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Add and manage recommended readings including books, papers, and articles.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
                     <TableHead className="font-serif text-center">
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help">
-                          Applications <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        <TooltipTrigger asChild>
+                          <button className="inline-flex items-center gap-1.5 cursor-help px-2 py-1 rounded hover:bg-muted/50 transition-colors">
+                            Applications <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Configure application settings, open/close applications, and manage form URLs.</p>
+                        <TooltipContent side="top" className="max-w-[250px] text-sm p-3">
+                          <p>Configure application settings, open/close applications, and manage form URLs.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableHead>
@@ -476,10 +502,21 @@ const UserManagement = () => {
 
       {/* Approved Users */}
       <div>
-        <h2 className="font-serif text-heading text-accent mb-4 flex items-center gap-2">
-          <UserCheck className="h-5 w-5" />
-          Approved Users ({approvedUsers.length})
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <h2 className="font-serif text-heading text-accent flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />
+            Approved Users ({filteredApprovedUsers.length}{searchQuery && ` of ${approvedUsers.length}`})
+          </h2>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email or role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
         
         {approvedUsers.length === 0 ? (
           <Card>
@@ -489,9 +526,17 @@ const UserManagement = () => {
               </p>
             </CardContent>
           </Card>
+        ) : filteredApprovedUsers.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="font-body text-muted-foreground">
+                No users match your search
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-4">
-            {approvedUsers.map(user => (
+            {filteredApprovedUsers.map(user => (
               <Card key={user.id}>
                 <CardContent className="py-4 flex items-center justify-between gap-4">
                   <div className="flex-1">
