@@ -181,7 +181,7 @@ function MemberCard({ member }: { member: TeamMember }) {
           {member.division === 'portfolio' && 
            member.fund && 
            !member.position.includes('Head of Portfolio Management') && (
-            <span className="block text-sm mt-1 text-accent/70">
+            <span className="block text-sm mt-1 text-accent/70 italic">
               {fundLabels[member.fund]}
             </span>
           )}
