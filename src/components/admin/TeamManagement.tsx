@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Linkedin } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical } from 'lucide-react';
+import linkedinIcon from '@/assets/linkedin-icon.png';
 import { divisionLabels, Division } from '@/lib/types';
 import {
   DndContext,
@@ -990,10 +991,10 @@ function SortableMemberCard({
                     href={member.linkedin_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-accent transition-colors flex-shrink-0"
+                    className="hover:opacity-80 transition-opacity flex-shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Linkedin className="h-4 w-4" />
+                    <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
                   </a>
                 )}
               </div>
