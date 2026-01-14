@@ -32,7 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
+
 
 type AppRole = 
   | 'admin'
@@ -525,11 +525,13 @@ const UserManagement = () => {
           </h2>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+            <input
+              type="text"
               placeholder="Search by name, email or role..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9"
+              className="w-full pl-9 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             />
           </div>
         </div>

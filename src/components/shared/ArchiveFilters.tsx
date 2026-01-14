@@ -42,7 +42,8 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
                   setFundFilter('all');
                 }
               }}
-              className="font-body text-small bg-background border border-separator px-3 py-2 min-w-[200px]"
+              className="bg-background border border-separator px-3 py-2 min-w-[200px]"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <option value="all">All Divisions</option>
               {Object.entries(divisionLabels).map(([key, label]) => (
@@ -59,7 +60,8 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
               <select
                 value={fundFilter}
                 onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
-                className="font-body text-small bg-background border border-separator px-3 py-2 min-w-[280px]"
+                className="bg-background border border-separator px-3 py-2 min-w-[280px]"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
                 <option value="all">All Funds</option>
                 <optgroup label="Active Funds">
