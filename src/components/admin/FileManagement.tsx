@@ -591,7 +591,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             <select
               value={divisionFilter}
               onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
-              className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+              className="bg-background border border-separator px-3 h-10 min-w-[200px]"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               {!allowedDivisions && <option value="all">All Divisions</option>}
               {allowedDivisions && allowedDivisions.length > 1 && <option value="all">All Divisions</option>}
@@ -608,12 +609,13 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+              <input
                 type="text"
                 placeholder="Search by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 font-body text-small h-10"
+                className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
               />
             </div>
           </div>

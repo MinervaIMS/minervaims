@@ -3,7 +3,6 @@ import { PageIntroduction } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
 import alumniCommunityLogo from '@/assets/alumni-community-logo.svg';
 import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 interface AlumniRecord {
@@ -175,12 +174,13 @@ const Alumni = () => {
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
+                <input
                   type="text"
                   placeholder="Search by name, company, or city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 font-body text-small h-10"
+                  className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
                 />
               </div>
             </div>
@@ -193,7 +193,8 @@ const Alumni = () => {
               <select
                 value={companyFilter}
                 onChange={(e) => setCompanyFilter(e.target.value)}
-                className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+                className="bg-background border border-separator px-3 h-10 min-w-[200px]"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
                 <option value="all">All Companies</option>
                 {uniqueCompanies.map((company) => (
@@ -210,7 +211,8 @@ const Alumni = () => {
               <select
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+                className="bg-background border border-separator px-3 h-10 min-w-[200px]"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
                 <option value="all">All Cities</option>
                 {uniqueCities.map((city) => (
