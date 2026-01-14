@@ -194,7 +194,12 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${file.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      // Clean filename: keep letters, numbers, spaces, hyphens, underscores
+      const cleanTitle = file.title
+        .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      link.download = `${cleanTitle || 'document'}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
