@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { PageIntroduction } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
-
+import { Loader2, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import readingsBg from '@/assets/readings-bg.webp';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
@@ -40,6 +40,7 @@ const Readings = () => {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<ReadingType | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { user, roles } = useAuth();
   const navigate = useNavigate();
 
@@ -66,9 +67,15 @@ const Readings = () => {
     fetchReadings();
   }, []);
 
-  const filteredReadings = activeCategory === 'all'
-    ? readings
-    : readings.filter(r => r.reading_type === activeCategory);
+  const filteredReadings = readings.filter(r => {
+    const matchesCategory = activeCategory === 'all' || r.reading_type === activeCategory;
+    const matchesSearch = searchQuery === '' || 
+      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      `${r.contributor_name} ${r.contributor_surname}`.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const handleSubmitClick = () => {
     if (canSubmit) {
@@ -132,33 +139,45 @@ const Readings = () => {
             Our Library
           </h2>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-3 mb-8">
-            <button
-              onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 border transition-all duration-200 uppercase ${
-                activeCategory === 'all'
-                  ? 'bg-accent text-background border-accent'
-                  : 'bg-transparent text-accent border-accent/40 hover:border-accent'
-              }`}
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
-            >
-              All
-            </button>
-            {(Object.keys(readingTypeLabels) as ReadingType[]).map((type) => (
+          {/* Category Filter and Search */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div className="flex flex-wrap gap-3">
               <button
-                key={type}
-                onClick={() => setActiveCategory(type)}
+                onClick={() => setActiveCategory('all')}
                 className={`px-4 py-2 border transition-all duration-200 uppercase ${
-                  activeCategory === type
+                  activeCategory === 'all'
                     ? 'bg-accent text-background border-accent'
                     : 'bg-transparent text-accent border-accent/40 hover:border-accent'
                 }`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
-                {readingTypeLabels[type]}
+                All
               </button>
-            ))}
+              {(Object.keys(readingTypeLabels) as ReadingType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setActiveCategory(type)}
+                  className={`px-4 py-2 border transition-all duration-200 uppercase ${
+                    activeCategory === type
+                      ? 'bg-accent text-background border-accent'
+                      : 'bg-transparent text-accent border-accent/40 hover:border-accent'
+                  }`}
+                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                  {readingTypeLabels[type]}
+                </button>
+              ))}
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search readings..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 border-accent/40 focus:border-accent"
+              />
+            </div>
           </div>
 
           {isLoading ? (
