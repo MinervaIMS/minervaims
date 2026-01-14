@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2 } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 
@@ -39,6 +39,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
   
@@ -178,6 +179,40 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       }
       return newSet;
     });
+  };
+
+  const handleDownload = async (file: ArchiveFile) => {
+    if (downloadingFiles.has(file.id)) return;
+    
+    setDownloadingFiles(prev => new Set(prev).add(file.id));
+    
+    try {
+      const response = await fetch(file.file_url);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${file.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download failed",
+        description: "Please try again or right-click the link to save.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingFiles(prev => {
+        const next = new Set(prev);
+        next.delete(file.id);
+        return next;
+      });
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -651,16 +686,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                       </div>
                     )}
                     <div className="mt-3">
-                      <a
-                        href={file.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline"
-                        download
+                      <button
+                        onClick={() => handleDownload(file)}
+                        disabled={downloadingFiles.has(file.id)}
+                        className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
                       >
-                        <Download className="h-4 w-4" />
-                        <span>Download</span>
-                      </a>
+                        {downloadingFiles.has(file.id) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        <span>{downloadingFiles.has(file.id) ? 'Downloading...' : 'Download'}</span>
+                      </button>
                     </div>
                   </div>
 
