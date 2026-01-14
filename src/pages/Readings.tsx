@@ -4,7 +4,6 @@ import { PageIntroduction } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import readingsBg from '@/assets/readings-bg.webp';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
@@ -140,8 +139,8 @@ const Readings = () => {
           </h2>
 
           {/* Category Filter and Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
+            <div className="flex flex-wrap gap-3 shrink-0">
               <button
                 onClick={() => setActiveCategory('all')}
                 className={`px-4 py-2 border transition-all duration-200 uppercase ${
@@ -168,14 +167,15 @@ const Readings = () => {
                 </button>
               ))}
             </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-accent/60" />
+              <input
                 type="text"
                 placeholder="Search readings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 border-accent/40 focus:border-accent"
+                className="w-full px-4 py-2 pl-9 border border-accent/40 bg-transparent text-accent placeholder:text-accent/50 focus:border-accent focus:outline-none transition-all duration-200"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
               />
             </div>
           </div>
