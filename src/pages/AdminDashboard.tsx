@@ -407,7 +407,7 @@ const AdminDashboard = () => {
               {user.email}
             </p>
             <span 
-              className="text-lg font-medium text-accent italic mt-2"
+              className="text-xl font-medium text-accent italic mt-2"
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               {getUserRoleLabel()}
