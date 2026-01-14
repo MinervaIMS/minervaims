@@ -48,9 +48,15 @@ export function Header() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  // Track mount state to prevent initial transition animation
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const isHomepage = location.pathname === '/';
 
@@ -108,7 +114,7 @@ export function Header() {
       {/* Spacer to prevent content jump when header is fixed - hidden on homepage where hero extends behind header */}
       {!isHomepage && <div className="h-20 md:h-24" />}
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,box-shadow] duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-50 ${hasMounted ? 'transition-[background-color,box-shadow] duration-300 ease-in-out' : ''} ${
           isTransparent 
             ? 'bg-transparent shadow-none' 
             : 'bg-background shadow-sm'
