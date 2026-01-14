@@ -12,6 +12,7 @@ const Sitemap = () => {
         { label: 'Events', href: '/events' },
         { label: 'Join Us', href: '/join' },
         { label: 'Archive', href: '/archive' },
+        { label: 'Readings', href: '/readings' },
       ],
     },
     {
