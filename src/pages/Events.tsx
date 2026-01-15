@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PageIntroduction } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
 import { EventsListNew } from "@/components/shared/EventsListNew";
 import { supabase } from "@/integrations/supabase/client";
 import eventsBg from "@/assets/events-bg.webp";
@@ -77,6 +77,10 @@ const Events = () => {
     return pages;
   };
 
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       <div className="relative">
@@ -115,55 +119,49 @@ const Events = () => {
         </h2>
 
         {/* Results count */}
-        {!isLoading && events.length > 0 && (
+        {events.length > 0 && (
           <p className="font-body text-small text-muted-foreground mb-6">
             Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, events.length)} of {events.length} events
           </p>
         )}
 
-        {isLoading ? (
-          <p className="font-body text-muted-foreground py-8">Loading events...</p>
-        ) : (
-          <>
-            <EventsListNew events={paginatedEvents} />
+        <EventsListNew events={paginatedEvents} />
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination className="mt-8">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination className="mt-8">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
 
-                  {getPageNumbers().map((page, index) => (
-                    <PaginationItem key={index}>
-                      {page === "ellipsis" ? (
-                        <span className="px-3 py-2">...</span>
-                      ) : (
-                        <PaginationLink
-                          isActive={currentPage === page}
-                          onClick={() => handlePageChange(page)}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
+              {getPageNumbers().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === "ellipsis" ? (
+                    <span className="px-3 py-2">...</span>
+                  ) : (
+                    <PaginationLink
+                      isActive={currentPage === page}
+                      onClick={() => handlePageChange(page)}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
 
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
-          </>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         )}
       </div>
     </>

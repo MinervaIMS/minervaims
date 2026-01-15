@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import readingsBg from '@/assets/readings-bg.webp';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
@@ -81,6 +81,10 @@ const Readings = () => {
       navigate('/admin?tab=readings');
     }
   };
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
 
   return (
     <>
@@ -185,11 +189,7 @@ const Readings = () => {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-8 sm:py-12">
-              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-accent/60" />
-            </div>
-          ) : filteredReadings.length === 0 ? (
+          {filteredReadings.length === 0 ? (
             <p className="font-body text-sm sm:text-body-lg text-muted-foreground text-center py-8">
               {activeCategory === 'all' 
                 ? 'No reading recommendations have been added yet.'

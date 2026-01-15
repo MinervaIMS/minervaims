@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { PageIntroduction, TeamDirectory } from '@/components/shared';
+import { PageIntroduction, TeamDirectory, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
 import teamBg from '@/assets/team-bg.webp';
@@ -59,6 +59,10 @@ const Team = () => {
     displayOrder: m.display_order,
   }));
 
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       <PageIntroduction
@@ -87,15 +91,11 @@ const Team = () => {
       </section>
 
       <div className="container pb-section-sm md:pb-section">
-        {isLoading ? (
-          <p className="font-body text-muted-foreground">Loading team...</p>
-        ) : (
-          <TeamDirectory 
-            members={transformedMembers} 
-            showFilters={true}
-            initialDivisionFilter={divisionParam || undefined}
-          />
-        )}
+        <TeamDirectory 
+          members={transformedMembers} 
+          showFilters={true}
+          initialDivisionFilter={divisionParam || undefined}
+        />
       </div>
     </>
   );
