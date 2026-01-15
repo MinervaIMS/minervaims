@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { PageIntroduction } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import { Division, divisionLabels } from "@/lib/types";
+import { useImagePreload } from "@/hooks/useImagePreload";
 import aboutBg from "@/assets/about-bg.webp";
 
 const divisionData: { division: Division; description: string }[] = [
@@ -28,6 +29,12 @@ const divisionData: { division: Division; description: string }[] = [
 ];
 
 const About = () => {
+  const imagesLoaded = useImagePreload([aboutBg]);
+
+  if (!imagesLoaded) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       {/* SECTION 0 - Hero with title and photo background */}

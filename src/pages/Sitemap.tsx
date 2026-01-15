@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import sitemapBg from '@/assets/sitemap-bg.webp';
 
 const Sitemap = () => {
+  const imagesLoaded = useImagePreload([sitemapBg]);
+
   const sections = [
     {
       title: 'Main',
@@ -50,6 +53,10 @@ const Sitemap = () => {
       ],
     },
   ];
+
+  if (!imagesLoaded) {
+    return <PageLoader />;
+  }
 
   return (
     <>

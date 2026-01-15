@@ -6,6 +6,7 @@ import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } 
 import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { useImagePreload } from "@/hooks/useImagePreload";
 import archiveBg from "@/assets/archive-bg.webp";
 import {
   Pagination,
@@ -31,11 +32,12 @@ const ITEMS_PER_PAGE = 15;
 const Archive = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const hasScrolledToFile = useRef(false);
+  const imagesLoaded = useImagePreload([archiveBg]);
 
   // Read fileId from URL params (for direct linking from carousels)
   const fileIdFromUrl = searchParams.get('fileId');
@@ -119,7 +121,7 @@ const Archive = () => {
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -209,7 +211,7 @@ const Archive = () => {
     return pages;
   };
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 

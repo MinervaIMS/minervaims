@@ -3,8 +3,10 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
 import alumniCommunityLogo from '@/assets/alumni-community-logo.svg';
 import { supabase } from '@/integrations/supabase/client';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
+
 interface AlumniRecord {
   id: string;
   name: string;
@@ -17,10 +19,11 @@ interface AlumniRecord {
 
 const Alumni = () => {
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
+  const imagesLoaded = useImagePreload([alumniBg]);
 
   useEffect(() => {
     fetchAlumni();
@@ -38,7 +41,7 @@ const Alumni = () => {
     } catch (error) {
       console.error('Error fetching alumni:', error);
     } finally {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -90,7 +93,7 @@ const Alumni = () => {
     return alumni.filter(a => a.linkedin_url).slice(0, 3);
   }, [alumni]);
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 

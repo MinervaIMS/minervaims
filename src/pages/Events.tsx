@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { EventsListNew } from "@/components/shared/EventsListNew";
 import { supabase } from "@/integrations/supabase/client";
+import { useImagePreload } from "@/hooks/useImagePreload";
 import eventsBg from "@/assets/events-bg.webp";
 import {
   Pagination,
@@ -26,8 +27,9 @@ const ITEMS_PER_PAGE = 10;
 
 const Events = () => {
   const [events, setEvents] = useState<DbEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const imagesLoaded = useImagePreload([eventsBg]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -43,7 +45,7 @@ const Events = () => {
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
-        setIsLoading(false);
+        setIsDataLoading(false);
       }
     };
 
@@ -77,7 +79,7 @@ const Events = () => {
     return pages;
   };
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 

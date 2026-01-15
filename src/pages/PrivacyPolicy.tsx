@@ -1,7 +1,14 @@
-import { PageIntroduction } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
+import { useImagePreload } from "@/hooks/useImagePreload";
 import privacyBg from "@/assets/privacy-bg.webp";
 
 const PrivacyPolicy = () => {
+  const imagesLoaded = useImagePreload([privacyBg]);
+
+  if (!imagesLoaded) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       <div className="relative">
