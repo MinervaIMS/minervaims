@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
 import alumniCommunityLogo from '@/assets/alumni-community-logo.svg';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,6 +89,10 @@ const Alumni = () => {
   const spotlightAlumni = useMemo(() => {
     return alumni.filter(a => a.linkedin_url).slice(0, 3);
   }, [alumni]);
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
 
   return (
     <>
@@ -228,9 +232,7 @@ const Alumni = () => {
         </div>
 
         {/* Alumni List */}
-        {isLoading ? (
-          <p className="font-body text-muted-foreground">Loading alumni...</p>
-        ) : alumni.length === 0 ? (
+        {alumni.length === 0 ? (
           <p className="font-body text-muted-foreground">No alumni data available yet.</p>
         ) : filteredAlumni.length === 0 ? (
           <p className="font-body text-muted-foreground">No alumni match your search criteria.</p>

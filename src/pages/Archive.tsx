@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PageIntroduction } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from "@/lib/types";
 import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
@@ -209,6 +209,10 @@ const Archive = () => {
     return pages;
   };
 
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       {/* Hero section with background image */}
@@ -313,13 +317,9 @@ const Archive = () => {
           </p>
 
           {/* Files list */}
-          {isLoading ? (
-            <p className="font-body text-muted-foreground py-8">Loading reports...</p>
-          ) : (
-            <>
-              <ArchiveFilesList files={paginatedFiles} showDivision={divisionFilter === 'all'} highlightedFileId={highlightedFileId} />
-              
-              {/* Pagination */}
+          <ArchiveFilesList files={paginatedFiles} showDivision={divisionFilter === 'all'} highlightedFileId={highlightedFileId} />
+          
+          {/* Pagination */}
               {totalPages > 1 && (
                 <Pagination className="mt-8">
                   <PaginationContent>
@@ -353,10 +353,8 @@ const Archive = () => {
                       />
                     </PaginationItem>
                   </PaginationContent>
-                </Pagination>
-              )}
-            </>
-          )}
+              </Pagination>
+            )}
         </div>
       </div>
     </>
