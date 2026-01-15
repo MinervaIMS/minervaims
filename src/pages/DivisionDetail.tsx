@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
+import { supabase } from '@/integrations/supabase/client';
 
 // Background images for each division
 import equityBg from '@/assets/division-equity-bg.webp';
@@ -9,6 +11,14 @@ import investmentBg from '@/assets/division-investment-bg.webp';
 import macroBg from '@/assets/division-macro-bg.webp';
 import portfolioBg from '@/assets/division-portfolio-bg.webp';
 import quantBg from '@/assets/division-quant-bg.webp';
+
+interface ArchiveFile {
+  id: string;
+  title: string;
+  file_url: string;
+  date: string;
+  division: string;
+}
 
 // Division content configuration
 interface DivisionContent {
@@ -70,9 +80,42 @@ const fundDescriptions: Record<Fund, string> = {
 
 const DivisionDetail = () => {
   const { division } = useParams<{ division: string }>();
+  const [files, setFiles] = useState<ArchiveFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (division && divisionLabels[division as Division]) {
+      fetchFiles();
+    } else {
+      setIsLoading(false);
+    }
+  }, [division]);
+
+  const fetchFiles = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('archive_files')
+        .select('id, title, file_url, date, division')
+        .eq('division', division)
+        .order('date', { ascending: false })
+        .limit(8);
+
+      if (error) throw error;
+      setFiles(data || []);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!division || !divisionLabels[division as Division]) {
     return <Navigate to="/divisions" replace />;
+  }
+
+  if (isLoading) {
+    return <PageLoader />;
   }
 
   const divisionKey = division as Division;
@@ -156,7 +199,7 @@ const DivisionDetail = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
             {content.sectionTitle}
           </h2>
-          <DivisionArchiveCarousel division={divisionKey} />
+          <DivisionArchiveCarousel division={divisionKey} files={files} />
         </div>
       </section>
     </>
