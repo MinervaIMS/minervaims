@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
+import { supabase } from '@/integrations/supabase/client';
 
 // Background images for funds
 import longShortBg from '@/assets/fund-long-short-bg.webp';
@@ -9,7 +11,13 @@ import multiAssetBg from '@/assets/fund-multi-asset-bg.webp';
 import pirBg from '@/assets/fund-pir-bg.webp';
 import dpsBg from '@/assets/fund-dps-bg.webp';
 
-// Fund content configuration
+interface ArchiveFile {
+  id: string;
+  title: string;
+  file_url: string;
+  date: string;
+  fund: string;
+}
 interface FundContent {
   title: string;
   subtitle: string;
@@ -54,9 +62,42 @@ const fundBackgrounds: Record<Fund, string> = {
 
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
+  const [files, setFiles] = useState<ArchiveFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (fund && fundLabels[fund as Fund]) {
+      fetchFiles();
+    } else {
+      setIsLoading(false);
+    }
+  }, [fund]);
+
+  const fetchFiles = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('archive_files')
+        .select('id, title, file_url, date, fund')
+        .eq('fund', fund)
+        .order('date', { ascending: false })
+        .limit(8);
+
+      if (error) throw error;
+      setFiles(data || []);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!fund || !fundLabels[fund as Fund]) {
     return <Navigate to="/" replace />;
+  }
+
+  if (isLoading) {
+    return <PageLoader />;
   }
 
   const fundKey = fund as Fund;
@@ -106,7 +147,7 @@ const FundDetail = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
             {content.sectionTitle}
           </h2>
-          <FundArchiveCarousel fund={fundKey} />
+          <FundArchiveCarousel fund={fundKey} files={files} />
         </div>
       </section>
     </>

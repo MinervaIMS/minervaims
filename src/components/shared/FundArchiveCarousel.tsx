@@ -18,16 +18,22 @@ interface ArchiveFile {
 
 interface FundArchiveCarouselProps {
   fund: Fund;
+  files?: ArchiveFile[];
 }
 
-export function FundArchiveCarousel({ fund }: FundArchiveCarouselProps) {
-  const [files, setFiles] = useState<ArchiveFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function FundArchiveCarousel({ fund, files: propFiles }: FundArchiveCarouselProps) {
+  const [files, setFiles] = useState<ArchiveFile[]>(propFiles || []);
+  const [isLoading, setIsLoading] = useState(!propFiles);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchLatestFiles();
-  }, [fund]);
+    if (propFiles) {
+      setFiles(propFiles);
+      setIsLoading(false);
+    } else {
+      fetchLatestFiles();
+    }
+  }, [fund, propFiles]);
 
   const fetchLatestFiles = async () => {
     try {
