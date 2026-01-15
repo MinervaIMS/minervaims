@@ -47,24 +47,16 @@ const About = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi
-              University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and
-              the only one with student-managed virtual funds.
+              Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and the only one with student-managed virtual funds.
             </p>
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              We are organised as an investment management firm. Members work in specialised research divisions and in
-              portfolio management. Each research team meets weekly to discuss markets, review ideas and develop
-              investment theses. The output of this work is written research and publications produced to professional
-              standards.
+              We are organised as an investment management firm. Members work in specialised research divisions and in portfolio management. Each research team meets regularly to discuss market developments, review ideas, and develop investment theses. Each team's work is consolidated into written research reports and publications structured to professional investment-industry standards.
             </p>
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              Portfolio management sits at the centre of the structure. It uses the research work to build and update
-              propriety funds allocations. Decisions are documented and reviewed through strict due diligence and
-              evaluated with risk-metrics analysis. The Society publishes outputs in line with market standards.
+              Portfolio management sits at the centre of the structure, leveraging the research work to build and update proprietary funds' allocations. Decisions are documented and reviewed through strict due diligence and evaluated with risk-metrics analysis. The Society publishes outputs in line with market standards.
             </p>
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              Over time, MIMS has built an international Alumni community. Former members have progressed to leading
-              investment banks, hedge funds and asset managers across global financial centres.
+              Over time, MIMS has built an international Alumni community. Former members have progressed to leading investment banks, hedge funds, and asset managers across global financial centres.
             </p>
           </div>
         </div>
