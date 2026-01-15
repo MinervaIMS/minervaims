@@ -4,6 +4,7 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
 import { supabase } from '@/integrations/supabase/client';
+import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for funds
 import longShortBg from '@/assets/fund-long-short-bg.webp';
@@ -63,18 +64,25 @@ const fundBackgrounds: Record<Fund, string> = {
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // Get the background image for the current fund
+  const backgroundImage = fund && fundLabels[fund as Fund] 
+    ? fundBackgrounds[fund as Fund] 
+    : '';
+  
+  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage] : []);
 
   useEffect(() => {
     if (fund && fundLabels[fund as Fund]) {
       fetchFiles();
     } else {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   }, [fund]);
 
   const fetchFiles = async () => {
-    setIsLoading(true);
+    setIsDataLoading(true);
     try {
       const { data, error } = await supabase
         .from('archive_files')
@@ -88,7 +96,7 @@ const FundDetail = () => {
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -96,14 +104,13 @@ const FundDetail = () => {
     return <Navigate to="/" replace />;
   }
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 
   const fundKey = fund as Fund;
   const content = fundContent[fundKey];
   const isClosed = closedFunds.includes(fundKey);
-  const backgroundImage = fundBackgrounds[fundKey];
 
   return (
     <>

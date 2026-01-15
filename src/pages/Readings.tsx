@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
 import readingsBg from '@/assets/readings-bg.webp';
 
@@ -37,11 +38,12 @@ const readingsAccessRoles = [
 
 const Readings = () => {
   const [readings, setReadings] = useState<Reading[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<ReadingType | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { user, roles } = useAuth();
   const navigate = useNavigate();
+  const imagesLoaded = useImagePreload([readingsBg]);
 
   // Check if user can submit readings
   const canSubmit = user && roles.some(r => readingsAccessRoles.includes(r.role));
@@ -59,7 +61,7 @@ const Readings = () => {
       } catch (error) {
         console.error('Error fetching readings:', error);
       } finally {
-        setIsLoading(false);
+        setIsDataLoading(false);
       }
     };
 
@@ -82,7 +84,7 @@ const Readings = () => {
     }
   };
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 

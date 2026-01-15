@@ -4,6 +4,7 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
 import { supabase } from '@/integrations/supabase/client';
+import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for each division
 import equityBg from '@/assets/division-equity-bg.webp';
@@ -81,18 +82,25 @@ const fundDescriptions: Record<Fund, string> = {
 const DivisionDetail = () => {
   const { division } = useParams<{ division: string }>();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  
+  // Get the background image for the current division
+  const backgroundImage = division && divisionLabels[division as Division] 
+    ? divisionBackgrounds[division as Division] 
+    : '';
+  
+  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage] : []);
 
   useEffect(() => {
     if (division && divisionLabels[division as Division]) {
       fetchFiles();
     } else {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   }, [division]);
 
   const fetchFiles = async () => {
-    setIsLoading(true);
+    setIsDataLoading(true);
     try {
       const { data, error } = await supabase
         .from('archive_files')
@@ -106,7 +114,7 @@ const DivisionDetail = () => {
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -114,14 +122,13 @@ const DivisionDetail = () => {
     return <Navigate to="/divisions" replace />;
   }
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 
   const divisionKey = division as Division;
   const content = divisionContent[divisionKey];
   const isPortfolio = divisionKey === 'portfolio';
-  const backgroundImage = divisionBackgrounds[divisionKey];
 
   // Combine active and closed funds for the portfolio section
   const allFunds: { fund: Fund; isActive: boolean }[] = [

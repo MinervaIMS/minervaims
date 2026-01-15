@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { PageIntroduction, ApplicationStatus } from '@/components/shared';
+import { PageIntroduction, ApplicationStatus, PageLoader } from '@/components/shared';
 import joinBg from '@/assets/join-bg.webp';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import {
   Accordion,
   AccordionContent,
@@ -62,6 +63,12 @@ const FAQS = [
 
 const Join = () => {
   const { settings } = useApplicationSettings();
+  const imagesLoaded = useImagePreload([joinBg]);
+
+  if (!imagesLoaded) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       <div className="relative">

@@ -1,10 +1,16 @@
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
 import { Button } from '@/components/ui/button';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import cookieBg from '@/assets/cookie-bg.webp';
 
 const CookiePolicy = () => {
   const { openPreferences } = useCookieConsent();
+  const imagesLoaded = useImagePreload([cookieBg]);
+
+  if (!imagesLoaded) {
+    return <PageLoader />;
+  }
 
   return (
     <>

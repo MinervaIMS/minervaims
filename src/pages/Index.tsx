@@ -1,14 +1,26 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoWhite from "@/assets/logo-white.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
+import { PageLoader } from "@/components/shared";
 import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
+import { useImagePreload } from "@/hooks/useImagePreload";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
 const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
+
+interface ArchiveFile {
+  id: string;
+  title: string;
+  file_url: string;
+  date: string;
+  division: string;
+}
 
 const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
   const animatedValue = useAnimatedCounter(value, 1500, !isLoading && value > 0);
@@ -21,8 +33,36 @@ const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolea
 };
 
 const Index = () => {
-  const { counts, isLoading } = useKeyFigures();
+  const { counts, isLoading: isKeyFiguresLoading } = useKeyFigures();
   const { settings: appSettings } = useApplicationSettings();
+  const [carouselFiles, setCarouselFiles] = useState<ArchiveFile[]>([]);
+  const [isCarouselLoading, setIsCarouselLoading] = useState(true);
+  const imagesLoaded = useImagePreload([homepageBg, logoWhite]);
+
+  useEffect(() => {
+    fetchCarouselFiles();
+  }, []);
+
+  const fetchCarouselFiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('archive_files')
+        .select('id, title, file_url, date, division')
+        .order('date', { ascending: false })
+        .limit(15);
+
+      if (error) throw error;
+      setCarouselFiles(data || []);
+    } catch (error) {
+      console.error('Error fetching carousel files:', error);
+    } finally {
+      setIsCarouselLoading(false);
+    }
+  };
+
+  if (isKeyFiguresLoading || isCarouselLoading || !imagesLoaded) {
+    return <PageLoader />;
+  }
 
   return (
     <>
@@ -75,7 +115,7 @@ const Index = () => {
               className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity"
             >
               <p className="font-serif text-hero text-primary mb-2">
-                <AnimatedFigure value={counts.reports} isLoading={isLoading} />
+                <AnimatedFigure value={counts.reports} isLoading={false} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </Link>
@@ -84,13 +124,13 @@ const Index = () => {
               className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity"
             >
               <p className="font-serif text-hero text-primary mb-2">
-                <AnimatedFigure value={counts.members} isLoading={isLoading} />
+                <AnimatedFigure value={counts.members} isLoading={false} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
             </Link>
             <Link to="/members/alumni" className="text-center py-6 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
-                <AnimatedFigure value={counts.alumni} isLoading={isLoading} />
+                <AnimatedFigure value={counts.alumni} isLoading={false} />
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
             </Link>
@@ -219,7 +259,7 @@ const Index = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
             Latest Reports
           </h2>
-          <LatestArchiveCarousel />
+          <LatestArchiveCarousel files={carouselFiles} />
         </div>
       </section>
     </>

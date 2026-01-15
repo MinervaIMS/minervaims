@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { PageIntroduction, TeamDirectory, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import teamBg from '@/assets/team-bg.webp';
 
 interface DbTeamMember {
@@ -22,7 +23,8 @@ const Team = () => {
   const [searchParams] = useSearchParams();
   const divisionParam = searchParams.get('division') as Division | null;
   const [members, setMembers] = useState<DbTeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const imagesLoaded = useImagePreload([teamBg]);
 
   useEffect(() => {
     fetchMembers();
@@ -41,7 +43,7 @@ const Team = () => {
     } catch (error) {
       console.error('Error fetching team members:', error);
     } finally {
-      setIsLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -59,7 +61,7 @@ const Team = () => {
     displayOrder: m.display_order,
   }));
 
-  if (isLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 

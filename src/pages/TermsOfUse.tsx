@@ -1,7 +1,14 @@
-import { PageIntroduction } from '@/components/shared';
+import { PageIntroduction, PageLoader } from '@/components/shared';
+import { useImagePreload } from '@/hooks/useImagePreload';
 import termsBg from '@/assets/terms-bg.webp';
 
 const TermsOfUse = () => {
+  const imagesLoaded = useImagePreload([termsBg]);
+
+  if (!imagesLoaded) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       <div className="relative">
