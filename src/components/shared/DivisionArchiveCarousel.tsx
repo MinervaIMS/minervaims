@@ -18,16 +18,22 @@ interface ArchiveFile {
 
 interface DivisionArchiveCarouselProps {
   division: Division;
+  files?: ArchiveFile[];
 }
 
-export function DivisionArchiveCarousel({ division }: DivisionArchiveCarouselProps) {
-  const [files, setFiles] = useState<ArchiveFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function DivisionArchiveCarousel({ division, files: propFiles }: DivisionArchiveCarouselProps) {
+  const [files, setFiles] = useState<ArchiveFile[]>(propFiles || []);
+  const [isLoading, setIsLoading] = useState(!propFiles);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchLatestFiles();
-  }, [division]);
+    if (propFiles) {
+      setFiles(propFiles);
+      setIsLoading(false);
+    } else {
+      fetchLatestFiles();
+    }
+  }, [division, propFiles]);
 
   const fetchLatestFiles = async () => {
     try {
