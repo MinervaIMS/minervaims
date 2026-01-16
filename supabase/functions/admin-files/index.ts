@@ -76,6 +76,34 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
+// Activity logging helper
+async function logActivity(
+  supabase: any,
+  user: { id: string; email: string },
+  userRole: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      user_email: user.email || 'unknown',
+      user_role: userRole,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    })
+    console.log(`Activity logged: ${action} ${entityType} "${entityName}" by ${user.email}`)
+  } catch (error) {
+    console.error('Failed to log activity:', error)
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -185,6 +213,9 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Get primary role for logging
+    const primaryRole = userRoles?.[0]?.role || (isAdminEmail ? 'president' : 'unknown')
 
     // Check content type to handle file uploads vs JSON
     const contentType = req.headers.get('content-type') || ''
@@ -354,6 +385,18 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(
+          supabase,
+          { id: user.id, email: user.email || 'unknown' },
+          primaryRole,
+          'create',
+          'file',
+          data.id,
+          data.title,
+          { division: data.division, fund: data.fund, date: data.date }
+        )
+
         console.log('File created:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
@@ -419,6 +462,18 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(
+          supabase,
+          { id: user.id, email: user.email || 'unknown' },
+          primaryRole,
+          'update',
+          'file',
+          data.id,
+          data.title,
+          { division: data.division, fund: data.fund, date: data.date }
+        )
+
         console.log('File updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
@@ -442,7 +497,7 @@ Deno.serve(async (req) => {
         // Get file info first to check division and delete from storage
         const { data: fileData } = await supabase
           .from('archive_files')
-          .select('file_url, division')
+          .select('file_url, division, title')
           .eq('id', deleteResult.data.id)
           .maybeSingle()
         
@@ -467,6 +522,18 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+
+        // Log activity
+        await logActivity(
+          supabase,
+          { id: user.id, email: user.email || 'unknown' },
+          primaryRole,
+          'delete',
+          'file',
+          deleteResult.data.id,
+          fileData?.title || 'Unknown file',
+          { division: fileData?.division }
+        )
 
         // Try to delete from storage if it's in our bucket
         if (fileData?.file_url && fileData.file_url.includes('archive-files')) {

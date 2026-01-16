@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Activity } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -18,6 +18,7 @@ import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
+import ActivityLog from '@/components/admin/ActivityLog';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
@@ -353,6 +354,7 @@ const AdminDashboard = () => {
 
   // Determine default tab based on permissions
   const getDefaultTab = () => {
+    if (permissions.canAccessActivityLog) return 'activity';
     if (permissions.canAccessUsers) return 'users';
     if (permissions.canAccessAlumni) return 'alumni';
     if (permissions.canAccessEvents) return 'events';
@@ -453,6 +455,12 @@ const AdminDashboard = () => {
       {/* Tabs */}
       <Tabs defaultValue={getDefaultTab()} className="w-full">
         <TabsList className="mb-8">
+          {permissions.canAccessActivityLog && (
+            <TabsTrigger value="activity" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <Activity className="h-4 w-4 mr-2" />
+              Activity Log
+            </TabsTrigger>
+          )}
           {permissions.canAccessUsers && (
             <TabsTrigger value="users" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <UserCog className="h-4 w-4 mr-2" />
@@ -496,6 +504,12 @@ const AdminDashboard = () => {
             </TabsTrigger>
           )}
         </TabsList>
+
+        {permissions.canAccessActivityLog && (
+          <TabsContent value="activity">
+            <ActivityLog />
+          </TabsContent>
+        )}
 
         {permissions.canAccessUsers && (
           <TabsContent value="users">
