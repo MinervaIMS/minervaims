@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
@@ -83,32 +84,17 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  user: { id: string; email: string },
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: user.id,
-      user_email: user.email || 'unknown',
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    })
-    console.log(`Activity logged: ${action} ${entityType} "${entityName}" by ${user.email}`)
-  } catch (error) {
-    console.error('Failed to log activity:', error)
-  }
+// Create HMAC key for JWT verification
+async function getJwtKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const encoder = new TextEncoder()
+  return await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  )
 }
 
 Deno.serve(async (req) => {
@@ -173,7 +159,9 @@ Deno.serve(async (req) => {
     // Roles that can access events
     const eventAccessRoles = [
       'admin', 'president', 'vice_president', 'head_of_asset_management',
-      'head_of_operations', 'head_of_media'
+      'head_of_operations', 'head_of_media',
+      'head_of_equity', 'head_of_investment',
+      'head_of_macro', 'head_of_portfolio', 'head_of_quant'
     ]
     
     const { data: userRoles } = await supabase
@@ -190,9 +178,6 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    // Get primary role for logging
-    const primaryRole = userRoles?.[0]?.role || (isAdminEmail ? 'president' : 'unknown')
 
     // Parse request body
     let body: unknown
@@ -255,18 +240,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'create',
-          'event',
-          data.id,
-          data.title,
-          { date: data.date, place: data.place }
-        )
-
         console.log('Event created:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
@@ -314,18 +287,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'update',
-          'event',
-          data.id,
-          data.title,
-          { date: data.date, place: data.place }
-        )
-
         console.log('Event updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
@@ -346,13 +307,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Get event title before deleting for logging
-        const { data: eventToDelete } = await supabase
-          .from('events')
-          .select('title')
-          .eq('id', deleteResult.data.id)
-          .single()
-
         const { error } = await supabase
           .from('events')
           .delete()
@@ -365,17 +319,6 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'delete',
-          'event',
-          deleteResult.data.id,
-          eventToDelete?.title || 'Unknown event'
-        )
 
         console.log('Event deleted:', deleteResult.data.id)
         return new Response(

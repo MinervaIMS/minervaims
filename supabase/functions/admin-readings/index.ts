@@ -73,34 +73,6 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  user: { id: string; email: string },
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: user.id,
-      user_email: user.email || 'unknown',
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    })
-    console.log(`Activity logged: ${action} ${entityType} "${entityName}" by ${user.email}`)
-  } catch (error) {
-    console.error('Failed to log activity:', error)
-  }
-}
-
 // Roles that can access readings management
 const readingsAccessRoles = [
   'admin', 'president', 'vice_president', 'head_of_asset_management',
@@ -182,9 +154,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get primary role for logging
-    const primaryRole = userRoles?.[0]?.role || (isAdminEmail ? 'president' : 'unknown')
-
     // Parse request body
     let body: unknown
     try {
@@ -258,18 +227,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'create',
-          'reading',
-          data.id,
-          data.title,
-          { author: data.author, reading_type: data.reading_type }
-        )
-
         console.log('Reading created:', data.id)
         return new Response(
           JSON.stringify({ success: true, reading: data }),
@@ -319,18 +276,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'update',
-          'reading',
-          data.id,
-          data.title,
-          { author: data.author, reading_type: data.reading_type }
-        )
-
         console.log('Reading updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, reading: data }),
@@ -351,13 +296,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Get reading info before deleting for logging
-        const { data: readingToDelete } = await supabase
-          .from('readings')
-          .select('title')
-          .eq('id', deleteResult.data.id)
-          .single()
-
         const { error } = await supabase
           .from('readings')
           .delete()
@@ -370,17 +308,6 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'delete',
-          'reading',
-          deleteResult.data.id,
-          readingToDelete?.title || 'Unknown reading'
-        )
 
         console.log('Reading deleted:', deleteResult.data.id)
         return new Response(
@@ -413,18 +340,6 @@ Deno.serve(async (req) => {
             console.error('Reorder error for item:', item.id, error)
           }
         }
-
-        // Log activity
-        await logActivity(
-          supabase,
-          { id: user.id, email: user.email || 'unknown' },
-          primaryRole,
-          'reorder',
-          'reading',
-          null,
-          `${reorderResult.data.length} readings`,
-          { count: reorderResult.data.length }
-        )
 
         console.log('Readings reordered')
         return new Response(
