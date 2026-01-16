@@ -76,58 +76,6 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
-// Helper to log activity
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action: action,
-      entity_type: 'file',
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    })
-  } catch (error) {
-    console.error('Failed to log activity:', error)
-  }
-}
-
-// Get user's primary role label
-function getPrimaryRoleLabel(roles: { role: string }[]): string {
-  const roleLabels: Record<string, string> = {
-    admin: 'Admin',
-    president: 'President',
-    vice_president: 'Vice President',
-    head_of_asset_management: 'Head of Asset Management',
-    head_of_equity: 'Head of Equity',
-    head_of_investment: 'Head of Investment',
-    head_of_macro: 'Head of Macro',
-    head_of_portfolio: 'Head of Portfolio',
-    head_of_quant: 'Head of Quant',
-    head_of_operations: 'Head of Operations',
-    head_of_media: 'Head of Media',
-    portfolio_manager: 'Portfolio Manager',
-    member: 'Member',
-  }
-  const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
-    'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
-    'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member']
-  const userRoleNames = roles.map(r => r.role)
-  const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || roles[0]?.role || 'Unknown'
-  return roleLabels[primaryRole] || primaryRole
-}
-
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -237,8 +185,6 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const userRoleLabel = getPrimaryRoleLabel(userRoles || [])
 
     // Check content type to handle file uploads vs JSON
     const contentType = req.headers.get('content-type') || ''
@@ -408,9 +354,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Log activity
-        await logActivity(supabase, user.id, user.email!, userRoleLabel, 'create', data.id, data.title)
-
         console.log('File created:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
@@ -476,9 +419,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Log activity
-        await logActivity(supabase, user.id, user.email!, userRoleLabel, 'update', data.id, data.title)
-
         console.log('File updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
@@ -502,7 +442,7 @@ Deno.serve(async (req) => {
         // Get file info first to check division and delete from storage
         const { data: fileData } = await supabase
           .from('archive_files')
-          .select('file_url, division, title')
+          .select('file_url, division')
           .eq('id', deleteResult.data.id)
           .maybeSingle()
         
@@ -527,9 +467,6 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-
-        // Log activity
-        await logActivity(supabase, user.id, user.email!, userRoleLabel, 'delete', deleteResult.data.id, fileData?.title || null)
 
         // Try to delete from storage if it's in our bucket
         if (fileData?.file_url && fileData.file_url.includes('archive-files')) {

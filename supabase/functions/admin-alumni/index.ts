@@ -29,58 +29,6 @@ const DeleteAlumniSchema = z.object({
 
 const ActionSchema = z.enum(['create', 'update', 'delete']);
 
-// Helper to log activity
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action: action,
-      entity_type: 'alumni',
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    })
-  } catch (error) {
-    console.error('Failed to log activity:', error)
-  }
-}
-
-// Get user's primary role label
-function getPrimaryRoleLabel(roles: { role: string }[]): string {
-  const roleLabels: Record<string, string> = {
-    admin: 'Admin',
-    president: 'President',
-    vice_president: 'Vice President',
-    head_of_asset_management: 'Head of Asset Management',
-    head_of_equity: 'Head of Equity',
-    head_of_investment: 'Head of Investment',
-    head_of_macro: 'Head of Macro',
-    head_of_portfolio: 'Head of Portfolio',
-    head_of_quant: 'Head of Quant',
-    head_of_operations: 'Head of Operations',
-    head_of_media: 'Head of Media',
-    portfolio_manager: 'Portfolio Manager',
-    member: 'Member',
-  }
-  const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
-    'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
-    'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member']
-  const userRoleNames = roles.map(r => r.role)
-  const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || roles[0]?.role || 'Unknown'
-  return roleLabels[primaryRole] || primaryRole
-}
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -113,31 +61,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if user has alumni management access
-    const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
-    
-    // Roles that can manage alumni
-    const alumniAccessRoles = [
-      'admin', 'president', 'vice_president', 'head_of_asset_management',
-      'head_of_operations', 'head_of_media'
-    ]
-    
-    const { data: userRoles } = await supabase
+    // Check if user is admin
+    const isAdmin = user.email === 'as.minerva@unibocconi.it';
+    const { data: adminRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-    
-    const hasAlumniAccess = isAdminEmail || 
-      (userRoles && userRoles.some(r => alumniAccessRoles.includes(r.role)))
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    if (!hasAlumniAccess) {
+    if (!isAdmin && !adminRole) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const userRoleLabel = getPrimaryRoleLabel(userRoles || [])
 
     // Parse request body
     const body = await req.json();
@@ -182,10 +120,6 @@ Deno.serve(async (req) => {
           })
           .select()
           .single();
-        
-        if (!result.error && result.data) {
-          await logActivity(supabase, user.id, user.email!, userRoleLabel, 'create', result.data.id, `${alumni.name} ${alumni.surname}`)
-        }
         break;
 
       case 'update':
@@ -208,10 +142,6 @@ Deno.serve(async (req) => {
           .eq('id', alumni.id)
           .select()
           .single();
-        
-        if (!result.error) {
-          await logActivity(supabase, user.id, user.email!, userRoleLabel, 'update', alumni.id, `${alumni.name} ${alumni.surname}`)
-        }
         break;
 
       case 'delete':
@@ -221,23 +151,10 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        
-        // Get alumni name before deleting
-        const { data: alumniToDelete } = await supabase
-          .from('alumni')
-          .select('name, surname')
-          .eq('id', alumni.id)
-          .maybeSingle()
-        
         result = await supabase
           .from('alumni')
           .delete()
           .eq('id', alumni.id);
-        
-        if (!result.error) {
-          const entityName = alumniToDelete ? `${alumniToDelete.name} ${alumniToDelete.surname}` : null
-          await logActivity(supabase, user.id, user.email!, userRoleLabel, 'delete', alumni.id, entityName)
-        }
         break;
 
       default:
