@@ -87,7 +87,7 @@
 
   html {
     scroll-behavior: smooth;
-    scrollbar-gutter: stable;
+    overflow-y: scroll; /* Force scrollbar to always be visible */
   }
 
   body {
