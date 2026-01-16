@@ -97,6 +97,58 @@ async function getJwtKey(): Promise<CryptoKey> {
   )
 }
 
+// Helper to log activity
+async function logActivity(
+  supabase: any,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  action: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      user_email: userEmail,
+      user_role: userRole,
+      action: action,
+      entity_type: 'event',
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    })
+  } catch (error) {
+    console.error('Failed to log activity:', error)
+  }
+}
+
+// Get user's primary role label
+function getPrimaryRoleLabel(roles: { role: string }[]): string {
+  const roleLabels: Record<string, string> = {
+    admin: 'Admin',
+    president: 'President',
+    vice_president: 'Vice President',
+    head_of_asset_management: 'Head of Asset Management',
+    head_of_equity: 'Head of Equity',
+    head_of_investment: 'Head of Investment',
+    head_of_macro: 'Head of Macro',
+    head_of_portfolio: 'Head of Portfolio',
+    head_of_quant: 'Head of Quant',
+    head_of_operations: 'Head of Operations',
+    head_of_media: 'Head of Media',
+    portfolio_manager: 'Portfolio Manager',
+    member: 'Member',
+  }
+  const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
+    'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
+    'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member']
+  const userRoleNames = roles.map(r => r.role)
+  const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || roles[0]?.role || 'Unknown'
+  return roleLabels[primaryRole] || primaryRole
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -179,6 +231,8 @@ Deno.serve(async (req) => {
       )
     }
 
+    const userRoleLabel = getPrimaryRoleLabel(userRoles || [])
+
     // Parse request body
     let body: unknown
     try {
@@ -240,6 +294,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, userRoleLabel, 'create', data.id, data.title)
+
         console.log('Event created:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
@@ -287,6 +344,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, userRoleLabel, 'update', data.id, data.title)
+
         console.log('Event updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
@@ -307,6 +367,13 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Get event name before deleting
+        const { data: eventToDelete } = await supabase
+          .from('events')
+          .select('title')
+          .eq('id', deleteResult.data.id)
+          .maybeSingle()
+
         const { error } = await supabase
           .from('events')
           .delete()
@@ -319,6 +386,9 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, userRoleLabel, 'delete', deleteResult.data.id, eventToDelete?.title || null)
 
         console.log('Event deleted:', deleteResult.data.id)
         return new Response(
