@@ -92,6 +92,58 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Helper to log activity
+async function logActivity(
+  supabase: any,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  action: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      user_email: userEmail,
+      user_role: userRole,
+      action: action,
+      entity_type: 'team_member',
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    })
+  } catch (error) {
+    console.error('Failed to log activity:', error)
+  }
+}
+
+// Get user's primary role label
+function getPrimaryRoleLabel(roles: { role: string }[]): string {
+  const roleLabels: Record<string, string> = {
+    admin: 'Admin',
+    president: 'President',
+    vice_president: 'Vice President',
+    head_of_asset_management: 'Head of Asset Management',
+    head_of_equity: 'Head of Equity',
+    head_of_investment: 'Head of Investment',
+    head_of_macro: 'Head of Macro',
+    head_of_portfolio: 'Head of Portfolio',
+    head_of_quant: 'Head of Quant',
+    head_of_operations: 'Head of Operations',
+    head_of_media: 'Head of Media',
+    portfolio_manager: 'Portfolio Manager',
+    member: 'Member',
+  }
+  const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
+    'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
+    'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member']
+  const userRoleNames = roles.map(r => r.role)
+  const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || roles[0]?.role || 'Unknown'
+  return roleLabels[primaryRole] || primaryRole
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -171,6 +223,8 @@ Deno.serve(async (req) => {
       return positions;
     };
     const allowedPositions = getAllowedPositions();
+
+    const userRoleLabel = getPrimaryRoleLabel(userRoles || [])
 
     // Check content type to handle photo uploads vs JSON
     const contentType = req.headers.get('content-type') || '';
@@ -284,14 +338,15 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Get member info before deleting
+      const { data: memberToDelete } = await supabase
+        .from('team_members')
+        .select('division, position, name, surname')
+        .eq('id', deleteResult.data.id)
+        .single();
+
       // Division heads can only delete members in their division
       if (!hasFullAccess && allowedDivisions) {
-        const { data: memberToDelete } = await supabase
-          .from('team_members')
-          .select('division, position')
-          .eq('id', deleteResult.data.id)
-          .single();
-
         if (!memberToDelete || !memberToDelete.division || !allowedDivisions.includes(memberToDelete.division)) {
           return new Response(
             JSON.stringify({ error: 'You can only delete members in your division' }),
@@ -316,6 +371,11 @@ Deno.serve(async (req) => {
         .eq('id', deleteResult.data.id);
 
       if (error) throw error;
+
+      // Log activity
+      const entityName = memberToDelete ? `${memberToDelete.name} ${memberToDelete.surname}` : null
+      await logActivity(supabase, user.id, user.email!, userRoleLabel, 'delete', deleteResult.data.id, entityName)
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -344,6 +404,9 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
       }
+
+      // Log activity
+      await logActivity(supabase, user.id, user.email!, userRoleLabel, 'reorder', null, `${reorderResult.data.length} team members`)
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -417,6 +480,10 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log activity
+      await logActivity(supabase, user.id, user.email!, userRoleLabel, 'create', data.id, `${member.name} ${member.surname}`)
+
       return new Response(
         JSON.stringify({ success: true, member: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -449,6 +516,10 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log activity
+      await logActivity(supabase, user.id, user.email!, userRoleLabel, 'update', data.id, `${member.name} ${member.surname}`)
+
       return new Response(
         JSON.stringify({ success: true, member: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
