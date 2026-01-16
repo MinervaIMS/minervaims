@@ -182,7 +182,7 @@ const ActivityLog = () => {
             <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" sideOffset={4}>
               <SelectItem value="all">All Entities</SelectItem>
               <SelectItem value="event">Events</SelectItem>
               <SelectItem value="alumni">Alumni</SelectItem>
@@ -199,7 +199,7 @@ const ActivityLog = () => {
             <SelectTrigger className="w-[130px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" sideOffset={4}>
               <SelectItem value="all">All Actions</SelectItem>
               <SelectItem value="create">Create</SelectItem>
               <SelectItem value="update">Update</SelectItem>
