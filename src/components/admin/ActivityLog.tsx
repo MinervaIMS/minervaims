@@ -36,7 +36,8 @@ const ActivityLog = () => {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Use type assertion since activity_logs is not in auto-generated types yet
+      const { data, error } = await (supabase as any)
         .from('activity_logs')
         .select('*')
         .order('created_at', { ascending: false })
