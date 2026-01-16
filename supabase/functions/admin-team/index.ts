@@ -92,6 +92,34 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Activity logging helper
+async function logActivity(
+  supabase: any,
+  user: { id: string; email: string },
+  userRole: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      user_email: user.email || 'unknown',
+      user_role: userRole,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    });
+    console.log(`Activity logged: ${action} ${entityType} "${entityName}" by ${user.email}`);
+  } catch (error) {
+    console.error('Failed to log activity:', error);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -155,6 +183,9 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Get primary role for logging
+    const primaryRole = userRoles?.[0]?.role || (isAdminEmail ? 'president' : 'unknown');
 
     // Get allowed divisions for division heads
     const allowedDivisions = isDivisionHead && !hasFullAccess
@@ -284,14 +315,15 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Get member info before deleting for logging
+      const { data: memberToDelete } = await supabase
+        .from('team_members')
+        .select('division, position, name, surname')
+        .eq('id', deleteResult.data.id)
+        .single();
+
       // Division heads can only delete members in their division
       if (!hasFullAccess && allowedDivisions) {
-        const { data: memberToDelete } = await supabase
-          .from('team_members')
-          .select('division, position')
-          .eq('id', deleteResult.data.id)
-          .single();
-
         if (!memberToDelete || !memberToDelete.division || !allowedDivisions.includes(memberToDelete.division)) {
           return new Response(
             JSON.stringify({ error: 'You can only delete members in your division' }),
@@ -316,6 +348,19 @@ Deno.serve(async (req) => {
         .eq('id', deleteResult.data.id);
 
       if (error) throw error;
+
+      // Log activity
+      await logActivity(
+        supabase,
+        { id: user.id, email: user.email || 'unknown' },
+        primaryRole,
+        'delete',
+        'team_member',
+        deleteResult.data.id,
+        memberToDelete ? `${memberToDelete.name} ${memberToDelete.surname}` : 'Unknown member',
+        { position: memberToDelete?.position, division: memberToDelete?.division }
+      );
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -344,6 +389,18 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
       }
+
+      // Log activity
+      await logActivity(
+        supabase,
+        { id: user.id, email: user.email || 'unknown' },
+        primaryRole,
+        'reorder',
+        'team_member',
+        null,
+        `${reorderResult.data.length} team members`,
+        { count: reorderResult.data.length }
+      );
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -417,6 +474,19 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log activity
+      await logActivity(
+        supabase,
+        { id: user.id, email: user.email || 'unknown' },
+        primaryRole,
+        'create',
+        'team_member',
+        data.id,
+        `${data.name} ${data.surname}`,
+        { position: data.position, division: data.division }
+      );
+
       return new Response(
         JSON.stringify({ success: true, member: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -449,6 +519,19 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log activity
+      await logActivity(
+        supabase,
+        { id: user.id, email: user.email || 'unknown' },
+        primaryRole,
+        'update',
+        'team_member',
+        data.id,
+        `${data.name} ${data.surname}`,
+        { position: data.position, division: data.division }
+      );
+
       return new Response(
         JSON.stringify({ success: true, member: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

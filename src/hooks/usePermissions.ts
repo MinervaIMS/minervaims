@@ -61,6 +61,7 @@ export interface Permissions {
   canAccessTeam: boolean;
   canAccessSettings: boolean;
   canAccessReadings: boolean;
+  canAccessActivityLog: boolean;
   
   // Division restrictions (null = all divisions, array = specific divisions only)
   allowedDivisions: Division[] | null;
@@ -91,6 +92,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: true,
         canAccessSettings: true,
         canAccessReadings: true,
+        canAccessActivityLog: true,
         allowedDivisions: null, // null means all divisions
         hasAnyAccess: true,
         isFullAccess: true,
@@ -109,6 +111,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: false, // No team management
         canAccessSettings: false,
         canAccessReadings: false, // No readings access for ops/media
+        canAccessActivityLog: false,
         allowedDivisions: null, // All divisions for files
         hasAnyAccess: true,
         isFullAccess: false,
@@ -132,6 +135,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: true, // Division heads can now manage team (restricted to their division)
         canAccessSettings: false,
         canAccessReadings: true, // Division heads can access readings
+        canAccessActivityLog: false,
         allowedDivisions: allowedDivisions.length > 0 ? allowedDivisions : null,
         hasAnyAccess: true,
         isFullAccess: false,
@@ -150,6 +154,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: false,
         canAccessSettings: false,
         canAccessReadings: true, // Portfolio managers can access readings
+        canAccessActivityLog: false,
         allowedDivisions: ['portfolio'], // Restricted to portfolio division only
         hasAnyAccess: true,
         isFullAccess: false,
@@ -165,6 +170,7 @@ export const usePermissions = (): Permissions => {
       canAccessTeam: false,
       canAccessSettings: false,
       canAccessReadings: false,
+      canAccessActivityLog: false,
       allowedDivisions: null,
       hasAnyAccess: false,
       isFullAccess: false,
