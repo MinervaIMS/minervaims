@@ -90,6 +90,12 @@
     overflow-y: scroll; /* Force scrollbar to always be visible */
   }
 
+  /* Prevent layout shift when Radix UI Select/Dialog opens */
+  body[data-scroll-locked] {
+    overflow: visible !important;
+    margin-right: 0 !important;
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
   }
