@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Download } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Download, Search } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -63,6 +64,8 @@ const AdminDashboard = () => {
     description: '',
   });
   const [eventsCurrentPage, setEventsCurrentPage] = useState(1);
+  const [eventsYearFilter, setEventsYearFilter] = useState<number | 'all'>('all');
+  const [eventsSearchQuery, setEventsSearchQuery] = useState('');
   const EVENTS_PER_PAGE = 15;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -137,13 +140,44 @@ const AdminDashboard = () => {
     }
   };
 
-  // Events pagination logic
-  const eventsTotalPages = Math.ceil(events.length / EVENTS_PER_PAGE);
+  // Events filtering and pagination
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      // Year filter
+      if (eventsYearFilter !== 'all') {
+        const eventYear = new Date(event.date).getFullYear();
+        if (eventYear !== eventsYearFilter) return false;
+      }
+      // Search filter
+      if (eventsSearchQuery.trim()) {
+        const query = eventsSearchQuery.toLowerCase();
+        const matchesTitle = event.title.toLowerCase().includes(query);
+        const matchesPlace = event.place.toLowerCase().includes(query);
+        const matchesModerator = event.moderator?.toLowerCase().includes(query) || false;
+        const matchesGuests = event.guest?.some(g => g.toLowerCase().includes(query)) || false;
+        const matchesDescription = event.description?.toLowerCase().includes(query) || false;
+        if (!matchesTitle && !matchesPlace && !matchesModerator && !matchesGuests && !matchesDescription) return false;
+      }
+      return true;
+    });
+  }, [events, eventsYearFilter, eventsSearchQuery]);
+
+  const eventsYears = useMemo(() => {
+    const years = [...new Set(events.map(e => new Date(e.date).getFullYear()))];
+    return years.sort((a, b) => b - a);
+  }, [events]);
+
+  const eventsTotalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
   const eventsStartIndex = (eventsCurrentPage - 1) * EVENTS_PER_PAGE;
   const paginatedEvents = useMemo(() => 
-    events.slice(eventsStartIndex, eventsStartIndex + EVENTS_PER_PAGE),
-    [events, eventsStartIndex, EVENTS_PER_PAGE]
+    filteredEvents.slice(eventsStartIndex, eventsStartIndex + EVENTS_PER_PAGE),
+    [filteredEvents, eventsStartIndex, EVENTS_PER_PAGE]
   );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setEventsCurrentPage(1);
+  }, [eventsYearFilter, eventsSearchQuery]);
 
   const handleEventsPageChange = (page: number) => {
     setEventsCurrentPage(page);
@@ -453,47 +487,49 @@ const AdminDashboard = () => {
 
       {/* Tabs */}
       <Tabs defaultValue={getDefaultTab()} className="w-full">
-        <TabsList className="mb-8">
-          {permissions.canAccessUsers && (
-            <TabsTrigger value="users" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <UserCog className="h-4 w-4 mr-2" />
-              Users
-            </TabsTrigger>
-          )}
-          {permissions.canAccessAlumni && (
-            <TabsTrigger value="alumni" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Alumni
-            </TabsTrigger>
-          )}
-          {permissions.canAccessEvents && (
-            <TabsTrigger value="events" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Events
-            </TabsTrigger>
-          )}
-          {permissions.canAccessFiles && (
-            <TabsTrigger value="files" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <FileText className="h-4 w-4 mr-2" />
-              Archive Files
-            </TabsTrigger>
-          )}
-          {permissions.canAccessTeam && (
-            <TabsTrigger value="team" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <Users className="h-4 w-4 mr-2" />
-              Team
-            </TabsTrigger>
-          )}
+        <TabsList className="mb-8 w-full justify-between">
+          <div className="flex">
+            {permissions.canAccessUsers && (
+              <TabsTrigger value="users" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+                <UserCog className="h-4 w-4 mr-2" />
+                Users
+              </TabsTrigger>
+            )}
+            {permissions.canAccessAlumni && (
+              <TabsTrigger value="alumni" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Alumni
+              </TabsTrigger>
+            )}
+            {permissions.canAccessEvents && (
+              <TabsTrigger value="events" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Events
+              </TabsTrigger>
+            )}
+            {permissions.canAccessFiles && (
+              <TabsTrigger value="files" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+                <FileText className="h-4 w-4 mr-2" />
+                Archive Files
+              </TabsTrigger>
+            )}
+            {permissions.canAccessTeam && (
+              <TabsTrigger value="team" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+                <Users className="h-4 w-4 mr-2" />
+                Team
+              </TabsTrigger>
+            )}
+            {permissions.canAccessReadings && (
+              <TabsTrigger value="readings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Readings
+              </TabsTrigger>
+            )}
+          </div>
           {permissions.canAccessSettings && (
             <TabsTrigger value="settings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <FileText className="h-4 w-4 mr-2" />
+              <Settings className="h-4 w-4 mr-2" />
               Applications
-            </TabsTrigger>
-          )}
-          {permissions.canAccessReadings && (
-            <TabsTrigger value="readings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <BookOpen className="h-4 w-4 mr-2" />
-              Readings
             </TabsTrigger>
           )}
         </TabsList>
@@ -516,26 +552,41 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-serif text-heading text-accent">Events Management</h2>
               <div className="flex items-center gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    const columns: { key: keyof DbEvent; header: string }[] = [
-                      { key: 'title', header: 'Title' },
-                      { key: 'date', header: 'Date' },
-                      { key: 'place', header: 'Place' },
-                      { key: 'moderator', header: 'Moderator' },
-                      { key: 'guest', header: 'Guests' },
-                      { key: 'description', header: 'Description' },
-                    ];
-                    downloadCSV(events, columns, 'events.csv');
-                    toast({ title: "Download started", description: "Events CSV is being downloaded." });
-                  }} 
-                  className="font-body" 
-                  disabled={events.length === 0}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download CSV
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="font-body" 
+                      disabled={events.length === 0}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download CSV
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Download Events CSV</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will download a CSV file containing {events.length} event{events.length !== 1 ? 's' : ''}.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => {
+                        const columns: { key: keyof DbEvent; header: string }[] = [
+                          { key: 'title', header: 'Title' },
+                          { key: 'date', header: 'Date' },
+                          { key: 'place', header: 'Place' },
+                          { key: 'moderator', header: 'Moderator' },
+                          { key: 'guest', header: 'Guests' },
+                          { key: 'description', header: 'Description' },
+                        ];
+                        downloadCSV(events, columns, 'events.csv');
+                        toast({ title: "Download started", description: "Events CSV is being downloaded." });
+                      }}>Download</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button onClick={openCreateDialog} className="font-body">
@@ -661,9 +712,50 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Event Filters */}
+            <div className="mb-8 pb-6 border-b border-separator">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Year filter */}
+                <div>
+                  <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                    Year
+                  </label>
+                  <select
+                    value={eventsYearFilter}
+                    onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                    className="bg-background border border-separator px-3 h-10 min-w-[150px]"
+                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                  >
+                    <option value="all">All Years</option>
+                    {eventsYears.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search */}
+                <div className="flex-1">
+                  <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                    Search
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search by title, place, moderator, guests..."
+                      value={eventsSearchQuery}
+                      onChange={(e) => setEventsSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+                      style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Results count */}
             <p className="font-body text-small text-muted-foreground mb-6">
-              Showing {paginatedEvents.length} of {events.length} {events.length === 1 ? 'event' : 'events'}
+              Showing {paginatedEvents.length} of {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
               {eventsTotalPages > 1 && ` (page ${eventsCurrentPage} of ${eventsTotalPages})`}
             </p>
 
