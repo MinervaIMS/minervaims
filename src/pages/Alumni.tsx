@@ -124,14 +124,14 @@ const Alumni = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             A Global Network, Still Close
           </h2>
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+          <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl flex-1">
               MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
             </p>
             <img 
               src={alumniCommunityLogo} 
               alt="MIMS Alumni Community" 
-              className="w-36 h-36 md:w-48 md:h-48 flex-shrink-0 md:ml-28"
+              className="w-36 h-36 md:w-48 md:h-48 flex-shrink-0 md:ml-28 md:-mt-2"
             />
           </div>
         </div>
@@ -141,7 +141,7 @@ const Alumni = () => {
         {/* Alumni Spotlight */}
         {spotlightAlumni.length > 0 && (
           <div className="mb-12">
-            <h2 className="font-serif text-h3 mb-6">Alumni Spotlight</h2>
+            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders, since 2017</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {spotlightAlumni.map((alumnus) => (
                 <div
@@ -289,8 +289,8 @@ const Alumni = () => {
                         {/* Mobile layout - stacked */}
                         <div className="sm:hidden">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-body text-body font-medium">
-                              {alumnus.name} {alumnus.surname}
+                            <span className="text-body font-medium" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                              {alumnus.surname} {alumnus.name}
                             </span>
                             {alumnus.linkedin_url ? (
                               <a
@@ -314,8 +314,8 @@ const Alumni = () => {
                         
                         {/* Desktop layout - 5 columns */}
                         <div className="hidden sm:flex items-center">
-                          <span className="font-body text-body font-medium w-[20%] truncate text-left">
-                            {alumnus.name} {alumnus.surname}
+                          <span className="text-body font-medium w-[20%] truncate text-left" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                            {alumnus.surname} {alumnus.name}
                           </span>
                           <span className="w-[10%] flex justify-start">
                             {alumnus.linkedin_url ? (
