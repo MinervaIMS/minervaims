@@ -9,9 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Download } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { divisionLabels, Division } from '@/lib/types';
+import { downloadCSV } from '@/lib/download-utils';
 import {
   DndContext,
   closestCenter,
@@ -612,18 +613,38 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
     return <p className="font-body text-muted-foreground">Loading team members...</p>;
   }
 
+  const handleDownloadCSV = () => {
+    const columns: { key: keyof TeamMember; header: string }[] = [
+      { key: 'name', header: 'First Name' },
+      { key: 'surname', header: 'Last Name' },
+      { key: 'position', header: 'Position' },
+      { key: 'division', header: 'Division' },
+      { key: 'fund', header: 'Fund' },
+      { key: 'is_board', header: 'Executive Board' },
+      { key: 'linkedin_url', header: 'LinkedIn URL' },
+      { key: 'photo_url', header: 'Photo URL' },
+    ];
+    downloadCSV(members, columns, 'team-members.csv');
+    toast({ title: "Download started", description: "Team members CSV is being downloaded." });
+  };
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-heading text-accent">Team Management</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="font-body">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Member
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleDownloadCSV} className="font-body" disabled={members.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Download CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="font-body">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Member
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -811,6 +832,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Members List grouped by division */}

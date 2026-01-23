@@ -6,9 +6,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Download } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { Progress } from '@/components/ui/progress';
+import { downloadCSV } from '@/lib/download-utils';
 import {
   Pagination,
   PaginationContent,
@@ -255,18 +256,37 @@ export default function AlumniManagement() {
     return <p className="font-body text-muted-foreground">Loading alumni...</p>;
   }
 
+  const handleDownloadCSV = () => {
+    const columns: { key: keyof AlumniRecord; header: string }[] = [
+      { key: 'surname', header: 'Last Name' },
+      { key: 'name', header: 'First Name' },
+      { key: 'graduation_year', header: 'Graduation Year' },
+      { key: 'company', header: 'Company' },
+      { key: 'job_area', header: 'Job Area' },
+      { key: 'city', header: 'City' },
+      { key: 'linkedin_url', header: 'LinkedIn URL' },
+    ];
+    downloadCSV(alumni, columns, 'alumni.csv');
+    toast({ title: "Download started", description: "Alumni CSV is being downloaded." });
+  };
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading text-accent">Alumni Management</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="font-body">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Alumni
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleDownloadCSV} className="font-body" disabled={alumni.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Download CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="font-body">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Alumni
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -379,6 +399,7 @@ export default function AlumniManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Search */}

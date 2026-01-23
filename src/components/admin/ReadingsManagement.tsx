@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { downloadCSV } from '@/lib/download-utils';
 import {
   DndContext,
   closestCenter,
@@ -428,18 +429,38 @@ const ReadingsManagement = () => {
     );
   }
 
+  const handleDownloadCSV = () => {
+    const columns: { key: keyof Reading; header: string }[] = [
+      { key: 'title', header: 'Title' },
+      { key: 'author', header: 'Author' },
+      { key: 'reading_type', header: 'Category' },
+      { key: 'description', header: 'Description' },
+      { key: 'publication_year', header: 'Publication Year' },
+      { key: 'contributor_name', header: 'Contributor First Name' },
+      { key: 'contributor_surname', header: 'Contributor Last Name' },
+      { key: 'contributor_role', header: 'Contributor Role' },
+    ];
+    downloadCSV(readings, columns, 'readings.csv');
+    toast({ title: "Download started", description: "Readings CSV is being downloaded." });
+  };
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-heading text-accent">Readings Management</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="font-body">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Reading
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleDownloadCSV} className="font-body" disabled={readings.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Download CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="font-body">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Reading
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -541,6 +562,7 @@ const ReadingsManagement = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Results count */}
