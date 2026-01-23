@@ -365,7 +365,8 @@ export default function AlumniManagement() {
             placeholder="Search by name, company, or city..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 font-body"
+            className="pl-10"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
           />
         </div>
       </div>
@@ -395,29 +396,59 @@ export default function AlumniManagement() {
                 {groupedAlumni[year].map((record) => (
                   <div key={record.id} className="py-4 flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-serif text-body-lg">
-                          {record.name} {record.surname}
+                      {/* Desktop layout - matching Alumni page */}
+                      <div className="hidden sm:flex items-center">
+                        <span className="text-body font-medium w-[20%] truncate text-left" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                          {record.surname} {record.name}
                         </span>
-                        {record.linkedin_url && (
-                          <a
-                            href={record.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-shrink-0"
-                          >
-                            <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
-                          </a>
+                        <span className="w-[10%] flex justify-start">
+                          {record.linkedin_url ? (
+                            <a
+                              href={record.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </span>
+                        <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
+                          {record.job_area || '—'}
+                        </span>
+                        <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
+                          {record.company}
+                        </span>
+                        <span className="font-body text-body text-muted-foreground w-[20%] truncate text-left">
+                          {record.city || '—'}
+                        </span>
+                      </div>
+                      {/* Mobile layout */}
+                      <div className="sm:hidden">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-body font-medium" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                            {record.surname} {record.name}
+                          </span>
+                          {record.linkedin_url && (
+                            <a
+                              href={record.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                            </a>
+                          )}
+                        </div>
+                        <p className="font-body text-small text-muted-foreground">
+                          {record.company}{record.city ? ` • ${record.city}` : ''}
+                        </p>
+                        {record.job_area && (
+                          <p className="font-body text-xs text-muted-foreground/70">
+                            {record.job_area}
+                          </p>
                         )}
                       </div>
-                      <p className="font-body text-small text-muted-foreground">
-                        {record.company}{record.city ? `, ${record.city}` : ''}
-                      </p>
-                      {record.job_area && (
-                        <p className="font-body text-xs text-muted-foreground/70">
-                          {record.job_area}
-                        </p>
-                      )}
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       <Button
