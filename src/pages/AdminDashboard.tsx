@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -21,6 +21,7 @@ import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
+import { downloadCSV } from '@/lib/download-utils';
 
 // Role-based dashboard icons
 import dashboardIconAdmin from '@/assets/dashboard-icon-admin.svg';
@@ -514,13 +515,34 @@ const AdminDashboard = () => {
             {/* Events Header */}
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-serif text-heading text-accent">Events Management</h2>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog} className="font-body">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Event
-                  </Button>
-                </DialogTrigger>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    const columns: { key: keyof DbEvent; header: string }[] = [
+                      { key: 'title', header: 'Title' },
+                      { key: 'date', header: 'Date' },
+                      { key: 'place', header: 'Place' },
+                      { key: 'moderator', header: 'Moderator' },
+                      { key: 'guest', header: 'Guests' },
+                      { key: 'description', header: 'Description' },
+                    ];
+                    downloadCSV(events, columns, 'events.csv');
+                    toast({ title: "Download started", description: "Events CSV is being downloaded." });
+                  }} 
+                  className="font-body" 
+                  disabled={events.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download CSV
+                </Button>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={openCreateDialog} className="font-body">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Event
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="font-serif">
@@ -636,6 +658,7 @@ const AdminDashboard = () => {
                   </form>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
 
             {/* Results count */}

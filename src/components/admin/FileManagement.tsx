@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
-
+import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-utils';
 interface ArchiveFile {
   id: string;
   title: string;
@@ -41,6 +41,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [downloadAllProgress, setDownloadAllProgress] = useState({ current: 0, total: 0 });
   const ITEMS_PER_PAGE = 15;
   
   // If user has restricted divisions, default form to first allowed division
@@ -433,18 +435,76 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     return <p className="font-body text-muted-foreground">Loading files...</p>;
   }
 
+  const handleDownloadAll = async () => {
+    if (filteredFiles.length === 0) {
+      toast({
+        title: "No files to download",
+        description: "There are no files matching the current filter.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDownloadingAll(true);
+    setDownloadAllProgress({ current: 0, total: filteredFiles.length });
+
+    const filesToDownload = filteredFiles.map(file => ({
+      url: file.file_url,
+      filename: `${sanitizeFilename(file.title)}.pdf`,
+    }));
+
+    const { success, failed } = await downloadFilesSequentially(
+      filesToDownload,
+      (current, total) => setDownloadAllProgress({ current, total })
+    );
+
+    setIsDownloadingAll(false);
+
+    if (failed === 0) {
+      toast({
+        title: "Download complete",
+        description: `Successfully downloaded ${success} file${success !== 1 ? 's' : ''}.`,
+      });
+    } else {
+      toast({
+        title: "Download completed with errors",
+        description: `Downloaded ${success} file${success !== 1 ? 's' : ''}, ${failed} failed.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading text-accent">Archive Files</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="font-body">
-              <Plus className="h-4 w-4 mr-2" />
-              Add File
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadAll} 
+            className="font-body"
+            disabled={isDownloadingAll || filteredFiles.length === 0}
+          >
+            {isDownloadingAll ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {downloadAllProgress.current}/{downloadAllProgress.total}
+              </>
+            ) : (
+              <>
+                <FolderDown className="h-4 w-4 mr-2" />
+                Download All
+              </>
+            )}
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="font-body">
+                <Plus className="h-4 w-4 mr-2" />
+                Add File
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -578,6 +638,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filters - matching Archive page UI */}
