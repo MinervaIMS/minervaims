@@ -5,11 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download, Search } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
 import {
@@ -149,6 +150,7 @@ const ReadingsManagement = () => {
     publication_year: '' as string,
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const ITEMS_PER_PAGE = 10;
   
   const { toast } = useToast();
@@ -209,13 +211,30 @@ const ReadingsManagement = () => {
     }
   };
 
-  // Pagination
-  const totalPages = Math.ceil(readings.length / ITEMS_PER_PAGE);
+  // Search and pagination
+  const filteredReadings = useMemo(() => {
+    if (!searchQuery.trim()) return readings;
+    const query = searchQuery.toLowerCase();
+    return readings.filter(r => 
+      r.title.toLowerCase().includes(query) ||
+      r.author.toLowerCase().includes(query) ||
+      r.description.toLowerCase().includes(query) ||
+      r.contributor_name.toLowerCase().includes(query) ||
+      r.contributor_surname.toLowerCase().includes(query)
+    );
+  }, [readings, searchQuery]);
+
+  const totalPages = Math.ceil(filteredReadings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedReadings = useMemo(() =>
-    readings.slice(startIndex, startIndex + ITEMS_PER_PAGE),
-    [readings, startIndex]
+    filteredReadings.slice(startIndex, startIndex + ITEMS_PER_PAGE),
+    [filteredReadings, startIndex]
   );
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = [];
@@ -450,10 +469,26 @@ const ReadingsManagement = () => {
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-heading text-accent">Readings Management</h2>
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleDownloadCSV} className="font-body" disabled={readings.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Download CSV
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="font-body" disabled={readings.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download Readings CSV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download a CSV file containing {readings.length} reading{readings.length !== 1 ? 's' : ''}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreateDialog} className="font-body">
@@ -565,9 +600,24 @@ const ReadingsManagement = () => {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by title, author, or contributor..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          />
+        </div>
+      </div>
+
       {/* Results count */}
       <p className="font-body text-small text-muted-foreground mb-6">
-        Showing {paginatedReadings.length} of {readings.length} {readings.length === 1 ? 'reading' : 'readings'}
+        Showing {paginatedReadings.length} of {filteredReadings.length} {filteredReadings.length === 1 ? 'reading' : 'readings'}
         {totalPages > 1 && ` (page ${currentPage} of ${totalPages})`}
       </p>
 

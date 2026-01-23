@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, Search, Loader2, Download } from 'lucide-react';
@@ -276,15 +277,30 @@ export default function AlumniManagement() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading text-accent">Alumni Management</h2>
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleDownloadCSV} className="font-body" disabled={alumni.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Download CSV
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="font-body" disabled={alumni.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download Alumni CSV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download a CSV file containing {alumni.length} alumni record{alumni.length !== 1 ? 's' : ''}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreateDialog} className="font-body">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Alumni
+                + Add Alumnus
               </Button>
             </DialogTrigger>
           <DialogContent className="max-w-lg">

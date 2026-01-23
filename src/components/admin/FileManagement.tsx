@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
+  const [yearFilter, setYearFilter] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
@@ -89,6 +91,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       if (allowedDivisions && !allowedDivisions.includes(file.division as Division)) return false;
       // Division filter
       if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
+      // Year filter
+      if (yearFilter !== 'all') {
+        const fileYear = new Date(file.date).getFullYear();
+        if (fileYear !== yearFilter) return false;
+      }
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -98,7 +105,16 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       }
       return true;
     });
-  }, [files, divisionFilter, searchQuery, allowedDivisions]);
+  }, [files, divisionFilter, yearFilter, searchQuery, allowedDivisions]);
+
+  const fileYears = useMemo(() => {
+    let relevantFiles = files;
+    if (allowedDivisions) {
+      relevantFiles = files.filter(f => allowedDivisions.includes(f.division as Division));
+    }
+    const years = [...new Set(relevantFiles.map(f => new Date(f.date).getFullYear()))];
+    return years.sort((a, b) => b - a);
+  }, [files, allowedDivisions]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
@@ -108,7 +124,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [divisionFilter, searchQuery]);
+  }, [divisionFilter, yearFilter, searchQuery]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -480,24 +496,39 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading text-accent">Archive Files</h2>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            onClick={handleDownloadAll} 
-            className="font-body"
-            disabled={isDownloadingAll || filteredFiles.length === 0}
-          >
-            {isDownloadingAll ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {downloadAllProgress.current}/{downloadAllProgress.total}
-              </>
-            ) : (
-              <>
-                <FolderDown className="h-4 w-4 mr-2" />
-                Download All
-              </>
-            )}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="font-body"
+                disabled={isDownloadingAll || filteredFiles.length === 0}
+              >
+                {isDownloadingAll ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {downloadAllProgress.current}/{downloadAllProgress.total}
+                  </>
+                ) : (
+                  <>
+                    <FolderDown className="h-4 w-4 mr-2" />
+                    Download All
+                  </>
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download All Files</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download {filteredFiles.length} PDF file{filteredFiles.length !== 1 ? 's' : ''} to your device. This may take a moment.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDownloadAll}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreateDialog} className="font-body">
@@ -659,6 +690,24 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
               {allowedDivisions && allowedDivisions.length > 1 && <option value="all">All Divisions</option>}
               {availableDivisions.map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year filter */}
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Year
+            </label>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+              className="bg-background border border-separator px-3 h-10 min-w-[120px]"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              <option value="all">All Years</option>
+              {fileYears.map((year) => (
+                <option key={year} value={year}>{year}</option>
               ))}
             </select>
           </div>

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
@@ -634,10 +635,26 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-heading text-accent">Team Management</h2>
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleDownloadCSV} className="font-body" disabled={members.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Download CSV
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="font-body" disabled={members.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download Team CSV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download a CSV file containing {members.length} team member{members.length !== 1 ? 's' : ''}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreateDialog} className="font-body">
