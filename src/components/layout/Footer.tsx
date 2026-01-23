@@ -35,17 +35,17 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
-        {/* Main Footer Content - 5 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6 mb-8">
-          {/* Column 1: Logo */}
-          <div className="flex items-start">
+        {/* Main Footer Content - Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-6 lg:gap-8 mb-8">
+          {/* Column 1: Logo - Full width on mobile, spans 2 cols on sm */}
+          <div className="col-span-2 sm:col-span-2 md:col-span-1 lg:col-span-1 flex items-start justify-center md:justify-start">
             <Link to="/" aria-label="MIMS Home">
               <img 
                 src={footerLogo} 
                 alt="Minerva Investment Management Society" 
                 width={160}
                 height={160}
-                className="h-36 md:h-40 w-auto"
+                className="h-28 sm:h-32 md:h-36 lg:h-40 w-auto"
                 loading="lazy"
                 decoding="async"
               />
@@ -120,7 +120,7 @@ export function Footer() {
               <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
             </Link>
             <p className="font-body text-[15px] text-[#D6D6D6] leading-[1.6] mt-3 italic">
-              For approved society<br />members only.
+              For approved society members only.
             </p>
           </div>
 
@@ -150,7 +150,7 @@ export function Footer() {
           <h4 className="font-serif text-[17px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
             Disclaimer
           </h4>
-          <div className="font-body text-[15px] md:text-[15px] text-[#D6D6D6] leading-[1.6] space-y-4 text-justify">
+          <div className="font-body text-[14px] md:text-[15px] text-[#D6D6D6] leading-[1.6] space-y-4 text-justify">
             <p>
               Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
               This website and any documents made available through it (including reports, presentations, virtual portfolio materials 
@@ -176,16 +176,16 @@ export function Footer() {
         </div>
 
         {/* Builder Credit and Copyright */}
-        <div className="border-t border-background/20 pt-6 flex flex-col items-center gap-3">
+        <div className="border-t border-background/20 pt-6 flex flex-col items-center gap-3 text-center px-4">
           <a
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-[13px] text-[#D6D6D6] underline hover:text-background transition-colors"
+            className="font-body text-[12px] md:text-[13px] text-[#D6D6D6] underline hover:text-background transition-colors"
           >
             Website built by Riccardo Colombo for Minerva IMS.
           </a>
-          <p className="font-body text-[13px] text-[#9A9A9A] leading-[1.4]">
+          <p className="font-body text-[11px] md:text-[13px] text-[#9A9A9A] leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
           </p>
         </div>
