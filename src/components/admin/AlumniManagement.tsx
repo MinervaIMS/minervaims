@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,9 +6,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { Progress } from '@/components/ui/progress';
+
+const ALUMNI_PER_PAGE = 30;
 
 interface AlumniRecord {
   id: string;
@@ -30,6 +32,7 @@ export default function AlumniManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAlumni, setEditingAlumni] = useState<AlumniRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
@@ -205,24 +208,38 @@ export default function AlumniManagement() {
     }
   };
 
-  const filteredAlumni = alumni.filter(a => {
-    if (!searchQuery.trim()) return true;
+  const filteredAlumni = useMemo(() => {
+    if (!searchQuery.trim()) return alumni;
     const query = searchQuery.toLowerCase();
-    return (
+    return alumni.filter(a => (
       a.name.toLowerCase().includes(query) ||
       a.surname.toLowerCase().includes(query) ||
       a.company.toLowerCase().includes(query) ||
       a.city?.toLowerCase().includes(query)
-    );
-  });
+    ));
+  }, [alumni, searchQuery]);
 
-  // Group by graduation year
-  const groupedAlumni = filteredAlumni.reduce((acc, record) => {
-    const year = record.graduation_year;
-    if (!acc[year]) acc[year] = [];
-    acc[year].push(record);
-    return acc;
-  }, {} as Record<number, AlumniRecord[]>);
+  // Pagination
+  const totalPages = Math.ceil(filteredAlumni.length / ALUMNI_PER_PAGE);
+  const paginatedAlumni = useMemo(() => {
+    const startIndex = (currentPage - 1) * ALUMNI_PER_PAGE;
+    return filteredAlumni.slice(startIndex, startIndex + ALUMNI_PER_PAGE);
+  }, [filteredAlumni, currentPage]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  // Group paginated alumni by graduation year
+  const groupedAlumni = useMemo(() => {
+    return paginatedAlumni.reduce((acc, record) => {
+      const year = record.graduation_year;
+      if (!acc[year]) acc[year] = [];
+      acc[year].push(record);
+      return acc;
+    }, {} as Record<number, AlumniRecord[]>);
+  }, [paginatedAlumni]);
 
   const sortedYears = Object.keys(groupedAlumni).map(Number).sort((a, b) => b - a);
 
@@ -373,7 +390,8 @@ export default function AlumniManagement() {
 
       {/* Results count */}
       <p className="font-body text-small text-muted-foreground mb-6">
-        Showing {filteredAlumni.length} {filteredAlumni.length === 1 ? 'alumni' : 'alumni'}
+        Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
+        {filteredAlumni.length !== alumni.length && ` (${alumni.length} total)`}
       </p>
 
       {/* Alumni List grouped by year */}
@@ -471,6 +489,31 @@ export default function AlumniManagement() {
               </div>
             </div>
           ))}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-2 text-small font-body border border-separator hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </button>
+              <span className="font-body text-small text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-2 text-small font-body border border-separator hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

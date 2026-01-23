@@ -4,7 +4,7 @@ import alumniBg from '@/assets/alumni-bg.webp';
 import alumniCommunityLogo from '@/assets/alumni-community-logo.svg';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
-import { Search } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
 interface AlumniRecord {
@@ -18,6 +18,8 @@ interface AlumniRecord {
   job_area: string | null;
 }
 
+const ALUMNI_PER_PAGE = 30;
+
 const Alumni = () => {
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -25,6 +27,7 @@ const Alumni = () => {
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [jobAreaFilter, setJobAreaFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const imagesLoaded = useImagePreload([alumniBg]);
 
   useEffect(() => {
@@ -80,17 +83,29 @@ const Alumni = () => {
     });
   }, [alumni, searchQuery, companyFilter, cityFilter, jobAreaFilter]);
 
-  // Group filtered alumni by graduation year
+  // Pagination for filtered alumni
+  const totalPages = Math.ceil(filteredAlumni.length / ALUMNI_PER_PAGE);
+  const paginatedAlumni = useMemo(() => {
+    const startIndex = (currentPage - 1) * ALUMNI_PER_PAGE;
+    return filteredAlumni.slice(startIndex, startIndex + ALUMNI_PER_PAGE);
+  }, [filteredAlumni, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, companyFilter, cityFilter, jobAreaFilter]);
+
+  // Group paginated alumni by graduation year
   const groupedAlumni = useMemo(() => {
     const groups: Record<number, AlumniRecord[]> = {};
-    filteredAlumni.forEach(alumnus => {
+    paginatedAlumni.forEach(alumnus => {
       if (!groups[alumnus.graduation_year]) {
         groups[alumnus.graduation_year] = [];
       }
       groups[alumnus.graduation_year].push(alumnus);
     });
     return groups;
-  }, [filteredAlumni]);
+  }, [paginatedAlumni]);
 
   // Sort years descending
   const sortedYears = useMemo(() => {
@@ -121,17 +136,19 @@ const Alumni = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section pb-12 md:pb-16 bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            A Global Network, Still Close
-          </h2>
           <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl flex-1">
-              MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
-            </p>
+            <div className="flex-1 max-w-3xl">
+              <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+                A Global Network, Still Close
+              </h2>
+              <p className="font-body text-body-lg text-muted-foreground">
+                MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
+              </p>
+            </div>
             <img 
               src={alumniCommunityLogo} 
               alt="MIMS Alumni Community" 
-              className="w-36 h-36 md:w-48 md:h-48 flex-shrink-0 md:ml-28 md:-mt-2"
+              className="w-36 h-36 md:w-48 md:h-48 flex-shrink-0 md:ml-28 md:-mt-8"
             />
           </div>
         </div>
@@ -262,7 +279,8 @@ const Alumni = () => {
           </div>
           
           <p className="text-small text-muted-foreground mt-4">
-            Showing {filteredAlumni.length} of {alumni.length} alumni
+            Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
+            {filteredAlumni.length !== alumni.length && ` (${alumni.length} total)`}
           </p>
         </div>
 
@@ -289,7 +307,7 @@ const Alumni = () => {
                         {/* Mobile layout - stacked */}
                         <div className="sm:hidden">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-body font-medium" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                            <span className="text-body-lg font-medium" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
                               {alumnus.surname} {alumnus.name}
                             </span>
                             {alumnus.linkedin_url ? (
@@ -314,7 +332,7 @@ const Alumni = () => {
                         
                         {/* Desktop layout - 5 columns */}
                         <div className="hidden sm:flex items-center">
-                          <span className="text-body font-medium w-[20%] truncate text-left" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                          <span className="text-body-lg font-medium w-[20%] truncate text-left" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
                             {alumnus.surname} {alumnus.name}
                           </span>
                           <span className="w-[10%] flex justify-start">
@@ -345,6 +363,31 @@ const Alumni = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-2 text-small font-body border border-separator hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <span className="font-body text-small text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-2 text-small font-body border border-separator hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>

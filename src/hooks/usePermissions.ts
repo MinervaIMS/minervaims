@@ -126,7 +126,7 @@ export const usePermissions = (): Permissions => {
       
       return {
         canAccessUsers: false,
-        canAccessAlumni: false,
+        canAccessAlumni: true, // Division heads can now manage alumni
         canAccessEvents: false, // Division heads no longer have events access
         canAccessFiles: true,
         canAccessTeam: true, // Division heads can now manage team (restricted to their division)
