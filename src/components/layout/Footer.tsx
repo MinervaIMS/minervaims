@@ -25,9 +25,9 @@ const legalLinks = [
 ];
 
 const LinkWithArrow = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center gap-1.5">
+  <span className="inline-flex items-center gap-1.5 group">
     {children}
-    <ArrowUpRight size={14} className="opacity-60" />
+    <ArrowUpRight size={14} className="opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
   </span>
 );
 
@@ -99,10 +99,10 @@ export function Footer() {
                     <img 
                       src={linkedinIcon} 
                       alt="LinkedIn" 
-                      className="h-8 w-8 opacity-80 hover:opacity-100 transition-opacity"
+                      className="h-9 w-9 opacity-80 hover:opacity-100 transition-opacity"
                     />
                   ) : (
-                    <Instagram size={32} />
+                    <Instagram size={36} />
                   )}
                 </a>
               ))}
@@ -120,7 +120,7 @@ export function Footer() {
               <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
             </Link>
             <p className="font-body text-[15px] text-[#D6D6D6] leading-[1.6] mt-3 italic">
-              For approved society members only.
+              For approved society<br />members only.
             </p>
           </div>
 
@@ -181,9 +181,9 @@ export function Footer() {
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-[13px] text-background underline hover:text-background/80 transition-colors"
+            className="font-body text-[13px] text-[#D6D6D6] underline hover:text-background transition-colors"
           >
-            This website was built by Riccardo Colombo
+            Website built by Riccardo Colombo for Minerva IMS.
           </a>
           <p className="font-body text-[13px] text-[#9A9A9A] leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
