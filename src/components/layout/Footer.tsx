@@ -29,7 +29,7 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
         {/* Main Footer Content - 4 Equal Quarters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6 mb-8">
           {/* Quarter 1: Logo */}
           <div className="flex items-start">
             <Link to="/" aria-label="MIMS Home">
@@ -118,6 +118,21 @@ export function Footer() {
               ))}
             </ul>
           </div>
+
+          {/* Quarter 5: Member Login */}
+          <div>
+            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Members</h3>
+            <Link
+              to="/admin"
+              className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded text-small hover:bg-background/90 transition-colors mb-2"
+            >
+              <User size={16} />
+              <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
+            </Link>
+            <p className="font-body text-[12px] text-background/60 mt-2">
+              For approved society members only.
+            </p>
+          </div>
         </div>
 
         {/* Separator */}
@@ -153,18 +168,19 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Copyright and Admin Login */}
-        <div className="border-t border-background/20 pt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        {/* Builder Credit and Copyright */}
+        <div className="border-t border-background/20 pt-6 flex flex-col items-center gap-3">
+          <a
+            href="https://www.linkedin.com/in/riccardo-colombo01/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-body text-[13px] text-[#9A9A9A] hover:text-background hover:underline hover:decoration-accent transition-colors"
+          >
+            This website was built by Riccardo Colombo
+          </a>
           <p className="font-body text-[13px] text-[#9A9A9A] leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
           </p>
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded text-small hover:bg-background/90 transition-colors"
-          >
-            <User size={16} />
-            <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
-          </Link>
         </div>
       </div>
     </footer>
