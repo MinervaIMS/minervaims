@@ -488,46 +488,44 @@ const AdminDashboard = () => {
       {/* Tabs */}
       <Tabs defaultValue={getDefaultTab()} className="w-full">
         <TabsList className="mb-8 w-full justify-between">
-          <div className="flex">
-            {permissions.canAccessUsers && (
-              <TabsTrigger value="users" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-                <UserCog className="h-4 w-4 mr-2" />
-                Users
-              </TabsTrigger>
-            )}
-            {permissions.canAccessAlumni && (
-              <TabsTrigger value="alumni" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-                <GraduationCap className="h-4 w-4 mr-2" />
-                Alumni
-              </TabsTrigger>
-            )}
-            {permissions.canAccessEvents && (
-              <TabsTrigger value="events" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Events
-              </TabsTrigger>
-            )}
-            {permissions.canAccessFiles && (
-              <TabsTrigger value="files" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-                <FileText className="h-4 w-4 mr-2" />
-                Archive Files
-              </TabsTrigger>
-            )}
-            {permissions.canAccessTeam && (
-              <TabsTrigger value="team" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-                <Users className="h-4 w-4 mr-2" />
-                Team
-              </TabsTrigger>
-            )}
-            {permissions.canAccessReadings && (
-              <TabsTrigger value="readings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Readings
-              </TabsTrigger>
-            )}
-          </div>
+          {permissions.canAccessUsers && (
+            <TabsTrigger value="users" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <UserCog className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+          )}
+          {permissions.canAccessAlumni && (
+            <TabsTrigger value="alumni" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Alumni
+            </TabsTrigger>
+          )}
+          {permissions.canAccessEvents && (
+            <TabsTrigger value="events" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Events
+            </TabsTrigger>
+          )}
+          {permissions.canAccessFiles && (
+            <TabsTrigger value="files" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <FileText className="h-4 w-4 mr-2" />
+              Archive Files
+            </TabsTrigger>
+          )}
+          {permissions.canAccessTeam && (
+            <TabsTrigger value="team" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <Users className="h-4 w-4 mr-2" />
+              Team
+            </TabsTrigger>
+          )}
+          {permissions.canAccessReadings && (
+            <TabsTrigger value="readings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <BookOpen className="h-4 w-4 mr-2" />
+              Readings
+            </TabsTrigger>
+          )}
           {permissions.canAccessSettings && (
-            <TabsTrigger value="settings" className="uppercase" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+            <TabsTrigger value="settings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <Settings className="h-4 w-4 mr-2" />
               Applications
             </TabsTrigger>
