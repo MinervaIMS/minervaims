@@ -25,9 +25,9 @@ const legalLinks = [
 ];
 
 const LinkWithArrow = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center gap-1.5 group">
+  <span className="inline-flex items-center gap-1.5">
     {children}
-    <ArrowUpRight size={14} className="opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+    <ArrowUpRight size={14} className="opacity-60" />
   </span>
 );
 
