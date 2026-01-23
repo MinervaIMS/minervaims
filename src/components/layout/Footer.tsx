@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom';
-import { User, Instagram } from 'lucide-react';
+import { User, Instagram, ArrowUpRight } from 'lucide-react';
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
 const exploreLinks = [
-  { label: 'Join Us', href: '/join' },
-  { label: 'Archive', href: '/archive' },
-  { label: 'Site Map', href: '/sitemap' },
+  { label: 'Join Us', href: '/join', external: false },
+  { label: 'Archive', href: '/archive', external: false },
+  { label: 'Site Map', href: '/sitemap', external: false },
 ];
 
 const contactLinks = [
-  { label: 'as.minerva@unibocconi.it', href: 'mailto:as.minerva@unibocconi.it' },
+  { label: 'as.minerva@unibocconi.it', href: 'mailto:as.minerva@unibocconi.it', external: true },
 ];
 
 const socialLinks = [
@@ -19,18 +19,25 @@ const socialLinks = [
 ];
 
 const legalLinks = [
-  { label: 'Terms of Use', href: '/terms-of-use' },
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-  { label: 'Cookie Policy', href: '/cookie-policy' },
+  { label: 'Terms of Use', href: '/terms-of-use', external: false },
+  { label: 'Privacy Policy', href: '/privacy-policy', external: false },
+  { label: 'Cookie Policy', href: '/cookie-policy', external: false },
 ];
+
+const LinkWithArrow = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center gap-1.5">
+    {children}
+    <ArrowUpRight size={14} className="opacity-60" />
+  </span>
+);
 
 export function Footer() {
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-12 md:py-16">
-        {/* Main Footer Content - 4 Equal Quarters */}
+        {/* Main Footer Content - 5 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6 mb-8">
-          {/* Quarter 1: Logo */}
+          {/* Column 1: Logo */}
           <div className="flex items-start">
             <Link to="/" aria-label="MIMS Home">
               <img 
@@ -45,7 +52,7 @@ export function Footer() {
             </Link>
           </div>
 
-          {/* Quarter 2: Explore */}
+          {/* Column 2: Explore */}
           <div>
             <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Explore</h3>
             <ul className="space-y-2">
@@ -55,14 +62,14 @@ export function Footer() {
                     to={link.href}
                     className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
                   >
-                    {link.label}
+                    <LinkWithArrow>{link.label}</LinkWithArrow>
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Quarter 3: Contact */}
+          {/* Column 3: Contact */}
           <div>
             <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Contact</h3>
             <ul className="space-y-2">
@@ -72,7 +79,7 @@ export function Footer() {
                     href={link.href}
                     className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
                   >
-                    {link.label}
+                    <LinkWithArrow>{link.label}</LinkWithArrow>
                   </a>
                 </li>
               ))}
@@ -102,24 +109,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quarter 4: Legal */}
-          <div>
-            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Legal</h3>
-            <ul className="space-y-2">
-              {legalLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Quarter 5: Member Login */}
+          {/* Column 4: Members */}
           <div>
             <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Members</h3>
             <Link
@@ -129,9 +119,26 @@ export function Footer() {
               <User size={16} />
               <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
             </Link>
-            <p className="font-body text-[12px] text-background/60 mt-2">
+            <p className="font-body text-[15px] text-[#D6D6D6] leading-[1.6] mt-3 italic">
               For approved society members only.
             </p>
+          </div>
+
+          {/* Column 5: Legal */}
+          <div>
+            <h3 className="font-serif text-subheading mb-4 uppercase tracking-wide">Legal</h3>
+            <ul className="space-y-2">
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
+                  >
+                    <LinkWithArrow>{link.label}</LinkWithArrow>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -174,7 +181,7 @@ export function Footer() {
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-[13px] text-[#9A9A9A] hover:text-background hover:underline hover:decoration-accent transition-colors"
+            className="font-body text-[13px] text-background underline hover:text-background/80 transition-colors"
           >
             This website was built by Riccardo Colombo
           </a>
