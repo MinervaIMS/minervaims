@@ -15,6 +15,7 @@ interface AlumniRecord {
   company: string;
   city: string | null;
   linkedin_url: string | null;
+  job_area: string | null;
 }
 
 const Alumni = () => {
@@ -23,6 +24,7 @@ const Alumni = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
+  const [jobAreaFilter, setJobAreaFilter] = useState<string>('all');
   const imagesLoaded = useImagePreload([alumniBg]);
 
   useEffect(() => {
@@ -56,20 +58,27 @@ const Alumni = () => {
     return cities;
   }, [alumni]);
 
+  const uniqueJobAreas = useMemo(() => {
+    const areas = [...new Set(alumni.map(a => a.job_area).filter(Boolean))].sort() as string[];
+    return areas;
+  }, [alumni]);
+
   // Filter alumni based on search and filters
   const filteredAlumni = useMemo(() => {
     return alumni.filter(alumnus => {
       const matchesSearch = searchQuery === '' || 
         `${alumnus.name} ${alumnus.surname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
         alumnus.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (alumnus.city?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+        (alumnus.city?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+        (alumnus.job_area?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
       
       const matchesCompany = companyFilter === 'all' || alumnus.company === companyFilter;
       const matchesCity = cityFilter === 'all' || alumnus.city === cityFilter;
+      const matchesJobArea = jobAreaFilter === 'all' || alumnus.job_area === jobAreaFilter;
       
-      return matchesSearch && matchesCompany && matchesCity;
+      return matchesSearch && matchesCompany && matchesCity && matchesJobArea;
     });
-  }, [alumni, searchQuery, companyFilter, cityFilter]);
+  }, [alumni, searchQuery, companyFilter, cityFilter, jobAreaFilter]);
 
   // Group filtered alumni by graduation year
   const groupedAlumni = useMemo(() => {
@@ -160,8 +169,13 @@ const Alumni = () => {
                     )}
                   </div>
                   <p className="font-body text-body">{alumnus.company}</p>
-                  {alumnus.city && (
+                  {alumnus.job_area && (
                     <p className="font-body text-small text-muted-foreground">
+                      {alumnus.job_area}
+                    </p>
+                  )}
+                  {alumnus.city && (
+                    <p className="font-body text-xs text-muted-foreground/70">
                       {alumnus.city}
                     </p>
                   )}
@@ -173,9 +187,9 @@ const Alumni = () => {
 
         {/* Search and Filters */}
         <div className="mb-8 pb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
             {/* Search */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-[200px]">
               <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                 Search
               </label>
@@ -183,7 +197,7 @@ const Alumni = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search by name, company, or city..."
+                  placeholder="Search by name, company, city, or job area..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
@@ -192,6 +206,24 @@ const Alumni = () => {
               </div>
             </div>
             
+            {/* Job Area Filter */}
+            <div>
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                Job Area
+              </label>
+              <select
+                value={jobAreaFilter}
+                onChange={(e) => setJobAreaFilter(e.target.value)}
+                className="bg-background border border-separator px-3 h-10 min-w-[200px]"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
+              >
+                <option value="all">All Job Areas</option>
+                {uniqueJobAreas.map((area) => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Company Filter */}
             <div>
               <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
@@ -273,14 +305,19 @@ const Alumni = () => {
                           <p className="font-body text-small text-muted-foreground">
                             {alumnus.company}{alumnus.city ? ` • ${alumnus.city}` : ''}
                           </p>
+                          {alumnus.job_area && (
+                            <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
+                              {alumnus.job_area}
+                            </p>
+                          )}
                         </div>
                         
-                        {/* Desktop layout - 4 columns */}
+                        {/* Desktop layout - 5 columns */}
                         <div className="hidden sm:flex items-center">
-                          <span className="font-body text-body font-medium w-1/4 truncate text-left">
+                          <span className="font-body text-body font-medium w-[20%] truncate text-left">
                             {alumnus.name} {alumnus.surname}
                           </span>
-                          <span className="w-1/4 flex justify-start">
+                          <span className="w-[10%] flex justify-start">
                             {alumnus.linkedin_url ? (
                               <a
                                 href={alumnus.linkedin_url}
@@ -293,10 +330,13 @@ const Alumni = () => {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </span>
-                          <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
+                          <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
+                            {alumnus.job_area || '—'}
+                          </span>
+                          <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
                             {alumnus.company}
                           </span>
-                          <span className="font-body text-body text-muted-foreground w-1/4 truncate text-left">
+                          <span className="font-body text-body text-muted-foreground w-[20%] truncate text-left">
                             {alumnus.city || '—'}
                           </span>
                         </div>

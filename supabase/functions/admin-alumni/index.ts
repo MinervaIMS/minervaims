@@ -21,6 +21,10 @@ const AlumniSchema = z.object({
     (val) => (val === '' || val === null || val === undefined) ? null : val,
     z.string().max(500, 'LinkedIn URL too long').url('LinkedIn URL must be a valid URL').nullable()
   ).nullable(),
+  job_area: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined) ? null : val,
+    z.string().max(200, 'Job area too long').trim().nullable()
+  ),
 });
 
 const DeleteAlumniSchema = z.object({
@@ -117,6 +121,7 @@ Deno.serve(async (req) => {
             company: alumni.company,
             city: alumni.city || null,
             linkedin_url: alumni.linkedin_url || null,
+            job_area: alumni.job_area || null,
           })
           .select()
           .single();
@@ -138,6 +143,7 @@ Deno.serve(async (req) => {
             company: alumni.company,
             city: alumni.city || null,
             linkedin_url: alumni.linkedin_url || null,
+            job_area: alumni.job_area || null,
           })
           .eq('id', alumni.id)
           .select()

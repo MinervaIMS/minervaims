@@ -18,6 +18,7 @@ interface AlumniRecord {
   company: string;
   city: string | null;
   linkedin_url: string | null;
+  job_area: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +37,7 @@ export default function AlumniManagement() {
     company: '',
     city: '',
     linkedin_url: '',
+    job_area: '',
   });
   const { toast } = useToast();
 
@@ -73,6 +75,7 @@ export default function AlumniManagement() {
       company: '',
       city: '',
       linkedin_url: '',
+      job_area: '',
     });
     setEditingAlumni(null);
   };
@@ -91,6 +94,7 @@ export default function AlumniManagement() {
       company: record.company,
       city: record.city || '',
       linkedin_url: record.linkedin_url || '',
+      job_area: record.job_area || '',
     });
     setIsDialogOpen(true);
   };
@@ -118,6 +122,7 @@ export default function AlumniManagement() {
       company: formData.company.trim(),
       city: formData.city.trim() || null,
       linkedin_url: formData.linkedin_url.trim() || null,
+      job_area: formData.job_area.trim() || null,
       ...(editingAlumni && { id: editingAlumni.id }),
     };
 
@@ -128,6 +133,7 @@ export default function AlumniManagement() {
       ...alumniData,
       city: alumniData.city,
       linkedin_url: alumniData.linkedin_url,
+      job_area: alumniData.job_area,
       created_at: editingAlumni?.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -291,6 +297,16 @@ export default function AlumniManagement() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="job_area" className="font-body">Job Area</Label>
+                <Input
+                  id="job_area"
+                  value={formData.job_area}
+                  onChange={(e) => setFormData({ ...formData, job_area: e.target.value })}
+                  placeholder="e.g. Investment Banking, Markets, Private Equity..."
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="city" className="font-body">City</Label>
                 <Input
                   id="city"
@@ -397,6 +413,11 @@ export default function AlumniManagement() {
                       <p className="font-body text-small text-muted-foreground">
                         {record.company}{record.city ? `, ${record.city}` : ''}
                       </p>
+                      {record.job_area && (
+                        <p className="font-body text-xs text-muted-foreground/70">
+                          {record.job_area}
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       <Button
