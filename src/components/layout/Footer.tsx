@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { User, Instagram } from 'lucide-react';
+import { User, Instagram, ExternalLink } from 'lucide-react';
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
@@ -174,9 +174,10 @@ export function Footer() {
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-[13px] text-[#9A9A9A] hover:text-background hover:underline hover:decoration-accent transition-colors"
+            className="inline-flex items-center gap-1.5 font-body text-[13px] text-[#9A9A9A] hover:text-accent transition-colors group"
           >
-            This website was built by Riccardo Colombo
+            <span className="group-hover:underline group-hover:decoration-accent">This website was built by Riccardo Colombo</span>
+            <ExternalLink size={12} className="opacity-60 group-hover:opacity-100 transition-opacity" />
           </a>
           <p className="font-body text-[13px] text-[#9A9A9A] leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
