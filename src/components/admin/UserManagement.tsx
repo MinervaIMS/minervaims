@@ -93,11 +93,11 @@ const ASSIGNABLE_ROLES: AppRole[] = [
 const ROLE_ACCESS_MATRIX = [
   { role: 'President / Vice President / Head of Asset Management', users: true, alumni: true, events: true, files: 'All divisions', team: true, readings: true, applications: true },
   { role: 'Head of Operations / Head of Media', users: false, alumni: true, events: true, files: 'All divisions', team: false, readings: false, applications: false },
-  { role: 'Head of Equity', users: false, alumni: false, events: false, files: 'Equity only', team: 'Equity only', readings: true, applications: false },
-  { role: 'Head of Investment', users: false, alumni: false, events: false, files: 'Investment only', team: 'Investment only', readings: true, applications: false },
-  { role: 'Head of Macro', users: false, alumni: false, events: false, files: 'Macro only', team: 'Macro only', readings: true, applications: false },
-  { role: 'Head of Portfolio', users: false, alumni: false, events: false, files: 'Portfolio only', team: 'Portfolio only', readings: true, applications: false },
-  { role: 'Head of Quant', users: false, alumni: false, events: false, files: 'Quant only', team: 'Quant only', readings: true, applications: false },
+  { role: 'Head of Equity', users: false, alumni: true, events: false, files: 'Equity only', team: 'Equity only', readings: true, applications: false },
+  { role: 'Head of Investment', users: false, alumni: true, events: false, files: 'Investment only', team: 'Investment only', readings: true, applications: false },
+  { role: 'Head of Macro', users: false, alumni: true, events: false, files: 'Macro only', team: 'Macro only', readings: true, applications: false },
+  { role: 'Head of Portfolio', users: false, alumni: true, events: false, files: 'Portfolio only', team: 'Portfolio only', readings: true, applications: false },
+  { role: 'Head of Quant', users: false, alumni: true, events: false, files: 'Quant only', team: 'Quant only', readings: true, applications: false },
   { role: 'Portfolio Manager', users: false, alumni: false, events: false, files: 'Portfolio only', team: false, readings: true, applications: false },
   { role: 'Member', users: false, alumni: false, events: false, files: false, team: false, readings: false, applications: false },
 ];
