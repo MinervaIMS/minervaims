@@ -124,7 +124,7 @@ export function Footer() {
               <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
             </Link>
             <p className="font-body text-[15px] text-[#D6D6D6] leading-[1.6] mt-3 italic">
-              For approved society members only.
+              For approved society<br />members only.
             </p>
           </div>
 
