@@ -51,7 +51,7 @@ const About = () => {
       {/* SECTION 1 - What We Do */}
       <section className="bg-background text-foreground pt-10 md:pt-14 pb-6 md:pb-8">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and the only one with student-managed virtual funds.
@@ -72,7 +72,7 @@ const About = () => {
       {/* SECTION 2 - Readings Curated By Our Members */}
       <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Readings Curated By Our Members
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -92,7 +92,7 @@ const About = () => {
       {/* SECTION 3 - Our Divisions */}
       <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Divisions</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="flex flex-col gap-4 max-w-4xl">
           {divisionData.map(({ division, description }) => (
               <Link
@@ -115,7 +115,7 @@ const About = () => {
       {/* SECTION 4 - Organisational Structure */}
       <section id="organisational-structure" className="bg-background pt-6 md:pt-8 pb-16 md:pb-24">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
 
           {/* Org Chart with integrated role descriptions */}
           <div className="mb-12">
