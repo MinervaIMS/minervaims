@@ -137,11 +137,11 @@ const Alumni = () => {
 
   // Fixed founders list - always show these 5 in alphabetical order with full details from alumni database
   const founders = [
-    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
-    { id: 'founder-2', name: 'Francesca', surname: 'Rigante', graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
-    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo', graduation_year: 2019, job_area: 'Markets (Treasury & Trading)', company: 'Banca Popolare Pugliese', city: 'Lecce', linkedin_url: 'https://www.linkedin.com/in/massimiliano-rizzo-0b9316144/' },
-    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
-    { id: 'founder-5', name: 'Stefano', surname: 'Serio', graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
+    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
+    { id: 'founder-2', name: 'Francesca', surname: 'Rigante', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
+    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo', degree: 'MSc Finance', graduation_year: 2019, job_area: 'Markets (Treasury & Trading)', company: 'Banca Popolare Pugliese', city: 'Lecce', linkedin_url: 'https://www.linkedin.com/in/massimiliano-rizzo-0b9316144/' },
+    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
+    { id: 'founder-5', name: 'Stefano', surname: 'Serio', degree: 'MSc Finance', graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
   ];
 
   if (isDataLoading || !imagesLoaded) {
@@ -207,12 +207,12 @@ const Alumni = () => {
                   </a>
                 </div>
                 <p className="text-muted-foreground text-small mb-2">
-                  Class of {founder.graduation_year}
+                  {founder.degree},  Class of {founder.graduation_year}
                 </p>
                 <p className="font-body text-small text-muted-foreground">
                   {founder.job_area}
                 </p>
-                <p className="font-body text-small">
+                <p className="font-body text-body">
                   {founder.company}
                 </p>
                 <p className="font-body text-xs text-muted-foreground/70">
