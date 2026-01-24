@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
-import alumniCommunityLogo from '@/assets/alumni-community-logo.svg';
 import companiesImage from '@/assets/companies.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
@@ -145,21 +144,12 @@ const Alumni = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section pb-12 md:pb-16 bg-background">
         <div className="container">
-          <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
-            <div className="flex-1 max-w-3xl">
-              <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-                A Global Network, Still Close
-              </h2>
-              <p className="font-body text-body-lg text-muted-foreground">
-                MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
-              </p>
-            </div>
-            <img 
-              src={alumniCommunityLogo} 
-              alt="MIMS Alumni Community" 
-              className="w-36 h-36 md:w-48 md:h-48 flex-shrink-0 md:ml-28 md:-mt-8"
-            />
-          </div>
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+            A Global Network, Still Close
+          </h2>
+          <p className="font-body text-body-lg text-muted-foreground">
+            MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
+          </p>
         </div>
       </section>
 
