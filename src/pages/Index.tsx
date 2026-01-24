@@ -61,20 +61,13 @@ const Index = () => {
     }
   };
 
-  if (isKeyFiguresLoading || isCarouselLoading || !imagesLoaded) {
+  // Only block on data loading, not images - let hero render immediately for better LCP
+  if (isKeyFiguresLoading || isCarouselLoading) {
     return <PageLoader />;
   }
 
   return (
     <>
-      {/* Preload LCP image for faster discovery */}
-      <img
-        src={homepageBg}
-        alt=""
-        fetchPriority="high"
-        aria-hidden="true"
-        className="absolute w-0 h-0 opacity-0 pointer-events-none"
-      />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center pt-20 md:pt-24">
