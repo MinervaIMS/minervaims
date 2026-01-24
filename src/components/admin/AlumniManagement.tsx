@@ -57,11 +57,13 @@ export default function AlumniManagement() {
   // Handle page change with scroll to top
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to the top of the page with offset for fixed header
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    // Use setTimeout to scroll after React re-renders the new page content
+    setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }, 0);
   };
 
   useEffect(() => {
