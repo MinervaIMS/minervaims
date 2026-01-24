@@ -338,12 +338,34 @@ Deno.serve(async (req) => {
 
       console.log(`Admin ${user.email} performing action: ${action}`);
 
+      // Get member info before deletion for logging
+      const { data: memberToLog } = await supabase
+        .from('team_members')
+        .select('name, surname, division, position')
+        .eq('id', deleteResult.data.id)
+        .single();
+
       const { error } = await supabase
         .from('team_members')
         .delete()
         .eq('id', deleteResult.data.id);
 
       if (error) throw error;
+
+      // Log activity
+      const primaryRole = userRoleNames[0] || 'member';
+      await logActivity(
+        supabase,
+        user.id,
+        user.email || 'unknown',
+        primaryRole,
+        'delete',
+        'team_member',
+        deleteResult.data.id,
+        memberToLog ? `${memberToLog.name} ${memberToLog.surname}` : 'Unknown member',
+        { division: memberToLog?.division, position: memberToLog?.position }
+      );
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -372,6 +394,20 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
       }
+
+      // Log activity
+      const primaryRole = userRoleNames[0] || 'member';
+      await logActivity(
+        supabase,
+        user.id,
+        user.email || 'unknown',
+        primaryRole,
+        'reorder',
+        'team_member',
+        null,
+        null,
+        { count: reorderResult.data.length }
+      );
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -445,6 +481,21 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log activity
+      const primaryRole = userRoleNames[0] || 'member';
+      await logActivity(
+        supabase,
+        user.id,
+        user.email || 'unknown',
+        primaryRole,
+        'create',
+        'team_member',
+        data.id,
+        `${member.name} ${member.surname}`,
+        { division: member.division, position: member.position }
+      );
+
       return new Response(
         JSON.stringify({ success: true, member: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -477,6 +528,21 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log activity
+      const primaryRole = userRoleNames[0] || 'member';
+      await logActivity(
+        supabase,
+        user.id,
+        user.email || 'unknown',
+        primaryRole,
+        'update',
+        'team_member',
+        data.id,
+        `${member.name} ${member.surname}`,
+        { division: member.division, position: member.position }
+      );
+
       return new Response(
         JSON.stringify({ success: true, member: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
