@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Loader2, User, Download } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Loader2, User, Download } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -106,9 +106,30 @@ export default function ActivityManagement() {
   const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [userFilter, setUserFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+
+  // Get unique users for filter dropdown
+  const uniqueUsers = useMemo(() => {
+    const userMap = new Map<string, { id: string; email: string; name: string }>();
+    activities.forEach((activity) => {
+      if (!userMap.has(activity.user_id)) {
+        // Extract name from email or use email as fallback
+        const emailParts = activity.user_email.split('@')[0];
+        const nameParts = emailParts.split('.');
+        const displayName = nameParts.length >= 2 
+          ? `${nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1)} ${nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1)}`
+          : emailParts;
+        userMap.set(activity.user_id, {
+          id: activity.user_id,
+          email: activity.user_email,
+          name: displayName,
+        });
+      }
+    });
+    return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [activities]);
 
   useEffect(() => {
     fetchActivities();
@@ -146,6 +167,10 @@ export default function ActivityManagement() {
       if (sectionFilter !== 'all' && activity.entity_type !== sectionFilter) {
         return false;
       }
+      // User filter
+      if (userFilter !== 'all' && activity.user_id !== userFilter) {
+        return false;
+      }
       // Date range filter
       if (startDate || endDate) {
         const activityDate = new Date(activity.created_at);
@@ -160,23 +185,14 @@ export default function ActivityManagement() {
           }
         }
       }
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesEmail = activity.user_email.toLowerCase().includes(query);
-        const matchesEntityName = activity.entity_name?.toLowerCase().includes(query) || false;
-        if (!matchesEmail && !matchesEntityName) {
-          return false;
-        }
-      }
       return true;
     });
-  }, [activities, actionFilter, sectionFilter, startDate, endDate, searchQuery]);
+  }, [activities, actionFilter, sectionFilter, userFilter, startDate, endDate]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [actionFilter, sectionFilter, startDate, endDate, searchQuery]);
+  }, [actionFilter, sectionFilter, userFilter, startDate, endDate]);
 
   // Clear date filter
   const clearDateFilter = () => {
@@ -324,6 +340,26 @@ export default function ActivityManagement() {
           </SelectContent>
         </Select>
 
+        {/* User Filter */}
+        <Select value={userFilter} onValueChange={setUserFilter}>
+          <SelectTrigger
+            className="w-[180px] bg-background border-separator"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          >
+            <SelectValue placeholder="All Users" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              All Users
+            </SelectItem>
+            {uniqueUsers.map((user) => (
+              <SelectItem key={user.id} value={user.id} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                {user.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* Section Filter */}
         <Select value={sectionFilter} onValueChange={setSectionFilter}>
           <SelectTrigger
@@ -408,17 +444,6 @@ export default function ActivityManagement() {
         )}
       </div>
 
-      {/* Search - Full Width */}
-      <div className="relative w-full mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search users or items..."
-          className="pl-10 bg-background border-separator w-full"
-          style={{ fontFamily: '"Times New Roman", Times, serif' }}
-        />
-      </div>
 
       {/* Results Count */}
       <p
