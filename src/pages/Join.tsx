@@ -185,7 +185,7 @@ const Join = () => {
         <section>
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
           <div className="max-w-3xl">
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="multiple" className="w-full">
               {FAQS.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`} className="border-separator">
                   <AccordionTrigger className="font-serif text-lg sm:text-subheading text-left hover:no-underline py-6 [&>svg]:text-accent [&>svg]:w-5 [&>svg]:h-5">
