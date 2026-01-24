@@ -30,7 +30,7 @@ interface PDFJSLib {
 // A4 aspect ratio: 1:√2 ≈ 1:1.4142
 const A4_ASPECT_RATIO = 1.4142;
 
-// Load PDF.js from CDN
+// Load PDF.js from CDN - lazy loaded only when needed
 let pdfjsLib: PDFJSLib | null = null;
 let loadingPromise: Promise<PDFJSLib> | null = null;
 
@@ -52,7 +52,6 @@ const loadPdfJs = (): Promise<PDFJSLib> => {
     }
 
     const script = document.createElement('script');
-    // Use legacy build which is more compatible
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
     script.async = true;
     
@@ -83,8 +82,30 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Only load PDF when component is visible (IntersectionObserver)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' } // Start loading slightly before visible
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
+    if (!isVisible) return;
+    
     let cancelled = false;
     let rafId: number;
 
@@ -115,13 +136,10 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
         rafId = requestAnimationFrame(() => {
           if (cancelled || !canvasRef.current || !containerRef.current) return;
 
-          // Get container dimensions - enforce A4 aspect ratio
           const container = containerRef.current;
           const containerWidth = container.clientWidth || 200;
-          // Calculate height based on A4 aspect ratio
           const containerHeight = containerWidth * A4_ASPECT_RATIO;
 
-          // Get PDF viewport and scale to fit the A4-proportioned container
           const viewport = page.getViewport({ scale: 1 });
           const scale = Math.min(
             containerWidth / viewport.width,
@@ -130,7 +148,6 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
           const scaledViewport = page.getViewport({ scale });
 
-          // Set canvas size to exactly fill A4 container
           const canvas = canvasRef.current;
           if (!canvas) return;
           
@@ -142,10 +159,8 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
             return;
           }
 
-          // Use device pixel ratio for sharper rendering
           const pixelRatio = window.devicePixelRatio || 1;
           
-          // Set canvas to A4 proportions (width x height based on container width)
           canvas.width = containerWidth * pixelRatio;
           canvas.height = containerHeight * pixelRatio;
           canvas.style.width = `${containerWidth}px`;
@@ -153,17 +168,14 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
           context.scale(pixelRatio, pixelRatio);
           
-          // Fill with white background first
           context.fillStyle = '#ffffff';
           context.fillRect(0, 0, containerWidth, containerHeight);
 
-          // Center the PDF content within the A4 canvas
           const offsetX = (containerWidth - scaledViewport.width) / 2;
           const offsetY = (containerHeight - scaledViewport.height) / 2;
           
           context.translate(offsetX, offsetY);
 
-          // Render the page
           page.render({
             canvasContext: context,
             viewport: scaledViewport,
@@ -194,7 +206,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
       cancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [url]);
+  }, [url, isVisible]);
 
   return (
     <div 
