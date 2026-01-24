@@ -29,7 +29,7 @@ function ExpandableContent({ description, moderator, guest }: ExpandableContentP
   if (!description && !hasModeratorOrGuests) return null;
 
   return (
-    <div className="mb-6">
+    <div className="mb-4">
       {description && (
         <p 
           className={`font-body text-body text-muted-foreground ${!isExpanded ? 'line-clamp-2' : ''}`}
@@ -107,7 +107,7 @@ export function EventsListNew({ events }: EventsListNewProps) {
       {sortedEvents.map((event, index) => (
         <article
           key={event.id}
-          className={`py-8 ${index !== sortedEvents.length - 1 ? 'border-b border-separator' : ''}`}
+          className={`py-5 ${index !== sortedEvents.length - 1 ? 'border-b border-separator' : ''}`}
         >
           {/* Date and Location row - stack on mobile */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-muted-foreground mb-3">
