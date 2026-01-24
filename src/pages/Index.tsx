@@ -175,13 +175,15 @@ const Index = () => {
       </section>
 
       {/* Companies Image */}
-      <section className="py-8 md:py-12 bg-background">
+      <section className="py-6 sm:py-8 md:py-12 bg-background">
         <div className="container">
-          <img 
-            src={companiesImage} 
-            alt="Companies where MIMS alumni work" 
-            className="w-full max-w-5xl mx-auto"
-          />
+          <div className="overflow-x-auto sm:overflow-visible">
+            <img 
+              src={companiesImage} 
+              alt="Companies where MIMS alumni work" 
+              className="w-full min-w-[500px] sm:min-w-0 max-w-5xl mx-auto px-4 sm:px-0"
+            />
+          </div>
         </div>
       </section>
 
