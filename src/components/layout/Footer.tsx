@@ -34,11 +34,11 @@ const LinkWithArrow = ({ children }: { children: React.ReactNode }) => (
 export function Footer() {
   return (
     <footer className="bg-foreground text-background">
-      <div className="container py-12 md:py-16">
+      <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
         {/* Main Footer Content - Responsive Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-6 lg:gap-8 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8 md:gap-6 lg:gap-8 mb-8">
           {/* Column 1: Logo - Full width on mobile, spans 2 cols on sm */}
-          <div className="col-span-2 sm:col-span-2 md:col-span-1 lg:col-span-1 flex items-start justify-center md:justify-start">
+          <div className="col-span-2 sm:col-span-2 md:col-span-1 lg:col-span-1 flex items-start justify-center md:justify-start mb-4 sm:mb-6 md:mb-0">
             <Link to="/" aria-label="MIMS Home">
               <img 
                 src={footerLogo} 
@@ -147,10 +147,10 @@ export function Footer() {
         </div>
 
         {/* Separator */}
-        <div className="border-t border-background/20 mb-6" />
+        <div className="border-t border-background/20 mb-4 sm:mb-6" />
 
         {/* Disclaimer - Full Width */}
-        <div className="mb-8 py-4">
+        <div className="mb-6 sm:mb-8 py-3 sm:py-4">
           <h4 className="font-serif text-[17px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
             Disclaimer
           </h4>
@@ -180,7 +180,7 @@ export function Footer() {
         </div>
 
         {/* Builder Credit and Copyright */}
-        <div className="border-t border-background/20 pt-6 flex flex-col items-center gap-3 text-center px-4">
+        <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col items-center gap-2 sm:gap-3 text-center px-2 sm:px-4">
           <a
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
