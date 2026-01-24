@@ -110,18 +110,25 @@ const Join = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Application Process
           </h2>
-          <div className="max-w-3xl space-y-0">
+          <div className="max-w-3xl">
             {APPLICATION_STEPS.map((step, index) => (
               <div
                 key={step.step}
-                className={`flex gap-5 py-6 ${index < APPLICATION_STEPS.length - 1 ? 'border-b border-separator' : ''}`}
+                className="flex gap-5"
               >
-                {/* Circled Step Number */}
-                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center">
-                  <span className="font-serif text-lg sm:text-xl text-accent">{step.step}</span>
+                {/* Timeline Column */}
+                <div className="flex flex-col items-center">
+                  {/* Circled Step Number */}
+                  <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background">
+                    <span className="font-serif text-lg sm:text-xl text-accent">{step.step}</span>
+                  </div>
+                  {/* Vertical Line */}
+                  {index < APPLICATION_STEPS.length - 1 && (
+                    <div className="w-px flex-1 bg-separator my-2" />
+                  )}
                 </div>
                 {/* Step Content */}
-                <div className="flex-1 pt-1">
+                <div className={`flex-1 pt-1 ${index < APPLICATION_STEPS.length - 1 ? 'pb-8' : ''}`}>
                   <h3 className="font-serif text-lg sm:text-subheading mb-2">{step.title}</h3>
                   <p className="font-body text-body-lg text-muted-foreground">
                     {step.description}
