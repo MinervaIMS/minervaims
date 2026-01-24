@@ -206,16 +206,19 @@ const Alumni = () => {
                     <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
                   </a>
                 </div>
+                <p className="text-muted-foreground text-small">
+                  {founder.degree}
+                </p>
                 <p className="text-muted-foreground text-small mb-2">
-                  {founder.degree},  Class of {founder.graduation_year}
+                  Class of {founder.graduation_year}
                 </p>
                 <p className="font-body text-small text-muted-foreground">
                   {founder.job_area}
                 </p>
-                <p className="font-body text-body">
+                <p className="font-serif text-body">
                   {founder.company}
                 </p>
-                <p className="font-body text-xs text-muted-foreground/70">
+                <p className="font-body text-small text-muted-foreground/70">
                   {founder.city}
                 </p>
               </div>
