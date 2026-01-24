@@ -106,10 +106,16 @@ export default function ActivityManagement() {
   // Handle page change with scroll to top
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to the top of the activity section
+    // Scroll to the top of the activity section with offset for fixed header
     const activitySection = document.getElementById('activity-section');
     if (activitySection) {
-      activitySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const headerOffset = 80;
+      const elementPosition = activitySection.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
