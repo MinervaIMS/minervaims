@@ -81,7 +81,7 @@ export function LatestArchiveCarousel({ files: propFiles }: LatestArchiveCarouse
       <div
         ref={scrollContainerRef}
         className="flex overflow-x-auto scrollbar-hide pb-4 scroll-smooth snap-x snap-mandatory gap-[60px]"
-        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        style={{ WebkitOverflowScrolling: 'touch', contain: 'layout' } as React.CSSProperties}
       >
         {files.map((file) => (
           <Link

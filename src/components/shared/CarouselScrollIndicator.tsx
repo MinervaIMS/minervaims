@@ -18,40 +18,51 @@ export function CarouselScrollIndicator({
     const container = containerRef.current;
     if (!container) return;
 
+    let rafId: number;
+
     const calculateVisibleDots = () => {
-      const { clientWidth } = container;
-      // Calculate how many items fit in viewport
-      const itemsPerView = Math.max(1, Math.floor(clientWidth / itemWidth));
-      // Number of "pages" or scroll positions
-      const dots = Math.max(1, itemCount - itemsPerView + 1);
-      setVisibleDots(Math.min(dots, itemCount));
+      // Use requestAnimationFrame to avoid forced reflow
+      rafId = requestAnimationFrame(() => {
+        if (!container) return;
+        const { clientWidth } = container;
+        // Calculate how many items fit in viewport
+        const itemsPerView = Math.max(1, Math.floor(clientWidth / itemWidth));
+        // Number of "pages" or scroll positions
+        const dots = Math.max(1, itemCount - itemsPerView + 1);
+        setVisibleDots(Math.min(dots, itemCount));
+      });
     };
 
     const handleScroll = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      const maxScroll = scrollWidth - clientWidth;
-      
-      if (maxScroll <= 0) {
-        setActiveIndex(0);
-        return;
-      }
+      // Use requestAnimationFrame to batch layout reads
+      rafId = requestAnimationFrame(() => {
+        if (!container) return;
+        const { scrollLeft, scrollWidth, clientWidth } = container;
+        const maxScroll = scrollWidth - clientWidth;
+        
+        if (maxScroll <= 0) {
+          setActiveIndex(0);
+          return;
+        }
 
-      // Calculate progress as percentage
-      const progress = scrollLeft / maxScroll;
-      // Map progress to dot index
-      const newIndex = Math.round(progress * (visibleDots - 1));
-      setActiveIndex(Math.max(0, Math.min(newIndex, visibleDots - 1)));
+        // Calculate progress as percentage
+        const progress = scrollLeft / maxScroll;
+        // Map progress to dot index
+        const newIndex = Math.round(progress * (visibleDots - 1));
+        setActiveIndex(Math.max(0, Math.min(newIndex, visibleDots - 1)));
+      });
     };
 
     calculateVisibleDots();
     handleScroll();
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', calculateVisibleDots);
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', calculateVisibleDots);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [containerRef, itemCount, itemWidth, visibleDots]);
 
@@ -67,13 +78,16 @@ export function CarouselScrollIndicator({
             const container = containerRef.current;
             if (!container) return;
             
-            const { scrollWidth, clientWidth } = container;
-            const maxScroll = scrollWidth - clientWidth;
-            const targetScroll = (index / (visibleDots - 1)) * maxScroll;
-            
-            container.scrollTo({
-              left: targetScroll,
-              behavior: 'smooth'
+            // Use requestAnimationFrame to avoid forced reflow on click
+            requestAnimationFrame(() => {
+              const { scrollWidth, clientWidth } = container;
+              const maxScroll = scrollWidth - clientWidth;
+              const targetScroll = (index / (visibleDots - 1)) * maxScroll;
+              
+              container.scrollTo({
+                left: targetScroll,
+                behavior: 'smooth'
+              });
             });
           }}
           className={`
