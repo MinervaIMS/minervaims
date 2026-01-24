@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Loader2, User, Download, Calendar } from 'lucide-react';
+import { Search, Loader2, User, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
   SelectContent,
@@ -11,6 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Pagination,
   PaginationContent,
@@ -32,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { downloadCSV } from '@/lib/download-utils';
+import { cn } from '@/lib/utils';
 
 interface ActivityLog {
   id: string;
@@ -96,16 +104,11 @@ export default function ActivityManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [sectionFilter, setSectionFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
-
-  // Get unique years from activities for date filter
-  const uniqueYears = useMemo(() => {
-    const years = [...new Set(activities.map(a => new Date(a.created_at).getFullYear()))].sort((a, b) => b - a);
-    return years;
-  }, [activities]);
 
   useEffect(() => {
     fetchActivities();
@@ -143,11 +146,18 @@ export default function ActivityManagement() {
       if (sectionFilter !== 'all' && activity.entity_type !== sectionFilter) {
         return false;
       }
-      // Date filter
-      if (dateFilter !== 'all') {
-        const activityYear = new Date(activity.created_at).getFullYear();
-        if (activityYear !== parseInt(dateFilter)) {
+      // Date range filter
+      if (startDate || endDate) {
+        const activityDate = new Date(activity.created_at);
+        if (startDate && activityDate < startDate) {
           return false;
+        }
+        if (endDate) {
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (activityDate > endOfDay) {
+            return false;
+          }
         }
       }
       // Search filter
@@ -161,12 +171,18 @@ export default function ActivityManagement() {
       }
       return true;
     });
-  }, [activities, actionFilter, sectionFilter, dateFilter, searchQuery]);
+  }, [activities, actionFilter, sectionFilter, startDate, endDate, searchQuery]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [actionFilter, sectionFilter, dateFilter, searchQuery]);
+  }, [actionFilter, sectionFilter, startDate, endDate, searchQuery]);
+
+  // Clear date filter
+  const clearDateFilter = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
 
   // CSV download handler
   const handleDownloadCSV = () => {
@@ -279,8 +295,8 @@ export default function ActivityManagement() {
         </AlertDialog>
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4 mb-4">
         {/* Action Filter */}
         <Select value={actionFilter} onValueChange={setActionFilter}>
           <SelectTrigger
@@ -328,38 +344,80 @@ export default function ActivityManagement() {
           </SelectContent>
         </Select>
 
-        {/* Date Filter */}
-        <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger
-            className="w-[140px] bg-background border-separator"
+        {/* Start Date Picker */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-[140px] justify-start text-left font-normal bg-background border-separator",
+                !startDate && "text-muted-foreground"
+              )}
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              {startDate ? format(startDate, "MMM d, yyyy") : "From date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDate}
+              onSelect={setStartDate}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* End Date Picker */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-[140px] justify-start text-left font-normal bg-background border-separator",
+                !endDate && "text-muted-foreground"
+              )}
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              {endDate ? format(endDate, "MMM d, yyyy") : "To date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={endDate}
+              onSelect={setEndDate}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Clear Date Filter */}
+        {(startDate || endDate) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearDateFilter}
+            className="text-muted-foreground hover:text-foreground"
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
-            <Calendar className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="All Dates" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              All Dates
-            </SelectItem>
-            {uniqueYears.map((year) => (
-              <SelectItem key={year} value={year.toString()} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            Clear dates
+          </Button>
+        )}
+      </div>
 
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search users or items..."
-            className="pl-10 bg-background border-separator"
-            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-          />
-        </div>
+      {/* Search - Full Width */}
+      <div className="relative w-full mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search users or items..."
+          className="pl-10 bg-background border-separator w-full"
+          style={{ fontFamily: '"Times New Roman", Times, serif' }}
+        />
       </div>
 
       {/* Results Count */}

@@ -496,16 +496,10 @@ const AdminDashboard = () => {
               Users
             </TabsTrigger>
           )}
-          {permissions.canAccessAlumni && (
-            <TabsTrigger value="alumni" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Alumni
-            </TabsTrigger>
-          )}
-          {permissions.canAccessEvents && (
-            <TabsTrigger value="events" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Events
+          {permissions.canAccessActivity && (
+            <TabsTrigger value="activity" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Activity
             </TabsTrigger>
           )}
           {permissions.canAccessFiles && (
@@ -520,6 +514,18 @@ const AdminDashboard = () => {
               Team
             </TabsTrigger>
           )}
+          {permissions.canAccessAlumni && (
+            <TabsTrigger value="alumni" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Alumni
+            </TabsTrigger>
+          )}
+          {permissions.canAccessEvents && (
+            <TabsTrigger value="events" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Events
+            </TabsTrigger>
+          )}
           {permissions.canAccessReadings && (
             <TabsTrigger value="readings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <BookOpen className="h-4 w-4 mr-2" />
@@ -530,12 +536,6 @@ const AdminDashboard = () => {
             <TabsTrigger value="settings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <Settings className="h-4 w-4 mr-2" />
               Applications
-            </TabsTrigger>
-          )}
-          {permissions.canAccessActivity && (
-            <TabsTrigger value="activity" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Activity
             </TabsTrigger>
           )}
         </TabsList>
