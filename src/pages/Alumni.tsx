@@ -165,12 +165,14 @@ const Alumni = () => {
 
       <div className="container pb-section-sm md:pb-section">
         {/* Companies Image */}
-        <div className="mb-12">
-          <img 
-            src={companiesImage} 
-            alt="Companies where MIMS alumni work" 
-            className="w-full max-w-4xl mx-auto"
-          />
+        <div className="mb-8 sm:mb-12">
+          <div className="overflow-x-auto sm:overflow-visible">
+            <img 
+              src={companiesImage} 
+              alt="Companies where MIMS alumni work" 
+              className="w-full min-w-[500px] sm:min-w-0 max-w-4xl mx-auto"
+            />
+          </div>
         </div>
 
         {/* Alumni Spotlight */}
