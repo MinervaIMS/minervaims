@@ -20,7 +20,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-const ALUMNI_PER_PAGE = 30;
+const ALUMNI_PER_PAGE = 25;
 
 interface AlumniRecord {
   id: string;

@@ -26,7 +26,7 @@ interface AlumniRecord {
   job_area: string | null;
 }
 
-const ALUMNI_PER_PAGE = 30;
+const ALUMNI_PER_PAGE = 25;
 
 const Alumni = () => {
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);

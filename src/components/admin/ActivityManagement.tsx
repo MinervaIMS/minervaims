@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Loader2, ChevronLeft, ChevronRight, MoreHorizontal, User } from 'lucide-react';
+import { Search, Loader2, User, Download, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +20,18 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { downloadCSV } from '@/lib/download-utils';
 
 interface ActivityLog {
   id: string;
@@ -34,7 +46,7 @@ interface ActivityLog {
   created_at: string;
 }
 
-const ACTIVITIES_PER_PAGE = 15;
+const ACTIVITIES_PER_PAGE = 25;
 
 // Action labels for display
 const actionLabels: Record<string, string> = {
@@ -84,9 +96,16 @@ export default function ActivityManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [sectionFilter, setSectionFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+
+  // Get unique years from activities for date filter
+  const uniqueYears = useMemo(() => {
+    const years = [...new Set(activities.map(a => new Date(a.created_at).getFullYear()))].sort((a, b) => b - a);
+    return years;
+  }, [activities]);
 
   useEffect(() => {
     fetchActivities();
@@ -124,6 +143,13 @@ export default function ActivityManagement() {
       if (sectionFilter !== 'all' && activity.entity_type !== sectionFilter) {
         return false;
       }
+      // Date filter
+      if (dateFilter !== 'all') {
+        const activityYear = new Date(activity.created_at).getFullYear();
+        if (activityYear !== parseInt(dateFilter)) {
+          return false;
+        }
+      }
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -135,12 +161,29 @@ export default function ActivityManagement() {
       }
       return true;
     });
-  }, [activities, actionFilter, sectionFilter, searchQuery]);
+  }, [activities, actionFilter, sectionFilter, dateFilter, searchQuery]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [actionFilter, sectionFilter, searchQuery]);
+  }, [actionFilter, sectionFilter, dateFilter, searchQuery]);
+
+  // CSV download handler
+  const handleDownloadCSV = () => {
+    const csvColumns: { key: keyof ActivityLog; header: string }[] = [
+      { key: 'user_email', header: 'User Email' },
+      { key: 'user_role', header: 'User Role' },
+      { key: 'action', header: 'Action' },
+      { key: 'entity_type', header: 'Section' },
+      { key: 'entity_name', header: 'Entity Name' },
+      { key: 'created_at', header: 'Date' },
+    ];
+    downloadCSV(filteredActivities, csvColumns, `activity-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    toast({
+      title: 'Success',
+      description: `Downloaded ${filteredActivities.length} activity logs`,
+    });
+  };
 
   // Pagination
   const totalPages = Math.ceil(filteredActivities.length / ACTIVITIES_PER_PAGE);
@@ -214,6 +257,26 @@ export default function ActivityManagement() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-heading text-accent">Activity Tracking</h2>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Download CSV
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Download Activity Logs</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will download {filteredActivities.length} activity log{filteredActivities.length !== 1 ? 's' : ''} as a CSV file.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Filters and Search */}
@@ -260,6 +323,27 @@ export default function ActivityManagement() {
             {Object.entries(sectionLabels).map(([value, label]) => (
               <SelectItem key={value} value={value} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
                 {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Date Filter */}
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger
+            className="w-[140px] bg-background border-separator"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="All Dates" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              All Dates
+            </SelectItem>
+            {uniqueYears.map((year) => (
+              <SelectItem key={year} value={year.toString()} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                {year}
               </SelectItem>
             ))}
           </SelectContent>
