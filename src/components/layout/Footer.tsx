@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { User, Instagram, ArrowUpRight } from 'lucide-react';
 import footerLogo from '@/assets/footer-logo.svg';
-import linkedinIcon from '@/assets/linkedin-icon.png';
+import linkedinIcon from '@/assets/linkedin-icon-small.png';
 
 const exploreLinks = [
   { label: 'Join Us', href: '/join', external: false },
@@ -99,7 +99,11 @@ export function Footer() {
                     <img 
                       src={linkedinIcon} 
                       alt="LinkedIn" 
+                      width={36}
+                      height={36}
                       className="h-9 w-9 opacity-80 hover:opacity-100 transition-opacity"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <Instagram size={36} />
