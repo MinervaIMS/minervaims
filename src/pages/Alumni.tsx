@@ -135,13 +135,13 @@ const Alumni = () => {
     return Object.keys(groupedAlumni).map(Number).sort((a, b) => b - a);
   }, [groupedAlumni]);
 
-  // Fixed founders list - always show these 5 in alphabetical order
+  // Fixed founders list - always show these 5 in alphabetical order with full details
   const founders = [
-    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti' },
-    { id: 'founder-2', name: 'Francesca', surname: 'Rigante' },
-    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo' },
-    { id: 'founder-4', name: 'Arturo', surname: 'Schembri' },
-    { id: 'founder-5', name: 'Stefano', surname: 'Serio' },
+    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', graduation_year: 2019, job_area: 'Investment Banking', company: 'Rothschild & Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti/' },
+    { id: 'founder-2', name: 'Francesca', surname: 'Rigante', graduation_year: 2019, job_area: 'Consulting', company: 'McKinsey & Company', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante/' },
+    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo', graduation_year: 2019, job_area: 'Investment Banking', company: 'J.P. Morgan', city: 'London', linkedin_url: 'https://www.linkedin.com/in/massimiliano-rizzo/' },
+    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', graduation_year: 2019, job_area: 'Private Equity', company: 'The Carlyle Group', city: 'London', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
+    { id: 'founder-5', name: 'Stefano', surname: 'Serio', graduation_year: 2019, job_area: 'Investment Banking', company: 'Goldman Sachs', city: 'London', linkedin_url: 'https://www.linkedin.com/in/stefano-serio/' },
   ];
 
   if (isDataLoading || !imagesLoaded) {
@@ -187,15 +187,37 @@ const Alumni = () => {
         {/* Our Founders */}
         <div className="mb-24">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders, since 2017</h2>
-          <div className="flex flex-wrap justify-center gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {founders.map((founder) => (
               <div
                 key={founder.id}
-                className="border border-separator p-6 hover:bg-muted/50 transition-colors text-center min-w-[160px]"
+                className="border border-separator rounded-lg p-4 hover:bg-muted/50 transition-colors"
               >
-                <h3 className="font-serif text-body-lg font-medium">
-                  {founder.name} {founder.surname}
-                </h3>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-serif text-body-lg font-medium leading-tight">
+                    {founder.surname} {founder.name}
+                  </h3>
+                  <a
+                    href={founder.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 ml-2"
+                  >
+                    <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                  </a>
+                </div>
+                <p className="text-muted-foreground text-small mb-2">
+                  Class of {founder.graduation_year}
+                </p>
+                <p className="font-body text-small text-muted-foreground">
+                  {founder.job_area}
+                </p>
+                <p className="font-body text-small">
+                  {founder.company}
+                </p>
+                <p className="font-body text-xs text-muted-foreground/70">
+                  {founder.city}
+                </p>
               </div>
             ))}
           </div>
