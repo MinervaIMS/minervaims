@@ -780,7 +780,7 @@ const AdminDashboard = () => {
                   {paginatedEvents.map((event, index) => (
                     <div 
                       key={event.id}
-                      className={`py-3 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}
+                      className={`py-0 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -788,7 +788,7 @@ const AdminDashboard = () => {
                         </div>
                         
                         {/* Actions */}
-                        <div className="flex gap-2 pt-3">
+                        <div className="flex gap-2 pt-0">
                           <Button
                             variant="outline"
                             size="icon"
