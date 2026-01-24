@@ -57,10 +57,16 @@ export default function AlumniManagement() {
   // Handle page change with scroll to top
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to the top of the alumni section
+    // Scroll to the top of the alumni section with offset for fixed header
     const alumniSection = document.getElementById('alumni-section');
     if (alumniSection) {
-      alumniSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const headerOffset = 80;
+      const elementPosition = alumniSection.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
