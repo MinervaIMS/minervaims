@@ -167,7 +167,7 @@ const Alumni = () => {
 
         {/* Alumni Spotlight */}
         {spotlightAlumni.length > 0 && (
-          <div className="mb-16">
+          <div className="mb-24">
             <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders, since 2017</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {spotlightAlumni.map((alumnus) => (
@@ -213,7 +213,7 @@ const Alumni = () => {
         )}
 
         {/* Search and Filters */}
-        <div className="mb-4">
+        <div className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator">
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
             {/* Search */}
             <div className="flex-1 min-w-[200px]">
