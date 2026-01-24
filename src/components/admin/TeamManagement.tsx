@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Download } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Download, RotateCcw } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { divisionLabels, Division } from '@/lib/types';
 import { downloadCSV } from '@/lib/download-utils';
@@ -289,6 +289,60 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
       console.error('Reorder error:', error);
       toast({ title: "Error", description: "Failed to save order", variant: "destructive" });
       fetchMembers();
+    }
+  }, [toast]);
+
+  // Reset order to alphabetical within position tiers
+  const resetOrder = useCallback(async (groupMembers: TeamMember[], groupName: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Session Expired", description: "Please log out and log back in.", variant: "destructive" });
+        return;
+      }
+
+      // Sort alphabetically by surname, then name, within each position tier
+      const sortedMembers = [...groupMembers].sort((a, b) => {
+        const posA = POSITION_ORDER[a.position] ?? 100;
+        const posB = POSITION_ORDER[b.position] ?? 100;
+        if (posA !== posB) return posA - posB;
+        // Within same position, sort alphabetically
+        const surnameCompare = a.surname.localeCompare(b.surname);
+        if (surnameCompare !== 0) return surnameCompare;
+        return a.name.localeCompare(b.name);
+      });
+
+      const items = sortedMembers.map((m, index) => ({
+        id: m.id,
+        display_order: index,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('admin-team', {
+        body: { action: 'reorder', items },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error || data?.error) {
+        toast({ title: "Error", description: data?.error || "Failed to reset order", variant: "destructive" });
+        return;
+      }
+
+      // Update local state
+      setMembers(prev => {
+        const newMembers = [...prev];
+        sortedMembers.forEach((member, index) => {
+          const idx = newMembers.findIndex(m => m.id === member.id);
+          if (idx !== -1) {
+            newMembers[idx] = { ...newMembers[idx], display_order: index };
+          }
+        });
+        return newMembers;
+      });
+
+      toast({ title: "Success", description: `Order reset to alphabetical for ${groupName}` });
+    } catch (error) {
+      console.error('Reset order error:', error);
+      toast({ title: "Error", description: "Failed to reset order", variant: "destructive" });
     }
   }, [toast]);
 
@@ -866,7 +920,18 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {/* Board Members */}
           {membersByDivision.boardMembers.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading text-accent mb-2 pb-2 border-b border-separator">Executive Board</h3>
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-separator">
+                <h3 className="font-serif text-subheading text-accent">Executive Board</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => resetOrder(membersByDivision.boardMembers, 'Executive Board')}
+                  className="font-body text-xs text-muted-foreground hover:text-accent"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Reset Order
+                </Button>
+              </div>
               <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this group</p>
               <DndContext
                 sensors={sensors}
@@ -880,8 +945,8 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {membersByDivision.boardMembers.map((member) => (
-                      <SortableMemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
+                    {membersByDivision.boardMembers.map((member, index) => (
+                      <SortableMemberCard key={member.id} member={member} index={index + 1} onEdit={openEditDialog} onDelete={handleDelete} />
                     ))}
                   </div>
                 </SortableContext>
@@ -895,7 +960,18 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {/* Members by Division */}
           {DIVISIONS.filter(d => membersByDivision.divisionGroups[d.value]?.length > 0).map((division) => (
             <div key={division.value}>
-              <h3 className="font-serif text-subheading text-accent mb-2 pb-2 border-b border-separator">{division.label}</h3>
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-separator">
+                <h3 className="font-serif text-subheading text-accent">{division.label}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => resetOrder(membersByDivision.divisionGroups[division.value], division.label)}
+                  className="font-body text-xs text-muted-foreground hover:text-accent"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Reset Order
+                </Button>
+              </div>
               <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this division</p>
               <DndContext
                 sensors={sensors}
@@ -909,8 +985,8 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {membersByDivision.divisionGroups[division.value].map((member) => (
-                      <SortableMemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
+                    {membersByDivision.divisionGroups[division.value].map((member, index) => (
+                      <SortableMemberCard key={member.id} member={member} index={index + 1} onEdit={openEditDialog} onDelete={handleDelete} />
                     ))}
                   </div>
                 </SortableContext>
@@ -924,7 +1000,18 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {/* Members without division */}
           {membersByDivision.noDivision.length > 0 && (
             <div>
-              <h3 className="font-serif text-subheading text-accent mb-2 pb-2 border-b border-separator">Other</h3>
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-separator">
+                <h3 className="font-serif text-subheading text-accent">Other</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => resetOrder(membersByDivision.noDivision, 'Other')}
+                  className="font-body text-xs text-muted-foreground hover:text-accent"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Reset Order
+                </Button>
+              </div>
               <p className="font-body text-sm text-muted-foreground mb-4">Drag to reorder members within this group</p>
               <DndContext
                 sensors={sensors}
@@ -938,8 +1025,8 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {membersByDivision.noDivision.map((member) => (
-                      <SortableMemberCard key={member.id} member={member} onEdit={openEditDialog} onDelete={handleDelete} />
+                    {membersByDivision.noDivision.map((member, index) => (
+                      <SortableMemberCard key={member.id} member={member} index={index + 1} onEdit={openEditDialog} onDelete={handleDelete} />
                     ))}
                   </div>
                 </SortableContext>
@@ -957,11 +1044,13 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
 
 // Sortable MemberCard wrapper
 function SortableMemberCard({ 
-  member, 
+  member,
+  index,
   onEdit, 
   onDelete 
 }: { 
-  member: TeamMember; 
+  member: TeamMember;
+  index: number;
   onEdit: (member: TeamMember) => void; 
   onDelete: (id: string) => void;
 }) {
@@ -993,14 +1082,17 @@ function SortableMemberCard({
       }`}>
         <CardContent className="p-4">
           <div className="flex gap-4">
-            {/* Drag Handle */}
+            {/* Drag Handle with Order Number */}
             <div
               {...attributes}
               {...listeners}
-              className={`flex items-center cursor-grab active:cursor-grabbing transition-colors ${
+              className={`flex flex-col items-center justify-center cursor-grab active:cursor-grabbing transition-colors ${
                 isDragging ? 'text-primary' : 'hover:text-primary/70'
               }`}
             >
+              <span className="font-body text-xs font-medium text-accent bg-secondary px-1.5 py-0.5 rounded mb-1">
+                #{index}
+              </span>
               <GripVertical className="h-5 w-5 text-muted-foreground" />
             </div>
 
