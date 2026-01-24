@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
@@ -84,17 +83,32 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
-// Create HMAC key for JWT verification
-async function getJwtKey(): Promise<CryptoKey> {
-  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const encoder = new TextEncoder()
-  return await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  )
+// Activity logging helper
+async function logActivity(
+  supabase: any,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      user_email: userEmail,
+      user_role: userRole,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    });
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -169,8 +183,9 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('user_id', user.id)
     
+    const userRoleNames = userRoles?.map(r => r.role) || []
     const hasEventAccess = isAdminEmail || 
-      (userRoles && userRoles.some(r => eventAccessRoles.includes(r.role)))
+      userRoleNames.some(r => eventAccessRoles.includes(r))
 
     if (!hasEventAccess) {
       return new Response(
@@ -178,6 +193,12 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Get primary role for logging
+    const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
+      'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
+      'head_of_macro', 'head_of_portfolio', 'head_of_quant'];
+    const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || userRoleNames[0] || 'member';
 
     // Parse request body
     let body: unknown
@@ -240,6 +261,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'event', data.id, validatedEvent.title);
+
         console.log('Event created:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
@@ -287,6 +311,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'event', data.id, validatedEvent.title);
+
         console.log('Event updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, event: data }),
@@ -307,6 +334,13 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Get event name before deleting for logging
+        const { data: existingEvent } = await supabase
+          .from('events')
+          .select('title')
+          .eq('id', deleteResult.data.id)
+          .maybeSingle();
+
         const { error } = await supabase
           .from('events')
           .delete()
@@ -319,6 +353,9 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'delete', 'event', deleteResult.data.id, existingEvent?.title || null);
 
         console.log('Event deleted:', deleteResult.data.id)
         return new Response(

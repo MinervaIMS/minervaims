@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Download, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Download, Search, ClipboardList } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -19,6 +19,7 @@ import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
+import ActivityManagement from '@/components/admin/ActivityManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
@@ -394,6 +395,7 @@ const AdminDashboard = () => {
     if (permissions.canAccessFiles) return 'files';
     if (permissions.canAccessTeam) return 'team';
     if (permissions.canAccessReadings) return 'readings';
+    if (permissions.canAccessActivity) return 'activity';
     return 'events';
   };
 
@@ -528,6 +530,12 @@ const AdminDashboard = () => {
             <TabsTrigger value="settings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
               <Settings className="h-4 w-4 mr-2" />
               Applications
+            </TabsTrigger>
+          )}
+          {permissions.canAccessActivity && (
+            <TabsTrigger value="activity" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Activity
             </TabsTrigger>
           )}
         </TabsList>
@@ -880,6 +888,12 @@ const AdminDashboard = () => {
         {permissions.canAccessReadings && (
           <TabsContent value="readings">
             <ReadingsManagement />
+          </TabsContent>
+        )}
+
+        {permissions.canAccessActivity && (
+          <TabsContent value="activity">
+            <ActivityManagement />
           </TabsContent>
         )}
       </Tabs>
