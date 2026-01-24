@@ -111,7 +111,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: false, // No team management
         canAccessSettings: false,
         canAccessReadings: false, // No readings access for ops/media
-        canAccessActivity: false,
+        canAccessActivity: true, // All roles except member can access activity
         allowedDivisions: null, // All divisions for files
         hasAnyAccess: true,
         isFullAccess: false,
@@ -135,7 +135,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: true, // Division heads can now manage team (restricted to their division)
         canAccessSettings: false,
         canAccessReadings: true, // Division heads can access readings
-        canAccessActivity: false,
+        canAccessActivity: true, // All roles except member can access activity
         allowedDivisions: allowedDivisions.length > 0 ? allowedDivisions : null,
         hasAnyAccess: true,
         isFullAccess: false,
@@ -154,7 +154,7 @@ export const usePermissions = (): Permissions => {
         canAccessTeam: false,
         canAccessSettings: false,
         canAccessReadings: true, // Portfolio managers can access readings
-        canAccessActivity: false,
+        canAccessActivity: true, // All roles except member can access activity
         allowedDivisions: ['portfolio'], // Restricted to portfolio division only
         hasAnyAccess: true,
         isFullAccess: false,
