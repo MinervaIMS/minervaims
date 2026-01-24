@@ -382,6 +382,20 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        const primaryRole = userRoleNames[0] || 'member';
+        await logActivity(
+          supabase,
+          user.id,
+          user.email || 'unknown',
+          primaryRole,
+          'create',
+          'file',
+          data.id,
+          validatedFile.title,
+          { division: validatedFile.division, fund: validatedFile.fund }
+        );
+
         console.log('File created:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
@@ -447,6 +461,20 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        const primaryRole = userRoleNames[0] || 'member';
+        await logActivity(
+          supabase,
+          user.id,
+          user.email || 'unknown',
+          primaryRole,
+          'update',
+          'file',
+          data.id,
+          validatedFile.title,
+          { division: validatedFile.division, fund: validatedFile.fund }
+        );
+
         console.log('File updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
@@ -470,7 +498,7 @@ Deno.serve(async (req) => {
         // Get file info first to check division and delete from storage
         const { data: fileData } = await supabase
           .from('archive_files')
-          .select('file_url, division')
+          .select('file_url, division, title')
           .eq('id', deleteResult.data.id)
           .maybeSingle()
         
@@ -508,6 +536,20 @@ Deno.serve(async (req) => {
             console.warn('Could not delete file from storage:', storageError)
           }
         }
+
+        // Log activity
+        const primaryRole = userRoleNames[0] || 'member';
+        await logActivity(
+          supabase,
+          user.id,
+          user.email || 'unknown',
+          primaryRole,
+          'delete',
+          'file',
+          deleteResult.data.id,
+          fileData?.title || 'Unknown file',
+          { division: fileData?.division }
+        );
 
         console.log('File deleted:', deleteResult.data.id)
         return new Response(
