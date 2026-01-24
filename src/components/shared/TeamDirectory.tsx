@@ -15,8 +15,8 @@ interface TeamDirectoryProps {
 const POSITION_ORDER: Record<string, number> = {
   'President': 1,
   'Vice President': 2,
-  'Head of Asset Management': 3,
-  'Advisor': 4,
+  'Advisor': 3,
+  'Head of Asset Management': 10,
   'Head of Equity Research': 10,
   'Co-Head of Equity Research': 11,
   'Head of Investment Research': 10,
