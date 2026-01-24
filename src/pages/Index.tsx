@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoWhite from "@/assets/logo-white.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
+import companiesImage from "@/assets/companies.webp";
 import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
 import { PageLoader } from "@/components/shared";
 import { Division, divisionLabels } from "@/lib/types";
@@ -170,6 +171,17 @@ const Index = () => {
               Discover Alumni Network
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Companies Image */}
+      <section className="py-8 md:py-12 bg-background">
+        <div className="container">
+          <img 
+            src={companiesImage} 
+            alt="Companies where MIMS alumni work" 
+            className="w-full max-w-5xl mx-auto"
+          />
         </div>
       </section>
 

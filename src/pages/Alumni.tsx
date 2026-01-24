@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
 import alumniCommunityLogo from '@/assets/alumni-community-logo.svg';
+import companiesImage from '@/assets/companies.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
@@ -163,6 +164,15 @@ const Alumni = () => {
       </section>
 
       <div className="container pb-section-sm md:pb-section">
+        {/* Companies Image */}
+        <div className="mb-12">
+          <img 
+            src={companiesImage} 
+            alt="Companies where MIMS alumni work" 
+            className="w-full max-w-4xl mx-auto"
+          />
+        </div>
+
         {/* Alumni Spotlight */}
         {spotlightAlumni.length > 0 && (
           <div className="mb-12">
