@@ -103,6 +103,16 @@ export default function ActivityManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
 
+  // Handle page change with scroll to top
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to the top of the activity section
+    const activitySection = document.getElementById('activity-section');
+    if (activitySection) {
+      activitySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   // Get unique users for filter dropdown
   const uniqueUsers = useMemo(() => {
     const userMap = new Map<string, { id: string; email: string; name: string }>();
@@ -278,7 +288,7 @@ export default function ActivityManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div id="activity-section" className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-serif text-heading text-accent">Activity Tracking</h2>
@@ -497,7 +507,7 @@ export default function ActivityManagement() {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
                   className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>
@@ -509,7 +519,7 @@ export default function ActivityManagement() {
                 ) : (
                   <PaginationItem key={page}>
                     <PaginationLink
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => handlePageChange(page)}
                       isActive={currentPage === page}
                       className="cursor-pointer"
                     >
@@ -520,7 +530,7 @@ export default function ActivityManagement() {
               )}
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
                   className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>

@@ -166,6 +166,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
     'President': 1,
     'Vice President': 2,
     'Head of Asset Management': 3,
+    'Advisor': 4,
     'Head of Equity Research': 10,
     'Co-Head of Equity Research': 11,
     'Head of Investment Research': 10,
