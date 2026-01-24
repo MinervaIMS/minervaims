@@ -128,17 +128,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to the top of the files section with offset for fixed header
-    const filesSection = document.getElementById('files-section');
-    if (filesSection) {
-      const headerOffset = 80;
-      const elementPosition = filesSection.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    // Scroll to the top of the page with offset for fixed header
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const getPageNumbers = () => {
