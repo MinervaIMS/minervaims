@@ -229,7 +229,7 @@ const Alumni = () => {
         {/* Search and Filters */}
         <div 
           ref={searchBarRef}
-          className={`sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator transition-shadow duration-200 ${isSticky ? 'shadow-md' : ''}`}
+          className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator"
         >
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
             {/* Search */}
