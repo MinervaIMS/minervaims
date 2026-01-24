@@ -135,13 +135,13 @@ const Alumni = () => {
     return Object.keys(groupedAlumni).map(Number).sort((a, b) => b - a);
   }, [groupedAlumni]);
 
-  // Fixed founders list - always show these 5 in alphabetical order with full details
+  // Fixed founders list - always show these 5 in alphabetical order with full details from alumni database
   const founders = [
-    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', graduation_year: 2019, job_area: 'Investment Banking', company: 'Rothschild & Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti/' },
-    { id: 'founder-2', name: 'Francesca', surname: 'Rigante', graduation_year: 2019, job_area: 'Consulting', company: 'McKinsey & Company', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante/' },
-    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo', graduation_year: 2019, job_area: 'Investment Banking', company: 'J.P. Morgan', city: 'London', linkedin_url: 'https://www.linkedin.com/in/massimiliano-rizzo/' },
-    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', graduation_year: 2019, job_area: 'Private Equity', company: 'The Carlyle Group', city: 'London', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
-    { id: 'founder-5', name: 'Stefano', surname: 'Serio', graduation_year: 2019, job_area: 'Investment Banking', company: 'Goldman Sachs', city: 'London', linkedin_url: 'https://www.linkedin.com/in/stefano-serio/' },
+    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
+    { id: 'founder-2', name: 'Francesca', surname: 'Rigante', graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
+    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo', graduation_year: 2019, job_area: 'Markets (Treasury & Trading)', company: 'Banca Popolare Pugliese', city: 'Lecce', linkedin_url: 'https://www.linkedin.com/in/massimiliano-rizzo-0b9316144/' },
+    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
+    { id: 'founder-5', name: 'Stefano', surname: 'Serio', graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
   ];
 
   if (isDataLoading || !imagesLoaded) {
