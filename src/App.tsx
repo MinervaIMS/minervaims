@@ -35,7 +35,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
