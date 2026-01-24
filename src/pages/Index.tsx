@@ -24,7 +24,7 @@ interface ArchiveFile {
 }
 
 const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
-  const animatedValue = useAnimatedCounter(value, 2500, !isLoading && value > 0);
+  const animatedValue = useAnimatedCounter(value, 4000, !isLoading && value > 0);
 
   if (isLoading) {
     return <Skeleton className="h-16 w-24 mx-auto" />;
