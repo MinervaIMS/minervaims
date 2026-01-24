@@ -116,8 +116,8 @@ const Events = () => {
       </section>
 
       <div className="container py-section-sm md:py-section">
-        <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
-          Minerva Events, bridging the gap between students and professionals since 2019
+        <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
+          Minerva Events, bridging the gap between academia and industry
         </h2>
 
         {/* Results count */}
