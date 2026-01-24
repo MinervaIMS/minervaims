@@ -86,6 +86,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
   useEffect(() => {
     let cancelled = false;
+    let rafId: number;
 
     const renderPdf = async () => {
       if (!canvasRef.current || !containerRef.current) return;
@@ -110,61 +111,76 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
         
         if (cancelled) return;
 
-        // Get container dimensions - enforce A4 aspect ratio
-        const container = containerRef.current;
-        const containerWidth = container.clientWidth || 200;
-        // Calculate height based on A4 aspect ratio
-        const containerHeight = containerWidth * A4_ASPECT_RATIO;
+        // Use requestAnimationFrame to batch layout reads and avoid forced reflow
+        rafId = requestAnimationFrame(() => {
+          if (cancelled || !canvasRef.current || !containerRef.current) return;
 
-        // Get PDF viewport and scale to fit the A4-proportioned container
-        const viewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(
-          containerWidth / viewport.width,
-          containerHeight / viewport.height
-        );
+          // Get container dimensions - enforce A4 aspect ratio
+          const container = containerRef.current;
+          const containerWidth = container.clientWidth || 200;
+          // Calculate height based on A4 aspect ratio
+          const containerHeight = containerWidth * A4_ASPECT_RATIO;
 
-        const scaledViewport = page.getViewport({ scale });
+          // Get PDF viewport and scale to fit the A4-proportioned container
+          const viewport = page.getViewport({ scale: 1 });
+          const scale = Math.min(
+            containerWidth / viewport.width,
+            containerHeight / viewport.height
+          );
 
-        // Set canvas size to exactly fill A4 container
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        
-        if (!context) {
-          throw new Error('Could not get canvas context');
-        }
+          const scaledViewport = page.getViewport({ scale });
 
-        // Use device pixel ratio for sharper rendering
-        const pixelRatio = window.devicePixelRatio || 1;
-        
-        // Set canvas to A4 proportions (width x height based on container width)
-        canvas.width = containerWidth * pixelRatio;
-        canvas.height = containerHeight * pixelRatio;
-        canvas.style.width = `${containerWidth}px`;
-        canvas.style.height = `${containerHeight}px`;
+          // Set canvas size to exactly fill A4 container
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          
+          const context = canvas.getContext('2d');
+          
+          if (!context) {
+            setError(true);
+            setLoading(false);
+            return;
+          }
 
-        context.scale(pixelRatio, pixelRatio);
-        
-        // Fill with white background first
-        context.fillStyle = '#ffffff';
-        context.fillRect(0, 0, containerWidth, containerHeight);
+          // Use device pixel ratio for sharper rendering
+          const pixelRatio = window.devicePixelRatio || 1;
+          
+          // Set canvas to A4 proportions (width x height based on container width)
+          canvas.width = containerWidth * pixelRatio;
+          canvas.height = containerHeight * pixelRatio;
+          canvas.style.width = `${containerWidth}px`;
+          canvas.style.height = `${containerHeight}px`;
 
-        // Center the PDF content within the A4 canvas
-        const offsetX = (containerWidth - scaledViewport.width) / 2;
-        const offsetY = (containerHeight - scaledViewport.height) / 2;
-        
-        context.translate(offsetX, offsetY);
+          context.scale(pixelRatio, pixelRatio);
+          
+          // Fill with white background first
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, containerWidth, containerHeight);
 
-        // Render the page
-        await page.render({
-          canvasContext: context,
-          viewport: scaledViewport,
-        }).promise;
+          // Center the PDF content within the A4 canvas
+          const offsetX = (containerWidth - scaledViewport.width) / 2;
+          const offsetY = (containerHeight - scaledViewport.height) / 2;
+          
+          context.translate(offsetX, offsetY);
 
-        if (!cancelled) {
-          setLoading(false);
-        }
+          // Render the page
+          page.render({
+            canvasContext: context,
+            viewport: scaledViewport,
+          }).promise.then(() => {
+            if (!cancelled) {
+              setLoading(false);
+            }
+          }).catch((err) => {
+            console.error('PDF render error:', err);
+            if (!cancelled) {
+              setError(true);
+              setLoading(false);
+            }
+          });
+        });
       } catch (err) {
-        console.error('PDF render error:', err);
+        console.error('PDF load error:', err);
         if (!cancelled) {
           setError(true);
           setLoading(false);
@@ -176,6 +192,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
     return () => {
       cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [url]);
 
@@ -183,7 +200,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
     <div 
       ref={containerRef} 
       className={`relative overflow-hidden ${className}`}
-      style={{ aspectRatio: `1 / ${A4_ASPECT_RATIO}` }}
+      style={{ aspectRatio: `1 / ${A4_ASPECT_RATIO}`, contain: 'layout paint' }}
     >
       {loading && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-white animate-pulse">
