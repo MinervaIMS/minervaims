@@ -170,7 +170,7 @@ const Alumni = () => {
 
       <div className="container pb-section-sm md:pb-section">
         {/* Companies Image */}
-        <div className="mb-8 sm:mb-12">
+        <div className="mb-16 sm:mb-20">
           <div className="overflow-x-auto sm:overflow-visible">
             <img 
               src={companiesImage} 
