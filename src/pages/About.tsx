@@ -49,7 +49,7 @@ const About = () => {
       </div>
 
       {/* SECTION 1 - White background / Black text */}
-      <section className="bg-background text-foreground py-section-sm md:py-section">
+      <section className="bg-background text-foreground py-10 md:py-14">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
@@ -70,7 +70,7 @@ const About = () => {
       </section>
 
       {/* SECTION 2 - Our Divisions */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="py-10 md:py-14 bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="flex flex-col gap-4 max-w-4xl">
