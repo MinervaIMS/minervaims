@@ -54,6 +54,16 @@ export default function AlumniManagement() {
   });
   const { toast } = useToast();
 
+  // Handle page change with scroll to top
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to the top of the alumni section
+    const alumniSection = document.getElementById('alumni-section');
+    if (alumniSection) {
+      alumniSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   useEffect(() => {
     fetchAlumni();
   }, []);
@@ -272,7 +282,7 @@ export default function AlumniManagement() {
   };
 
   return (
-    <div>
+    <div id="alumni-section">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading text-accent">Alumni Management</h2>
@@ -541,7 +551,7 @@ export default function AlumniManagement() {
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious 
-                    onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                    onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
                     className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                   />
                 </PaginationItem>
@@ -566,7 +576,7 @@ export default function AlumniManagement() {
                       ) : (
                         <PaginationLink
                           isActive={currentPage === page}
-                          onClick={() => setCurrentPage(page)}
+                          onClick={() => handlePageChange(page)}
                           className="cursor-pointer"
                         >
                           {page}
@@ -578,7 +588,7 @@ export default function AlumniManagement() {
                 
                 <PaginationItem>
                   <PaginationNext 
-                    onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                    onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
                     className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                   />
                 </PaginationItem>

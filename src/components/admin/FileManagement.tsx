@@ -128,6 +128,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Scroll to the top of the files section
+    const filesSection = document.getElementById('files-section');
+    if (filesSection) {
+      filesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const getPageNumbers = () => {
@@ -491,7 +496,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   };
 
   return (
-    <div>
+    <div id="files-section">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-heading text-accent">Archive Files</h2>
