@@ -180,7 +180,7 @@ const Join = () => {
                   <AccordionTrigger className="font-serif text-lg sm:text-subheading text-left hover:no-underline py-6 [&>svg]:hidden">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="font-body text-body-lg text-muted-foreground pb-6">
+                  <AccordionContent className="font-body text-body-lg text-muted-foreground pb-6 text-base sm:text-lg">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
