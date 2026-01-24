@@ -11,6 +11,32 @@ interface TeamDirectoryProps {
   initialDivisionFilter?: Division;
 }
 
+// Position hierarchy for sorting (lower = higher priority) - matches admin dashboard
+const POSITION_ORDER: Record<string, number> = {
+  'President': 1,
+  'Vice President': 2,
+  'Head of Asset Management': 3,
+  'Advisor': 4,
+  'Head of Equity Research': 10,
+  'Co-Head of Equity Research': 11,
+  'Head of Investment Research': 10,
+  'Co-Head of Investment Research': 11,
+  'Head of Macro Research': 10,
+  'Co-Head of Macro Research': 11,
+  'Head of Portfolio Management': 10,
+  'Co-Head of Portfolio Management': 11,
+  'Head of Quantitative Research': 10,
+  'Co-Head of Quantitative Research': 11,
+  'Head of Operations': 10,
+  'Co-Head of Operations': 11,
+  'Head of Media': 10,
+  'Co-Head of Media': 11,
+  'Portfolio Manager': 20,
+  'Senior Analyst': 30,
+  'Analyst': 40,
+  'Operations': 50,
+  'Media': 50,
+};
 
 export function TeamDirectory({ members, showFilters = false, initialDivisionFilter }: TeamDirectoryProps) {
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>(initialDivisionFilter || 'all');
@@ -36,18 +62,26 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
     });
   }, [members, divisionFilter, roleFilter, searchQuery]);
 
-  // Board members: sorted by display_order only (manual ordering from admin)
+  // Sort by position hierarchy first, then by display_order (matches admin dashboard logic)
+  const sortByPositionThenOrder = (a: TeamMember, b: TeamMember) => {
+    const posA = POSITION_ORDER[a.position] ?? 100;
+    const posB = POSITION_ORDER[b.position] ?? 100;
+    if (posA !== posB) return posA - posB;
+    return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+  };
+
+  // Board members: sorted by position hierarchy then display_order
   const boardMembers = useMemo(() => {
     return filteredMembers
       .filter(m => m.isBoard)
-      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      .sort(sortByPositionThenOrder);
   }, [filteredMembers]);
   
-  // Division members: sorted by display_order (respects admin drag-and-drop ordering)
+  // Division members: sorted by position hierarchy then display_order
   const divisionMembers = useMemo(() => {
     return filteredMembers
       .filter(m => !m.isBoard)
-      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      .sort(sortByPositionThenOrder);
   }, [filteredMembers]);
 
   const groupedByDivision = useMemo(() => {
@@ -56,6 +90,10 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
       const key = member.division || 'operations';
       if (!groups[key]) groups[key] = [];
       groups[key].push(member);
+    });
+    // Sort members within each division group by position then display_order
+    Object.keys(groups).forEach(div => {
+      groups[div].sort(sortByPositionThenOrder);
     });
     return groups;
   }, [divisionMembers]);
