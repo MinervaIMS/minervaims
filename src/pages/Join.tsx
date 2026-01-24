@@ -188,7 +188,7 @@ const Join = () => {
             <Accordion type="single" collapsible className="w-full">
               {FAQS.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`} className="border-separator">
-                  <AccordionTrigger className="font-serif text-lg sm:text-subheading text-left hover:no-underline py-6 [&>svg]:hidden">
+                  <AccordionTrigger className="font-serif text-lg sm:text-subheading text-left hover:no-underline py-6 [&>svg]:text-accent [&>svg]:w-5 [&>svg]:h-5">
                     {faq.question}
                   </AccordionTrigger>
                   <AccordionContent className="font-body text-body-lg text-muted-foreground pb-6 text-base sm:text-lg">
