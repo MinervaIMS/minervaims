@@ -77,7 +77,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
+                    className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors break-all"
                   >
                     <LinkWithArrow>{link.label}</LinkWithArrow>
                   </a>

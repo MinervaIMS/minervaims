@@ -396,8 +396,8 @@ const Alumni = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <Pagination className="mt-8">
-            <PaginationContent>
+          <Pagination className="mt-8 overflow-x-auto">
+            <PaginationContent className="flex-wrap justify-center gap-1">
               <PaginationItem>
                 <PaginationPrevious 
                   onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
