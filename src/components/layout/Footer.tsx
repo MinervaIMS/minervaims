@@ -62,7 +62,7 @@ export function Footer() {
                     to={link.href}
                     className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
                   >
-                    <LinkWithArrow>{link.label}</LinkWithArrow>
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -138,7 +138,7 @@ export function Footer() {
                     to={link.href}
                     className="font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors"
                   >
-                    <LinkWithArrow>{link.label}</LinkWithArrow>
+                    {link.label}
                   </Link>
                 </li>
               ))}
