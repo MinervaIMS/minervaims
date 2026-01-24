@@ -92,6 +92,34 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Activity logging helper
+async function logActivity(
+  supabase: any,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      user_email: userEmail,
+      user_role: userRole,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    });
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

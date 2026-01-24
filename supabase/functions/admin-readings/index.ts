@@ -73,12 +73,47 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
+// Activity logging helper
+async function logActivity(
+  supabase: any,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      user_email: userEmail,
+      user_role: userRole,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    });
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 // Roles that can access readings management
 const readingsAccessRoles = [
   'admin', 'president', 'vice_president', 'head_of_asset_management',
   'head_of_equity', 'head_of_investment', 'head_of_macro', 'head_of_portfolio', 'head_of_quant',
   'portfolio_manager'
 ]
+
+// Reading type labels for logging
+const readingTypeLabels: Record<string, string> = {
+  academic_papers: 'Academic Papers',
+  technical_textbooks: 'Technical Textbooks',
+  free_time_readings: 'Free Time Readings',
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -144,8 +179,9 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('user_id', user.id)
     
+    const userRoleNames = userRoles?.map(r => r.role) || []
     const hasReadingsAccess = isAdminEmail || 
-      (userRoles && userRoles.some(r => readingsAccessRoles.includes(r.role)))
+      userRoleNames.some(r => readingsAccessRoles.includes(r))
 
     if (!hasReadingsAccess) {
       return new Response(
@@ -153,6 +189,11 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Get primary role for logging
+    const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
+      'head_of_equity', 'head_of_investment', 'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager'];
+    const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || userRoleNames[0] || 'member';
 
     // Parse request body
     let body: unknown
@@ -227,6 +268,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'reading', data.id, validatedReading.title);
+
         console.log('Reading created:', data.id)
         return new Response(
           JSON.stringify({ success: true, reading: data }),
@@ -276,6 +320,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'reading', data.id, validatedReading.title);
+
         console.log('Reading updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, reading: data }),
@@ -296,6 +343,13 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Get reading title before deleting for logging
+        const { data: existingReading } = await supabase
+          .from('readings')
+          .select('title')
+          .eq('id', deleteResult.data.id)
+          .maybeSingle();
+
         const { error } = await supabase
           .from('readings')
           .delete()
@@ -309,6 +363,9 @@ Deno.serve(async (req) => {
           )
         }
 
+        // Log activity
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'delete', 'reading', deleteResult.data.id, existingReading?.title || null);
+
         console.log('Reading deleted:', deleteResult.data.id)
         return new Response(
           JSON.stringify({ success: true }),
@@ -318,6 +375,7 @@ Deno.serve(async (req) => {
 
       case 'reorder': {
         const readings = (body as { readings?: unknown }).readings
+        const readingType = (body as { readingType?: string }).readingType
         const reorderResult = ReorderSchema.safeParse(readings)
         if (!reorderResult.success) {
           return new Response(
@@ -340,6 +398,13 @@ Deno.serve(async (req) => {
             console.error('Reorder error for item:', item.id, error)
           }
         }
+
+        // Log activity
+        const typeLabel = readingType ? readingTypeLabels[readingType] || readingType : 'readings';
+        await logActivity(supabase, user.id, user.email!, primaryRole, 'reorder', 'reading', null, null, { 
+          type: typeLabel, 
+          count: reorderResult.data.length 
+        });
 
         console.log('Readings reordered')
         return new Response(

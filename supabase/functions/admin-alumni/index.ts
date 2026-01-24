@@ -33,6 +33,34 @@ const DeleteAlumniSchema = z.object({
 
 const ActionSchema = z.enum(['create', 'update', 'delete']);
 
+// Activity logging helper
+async function logActivity(
+  supabase: any,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: Record<string, unknown>
+) {
+  try {
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      user_email: userEmail,
+      user_role: userRole,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      details: details || null,
+    });
+  } catch (err) {
+    console.error('Failed to log activity:', err);
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -65,21 +93,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if user is admin
-    const isAdmin = user.email === 'as.minerva@unibocconi.it';
-    const { data: adminRole } = await supabase
+    // Check if user has alumni access (full access roles + division heads)
+    const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
+    const alumniAccessRoles = [
+      'admin', 'president', 'vice_president', 'head_of_asset_management',
+      'head_of_equity', 'head_of_investment', 'head_of_macro', 'head_of_portfolio', 'head_of_quant'
+    ];
+    
+    const { data: userRoles } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle();
+      .eq('user_id', user.id);
 
-    if (!isAdmin && !adminRole) {
+    const userRoleNames = userRoles?.map(r => r.role) || [];
+    const hasAlumniAccess = isAdminEmail || userRoleNames.some(r => alumniAccessRoles.includes(r));
+
+    if (!hasAlumniAccess) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Get primary role for logging
+    const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
+      'head_of_equity', 'head_of_investment', 'head_of_macro', 'head_of_portfolio', 'head_of_quant'];
+    const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || userRoleNames[0] || 'member';
 
     // Parse request body
     const body = await req.json();
@@ -125,6 +164,10 @@ Deno.serve(async (req) => {
           })
           .select()
           .single();
+        
+        if (!result.error) {
+          await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'alumnus', result.data.id, `${alumni.name} ${alumni.surname}`);
+        }
         break;
 
       case 'update':
@@ -148,6 +191,10 @@ Deno.serve(async (req) => {
           .eq('id', alumni.id)
           .select()
           .single();
+        
+        if (!result.error) {
+          await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'alumnus', alumni.id, `${alumni.name} ${alumni.surname}`);
+        }
         break;
 
       case 'delete':
@@ -157,10 +204,23 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        
+        // Get alumni name before deleting for logging
+        const { data: existingAlumni } = await supabase
+          .from('alumni')
+          .select('name, surname')
+          .eq('id', alumni.id)
+          .maybeSingle();
+        
         result = await supabase
           .from('alumni')
           .delete()
           .eq('id', alumni.id);
+        
+        if (!result.error) {
+          const alumniName = existingAlumni ? `${existingAlumni.name} ${existingAlumni.surname}` : null;
+          await logActivity(supabase, user.id, user.email!, primaryRole, 'delete', 'alumnus', alumni.id, alumniName);
+        }
         break;
 
       default:
