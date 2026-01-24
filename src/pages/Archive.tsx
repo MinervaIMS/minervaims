@@ -232,8 +232,8 @@ const Archive = () => {
       {/* Content section */}
       <div className="bg-background">
         <div className="container py-section-sm md:py-section">
-          {/* Filters */}
-          <div className="mb-8 pb-6 border-b border-separator">
+          {/* Sticky Filters Bar */}
+          <div className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator">
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               {/* Division filter */}
               <div>
