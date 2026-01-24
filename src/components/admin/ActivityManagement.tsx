@@ -7,13 +7,6 @@ import { Loader2, User, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -311,137 +304,134 @@ export default function ActivityManagement() {
         </AlertDialog>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        {/* Action Filter */}
-        <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger
-            className="w-[160px] bg-background border-separator"
-            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-          >
-            <SelectValue placeholder="All Actions" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              All Actions
-            </SelectItem>
-            <SelectItem value="create" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              Create
-            </SelectItem>
-            <SelectItem value="update" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              Update
-            </SelectItem>
-            <SelectItem value="delete" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              Delete
-            </SelectItem>
-            <SelectItem value="reorder" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              Reorder
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* User Filter */}
-        <Select value={userFilter} onValueChange={setUserFilter}>
-          <SelectTrigger
-            className="w-[180px] bg-background border-separator"
-            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-          >
-            <SelectValue placeholder="All Users" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              All Users
-            </SelectItem>
-            {uniqueUsers.map((user) => (
-              <SelectItem key={user.id} value={user.id} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Section Filter */}
-        <Select value={sectionFilter} onValueChange={setSectionFilter}>
-          <SelectTrigger
-            className="w-[160px] bg-background border-separator"
-            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-          >
-            <SelectValue placeholder="All Sections" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              All Sections
-            </SelectItem>
-            {Object.entries(sectionLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Start Date Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[140px] justify-start text-left font-normal bg-background border-separator",
-                !startDate && "text-muted-foreground"
-              )}
+      {/* Filters - matching Archive page UI */}
+      <div className="mb-8 pb-6 border-b border-separator">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Action filter */}
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Action
+            </label>
+            <select
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="bg-background border border-separator px-3 h-10 min-w-[140px]"
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
-              {startDate ? format(startDate, "MMM d, yyyy") : "From date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={setStartDate}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
+              <option value="all">All Actions</option>
+              <option value="create">Create</option>
+              <option value="update">Update</option>
+              <option value="delete">Delete</option>
+              <option value="reorder">Reorder</option>
+            </select>
+          </div>
 
-        {/* End Date Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[140px] justify-start text-left font-normal bg-background border-separator",
-                !endDate && "text-muted-foreground"
-              )}
+          {/* User filter */}
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              User
+            </label>
+            <select
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="bg-background border border-separator px-3 h-10 min-w-[180px]"
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
-              {endDate ? format(endDate, "MMM d, yyyy") : "To date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={setEndDate}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
+              <option value="all">All Users</option>
+              {uniqueUsers.map((user) => (
+                <option key={user.id} value={user.id}>{user.name}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Clear Date Filter */}
-        {(startDate || endDate) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearDateFilter}
-            className="text-muted-foreground hover:text-foreground"
-            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-          >
-            Clear dates
-          </Button>
-        )}
+          {/* Section filter */}
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+              Section
+            </label>
+            <select
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+              className="bg-background border border-separator px-3 h-10 min-w-[140px]"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              <option value="all">All Sections</option>
+              {Object.entries(sectionLabels).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date range */}
+          <div className="flex gap-2 items-end">
+            <div>
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                From
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className={cn(
+                      "bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
+                      !startDate && "text-muted-foreground"
+                    )}
+                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                  >
+                    {startDate ? format(startDate, "MMM d, yyyy") : "Select date"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                To
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className={cn(
+                      "bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
+                      !endDate && "text-muted-foreground"
+                    )}
+                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                  >
+                    {endDate ? format(endDate, "MMM d, yyyy") : "Select date"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Clear dates */}
+            {(startDate || endDate) && (
+              <button
+                onClick={clearDateFilter}
+                className="h-10 px-3 text-muted-foreground hover:text-foreground transition-colors"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
 
