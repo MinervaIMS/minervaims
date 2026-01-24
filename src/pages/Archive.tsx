@@ -237,13 +237,13 @@ const Archive = () => {
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               {/* Division filter */}
               <div>
-                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                <label className="font-serif text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                   Division
                 </label>
                 <select
                   value={divisionFilter}
                   onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
-                  className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
+                  className="font-serif text-small bg-background border border-separator px-3 h-10 min-w-[200px]"
                 >
                   <option value="all">All Divisions</option>
                   {Object.entries(divisionLabels).map(([key, label]) => (
@@ -254,13 +254,13 @@ const Archive = () => {
 
               {/* Year filter */}
               <div>
-                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                <label className="font-serif text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                   Year
                 </label>
                 <select
                   value={yearFilter}
                   onChange={(e) => setYearFilter(e.target.value)}
-                  className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[120px]"
+                  className="font-serif text-small bg-background border border-separator px-3 h-10 min-w-[120px]"
                 >
                   <option value="all">All Years</option>
                   {availableYears.map((year) => (
@@ -271,7 +271,7 @@ const Archive = () => {
 
               {/* Search */}
               <div className="flex-1 min-w-[200px]">
-                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                <label className="font-serif text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                   Search
                 </label>
                 <div className="relative">
@@ -281,20 +281,20 @@ const Archive = () => {
                     placeholder="Search by title or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 font-body text-small h-10"
+                    className="pl-10 font-serif text-small h-10"
                   />
                 </div>
               </div>
 
               {divisionFilter === 'portfolio' && (
                 <div>
-                  <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                  <label className="font-serif text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                     Fund
                   </label>
                   <select
                     value={fundFilter}
                     onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
-                    className="font-body text-small bg-background border border-separator px-3 h-10 min-w-[280px]"
+                    className="font-serif text-small bg-background border border-separator px-3 h-10 min-w-[280px]"
                   >
                     <option value="all">All Funds</option>
                     <optgroup label="Active Funds">
