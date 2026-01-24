@@ -135,10 +135,14 @@ const Alumni = () => {
     return Object.keys(groupedAlumni).map(Number).sort((a, b) => b - a);
   }, [groupedAlumni]);
 
-  // Get spotlight alumni (first 3 with LinkedIn profiles)
-  const spotlightAlumni = useMemo(() => {
-    return alumni.filter(a => a.linkedin_url).slice(0, 3);
-  }, [alumni]);
+  // Fixed founders list - always show these 5 in alphabetical order
+  const founders = [
+    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti' },
+    { id: 'founder-2', name: 'Francesca', surname: 'Rigante' },
+    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo' },
+    { id: 'founder-4', name: 'Arturo', surname: 'Schembri' },
+    { id: 'founder-5', name: 'Stefano', surname: 'Serio' },
+  ];
 
   if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
@@ -180,52 +184,22 @@ const Alumni = () => {
           </div>
         </div>
 
-        {/* Alumni Spotlight */}
-        {spotlightAlumni.length > 0 && (
-          <div className="mb-24">
-            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders, since 2017</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {spotlightAlumni.map((alumnus) => (
-                <div
-                  key={alumnus.id}
-                  className="border border-separator p-6 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-serif text-body-lg font-medium">
-                        {alumnus.name} {alumnus.surname}
-                      </h3>
-                      <p className="text-muted-foreground text-small">
-                        Class of {alumnus.graduation_year}
-                      </p>
-                    </div>
-                    {alumnus.linkedin_url && (
-                      <a
-                        href={alumnus.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block"
-                      >
-                        <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
-                      </a>
-                    )}
-                  </div>
-                  <p className="font-body text-body">{alumnus.company}</p>
-                  {alumnus.job_area && (
-                    <p className="font-body text-small text-muted-foreground">
-                      {alumnus.job_area}
-                    </p>
-                  )}
-                  {alumnus.city && (
-                    <p className="font-body text-xs text-muted-foreground/70">
-                      {alumnus.city}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+        {/* Our Founders */}
+        <div className="mb-24">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders, since 2017</h2>
+          <div className="flex flex-wrap justify-center gap-6">
+            {founders.map((founder) => (
+              <div
+                key={founder.id}
+                className="border border-separator p-6 hover:bg-muted/50 transition-colors text-center min-w-[160px]"
+              >
+                <h3 className="font-serif text-body-lg font-medium">
+                  {founder.name} {founder.surname}
+                </h3>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Search and Filters */}
         <div 
