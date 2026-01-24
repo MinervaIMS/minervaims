@@ -181,7 +181,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Section */}
-      <section className="py-10 md:py-14 bg-background">
+      <section className="pt-10 md:pt-14 pb-6 md:pb-8 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -199,7 +199,7 @@ const Index = () => {
       </section>
 
       {/* Activities & Events Section */}
-      <section className="pt-12 md:pt-16 pb-6 md:pb-8 bg-background">
+      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Activities & Events
