@@ -107,10 +107,9 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
     if (!isVisible) return;
     
     let cancelled = false;
-    let rafId: number;
 
     const renderPdf = async () => {
-      if (!canvasRef.current || !containerRef.current) return;
+      if (!canvasRef.current) return;
 
       try {
         setLoading(true);
@@ -132,64 +131,58 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
         
         if (cancelled) return;
 
-        // Use requestAnimationFrame to batch layout reads and avoid forced reflow
-        rafId = requestAnimationFrame(() => {
-          if (cancelled || !canvasRef.current || !containerRef.current) return;
+        // Use fixed dimensions to avoid reading clientWidth (prevents forced reflow)
+        const THUMBNAIL_WIDTH = 200;
+        const containerWidth = THUMBNAIL_WIDTH;
+        const containerHeight = containerWidth * A4_ASPECT_RATIO;
 
-          const container = containerRef.current;
-          const containerWidth = container.clientWidth || 200;
-          const containerHeight = containerWidth * A4_ASPECT_RATIO;
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(
+          containerWidth / viewport.width,
+          containerHeight / viewport.height
+        );
 
-          const viewport = page.getViewport({ scale: 1 });
-          const scale = Math.min(
-            containerWidth / viewport.width,
-            containerHeight / viewport.height
-          );
+        const scaledViewport = page.getViewport({ scale });
 
-          const scaledViewport = page.getViewport({ scale });
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+        
+        const context = canvas.getContext('2d');
+        
+        if (!context) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
 
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          
-          const context = canvas.getContext('2d');
-          
-          if (!context) {
+        const pixelRatio = window.devicePixelRatio || 1;
+        
+        canvas.width = containerWidth * pixelRatio;
+        canvas.height = containerHeight * pixelRatio;
+
+        context.scale(pixelRatio, pixelRatio);
+        
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, containerWidth, containerHeight);
+
+        const offsetX = (containerWidth - scaledViewport.width) / 2;
+        const offsetY = (containerHeight - scaledViewport.height) / 2;
+        
+        context.translate(offsetX, offsetY);
+
+        page.render({
+          canvasContext: context,
+          viewport: scaledViewport,
+        }).promise.then(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }).catch((err) => {
+          console.error('PDF render error:', err);
+          if (!cancelled) {
             setError(true);
             setLoading(false);
-            return;
           }
-
-          const pixelRatio = window.devicePixelRatio || 1;
-          
-          canvas.width = containerWidth * pixelRatio;
-          canvas.height = containerHeight * pixelRatio;
-          canvas.style.width = `${containerWidth}px`;
-          canvas.style.height = `${containerHeight}px`;
-
-          context.scale(pixelRatio, pixelRatio);
-          
-          context.fillStyle = '#ffffff';
-          context.fillRect(0, 0, containerWidth, containerHeight);
-
-          const offsetX = (containerWidth - scaledViewport.width) / 2;
-          const offsetY = (containerHeight - scaledViewport.height) / 2;
-          
-          context.translate(offsetX, offsetY);
-
-          page.render({
-            canvasContext: context,
-            viewport: scaledViewport,
-          }).promise.then(() => {
-            if (!cancelled) {
-              setLoading(false);
-            }
-          }).catch((err) => {
-            console.error('PDF render error:', err);
-            if (!cancelled) {
-              setError(true);
-              setLoading(false);
-            }
-          });
         });
       } catch (err) {
         console.error('PDF load error:', err);
@@ -204,7 +197,6 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
 
     return () => {
       cancelled = true;
-      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [url, isVisible]);
 
