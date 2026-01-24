@@ -92,8 +92,28 @@ const About = () => {
         </div>
       </section>
 
-      {/* SECTION 3 - Organisational Structure */}
-      <section id="organisational-structure" className="bg-background py-section-sm md:py-section">
+      {/* SECTION 3 - Readings Curated by MIMS */}
+      <section className="py-10 md:py-14 bg-background">
+        <div className="container">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+            Readings Curated by MIMS
+          </h2>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+              A curated set of essential finance readings, built by MIMS and shared across students, members and alumni. Explore landmark papers, technical textbooks and free-time books, each recommended with a clear rationale to accelerate learning.
+            </p>
+            <Link
+              to="/readings"
+              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+            >
+              Discover Our Library
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4 - Organisational Structure */}
+      <section id="organisational-structure" className="bg-background py-10 md:py-14 pb-16 md:pb-24">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
 
@@ -109,26 +129,6 @@ const About = () => {
               className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200"
             >
               Meet the Team
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4 - Readings Curated by MIMS */}
-      <section className="py-12 md:py-16 pb-20 md:pb-28 bg-background">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Readings Curated by MIMS
-          </h2>
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              A curated set of essential finance readings, built by MIMS and shared across students, members and alumni. Explore landmark papers, technical textbooks and free-time books, each recommended with a clear rationale to accelerate learning.
-            </p>
-            <Link
-              to="/readings"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
-            >
-              Discover Our Library
             </Link>
           </div>
         </div>
