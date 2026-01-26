@@ -127,10 +127,10 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Written Assessment */}
+        {/* Written Answers */}
         <section className="mb-20 md:mb-24">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Written Assessment
+            Written Answers
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
             <div className="lg:flex-1">
@@ -138,41 +138,41 @@ const Join = () => {
                 After you rank your division preferences in the application form, from 1 (first choice) to 5 (fifth choice), prepare your response based on your expressed preference as a single PDF named: <span className="font-medium text-foreground">Surname_Name_Answer.pdf</span>
               </p>
 
-              <div className="space-y-5">
-                <div>
+              <div className="space-y-6">
+                <div className="pl-4 border-l-2 border-separator">
                   <h4 className="font-serif text-lg sm:text-subheading mb-2">Equity Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
+                  <p className="font-body text-body-lg text-muted-foreground pl-2">
                     Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.
                   </p>
                 </div>
 
-                <div>
+                <div className="pl-4 border-l-2 border-separator">
                   <h4 className="font-serif text-lg sm:text-subheading mb-2">Investment Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
+                  <p className="font-body text-body-lg text-muted-foreground pl-2">
                     How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.
                   </p>
                 </div>
 
-                <div>
+                <div className="pl-4 border-l-2 border-separator">
                   <h4 className="font-serif text-lg sm:text-subheading mb-2">Macro Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
+                  <p className="font-body text-body-lg text-muted-foreground pl-2">
                     Choose a macroeconomic topic and explain how it may impact any of Minerva's funds.
                   </p>
                 </div>
 
-                <div>
+                <div className="pl-4 border-l-2 border-separator">
                   <h4 className="font-serif text-lg sm:text-subheading mb-2">Portfolio Management</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
+                  <p className="font-body text-body-lg text-muted-foreground pl-2">
                     Submit a one-page investment pitch. It may cover a stock, bond, ETP, derivatives strategy, or a full portfolio. Place any charts/tables/math formulas in an Appendix after the first page.
                   </p>
                 </div>
 
-                <div>
+                <div className="pl-4 border-l-2 border-separator">
                   <h4 className="font-serif text-lg sm:text-subheading mb-2">Quantitative Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground mb-2">
+                  <p className="font-body text-body-lg text-muted-foreground pl-2 mb-2">
                     Provide brief answers to both:
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 pl-2">
                     <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                       A topic in quantitative finance, risk management, or financial machine learning you are interested in;
                     </li>
