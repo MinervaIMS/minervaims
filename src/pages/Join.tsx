@@ -138,99 +138,55 @@ const Join = () => {
                 After you rank your division preferences in the application form, from 1 (first choice) to 5 (fifth choice), prepare your response based on your expressed preference as a single PDF named: <span className="font-medium text-foreground">Surname_Name_Answer.pdf</span>
               </p>
 
-              <div className="space-y-0">
-                {/* Equity Research */}
-                <div className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background">
-                      <span className="font-serif text-lg sm:text-xl text-accent">E</span>
-                    </div>
-                    <div className="w-px flex-1 bg-separator my-2" />
-                  </div>
-                  <div className="flex-1 pt-1 pb-10">
-                    <h4 className="font-serif text-lg sm:text-subheading mb-2">Equity Research</h4>
-                    <p className="font-body text-body-lg text-muted-foreground">
-                      Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.
-                    </p>
-                  </div>
+              <div className="space-y-6">
+                <div className="pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-accent before:text-xl">
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2 text-accent">Equity Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.
+                  </p>
                 </div>
 
-                {/* Investment Research */}
-                <div className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background">
-                      <span className="font-serif text-lg sm:text-xl text-accent">I</span>
-                    </div>
-                    <div className="w-px flex-1 bg-separator my-2" />
-                  </div>
-                  <div className="flex-1 pt-1 pb-10">
-                    <h4 className="font-serif text-lg sm:text-subheading mb-2">Investment Research</h4>
-                    <p className="font-body text-body-lg text-muted-foreground">
-                      How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.
-                    </p>
-                  </div>
+                <div className="pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-accent before:text-xl">
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2 text-accent">Investment Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.
+                  </p>
                 </div>
 
-                {/* Macro Research */}
-                <div className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background">
-                      <span className="font-serif text-lg sm:text-xl text-accent">M</span>
-                    </div>
-                    <div className="w-px flex-1 bg-separator my-2" />
-                  </div>
-                  <div className="flex-1 pt-1 pb-10">
-                    <h4 className="font-serif text-lg sm:text-subheading mb-2">Macro Research</h4>
-                    <p className="font-body text-body-lg text-muted-foreground">
-                      Choose a macroeconomic topic and explain how it may impact any of Minerva's funds.
-                    </p>
-                  </div>
+                <div className="pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-accent before:text-xl">
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2 text-accent">Macro Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    Choose a macroeconomic topic and explain how it may impact any of Minerva's funds.
+                  </p>
                 </div>
 
-                {/* Portfolio Management */}
-                <div className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background">
-                      <span className="font-serif text-lg sm:text-xl text-accent">P</span>
-                    </div>
-                    <div className="w-px flex-1 bg-separator my-2" />
-                  </div>
-                  <div className="flex-1 pt-1 pb-10">
-                    <h4 className="font-serif text-lg sm:text-subheading mb-2">Portfolio Management</h4>
-                    <p className="font-body text-body-lg text-muted-foreground">
-                      Submit a one-page investment pitch. It may cover a stock, bond, ETP, derivatives strategy, or a full portfolio. Place any charts/tables/math formulas in an Appendix after the first page.
-                    </p>
-                  </div>
+                <div className="pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-accent before:text-xl">
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2 text-accent">Portfolio Management</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    Submit a one-page investment pitch. It may cover a stock, bond, ETP, derivatives strategy, or a full portfolio. Place any charts/tables/math formulas in an Appendix after the first page.
+                  </p>
                 </div>
 
-                {/* Quantitative Research */}
-                <div className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background">
-                      <span className="font-serif text-lg sm:text-xl text-accent">Q</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <h4 className="font-serif text-lg sm:text-subheading mb-2">Quantitative Research</h4>
-                    <p className="font-body text-body-lg text-muted-foreground mb-2">
-                      Provide brief answers to both:
-                    </p>
-                    <ul className="space-y-2">
-                      <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                        A topic in quantitative finance, risk management, or financial machine learning you are interested in;
-                      </li>
-                      <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                        A project (academic/personal/work) in which you wrote code (what you built and what you learned).
-                      </li>
-                    </ul>
-                  </div>
+                <div className="pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-accent before:text-xl">
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2 text-accent">Quantitative Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground mb-2">
+                    Provide brief answers to both:
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                      A topic in quantitative finance, risk management, or financial machine learning you are interested in;
+                    </li>
+                    <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                      A project (academic/personal/work) in which you wrote code (what you built and what you learned).
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
 
             <div className="lg:flex-shrink-0 lg:w-72">
               <div className="bg-muted/50 rounded-md p-5">
-                <h4 className="font-serif text-lg sm:text-subheading mb-3">Submission Rules</h4>
+                <h4 className="font-serif text-lg sm:text-subheading mb-3 text-accent">Submission Rules</h4>
                 <ul className="space-y-3">
                   <li className="font-body text-body-lg text-muted-foreground pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                     You are required to answer only the question for your first-choice division.
