@@ -142,14 +142,35 @@ const Join = () => {
 
               <div className="space-y-5">
                 <div>
-                  <h4 className="font-serif text-base sm:text-lg font-medium mb-2">Portfolio Management</h4>
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2">Equity Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2">Investment Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2">Macro Research</h4>
+                  <p className="font-body text-body-lg text-muted-foreground">
+                    Choose a macroeconomic topic and explain how it may impact any of Minerva's funds.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2">Portfolio Management</h4>
                   <p className="font-body text-body-lg text-muted-foreground">
                     Submit a one-page investment pitch. It may cover a stock, bond, ETP, derivatives strategy, or a full portfolio. Place any charts/tables/math formulas in an Appendix after the first page.
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="font-serif text-base sm:text-lg font-medium mb-2">Quantitative Research</h4>
+                  <h4 className="font-serif text-lg sm:text-subheading mb-2">Quantitative Research</h4>
                   <p className="font-body text-body-lg text-muted-foreground mb-2">
                     Provide brief answers to both:
                   </p>
@@ -162,38 +183,17 @@ const Join = () => {
                     </li>
                   </ul>
                 </div>
-
-                <div>
-                  <h4 className="font-serif text-base sm:text-lg font-medium mb-2">Investment Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
-                    How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-serif text-base sm:text-lg font-medium mb-2">Equity Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
-                    Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-serif text-base sm:text-lg font-medium mb-2">Macro Research</h4>
-                  <p className="font-body text-body-lg text-muted-foreground">
-                    Choose a macroeconomic topic and explain how it may impact any of Minerva's funds.
-                  </p>
-                </div>
               </div>
             </div>
 
             <div className="lg:flex-shrink-0 lg:w-72">
-              <div className="bg-muted/50 border border-separator rounded-md p-5">
-                <h4 className="font-serif text-base sm:text-lg font-medium mb-3">Submission Rules</h4>
+              <div className="bg-muted/50 rounded-md p-5">
+                <h4 className="font-serif text-lg sm:text-subheading mb-3">Submission Rules</h4>
                 <ul className="space-y-3">
-                  <li className="font-body text-sm text-muted-foreground pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                  <li className="font-body text-body-lg text-muted-foreground pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                     You are required to answer only the question for your first-choice division.
                   </li>
-                  <li className="font-body text-sm text-muted-foreground pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
+                  <li className="font-body text-body-lg text-muted-foreground pl-5 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                     You may also answer additional division questions; if you do, combine all answers into one PDF (single file upload).
                   </li>
                 </ul>
