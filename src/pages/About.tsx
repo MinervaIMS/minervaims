@@ -63,7 +63,7 @@ const About = () => {
               Portfolio management sits at the centre of the structure, leveraging the research work to build and update proprietary funds' allocations. Decisions are documented and reviewed through strict due diligence and evaluated with risk-metrics analysis. The Society publishes outputs in line with market standards.
             </p>
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              Over time, MIMS has built an international Alumni community. Former members have progressed to leading investment banks, hedge funds, and asset managers across global financial centres.
+              Over time, MIMS has built an international alumni community. Former members have gone on to pursue MSc and PhD studies and to build careers across major financial centres, joining leading investment banks, hedge funds, asset managers and consultancies worldwide.
             </p>
           </div>
         </div>
