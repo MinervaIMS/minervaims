@@ -1,14 +1,9 @@
-import { Link } from 'react-router-dom';
-import { PageIntroduction, ApplicationStatus, PageLoader } from '@/components/shared';
-import joinBg from '@/assets/join-bg.webp';
-import { useApplicationSettings } from '@/hooks/useApplicationSettings';
-import { useImagePreload } from '@/hooks/useImagePreload';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { Link } from "react-router-dom";
+import { PageIntroduction, ApplicationStatus, PageLoader } from "@/components/shared";
+import joinBg from "@/assets/join-bg.webp";
+import { useApplicationSettings } from "@/hooks/useApplicationSettings";
+import { useImagePreload } from "@/hooks/useImagePreload";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const ELIGIBILITY_CRITERIA = [
   "Undoubtable academic integrity, humility, eagerness to learn, respect for other members, and full compliance with Università Bocconi's Honor Code.",
@@ -22,7 +17,7 @@ const APPLICATION_STEPS = [
     step: 1,
     title: "Online Application",
     description:
-      "Complete the application form and submit your CV, motivation letter, and the required written financial analysis for the division you are applying for.",
+      "Complete the application form and submit your CV, motivation letter, and the required written answers and/or investment pitch for the division you are applying for. (See below)",
   },
   {
     step: 2,
@@ -112,10 +107,7 @@ const Join = () => {
           </h2>
           <div className="max-w-3xl">
             {APPLICATION_STEPS.map((step, index) => (
-              <div
-                key={step.step}
-                className="flex gap-5"
-              >
+              <div key={step.step} className="flex gap-5">
                 {/* Timeline Column */}
                 <div className="flex flex-col items-center">
                   {/* Circled Step Number */}
@@ -123,16 +115,12 @@ const Join = () => {
                     <span className="font-serif text-lg sm:text-xl text-accent">{step.step}</span>
                   </div>
                   {/* Vertical Line */}
-                  {index < APPLICATION_STEPS.length - 1 && (
-                    <div className="w-px flex-1 bg-separator my-2" />
-                  )}
+                  {index < APPLICATION_STEPS.length - 1 && <div className="w-px flex-1 bg-separator my-2" />}
                 </div>
                 {/* Step Content */}
-                <div className={`flex-1 pt-1 ${index < APPLICATION_STEPS.length - 1 ? 'pb-8' : ''}`}>
+                <div className={`flex-1 pt-1 ${index < APPLICATION_STEPS.length - 1 ? "pb-8" : ""}`}>
                   <h3 className="font-serif text-lg sm:text-subheading mb-2">{step.title}</h3>
-                  <p className="font-body text-body-lg text-muted-foreground">
-                    {step.description}
-                  </p>
+                  <p className="font-body text-body-lg text-muted-foreground">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -147,26 +135,25 @@ const Join = () => {
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
             <div className="lg:flex-1">
               <p className="font-body text-body-lg text-muted-foreground mb-6">
-                To prepare effectively, we recommend reviewing our division-specific publications to
-                understand our analytical standards, writing style, and recurring themes. This will
-                help you align your reasoning, structure, and level of depth with the work produced
-                within MIMS. Applicants, with due respect, may also contact society members on LinkedIn to ask further questions.
+                To prepare effectively, we recommend reviewing our division-specific publications to understand our
+                analytical approach, reporting standards, and recurring themes. This will help you align your reasoning,
+                structure, and level of depth with the work produced within MIMS. Applicants, with due respect, may also
+                contact society members on LinkedIn to ask further questions.
               </p>
               <p className="font-body text-body-lg text-muted-foreground mb-4">
-                In addition, candidates are expected to demonstrate a clear awareness of the current
-                market environment. In practice, this means being comfortable discussing:
+                In addition, candidates are expected to demonstrate a clear awareness of the current market environment.
+                In practice, this means being comfortable discussing:
               </p>
               <ul className="space-y-3">
                 <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
                   Macroeconomic data (inflation, growth, labour market dynamics, central bank stance).
                 </li>
                 <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                  Relevant market data and recent performance (rates, credit, equities, FX,
-                  commodities; key moves and drivers).
+                  Relevant market data and recent performance (rates, credit, equities, FX, commodities; key moves and
+                  drivers).
                 </li>
                 <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                  The most relevant market news from the last two weeks and its implications across
-                  asset classes.
+                  The most relevant market news from the last two weeks and its implications across asset classes.
                 </li>
               </ul>
             </div>
