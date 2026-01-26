@@ -167,7 +167,7 @@ const Alumni = () => {
             A Global Network, Still Close
           </h2>
           <p className="font-body text-body-lg text-muted-foreground">
-            MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers. Former members remain actively engaged through mentoring and alumni calls, offering current students practical guidance on academic choices, recruitment processes and early-career development.
+            MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers, as well as consultancies and top academic programmes worldwide. The network reflects the breadth of paths taken by members during and after their time in the Society, whether continuing with MSc or PhD studies, or building careers in major financial centres. The organisations shown below provide a snapshot of where our alumni study and work today, reinforcing the reach of a truly global community that remains closely connected to MIMS. Former members stay actively engaged through mentoring and alumni calls, supporting current students with practical guidance on academic choices, recruitment processes and early-career development. Further down the page you can explore the full alumni directory, with our founders highlighted.
           </p>
         </div>
       </section>
