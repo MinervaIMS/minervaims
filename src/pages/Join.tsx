@@ -168,9 +168,6 @@ const Join = () => {
                   The most relevant market news from the last two weeks and its implications across
                   asset classes.
                 </li>
-                <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                  With respect, contact society members on LinkedIn to ask questions.
-                </li>
               </ul>
             </div>
             <div className="lg:flex-shrink-0">
