@@ -152,9 +152,7 @@ const Index = () => {
                 aperitivos strengthen relationships across the membership.
               </p>
               <p className="font-body text-body-lg text-muted-foreground">
-                MIMS has also developed an international alumni network. Former members work across major financial
-                centres in investment banking, hedge funds and asset management, including Goldman Sachs, J.P. Morgan,
-                Citi, UBS and other leading institutions.
+                MIMS has also developed an international alumni network. Former members now work across major financial centres in leading financial institutions, including investment banks, hedge funds and asset managers, as well as consultancies and top academic programmes worldwide. The organisations shown below highlight where members have gone on to pursue MSc and PhD studies and where they have built their careers, underscoring the reach and strength of a truly global, high-performing community shaped at Bocconi.
               </p>
             </div>
             <Link
