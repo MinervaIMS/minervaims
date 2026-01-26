@@ -138,8 +138,6 @@ const Join = () => {
                 After you rank your division preferences in the application form, from 1 (first choice) to 5 (fifth choice), prepare your response based on your expressed preference as a single PDF named: <span className="font-medium text-foreground">Surname_Name_Answer.pdf</span>
               </p>
 
-              <h3 className="font-serif text-lg sm:text-subheading mb-4">Division Questions</h3>
-
               <div className="space-y-5">
                 <div>
                   <h4 className="font-serif text-lg sm:text-subheading mb-2">Equity Research</h4>
