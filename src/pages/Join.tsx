@@ -150,7 +150,7 @@ const Join = () => {
                 To prepare effectively, we recommend reviewing our division-specific publications to
                 understand our analytical standards, writing style, and recurring themes. This will
                 help you align your reasoning, structure, and level of depth with the work produced
-                within MIMS.
+                within MIMS. Applicants, with due respect, may also contact society members on LinkedIn to ask further questions.
               </p>
               <p className="font-body text-body-lg text-muted-foreground mb-4">
                 In addition, candidates are expected to demonstrate a clear awareness of the current
