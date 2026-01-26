@@ -25,13 +25,10 @@ const ApplicationStatus = ({
           href={applyFormUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block px-10 py-4 bg-background text-accent font-serif text-lg hover:bg-background/90 hover:scale-[1.02] transition-all duration-300 mb-8"
+          className="inline-block px-10 py-4 bg-background text-accent font-serif text-lg hover:bg-background/90 hover:scale-[1.02] transition-all duration-300"
         >
-          Apply Now
+          Submit Application Form
         </a>
-        <p className="font-body text-body text-accent-foreground/80">
-          For questions, with respect, contact society members on LinkedIn.
-        </p>
       </div>
     );
   }
