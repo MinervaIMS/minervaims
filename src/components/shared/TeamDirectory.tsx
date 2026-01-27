@@ -168,8 +168,14 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
         </section>
       )}
 
-      {/* Division Members */}
-      {Object.entries(groupedByDivision).map(([division, members]) => (
+      {/* Division Members - sorted alphabetically by label */}
+      {Object.entries(groupedByDivision)
+        .sort(([a], [b]) => {
+          const labelA = divisionLabels[a as Division] || 'Operations & Media';
+          const labelB = divisionLabels[b as Division] || 'Operations & Media';
+          return labelA.localeCompare(labelB);
+        })
+        .map(([division, members]) => (
         <section key={division} className="mb-12">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             {divisionLabels[division as Division] || 'Operations & Media'}
