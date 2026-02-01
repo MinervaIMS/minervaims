@@ -52,7 +52,7 @@ const FAQS = [
   {
     question: "Are referrals a thing?",
     answer:
-      "No. Members are not permitted to refer candidates during the application process. All candidates follow the same assessment. We still encourage applicants to connect with members on LinkedIn.",
+      "Yes. Members are permitted to refer a maximum of 2 candidates each per round of application. Referred applicants are not required to submit written answers and do not need to submit the application form. More information about the application process is provided privately by the member who makes the referral. Referrals may be based upon a long and well-established academic or professional relationship. Applicants cannot request a referral through LinkedIn. We still encourage applicants to connect with members on LinkedIn.",
   },
 ];
 
