@@ -138,8 +138,8 @@ const Alumni = () => {
   // Fixed founders list - always show these 5 in alphabetical order with full details from alumni database
   const founders = [
     { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
-    { id: 'founder-2', name: 'Francesca', surname: 'Rigante', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
-    { id: 'founder-3', name: 'Massimiliano', surname: 'Rizzo', degree: 'MSc Finance', graduation_year: 2019, job_area: 'Markets (Treasury & Trading)', company: 'Banca Popolare Pugliese', city: 'Lecce', linkedin_url: 'https://www.linkedin.com/in/massimiliano-rizzo-0b9316144/' },
+    { id: 'founder-2', name: 'Federico', surname: 'Fantauzzi', degree: 'MSc Accounting - AFM', graduation_year: 2020, job_area: 'Valuation & M&A', company: 'KPMG', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/federico-fantauzzi-a6a9b2160/' },
+    { id: 'founder-3', name: 'Francesca', surname: 'Rigante', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
     { id: 'founder-4', name: 'Arturo', surname: 'Schembri', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
     { id: 'founder-5', name: 'Stefano', surname: 'Serio', degree: 'MSc Finance', graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
   ];
