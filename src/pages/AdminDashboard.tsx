@@ -747,7 +747,7 @@ const AdminDashboard = () => {
           {/* Content area */}
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Breadcrumb strip */}
-            <div className="shrink-0 h-14 flex items-center gap-3 px-6 border-b border-separator">
+            <div className="shrink-0 h-14 flex items-center gap-3 px-6">
               {!submenuOpen && activeSection && activeSection.subItems.length > 1 && (
                 <button
                   onClick={() => setSubmenuOpen(true)}
