@@ -63,6 +63,10 @@ type NavSection = {
 
 const NAV: NavSection[] = [
   {
+    key: 'my-role', label: 'My Role', Icon: UserIcon,
+    subItems: [],
+  },
+  {
     key: 'calendar', label: 'Calendar', Icon: CalendarIcon,
     subItems: [
       { key: 'calendar-all', label: 'All' },
