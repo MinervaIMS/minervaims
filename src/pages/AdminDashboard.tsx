@@ -13,9 +13,9 @@ import {
   Plus, Edit, Trash2, LogOut, X, Loader2,
   ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
-  CalendarDays, ClipboardList, Image as ImageIcon, Briefcase,
+  CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation,
+  Presentation, Home,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
