@@ -135,6 +135,7 @@ const NAV: NavSection[] = [
       { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
       { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
       { key: 'settings-pages', label: 'Website Pages', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-edit-dashboard', label: 'Edit Dashboard', allowed: (p) => p.canAccessUsers },
     ],
   },
 ];
