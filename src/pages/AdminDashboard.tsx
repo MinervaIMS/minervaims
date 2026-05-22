@@ -15,7 +15,9 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Briefcase,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
+  Presentation,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
