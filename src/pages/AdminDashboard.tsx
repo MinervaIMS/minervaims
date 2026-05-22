@@ -357,7 +357,7 @@ const AdminDashboard = () => {
   // ────────────────────────────────────────────────────────────────────────────
 
   // Dashboard sits below the public header (h-20 mobile / h-24 desktop = 6rem)
-  const shellHeight = 'h-[calc(100vh-6rem)]';
+  const shellHeight = 'h-screen';
 
   if (authLoading) {
     return (
