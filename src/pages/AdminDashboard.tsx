@@ -637,7 +637,7 @@ const AdminDashboard = () => {
         <div className="shrink-0 flex items-center gap-3 px-4 h-20">
           <img src={logoWhite} alt="Dashboard" className="h-10 w-10 shrink-0" />
           {navExpanded && (
-            <span className="font-serif text-xl tracking-wide">Dashboard</span>
+            <span className="font-serif text-xl tracking-wide uppercase">DASHBOARD</span>
           )}
         </div>
 
