@@ -14,7 +14,7 @@ import {
   ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Briefcase,
-  Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen,
+  Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
@@ -29,7 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { downloadCSV } from '@/lib/download-utils';
-import logoMark from '@/assets/logo-color.svg';
+import logoWhite from '@/assets/logo-white.svg';
 
 interface DbEvent {
   id: string;
