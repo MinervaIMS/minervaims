@@ -4,14 +4,14 @@ import { Footer } from './Footer';
 
 export function Layout() {
   const { pathname } = useLocation();
-  const hideFooter = pathname.startsWith('/admin');
+  const isAdmin = pathname.startsWith('/admin');
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {!isAdmin && <Header />}
       <main className="flex-1">
         <Outlet />
       </main>
-      {!hideFooter && <Footer />}
+      {!isAdmin && <Footer />}
     </div>
   );
 }
