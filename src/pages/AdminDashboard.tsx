@@ -681,27 +681,28 @@ const AdminDashboard = () => {
         {/* Top strip */}
         <div className="shrink-0 h-20 flex items-center justify-between gap-6 px-6 bg-muted/40 border-b border-separator">
           <div className="flex flex-col leading-tight shrink-0">
-            <span className="italic font-bold text-accent text-2xl" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+            <span className="italic text-accent text-[28px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
               {roleLabel}
             </span>
             <span className="font-body text-sm text-muted-foreground">{user.email}</span>
           </div>
 
-          <nav className="flex-1 flex items-center justify-center flex-wrap gap-x-6 gap-y-1">
-            <Link to="/about" className="font-serif text-sm tracking-wider uppercase text-accent hover:text-accent/70">About</Link>
-            <Link to="/divisions/equity" className="font-serif text-sm tracking-wider uppercase text-accent hover:text-accent/70">Divisions</Link>
-            <Link to="/funds/long-short" className="font-serif text-sm tracking-wider uppercase text-accent hover:text-accent/70">Funds</Link>
-            <Link to="/members/team" className="font-serif text-sm tracking-wider uppercase text-accent hover:text-accent/70">Members</Link>
-            <Link to="/events" className="font-serif text-sm tracking-wider uppercase text-accent hover:text-accent/70">Events</Link>
-          </nav>
-
-          <Button
-            variant="outline"
-            onClick={async () => { await signOut(); navigate('/auth'); }}
-            className="font-body shrink-0"
-          >
-            <LogOut className="h-4 w-4 mr-2" />Log out
-          </Button>
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="font-body"
+            >
+              <Home className="h-4 w-4 mr-2" />Return to website
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => { await signOut(); navigate('/auth'); }}
+              className="font-body"
+            >
+              <LogOut className="h-4 w-4 mr-2" />Log out
+            </Button>
+          </div>
         </div>
 
         {/* Body row */}
