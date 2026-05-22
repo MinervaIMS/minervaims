@@ -168,6 +168,7 @@ const AdminDashboard = () => {
       const first = visibleNav[0];
       setActiveSectionKey(first.key);
       setActiveSubKey(first.subItems[0]?.key ?? null);
+      if (first.subItems.length === 0) setSubmenuOpen(false);
     }
   }, [visibleNav, activeSectionKey]);
 
