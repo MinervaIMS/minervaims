@@ -400,11 +400,13 @@ const AdminDashboard = () => {
 
   const handleNavClick = (section: NavSection) => {
     setActiveSectionKey(section.key);
-    if (section.subItems.length > 1) {
+    if (section.subItems.length === 0) {
+      setSubmenuOpen(false);
+      setActiveSubKey(null);
+    } else if (section.subItems.length > 1) {
       setSubmenuOpen(true);
-      // pick first sub-item by default
       setActiveSubKey(section.subItems[0].key);
-    } else if (section.subItems.length === 1) {
+    } else {
       setSubmenuOpen(false);
       setActiveSubKey(section.subItems[0].key);
     }
@@ -414,7 +416,24 @@ const AdminDashboard = () => {
   // Content router
   // ────────────────────────────────────────────────────────────────────────────
 
+  const renderMyRole = () => (
+    <div className="max-w-2xl">
+      <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">My Role</h2>
+      <div className="space-y-4 font-body">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Role</div>
+          <div className="text-lg text-foreground">{roleLabel}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Email</div>
+          <div className="text-foreground">{user.email}</div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
+    if (activeSectionKey === 'my-role') return renderMyRole();
     if (!activeSubKey) return null;
     switch (activeSubKey) {
       case 'reports-archive':
