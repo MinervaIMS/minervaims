@@ -118,14 +118,15 @@ const NAV: NavSection[] = [
     ],
   },
   {
-    key: 'operations', label: 'Operations', Icon: Briefcase,
+    key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
       { key: 'ops-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'ops-fee', label: 'Membership Fee' },
       { key: 'ops-treasury', label: 'Treasury' },
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
-      { key: 'ops-docs', label: 'Official Docs' },
+      { key: 'ops-auto-emails', label: 'Auto Emails' },
+      { key: 'ops-docs', label: 'Statuto' },
     ],
   },
   {
