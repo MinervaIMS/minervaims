@@ -69,7 +69,7 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'calendar', label: 'Calendar', Icon: CalendarIcon,
+    key: 'calendar', label: 'Calendar', Icon: CalendarDays,
     subItems: [
       { key: 'calendar-all', label: 'All' },
       { key: 'calendar-reports', label: 'Reports' },
@@ -93,7 +93,7 @@ const NAV: NavSection[] = [
     ],
   },
   {
-    key: 'events', label: 'Events', Icon: CalendarDays,
+    key: 'events', label: 'Events', Icon: Presentation,
     subItems: [
       { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
       { key: 'events-forms', label: 'Forms & Attendance', allowed: (p) => p.canAccessEvents },
