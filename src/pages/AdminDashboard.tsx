@@ -14,7 +14,7 @@ import {
   ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Briefcase,
-  Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen,
+  Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
@@ -29,7 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { downloadCSV } from '@/lib/download-utils';
-import logoMark from '@/assets/logo-color.svg';
+import logoWhite from '@/assets/logo-white.svg';
 
 interface DbEvent {
   id: string;
@@ -62,6 +62,10 @@ type NavSection = {
 };
 
 const NAV: NavSection[] = [
+  {
+    key: 'my-role', label: 'My Role', Icon: UserIcon,
+    subItems: [],
+  },
   {
     key: 'calendar', label: 'Calendar', Icon: CalendarIcon,
     subItems: [
@@ -136,7 +140,7 @@ const NAV: NavSection[] = [
 function filterNav(permissions: Permissions): NavSection[] {
   return NAV
     .map((s) => ({ ...s, subItems: s.subItems.filter((si) => !si.allowed || si.allowed(permissions)) }))
-    .filter((s) => s.subItems.length > 0);
+    .filter((s) => s.key === 'my-role' || s.subItems.length > 0);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -164,6 +168,7 @@ const AdminDashboard = () => {
       const first = visibleNav[0];
       setActiveSectionKey(first.key);
       setActiveSubKey(first.subItems[0]?.key ?? null);
+      if (first.subItems.length === 0) setSubmenuOpen(false);
     }
   }, [visibleNav, activeSectionKey]);
 
@@ -396,11 +401,13 @@ const AdminDashboard = () => {
 
   const handleNavClick = (section: NavSection) => {
     setActiveSectionKey(section.key);
-    if (section.subItems.length > 1) {
+    if (section.subItems.length === 0) {
+      setSubmenuOpen(false);
+      setActiveSubKey(null);
+    } else if (section.subItems.length > 1) {
       setSubmenuOpen(true);
-      // pick first sub-item by default
       setActiveSubKey(section.subItems[0].key);
-    } else if (section.subItems.length === 1) {
+    } else {
       setSubmenuOpen(false);
       setActiveSubKey(section.subItems[0].key);
     }
@@ -410,7 +417,24 @@ const AdminDashboard = () => {
   // Content router
   // ────────────────────────────────────────────────────────────────────────────
 
+  const renderMyRole = () => (
+    <div className="max-w-2xl">
+      <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">My Role</h2>
+      <div className="space-y-4 font-body">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Role</div>
+          <div className="text-lg text-foreground">{roleLabel}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Email</div>
+          <div className="text-foreground">{user.email}</div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
+    if (activeSectionKey === 'my-role') return renderMyRole();
     if (!activeSubKey) return null;
     switch (activeSubKey) {
       case 'reports-archive':
@@ -603,16 +627,14 @@ const AdminDashboard = () => {
     <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
       {/* Nav column */}
       <aside
-        className="flex flex-col bg-foreground text-background transition-[width] duration-200 ease-in-out shrink-0"
+        className="flex flex-col bg-accent text-accent-foreground transition-[width] duration-200 ease-in-out shrink-0"
         style={{ width: navExpanded ? 240 : 72 }}
       >
         {/* Logo */}
-        <div className="shrink-0 flex items-center gap-3 px-4 h-20 border-b border-background/10">
-          <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center shrink-0">
-            <img src={logoMark} alt="MIMS" className="h-7 w-7" />
-          </div>
+        <div className="shrink-0 flex items-center gap-3 px-4 h-20">
+          <img src={logoWhite} alt="Dashboard" className="h-10 w-10 shrink-0" />
           {navExpanded && (
-            <span className="font-serif text-xl tracking-wide">MIMS</span>
+            <span className="font-serif text-xl tracking-wide">Dashboard</span>
           )}
         </div>
 
@@ -625,28 +647,28 @@ const AdminDashboard = () => {
                 key={section.key}
                 onClick={() => handleNavClick(section)}
                 title={!navExpanded ? section.label : undefined}
-                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors ${
-                  isActive ? 'bg-background/10' : 'hover:bg-background/5'
+                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors uppercase tracking-wider ${
+                  isActive ? 'bg-white/15' : 'hover:bg-white/10'
                 } ${navExpanded ? '' : 'justify-center'}`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
                 <section.Icon className="h-5 w-5 shrink-0" />
-                {navExpanded && <span className="text-[15px]">{section.label}</span>}
+                {navExpanded && <span className="text-[14px]">{section.label}</span>}
               </button>
             );
           })}
         </nav>
 
         {/* Collapse toggle */}
-        <div className="shrink-0 border-t border-background/10 p-2">
+        <div className="shrink-0 p-2">
           <button
             onClick={() => setNavExpanded((v) => !v)}
-            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-background/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
+            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-white/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
             title={navExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
             {navExpanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
-            {navExpanded && <span className="text-sm text-background/70">Collapse sidebar</span>}
+            {navExpanded && <span className="text-sm opacity-80 uppercase tracking-wider">Collapse</span>}
           </button>
         </div>
       </aside>
@@ -656,7 +678,7 @@ const AdminDashboard = () => {
         {/* Top strip */}
         <div className="shrink-0 h-20 flex items-center justify-between px-6 bg-muted/40 border-b border-separator">
           <div className="flex flex-col leading-tight">
-            <span className="italic font-body text-accent" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+            <span className="italic text-accent text-2xl" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
               {roleLabel}
             </span>
             <span className="font-body text-sm text-muted-foreground">{user.email}</span>
@@ -675,15 +697,15 @@ const AdminDashboard = () => {
           {/* Submenu panel */}
           <div
             className="bg-muted/30 border-r border-separator overflow-hidden transition-[width] duration-200 ease-in-out shrink-0"
-            style={{ width: submenuOpen && activeSection ? 240 : 0 }}
+            style={{ width: submenuOpen && activeSection && activeSection.subItems.length > 0 ? 240 : 0 }}
           >
-            {activeSection && (
+            {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
                 <div className="shrink-0 h-14 flex items-center justify-between px-4 border-b border-separator">
                   <h3 className="font-serif text-lg text-accent">{activeSection.label}</h3>
                   <button
                     onClick={() => setSubmenuOpen(false)}
-                    className="h-7 w-7 flex items-center justify-center border border-separator hover:bg-background"
+                    className="h-7 w-7 flex items-center justify-center hover:bg-background"
                     title="Hide submenu"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -717,7 +739,7 @@ const AdminDashboard = () => {
               {!submenuOpen && activeSection && activeSection.subItems.length > 1 && (
                 <button
                   onClick={() => setSubmenuOpen(true)}
-                  className="h-7 w-7 flex items-center justify-center border border-separator hover:bg-muted"
+                  className="h-7 w-7 flex items-center justify-center hover:bg-muted"
                   title="Show submenu"
                 >
                   <ChevronRight className="h-4 w-4" />
