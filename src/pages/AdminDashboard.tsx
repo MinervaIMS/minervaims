@@ -7,10 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, X, Calendar, FileText, Users, GraduationCap, UserCog, Loader2, Settings, ChevronLeft, ChevronRight, MoreHorizontal, BookOpen, Download, Search, ClipboardList } from 'lucide-react';
+import {
+  Plus, Edit, Trash2, LogOut, X, Loader2,
+  ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
+  Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
+  CalendarDays, ClipboardList, Image as ImageIcon, Briefcase,
+  Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen,
+} from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
@@ -21,22 +26,10 @@ import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { downloadCSV } from '@/lib/download-utils';
-
-// Role-based dashboard icons
-import dashboardIconAdmin from '@/assets/dashboard-icon-admin.svg';
-import dashboardIconMacro from '@/assets/dashboard-icon-macro.svg';
-import dashboardIconInvestment from '@/assets/dashboard-icon-investment.svg';
-import dashboardIconQuant from '@/assets/dashboard-icon-quant.svg';
-import dashboardIconEquity from '@/assets/dashboard-icon-equity.svg';
-import dashboardIconPortfolio from '@/assets/dashboard-icon-portfolio.svg';
-import dashboardIconPM from '@/assets/dashboard-icon-pm.svg';
-import dashboardIconOpsMedia from '@/assets/dashboard-icon-ops-media.svg';
-
-// Restricted screen logo
-import dashboardRestrictedLogo from '@/assets/dashboard-restricted-logo.png';
+import logoMark from '@/assets/logo-color.svg';
 
 interface DbEvent {
   id: string;
@@ -50,69 +43,168 @@ interface DbEvent {
   updated_at: string;
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Navigation model
+// ──────────────────────────────────────────────────────────────────────────────
+
+type SubItem = {
+  key: string;
+  label: string;
+  /** Permission predicate. If omitted, always available to anyone with hasAnyAccess. */
+  allowed?: (p: Permissions) => boolean;
+};
+
+type NavSection = {
+  key: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  subItems: SubItem[];
+};
+
+const NAV: NavSection[] = [
+  {
+    key: 'calendar', label: 'Calendar', Icon: CalendarIcon,
+    subItems: [
+      { key: 'calendar-all', label: 'All' },
+      { key: 'calendar-reports', label: 'Reports' },
+      { key: 'calendar-events', label: 'Calls & Events' },
+    ],
+  },
+  {
+    key: 'reports', label: 'Reports', Icon: FileBarChart2,
+    subItems: [
+      { key: 'reports-upload', label: 'Upload', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-templates', label: 'Templates & Code Repos' },
+      { key: 'reports-funds', label: "Funds' Performances" },
+    ],
+  },
+  {
+    key: 'people', label: 'People', Icon: UsersIcon,
+    subItems: [
+      { key: 'people-members', label: 'Members', allowed: (p) => p.canAccessTeam },
+      { key: 'people-alumni', label: 'Alumni', allowed: (p) => p.canAccessAlumni },
+    ],
+  },
+  {
+    key: 'events', label: 'Events', Icon: CalendarDays,
+    subItems: [
+      { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
+      { key: 'events-forms', label: 'Forms & Attendance', allowed: (p) => p.canAccessEvents },
+      { key: 'events-archive', label: 'Archive & Website', allowed: (p) => p.canAccessEvents },
+    ],
+  },
+  {
+    key: 'applications', label: 'Applications', Icon: ClipboardList,
+    subItems: [
+      { key: 'applications-status', label: 'Status & Website', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-screening', label: 'Screening', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-form', label: 'Form Settings', allowed: (p) => p.canAccessSettings },
+    ],
+  },
+  {
+    key: 'smm', label: 'SMM & Graphics', Icon: ImageIcon,
+    subItems: [
+      { key: 'smm-ig', label: 'Instagram' },
+      { key: 'smm-li', label: 'LinkedIn' },
+      { key: 'smm-other', label: 'Other templates' },
+      { key: 'smm-brand', label: 'Design, Brand & Logo' },
+    ],
+  },
+  {
+    key: 'operations', label: 'Operations', Icon: Briefcase,
+    subItems: [
+      { key: 'ops-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
+      { key: 'ops-fee', label: 'Membership Fee' },
+      { key: 'ops-treasury', label: 'Treasury' },
+      { key: 'ops-accounts', label: 'Accounts & Credentials' },
+      { key: 'ops-external', label: 'External Relations' },
+      { key: 'ops-docs', label: 'Official Docs' },
+    ],
+  },
+  {
+    key: 'settings', label: 'Settings', Icon: SettingsIcon,
+    subItems: [
+      { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
+      { key: 'settings-pages', label: 'Website Pages', allowed: (p) => p.canAccessUsers },
+    ],
+  },
+];
+
+function filterNav(permissions: Permissions): NavSection[] {
+  return NAV
+    .map((s) => ({ ...s, subItems: s.subItems.filter((si) => !si.allowed || si.allowed(permissions)) }))
+    .filter((s) => s.subItems.length > 0);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────────────────────────────────────
+
 const AdminDashboard = () => {
-  const [events, setEvents] = useState<DbEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    date: '',
-    place: '',
-    moderator: '',
-    guests: [''],
-    description: '',
-  });
-  const [eventsCurrentPage, setEventsCurrentPage] = useState(1);
-  const [eventsYearFilter, setEventsYearFilter] = useState<number | 'all'>('all');
-  const [eventsSearchQuery, setEventsSearchQuery] = useState('');
-  const EVENTS_PER_PAGE = 15;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
   const permissions = usePermissions();
   const isDesktop = useIsDesktop();
 
-  // Handle session expiry
+  // Shell state
+  const [navExpanded, setNavExpanded] = useState(true);
+  const [submenuOpen, setSubmenuOpen] = useState(true);
+  const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
+  const [activeSubKey, setActiveSubKey] = useState<string | null>(null);
+
+  const visibleNav = useMemo(() => filterNav(permissions), [permissions]);
+
+  // Set initial active section/sub-item
+  useEffect(() => {
+    if (!activeSectionKey && visibleNav.length > 0) {
+      const first = visibleNav[0];
+      setActiveSectionKey(first.key);
+      setActiveSubKey(first.subItems[0]?.key ?? null);
+    }
+  }, [visibleNav, activeSectionKey]);
+
+  // Events state (existing logic preserved)
+  const [events, setEvents] = useState<DbEvent[]>([]);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
+  const [formData, setFormData] = useState({
+    title: '', date: '', place: '', moderator: '', guests: [''], description: '',
+  });
+  const [eventsCurrentPage, setEventsCurrentPage] = useState(1);
+  const [eventsYearFilter, setEventsYearFilter] = useState<number | 'all'>('all');
+  const [eventsSearchQuery, setEventsSearchQuery] = useState('');
+  const EVENTS_PER_PAGE = 15;
+
+  // Session expiry
   useEffect(() => {
     if (isSessionExpired) {
-      toast({
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
-        variant: "destructive",
-      });
-      signOut().then(() => {
-        navigate('/auth', { state: { from: '/admin', sessionExpired: true } });
-      });
+      toast({ title: 'Session Expired', description: 'Your session has expired. Please log in again.', variant: 'destructive' });
+      signOut().then(() => navigate('/auth', { state: { from: '/admin', sessionExpired: true } }));
     }
   }, [isSessionExpired, signOut, navigate, toast]);
 
+  // Auth gate
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
         navigate('/auth', { state: { from: '/admin' } });
         return;
       }
-      
-      // Check if user is only a member (pending approval) or has no roles
-      // Skip this check for admin email
       const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
-      const isMemberOnly = roles.length > 0 && roles.every(r => r.role === 'member');
+      const isMemberOnly = roles.length > 0 && roles.every((r) => r.role === 'member');
       const hasNoRoles = roles.length === 0;
-      
       if (!isAdminEmail && (isMemberOnly || hasNoRoles)) {
         navigate('/pending-approval');
         return;
       }
-      
-      // Check if user has any dashboard access
       if (!permissions.hasAnyAccess) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access the admin dashboard.",
-          variant: "destructive",
-        });
+        toast({ title: 'Access Denied', description: "You don't have permission to access the admin dashboard.", variant: 'destructive' });
         navigate('/');
         return;
       }
@@ -122,67 +214,50 @@ const AdminDashboard = () => {
 
   const fetchEvents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('date', { ascending: false });
-
+      const { data, error } = await supabase.from('events').select('*').order('date', { ascending: false });
       if (error) throw error;
       setEvents(data || []);
     } catch (error) {
       console.error('Error fetching events:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch events",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to fetch events', variant: 'destructive' });
     } finally {
-      setIsLoading(false);
+      setIsEventsLoading(false);
     }
   };
 
-  // Events filtering and pagination
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
-      // Year filter
+    return events.filter((event) => {
       if (eventsYearFilter !== 'all') {
         const eventYear = new Date(event.date).getFullYear();
         if (eventYear !== eventsYearFilter) return false;
       }
-      // Search filter
       if (eventsSearchQuery.trim()) {
-        const query = eventsSearchQuery.toLowerCase();
-        const matchesTitle = event.title.toLowerCase().includes(query);
-        const matchesPlace = event.place.toLowerCase().includes(query);
-        const matchesModerator = event.moderator?.toLowerCase().includes(query) || false;
-        const matchesGuests = event.guest?.some(g => g.toLowerCase().includes(query)) || false;
-        const matchesDescription = event.description?.toLowerCase().includes(query) || false;
-        if (!matchesTitle && !matchesPlace && !matchesModerator && !matchesGuests && !matchesDescription) return false;
+        const q = eventsSearchQuery.toLowerCase();
+        const matches =
+          event.title.toLowerCase().includes(q) ||
+          event.place.toLowerCase().includes(q) ||
+          (event.moderator?.toLowerCase().includes(q) ?? false) ||
+          (event.guest?.some((g) => g.toLowerCase().includes(q)) ?? false) ||
+          (event.description?.toLowerCase().includes(q) ?? false);
+        if (!matches) return false;
       }
       return true;
     });
   }, [events, eventsYearFilter, eventsSearchQuery]);
 
   const eventsYears = useMemo(() => {
-    const years = [...new Set(events.map(e => new Date(e.date).getFullYear()))];
+    const years = [...new Set(events.map((e) => new Date(e.date).getFullYear()))];
     return years.sort((a, b) => b - a);
   }, [events]);
 
   const eventsTotalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
   const eventsStartIndex = (eventsCurrentPage - 1) * EVENTS_PER_PAGE;
-  const paginatedEvents = useMemo(() => 
-    filteredEvents.slice(eventsStartIndex, eventsStartIndex + EVENTS_PER_PAGE),
-    [filteredEvents, eventsStartIndex, EVENTS_PER_PAGE]
+  const paginatedEvents = useMemo(
+    () => filteredEvents.slice(eventsStartIndex, eventsStartIndex + EVENTS_PER_PAGE),
+    [filteredEvents, eventsStartIndex]
   );
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setEventsCurrentPage(1);
-  }, [eventsYearFilter, eventsSearchQuery]);
-
-  const handleEventsPageChange = (page: number) => {
-    setEventsCurrentPage(page);
-  };
+  useEffect(() => { setEventsCurrentPage(1); }, [eventsYearFilter, eventsSearchQuery]);
 
   const getEventsPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = [];
@@ -191,128 +266,62 @@ const AdminDashboard = () => {
     } else {
       pages.push(1);
       if (eventsCurrentPage > 3) pages.push('ellipsis');
-      for (let i = Math.max(2, eventsCurrentPage - 1); i <= Math.min(eventsTotalPages - 1, eventsCurrentPage + 1); i++) {
-        pages.push(i);
-      }
+      for (let i = Math.max(2, eventsCurrentPage - 1); i <= Math.min(eventsTotalPages - 1, eventsCurrentPage + 1); i++) pages.push(i);
       if (eventsCurrentPage < eventsTotalPages - 2) pages.push('ellipsis');
       pages.push(eventsTotalPages);
     }
     return pages;
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/auth');
-  };
-
   const resetForm = () => {
-    setFormData({
-      title: '',
-      date: '',
-      place: '',
-      moderator: '',
-      guests: [''],
-      description: '',
-    });
+    setFormData({ title: '', date: '', place: '', moderator: '', guests: [''], description: '' });
     setEditingEvent(null);
   };
-
-  const openCreateDialog = () => {
-    resetForm();
-    setIsDialogOpen(true);
-  };
-
+  const openCreateDialog = () => { resetForm(); setIsDialogOpen(true); };
   const openEditDialog = (event: DbEvent) => {
     setEditingEvent(event);
     setFormData({
-      title: event.title,
-      date: event.date,
-      place: event.place,
+      title: event.title, date: event.date, place: event.place,
       moderator: event.moderator || '',
       guests: event.guest && event.guest.length > 0 ? event.guest : [''],
       description: event.description || '',
     });
     setIsDialogOpen(true);
   };
-
-  const addGuestField = () => {
-    setFormData({ ...formData, guests: [...formData.guests, ''] });
-  };
-
-  const removeGuestField = (index: number) => {
-    if (formData.guests.length > 1) {
-      const newGuests = formData.guests.filter((_, i) => i !== index);
-      setFormData({ ...formData, guests: newGuests });
-    }
-  };
-
-  const updateGuest = (index: number, value: string) => {
-    const newGuests = [...formData.guests];
-    newGuests[index] = value;
-    setFormData({ ...formData, guests: newGuests });
+  const addGuestField = () => setFormData({ ...formData, guests: [...formData.guests, ''] });
+  const removeGuestField = (i: number) => formData.guests.length > 1 && setFormData({ ...formData, guests: formData.guests.filter((_, idx) => idx !== i) });
+  const updateGuest = (i: number, v: string) => {
+    const g = [...formData.guests]; g[i] = v; setFormData({ ...formData, guests: g });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.title.trim() || !formData.date || !formData.place.trim()) {
-      toast({
-        title: "Error",
-        description: "Title, date, and place are required",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Title, date, and place are required', variant: 'destructive' });
       return;
     }
-
     setIsSubmitting(true);
-
     try {
       const action = editingEvent ? 'update' : 'create';
-      const filteredGuests = formData.guests.filter(g => g.trim() !== '');
-      
+      const filteredGuests = formData.guests.filter((g) => g.trim() !== '');
       const eventData = {
-        title: formData.title,
-        date: formData.date,
-        place: formData.place,
+        title: formData.title, date: formData.date, place: formData.place,
         moderator: formData.moderator || null,
         guest: filteredGuests.length > 0 ? filteredGuests : null,
         description: formData.description || null,
         ...(editingEvent && { id: editingEvent.id }),
       };
-
       const { data, error } = await supabase.functions.invoke('admin-events', {
         body: { action, event: eventData },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
-
       if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: `Event ${editingEvent ? 'updated' : 'created'} successfully`,
-      });
-
-      setIsDialogOpen(false);
-      resetForm();
-      fetchEvents();
+      if (data.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
+      toast({ title: 'Success', description: `Event ${editingEvent ? 'updated' : 'created'} successfully` });
+      setIsDialogOpen(false); resetForm(); fetchEvents();
     } catch (error) {
       console.error('Submit error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save event",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to save event', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -320,583 +329,414 @@ const AdminDashboard = () => {
 
   const handleDelete = async (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return;
-
     try {
       const { data, error } = await supabase.functions.invoke('admin-events', {
         body: { action: 'delete', event: { id: eventId } },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
-
       if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: "Event deleted successfully",
-      });
-
+      if (data.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
+      toast({ title: 'Success', description: 'Event deleted successfully' });
       fetchEvents();
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete event",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to delete event', variant: 'destructive' });
     }
   };
 
-  if (authLoading || isLoading) {
+  // ────────────────────────────────────────────────────────────────────────────
+  // Loading / guards
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // Dashboard sits below the public header (h-20 mobile / h-24 desktop = 6rem)
+  const shellHeight = 'h-[calc(100vh-6rem)]';
+
+  if (authLoading) {
     return (
-      <div className="container py-section-sm md:py-section flex items-center justify-center min-h-[60vh]">
+      <div className={`${shellHeight} flex items-center justify-center`}>
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  // Show desktop-only message for small screens
   if (!isDesktop) {
     return (
-      <div className="container py-section-sm md:py-section flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
-        <img 
-          src={dashboardRestrictedLogo} 
-          alt="Minerva Investment Management Society" 
-          className="h-48 w-48 mb-8"
-        />
-        <h1 className="font-serif text-heading text-accent mb-4">
-          Desktop View Required
-        </h1>
-        <p className="font-body text-muted-foreground text-lg max-w-md">
-          The admin dashboard is optimized for larger screens. Please access this page from a desktop computer or a tablet in landscape mode.
-        </p>
+      <div className={`${shellHeight} flex items-center justify-center px-6`}>
+        <Card className="max-w-md">
+          <CardContent className="py-10 text-center">
+            <h1 className="font-serif text-heading text-accent mb-3">Dashboard available on desktop</h1>
+            <p className="font-body text-muted-foreground">
+              Please open this page on a desktop computer or a tablet in landscape mode.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (!user || !permissions.hasAnyAccess) {
-    return null;
-  }
+  if (!user || !permissions.hasAnyAccess) return null;
 
-  // Determine default tab based on permissions
-  const getDefaultTab = () => {
-    if (permissions.canAccessUsers) return 'users';
-    if (permissions.canAccessAlumni) return 'alumni';
-    if (permissions.canAccessEvents) return 'events';
-    if (permissions.canAccessFiles) return 'files';
-    if (permissions.canAccessTeam) return 'team';
-    if (permissions.canAccessReadings) return 'readings';
-    if (permissions.canAccessActivity) return 'activity';
-    return 'events';
+  const roleLabels: Record<string, string> = {
+    admin: 'Admin', president: 'President', vice_president: 'Vice President',
+    head_of_asset_management: 'Head of Asset Management',
+    head_of_equity: 'Head of Equity Research', head_of_investment: 'Head of Investment Research',
+    head_of_macro: 'Head of Macro Research', head_of_portfolio: 'Head of Portfolio Management',
+    head_of_quant: 'Head of Quantitative Research', head_of_operations: 'Head of Operations',
+    head_of_media: 'Head of Media', portfolio_manager: 'Portfolio Manager', member: 'Member',
   };
+  const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management',
+    'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment',
+    'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member'];
+  const userRoleNames = roles.map((r) => r.role);
+  const primaryRole = priorityOrder.find((r) => userRoleNames.includes(r as any)) || (roles[0]?.role ?? '');
+  const roleLabel = roleLabels[primaryRole] || primaryRole || 'No Role';
 
-  // Get user's primary role for display
-  const getUserRoleLabel = () => {
-    if (!roles.length) return 'No Role';
-    const roleLabels: Record<string, string> = {
-      admin: 'Admin',
-      president: 'President',
-      vice_president: 'Vice President',
-      head_of_asset_management: 'Head of Asset Management',
-      head_of_equity: 'Head of Equity Research',
-      head_of_investment: 'Head of Investment Research',
-      head_of_macro: 'Head of Macro Research',
-      head_of_portfolio: 'Head of Portfolio Management',
-      head_of_quant: 'Head of Quantitative Research',
-      head_of_operations: 'Head of Operations',
-      head_of_media: 'Head of Media',
-      member: 'Member',
-    };
-    // Get the highest priority role
-    const priorityOrder: string[] = ['president', 'vice_president', 'admin', 'head_of_asset_management', 
-      'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment', 
-      'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member'];
-    const userRoleNames: string[] = roles.map(r => r.role);
-    const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || String(roles[0].role);
-    return roleLabels[primaryRole] || primaryRole;
-  };
+  const activeSection = visibleNav.find((s) => s.key === activeSectionKey) ?? null;
+  const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
 
-  // Get the appropriate dashboard icon based on user roles
-  const getDashboardIcon = () => {
-    const userRoleNames = roles.map(r => r.role);
-    
-    // Admin, president, vice_president, head_of_asset_management
-    if (userRoleNames.some(r => ['admin', 'president', 'vice_president', 'head_of_asset_management'].includes(r))) {
-      return dashboardIconAdmin;
+  const handleNavClick = (section: NavSection) => {
+    setActiveSectionKey(section.key);
+    if (section.subItems.length > 1) {
+      setSubmenuOpen(true);
+      // pick first sub-item by default
+      setActiveSubKey(section.subItems[0].key);
+    } else if (section.subItems.length === 1) {
+      setSubmenuOpen(false);
+      setActiveSubKey(section.subItems[0].key);
     }
-    // Head of operations or head of media
-    if (userRoleNames.some(r => ['head_of_operations', 'head_of_media'].includes(r))) {
-      return dashboardIconOpsMedia;
-    }
-    // Division heads
-    if (userRoleNames.includes('head_of_macro')) return dashboardIconMacro;
-    if (userRoleNames.includes('head_of_investment')) return dashboardIconInvestment;
-    if (userRoleNames.includes('head_of_quant')) return dashboardIconQuant;
-    if (userRoleNames.includes('head_of_equity')) return dashboardIconEquity;
-    if (userRoleNames.includes('head_of_portfolio')) return dashboardIconPortfolio;
-    if (userRoleNames.includes('portfolio_manager')) return dashboardIconPM;
-    
-    return null;
   };
 
-  const dashboardIcon = getDashboardIcon();
+  // ────────────────────────────────────────────────────────────────────────────
+  // Content router
+  // ────────────────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="container py-section-sm md:py-section">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-10 pb-6 border-b border-separator">
-        <div className="flex items-center gap-6">
-          {dashboardIcon && (
-            <div className="flex items-center">
-              <img 
-                src={dashboardIcon} 
-                alt="Dashboard icon" 
-                className="h-[6.75rem] w-[6.75rem] md:h-[7.875rem] md:w-[7.875rem]"
-              />
-            </div>
-          )}
-          <div className="flex flex-col">
-            <h1 className="font-serif text-display text-accent mb-2">Dashboard</h1>
-            <p className="font-body text-muted-foreground text-lg">
-              {user.email}
-            </p>
-            <span 
-              className="text-xl font-medium text-accent italic mt-2"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
-            >
-              {getUserRoleLabel()}
-            </span>
+  const renderContent = () => {
+    if (!activeSubKey) return null;
+    switch (activeSubKey) {
+      case 'reports-archive':
+        return <FileManagement allowedDivisions={permissions.allowedDivisions} />;
+      case 'people-members':
+        return <TeamManagement allowedDivisions={permissions.allowedDivisions} isFullAccess={permissions.isFullAccess} />;
+      case 'people-alumni':
+        return <AlumniManagement />;
+      case 'events-archive':
+        return renderEventsManagement();
+      case 'applications-status':
+        return <ApplicationSettings />;
+      case 'ops-readings':
+        return <ReadingsManagement />;
+      case 'settings-users':
+        return <UserManagement />;
+      case 'settings-activity':
+        return <ActivityManagement />;
+      default:
+        return (
+          <div className="py-16 text-center">
+            <h2 className="font-serif text-heading text-accent mb-3">{activeSub?.label}</h2>
+            <p className="font-body text-muted-foreground">Coming soon.</p>
           </div>
+        );
+    }
+  };
+
+  const renderEventsManagement = () => (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="font-serif text-heading text-accent">Events Management</h2>
+        <div className="flex items-center gap-3">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="font-body" disabled={events.length === 0}>
+                <Download className="h-4 w-4 mr-2" />Download CSV
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download Events CSV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download a CSV file containing {events.length} event{events.length !== 1 ? 's' : ''}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => {
+                  const columns: { key: keyof DbEvent; header: string }[] = [
+                    { key: 'title', header: 'Title' },
+                    { key: 'date', header: 'Date' },
+                    { key: 'place', header: 'Place' },
+                    { key: 'moderator', header: 'Moderator' },
+                    { key: 'guest', header: 'Guests' },
+                    { key: 'description', header: 'Description' },
+                  ];
+                  downloadCSV(events, columns, 'events.csv');
+                  toast({ title: 'Download started', description: 'Events CSV is being downloaded.' });
+                }}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="font-body">
+                <Plus className="h-4 w-4 mr-2" />Add Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-serif">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2"><Label htmlFor="title" className="font-body">Title *</Label>
+                  <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Event title" required /></div>
+                <div className="space-y-2"><Label htmlFor="date" className="font-body">Date *</Label>
+                  <Input id="date" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required /></div>
+                <div className="space-y-2"><Label htmlFor="place" className="font-body">Place *</Label>
+                  <Input id="place" value={formData.place} onChange={(e) => setFormData({ ...formData, place: e.target.value })} placeholder="Event location" required /></div>
+                <div className="space-y-2"><Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
+                  <Input id="moderator" value={formData.moderator} onChange={(e) => setFormData({ ...formData, moderator: e.target.value })} placeholder="e.g., John Smith, CEO at Company" /></div>
+                <div className="space-y-2">
+                  <Label className="font-body">Guests (optional)</Label>
+                  {formData.guests.map((guest, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input value={guest} onChange={(e) => updateGuest(index, e.target.value)} placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`} />
+                      {formData.guests.length > 1 && (
+                        <Button type="button" variant="outline" size="icon" onClick={() => removeGuestField(index)}><X className="h-4 w-4" /></Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={addGuestField} className="font-body"><Plus className="h-4 w-4 mr-2" />Add another guest</Button>
+                </div>
+                <div className="space-y-2"><Label htmlFor="description" className="font-body">Description (optional)</Label>
+                  <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Event description" rows={3} /></div>
+                {isSubmitting && (
+                  <div className="space-y-2"><Progress value={100} className="h-1 animate-pulse" />
+                    <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p></div>
+                )}
+                <div className="flex gap-4 pt-4">
+                  <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
+                    {isSubmitting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>) : (editingEvent ? 'Update Event' : 'Create Event')}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="font-body">Cancel</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleLogout} 
-          className="font-body border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-all"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
-        </Button>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue={getDefaultTab()} className="w-full">
-        <TabsList className="mb-8 w-full justify-between">
-          {permissions.canAccessUsers && (
-            <TabsTrigger value="users" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <UserCog className="h-4 w-4 mr-2" />
-              Users
-            </TabsTrigger>
-          )}
-          {permissions.canAccessActivity && (
-            <TabsTrigger value="activity" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Activity
-            </TabsTrigger>
-          )}
-          {permissions.canAccessFiles && (
-            <TabsTrigger value="files" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <FileText className="h-4 w-4 mr-2" />
-              Archive Files
-            </TabsTrigger>
-          )}
-          {permissions.canAccessTeam && (
-            <TabsTrigger value="team" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <Users className="h-4 w-4 mr-2" />
-              Team
-            </TabsTrigger>
-          )}
-          {permissions.canAccessAlumni && (
-            <TabsTrigger value="alumni" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Alumni
-            </TabsTrigger>
-          )}
-          {permissions.canAccessEvents && (
-            <TabsTrigger value="events" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Events
-            </TabsTrigger>
-          )}
-          {permissions.canAccessReadings && (
-            <TabsTrigger value="readings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <BookOpen className="h-4 w-4 mr-2" />
-              Readings
-            </TabsTrigger>
-          )}
-          {permissions.canAccessSettings && (
-            <TabsTrigger value="settings" className="uppercase flex-1" style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}>
-              <Settings className="h-4 w-4 mr-2" />
-              Applications
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        {permissions.canAccessUsers && (
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
-        )}
-
-        {permissions.canAccessAlumni && (
-          <TabsContent value="alumni">
-            <AlumniManagement />
-          </TabsContent>
-        )}
-
-        {permissions.canAccessEvents && (
-          <TabsContent value="events">
-            {/* Events Header */}
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-serif text-heading text-accent">Events Management</h2>
-              <div className="flex items-center gap-3">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="font-body" 
-                      disabled={events.length === 0}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download CSV
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Download Events CSV</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will download a CSV file containing {events.length} event{events.length !== 1 ? 's' : ''}.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => {
-                        const columns: { key: keyof DbEvent; header: string }[] = [
-                          { key: 'title', header: 'Title' },
-                          { key: 'date', header: 'Date' },
-                          { key: 'place', header: 'Place' },
-                          { key: 'moderator', header: 'Moderator' },
-                          { key: 'guest', header: 'Guests' },
-                          { key: 'description', header: 'Description' },
-                        ];
-                        downloadCSV(events, columns, 'events.csv');
-                        toast({ title: "Download started", description: "Events CSV is being downloaded." });
-                      }}>Download</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={openCreateDialog} className="font-body">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Event
-                    </Button>
-                  </DialogTrigger>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="font-serif">
-                      {editingEvent ? 'Edit Event' : 'Add New Event'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title" className="font-body">Title *</Label>
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="Event title"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="date" className="font-body">Date *</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="place" className="font-body">Place *</Label>
-                      <Input
-                        id="place"
-                        value={formData.place}
-                        onChange={(e) => setFormData({ ...formData, place: e.target.value })}
-                        placeholder="Event location"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
-                      <Input
-                        id="moderator"
-                        value={formData.moderator}
-                        onChange={(e) => setFormData({ ...formData, moderator: e.target.value })}
-                        placeholder="e.g., John Smith, CEO at Company"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Guests (optional)</Label>
-                      {formData.guests.map((guest, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            value={guest}
-                            onChange={(e) => updateGuest(index, e.target.value)}
-                            placeholder={`Guest ${index + 1}, e.g., Jane Doe, Partner at Firm`}
-                          />
-                          {formData.guests.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={() => removeGuestField(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addGuestField}
-                        className="font-body"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add another guest
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description" className="font-body">Description (optional)</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Event description"
-                        rows={3}
-                      />
-                    </div>
-                    {isSubmitting && (
-                      <div className="space-y-2">
-                        <Progress value={100} className="h-1 animate-pulse" />
-                        <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p>
-                      </div>
-                    )}
-                    <div className="flex gap-4 pt-4">
-                      <Button type="submit" className="flex-1 font-body" disabled={isSubmitting}>
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (editingEvent ? 'Update Event' : 'Create Event')}
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsDialogOpen(false)}
-                        className="font-body"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-              </div>
+      <div className="mb-8 pb-6 border-b border-separator">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Year</label>
+            <select value={eventsYearFilter} onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+              className="bg-background border border-separator px-3 h-10 min-w-[150px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              <option value="all">All Years</option>
+              {eventsYears.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input type="text" placeholder="Search by title, place, moderator, guests..." value={eventsSearchQuery} onChange={(e) => setEventsSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+                style={{ fontFamily: '"Times New Roman", Times, serif' }} />
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Event Filters */}
-            <div className="mb-8 pb-6 border-b border-separator">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Year filter */}
-                <div>
-                  <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                    Year
-                  </label>
-                  <select
-                    value={eventsYearFilter}
-                    onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                    className="bg-background border border-separator px-3 h-10 min-w-[150px]"
-                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                  >
-                    <option value="all">All Years</option>
-                    {eventsYears.map((year) => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
+      <p className="font-body text-small text-muted-foreground mb-6">
+        Showing {paginatedEvents.length} of {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
+        {eventsTotalPages > 1 && ` (page ${eventsCurrentPage} of ${eventsTotalPages})`}
+      </p>
 
-                {/* Search */}
-                <div className="flex-1">
-                  <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                    Search
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search by title, place, moderator, guests..."
-                      value={eventsSearchQuery}
-                      onChange={(e) => setEventsSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                      style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                    />
+      {isEventsLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : events.length === 0 ? (
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Click "Add Event" to create one.</p></CardContent></Card>
+      ) : (
+        <>
+          <div className="space-y-0">
+            {paginatedEvents.map((event, index) => (
+              <div key={event.id} className={`py-0 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1"><EventsListNew events={[event]} /></div>
+                  <div className="flex gap-2 pt-0">
+                    <Button variant="outline" size="icon" onClick={() => openEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                    <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+          {eventsTotalPages > 1 && (
+            <nav className="flex justify-center mt-8" aria-label="Events Pagination">
+              <ul className="flex items-center gap-1">
+                <li><button onClick={() => setEventsCurrentPage(eventsCurrentPage - 1)} disabled={eventsCurrentPage === 1}
+                  className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed">
+                  <ChevronLeft className="h-4 w-4" />Previous</button></li>
+                {getEventsPageNumbers().map((page, i) => (
+                  <li key={i}>{page === 'ellipsis' ? (
+                    <span className="flex h-9 w-9 items-center justify-center"><MoreHorizontal className="h-4 w-4" /></span>
+                  ) : (
+                    <button onClick={() => setEventsCurrentPage(page)}
+                      className={`h-9 w-9 font-body text-sm border rounded ${eventsCurrentPage === page ? 'border-primary bg-primary text-primary-foreground' : 'border-separator hover:bg-muted'}`}>
+                      {page}</button>
+                  )}</li>
+                ))}
+                <li><button onClick={() => setEventsCurrentPage(eventsCurrentPage + 1)} disabled={eventsCurrentPage === eventsTotalPages}
+                  className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed">
+                  Next<ChevronRight className="h-4 w-4" /></button></li>
+              </ul>
+            </nav>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Render shell
+  // ────────────────────────────────────────────────────────────────────────────
+
+  return (
+    <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
+      {/* Nav column */}
+      <aside
+        className="flex flex-col bg-foreground text-background transition-[width] duration-200 ease-in-out shrink-0"
+        style={{ width: navExpanded ? 240 : 72 }}
+      >
+        {/* Logo */}
+        <div className="shrink-0 flex items-center gap-3 px-4 h-20 border-b border-background/10">
+          <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center shrink-0">
+            <img src={logoMark} alt="MIMS" className="h-7 w-7" />
+          </div>
+          {navExpanded && (
+            <span className="font-serif text-xl tracking-wide">MIMS</span>
+          )}
+        </div>
+
+        {/* Nav items (scrollable) */}
+        <nav className="flex-1 overflow-y-auto py-3">
+          {visibleNav.map((section) => {
+            const isActive = section.key === activeSectionKey;
+            return (
+              <button
+                key={section.key}
+                onClick={() => handleNavClick(section)}
+                title={!navExpanded ? section.label : undefined}
+                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors ${
+                  isActive ? 'bg-background/10' : 'hover:bg-background/5'
+                } ${navExpanded ? '' : 'justify-center'}`}
+                style={{ fontFamily: '"Times New Roman", Times, serif' }}
+              >
+                <section.Icon className="h-5 w-5 shrink-0" />
+                {navExpanded && <span className="text-[15px]">{section.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Collapse toggle */}
+        <div className="shrink-0 border-t border-background/10 p-2">
+          <button
+            onClick={() => setNavExpanded((v) => !v)}
+            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-background/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
+            title={navExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          >
+            {navExpanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+            {navExpanded && <span className="text-sm text-background/70">Collapse sidebar</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Right side */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top strip */}
+        <div className="shrink-0 h-20 flex items-center justify-between px-6 bg-muted/40 border-b border-separator">
+          <div className="flex flex-col leading-tight">
+            <span className="italic font-body text-accent" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              {roleLabel}
+            </span>
+            <span className="font-body text-sm text-muted-foreground">{user.email}</span>
+          </div>
+          <Button
+            variant="outline"
+            onClick={async () => { await signOut(); navigate('/auth'); }}
+            className="font-body"
+          >
+            <LogOut className="h-4 w-4 mr-2" />Log out
+          </Button>
+        </div>
+
+        {/* Body row */}
+        <div className="flex-1 min-h-0 flex">
+          {/* Submenu panel */}
+          <div
+            className="bg-muted/30 border-r border-separator overflow-hidden transition-[width] duration-200 ease-in-out shrink-0"
+            style={{ width: submenuOpen && activeSection ? 240 : 0 }}
+          >
+            {activeSection && (
+              <div className="w-[240px] h-full flex flex-col">
+                <div className="shrink-0 h-14 flex items-center justify-between px-4 border-b border-separator">
+                  <h3 className="font-serif text-lg text-accent">{activeSection.label}</h3>
+                  <button
+                    onClick={() => setSubmenuOpen(false)}
+                    className="h-7 w-7 flex items-center justify-center border border-separator hover:bg-background"
+                    title="Hide submenu"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto py-3">
+                  {activeSection.subItems.map((si) => {
+                    const isActive = si.key === activeSubKey;
+                    return (
+                      <button
+                        key={si.key}
+                        onClick={() => setActiveSubKey(si.key)}
+                        className={`w-full text-left px-4 h-10 flex items-center transition-colors text-[15px] ${
+                          isActive ? 'text-accent font-medium bg-background' : 'text-foreground hover:bg-background/60'
+                        }`}
+                        style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                      >
+                        {si.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Content area */}
+          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            {/* Breadcrumb strip */}
+            <div className="shrink-0 h-14 flex items-center gap-3 px-6 border-b border-separator">
+              {!submenuOpen && activeSection && activeSection.subItems.length > 1 && (
+                <button
+                  onClick={() => setSubmenuOpen(true)}
+                  className="h-7 w-7 flex items-center justify-center border border-separator hover:bg-muted"
+                  title="Show submenu"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              )}
+              <nav className="font-body text-sm text-muted-foreground flex items-center gap-2">
+                <span>Dashboard</span>
+                {activeSection && <><span>/</span><span>{activeSection.label}</span></>}
+                {activeSub && <><span>/</span><span className="text-foreground">{activeSub.label}</span></>}
+              </nav>
             </div>
 
-            {/* Results count */}
-            <p className="font-body text-small text-muted-foreground mb-6">
-              Showing {paginatedEvents.length} of {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
-              {eventsTotalPages > 1 && ` (page ${eventsCurrentPage} of ${eventsTotalPages})`}
-            </p>
-
-            {/* Events List */}
-            {events.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="font-body text-muted-foreground">
-                    No events yet. Click "Add Event" to create one.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="space-y-0">
-                  {paginatedEvents.map((event, index) => (
-                    <div 
-                      key={event.id}
-                      className={`py-0 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <EventsListNew events={[event]} />
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex gap-2 pt-0">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEditDialog(event)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleDelete(event.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {eventsTotalPages > 1 && (
-                  <nav className="flex justify-center mt-8" aria-label="Events Pagination">
-                    <ul className="flex items-center gap-1">
-                      <li>
-                        <button
-                          onClick={() => handleEventsPageChange(eventsCurrentPage - 1)}
-                          disabled={eventsCurrentPage === 1}
-                          className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Go to previous page"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          Previous
-                        </button>
-                      </li>
-                      {getEventsPageNumbers().map((page, index) => (
-                        <li key={index}>
-                          {page === 'ellipsis' ? (
-                            <span className="flex h-9 w-9 items-center justify-center" aria-hidden>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleEventsPageChange(page)}
-                              className={`h-9 w-9 font-body text-sm border rounded ${
-                                eventsCurrentPage === page
-                                  ? 'border-primary bg-primary text-primary-foreground'
-                                  : 'border-separator hover:bg-muted'
-                              }`}
-                              aria-current={eventsCurrentPage === page ? 'page' : undefined}
-                            >
-                              {page}
-                            </button>
-                          )}
-                        </li>
-                      ))}
-                      <li>
-                        <button
-                          onClick={() => handleEventsPageChange(eventsCurrentPage + 1)}
-                          disabled={eventsCurrentPage === eventsTotalPages}
-                          className="flex items-center gap-1 px-3 py-2 font-body text-sm border border-separator rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Go to next page"
-                        >
-                          Next
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </li>
-                    </ul>
-                  </nav>
-                )}
-              </>
-            )}
-          </TabsContent>
-        )}
-
-        {permissions.canAccessFiles && (
-          <TabsContent value="files">
-            <FileManagement allowedDivisions={permissions.allowedDivisions} />
-          </TabsContent>
-        )}
-
-        {permissions.canAccessTeam && (
-          <TabsContent value="team">
-            <TeamManagement 
-              allowedDivisions={permissions.allowedDivisions} 
-              isFullAccess={permissions.isFullAccess}
-            />
-          </TabsContent>
-        )}
-
-        {permissions.canAccessSettings && (
-          <TabsContent value="settings">
-            <ApplicationSettings />
-          </TabsContent>
-        )}
-
-        {permissions.canAccessReadings && (
-          <TabsContent value="readings">
-            <ReadingsManagement />
-          </TabsContent>
-        )}
-
-        {permissions.canAccessActivity && (
-          <TabsContent value="activity">
-            <ActivityManagement />
-          </TabsContent>
-        )}
-      </Tabs>
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {renderContent()}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
