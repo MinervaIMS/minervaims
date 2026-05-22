@@ -713,8 +713,8 @@ const AdminDashboard = () => {
           >
             {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
-                <div className="shrink-0 h-14 flex items-center justify-between px-4 border-b border-separator">
-                  <h3 className="font-serif text-lg text-accent">{activeSection.label}</h3>
+                <div className="shrink-0 h-14 flex items-center justify-between px-4">
+                  <h3 className="font-serif text-lg text-accent uppercase tracking-wider">{activeSection.label}</h3>
                   <button
                     onClick={() => setSubmenuOpen(false)}
                     className="h-7 w-7 flex items-center justify-center hover:bg-background"
