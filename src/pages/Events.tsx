@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { EventsListNew } from "@/components/shared/EventsListNew";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,9 @@ const Events = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Events | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${eventsBg})` }} />
         <div className="relative z-10">
