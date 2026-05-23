@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,6 +91,9 @@ const Readings = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Readings | MIMS</title>
+      </Helmet>
       {/* First Section: Title with Background */}
       <div className="relative">
         <div 

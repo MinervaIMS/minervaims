@@ -218,6 +218,9 @@ const Archive = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Archive | MIMS</title>
+      </Helmet>
       {/* Hero section with background image */}
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBg})` }} />
