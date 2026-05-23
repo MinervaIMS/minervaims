@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
@@ -138,6 +139,9 @@ const DivisionDetail = () => {
 
   return (
     <>
+      <Helmet>
+        <title>{content.title} | MIMS</title>
+      </Helmet>
       {/* First Section: Title and Subtitle with Background */}
       <div className="relative">
         <div 
