@@ -17,6 +17,7 @@ import {
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
   Presentation, Home,
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
@@ -628,6 +629,10 @@ const AdminDashboard = () => {
   // ────────────────────────────────────────────────────────────────────────────
 
   return (
+    <>
+    <Helmet>
+      <title>Dashboard | MIMS</title>
+    </Helmet>
     <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
       {/* Nav column */}
       <aside
