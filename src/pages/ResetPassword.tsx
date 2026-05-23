@@ -137,14 +137,13 @@ const ResetPassword = () => {
   // Email sent confirmation screen
   if (emailSent) {
     return (
-      <>
-      <Helmet>
-        <title>Reset Password | MIMS</title>
-      </Helmet>
       <div 
         className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${resetPasswordBg})` }}
       >
+        <Helmet>
+          <title>Reset Password | MIMS</title>
+        </Helmet>
         <div className="container flex items-center justify-center">
           <Card className="w-full max-w-md shadow-elevated">
           <CardHeader className="text-center">
@@ -189,6 +188,9 @@ const ResetPassword = () => {
         className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${resetPasswordBg})` }}
       >
+        <Helmet>
+          <title>Reset Password | MIMS</title>
+        </Helmet>
         <div className="container flex items-center justify-center">
           <Card className="w-full max-w-md shadow-elevated">
           <CardHeader className="text-center">
