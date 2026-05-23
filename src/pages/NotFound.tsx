@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import dashboardRestrictedLogo from '@/assets/dashboard-restricted-logo.png';
 
 const NotFound = () => {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
+      <Helmet>
+        <title>Page Not Found | MIMS</title>
+      </Helmet>
       <div className="text-center flex flex-col items-center">
         <img 
           src={dashboardRestrictedLogo} 

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import sitemapBg from '@/assets/sitemap-bg.webp';
@@ -60,6 +61,9 @@ const Sitemap = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Sitemap | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sitemapBg})` }} />
         <div className="relative z-10">

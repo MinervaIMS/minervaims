@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import logoWhite from "@/assets/logo-white.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
 import companiesImage from "@/assets/companies.webp";
@@ -68,6 +69,9 @@ const Index = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Minerva Investment Management Society | MIMS</title>
+      </Helmet>
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center pt-20 md:pt-24">

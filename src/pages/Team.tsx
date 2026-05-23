@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, TeamDirectory, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
@@ -67,6 +68,9 @@ const Team = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Team | MIMS</title>
+      </Helmet>
       <PageIntroduction
         title="Our Team"
         backgroundImage={teamBg}

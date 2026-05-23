@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { PageIntroduction, ApplicationStatus, PageLoader } from "@/components/shared";
 import joinBg from "@/assets/join-bg.webp";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
@@ -66,6 +67,9 @@ const Join = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Join | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg})` }} />
         <div className="relative z-10">

@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import authBg from '@/assets/auth-bg.webp';
+import { Helmet } from 'react-helmet-async';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -162,6 +163,9 @@ const Auth = () => {
       className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: `url(${authBg})` }}
     >
+      <Helmet>
+        <title>Sign In | MIMS</title>
+      </Helmet>
       <div className="container flex items-center justify-center">
         <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">

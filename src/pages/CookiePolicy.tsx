@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,9 @@ const CookiePolicy = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Cookie Policy | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${cookieBg})` }} />
         <div className="relative z-10">

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +40,9 @@ const PendingApproval = () => {
       className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: `url(${pendingApprovalBg})` }}
     >
+      <Helmet>
+        <title>Pending Approval | MIMS</title>
+      </Helmet>
       <div className="container flex items-center justify-center">
         <Card className="w-full max-w-lg text-center shadow-elevated">
         <CardHeader>

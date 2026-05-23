@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import privacyBg from "@/assets/privacy-bg.webp";
@@ -11,6 +12,9 @@ const PrivacyPolicy = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Privacy Policy | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${privacyBg})` }} />
         <div className="relative z-10">

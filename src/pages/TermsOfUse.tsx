@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import termsBg from '@/assets/terms-bg.webp';
@@ -11,6 +12,9 @@ const TermsOfUse = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Terms of Use | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${termsBg})` }} />
         <div className="relative z-10">

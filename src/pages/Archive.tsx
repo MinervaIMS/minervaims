@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from "@/lib/types";
@@ -217,6 +218,9 @@ const Archive = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Archive | MIMS</title>
+      </Helmet>
       {/* Hero section with background image */}
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBg})` }} />
