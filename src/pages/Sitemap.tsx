@@ -61,6 +61,9 @@ const Sitemap = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Sitemap | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sitemapBg})` }} />
         <div className="relative z-10">
