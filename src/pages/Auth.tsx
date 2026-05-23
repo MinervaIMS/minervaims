@@ -166,8 +166,6 @@ const Auth = () => {
       <Helmet>
         <title>Sign In | MIMS</title>
       </Helmet>
-      style={{ backgroundImage: `url(${authBg})` }}
-    >
       <div className="container flex items-center justify-center">
         <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">
