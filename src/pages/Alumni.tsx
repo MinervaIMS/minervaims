@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
 import companiesImage from '@/assets/companies.webp';
@@ -150,6 +151,9 @@ const Alumni = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Alumni | MIMS</title>
+      </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${alumniBg})` }} />
         <div className="relative z-10">
