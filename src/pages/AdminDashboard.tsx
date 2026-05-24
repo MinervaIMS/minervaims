@@ -451,6 +451,14 @@ const AdminDashboard = () => {
 
   const renderContent = () => {
     if (activeSectionKey === 'my-role') return renderMyRole();
+    if (activeSectionKey === 'dashboard') {
+      return (
+        <div className="py-16 text-center">
+          <h2 className="font-serif text-heading text-accent mb-3">Dashboard</h2>
+          <p className="font-body text-muted-foreground">Coming soon.</p>
+        </div>
+      );
+    }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
       case 'reports-archive':
@@ -461,7 +469,7 @@ const AdminDashboard = () => {
         return <AlumniManagement />;
       case 'events-archive':
         return renderEventsManagement();
-      case 'applications-status':
+      case 'applications-website':
         return <ApplicationSettings />;
       case 'ops-readings':
         return <ReadingsManagement />;
