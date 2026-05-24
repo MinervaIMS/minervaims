@@ -103,16 +103,17 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
       { key: 'events-forms', label: 'Forms & Attendance', allowed: (p) => p.canAccessEvents },
-      { key: 'events-archive', label: 'Archive & Website', allowed: (p) => p.canAccessEvents },
+      { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
       { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-status', label: 'Status & Website', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-status', label: 'Status', allowed: (p) => p.canAccessSettings },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-joiners', label: 'Joiners', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-joiners', label: 'New Joiners', allowed: (p) => p.canAccessSettings },
       { key: 'applications-form', label: 'Form Settings', allowed: (p) => p.canAccessSettings },
     ],
   },
