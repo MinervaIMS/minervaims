@@ -135,6 +135,7 @@ const NAV: NavSection[] = [
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
       { key: 'ops-testimonials', label: 'Testimonials' },
+      { key: 'ops-alumni-companies', label: 'Alumni Companies' },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
       { key: 'ops-docs', label: 'Statuto' },
     ],
