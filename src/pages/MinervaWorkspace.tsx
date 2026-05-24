@@ -15,7 +15,7 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation, Home,
+  Presentation, LayoutDashboard, LayoutTemplate,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -70,16 +70,12 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'dashboard', label: 'Dashboard', Icon: Home,
+    key: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard,
     subItems: [],
   },
   {
     key: 'calendar', label: 'Calendar', Icon: CalendarDays,
-    subItems: [
-      { key: 'calendar-all', label: 'All' },
-      { key: 'calendar-reports', label: 'Reports' },
-      { key: 'calendar-events', label: 'Calls & Events' },
-    ],
+    subItems: [],
   },
   {
     key: 'reports', label: 'Reports', Icon: FileBarChart2,
@@ -122,22 +118,29 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'smm-ig', label: 'Instagram' },
       { key: 'smm-li', label: 'LinkedIn' },
-      { key: 'smm-other', label: 'Other templates' },
+      { key: 'smm-other', label: 'Other Templates' },
       { key: 'smm-brand', label: 'Design, Brand & Logo' },
     ],
   },
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'ops-fee', label: 'Membership Fee' },
       { key: 'ops-treasury', label: 'Treasury' },
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
-      { key: 'ops-testimonials', label: 'Testimonials' },
-      { key: 'ops-alumni-companies', label: 'Alumni Companies' },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
       { key: 'ops-docs', label: 'Statuto' },
+    ],
+  },
+
+  {
+    key: 'website', label: 'Website', Icon: LayoutTemplate,
+    subItems: [
+      { key: 'website-pages', label: 'Pages', allowed: (p) => p.canAccessUsers },
+      { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
+      { key: 'website-testimonials', label: 'Testimonials' },
+      { key: 'website-alumni-companies', label: 'Alumni Companies' },
     ],
   },
 
@@ -147,7 +150,6 @@ const NAV: NavSection[] = [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
       { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
       { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
-      { key: 'settings-pages', label: 'Website Pages', allowed: (p) => p.canAccessUsers },
       { key: 'settings-edit-dashboard', label: 'Edit Workspace', allowed: (p) => p.canAccessUsers },
     ],
   },
@@ -471,7 +473,7 @@ const MinervaWorkspace = () => {
         return renderEventsManagement();
       case 'applications-website':
         return <ApplicationSettings />;
-      case 'ops-readings':
+      case 'website-readings':
         return <ReadingsManagement />;
       case 'settings-users':
         return <UserManagement />;
@@ -717,7 +719,7 @@ const MinervaWorkspace = () => {
               onClick={() => navigate('/')}
               className="font-body"
             >
-              <Home className="h-4 w-4 mr-2" />Return to website
+              <Globe className="h-4 w-4 mr-2" />Return to website
             </Button>
             <Button
               variant="outline"
