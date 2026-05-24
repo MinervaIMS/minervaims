@@ -15,7 +15,7 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation, Home,
+  Presentation, LayoutDashboard, LayoutTemplate,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -70,16 +70,12 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'dashboard', label: 'Dashboard', Icon: Home,
+    key: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard,
     subItems: [],
   },
   {
     key: 'calendar', label: 'Calendar', Icon: CalendarDays,
-    subItems: [
-      { key: 'calendar-all', label: 'All' },
-      { key: 'calendar-reports', label: 'Reports' },
-      { key: 'calendar-events', label: 'Calls & Events' },
-    ],
+    subItems: [],
   },
   {
     key: 'reports', label: 'Reports', Icon: FileBarChart2,
@@ -122,7 +118,7 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'smm-ig', label: 'Instagram' },
       { key: 'smm-li', label: 'LinkedIn' },
-      { key: 'smm-other', label: 'Other templates' },
+      { key: 'smm-other', label: 'Other Templates' },
       { key: 'smm-brand', label: 'Design, Brand & Logo' },
     ],
   },
