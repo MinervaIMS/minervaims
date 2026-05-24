@@ -163,7 +163,7 @@ function filterNav(permissions: Permissions): NavSection[] {
 // Component
 // ──────────────────────────────────────────────────────────────────────────────
 
-const AdminDashboard = () => {
+const MinervaWorkspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
