@@ -801,4 +801,4 @@ const MinervaWorkspace = () => {
   );
 };
 
-export default AdminDashboard;
+export default MinervaWorkspace;
