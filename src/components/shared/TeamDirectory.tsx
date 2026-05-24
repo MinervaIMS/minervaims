@@ -11,7 +11,7 @@ interface TeamDirectoryProps {
   initialDivisionFilter?: Division;
 }
 
-// Position hierarchy for sorting (lower = higher priority) - matches admin dashboard
+// Position hierarchy for sorting (lower = higher priority) - matches Minerva Workspace
 const POSITION_ORDER: Record<string, number> = {
   'President': 1,
   'Vice President': 2,
@@ -62,7 +62,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
     });
   }, [members, divisionFilter, roleFilter, searchQuery]);
 
-  // Sort by position hierarchy first, then by display_order (matches admin dashboard logic)
+  // Sort by position hierarchy first, then by display_order (matches Minerva Workspace logic)
   const sortByPositionThenOrder = (a: TeamMember, b: TeamMember) => {
     const posA = POSITION_ORDER[a.position] ?? 100;
     const posB = POSITION_ORDER[b.position] ?? 100;

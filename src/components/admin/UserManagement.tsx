@@ -426,7 +426,7 @@ const UserManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Pending Approvals (Members without dashboard access) */}
+      {/* Pending Approvals (Members without workspace access) */}
       <div>
         <h2 className="font-serif text-heading text-accent mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5" />
