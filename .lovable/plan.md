@@ -1,8 +1,9 @@
-Update dashboard navigation labels and sub-sections in `src/pages/AdminDashboard.tsx`.
+The Calendar section exists in NAV with empty `subItems`, but `filterNav` (line 161) drops any section without subItems unless its key is `my-role` or `dashboard`. So Calendar is being filtered out.
 
-1. Rename **My Role** section label and page heading to **My Profile**.
-2. Rename **Screening** sub-item under Applications to **Candidates**.
-3. Add **Joiners** sub-item under Applications (same permission as existing application items).
-4. Add **Alumni Calls** sub-item under Events (same permission as existing event items).
-5. Add **Advisors** sub-item under People (same permission as Members).
-6. Add **Testimonials** sub-item under Operations (no permission restriction, following existing ops pattern).
+**Change:** In `src/pages/MinervaWorkspace.tsx` line 161, add `s.key === 'calendar'` to the keep condition:
+
+```ts
+.filter((s) => s.key === 'my-role' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
+```
+
+That's it — single-line fix.
