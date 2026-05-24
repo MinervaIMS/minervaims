@@ -66,7 +66,7 @@ type NavSection = {
 
 const NAV: NavSection[] = [
   {
-    key: 'my-role', label: 'My Role', Icon: UserIcon,
+    key: 'my-role', label: 'My Profile', Icon: UserIcon,
     subItems: [],
   },
   {
@@ -90,6 +90,7 @@ const NAV: NavSection[] = [
     key: 'people', label: 'People', Icon: UsersIcon,
     subItems: [
       { key: 'people-members', label: 'Members', allowed: (p) => p.canAccessTeam },
+      { key: 'people-advisors', label: 'Advisors', allowed: (p) => p.canAccessTeam },
       { key: 'people-alumni', label: 'Alumni', allowed: (p) => p.canAccessAlumni },
     ],
   },
@@ -99,13 +100,15 @@ const NAV: NavSection[] = [
       { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
       { key: 'events-forms', label: 'Forms & Attendance', allowed: (p) => p.canAccessEvents },
       { key: 'events-archive', label: 'Archive & Website', allowed: (p) => p.canAccessEvents },
+      { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
       { key: 'applications-status', label: 'Status & Website', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-screening', label: 'Screening', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-joiners', label: 'Joiners', allowed: (p) => p.canAccessSettings },
       { key: 'applications-form', label: 'Form Settings', allowed: (p) => p.canAccessSettings },
     ],
   },
@@ -126,10 +129,12 @@ const NAV: NavSection[] = [
       { key: 'ops-treasury', label: 'Treasury' },
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
+      { key: 'ops-testimonials', label: 'Testimonials' },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
       { key: 'ops-docs', label: 'Statuto' },
     ],
   },
+
   {
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
