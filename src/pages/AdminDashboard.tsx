@@ -429,7 +429,7 @@ const AdminDashboard = () => {
 
   const renderMyRole = () => (
     <div className="max-w-2xl">
-      <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">My Role</h2>
+      <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">My Profile</h2>
       <div className="space-y-4 font-body">
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Role</div>
