@@ -32,7 +32,7 @@ const Sitemap = lazy(() => import("./pages/Sitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const MinervaWorkspace = lazy(() => import("./pages/MinervaWorkspace"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
