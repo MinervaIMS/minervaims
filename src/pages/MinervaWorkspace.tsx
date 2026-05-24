@@ -70,7 +70,7 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard,
+    key: 'dashboard', label: 'Dashboard', Icon: BarChart3,
     subItems: [],
   },
   {
