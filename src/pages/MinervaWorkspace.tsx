@@ -650,7 +650,7 @@ const MinervaWorkspace = () => {
   return (
     <>
     <Helmet>
-      <title>Dashboard | MIMS</title>
+      <title>Workspace | MIMS</title>
     </Helmet>
     <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
       {/* Nav column */}
