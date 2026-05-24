@@ -225,7 +225,7 @@ const MinervaWorkspace = () => {
         return;
       }
       if (!permissions.hasAnyAccess) {
-        toast({ title: 'Access Denied', description: "You don't have permission to access the admin dashboard.", variant: 'destructive' });
+        toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
