@@ -70,6 +70,10 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
+    key: 'dashboard', label: 'Dashboard', Icon: Home,
+    subItems: [],
+  },
+  {
     key: 'calendar', label: 'Calendar', Icon: CalendarDays,
     subItems: [
       { key: 'calendar-all', label: 'All' },
@@ -99,16 +103,17 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
       { key: 'events-forms', label: 'Forms & Attendance', allowed: (p) => p.canAccessEvents },
-      { key: 'events-archive', label: 'Archive & Website', allowed: (p) => p.canAccessEvents },
+      { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
       { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-status', label: 'Status & Website', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-status', label: 'Status', allowed: (p) => p.canAccessSettings },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-joiners', label: 'Joiners', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-joiners', label: 'New Joiners', allowed: (p) => p.canAccessSettings },
       { key: 'applications-form', label: 'Form Settings', allowed: (p) => p.canAccessSettings },
     ],
   },
@@ -130,6 +135,7 @@ const NAV: NavSection[] = [
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
       { key: 'ops-testimonials', label: 'Testimonials' },
+      { key: 'ops-alumni-companies', label: 'Alumni Companies' },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
       { key: 'ops-docs', label: 'Statuto' },
     ],
@@ -445,6 +451,14 @@ const AdminDashboard = () => {
 
   const renderContent = () => {
     if (activeSectionKey === 'my-role') return renderMyRole();
+    if (activeSectionKey === 'dashboard') {
+      return (
+        <div className="py-16 text-center">
+          <h2 className="font-serif text-heading text-accent mb-3">Dashboard</h2>
+          <p className="font-body text-muted-foreground">Coming soon.</p>
+        </div>
+      );
+    }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
       case 'reports-archive':
@@ -455,7 +469,7 @@ const AdminDashboard = () => {
         return <AlumniManagement />;
       case 'events-archive':
         return renderEventsManagement();
-      case 'applications-status':
+      case 'applications-website':
         return <ApplicationSettings />;
       case 'ops-readings':
         return <ReadingsManagement />;
