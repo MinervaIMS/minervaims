@@ -783,7 +783,7 @@ const MinervaWorkspace = () => {
                 </button>
               )}
               <nav className="font-body text-sm text-muted-foreground flex items-center gap-2">
-                <span>Dashboard</span>
+                <span>Minerva Workspace</span>
                 {activeSection && <><span>/</span><span>{activeSection.label}</span></>}
                 {activeSub && <><span>/</span><span className="text-foreground">{activeSub.label}</span></>}
               </nav>
