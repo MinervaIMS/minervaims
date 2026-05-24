@@ -70,6 +70,10 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
+    key: 'dashboard', label: 'Dashboard', Icon: Home,
+    subItems: [],
+  },
+  {
     key: 'calendar', label: 'Calendar', Icon: CalendarDays,
     subItems: [
       { key: 'calendar-all', label: 'All' },
