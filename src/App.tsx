@@ -65,7 +65,7 @@ const App = () => (
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
-                <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
+                <Route path="/admin" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
                 <Route path="/pending-approval" element={<Suspense fallback={<PageLoader />}><PendingApproval /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
               </Route>
