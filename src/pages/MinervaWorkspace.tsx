@@ -98,7 +98,8 @@ const NAV: NavSection[] = [
     key: 'events', label: 'Events', Icon: Presentation,
     subItems: [
       { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
-      { key: 'events-forms', label: 'Forms & Attendance', allowed: (p) => p.canAccessEvents },
+      { key: 'events-forms', label: 'Forms', allowed: (p) => p.canAccessEvents },
+      { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
       { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
       { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.canAccessEvents },
     ],
