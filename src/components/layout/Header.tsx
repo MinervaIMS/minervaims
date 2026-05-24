@@ -172,13 +172,13 @@ export function Header() {
               </div>
             ))}
             
-            {/* Dashboard Button - only shown when logged in */}
+            {/* Workspace Button - only shown when logged in */}
             {user && (
               <Link
                 to="/admin"
                 className={`font-serif text-base tracking-wider border px-4 py-2 transition-all duration-300 ${isTransparent ? 'bg-background text-foreground border-background hover:bg-transparent hover:text-background' : 'bg-background text-accent border-accent hover:bg-accent hover:text-background hover:shadow-md'}`}
               >
-                DASHBOARD
+                WORKSPACE
               </Link>
             )}
           </div>
