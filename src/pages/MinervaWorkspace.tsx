@@ -473,7 +473,7 @@ const MinervaWorkspace = () => {
         return renderEventsManagement();
       case 'applications-website':
         return <ApplicationSettings />;
-      case 'ops-readings':
+      case 'website-readings':
         return <ReadingsManagement />;
       case 'settings-users':
         return <UserManagement />;
