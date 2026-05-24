@@ -148,7 +148,7 @@ const NAV: NavSection[] = [
       { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
       { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
       { key: 'settings-pages', label: 'Website Pages', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-edit-dashboard', label: 'Edit Dashboard', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-edit-dashboard', label: 'Edit Workspace', allowed: (p) => p.canAccessUsers },
     ],
   },
 ];
@@ -156,14 +156,14 @@ const NAV: NavSection[] = [
 function filterNav(permissions: Permissions): NavSection[] {
   return NAV
     .map((s) => ({ ...s, subItems: s.subItems.filter((si) => !si.allowed || si.allowed(permissions)) }))
-    .filter((s) => s.key === 'my-role' || s.subItems.length > 0);
+    .filter((s) => s.key === 'my-role' || s.key === 'dashboard' || s.subItems.length > 0);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────────────────────────────────────
 
-const AdminDashboard = () => {
+const MinervaWorkspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
@@ -225,7 +225,7 @@ const AdminDashboard = () => {
         return;
       }
       if (!permissions.hasAnyAccess) {
-        toast({ title: 'Access Denied', description: "You don't have permission to access the admin dashboard.", variant: 'destructive' });
+        toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
@@ -369,7 +369,7 @@ const AdminDashboard = () => {
   // Loading / guards
   // ────────────────────────────────────────────────────────────────────────────
 
-  // Dashboard sits below the public header (h-20 mobile / h-24 desktop = 6rem)
+  // Workspace sits below the public header (h-20 mobile / h-24 desktop = 6rem)
   const shellHeight = 'h-screen';
 
   if (authLoading) {
@@ -385,7 +385,7 @@ const AdminDashboard = () => {
       <div className={`${shellHeight} flex items-center justify-center px-6`}>
         <Card className="max-w-md">
           <CardContent className="py-10 text-center">
-            <h1 className="font-serif text-heading text-accent mb-3">Dashboard available on desktop</h1>
+            <h1 className="font-serif text-heading text-accent mb-3">Minerva Workspace available on desktop</h1>
             <p className="font-body text-muted-foreground">
               Please open this page on a desktop computer or a tablet in landscape mode.
             </p>
@@ -650,7 +650,7 @@ const AdminDashboard = () => {
   return (
     <>
     <Helmet>
-      <title>Dashboard | MIMS</title>
+      <title>Workspace | MIMS</title>
     </Helmet>
     <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
       {/* Nav column */}
@@ -783,7 +783,7 @@ const AdminDashboard = () => {
                 </button>
               )}
               <nav className="font-body text-sm text-muted-foreground flex items-center gap-2">
-                <span>Dashboard</span>
+                <span>Minerva Workspace</span>
                 {activeSection && <><span>/</span><span>{activeSection.label}</span></>}
                 {activeSub && <><span>/</span><span className="text-foreground">{activeSub.label}</span></>}
               </nav>
@@ -801,4 +801,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default MinervaWorkspace;

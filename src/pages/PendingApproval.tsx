@@ -69,7 +69,7 @@ const PendingApproval = () => {
           </div>
 
           <p className="text-muted-foreground font-body font-normal">
-            You need approval to access the dashboard to manage events, team members, alumni network and reports uploaded. 
+            You need approval to access the Minerva Workspace to manage events, team members, alumni network and reports uploaded. 
             Please contact the current president of the MIMS.
           </p>
 

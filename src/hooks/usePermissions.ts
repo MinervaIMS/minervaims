@@ -26,7 +26,7 @@ const roleToDivision: Partial<Record<AppRole, Division>> = {
   head_of_quant: 'quant',
 };
 
-// Roles with full dashboard access
+// Roles with full workspace access
 const fullAccessRoles: AppRole[] = [
   'admin',
   'president',
@@ -161,7 +161,7 @@ export const usePermissions = (): Permissions => {
       };
     }
     
-    // No special roles (member) - no dashboard access
+    // No special roles (member) - no workspace access
     return {
       canAccessUsers: false,
       canAccessAlumni: false,
