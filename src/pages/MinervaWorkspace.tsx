@@ -125,15 +125,22 @@ const NAV: NavSection[] = [
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'ops-fee', label: 'Membership Fee' },
       { key: 'ops-treasury', label: 'Treasury' },
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
-      { key: 'ops-testimonials', label: 'Testimonials' },
-      { key: 'ops-alumni-companies', label: 'Alumni Companies' },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
       { key: 'ops-docs', label: 'Statuto' },
+    ],
+  },
+
+  {
+    key: 'website', label: 'Website', Icon: LayoutTemplate,
+    subItems: [
+      { key: 'website-pages', label: 'Pages', allowed: (p) => p.canAccessUsers },
+      { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
+      { key: 'website-testimonials', label: 'Testimonials' },
+      { key: 'website-alumni-companies', label: 'Alumni Companies' },
     ],
   },
 
@@ -143,7 +150,6 @@ const NAV: NavSection[] = [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
       { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
       { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
-      { key: 'settings-pages', label: 'Website Pages', allowed: (p) => p.canAccessUsers },
       { key: 'settings-edit-dashboard', label: 'Edit Workspace', allowed: (p) => p.canAccessUsers },
     ],
   },
