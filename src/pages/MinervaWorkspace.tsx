@@ -385,7 +385,7 @@ const MinervaWorkspace = () => {
       <div className={`${shellHeight} flex items-center justify-center px-6`}>
         <Card className="max-w-md">
           <CardContent className="py-10 text-center">
-            <h1 className="font-serif text-heading text-accent mb-3">Dashboard available on desktop</h1>
+            <h1 className="font-serif text-heading text-accent mb-3">Minerva Workspace available on desktop</h1>
             <p className="font-body text-muted-foreground">
               Please open this page on a desktop computer or a tablet in landscape mode.
             </p>
