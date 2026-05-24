@@ -369,7 +369,7 @@ const MinervaWorkspace = () => {
   // Loading / guards
   // ────────────────────────────────────────────────────────────────────────────
 
-  // Dashboard sits below the public header (h-20 mobile / h-24 desktop = 6rem)
+  // Workspace sits below the public header (h-20 mobile / h-24 desktop = 6rem)
   const shellHeight = 'h-screen';
 
   if (authLoading) {
