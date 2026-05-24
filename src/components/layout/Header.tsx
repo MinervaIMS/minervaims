@@ -241,7 +241,7 @@ export function Header() {
               </div>
             ))}
             
-            {/* Mobile Dashboard - only shown when logged in */}
+            {/* Mobile Workspace - only shown when logged in */}
             {user && (
               <div className="py-2 mt-2">
                 <Link
@@ -249,7 +249,7 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="font-serif text-base tracking-wider bg-background text-accent border border-accent px-4 py-2 inline-block hover:bg-accent hover:text-background hover:shadow-md transition-all duration-300"
                 >
-                  DASHBOARD
+                  WORKSPACE
                 </Link>
               </div>
             )}
