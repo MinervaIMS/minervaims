@@ -22,6 +22,8 @@ const legalLinks = [
   { label: 'Terms of Use', href: '/terms-of-use', external: false },
   { label: 'Privacy Policy', href: '/privacy-policy', external: false },
   { label: 'Cookie Policy', href: '/cookie-policy', external: false },
+  { label: 'Disclaimer', href: '/disclaimer', external: false },
+  { label: 'Society Statute', href: '/statute', external: false },
 ];
 
 const LinkWithArrow = ({ children }: { children: React.ReactNode }) => (
