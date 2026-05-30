@@ -168,7 +168,7 @@ const DivisionDetail = () => {
               {content.description}
             </p>
             <Link
-              to="/members/team"
+              to="/people/members"
               className="cta-link whitespace-nowrap shrink-0"
             >
               Meet the Team

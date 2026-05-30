@@ -68,7 +68,7 @@ const Join = () => {
   return (
     <>
       <Helmet>
-        <title>Join | MIMS</title>
+        <title>Join Us | MIMS</title>
       </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg})` }} />

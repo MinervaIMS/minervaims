@@ -46,7 +46,7 @@ const About = () => {
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${aboutBg})` }} />
         <div className="relative z-10">
           <PageIntroduction
-            title="About Us"
+            title="About"
             transparentBackground
           />
         </div>
@@ -129,7 +129,7 @@ const About = () => {
           {/* CTA */}
           <div className="text-center">
             <Link
-              to="/members/team"
+              to="/people/members"
               className="cta-link"
             >
               Meet the Team

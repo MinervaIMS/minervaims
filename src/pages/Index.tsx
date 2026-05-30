@@ -118,7 +118,7 @@ const Index = () => {
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
             </Link>
             <Link
-              to="/members/team"
+              to="/people/members"
               className="text-center py-6 border-b md:border-b-0 md:border-r border-separator last:border-b-0 last:border-r-0 hover:opacity-80 transition-opacity"
             >
               <p className="font-serif text-hero text-primary mb-2">
@@ -126,7 +126,7 @@ const Index = () => {
               </p>
               <p className="font-body text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
             </Link>
-            <Link to="/members/alumni" className="text-center py-6 hover:opacity-80 transition-opacity">
+            <Link to="/people/alumni" className="text-center py-6 hover:opacity-80 transition-opacity">
               <p className="font-serif text-hero text-primary mb-2">
                 <AnimatedFigure value={counts.alumni} isLoading={false} />
               </p>
@@ -160,7 +160,7 @@ const Index = () => {
               </p>
             </div>
             <Link
-              to="/members/alumni"
+              to="/people/alumni"
               className="cta-link whitespace-nowrap shrink-0"
             >
               Discover Alumni Network

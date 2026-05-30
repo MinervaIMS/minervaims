@@ -69,10 +69,10 @@ const Team = () => {
   return (
     <>
       <Helmet>
-        <title>Team | MIMS</title>
+        <title>Members | MIMS</title>
       </Helmet>
       <PageIntroduction
-        title="Our Team"
+        title="Members"
         backgroundImage={teamBg}
       />
 
