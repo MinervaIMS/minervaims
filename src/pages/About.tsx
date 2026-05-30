@@ -85,7 +85,7 @@ const About = () => {
             </p>
             <Link
               to="/readings"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+              className="cta-link whitespace-nowrap shrink-0"
             >
               Discover Our Library
             </Link>
@@ -130,7 +130,7 @@ const About = () => {
           <div className="text-center">
             <Link
               to="/members/team"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200"
+              className="cta-link"
             >
               Meet the Team
             </Link>

@@ -161,7 +161,7 @@ const Index = () => {
             </div>
             <Link
               to="/members/alumni"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+              className="cta-link whitespace-nowrap shrink-0"
             >
               Discover Alumni Network
             </Link>
@@ -214,7 +214,7 @@ const Index = () => {
             </p>
             <Link
               to="/events?view=past"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+              className="cta-link whitespace-nowrap shrink-0"
             >
               View Past Events
             </Link>
@@ -234,7 +234,7 @@ const Index = () => {
             </p>
             <Link
               to="/join"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+              className="cta-link whitespace-nowrap shrink-0"
             >
               How To Apply
             </Link>
