@@ -683,7 +683,7 @@ const MinervaWorkspace = () => {
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
                 <section.Icon className="h-5 w-5 shrink-0" />
-                {navExpanded && <span className="text-[14px]">{section.label}</span>}
+                {navExpanded && <span className="text-small">{section.label}</span>}
               </button>
             );
           })}
@@ -758,7 +758,7 @@ const MinervaWorkspace = () => {
                       <button
                         key={si.key}
                         onClick={() => setActiveSubKey(si.key)}
-                        className={`w-full text-left px-4 h-10 flex items-center transition-colors text-[15px] ${
+                        className={`w-full text-left px-4 h-10 flex items-center transition-colors text-body ${
                           isActive ? 'text-accent font-medium bg-background' : 'text-foreground hover:bg-background/60'
                         }`}
                         style={{ fontFamily: '"Times New Roman", Times, serif' }}
