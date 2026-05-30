@@ -118,7 +118,7 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
               >
                 <PdfThumbnail
                   url={file.file_url}
-                  className="w-28 bg-white rounded border border-separator"
+                  className="w-28 bg-background rounded border border-separator"
                   alt={`Preview of ${file.title}`}
                 />
               </div>

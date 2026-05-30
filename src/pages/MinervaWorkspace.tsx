@@ -678,7 +678,7 @@ const MinervaWorkspace = () => {
                 onClick={() => handleNavClick(section)}
                 title={!navExpanded ? section.label : undefined}
                 className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors uppercase tracking-wider ${
-                  isActive ? 'bg-white/15' : 'hover:bg-white/10'
+                  isActive ? 'bg-background/15' : 'hover:bg-background/10'
                 } ${navExpanded ? '' : 'justify-center'}`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
@@ -693,7 +693,7 @@ const MinervaWorkspace = () => {
         <div className="shrink-0 p-2">
           <button
             onClick={() => setNavExpanded((v) => !v)}
-            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-white/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
+            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-background/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
             title={navExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >

@@ -104,10 +104,10 @@ const About = () => {
                 to={`/divisions/${division}`}
                 className="group block bg-secondary p-6 transition-all duration-300 hover:bg-accent hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]"
               >
-                <h3 className="font-serif text-xl md:text-2xl mb-2 text-accent group-hover:text-white transition-colors duration-300">
+                <h3 className="font-serif text-xl md:text-2xl mb-2 text-accent group-hover:text-background transition-colors duration-300">
                   {divisionLabels[division]}
                 </h3>
-                <p className="font-body text-body-lg text-muted-foreground group-hover:text-white/80 transition-colors duration-300">
+                <p className="font-body text-body-lg text-muted-foreground group-hover:text-background/80 transition-colors duration-300">
                   {description}
                 </p>
               </Link>

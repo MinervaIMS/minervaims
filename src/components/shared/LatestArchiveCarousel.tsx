@@ -94,7 +94,7 @@ export function LatestArchiveCarousel({ files: propFiles }: LatestArchiveCarouse
             <div className="w-full">
               <PdfThumbnail
                 url={file.file_url}
-                className="w-full bg-white mb-5"
+                className="w-full bg-background mb-5"
                 alt={`Preview of ${file.title}`}
               />
             </div>
