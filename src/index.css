@@ -152,6 +152,22 @@ body[data-scroll-locked] {
   }
 }
 
+/* Shared component patterns - keep these in sync with the design memos */
+@layer components {
+  /* Standard section heading: serif, accent color, hairline divider */
+  .section-heading {
+    @apply font-serif text-heading mb-6 pb-3 border-b border-separator text-accent;
+  }
+
+  /* Primary CTA link/button: white background, accent border, serif text,
+     accent hover fill. Replaces a long class string repeated across pages. */
+  .cta-link {
+    @apply inline-block px-10 py-4 bg-background text-accent border border-accent
+           font-serif text-lg shadow-none transition-all duration-200
+           hover:bg-accent hover:text-background hover:shadow-elevated;
+  }
+}
+
 /* Typography utilities */
 @layer utilities {
   .text-balance {

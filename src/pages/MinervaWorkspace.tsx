@@ -678,12 +678,12 @@ const MinervaWorkspace = () => {
                 onClick={() => handleNavClick(section)}
                 title={!navExpanded ? section.label : undefined}
                 className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors uppercase tracking-wider ${
-                  isActive ? 'bg-white/15' : 'hover:bg-white/10'
+                  isActive ? 'bg-background/15' : 'hover:bg-background/10'
                 } ${navExpanded ? '' : 'justify-center'}`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
                 <section.Icon className="h-5 w-5 shrink-0" />
-                {navExpanded && <span className="text-[14px]">{section.label}</span>}
+                {navExpanded && <span className="text-small">{section.label}</span>}
               </button>
             );
           })}
@@ -693,7 +693,7 @@ const MinervaWorkspace = () => {
         <div className="shrink-0 p-2">
           <button
             onClick={() => setNavExpanded((v) => !v)}
-            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-white/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
+            className={`w-full flex items-center gap-3 px-2 h-10 hover:bg-background/10 transition-colors ${navExpanded ? '' : 'justify-center'}`}
             title={navExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
@@ -758,7 +758,7 @@ const MinervaWorkspace = () => {
                       <button
                         key={si.key}
                         onClick={() => setActiveSubKey(si.key)}
-                        className={`w-full text-left px-4 h-10 flex items-center transition-colors text-[15px] ${
+                        className={`w-full text-left px-4 h-10 flex items-center transition-colors text-body ${
                           isActive ? 'text-accent font-medium bg-background' : 'text-foreground hover:bg-background/60'
                         }`}
                         style={{ fontFamily: '"Times New Roman", Times, serif' }}

@@ -123,7 +123,7 @@ export function Footer() {
               <User size={16} />
               <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase">Login</span>
             </Link>
-            <p className="font-body text-[15px] text-[#D6D6D6] leading-[1.6] mt-3 italic">
+            <p className="font-body text-body text-background/80 leading-[1.6] mt-3 italic">
               For approved society<br />members only.
             </p>
           </div>
@@ -151,10 +151,10 @@ export function Footer() {
 
         {/* Disclaimer - Full Width */}
         <div className="mb-6 sm:mb-8 py-3 sm:py-4">
-          <h4 className="font-serif text-[17px] font-semibold text-[#D6D6D6] mb-3 uppercase tracking-wide">
+          <h4 className="font-serif text-body-lg font-semibold text-background/80 mb-3 uppercase tracking-wide">
             Disclaimer
           </h4>
-          <div className="font-body text-[14px] md:text-[15px] text-[#D6D6D6] leading-[1.6] space-y-4 text-justify">
+          <div className="font-body text-small md:text-body text-background/80 leading-[1.6] space-y-4 text-justify">
             <p>
               Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
               This website and any documents made available through it (including reports, presentations, virtual portfolio materials 
@@ -185,11 +185,11 @@ export function Footer() {
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-[12px] md:text-[13px] text-[#D6D6D6] underline hover:text-background transition-colors"
+            className="font-body text-xs md:text-small text-background/80 underline hover:text-background transition-colors"
           >
             Website built by Riccardo Colombo for Minerva IMS.
           </a>
-          <p className="font-body text-[11px] md:text-[13px] text-[#9A9A9A] leading-[1.4]">
+          <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
           </p>
         </div>

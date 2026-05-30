@@ -85,7 +85,7 @@ const About = () => {
             </p>
             <Link
               to="/readings"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200 whitespace-nowrap shrink-0"
+              className="cta-link whitespace-nowrap shrink-0"
             >
               Discover Our Library
             </Link>
@@ -104,10 +104,10 @@ const About = () => {
                 to={`/divisions/${division}`}
                 className="group block bg-secondary p-6 transition-all duration-300 hover:bg-accent hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01]"
               >
-                <h3 className="font-serif text-xl md:text-2xl mb-2 text-accent group-hover:text-white transition-colors duration-300">
+                <h3 className="font-serif text-xl md:text-2xl mb-2 text-accent group-hover:text-background transition-colors duration-300">
                   {divisionLabels[division]}
                 </h3>
-                <p className="font-body text-body-lg text-muted-foreground group-hover:text-white/80 transition-colors duration-300">
+                <p className="font-body text-body-lg text-muted-foreground group-hover:text-background/80 transition-colors duration-300">
                   {description}
                 </p>
               </Link>
@@ -130,7 +130,7 @@ const About = () => {
           <div className="text-center">
             <Link
               to="/members/team"
-              className="inline-block px-10 py-4 bg-background text-accent border border-accent font-serif text-lg shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition-all duration-200"
+              className="cta-link"
             >
               Meet the Team
             </Link>

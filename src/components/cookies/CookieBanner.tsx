@@ -25,7 +25,7 @@ export function CookieBanner() {
             <Button
               onClick={rejectNonEssential}
               variant="outline"
-              className="text-small text-accent hover:text-white"
+              className="text-small text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Reject Non-Essential
@@ -33,7 +33,7 @@ export function CookieBanner() {
             <Button
               onClick={openPreferences}
               variant="outline"
-              className="text-small text-accent hover:text-white"
+              className="text-small text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Manage Settings
@@ -41,7 +41,7 @@ export function CookieBanner() {
             <Button
               onClick={acceptAll}
               variant="default"
-              className="text-small text-accent hover:text-white"
+              className="text-small text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Accept All

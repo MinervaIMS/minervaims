@@ -86,10 +86,10 @@ export function CookiePreferences() {
       <div className="relative bg-background border border-border shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 md:p-8 space-y-6">
           <div>
-            <h2 className="font-serif text-[22px] md:text-[24px] text-foreground mb-2">
+            <h2 className="font-serif text-subheading md:text-2xl text-foreground mb-2">
               Cookie Settings
             </h2>
-            <p className="font-body text-[15px] text-muted-foreground leading-[1.55]">
+            <p className="font-body text-body text-muted-foreground leading-[1.55]">
               Manage your cookie preferences. Non-essential cookies are only used with your consent.
             </p>
           </div>
@@ -103,11 +103,11 @@ export function CookiePreferences() {
                 <div className="flex-1">
                   <Label 
                     htmlFor={category.id}
-                    className="font-serif text-[18px] font-semibold text-foreground cursor-pointer block mb-1"
+                    className="font-serif text-body-lg font-semibold text-foreground cursor-pointer block mb-1"
                   >
                     {category.name}
                   </Label>
-                  <p className="font-body text-[14px] md:text-[15px] text-muted-foreground leading-[1.55]">
+                  <p className="font-body text-small md:text-body text-muted-foreground leading-[1.55]">
                     {category.description}
                   </p>
                 </div>
@@ -127,7 +127,7 @@ export function CookiePreferences() {
             <Button
               onClick={rejectNonEssential}
               variant="outline"
-              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-white"
+              className="text-small md:text-body flex-1 text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Reject All
@@ -135,7 +135,7 @@ export function CookiePreferences() {
             <Button
               onClick={handleSave}
               variant="outline"
-              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-white"
+              className="text-small md:text-body flex-1 text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Save Preferences
@@ -143,7 +143,7 @@ export function CookiePreferences() {
             <Button
               onClick={acceptAll}
               variant="default"
-              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-white"
+              className="text-small md:text-body flex-1 text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Accept All

@@ -207,12 +207,12 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
       style={{ aspectRatio: `1 / ${A4_ASPECT_RATIO}`, contain: 'layout paint' }}
     >
       {loading && !error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white animate-pulse">
+        <div className="absolute inset-0 flex items-center justify-center bg-background animate-pulse">
           <FileText className="h-8 w-8 text-muted-foreground/50" />
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-2">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2">
           <FileText className="h-8 w-8 text-muted-foreground/50" />
           <span className="text-muted-foreground text-xs text-center px-2">Preview unavailable</span>
         </div>
