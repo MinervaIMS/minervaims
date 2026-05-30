@@ -107,7 +107,7 @@ export function CookiePreferences() {
                   >
                     {category.name}
                   </Label>
-                  <p className="font-body text-[14px] md:text-[15px] text-muted-foreground leading-[1.55]">
+                  <p className="font-body text-small md:text-body text-muted-foreground leading-[1.55]">
                     {category.description}
                   </p>
                 </div>
@@ -127,7 +127,7 @@ export function CookiePreferences() {
             <Button
               onClick={rejectNonEssential}
               variant="outline"
-              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-background"
+              className="text-small md:text-body flex-1 text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Reject All
@@ -135,7 +135,7 @@ export function CookiePreferences() {
             <Button
               onClick={handleSave}
               variant="outline"
-              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-background"
+              className="text-small md:text-body flex-1 text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Save Preferences
@@ -143,7 +143,7 @@ export function CookiePreferences() {
             <Button
               onClick={acceptAll}
               variant="default"
-              className="text-[14px] md:text-[15px] flex-1 text-accent hover:text-background"
+              className="text-small md:text-body flex-1 text-accent hover:text-background"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Accept All
