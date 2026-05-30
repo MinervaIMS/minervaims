@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import logoColor from '@/assets/logo-color.svg';
 import logoWhite from '@/assets/logo-white.svg';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +17,7 @@ interface NavItem {
 }
 
 const baseNavItems: NavItem[] = [
-  { label: 'ABOUT US', href: '/about' },
+  { label: 'ABOUT', href: '/about' },
   {
     label: 'DIVISIONS',
     dropdown: [
@@ -35,13 +36,13 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
-    label: 'MEMBERS',
+    label: 'PEOPLE',
     dropdown: [
-      { label: 'Our Team', href: '/members/team' },
-      { label: 'Alumni', href: '/members/alumni' },
+      { label: 'Members', href: '/people/members' },
+      { label: 'Alumni', href: '/people/alumni' },
     ],
   },
-  { label: 'EVENTS', href: '/events' },
+  { label: 'JOIN US', href: '/join' },
 ];
 
 export function Header() {
@@ -53,16 +54,14 @@ export function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
-  // Track mount state to prevent initial transition animation
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
   const isHomepage = location.pathname === '/';
 
-  // Add HOME link when not on homepage
-  const navItems = isHomepage 
-    ? baseNavItems 
+  const navItems = isHomepage
+    ? baseNavItems
     : [{ label: 'HOME', href: '/' }, ...baseNavItems];
 
   useEffect(() => {
@@ -72,9 +71,7 @@ export function Header() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Only handle click outside for desktop navigation
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        // Don't close if clicking in mobile menu
         const mobileMenu = document.getElementById('mobile-menu');
         if (mobileMenu && mobileMenu.contains(event.target as Node)) {
           return;
@@ -92,31 +89,30 @@ export function Header() {
       return;
     }
 
-    // Reset to transparent state when on homepage
     setIsScrolled(false);
 
     const handleScroll = () => {
-      // Switch to solid header after scrolling past ~80% of viewport height
       const threshold = window.innerHeight * 0.8;
       setIsScrolled(window.scrollY > threshold);
     };
 
-    handleScroll(); // Check initial position
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isHomepage, user]);
 
-  // Determine if we should use transparent styling (only on homepage when not scrolled and mobile menu closed)
   const isTransparent = isHomepage && !isScrolled && !mobileMenuOpen;
+
+  const authButtonHref = user ? '/admin' : '/auth';
+  const authButtonLabel = user ? 'WORKSPACE' : 'LOGIN';
 
   return (
     <>
-      {/* Spacer to prevent content jump when header is fixed - hidden on homepage where hero extends behind header */}
       {!isHomepage && <div className="h-20 md:h-24" />}
-      <header 
+      <header
         className={`fixed top-0 left-0 right-0 z-50 ${
-          isTransparent 
-            ? 'bg-transparent shadow-none' 
+          isTransparent
+            ? 'bg-transparent shadow-none'
             : 'bg-background shadow-sm'
         }`}
       >
@@ -124,12 +120,12 @@ export function Header() {
           <nav className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img 
-              src={isTransparent ? logoWhite : logoColor} 
-              alt="MIMS" 
+            <img
+              src={isTransparent ? logoWhite : logoColor}
+              alt="MIMS"
               width={56}
               height={56}
-              className="h-12 md:h-14 w-auto transition-opacity duration-300" 
+              className="h-12 md:h-14 w-auto transition-opacity duration-300"
               decoding="async"
             />
           </Link>
@@ -171,24 +167,24 @@ export function Header() {
                 )}
               </div>
             ))}
-            
-            {/* Workspace Button - only shown when logged in */}
-            {user && (
-              <Link
-                to="/admin"
-                className={`font-serif text-base tracking-wider border px-4 py-2 transition-all duration-300 ${isTransparent ? 'bg-background text-foreground border-background hover:bg-transparent hover:text-background' : 'bg-background text-accent border-accent hover:bg-accent hover:text-background hover:shadow-md'}`}
-              >
-                WORKSPACE
-              </Link>
-            )}
+
+            {/* Auth Button: WORKSPACE if logged in, LOGIN otherwise */}
+            <Link
+              to={authButtonHref}
+              className={`font-serif text-base tracking-wider border px-4 py-2 transition-all duration-300 ${isTransparent ? 'bg-background text-foreground border-background hover:bg-transparent hover:text-background' : 'bg-background text-accent border-accent hover:bg-accent hover:text-background hover:shadow-md'}`}
+            >
+              {authButtonLabel}
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className={`lg:hidden font-serif text-base tracking-wider p-2 ${isTransparent ? 'text-background' : 'text-accent'}`}
+            className={`lg:hidden p-2 ${isTransparent ? 'text-background' : 'text-accent'}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? 'CLOSE' : 'MENU'}
+            {mobileMenuOpen ? <X size={28} strokeWidth={2} /> : <Menu size={28} strokeWidth={2} />}
           </button>
         </nav>
 
@@ -240,19 +236,17 @@ export function Header() {
                 )}
               </div>
             ))}
-            
-            {/* Mobile Workspace - only shown when logged in */}
-            {user && (
-              <div className="py-2 mt-2">
-                <Link
-                  to="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="font-serif text-base tracking-wider bg-background text-accent border border-accent px-4 py-2 inline-block hover:bg-accent hover:text-background hover:shadow-md transition-all duration-300"
-                >
-                  WORKSPACE
-                </Link>
-              </div>
-            )}
+
+            {/* Mobile Auth Button */}
+            <div className="py-2 mt-2">
+              <Link
+                to={authButtonHref}
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-serif text-base tracking-wider bg-background text-accent border border-accent px-4 py-2 inline-block hover:bg-accent hover:text-background hover:shadow-md transition-all duration-300"
+              >
+                {authButtonLabel}
+              </Link>
+            </div>
           </div>
         )}
         </div>

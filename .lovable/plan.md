@@ -1,81 +1,54 @@
-## Goal
+## Header updates (`src/components/layout/Header.tsx`)
 
-Clean up inconsistencies introduced by many iterative edits. Keep the current look (B&W minimal, #1F0F4D accent, EB Garamond serif headings, Calibri body), but make the implementation coherent, token-driven, and responsive — no redesign.
+### 1. Navigation label & structure
+- `ABOUT US` → `ABOUT` (→ `/about`)
+- `MEMBERS` dropdown → `PEOPLE`:
+  - `Members` → `/people/members`
+  - `Alumni` → `/people/alumni`
+- Remove top-level `EVENTS`.
+- Add top-level `JOIN US` → `/join`.
 
-## Approach
+Final order: `ABOUT` · `DIVISIONS` · `FUNDS` · `PEOPLE` · `JOIN US` (+ `HOME` prepended off-homepage).
 
-Work in passes, each across the whole `src/` tree. After each pass, build + spot-check desktop / tablet / mobile in preview.
+### 2. Login button
+- Add `LOGIN` button on the right (desktop + mobile), shown only when logged out, linking to `/auth`.
+- Same styling pattern as existing `WORKSPACE` button (transparent-aware on homepage hero).
 
-### Pass 1 — Token & theme audit (no visual change)
+### 3. Mobile menu icon
+- Replace `MENU` / `CLOSE` text with `Menu` / `X` icons from `lucide-react`.
+- Keep `currentColor`; add `aria-label`.
 
-- Audit `src/index.css` + `tailwind.config.ts` to confirm the canonical tokens: `background`, `foreground`, `primary`, `accent`, `muted`, `secondary`, `separator`, `card`, `border`, plus the type scale (`hero`, `display`, `heading`, `subheading`, `body-lg`, `body`, `small`, `xs`).
-- Document the intended roles in a short comment block at top of `index.css` so future edits stop drifting.
-- Remove unused or duplicate CSS rules in `src/App.css` (Vite template leftovers like `.logo`, `.read-the-docs`, `#root` padding) that conflict with the real layout.
+## Route updates
 
-### Pass 2 — Color & font hardcodes → tokens
+Update `src/App.tsx`:
+- Rename routes:
+  - `/members/team` → `/people/members`
+  - `/members/alumni` → `/people/alumni`
+  - `/members` (MembersIndex landing) → `/people`
+- Add redirect routes for the old paths so any bookmarked/indexed link still resolves:
+  - `/members` → `/people`
+  - `/members/team` → `/people/members`
+  - `/members/alumni` → `/people/alumni`
 
-Replace hardcoded color and font usage with semantic tokens. Targets identified:
+Sweep and update every internal link to the new paths:
+- `src/components/layout/Header.tsx` (nav dropdown)
+- `src/components/layout/Footer.tsx`
+- `src/pages/Sitemap.tsx`
+- `src/pages/MembersIndex.tsx` (card links)
+- `src/pages/Index.tsx`, `src/pages/About.tsx`, `src/pages/Team.tsx`, `src/pages/Alumni.tsx`, `src/pages/Join.tsx`, `src/pages/DivisionDetail.tsx`, `src/pages/MinervaWorkspace.tsx`, and any other file referencing `/members/...` (verified via grep before editing).
 
-- `text-white` / `text-black` / `bg-white` / `bg-black` → `text-background`/`text-foreground`/`bg-background`/`bg-foreground`. Hotspots: `Alumni.tsx`, `Index.tsx`, `Archive.tsx`, `Readings.tsx`, `MinervaWorkspace.tsx`, `About.tsx`, `ActivityManagement.tsx`, `FileManagement.tsx`, cookie components, several shared carousels.
-- Arbitrary `text-[…]`, `font-[…]`, `px-[…]`, `py-[…]`, `min-w-[…]` values across ~35 files → map to the scale (`text-hero|display|heading|subheading|body-lg|body|small|xs`) and to spacing tokens. Keep arbitrary values only where genuinely needed (e.g. `min-h-[320px]` hero, PdfThumbnail fixed 200px canvas — already memoised as required).
-- `style={{ ... }}` inline styles: keep only where dynamic (background images, computed widths, PDF canvas). Move static ones into Tailwind classes.
+## Page title / heading updates
 
-### Pass 3 — Typography hierarchy & font roles
+- `src/pages/About.tsx` — heading "About Us" → "About".
+- `src/pages/Team.tsx` — heading "Our Team" → "Members".
+- `src/pages/MembersIndex.tsx` — heading "Members" → "People"; cards stay labeled "Members" and "Alumni".
+- `src/pages/Join.tsx` — heading → "Join Us" (if not already).
+- Update corresponding `<title>` / SEO meta tags and any breadcrumbs to match.
+- Footer + Sitemap labels updated alongside the link paths.
 
-Enforce the memorised rule: serif (`font-serif`, EB Garamond / Times New Roman) for headings + buttons/labels styled as display; body (`font-body`, Calibri) for paragraphs and form text. Search-and-fix:
+## Notes
+- `/events` page itself stays reachable via direct URL; only the top-nav entry is removed per your request. Flag if it should also be dropped from Footer/Sitemap.
+- Routes for `/divisions/*` and `/funds/*` are unchanged.
 
-- Headings (`h1`–`h4`) missing `font-serif` or using `font-body`.
-- Body paragraphs accidentally wearing `font-serif`.
-- `font-bold` usage: replace with `font-medium` or `font-semibold` where the design calls for weight, not boldness. Headings should rely on the serif weight, not `font-bold`.
-- Normalise section heading pattern to the memorised standard: `font-serif text-heading mb-6 pb-3 border-b border-separator text-accent`. Apply consistently on `Index`, `About`, `Alumni`, `Archive`, `Readings`, `Events`, `Join`, `Team`, `DivisionDetail`, `FundDetail`.
-- Standardise `PageIntroduction` usage (currently the only hero pattern) so every page-level intro goes through it instead of bespoke headers.
-
-### Pass 4 — Spacing, radius, borders, separators
-
-- Section padding: standardise to `py-10 md:py-14` (content) and `py-20 md:py-28` (CTA blocks) — already the dominant pattern in `Index.tsx`. Apply across pages.
-- Container: always use the Tailwind `container` from `tailwind.config.ts`, drop ad-hoc `max-w-*` + `mx-auto px-*` combos where they duplicate it.
-- Border radius: the design system sets `--radius: 0`. Remove stray `rounded-md`, `rounded-lg`, `rounded-full` on cards / buttons / inputs where they conflict (keep where intentional: avatars, badges).
-- Replace ad-hoc dividers with `border-separator` (or the `.hairline` utility) for visual consistency.
-- Button pattern: align all primary CTAs to the memorised style — white background, accent border, serif text, accent hover fill — currently inlined many times in `Index.tsx`, `About.tsx`, etc. Extract to a `cta-link` utility or button variant rather than copy-pasting the long class string.
-
-### Pass 5 — Responsive / mobile overflow
-
-- Audit every `min-w-[…]` and `overflow-x-auto` — the homepage companies image, alumni table, archive lists, org chart, admin tables. Confirm they don't break the body width. Wrap genuinely wide content in `overflow-x-auto` containers and avoid `min-w` on the page-level wrappers.
-- Tables (`AlumniTable`, admin tables) must scroll inside a wrapper, not push the page.
-- Header / Footer: verify on 320–414px widths; fix any flex rows that wrap badly.
-- Hero typography: confirm clamp behaviour from `text-[2.5rem] sm:text-hero md:text-[4.5rem]` is consistent across hero variants; remove competing sizes when both `text-hero` and arbitrary `text-[4.5rem]` are stacked.
-- `MinervaWorkspace.tsx` (807 lines): biggest source of one-off styling. Pass it last with extra care — normalise sidebar item classes, ensure subsections share a single styled component instead of repeated class strings.
-
-### Pass 6 — Component dedup
-
-- `EventsList` vs `EventsListNew` — confirm which is live, mark the other for removal (note only, no deletion without confirmation).
-- Carousels (`LatestArchiveCarousel`, `DivisionArchiveCarousel`, `FundArchiveCarousel`) share ~80% of layout — extract shared card/thumbnail markup into a single sub-component, keep behaviour identical.
-- `DivisionCard` / `FundCard` — align padding, typography, hover transitions.
-- Admin tables (`UserManagement`, `AlumniManagement`, `FileManagement`, `ReadingsManagement`, `TeamManagement`, `ActivityManagement`) — unify row/header/cell classes via the shared `ui/table` primitives, drop bespoke colour and weight overrides.
-
-### Pass 7 — Verify
-
-- Run the build.
-- Walk each route in preview at desktop (1580), tablet (768), mobile (390): `/`, `/about`, `/members/team`, `/members/alumni`, `/archive`, `/events`, `/divisions/equity` (sample), `/readings`, `/join`, `/auth`, `/admin` workspace.
-- Check no horizontal scrollbar appears on mobile.
-- Spot-check console for hydration / class warnings.
-
-## Out of scope (explicitly)
-
-- No new design language, no new colours, no new fonts.
-- No content changes, no copy edits.
-- No layout restructuring of pages.
-- No backend / data / auth changes.
-- No deletion of files without flagging first (will list candidates in the final summary).
-
-## Deliverables
-
-1. Cleaned-up code across the files listed above.
-2. A summary in chat covering: tokens enforced, hardcoded values removed, components deduplicated, mobile overflow fixes, and a short list of "needs manual review" items (e.g. potentially-dead `EventsList`, any layout that should be redesigned rather than patched).
-
-## Technical notes
-
-- All colour changes go through `hsl(var(--token))` via Tailwind classes — never raw hex.
-- Where a class string is repeated 3+ times, extract a utility in `index.css` `@layer components` or a small wrapper component.
-- Keep edits surgical with `line_replace`; do not rewrite whole files unless cleanup density justifies it.
-- Do not touch `src/integrations/supabase/*`, `supabase/` SQL, or `.env`.
+### Out of scope
+- No auth/business-logic changes, no content rewrites beyond title swaps, no backend changes.

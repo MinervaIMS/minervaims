@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { CookieProvider, CookieBanner, CookiePreferences } from "@/components/cookies";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -54,9 +54,13 @@ const App = () => (
                 <Route path="/about" element={<Suspense fallback={<PageLoader />}><About /></Suspense>} />
                 <Route path="/divisions/:division" element={<Suspense fallback={<PageLoader />}><DivisionDetail /></Suspense>} />
                 <Route path="/funds/:fund" element={<Suspense fallback={<PageLoader />}><FundDetail /></Suspense>} />
-                <Route path="/members" element={<Suspense fallback={<PageLoader />}><MembersIndex /></Suspense>} />
-                <Route path="/members/team" element={<Suspense fallback={<PageLoader />}><Team /></Suspense>} />
-                <Route path="/members/alumni" element={<Suspense fallback={<PageLoader />}><Alumni /></Suspense>} />
+                <Route path="/people" element={<Suspense fallback={<PageLoader />}><MembersIndex /></Suspense>} />
+                <Route path="/people/members" element={<Suspense fallback={<PageLoader />}><Team /></Suspense>} />
+                <Route path="/people/alumni" element={<Suspense fallback={<PageLoader />}><Alumni /></Suspense>} />
+                {/* Legacy redirects */}
+                <Route path="/members" element={<Navigate to="/people" replace />} />
+                <Route path="/members/team" element={<Navigate to="/people/members" replace />} />
+                <Route path="/members/alumni" element={<Navigate to="/people/alumni" replace />} />
                 <Route path="/events" element={<Suspense fallback={<PageLoader />}><Events /></Suspense>} />
                 <Route path="/join" element={<Suspense fallback={<PageLoader />}><Join /></Suspense>} />
                 <Route path="/archive" element={<Suspense fallback={<PageLoader />}><Archive /></Suspense>} />

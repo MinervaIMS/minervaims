@@ -12,8 +12,7 @@ const Sitemap = () => {
       title: 'Main',
       links: [
         { label: 'Home', href: '/' },
-        { label: 'About Us', href: '/about' },
-        { label: 'Events', href: '/events' },
+        { label: 'About', href: '/about' },
         { label: 'Join Us', href: '/join' },
         { label: 'Archive', href: '/archive' },
         { label: 'Readings', href: '/readings' },
@@ -39,10 +38,10 @@ const Sitemap = () => {
       ],
     },
     {
-      title: 'Members',
+      title: 'People',
       links: [
-        { label: 'Our Team', href: '/members/team' },
-        { label: 'Alumni', href: '/members/alumni' },
+        { label: 'Members', href: '/people/members' },
+        { label: 'Alumni', href: '/people/alumni' },
       ],
     },
     {
