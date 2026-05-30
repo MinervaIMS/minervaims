@@ -51,6 +51,8 @@ const Sitemap = () => {
         { label: 'Terms of Use', href: '/terms-of-use' },
         { label: 'Privacy Policy', href: '/privacy-policy' },
         { label: 'Cookie Policy', href: '/cookie-policy' },
+        { label: 'Disclaimer', href: '/disclaimer' },
+        { label: 'Society Statute', href: '/statute' },
       ],
     },
   ];
