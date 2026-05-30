@@ -151,35 +151,7 @@ export function Footer() {
         {/* Separator */}
         <div className="border-t border-background/20 mb-4 sm:mb-6" />
 
-        {/* Disclaimer - Full Width */}
-        <div className="mb-6 sm:mb-8 py-3 sm:py-4">
-          <h4 className="font-serif text-body-lg font-semibold text-background/80 mb-3 uppercase tracking-wide">
-            Disclaimer
-          </h4>
-          <div className="font-body text-small md:text-body text-background/80 leading-[1.6] space-y-4 text-justify">
-            <p>
-              Minerva Investment Management Society (MIMS) is a student society promoted and managed by Bocconi University's students. 
-              This website and any documents made available through it (including reports, presentations, virtual portfolio materials 
-              and event content) are provided solely for educational and academic purposes. They do not constitute investment advice, 
-              investment research, a personal recommendation, or an offer or solicitation to buy or sell any security or financial 
-              instrument, or to adopt any investment strategy. Any references to issuers, securities, asset classes, indices, markets, 
-              or strategies are for illustrative purposes only and may relate to simulated or virtual portfolios; they must not be 
-              relied upon for real-world investment decisions.
-            </p>
-            <p>
-              Information is provided 'as is' and may be incomplete, outdated, or inaccurate. Opinions are those of the authors at 
-              the time of publication and may change without notice. You are solely responsible for any use of the information and 
-              should obtain independent advice from a qualified professional before making any investment decision. Past performance, 
-              back-tested, or simulated results are not indicative of future results. Investing involves risk, including the possible 
-              loss of capital.
-            </p>
-            <p>
-              MIMS is independent from Università Bocconi. Bocconi University does not review, approve, endorse, or monitor this 
-              website or its contents and is not responsible for any content, activities, or outcomes connected to it. Use of this 
-              website is at your own risk.
-            </p>
-          </div>
-        </div>
+
 
         {/* Builder Credit and Copyright */}
         <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col items-center gap-2 sm:gap-3 text-center px-2 sm:px-4">
