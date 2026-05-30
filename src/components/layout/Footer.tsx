@@ -5,6 +5,7 @@ import linkedinIcon from '@/assets/linkedin-icon-small.png';
 
 const exploreLinks = [
   { label: 'About', href: '/about' },
+  { label: 'Events', href: '/events' },
   { label: 'Join Us', href: '/join' },
   { label: 'Archive', href: '/archive' },
   { label: 'Readings', href: '/readings' },
@@ -42,10 +43,10 @@ const socialLinks = [
 ];
 
 const linkClass =
-  'font-body text-small text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors';
+  'font-body text-body text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors';
 
 const columnHeadingClass =
-  'font-serif text-subheading mb-4 pb-2 border-b border-background/20';
+  'font-serif text-heading mb-5 text-background';
 
 function LinkColumn({
   title,
@@ -57,7 +58,7 @@ function LinkColumn({
   return (
     <div>
       <h3 className={columnHeadingClass}>{title}</h3>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {links.map((link) => (
           <li key={link.href}>
             <Link to={link.href} className={linkClass}>
@@ -91,13 +92,14 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-serif text-subheading mb-4">Contact</h3>
-            <p className="font-body text-body text-background/80 mb-4 leading-relaxed">
+            <h3 className="font-serif text-heading mb-5 text-background">Contact</h3>
+            <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
+
               For partnerships, joining information, or general enquiries:
             </p>
             <a
               href="mailto:as.minerva@unibocconi.it"
-              className="font-body text-body text-background hover:underline hover:decoration-accent transition-colors break-all"
+              className="font-body text-body-lg text-background hover:underline hover:decoration-accent transition-colors break-all"
             >
               as.minerva@unibocconi.it
             </a>
@@ -139,8 +141,8 @@ export function Footer() {
 
           {/* People column with Login button */}
           <div>
-            <h3 className={columnHeadingClass}>People</h3>
-            <ul className="space-y-2 mb-4">
+            <h3 className="font-serif text-heading mb-5 text-background">People</h3>
+            <ul className="space-y-3 mb-5">
               {peopleLinks.map((link) => (
                 <li key={link.href}>
                   <Link to={link.href} className={linkClass}>
