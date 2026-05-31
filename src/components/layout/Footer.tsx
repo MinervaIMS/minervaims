@@ -171,9 +171,9 @@ export function Footer() {
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-xs md:text-small text-background/80 underline hover:text-background transition-colors"
+            className="font-body text-xs md:text-small text-background/20 underline hover:text-background transition-colors"
           >
-            Website built by Riccardo Colombo for Minerva IMS.
+            Website built for Minerva IMS.
           </a>
           <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
