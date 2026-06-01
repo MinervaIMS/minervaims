@@ -258,3 +258,14 @@
 @media (max-width: 1023px) {
   .legal-doc .lp-title { white-space: normal; }
 }
+
+/* horizontal-scroll wrapper for wide tables (cookie list etc.) */
+.legal-doc .lp-table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--mims-line); margin: 16px 0; }
+.legal-doc .lp-table-scroll table { margin: 0; border: none; min-width: 720px; }
+.legal-doc .lp-table-scroll table th,
+.legal-doc .lp-table-scroll table td { border-left: none; border-right: none; }
+
+/* progress block label */
+.legal-doc .lp-progress-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--mims-navy); font-weight: 700; margin-bottom: 10px; }
