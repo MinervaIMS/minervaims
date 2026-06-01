@@ -164,13 +164,13 @@ const FundDetail = () => {
                 <thead>
                   <tr className="border-b border-separator bg-accent text-background font-body">
                     <th className="text-center py-3 pr-4"></th>
-                    <th className="text-center py-3 px-3 font-semibold">ITD<sup>1,5</sup></th>
+                    <th className="text-center py-3 px-3 font-semibold">ITD<sup>1,4</sup></th>
                     {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m => (
                       <th key={m} className="text-center py-3 px-2 font-normal">{m}</th>
                     ))}
-                    <th className="text-center py-3 px-3 font-semibold">YTD<sup>5</sup></th>
-                    <th className="text-center py-3 px-2">Vol<sup>5</sup></th>
-                    <th className="text-center py-3 px-2">Sharpe<sup>2,5</sup></th>
+                    <th className="text-center py-3 px-3 font-semibold">YTD<sup>4</sup></th>
+                    <th className="text-center py-3 px-2">Vol<sup>4</sup></th>
+                    <th className="text-center py-3 px-2">Sharpe<sup>2,4</sup></th>
                   </tr>
                 </thead>
                 <tbody className="text-foreground">
@@ -180,7 +180,7 @@ const FundDetail = () => {
                     { y: '2023', itd: '29.8%', months: ['-2.2%','+0.3%','+2.5%','+1.6%','-0.4%','+0.1%','-3.8%','+5.2%','+1.6%','+1.7%','-4.0%','-1.8%'], ytd: '+0.5%', vol: '7.0%', sharpe: '-0.64' },
                     { y: '2024', itd: '46.5%', months: ['+6.6%','+0.9%','-0.3%','+1.2%','+0.9%','-1.7%','+0.5%','+0.7%','-2.4%','+3.1%','+1.6%','+1.4%'], ytd: '+12.9%', vol: '6.0%', sharpe: '1.20' },
                     { y: '2025', itd: '58.3%', months: ['-1.1%','+0.3%','+1.0%','-1.6%','+2.1%','+2.4%','+2.2%','+0.5%','+1.6%','+0.3%','-0.85%','+0.86%'], ytd: '+8.01%', vol: '5.5%', sharpe: '0.73' },
-                    { y: '2026', itd: '52.8%', months: ['-1.37%','-1.04%','-1.09%','—⁴','','','','','','','',''], ytd: '-2.17%', vol: '3.1%', sharpe: '-1.06' },
+                    { y: '2026', itd: '52.8%', months: ['-1.37%','-1.04%','-1.09%','','','','','','','','',''], ytd: '-2.17%', vol: '3.1%', sharpe: '-1.06' },
                   ].map(row => (
                     <tr key={row.y} className="border-b border-separator/60">
                       <td className="py-3 pr-4 font-serif text-accent text-center">{row.y}</td>
@@ -197,14 +197,13 @@ const FundDetail = () => {
               </table>
             </div>
             <p className="mt-6 font-body text-sm text-muted-foreground italic">
-              Given its dynamic, opportunity-driven mandate and its wide investment universe, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
+              Given its semi-automated approach and zero-net investment 'multi-factor' strategy, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
             </p>
             <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
               <li><sup>1</sup> ITD: Inception-to-date. Inception = 21/11/2021, Date = 24/04/2026.</li>
               <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
               <li><sup>3</sup> Sortino Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
-              <li><sup>4</sup> The monthly performance of April 2026 as of 24/04/2026 is 1.34%.</li>
-              <li><sup>5</sup> The fund performance is calculated based on an evolving model with a simulated NAV.</li>
+              <li><sup>4</sup> The fund performance is calculated based on an evolving model with a simulated NAV.</li>
             </ol>
           </div>
         </section>
@@ -259,13 +258,9 @@ const FundDetail = () => {
               Given its dynamic, opportunity-driven mandate and its wide investment universe, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
             </p>
             <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
-              <li><sup>1</sup> ITD: Inception-to-date. Inception = 31/1/2020, Date = 05/05/2026.</li>
+              <li><sup>1</sup> ITD: Inception-to-date. Inception = 31/1/2020.</li>
               <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
               <li><sup>3</sup> Considering multi-strategy absolute-returns (HFRI index) would be the best proxy, but still far from our long-only no-leverage strategy.</li>
-              <li><sup>4</sup> Computed over monthly returns ITD.</li>
-              <li><sup>5</sup> Sector breakdown among solely equities.</li>
-              <li><sup>6</sup> Unhedged exposure: USD includes HKD (pegged) EUR includes DKK (pegged).</li>
-              <li><sup>7</sup> Commodities are excluded since prices are determined by global factors.</li>
             </ol>
           </div>
         </section>
