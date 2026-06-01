@@ -78,7 +78,7 @@ export function Footer() {
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
         {/* Top: Logo + Contact */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 pb-10 mb-10 border-b border-background/20">
-          <div className="flex items-start justify-center md:justify-start">
+          <div className="flex flex-col items-center md:items-start gap-6">
             <Link to="/" aria-label="MIMS Home">
               <img
                 src={footerLogo}
@@ -90,20 +90,7 @@ export function Footer() {
                 decoding="async"
               />
             </Link>
-          </div>
-
-          <div>
-            <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
-              For partnerships, joining information, or general enquiries:
-            </p>
-            <a
-              href="mailto:as.minerva@unibocconi.it"
-              className="font-serif text-background hover:underline hover:decoration-accent transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight break-all"
-            >
-              <span>as.minerva@unibocconi.it</span>
-              <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
-            </a>
-            <div className="flex items-center gap-7 mt-7">
+            <div className="flex flex-col gap-3">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
@@ -130,6 +117,19 @@ export function Footer() {
                 </a>
               ))}
             </div>
+          </div>
+
+          <div>
+            <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
+              For partnerships, joining information, or general enquiries:
+            </p>
+            <a
+              href="mailto:as.minerva@unibocconi.it"
+              className="font-serif text-background hover:underline hover:decoration-accent transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight break-all"
+            >
+              <span>as.minerva@unibocconi.it</span>
+              <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
+            </a>
           </div>
 
         </div>
