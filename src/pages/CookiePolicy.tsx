@@ -105,7 +105,7 @@ const CookiePolicy = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>mims_cookie_consent</td>
+                  <td>mims-cookie-consent</td>
                   <td>MIMS</td>
                   <td>Strictly Necessary</td>
                   <td>Stores your cookie consent preferences</td>
