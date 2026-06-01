@@ -45,7 +45,7 @@ const NAV_LINKS: NavItem[] = [
   { label: "Join", to: "/join" },
 ];
 
-const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join"]);
+const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join", "/events", "/archive", "/readings"]);
 const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
 
 const NAV_TRANSITION_MS = 200;
