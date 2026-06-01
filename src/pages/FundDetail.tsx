@@ -179,11 +179,11 @@ const FundDetail = () => {
                     { y: '2022', itd: '29.1%', months: ['+9.3%','+0.1%','+0.7%','+4.9%','+2.2%','+0.6%','-3.7%','+2.2%','+0.9%','+1.0%','-1.0%','+1.5%'], ytd: '+19.6%', vol: '10.1%', sharpe: '1.61' },
                     { y: '2023', itd: '29.8%', months: ['-2.2%','+0.3%','+2.5%','+1.6%','-0.4%','+0.1%','-3.8%','+5.2%','+1.6%','+1.7%','-4.0%','-1.8%'], ytd: '+0.5%', vol: '7.0%', sharpe: '-0.64' },
                     { y: '2024', itd: '46.5%', months: ['+6.6%','+0.9%','-0.3%','+1.2%','+0.9%','-1.7%','+0.5%','+0.7%','-2.4%','+3.1%','+1.6%','+1.4%'], ytd: '+12.9%', vol: '6.0%', sharpe: '1.20' },
-                    { y: '2025', itd: '58.3%', months: ['-1.1%','+0.3%','+1.0%','-1.6%','+2.1%','+2.4%','+2.2%','+0.5%','+1.6%','+0.3%','-0.85%','+0.86%'], ytd: '+8.01%', vol: '5.5%', sharpe: '0.73' },
-                    { y: '2026', itd: '52.8%', months: ['-1.37%','-1.04%','-1.09%','','','','','','','','',''], ytd: '-2.17%', vol: '3.1%', sharpe: '-1.06' },
+                    { y: '2025', itd: '58.3%', months: ['-1.1%','+0.3%','+1.0%','-1.6%','+2.1%','+2.4%','+2.2%','+0.5%','+1.6%','+0.3%','-0.9%','+0.9%'], ytd: '+8.0%', vol: '5.5%', sharpe: '0.73' },
+                    { y: '2026', itd: '52.8%', months: ['-1.4%','-1.0%','-1.1%','','','','','','','','',''], ytd: '-2.2%', vol: '3.1%', sharpe: '-1.06' },
                   ].map(row => (
                     <tr key={row.y} className="border-b border-separator/60">
-                      <td className="py-3 pr-4 font-serif text-accent text-center">{row.y}</td>
+                      <td className="py-3 pr-4 font-body text-accent text-center">{row.y}</td>
                       <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
                       {row.months.map((v, i) => (
                         <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
@@ -197,10 +197,10 @@ const FundDetail = () => {
               </table>
             </div>
             <p className="mt-6 font-body text-sm text-muted-foreground italic">
-              Given its semi-automated approach and zero-net investment 'multi-factor' strategy, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
+              Given its semi-automated approach and zero-net investment 'multi-factor' strategy, the portfolio does not have a reference benchmark upon which to calculate the alpha.
             </p>
             <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
-              <li><sup>1</sup> ITD: Inception-to-date. Inception = 21/11/2021, Date = 24/04/2026.</li>
+              <li><sup>1</sup> ITD: Inception-to-date. Inception = 21/11/2021.</li>
               <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
               <li><sup>3</sup> Sortino Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
               <li><sup>4</sup> The fund performance is calculated based on an evolving model with a simulated NAV.</li>
@@ -237,11 +237,11 @@ const FundDetail = () => {
                     { y: '2022', itd: '35.7%', months: ['-2.0%','+0.4%','+2.1%','-2.8%','-0.2%','-7.8%','+6.5%','+5.1%','-9.2%','+3.7%','+2.9%','-4.1%'], ytd: '-6.6%', vol: '17.1%', sharpe: '-0.53' },
                     { y: '2023', itd: '36.6%', months: ['+0.2%','-2.1%','-0.3%','-0.3%','-1.0%','+1.3%','-1.5%','+0.1%','-3.7%','-0.7%','+7.3%','+1.8%'], ytd: '+0.7%', vol: '9.4%', sharpe: '-0.49' },
                     { y: '2024', itd: '38.4%', months: ['+0.5%','+0.2%','+1.6%','-0.4%','+0.4%','-0.1%','+0.7%','0.0%','-0.4%','-0.2%','+0.9%','-1.9%'], ytd: '+1.3%', vol: '3.0%', sharpe: '-1.24' },
-                    { y: '2025', itd: '58.8%', months: ['+0.6%','+4.5%','-3.3%','+1.6%','+1.7%','-0.2%','+0.2%','+2.7%','+2.1%','+3.7%','-0.01%','+0.4%'], ytd: '+14.8%', vol: '7.1%', sharpe: '1.51' },
+                    { y: '2025', itd: '58.8%', months: ['+0.6%','+4.5%','-3.3%','+1.6%','+1.7%','-0.2%','+0.2%','+2.7%','+2.1%','+3.7%','0.0%','+0.4%'], ytd: '+14.8%', vol: '7.1%', sharpe: '1.51' },
                     { y: '2026', itd: '69.9%', months: ['+5.8%','+1.1%','-2.0%','+4.1%','','','','','','','',''], ytd: '+9.1%', vol: '11.8%', sharpe: '0.67' },
                   ].map(row => (
                     <tr key={row.y} className="border-b border-separator/60">
-                      <td className="py-3 pr-4 font-serif text-accent text-center">{row.y}</td>
+                      <td className="py-3 pr-4 font-body text-accent text-center">{row.y}</td>
                       <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
                       {row.months.map((v, i) => (
                         <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
