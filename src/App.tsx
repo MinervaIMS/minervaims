@@ -42,7 +42,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <CookieProvider>
+      <AuthProvider>
         <AuthProvider>
           <Toaster />
           <Sonner />
