@@ -96,6 +96,8 @@
   border-top: 1px solid var(--mims-line); }
 .legal-doc .lp-toc-collapse nav a .n { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--mims-muted); }
 .legal-doc .lp-toc-collapse nav a:first-child { border-top: none; }
+.legal-doc .lp-toc-collapse a { text-decoration: none; }
+.legal-doc .lp-toc-collapse a:hover { text-decoration: none; }
 
 /* content column */
 .legal-doc .lp-content { min-width: 0; }

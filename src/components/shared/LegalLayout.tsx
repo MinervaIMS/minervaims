@@ -95,12 +95,21 @@ export function LegalLayout({
 
   const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    const el = document.getElementById(id);
-    if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 112;
+    const wasOpen = tocOpen;
+    setTocOpen(false);
+    const doScroll = () => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const headerEl = document.querySelector('header');
+      const headerH = headerEl?.getBoundingClientRect().height ?? 96;
+      const top = el.getBoundingClientRect().top + window.scrollY - (headerH + 16);
       window.scrollTo({ top, behavior: 'smooth' });
       history.replaceState(null, '', `#${id}`);
-      setTocOpen(false);
+    };
+    if (wasOpen) {
+      requestAnimationFrame(() => requestAnimationFrame(doScroll));
+    } else {
+      doScroll();
     }
   };
 
