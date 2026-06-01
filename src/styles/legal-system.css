@@ -229,6 +229,14 @@
   .legal-doc .lp-related a .r-cat { display: none; }
 }
 
+/* progress tracker (sticky TOC footer) */
+.legal-doc .lp-progress { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--mims-line); }
+.legal-doc .lp-progress-meta { display: flex; justify-content: space-between; font-size: 10px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--mims-muted); margin-bottom: 8px;
+  font-variant-numeric: tabular-nums; }
+.legal-doc .lp-progress-track { height: 3px; background: var(--mims-line); position: relative; overflow: hidden; }
+.legal-doc .lp-progress-bar { height: 100%; background: var(--mims-navy); width: 0%;
+  transition: width .12s linear; }
 
 /* toc footer slot (cookie preferences CTA) */
 .legal-doc .lp-toc-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--mims-line); }
@@ -258,3 +266,6 @@
 .legal-doc .lp-table-scroll table th,
 .legal-doc .lp-table-scroll table td { border-left: none; border-right: none; }
 
+/* progress block label */
+.legal-doc .lp-progress-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--mims-navy); font-weight: 700; margin-bottom: 10px; }
