@@ -214,7 +214,7 @@ export function Header() {
         ].join(" ")}
         style={headerStyle}
       >
-        <div className="grid h-full w-full grid-cols-[1fr_auto_1fr] items-center gap-7 px-6 md:px-10 min-[880px]:grid-cols-[1fr_auto_1fr] max-[879px]:!grid-cols-[1fr_auto]">
+        <div className="mx-auto grid h-full w-full max-w-[1280px] grid-cols-[1fr_auto_1fr] items-center gap-7 px-6 md:px-10 min-[880px]:grid-cols-[1fr_auto_1fr] max-[879px]:!grid-cols-[1fr_auto]">
           {/* zone 1 — logo */}
           <Link to="/" aria-label="Minerva IMS — home" className="justify-self-start flex items-center">
             <img
