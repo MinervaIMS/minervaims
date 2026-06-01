@@ -77,7 +77,7 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
         {/* Top: Logo + Socials + Contact (horizontally centered, vertically aligned) */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-10 md:gap-8 pb-10 mb-10 border-b border-background/20">
+        <div className="flex flex-col lg:flex-row flex-wrap items-center lg:justify-between gap-10 lg:gap-8 pb-10 mb-10 border-b border-background/20">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             aria-label="Back to top"
