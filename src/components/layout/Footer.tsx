@@ -7,7 +7,7 @@ const exploreLinks = [
   { label: 'About', href: '/about' },
   { label: 'Events', href: '/events' },
   { label: 'Join Us', href: '/join' },
-  { label: 'Archive', href: '/archive' },
+  { label: 'Reports', href: '/archive' },
   { label: 'Readings', href: '/readings' },
 ];
 
