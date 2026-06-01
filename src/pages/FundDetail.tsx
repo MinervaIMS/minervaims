@@ -152,6 +152,64 @@ const FundDetail = () => {
         </div>
       </section>
 
+      {/* Performance Summary - long-short only */}
+      {fundKey === 'long-short' && (
+        <section className="py-section-sm md:py-section bg-background">
+          <div className="container">
+            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+              Performance Summary
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm font-body border-collapse min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-separator text-accent font-serif">
+                    <th className="text-left py-3 pr-4"></th>
+                    <th className="text-left py-3 px-3 font-semibold">ITD<sup>1,5</sup></th>
+                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m => (
+                      <th key={m} className="text-left py-3 px-2 font-normal">{m}</th>
+                    ))}
+                    <th className="text-left py-3 px-3 font-semibold">YTD<sup>5</sup></th>
+                    <th className="text-left py-3 px-2">Vol<sup>5</sup></th>
+                    <th className="text-left py-3 px-2">Sharpe<sup>2,5</sup></th>
+                  </tr>
+                </thead>
+                <tbody className="text-foreground">
+                  {[
+                    { y: '2021', itd: '7.9%', months: ['','','','','','','','','','','+0.9%','+6.9%'], ytd: '+7.9%', vol: '4.6%', sharpe: '1.68' },
+                    { y: '2022', itd: '29.1%', months: ['+9.3%','+0.1%','+0.7%','+4.9%','+2.2%','+0.6%','-3.7%','+2.2%','+0.9%','+1.0%','-1.0%','+1.5%'], ytd: '+19.6%', vol: '10.1%', sharpe: '1.61' },
+                    { y: '2023', itd: '29.8%', months: ['-2.2%','+0.3%','+2.5%','+1.6%','-0.4%','+0.1%','-3.8%','+5.2%','+1.6%','+1.7%','-4.0%','-1.8%'], ytd: '+0.5%', vol: '7.0%', sharpe: '-0.64' },
+                    { y: '2024', itd: '46.5%', months: ['+6.6%','+0.9%','-0.3%','+1.2%','+0.9%','-1.7%','+0.5%','+0.7%','-2.4%','+3.1%','+1.6%','+1.4%'], ytd: '+12.9%', vol: '6.0%', sharpe: '1.20' },
+                    { y: '2025', itd: '58.3%', months: ['-1.1%','+0.3%','+1.0%','-1.6%','+2.1%','+2.4%','+2.2%','+0.5%','+1.6%','+0.3%','-0.85%','+0.86%'], ytd: '+8.01%', vol: '5.5%', sharpe: '0.73' },
+                    { y: '2026', itd: '52.8%', months: ['-1.37%','-1.04%','-1.09%','—⁴','','','','','','','',''], ytd: '-2.17%', vol: '3.1%', sharpe: '-1.06' },
+                  ].map(row => (
+                    <tr key={row.y} className="border-b border-separator/60">
+                      <td className="py-3 pr-4 font-serif text-accent">{row.y}</td>
+                      <td className="py-3 px-3 font-semibold text-accent">{row.itd}</td>
+                      {row.months.map((v, i) => (
+                        <td key={i} className="py-3 px-2 whitespace-nowrap">{v}</td>
+                      ))}
+                      <td className="py-3 px-3 font-semibold text-accent">{row.ytd}</td>
+                      <td className="py-3 px-2">{row.vol}</td>
+                      <td className="py-3 px-2">{row.sharpe}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-6 font-body text-sm text-muted-foreground italic">
+              Given its dynamic, opportunity-driven mandate and its wide investment universe, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
+            </p>
+            <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
+              <li><sup>1</sup> ITD: Inception-to-date. Inception = 21/11/2021, Date = 24/04/2026.</li>
+              <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
+              <li><sup>3</sup> Sortino Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
+              <li><sup>4</sup> The monthly performance of April 2026 as of 24/04/2026 is 1.34%.</li>
+              <li><sup>5</sup> The fund performance is calculated based on an evolving model with a simulated NAV.</li>
+            </ol>
+          </div>
+        </section>
+      )}
+
       {/* Third Section: Latest Fund Updates */}
       <section className="py-section-sm md:py-section bg-accent">
         <div className="container">
