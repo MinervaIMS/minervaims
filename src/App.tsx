@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
-import { CookieProvider, CookieBanner, CookiePreferences } from "@/components/cookies";
+import { CookieConsent } from "@/components/cookies";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
