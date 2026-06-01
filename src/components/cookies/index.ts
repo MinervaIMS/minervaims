@@ -1,3 +1,2 @@
-export { CookieProvider, useCookieConsent } from './CookieContext';
-export { CookieBanner } from './CookieBanner';
-export { CookiePreferences } from './CookiePreferences';
+export { CookieConsent, openCookieSettings } from './CookieConsent';
+import './mims-cookie-consent.css';
