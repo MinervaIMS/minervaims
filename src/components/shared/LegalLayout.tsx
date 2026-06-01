@@ -1,6 +1,6 @@
 import { useEffect, useState, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import footerLogo from '@/assets/footer-logo.svg';
+import heroLogo from '@/assets/legal-hero-logo.svg';
 import '@/styles/legal-system.css';
 
 export interface LegalSection {
@@ -19,16 +19,14 @@ interface LegalLayoutProps {
   title: string;
   description?: string;
   lastUpdated?: string;
-  effectiveDate?: string;
   sections: LegalSection[];
   children: ReactNode;
-  /** Optional element rendered above metadata (e.g. cookie preferences button) */
-  toolbar?: ReactNode;
-  /** Optional element rendered below metadata (e.g. EN/IT language toggle) */
+  /** Element rendered below metadata in the hero (e.g. EN/IT toggle) */
   languageToggle?: ReactNode;
-  /** Related legal pages strip (defaults to standard set if omitted) */
+  /** Element rendered inside the sticky TOC, below the progress bar (e.g. cookie preferences button) */
+  tocFooter?: ReactNode;
+  /** Related legal pages strip */
   related?: RelatedDoc[];
-  /** Current doc id for related-strip highlight */
   currentId?: string;
 }
 
@@ -40,8 +38,6 @@ const DEFAULT_RELATED: RelatedDoc[] = [
   { id: 'cookie', title: 'Cookie Policy', category: 'Policy', href: '/cookie-policy' },
 ];
 
-// Strip a leading "1." / "01." / "1)" numbering from section titles so we
-// don't duplicate the rendered numeral.
 function stripLeadingNumber(t: string) {
   return t.replace(/^\s*\d+[.)]\s*/, '');
 }
@@ -52,16 +48,16 @@ export function LegalLayout({
   title,
   description,
   lastUpdated,
-  effectiveDate,
   sections,
   children,
-  toolbar,
   languageToggle,
+  tocFooter,
   related = DEFAULT_RELATED,
   currentId,
 }: LegalLayoutProps) {
   const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? '');
   const [tocOpen, setTocOpen] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (!sections.length) return;
@@ -80,6 +76,22 @@ export function LegalLayout({
     });
     return () => observer.disconnect();
   }, [sections]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const scrollable = h.scrollHeight - h.clientHeight;
+      const pct = scrollable > 0 ? Math.min(100, Math.max(0, (h.scrollTop / scrollable) * 100)) : 0;
+      setProgress(pct);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
 
   const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
@@ -102,34 +114,26 @@ export function LegalLayout({
             <h1 className="lp-title">{title}</h1>
             {description && <p className="lp-intro">{description}</p>}
           </div>
-          <img className="lp-hero-logo" src={footerLogo} alt="" aria-hidden="true" />
+          <img className="lp-hero-logo" src={heroLogo} alt="" aria-hidden="true" />
         </div>
 
-        {(lastUpdated || effectiveDate) && (
+        {lastUpdated && (
           <div className="lp-meta">
-            {lastUpdated && (
-              <div className="item">
-                <span className="k">Last updated</span>
-                <span className="v">{lastUpdated}</span>
-              </div>
-            )}
-            {effectiveDate && (
-              <div className="item">
-                <span className="k">Effective date</span>
-                <span className="v">{effectiveDate}</span>
-              </div>
-            )}
+            <div className="item">
+              <span className="k">Last updated</span>
+              <span className="v">{lastUpdated}</span>
+            </div>
           </div>
         )}
 
         {languageToggle && <div className="lp-lang">{languageToggle}</div>}
-        {toolbar && <div className="lp-toolbar">{toolbar}</div>}
       </header>
 
       <div className="lp-body">
-        {/* Sticky numbered TOC — desktop */}
         <aside className="lp-toc" aria-label="On this page">
-          <div className="toc-h">On this page</div>
+          <div className="toc-h">
+            Contents <span className="toc-sub">· progress-tracked</span>
+          </div>
           <nav>
             {sections.map((s, i) => {
               const active = activeId === s.id;
@@ -146,17 +150,28 @@ export function LegalLayout({
               );
             })}
           </nav>
+
+          <div className="lp-progress" aria-label="Reading progress">
+            <div className="lp-progress-meta">
+              <span>Reading progress</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="lp-progress-track">
+              <div className="lp-progress-bar" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+
+          {tocFooter && <div className="lp-toc-footer">{tocFooter}</div>}
         </aside>
 
         <div className="lp-content">
-          {/* Collapsible TOC — tablet/mobile */}
           <details
             className="lp-toc-collapse"
             open={tocOpen}
             onToggle={(e) => setTocOpen((e.target as HTMLDetailsElement).open)}
           >
             <summary>
-              On this page <span className="chev">▾</span>
+              Contents <span className="chev">▾</span>
             </summary>
             <nav>
               {sections.map((s, i) => (
@@ -166,6 +181,16 @@ export function LegalLayout({
                 </a>
               ))}
             </nav>
+            <div className="lp-progress">
+              <div className="lp-progress-meta">
+                <span>Reading progress</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <div className="lp-progress-track">
+                <div className="lp-progress-bar" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+            {tocFooter && <div className="lp-toc-footer">{tocFooter}</div>}
           </details>
 
           {children}
@@ -215,15 +240,16 @@ interface LegalSectionBlockProps {
   number?: string;
   title: string;
   children: ReactNode;
+  /** When true, lifts the 68ch max-width to let wide content (tables) span full column */
+  wide?: boolean;
 }
 
-export function LegalSectionBlock({ id, number, title, children }: LegalSectionBlockProps) {
-  // Auto-strip leading numbering and derive the numeral from `number` prop or title prefix.
+export function LegalSectionBlock({ id, number, title, children, wide }: LegalSectionBlockProps) {
   const cleanTitle = stripLeadingNumber(title);
   const match = title.match(/^\s*(\d+)/);
   const num = number ?? (match ? pad(parseInt(match[1], 10)) : '');
   return (
-    <section className="lp-section" id={id} aria-labelledby={`h-${id}`}>
+    <section className={`lp-section${wide ? ' lp-section-wide' : ''}`} id={id} aria-labelledby={`h-${id}`}>
       <div className="lp-num" aria-hidden="true">{num}</div>
       <div className="lp-h2-wrap">
         <h2 className="lp-h2" id={`h-${id}`}>
