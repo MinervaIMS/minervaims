@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Instagram } from 'lucide-react';
+import { Instagram, ArrowUpRight } from 'lucide-react';
+
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-icon-small.png';
 
