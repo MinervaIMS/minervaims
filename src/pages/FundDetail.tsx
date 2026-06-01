@@ -162,7 +162,7 @@ const FundDetail = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-body border-collapse min-w-[900px]">
                 <thead>
-                  <tr className="border-b border-separator text-accent font-serif">
+                  <tr className="border-b border-separator bg-accent text-background font-serif">
                     <th className="text-left py-3 pr-4"></th>
                     <th className="text-left py-3 px-3 font-semibold">ITD<sup>1,5</sup></th>
                     {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m => (
@@ -184,11 +184,11 @@ const FundDetail = () => {
                   ].map(row => (
                     <tr key={row.y} className="border-b border-separator/60">
                       <td className="py-3 pr-4 font-serif text-accent">{row.y}</td>
-                      <td className="py-3 px-3 font-semibold text-accent">{row.itd}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted">{row.itd}</td>
                       {row.months.map((v, i) => (
                         <td key={i} className="py-3 px-2 whitespace-nowrap">{v}</td>
                       ))}
-                      <td className="py-3 px-3 font-semibold text-accent">{row.ytd}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted">{row.ytd}</td>
                       <td className="py-3 px-2">{row.vol}</td>
                       <td className="py-3 px-2">{row.sharpe}</td>
                     </tr>
