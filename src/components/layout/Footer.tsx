@@ -77,7 +77,7 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
         {/* Top: Logo + Socials + Contact (horizontally centered, vertically aligned) */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-16 pb-10 mb-10 border-b border-background/20">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-10 md:gap-8 pb-10 mb-10 border-b border-background/20">
           <Link to="/" aria-label="MIMS Home" className="shrink-0">
             <img
               src={footerLogo}
@@ -90,7 +90,20 @@ export function Footer() {
             />
           </Link>
 
-          <div className="flex flex-col gap-3">
+          <div className="text-center md:text-left">
+            <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
+              For partnerships, joining information, or general enquiries:
+            </p>
+            <a
+              href="mailto:as.minerva@unibocconi.it"
+              className="font-serif text-background hover:underline hover:decoration-accent transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight break-all"
+            >
+              <span>as.minerva@unibocconi.it</span>
+              <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
+            </a>
+          </div>
+
+          <div className="flex flex-col gap-3 shrink-0">
             {socialLinks.map((social) => (
               <a
                 key={social.label}
@@ -116,19 +129,6 @@ export function Footer() {
                 <span className="font-body text-body">{social.label}</span>
               </a>
             ))}
-          </div>
-
-          <div className="text-center md:text-left">
-            <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
-              For partnerships, joining information, or general enquiries:
-            </p>
-            <a
-              href="mailto:as.minerva@unibocconi.it"
-              className="font-serif text-background hover:underline hover:decoration-accent transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight break-all"
-            >
-              <span>as.minerva@unibocconi.it</span>
-              <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
-            </a>
           </div>
         </div>
 
