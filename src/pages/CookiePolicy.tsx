@@ -1,182 +1,144 @@
 import { Helmet } from 'react-helmet-async';
-import { PageIntroduction, PageLoader } from '@/components/shared';
+import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
-import { Button } from '@/components/ui/button';
-import { useImagePreload } from '@/hooks/useImagePreload';
 import cookieBg from '@/assets/cookie-bg.webp';
+
+const sections: LegalSection[] = [
+  { id: 'what', title: '1. What Cookies Are' },
+  { id: 'how', title: '2. How We Use Cookies' },
+  { id: 'legal-basis', title: '3. Legal Basis' },
+  { id: 'choices', title: '4. Your Choices' },
+  { id: 'list', title: '5. Cookie List' },
+  { id: 'third-party', title: '6. Third-Party Embeds' },
+  { id: 'retention', title: '7. How Long Choices Last' },
+];
 
 const CookiePolicy = () => {
   const { openPreferences } = useCookieConsent();
-  const imagesLoaded = useImagePreload([cookieBg]);
-
-  if (!imagesLoaded) {
-    return <PageLoader />;
-  }
 
   return (
     <>
       <Helmet>
         <title>Cookie Policy | MIMS</title>
+        <meta
+          name="description"
+          content="How cookies and similar technologies are used on the Minerva Investment Management Society website."
+        />
       </Helmet>
-      <div className="relative">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${cookieBg})` }} />
-        <div className="relative z-10">
-          <PageIntroduction
-            title="Cookie Policy"
-            transparentBackground
-          />
-        </div>
-      </div>
+      <LegalLayout
+        title="Cookie Policy"
+        description="How we use cookies and similar technologies on this website, and how you can control them."
+        lastUpdated="January 1st, 2026"
+        backgroundImage={cookieBg}
+        sections={sections}
+        toolbar={
+          <button
+            type="button"
+            onClick={openPreferences}
+            className="inline-flex items-center px-6 py-3 bg-background text-accent border border-accent font-serif text-body transition-colors hover:bg-accent hover:text-background"
+          >
+            Manage Cookie Preferences
+          </button>
+        }
+      >
+        <LegalSectionBlock id="what" number="01" title="What Cookies Are">
+          <p>
+            Cookies are small text files stored on your device. We may also use similar technologies
+            (e.g., local storage or pixels) where applicable.
+          </p>
+        </LegalSectionBlock>
 
-      <div className="container py-section-sm md:py-section">
-        <div className="max-w-3xl space-y-8">
-          {/* Manage Cookie Preferences Button */}
-          <div className="pb-6 border-b border-border">
-            <Button
+        <LegalSectionBlock id="how" number="02" title="How We Use Cookies">
+          <p>We use:</p>
+          <ul>
+            <li><strong>Strictly necessary cookies</strong> (required for the website to function and for security),</li>
+            <li><strong>Preference cookies</strong> (to remember settings),</li>
+            <li><strong>Analytics cookies</strong> (to understand usage and improve the site),</li>
+            <li><strong>Third-party cookies</strong> (e.g., embedded social content) where enabled.</li>
+          </ul>
+          <p>Non-essential cookies are used only with your consent.</p>
+        </LegalSectionBlock>
+
+        <LegalSectionBlock id="legal-basis" number="03" title="Legal Basis">
+          <p>
+            Strictly necessary cookies are used because they are required to provide the service you explicitly
+            request and to maintain security. All other cookies are used only with your consent, which you can
+            withdraw at any time.
+          </p>
+        </LegalSectionBlock>
+
+        <LegalSectionBlock id="choices" number="04" title="Your Choices">
+          <p>You can:</p>
+          <ul>
+            <li>Accept all cookies,</li>
+            <li>Reject all non-essential cookies,</li>
+            <li>Customise choices by category,</li>
+          </ul>
+          <p>
+            at any time via the{' '}
+            <button
+              type="button"
               onClick={openPreferences}
-              variant="default"
-              className="text-body text-accent hover:text-background"
-              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              className="text-accent underline hover:text-accent/80"
             >
               Manage Cookie Preferences
-            </Button>
-          </div>
-
-          <p className="font-body text-small text-muted-foreground">
-            Last updated: January 1st, 2026
+            </button>
+            {' '}button above.
           </p>
+          <p>
+            You can also control cookies via your browser settings, but blocking necessary cookies may
+            affect site functionality.
+          </p>
+        </LegalSectionBlock>
 
-          <section>
-            <h2 className="font-serif text-heading mb-4">1. What Cookies Are</h2>
-            <p className="font-body text-body text-muted-foreground">
-              Cookies are small text files stored on your device. We may also use similar technologies 
-              (e.g., local storage or pixels) where applicable.
-            </p>
-          </section>
+        <LegalSectionBlock id="list" number="05" title="Cookie List">
+          <p>The following table lists the cookies used on this website:</p>
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full border-collapse border border-separator text-small">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="border border-separator p-3 text-left font-serif text-foreground">Cookie Name</th>
+                  <th className="border border-separator p-3 text-left font-serif text-foreground">Provider</th>
+                  <th className="border border-separator p-3 text-left font-serif text-foreground">Category</th>
+                  <th className="border border-separator p-3 text-left font-serif text-foreground">Purpose</th>
+                  <th className="border border-separator p-3 text-left font-serif text-foreground">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-separator p-3">mims_cookie_consent</td>
+                  <td className="border border-separator p-3">MIMS</td>
+                  <td className="border border-separator p-3">Strictly Necessary</td>
+                  <td className="border border-separator p-3">Stores your cookie consent preferences</td>
+                  <td className="border border-separator p-3">6 months</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="italic">
+            At present, we do not use analytics or marketing cookies. If this changes, we will update
+            this table and request consent where required.
+          </p>
+        </LegalSectionBlock>
 
-          <section>
-            <h2 className="font-serif text-heading mb-4">2. How We Use Cookies</h2>
-            <div className="font-body text-body text-muted-foreground space-y-2">
-              <p>We use:</p>
-              <ul className="list-disc list-inside pl-4 space-y-1">
-                <li><strong>Strictly necessary cookies</strong> (required for the website to function and for security),</li>
-                <li><strong>Preference cookies</strong> (to remember settings),</li>
-                <li><strong>Analytics cookies</strong> (to understand usage and improve the site),</li>
-                <li><strong>Third-party cookies</strong> (e.g., embedded social content) where enabled.</li>
-              </ul>
-              <p className="mt-2">Non-essential cookies are used only with your consent.</p>
-            </div>
-          </section>
+        <LegalSectionBlock id="third-party" number="06" title="Third-Party Embeds and Links">
+          <p>
+            Social media embeds (e.g., Instagram) and third-party services may set cookies or collect data.
+            Where feasible, we implement a two-step loading mechanism:
+          </p>
+          <ul>
+            <li><strong>Default state:</strong> Embed is blocked with a notice and a "Load content" button.</li>
+            <li><strong>After consent:</strong> Only load the embed after you have consented to the relevant category (or after explicit click where legally acceptable).</li>
+          </ul>
+        </LegalSectionBlock>
 
-          <section>
-            <h2 className="font-serif text-heading mb-4">3. Legal Basis</h2>
-            <p className="font-body text-body text-muted-foreground">
-              Strictly necessary cookies are used because they are required to provide the service you explicitly 
-              request and to maintain security. All other cookies are used only with your consent, which you can 
-              withdraw at any time.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-heading mb-4">4. Your Choices</h2>
-            <div className="font-body text-body text-muted-foreground space-y-2">
-              <p>You can:</p>
-              <ul className="list-disc list-inside pl-4 space-y-1">
-                <li>Accept all cookies,</li>
-                <li>Reject all non-essential cookies,</li>
-                <li>Customise choices by category,</li>
-              </ul>
-              <p className="mt-2">
-                at any time via the{' '}
-                <button 
-                  onClick={openPreferences}
-                  className="text-accent underline hover:text-accent/80"
-                >
-                  Manage Cookie Preferences
-                </button>
-                {' '}button above.
-              </p>
-              <p className="mt-2">
-                You can also control cookies via your browser settings, but blocking necessary cookies may 
-                affect site functionality.
-              </p>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-heading mb-4">5. Cookie List</h2>
-            <div className="font-body text-body text-muted-foreground space-y-4">
-              <p>
-                The following table lists the cookies used on this website:
-              </p>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-border text-small">
-                  <thead>
-                    <tr className="bg-muted">
-                      <th className="border border-border p-2 text-left font-serif">Cookie Name</th>
-                      <th className="border border-border p-2 text-left font-serif">Provider</th>
-                      <th className="border border-border p-2 text-left font-serif">Category</th>
-                      <th className="border border-border p-2 text-left font-serif">Purpose</th>
-                      <th className="border border-border p-2 text-left font-serif">Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-border p-2">mims_cookie_consent</td>
-                      <td className="border border-border p-2">MIMS</td>
-                      <td className="border border-border p-2">Strictly Necessary</td>
-                      <td className="border border-border p-2">Stores your cookie consent preferences</td>
-                      <td className="border border-border p-2">6 months</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="italic">
-                At present, we do not use analytics or marketing cookies. If this changes, we will update 
-                this table and request consent where required.
-              </p>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-heading mb-4">6. Third-Party Embeds and Links</h2>
-            <div className="font-body text-body text-muted-foreground space-y-2">
-              <p>
-                Social media embeds (e.g., Instagram) and third-party services may set cookies or collect data. 
-                Where feasible, we implement a two-step loading mechanism:
-              </p>
-              <ul className="list-disc list-inside pl-4 space-y-1">
-                <li><strong>Default state:</strong> Embed is blocked with a notice and a "Load content" button.</li>
-                <li><strong>After consent:</strong> Only load the embed after you have consented to the relevant 
-                category (or after explicit click where legally acceptable).</li>
-              </ul>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-heading mb-4">7. How Long Choices Last</h2>
-            <p className="font-body text-body text-muted-foreground">
-              We store consent choices for up to 6 months (or less if required by law or if you clear cookies). 
-              We may re-display the banner earlier if cookies/categorisation materially change.
-            </p>
-          </section>
-
-          <section className="pt-4 border-t border-border">
-            <p className="font-body text-body text-muted-foreground">
-              To manage your cookie preferences at any time, click the{' '}
-              <button 
-                onClick={openPreferences}
-                className="text-accent underline hover:text-accent/80"
-              >
-                Manage Cookie Preferences
-              </button>
-              {' '}button.
-            </p>
-          </section>
-        </div>
-      </div>
+        <LegalSectionBlock id="retention" number="07" title="How Long Choices Last">
+          <p>
+            We store consent choices for up to 6 months (or less if required by law or if you clear cookies).
+            We may re-display the banner earlier if cookies/categorisation materially change.
+          </p>
+        </LegalSectionBlock>
+      </LegalLayout>
     </>
   );
 };
