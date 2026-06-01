@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
-import { useCookieConsent } from '@/components/cookies';
+import { openCookieSettings } from '@/components/cookies';
 
 const sections: LegalSection[] = [
   { id: 'what', title: '1. What Cookies Are' },
