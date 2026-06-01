@@ -96,7 +96,7 @@ export function Footer() {
             </p>
             <a
               href="mailto:as.minerva@unibocconi.it"
-              className="font-serif text-background hover:underline hover:decoration-accent transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight whitespace-nowrap"
+              className="font-serif text-background hover:underline hover:decoration-background transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight whitespace-nowrap"
             >
               <span>as.minerva@unibocconi.it</span>
               <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
