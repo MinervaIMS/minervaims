@@ -150,6 +150,7 @@ export function LegalLayout({
           </nav>
 
           <div className="lp-progress" aria-label="Reading progress">
+            <div className="lp-progress-label">Contents · progress-tracked</div>
             <div className="lp-progress-meta">
               <span>Reading progress</span>
               <span>{Math.round(progress)}%</span>
