@@ -131,9 +131,7 @@ export function LegalLayout({
 
       <div className="lp-body">
         <aside className="lp-toc" aria-label="On this page">
-          <div className="toc-h">
-            Contents <span className="toc-sub">· progress-tracked</span>
-          </div>
+          <div className="toc-h">In this page</div>
           <nav>
             {sections.map((s, i) => {
               const active = activeId === s.id;
