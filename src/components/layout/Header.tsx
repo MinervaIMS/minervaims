@@ -380,7 +380,7 @@ export function Header() {
                     type="button"
                     onClick={() => setMobileOpenDd(expanded ? null : item.label)}
                     className={[
-                      "w-full flex items-center justify-between px-6 py-3 font-serif text-[18px]",
+                      "w-full flex items-center justify-between px-6 py-3 font-serif text-[19px]",
                       "text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]",
                       active ? "text-[#1F0F4D]" : "",
                     ].join(" ")}
