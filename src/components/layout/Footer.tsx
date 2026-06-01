@@ -103,7 +103,7 @@ export function Footer() {
             </a>
           </div>
 
-          <div className="flex flex-col gap-3 shrink-0">
+          <div className="flex flex-row lg:flex-col gap-5 lg:gap-3 shrink-0">
             {socialLinks.map((social) => (
               <a
                 key={social.label}
