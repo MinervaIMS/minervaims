@@ -1,53 +1,43 @@
-## Goal
+# Replace site header — precise port of the uploaded reference
 
-Reproduce the handoff's `legal-system.css` editorial layout 1:1 across all 5 legal/technical pages, keeping only the site Header, Footer, and existing English legal copy.
+Rewrite `src/components/layout/Header.tsx` as a 1:1 port of the uploaded `Header.tsx` / `MIMS Navbar — Final.html`. No deviations from the reference behaviour or styling. Only the placeholders called out in the reference comments are wired to the real project.
 
-## What changes
+## Adherence to the reference (no changes)
 
-### 1. Scoped CSS — `src/styles/legal-system.css` (new)
-Port `legal-system.css` verbatim, scoped under `.legal-doc`. Imported once in `src/index.css`. This brings in the exact:
-- Hero: `.lp-hero` 60/72 padding, `.lp-title` 58px Times New Roman navy, `.lp-intro` 19px muted, `.lp-eyebrow`, `.lp-meta` hairline strip with Last updated / Effective date.
-- Body grid: `.lp-body` `248px 1fr` with 72px gutter.
-- Sticky numbered TOC: `.lp-toc` `position:sticky; top:32px`, 2px left rail per item, navy active state, "On this page" eyebrow, optional progress bar.
-- Mobile collapsible TOC: `<details class="lp-toc-collapse">`.
-- Sections: `.lp-section` `56px 1fr` grid with serif numeral `.lp-num` in muted lavender `#AFA2D2` on the left margin, `.lp-h2` 27px navy, hairline separators between sections.
-- Lists with square lavender bullets, inline navy underlined links, `.lp-callout` block (navy left border).
-- Back-to-top button `.lp-backtop`.
-- Related pages strip `.lp-related` on grey, with hover slide.
-- Statute-only language toggle `.lp-lang` (EN/IT segmented control).
-- Responsive: `.vp-tablet` (no sticky TOC, collapsible appears) and `.vp-mobile` (stacked, 32px title, logo behind heading).
+- Fixed header, `inset-x-0 top-0 z-50`, height **84px**, `border-b` transition.
+- Two modes via scroll listener at `scrollY > 20`.
+  - Transparent: `bg-transparent border-transparent`, white serif links (`rgba(255,255,255,.92)` → `#fff` on hover/active), white logo mark.
+  - Solid: `bg-white border-[#E0E0E0] shadow-[0_1px_3px_0_rgba(0,0,0,0.07)]`, navy (`#1F0F4D`) links, colour logo mark.
+- Three-zone grid `grid-cols-[1fr_auto_1fr]`, max-width 1280, padding `px-10`, gap 28px. Logo `justify-self-start`, account `justify-self-end`, nav centred.
+- Nav: serif 17px, gap 34px, draw-in 1.5px underline under each link, persistent underline on `is-active`. Caret `▾` for dropdown items at `0.62em / opacity .6`.
+- Dropdowns open on `group-hover`: 266px min-width, white panel, `#E0E0E0` border, elevated shadow, items 16px serif, hover bg `#F2F2F2` + navy text. Centred under the trigger (`left-1/2 -translate-x-1/2 mt-2`).
+- Account cluster:
+  - Logged out → "Login" text link with the same underline draw-in.
+  - Logged in → "Workspace" label + 32px circular avatar to its right (gap 12px). Avatar shows photo when present, else **uppercase initials** on `#1F0F4D` with white Calibri 700 12.5px. Avatar ring: `rgba(255,255,255,.55)` when transparent, `#E0E0E0` when solid.
+- Hamburger button shown `< 880px` (matches the reference's `@media (max-width:880px)`). Hides nav + account, switches grid to `1fr auto`. Icon colour follows mode.
+- Active-state rule: matches `location.pathname === to` for `/`, else `startsWith(to)`.
+- No focus ring, no divider before the account.
+- Not rendered on `/admin*` (early return; Layout already guards this too).
 
-### 2. Rewritten `LegalLayout.tsx`
-Match `legal-render.js` markup exactly:
-- `<article class="legal-doc vp-desktop|vp-tablet|vp-mobile">` chosen via `useIsDesktop` / `useIsMobile`.
-- `<header class="lp-hero">` with title + intro + logo image (existing footer-logo.svg, faded) + `.lp-meta` strip rendering Last updated / Effective date.
-- `.lp-body` with sticky `.lp-toc` (numbered `01`, `02`…, active scroll-spy via IntersectionObserver, navy active rail) AND a parallel `<details class="lp-toc-collapse">` shown only on tablet/mobile.
-- `.lp-content` rendering children as `.lp-section` blocks.
-- `.lp-backtop-row` with working Back-to-top button.
-- Optional `toolbar` slot (used by Cookie Policy for "Manage preferences").
-- Optional `languageToggle` slot (used by Statute for EN/IT switch).
-- No background image. No `PageIntroduction`. No `PageLoader`.
+## Project-specific wiring (the only adaptations)
 
-### 3. Rewritten `LegalSectionBlock`
-Renders the exact `.lp-section` structure: `.lp-num` numeral column + `.lp-h2-wrap` containing `.lp-h2` (with hover `#` anchor) and body content. Hairline separator between sections handled by CSS sibling selector.
+1. **Logo assets** — the reference uses `logo-mark-color.png` / `logo-mark-white.png`. The project has `@/assets/logo-color.svg` and `@/assets/logo-white.svg` (the same brand mark, already used by the current header). Use those imports — visually identical, just SVG.
+2. **Routes** — map `NAV_LINKS` to actual app routes:
+   - About → `/about`
+   - Divisions → `/divisions/equity`, `/divisions/investment`, `/divisions/macro`, `/divisions/portfolio`, `/divisions/quant`
+   - Funds → `/funds/long-short`, `/funds/multi-asset`
+   - People → `/people/members`, `/people/alumni`
+   - Join → `/join`
+   - Parent labels (`Divisions`, `Funds`, `People`) have **no `to`** — they're hover triggers only (caret + dropdown), not links. Matches reference: parent items don't navigate, dropdown items do.
+3. **HERO_ROUTES** = `["/", "/about", "/join"]` (exact list from the reference).
+4. **Auth** — `useAuth()` from `@/contexts/AuthContext`:
+   - Logged out → "Login" → `/auth` (project has no `/login` route; `/auth` is the login page).
+   - Logged in → "Workspace" → `/admin`.
+   - `fullName` from `profile?.full_name ?? user.email`.
+   - `avatarUrl`: profiles table has no photo column, so always render initials (matches the reference's `initials` state — the most common case).
+5. **Mobile menu panel** — the reference only ships the burger button with no open behaviour. I will add a minimal panel (slide-down, serif links, expanded dropdowns inline, Login/Workspace at bottom) using the same colours so the burger is functional. If you'd rather keep the burger inert exactly like the reference, say so.
 
-### 4. Page updates (existing English copy preserved)
-- `PrivacyPolicy.tsx`, `TermsOfUse.tsx`, `CookiePolicy.tsx`, `Disclaimer.tsx`, `Statute.tsx`: remove `backgroundImage` props, supply `effectiveDate` alongside `lastUpdated`, keep current section text unchanged.
-- `Statute.tsx`: add EN/IT segmented language toggle via new `languageToggle` slot. Italian translations come from the handoff `legal-content.js` (sectionsIt). English copy on the page remains the current placeholder under-revision text unless you'd rather adopt the handoff's English statute copy — confirmed earlier you want to keep existing text content.
-- `CookiePolicy.tsx`: "Manage Cookie Preferences" rendered via `toolbar` slot using `.mims-btn-outline` styling.
+## Files
 
-### 5. Header offset
-Sticky TOC `top` value bumped from 32px to clear the existing site `Header` (≈96px) so it sits below the navbar, matching the handoff's visual intent within our shell.
-
-## Files touched
-- **new:** `src/styles/legal-system.css`
-- **edit:** `src/index.css` (one `@import`)
-- **rewrite:** `src/components/shared/LegalLayout.tsx`
-- **edit:** `src/pages/PrivacyPolicy.tsx`, `TermsOfUse.tsx`, `CookiePolicy.tsx`, `Disclaimer.tsx`, `Statute.tsx`
-
-## Assumptions / open questions
-
-1. **Logo asset** — handoff uses `assets/logo-full-color.png`. I'll use the existing `src/assets/footer-logo.svg` at 50% opacity as the faded hero logo (closest equivalent already in the project).
-2. **English copy** — kept as currently shipped on each page (per your earlier instruction "the only thing to keep is text content"). The handoff's `legal-content.js` is used only as the source for Italian Statute translations and for the `effective date` values where you haven't already set one.
-3. **Related pages strip & prev/next** — handoff includes them but they navigate via in-page anchors in the demo. I'll wire them to real routes (`/privacy-policy`, `/terms-of-use`, etc.). Tell me if you'd rather omit the related-pages strip.
-4. **Reading time** — handoff exposes it on a component variant but not on the main page meta strip; I'll omit it from the meta strip to match the rendered handoff exactly.
+- Rewrite: `src/components/layout/Header.tsx`
+- No other files touched (Layout, routes, assets, auth context unchanged).
