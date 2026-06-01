@@ -249,7 +249,7 @@ export function Header() {
                 </>
               );
               const linkClass = [
-                "relative inline-flex items-center whitespace-nowrap py-2 font-serif text-[18px] leading-none outline-none focus:outline-none",
+                "relative inline-flex items-center whitespace-nowrap py-2 font-serif text-[19px] leading-none outline-none focus:outline-none",
                 "after:absolute after:left-0 after:right-0 after:bottom-0.5 after:h-[1.5px] after:bg-current after:origin-left after:scale-x-0 after:transition-transform after:duration-[240ms]",
                 "hover:after:scale-x-100",
                 active ? "after:scale-x-100" : "",
