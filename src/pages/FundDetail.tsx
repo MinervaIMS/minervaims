@@ -184,7 +184,7 @@ const FundDetail = () => {
                   ].map(row => (
                     <tr key={row.y} className="border-b border-separator/60">
                       <td className="py-3 pr-4 font-serif text-accent">{row.y}</td>
-                      <td className="py-3 px-3 font-semibold text-accent">{row.itd}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted">{row.itd}</td>
                       {row.months.map((v, i) => (
                         <td key={i} className="py-3 px-2 whitespace-nowrap">{v}</td>
                       ))}
