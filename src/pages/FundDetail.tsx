@@ -210,6 +210,67 @@ const FundDetail = () => {
         </section>
       )}
 
+      {/* Performance Summary - multi-asset */}
+      {fundKey === 'multi-asset' && (
+        <section className="py-section-sm md:py-section bg-background">
+          <div className="container">
+            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+              Performance Summary
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm font-body border-collapse min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-separator bg-accent text-background font-body">
+                    <th className="text-center py-3 pr-4"></th>
+                    <th className="text-center py-3 px-3 font-semibold">ITD<sup>1</sup></th>
+                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m => (
+                      <th key={m} className="text-center py-3 px-2 font-normal">{m}</th>
+                    ))}
+                    <th className="text-center py-3 px-3 font-semibold">YTD</th>
+                    <th className="text-center py-3 px-2">Vol</th>
+                    <th className="text-center py-3 px-2">Sharpe<sup>2</sup></th>
+                  </tr>
+                </thead>
+                <tbody className="text-foreground">
+                  {[
+                    { y: '2020', itd: '15.1%', months: ['+0.1%','-0.3%','+0.1%','+1.4%','+3.4%','+1.9%','-1.8%','+1.2%','-1.4%','+2.2%','+5.0%','+2.6%'], ytd: '+15.1%', vol: '6.9%', sharpe: '2.18' },
+                    { y: '2021', itd: '45.2%', months: ['+3.0%','+2.3%','+1.5%','+0.7%','+0.5%','+2.4%','+2.0%','+1.5%','-2.3%','+4.7%','+2.4%','+4.9%'], ytd: '+26.1%', vol: '6.6%', sharpe: '3.94' },
+                    { y: '2022', itd: '35.7%', months: ['-2.0%','+0.4%','+2.1%','-2.8%','-0.2%','-7.8%','+6.5%','+5.1%','-9.2%','+3.7%','+2.9%','-4.1%'], ytd: '-6.6%', vol: '17.1%', sharpe: '-0.53' },
+                    { y: '2023', itd: '36.6%', months: ['+0.2%','-2.1%','-0.3%','-0.3%','-1.0%','+1.3%','-1.5%','+0.1%','-3.7%','-0.7%','+7.3%','+1.8%'], ytd: '+0.7%', vol: '9.4%', sharpe: '-0.49' },
+                    { y: '2024', itd: '38.4%', months: ['+0.5%','+0.2%','+1.6%','-0.4%','+0.4%','-0.1%','+0.7%','0.0%','-0.4%','-0.2%','+0.9%','-1.9%'], ytd: '+1.3%', vol: '3.0%', sharpe: '-1.24' },
+                    { y: '2025', itd: '58.8%', months: ['+0.6%','+4.5%','-3.3%','+1.6%','+1.7%','-0.2%','+0.2%','+2.7%','+2.1%','+3.7%','-0.01%','+0.4%'], ytd: '+14.8%', vol: '7.1%', sharpe: '1.51' },
+                    { y: '2026', itd: '69.9%', months: ['+5.8%','+1.1%','-2.0%','+4.1%','','','','','','','',''], ytd: '+9.1%', vol: '11.8%', sharpe: '0.67' },
+                  ].map(row => (
+                    <tr key={row.y} className="border-b border-separator/60">
+                      <td className="py-3 pr-4 font-serif text-accent text-center">{row.y}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
+                      {row.months.map((v, i) => (
+                        <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
+                      ))}
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.ytd}</td>
+                      <td className="py-3 px-2 text-center">{row.vol}</td>
+                      <td className="py-3 px-2 text-center">{row.sharpe}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-6 font-body text-sm text-muted-foreground italic">
+              Given its dynamic, opportunity-driven mandate and its wide investment universe, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
+            </p>
+            <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
+              <li><sup>1</sup> ITD: Inception-to-date. Inception = 31/1/2020, Date = 05/05/2026.</li>
+              <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
+              <li><sup>3</sup> Considering multi-strategy absolute-returns (HFRI index) would be the best proxy, but still far from our long-only no-leverage strategy.</li>
+              <li><sup>4</sup> Computed over monthly returns ITD.</li>
+              <li><sup>5</sup> Sector breakdown among solely equities.</li>
+              <li><sup>6</sup> Unhedged exposure: USD includes HKD (pegged) EUR includes DKK (pegged).</li>
+              <li><sup>7</sup> Commodities are excluded since prices are determined by global factors.</li>
+            </ol>
+          </div>
+        </section>
+      )}
+
       {/* Third Section: Latest Fund Updates */}
       <section className="py-section-sm md:py-section bg-accent">
         <div className="container">
