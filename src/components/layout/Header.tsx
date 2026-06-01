@@ -234,7 +234,18 @@ export function Header() {
               const labelEl = (
                 <>
                   {item.label}
-                  {item.dropdown && <span className="text-[0.62em] opacity-60 translate-y-px ml-1">▾</span>}
+                  {item.dropdown && (
+                    <span
+                      className="text-[0.62em] translate-y-px ml-1"
+                      style={{
+                        color: transparent ? "rgba(255,255,255,0.85)" : "rgba(31,15,77,0.55)",
+                        textShadow: transparent ? TEXT_SHADOW_TRANSPARENT : "none",
+                        transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, text-shadow ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
+                      }}
+                    >
+                      ▾
+                    </span>
+                  )}
                 </>
               );
               const linkClass = [
