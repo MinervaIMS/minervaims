@@ -207,7 +207,7 @@
   .legal-doc .lp-hero { padding: 34px 24px 0; }
   .legal-doc .lp-hero-top { display: block; position: relative; }
   .legal-doc .lp-hero-head { position: relative; z-index: 1; }
-  .legal-doc .lp-hero-logo { position: absolute; top: -4px; right: -16px; width: 158px; opacity: .3; z-index: 0; }
+  .legal-doc .lp-hero-logo { position: absolute; top: -4px; right: -16px; width: 158px; opacity: 1; z-index: 0; }
   .legal-doc .lp-lang { flex-wrap: wrap; }
   .legal-doc .lp-eyebrow { margin-bottom: 20px; }
   .legal-doc .lp-title { font-size: 32px; max-width: none; }
