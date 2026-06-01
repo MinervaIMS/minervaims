@@ -63,8 +63,20 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDd, setOpenDd] = useState<string | null>(null);
   const [mobileOpenDd, setMobileOpenDd] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(
+    typeof document !== "undefined" && document.body.hasAttribute("data-page-loading"),
+  );
   const closeTimerRef = useRef<number | null>(null);
   const { user, profile } = useAuth();
+
+  // Observe body[data-page-loading] so the header hides while Suspense fallback renders.
+  useEffect(() => {
+    const update = () => setPageLoading(document.body.hasAttribute("data-page-loading"));
+    update();
+    const mo = new MutationObserver(update);
+    mo.observe(document.body, { attributes: true, attributeFilter: ["data-page-loading"] });
+    return () => mo.disconnect();
+  }, []);
 
   // Scroll detection — flip to solid only once the hero has left the viewport.
   useEffect(() => {
