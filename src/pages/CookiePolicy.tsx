@@ -1,7 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 import { useCookieConsent } from '@/components/cookies';
-import cookieBg from '@/assets/cookie-bg.webp';
 
 const sections: LegalSection[] = [
   { id: 'what', title: '1. What Cookies Are' },
@@ -29,13 +28,15 @@ const CookiePolicy = () => {
         title="Cookie Policy"
         description="How we use cookies and similar technologies on this website, and how you can control them."
         lastUpdated="January 1st, 2026"
-        backgroundImage={cookieBg}
+        effectiveDate="January 1st, 2026"
+        currentId="cookie"
         sections={sections}
         toolbar={
           <button
             type="button"
             onClick={openPreferences}
-            className="inline-flex items-center px-6 py-3 bg-background text-accent border border-accent font-serif text-body transition-colors hover:bg-accent hover:text-background"
+            className="lp-backtop"
+            style={{ width: 'auto' }}
           >
             Manage Cookie Preferences
           </button>
