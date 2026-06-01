@@ -197,14 +197,13 @@ const FundDetail = () => {
               </table>
             </div>
             <p className="mt-6 font-body text-sm text-muted-foreground italic">
-              Given its dynamic, opportunity-driven mandate and its wide investment universe, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
+              Given its semi-automated approach and zero-net investment 'multi-factor' strategy, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
             </p>
             <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
               <li><sup>1</sup> ITD: Inception-to-date. Inception = 21/11/2021, Date = 24/04/2026.</li>
               <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
               <li><sup>3</sup> Sortino Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
-              <li><sup>4</sup> The monthly performance of April 2026 as of 24/04/2026 is 1.34%.</li>
-              <li><sup>5</sup> The fund performance is calculated based on an evolving model with a simulated NAV.</li>
+              <li><sup>4</sup> The fund performance is calculated based on an evolving model with a simulated NAV.</li>
             </ol>
           </div>
         </section>
