@@ -77,13 +77,12 @@ const App = () => (
                 <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
               </Route>
             </Routes>
-            <CookieBanner />
-            <CookiePreferences />
+            <CookieConsent />
             <SessionWarningModal warningThresholdMinutes={2} />
           </BrowserRouter>
         </AuthProvider>
-      </CookieProvider>
     </TooltipProvider>
+
   </QueryClientProvider>
 );
 
