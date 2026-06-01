@@ -113,6 +113,7 @@ export function Header() {
   }, [mobileOpen]);
 
   if (location.pathname.startsWith("/admin")) return null;
+  if (pageLoading) return null;
 
   const pathname = location.pathname;
   const hasHero =
