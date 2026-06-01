@@ -13,3 +13,5 @@ export { FundArchiveCarousel } from './FundArchiveCarousel';
 export { default as ApplicationStatus } from './ApplicationStatus';
 export { ResponsiveBackground } from './ResponsiveBackground';
 export { PageLoader } from './PageLoader';
+export { LegalLayout, LegalSectionBlock } from './LegalLayout';
+export type { LegalSection } from './LegalLayout';
