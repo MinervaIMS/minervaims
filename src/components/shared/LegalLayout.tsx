@@ -76,21 +76,6 @@ export function LegalLayout({
     return () => observer.disconnect();
   }, [sections]);
 
-  useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement;
-      const scrollable = h.scrollHeight - h.clientHeight;
-      const pct = scrollable > 0 ? Math.min(100, Math.max(0, (h.scrollTop / scrollable) * 100)) : 0;
-      setProgress(pct);
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, []);
 
   const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
@@ -148,17 +133,6 @@ export function LegalLayout({
             })}
           </nav>
 
-          <div className="lp-progress" aria-label="Reading progress">
-            <div className="lp-progress-label">Contents · progress-tracked</div>
-            <div className="lp-progress-meta">
-              <span>Reading progress</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <div className="lp-progress-track">
-              <div className="lp-progress-bar" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-
           {tocFooter && <div className="lp-toc-footer">{tocFooter}</div>}
         </aside>
 
@@ -179,16 +153,6 @@ export function LegalLayout({
                 </a>
               ))}
             </nav>
-            <div className="lp-progress">
-              <div className="lp-progress-label">Contents · progress-tracked</div>
-              <div className="lp-progress-meta">
-                <span>Reading progress</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <div className="lp-progress-track">
-                <div className="lp-progress-bar" style={{ width: `${progress}%` }} />
-              </div>
-            </div>
             {tocFooter && <div className="lp-toc-footer">{tocFooter}</div>}
           </details>
 
