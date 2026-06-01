@@ -78,7 +78,11 @@ export function Footer() {
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
         {/* Top: Logo + Socials + Contact (horizontally centered, vertically aligned) */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-10 md:gap-8 pb-10 mb-10 border-b border-background/20">
-          <Link to="/" aria-label="MIMS Home" className="shrink-0">
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Back to top"
+            className="shrink-0 bg-transparent border-0 p-0 cursor-pointer"
+          >
             <img
               src={footerLogo}
               alt="Minerva Investment Management Society"
@@ -88,7 +92,7 @@ export function Footer() {
               loading="lazy"
               decoding="async"
             />
-          </Link>
+          </button>
 
           <div className="text-center md:text-left">
             <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
