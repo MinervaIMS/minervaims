@@ -258,13 +258,9 @@ const FundDetail = () => {
               Given its dynamic, opportunity-driven mandate and its wide investment universe, the portfolio does not have a reference benchmark<sup>3</sup> upon which to calculate the alpha.
             </p>
             <ol className="mt-4 font-body text-xs text-muted-foreground space-y-1 list-none">
-              <li><sup>1</sup> ITD: Inception-to-date. Inception = 31/1/2020, Date = 05/05/2026.</li>
+              <li><sup>1</sup> ITD: Inception-to-date. Inception = 31/1/2020.</li>
               <li><sup>2</sup> Sharpe Ratio computed with US 3-Months Treasury Bills Yields as risk-free rate proxy.</li>
               <li><sup>3</sup> Considering multi-strategy absolute-returns (HFRI index) would be the best proxy, but still far from our long-only no-leverage strategy.</li>
-              <li><sup>4</sup> Computed over monthly returns ITD.</li>
-              <li><sup>5</sup> Sector breakdown among solely equities.</li>
-              <li><sup>6</sup> Unhedged exposure: USD includes HKD (pegged) EUR includes DKK (pegged).</li>
-              <li><sup>7</sup> Commodities are excluded since prices are determined by global factors.</li>
             </ol>
           </div>
         </section>
