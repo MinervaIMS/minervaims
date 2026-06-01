@@ -459,7 +459,7 @@ function Account({
     return (
       <Link
         to="/auth"
-        className="group relative inline-flex items-center font-serif text-[17px] leading-none outline-none focus:outline-none"
+        className="group relative inline-flex items-center font-serif text-[18px] leading-none outline-none focus:outline-none"
         style={linkStyle}
       >
         <span className="relative after:absolute after:left-0 after:right-0 after:-bottom-[3px] after:h-[1.5px] after:bg-current after:origin-left after:scale-x-0 after:transition-transform after:duration-[240ms] group-hover:after:scale-x-100">
