@@ -30,12 +30,11 @@ const CookiePolicy = () => {
         lastUpdated="January 1st, 2026"
         currentId="cookie"
         sections={sections}
-        toolbar={
+        tocFooter={
           <button
             type="button"
             onClick={openPreferences}
-            className="lp-backtop"
-            style={{ width: 'auto' }}
+            className="lp-toc-cta"
           >
             Manage Cookie Preferences
           </button>
@@ -91,30 +90,28 @@ const CookiePolicy = () => {
           </p>
         </LegalSectionBlock>
 
-        <LegalSectionBlock id="list" number="05" title="Cookie List">
+        <LegalSectionBlock id="list" number="05" title="Cookie List" wide>
           <p>The following table lists the cookies used on this website:</p>
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <table className="w-full border-collapse border border-separator text-small">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="border border-separator p-3 text-left font-serif text-foreground">Cookie Name</th>
-                  <th className="border border-separator p-3 text-left font-serif text-foreground">Provider</th>
-                  <th className="border border-separator p-3 text-left font-serif text-foreground">Category</th>
-                  <th className="border border-separator p-3 text-left font-serif text-foreground">Purpose</th>
-                  <th className="border border-separator p-3 text-left font-serif text-foreground">Duration</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-separator p-3">mims_cookie_consent</td>
-                  <td className="border border-separator p-3">MIMS</td>
-                  <td className="border border-separator p-3">Strictly Necessary</td>
-                  <td className="border border-separator p-3">Stores your cookie consent preferences</td>
-                  <td className="border border-separator p-3">6 months</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cookie Name</th>
+                <th>Provider</th>
+                <th>Category</th>
+                <th>Purpose</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>mims_cookie_consent</td>
+                <td>MIMS</td>
+                <td>Strictly Necessary</td>
+                <td>Stores your cookie consent preferences</td>
+                <td>6 months</td>
+              </tr>
+            </tbody>
+          </table>
           <p className="italic">
             At present, we do not use analytics or marketing cookies. If this changes, we will update
             this table and request consent where required.
