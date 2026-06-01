@@ -139,28 +139,7 @@ export function Footer() {
           <LinkColumn title="Divisions" links={divisionLinks} />
           <LinkColumn title="Funds" links={fundLinks} />
 
-          {/* People column with Login button */}
-          <div>
-            <h3 className="font-serif text-heading mb-5 text-background">People</h3>
-            <ul className="space-y-3 mb-5">
-              {peopleLinks.map((link) => (
-                <li key={link.href}>
-                  <Link to={link.href} className={linkClass}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/auth"
-              className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 hover:bg-background/90 transition-colors"
-            >
-              <User size={16} />
-              <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase tracking-wider text-small">
-                Login
-              </span>
-            </Link>
-          </div>
+          <LinkColumn title="People" links={peopleLinks} />
 
           <LinkColumn title="Legal" links={legalLinks} />
         </div>
