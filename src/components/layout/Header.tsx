@@ -78,22 +78,58 @@ export function Header() {
     return () => mo.disconnect();
   }, []);
 
-  // Scroll detection — flip to solid only once the hero has left the viewport.
+  // Scroll detection — measure the actual page hero so the threshold adapts per page.
   useEffect(() => {
-    let threshold = Math.max(window.innerHeight * 0.85, 480);
+    let threshold = 0;
+    let rafId = 0;
+
+    const findHero = (): HTMLElement | null =>
+      (document.querySelector("[data-page-hero]") as HTMLElement | null) ||
+      (document.querySelector("main [data-hero]") as HTMLElement | null) ||
+      (document.querySelector("main > section:first-of-type") as HTMLElement | null) ||
+      (document.querySelector("main > *:first-child") as HTMLElement | null);
+
+    const recompute = () => {
+      const hero = findHero();
+      if (hero) {
+        const rect = hero.getBoundingClientRect();
+        const heroBottom = rect.top + window.scrollY + rect.height;
+        // Flip just before the hero fully scrolls past the header.
+        threshold = Math.max(heroBottom - 80, 120);
+      } else {
+        threshold = Math.max(window.innerHeight * 0.85, 480);
+      }
+      setScrolled(window.scrollY > threshold);
+    };
+
     const onScroll = () => setScrolled(window.scrollY > threshold);
-    const onResize = () => {
-      threshold = Math.max(window.innerHeight * 0.85, 480);
-      onScroll();
+    const scheduleRecompute = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(recompute);
     };
-    onScroll();
+
+    recompute();
+    // Re-measure after layout settles (images/fonts/async content).
+    const t1 = window.setTimeout(recompute, 100);
+    const t2 = window.setTimeout(recompute, 500);
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", scheduleRecompute);
+
+    const ro = new ResizeObserver(scheduleRecompute);
+    const hero = findHero();
+    if (hero) ro.observe(hero);
+    ro.observe(document.body);
+
     return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(t1);
+      clearTimeout(t2);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", scheduleRecompute);
+      ro.disconnect();
     };
-  }, []);
+  }, [location.pathname]);
 
   // Reset on route change
   useEffect(() => {
