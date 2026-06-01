@@ -162,7 +162,7 @@ const FundDetail = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-body border-collapse min-w-[900px]">
                 <thead>
-                  <tr className="border-b border-separator bg-accent text-background font-serif">
+                  <tr className="border-b border-separator bg-accent text-background font-body">
                     <th className="text-center py-3 pr-4"></th>
                     <th className="text-center py-3 px-3 font-semibold">ITD<sup>1,5</sup></th>
                     {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m => (
