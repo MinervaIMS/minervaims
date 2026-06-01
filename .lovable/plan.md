@@ -1,43 +1,88 @@
-# Replace site header — precise port of the uploaded reference
+# Header refinements
 
-Rewrite `src/components/layout/Header.tsx` as a 1:1 port of the uploaded `Header.tsx` / `MIMS Navbar — Final.html`. No deviations from the reference behaviour or styling. Only the placeholders called out in the reference comments are wired to the real project.
+Scope: `src/components/layout/Header.tsx` only (plus a tiny CSS-in-component addition for text/logo shadow). No route, auth, or asset changes.
 
-## Adherence to the reference (no changes)
+## 1. Hero detection — robust, image-aware
 
-- Fixed header, `inset-x-0 top-0 z-50`, height **84px**, `border-b` transition.
-- Two modes via scroll listener at `scrollY > 20`.
-  - Transparent: `bg-transparent border-transparent`, white serif links (`rgba(255,255,255,.92)` → `#fff` on hover/active), white logo mark.
-  - Solid: `bg-white border-[#E0E0E0] shadow-[0_1px_3px_0_rgba(0,0,0,0.07)]`, navy (`#1F0F4D`) links, colour logo mark.
-- Three-zone grid `grid-cols-[1fr_auto_1fr]`, max-width 1280, padding `px-10`, gap 28px. Logo `justify-self-start`, account `justify-self-end`, nav centred.
-- Nav: serif 17px, gap 34px, draw-in 1.5px underline under each link, persistent underline on `is-active`. Caret `▾` for dropdown items at `0.62em / opacity .6`.
-- Dropdowns open on `group-hover`: 266px min-width, white panel, `#E0E0E0` border, elevated shadow, items 16px serif, hover bg `#F2F2F2` + navy text. Centred under the trigger (`left-1/2 -translate-x-1/2 mt-2`).
-- Account cluster:
-  - Logged out → "Login" text link with the same underline draw-in.
-  - Logged in → "Workspace" label + 32px circular avatar to its right (gap 12px). Avatar shows photo when present, else **uppercase initials** on `#1F0F4D` with white Calibri 700 12.5px. Avatar ring: `rgba(255,255,255,.55)` when transparent, `#E0E0E0` when solid.
-- Hamburger button shown `< 880px` (matches the reference's `@media (max-width:880px)`). Hides nav + account, switches grid to `1fr auto`. Icon colour follows mode.
-- Active-state rule: matches `location.pathname === to` for `/`, else `startsWith(to)`.
-- No focus ring, no divider before the account.
-- Not rendered on `/admin*` (early return; Layout already guards this too).
+The current allowlist `HERO_ROUTES = ["/", "/about", "/join"]` is the root cause of both reported problems: detail pages with dark photo heroes (divisions, funds, people) are excluded, and the scroll threshold (`scrollY > 20`) flips the bar to solid too early on the listed pages.
 
-## Project-specific wiring (the only adaptations)
+Fix in two parts:
 
-1. **Logo assets** — the reference uses `logo-mark-color.png` / `logo-mark-white.png`. The project has `@/assets/logo-color.svg` and `@/assets/logo-white.svg` (the same brand mark, already used by the current header). Use those imports — visually identical, just SVG.
-2. **Routes** — map `NAV_LINKS` to actual app routes:
-   - About → `/about`
-   - Divisions → `/divisions/equity`, `/divisions/investment`, `/divisions/macro`, `/divisions/portfolio`, `/divisions/quant`
-   - Funds → `/funds/long-short`, `/funds/multi-asset`
-   - People → `/people/members`, `/people/alumni`
-   - Join → `/join`
-   - Parent labels (`Divisions`, `Funds`, `People`) have **no `to`** — they're hover triggers only (caret + dropdown), not links. Matches reference: parent items don't navigate, dropdown items do.
-3. **HERO_ROUTES** = `["/", "/about", "/join"]` (exact list from the reference).
-4. **Auth** — `useAuth()` from `@/contexts/AuthContext`:
-   - Logged out → "Login" → `/auth` (project has no `/login` route; `/auth` is the login page).
-   - Logged in → "Workspace" → `/admin`.
-   - `fullName` from `profile?.full_name ?? user.email`.
-   - `avatarUrl`: profiles table has no photo column, so always render initials (matches the reference's `initials` state — the most common case).
-5. **Mobile menu panel** — the reference only ships the burger button with no open behaviour. I will add a minimal panel (slide-down, serif links, expanded dropdowns inline, Login/Workspace at bottom) using the same colours so the burger is functional. If you'd rather keep the burger inert exactly like the reference, say so.
+**a. Expand the hero route set to every page that ships a dark photographic hero:**
+```
+const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join"]);
+const HERO_ROUTE_PREFIXES = [
+  "/divisions/",   // equity, investment, macro, portfolio, quant
+  "/funds/",       // long-short, multi-asset
+  "/people/",      // members, alumni
+];
+const hasHero =
+  HERO_ROUTES_EXACT.has(pathname) ||
+  HERO_ROUTE_PREFIXES.some((p) => pathname.startsWith(p));
+```
 
-## Files
+**b. Raise the scroll threshold so the bar stays transparent while the hero is still on screen.** Heroes on this site are ~100vh, so flipping at 20px is far too eager. New threshold: when the user has scrolled past roughly the viewport height (use `Math.max(window.innerHeight * 0.85, 480)`). Recompute on resize too. This guarantees the transparent state lasts for the entire visible hero and the solid state appears only once the hero has actually left the top of the screen.
 
-- Rewrite: `src/components/layout/Header.tsx`
-- No other files touched (Layout, routes, assets, auth context unchanged).
+## 2. Readability over any image (white text + dark-purple shadow)
+
+In the transparent mode, add a subtle `#1D102A` shadow to every text node and to the logo, so contrast survives bright spots in the hero photo without darkening the whole bar:
+
+```
+// applied only when transparent === true
+textShadow: "0 1px 2px rgba(29,16,42,0.55), 0 0 12px rgba(29,16,42,0.35)"
+// logo <img>
+filter: "drop-shadow(0 1px 2px rgba(29,16,42,0.55)) drop-shadow(0 0 10px rgba(29,16,42,0.35))"
+```
+
+These are removed in the solid state so navy-on-white stays crisp.
+
+## 3. Smoother, institutional transition
+
+Replace the current `transition-colors duration-300` on the `<header>` with a longer, eased compound transition covering background, border, shadow, color, text-shadow, and the logo's drop-shadow filter:
+
+- duration: 600 ms
+- easing: `cubic-bezier(0.25, 0.1, 0.25, 1)` (gentle ease-in-out, no overshoot)
+- properties: `background-color, border-color, box-shadow, color, text-shadow`
+- logo `<img>` gets matching `transition: filter 600ms` so the shadow fades in/out in lockstep with the colour swap
+
+All descendant links inherit `color` and `text-shadow` transitions from the header so nothing snaps.
+
+## 4. Stable hover dropdowns (desktop)
+
+The current dropdown relies purely on `group-hover`, which closes the instant the cursor leaves the trigger — there is no bridge across the 8 px gap, so reaching the menu is fragile.
+
+Replace with a controlled-state pattern per item:
+
+- Track `openDd` (already in state) for desktop too.
+- On the wrapper `<div>`: `onPointerEnter` → `clearTimeout` + `setOpenDd(label)`; `onPointerLeave` → `setTimeout(() => setOpenDd(null), 220)`.
+- The dropdown panel itself uses the same enter/leave handlers (cancels close while the cursor is inside it).
+- Remove the `mt-2` gap and instead use `pt-2` **inside** an invisible wrapper that extends up under the trigger, so the cursor never crosses dead space between trigger and panel.
+- Keep keyboard accessibility: `onFocus`/`onBlur` mirror the pointer handlers.
+
+Result: menus stay open while traversing, close ~220 ms after the cursor leaves both trigger and panel.
+
+## 5. Mobile/tablet menu — full screen
+
+Currently the panel is `max-h-[calc(100vh-84px)]` below the header. Change to a true full-viewport overlay:
+
+- When `mobileOpen` and viewport `< 880px`: render a fixed overlay `inset-0 z-[60] bg-white` that contains the close button (top-right), the full nav list, the account block at the bottom, and respects safe-area insets.
+- Lock body scroll while open (`document.body.style.overflow = "hidden"` in an effect, restored on close/unmount).
+- The header itself stays mounted underneath; the overlay covers it entirely so there is no double chrome.
+- Animate with the same 600 ms eased opacity/translate as the colour transition for consistency.
+
+## 6. Mobile/tablet link hover/press effect
+
+Mirror the desktop dropdown-item treatment on every link inside the mobile overlay (parent items, sub-items, and Login/Workspace):
+
+- Base: `font-serif text-[17px] text-[#141414]`
+- Hover/active: `bg-[#F2F2F2] text-[#1F0F4D]`
+- Generous tap target: `px-5 py-3`, full-row width
+- Sub-items indented (`pl-9`), same hover style
+- Add a draw-in underline (1.5 px, 240 ms) on the active label to echo the desktop affordance
+
+## Technical notes
+
+- All timing values centralised as constants at the top of the file (`NAV_TRANSITION_MS = 600`, `DROPDOWN_CLOSE_DELAY_MS = 220`) for easy tuning.
+- No new dependencies, no Radix dropdown swap — staying with the current CSS-only panel keeps bundle size flat and matches the reference HTML.
+- `scrollbar-gutter: stable` is already set globally (per memory), so locking body scroll for the mobile overlay will not shift the underlying layout.
+- Admin route guard, route list, auth wiring, logo assets, and the three-zone grid remain untouched.
