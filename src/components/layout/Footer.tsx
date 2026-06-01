@@ -93,18 +93,17 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-serif text-heading mb-5 text-background">Contact</h3>
             <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
-
               For partnerships, joining information, or general enquiries:
             </p>
             <a
               href="mailto:as.minerva@unibocconi.it"
-              className="font-body text-body-lg text-background hover:underline hover:decoration-accent transition-colors break-all"
+              className="font-serif text-background hover:underline hover:decoration-accent transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight break-all"
             >
-              as.minerva@unibocconi.it
+              <span>as.minerva@unibocconi.it</span>
+              <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
             </a>
-            <div className="flex items-center gap-6 mt-6">
+            <div className="flex items-center gap-7 mt-7">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
@@ -112,26 +111,27 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="inline-flex items-center gap-2 text-background/80 hover:text-background transition-colors"
+                  className="inline-flex items-center gap-2.5 text-background/80 hover:text-background transition-colors"
                 >
                   {social.icon === 'linkedin' ? (
                     <img
                       src={linkedinIcon}
                       alt=""
-                      width={28}
-                      height={28}
-                      className="h-7 w-7"
+                      width={36}
+                      height={36}
+                      className="h-9 w-9"
                       loading="lazy"
                       decoding="async"
                     />
                   ) : (
-                    <Instagram size={28} />
+                    <Instagram size={36} />
                   )}
-                  <span className="font-body text-small">{social.label}</span>
+                  <span className="font-body text-body">{social.label}</span>
                 </a>
               ))}
             </div>
           </div>
+
         </div>
 
         {/* Bottom: 5 link columns */}
