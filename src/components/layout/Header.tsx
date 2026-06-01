@@ -220,7 +220,7 @@ export function Header() {
             <img
               src={transparent ? logoWhite : logoColor}
               alt="Minerva IMS"
-              className="h-[46px] w-auto block"
+              className="h-[50px] w-auto block"
               decoding="async"
               style={logoStyle}
             />
