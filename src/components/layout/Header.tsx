@@ -48,7 +48,7 @@ const NAV_LINKS: NavItem[] = [
 const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join"]);
 const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
 
-const NAV_TRANSITION_MS = 600;
+const NAV_TRANSITION_MS = 200;
 const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const DROPDOWN_CLOSE_DELAY_MS = 220;
 
@@ -63,8 +63,20 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDd, setOpenDd] = useState<string | null>(null);
   const [mobileOpenDd, setMobileOpenDd] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(
+    typeof document !== "undefined" && document.body.hasAttribute("data-page-loading"),
+  );
   const closeTimerRef = useRef<number | null>(null);
   const { user, profile } = useAuth();
+
+  // Observe body[data-page-loading] so the header hides while Suspense fallback renders.
+  useEffect(() => {
+    const update = () => setPageLoading(document.body.hasAttribute("data-page-loading"));
+    update();
+    const mo = new MutationObserver(update);
+    mo.observe(document.body, { attributes: true, attributeFilter: ["data-page-loading"] });
+    return () => mo.disconnect();
+  }, []);
 
   // Scroll detection — flip to solid only once the hero has left the viewport.
   useEffect(() => {
@@ -101,6 +113,7 @@ export function Header() {
   }, [mobileOpen]);
 
   if (location.pathname.startsWith("/admin")) return null;
+  if (pageLoading) return null;
 
   const pathname = location.pathname;
   const hasHero =
