@@ -48,7 +48,7 @@ const NAV_LINKS: NavItem[] = [
 const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join"]);
 const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
 
-const NAV_TRANSITION_MS = 600;
+const NAV_TRANSITION_MS = 200;
 const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const DROPDOWN_CLOSE_DELAY_MS = 220;
 
