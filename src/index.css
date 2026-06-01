@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* MIMS Design System - Institutional, Minimal, Premium */
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Carlito:wght@400;700&display=swap');
 
 /* Prevent layout shift when dialogs/dropdowns apply scroll-lock */
 html {
