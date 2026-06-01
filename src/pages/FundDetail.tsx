@@ -164,13 +164,13 @@ const FundDetail = () => {
                 <thead>
                   <tr className="border-b border-separator bg-accent text-background font-body">
                     <th className="text-center py-3 pr-4"></th>
-                    <th className="text-center py-3 px-3 font-semibold">ITD<sup>1,5</sup></th>
+                    <th className="text-center py-3 px-3 font-semibold">ITD<sup>1,4</sup></th>
                     {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(m => (
                       <th key={m} className="text-center py-3 px-2 font-normal">{m}</th>
                     ))}
-                    <th className="text-center py-3 px-3 font-semibold">YTD<sup>5</sup></th>
-                    <th className="text-center py-3 px-2">Vol<sup>5</sup></th>
-                    <th className="text-center py-3 px-2">Sharpe<sup>2,5</sup></th>
+                    <th className="text-center py-3 px-3 font-semibold">YTD<sup>4</sup></th>
+                    <th className="text-center py-3 px-2">Vol<sup>4</sup></th>
+                    <th className="text-center py-3 px-2">Sharpe<sup>2,4</sup></th>
                   </tr>
                 </thead>
                 <tbody className="text-foreground">
