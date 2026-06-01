@@ -145,18 +145,18 @@ export function Footer() {
         </div>
 
         {/* Builder Credit and Copyright */}
-        <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col items-center gap-2 sm:gap-3 text-center px-2 sm:px-4">
+        <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 px-2 sm:px-4">
+          <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
+            © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
+          </p>
           <a
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-xs md:text-small text-background/20 underline hover:text-background transition-colors"
+            className="font-body text-xs md:text-small text-background/60 underline hover:text-background transition-colors"
           >
             Website built for Minerva IMS.
           </a>
-          <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
-            © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
-          </p>
         </div>
       </div>
     </footer>
