@@ -356,7 +356,7 @@ export function Header() {
         {/* Header row inside overlay */}
         <div className="flex items-center justify-between h-[84px] px-6 border-b border-[#E0E0E0] shrink-0">
           <Link to="/" aria-label="Minerva IMS — home" className="flex items-center">
-            <img src={logoColor} alt="Minerva IMS" className="h-[46px] w-auto block" />
+            <img src={logoColor} alt="Minerva IMS" className="h-[50px] w-auto block" />
           </Link>
           <button
             type="button"
