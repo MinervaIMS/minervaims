@@ -13,7 +13,7 @@ const sections: LegalSection[] = [
 ];
 
 const CookiePolicy = () => {
-  const { openPreferences } = useCookieConsent();
+  const openPreferences = openCookieSettings;
 
   return (
     <>
