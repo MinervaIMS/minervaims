@@ -410,7 +410,7 @@ export function Header() {
                 key={item.label}
                 to={item.to!}
                 className={[
-                  "block px-6 py-3 font-serif text-[18px]",
+                  "block px-6 py-3 font-serif text-[19px]",
                   "text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]",
                   active ? "text-[#1F0F4D]" : "",
                 ].join(" ")}
