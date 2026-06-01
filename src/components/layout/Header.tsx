@@ -53,9 +53,9 @@ const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const DROPDOWN_CLOSE_DELAY_MS = 220;
 
 const TEXT_SHADOW_TRANSPARENT =
-  "0 1px 3px rgba(29,16,42,0.65), 0 0 16px rgba(29,16,42,0.45)";
+  "0 1px 3px rgba(29,16,42,0.72), 0 0 18px rgba(29,16,42,0.52)";
 const LOGO_FILTER_TRANSPARENT =
-  "drop-shadow(0 1px 3px rgba(29,16,42,0.65)) drop-shadow(0 0 14px rgba(29,16,42,0.45))";
+  "drop-shadow(0 1px 3px rgba(29,16,42,0.72)) drop-shadow(0 0 16px rgba(29,16,42,0.52))";
 
 export function Header() {
   const location = useLocation();
