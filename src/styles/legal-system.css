@@ -126,8 +126,16 @@
 /* inline links */
 .legal-doc .lp-content a.inline,
 .legal-doc .lp-content a:not(.lp-backtop):not(.anchor) { color: var(--mims-navy); text-decoration: underline; text-underline-offset: 3px;
-  text-decoration-thickness: 1px; font-weight: 700; transition: text-decoration-thickness .12s; }
+  text-decoration-thickness: 1px; transition: text-decoration-thickness .12s; }
 .legal-doc .lp-content a.inline:hover,
+.legal-doc .lp-content a:not(.lp-backtop):not(.anchor):hover { text-decoration-thickness: 2px; }
+
+/* strip bold from legal/policy textual content (keep headings serif-weight as designed) */
+.legal-doc .lp-content,
+.legal-doc .lp-content p,
+.legal-doc .lp-content li,
+.legal-doc .lp-content strong,
+.legal-doc .lp-content b { font-weight: 400; }
 .legal-doc .lp-content a:not(.lp-backtop):not(.anchor):hover { text-decoration-thickness: 2px; }
 
 /* italic helper used in legacy copy */
