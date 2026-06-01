@@ -44,7 +44,7 @@ const socialLinks = [
 ];
 
 const linkClass =
-  'font-body text-body text-background/80 hover:text-background hover:underline hover:decoration-accent transition-colors';
+  'font-body text-body text-background/80 hover:text-background hover:underline hover:decoration-background transition-colors';
 
 const columnHeadingClass =
   'font-serif text-heading mb-5 text-background';
