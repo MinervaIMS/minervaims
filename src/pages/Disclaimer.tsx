@@ -20,7 +20,6 @@ const Disclaimer = () => (
       title="Disclaimer"
       description="Educational notice and limits on the use of materials published on this website."
       lastUpdated="January 1st, 2026"
-      effectiveDate="January 1st, 2026"
       currentId="disclaimer"
       sections={sections}
     >

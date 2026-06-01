@@ -31,7 +31,6 @@ const PrivacyPolicy = () => (
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR."
       lastUpdated="January 1st, 2026"
-      effectiveDate="January 1st, 2026"
       currentId="privacy"
       sections={sections}
     >

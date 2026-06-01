@@ -20,7 +20,6 @@ const Statute = () => (
       title="Society Statute"
       description="The official statute of MIMS, currently under revision by the Board."
       lastUpdated="Under revision"
-      effectiveDate="Academic year 2026/27"
       currentId="statute"
       sections={sections}
       languageToggle={

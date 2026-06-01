@@ -30,7 +30,6 @@ const TermsOfUse = () => (
       title="Terms of Use"
       description="The rules that govern your use of this website and its content."
       lastUpdated="January 1st, 2026"
-      effectiveDate="January 1st, 2026"
       currentId="terms"
       sections={sections}
     >

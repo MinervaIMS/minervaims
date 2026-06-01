@@ -28,7 +28,6 @@ const CookiePolicy = () => {
         title="Cookie Policy"
         description="How we use cookies and similar technologies on this website, and how you can control them."
         lastUpdated="January 1st, 2026"
-        effectiveDate="January 1st, 2026"
         currentId="cookie"
         sections={sections}
         toolbar={
