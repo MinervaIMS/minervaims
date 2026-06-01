@@ -36,7 +36,7 @@
 .legal-doc .lp-ref { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mims-muted);
   font-variant-numeric: tabular-nums; }
 .legal-doc .lp-title { font-family: var(--font-serif-web); font-weight: 400; font-size: 58px; line-height: 1.02;
-  letter-spacing: -.022em; color: var(--mims-navy); max-width: 14ch; margin: 0; }
+  letter-spacing: -.022em; color: var(--mims-navy); margin: 0; white-space: nowrap; }
 .legal-doc .lp-intro { font-size: 19px; line-height: 1.62; color: var(--mims-muted); max-width: 58ch; margin-top: 22px;
   text-wrap: pretty; }
 
@@ -66,9 +66,11 @@
   align-items: start; }
 
 /* TOC (numbered) — sticky below the site header (96px) */
-.legal-doc .lp-toc { position: sticky; top: 112px; }
-.legal-doc .lp-toc .toc-h { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--mims-muted);
-  padding-bottom: 12px; border-bottom: 1px solid var(--mims-line); margin-bottom: 6px; }
+.legal-doc .lp-toc { position: sticky; top: 112px; max-height: calc(100vh - 132px);
+  overflow-y: auto; padding-right: 4px; }
+.legal-doc .lp-toc .toc-h { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--mims-navy);
+  font-weight: 700; padding-bottom: 12px; border-bottom: 1px solid var(--mims-line); margin-bottom: 6px; }
+.legal-doc .lp-toc .toc-h .toc-sub { color: var(--mims-muted); font-weight: 400; letter-spacing: .12em; }
 .legal-doc .lp-toc nav { display: flex; flex-direction: column; }
 .legal-doc .lp-toc a { position: relative; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: baseline;
   font-size: 13.5px; line-height: 1.3; color: var(--mims-muted); text-decoration: none;
