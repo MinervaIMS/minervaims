@@ -131,9 +131,7 @@ export function LegalLayout({
 
       <div className="lp-body">
         <aside className="lp-toc" aria-label="On this page">
-          <div className="toc-h">
-            Contents <span className="toc-sub">· progress-tracked</span>
-          </div>
+          <div className="toc-h">In this page</div>
           <nav>
             {sections.map((s, i) => {
               const active = activeId === s.id;
@@ -152,6 +150,7 @@ export function LegalLayout({
           </nav>
 
           <div className="lp-progress" aria-label="Reading progress">
+            <div className="lp-progress-label">Contents · progress-tracked</div>
             <div className="lp-progress-meta">
               <span>Reading progress</span>
               <span>{Math.round(progress)}%</span>
@@ -182,6 +181,7 @@ export function LegalLayout({
               ))}
             </nav>
             <div className="lp-progress">
+              <div className="lp-progress-label">Contents · progress-tracked</div>
               <div className="lp-progress-meta">
                 <span>Reading progress</span>
                 <span>{Math.round(progress)}%</span>

@@ -92,26 +92,28 @@ const CookiePolicy = () => {
 
         <LegalSectionBlock id="list" number="05" title="Cookie List" wide>
           <p>The following table lists the cookies used on this website:</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Cookie Name</th>
-                <th>Provider</th>
-                <th>Category</th>
-                <th>Purpose</th>
-                <th>Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>mims_cookie_consent</td>
-                <td>MIMS</td>
-                <td>Strictly Necessary</td>
-                <td>Stores your cookie consent preferences</td>
-                <td>6 months</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="lp-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cookie Name</th>
+                  <th>Provider</th>
+                  <th>Category</th>
+                  <th>Purpose</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>mims_cookie_consent</td>
+                  <td>MIMS</td>
+                  <td>Strictly Necessary</td>
+                  <td>Stores your cookie consent preferences</td>
+                  <td>6 months</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <p className="italic">
             At present, we do not use analytics or marketing cookies. If this changes, we will update
             this table and request consent where required.

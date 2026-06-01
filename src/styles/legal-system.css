@@ -66,8 +66,7 @@
   align-items: start; }
 
 /* TOC (numbered) — sticky below the site header (96px) */
-.legal-doc .lp-toc { position: sticky; top: 112px; max-height: calc(100vh - 132px);
-  overflow-y: auto; padding-right: 4px; }
+.legal-doc .lp-toc { position: sticky; top: 112px; align-self: start; padding-right: 4px; }
 .legal-doc .lp-toc .toc-h { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--mims-navy);
   font-weight: 700; padding-bottom: 12px; border-bottom: 1px solid var(--mims-line); margin-bottom: 6px; }
 .legal-doc .lp-toc .toc-h .toc-sub { color: var(--mims-muted); font-weight: 400; letter-spacing: .12em; }
@@ -79,8 +78,8 @@
   transition: color .15s; }
 .legal-doc .lp-toc a:hover { color: var(--mims-navy); border-left-color: var(--mims-light-purple); }
 .legal-doc .lp-toc a:hover .n { color: var(--mims-navy); }
-.legal-doc .lp-toc a.active { color: var(--mims-navy); border-left-color: var(--mims-navy); font-weight: 700; }
-.legal-doc .lp-toc a.active .n { color: var(--mims-navy); font-weight: 700; }
+.legal-doc .lp-toc a.active { color: var(--mims-navy); border-left-color: var(--mims-navy); }
+.legal-doc .lp-toc a.active .n { color: var(--mims-navy); }
 .legal-doc .lp-toc.toc-plain a { grid-template-columns: 1fr; }
 
 /* collapsible TOC (tablet / mobile) */
@@ -127,8 +126,16 @@
 /* inline links */
 .legal-doc .lp-content a.inline,
 .legal-doc .lp-content a:not(.lp-backtop):not(.anchor) { color: var(--mims-navy); text-decoration: underline; text-underline-offset: 3px;
-  text-decoration-thickness: 1px; font-weight: 700; transition: text-decoration-thickness .12s; }
+  text-decoration-thickness: 1px; transition: text-decoration-thickness .12s; }
 .legal-doc .lp-content a.inline:hover,
+.legal-doc .lp-content a:not(.lp-backtop):not(.anchor):hover { text-decoration-thickness: 2px; }
+
+/* strip bold from legal/policy textual content (keep headings serif-weight as designed) */
+.legal-doc .lp-content,
+.legal-doc .lp-content p,
+.legal-doc .lp-content li,
+.legal-doc .lp-content strong,
+.legal-doc .lp-content b { font-weight: 400; }
 .legal-doc .lp-content a:not(.lp-backtop):not(.anchor):hover { text-decoration-thickness: 2px; }
 
 /* italic helper used in legacy copy */
@@ -251,3 +258,14 @@
 @media (max-width: 1023px) {
   .legal-doc .lp-title { white-space: normal; }
 }
+
+/* horizontal-scroll wrapper for wide tables (cookie list etc.) */
+.legal-doc .lp-table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--mims-line); margin: 16px 0; }
+.legal-doc .lp-table-scroll table { margin: 0; border: none; min-width: 720px; }
+.legal-doc .lp-table-scroll table th,
+.legal-doc .lp-table-scroll table td { border-left: none; border-right: none; }
+
+/* progress block label */
+.legal-doc .lp-progress-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--mims-navy); font-weight: 700; margin-bottom: 10px; }
