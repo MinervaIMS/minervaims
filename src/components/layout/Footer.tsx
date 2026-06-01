@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { User, Instagram } from 'lucide-react';
+import { Instagram } from 'lucide-react';
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-icon-small.png';
 
@@ -7,7 +7,7 @@ const exploreLinks = [
   { label: 'About', href: '/about' },
   { label: 'Events', href: '/events' },
   { label: 'Join Us', href: '/join' },
-  { label: 'Archive', href: '/archive' },
+  { label: 'Reports', href: '/archive' },
   { label: 'Readings', href: '/readings' },
 ];
 
@@ -139,45 +139,24 @@ export function Footer() {
           <LinkColumn title="Divisions" links={divisionLinks} />
           <LinkColumn title="Funds" links={fundLinks} />
 
-          {/* People column with Login button */}
-          <div>
-            <h3 className="font-serif text-heading mb-5 text-background">People</h3>
-            <ul className="space-y-3 mb-5">
-              {peopleLinks.map((link) => (
-                <li key={link.href}>
-                  <Link to={link.href} className={linkClass}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/auth"
-              className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 hover:bg-background/90 transition-colors"
-            >
-              <User size={16} />
-              <span style={{ fontFamily: '"Times New Roman", Times, serif' }} className="uppercase tracking-wider text-small">
-                Login
-              </span>
-            </Link>
-          </div>
+          <LinkColumn title="People" links={peopleLinks} />
 
           <LinkColumn title="Legal" links={legalLinks} />
         </div>
 
         {/* Builder Credit and Copyright */}
-        <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col items-center gap-2 sm:gap-3 text-center px-2 sm:px-4">
+        <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 px-2 sm:px-4">
+          <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
+            © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
+          </p>
           <a
             href="https://www.linkedin.com/in/riccardo-colombo01/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-body text-xs md:text-small text-background/20 underline hover:text-background transition-colors"
+            className="font-body text-xs md:text-small text-background/60 underline hover:text-background transition-colors"
           >
             Website built for Minerva IMS.
           </a>
-          <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
-            © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
-          </p>
         </div>
       </div>
     </footer>
