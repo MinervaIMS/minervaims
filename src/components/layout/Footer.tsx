@@ -76,50 +76,49 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
-        {/* Top: Logo + Contact */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 pb-10 mb-10 border-b border-background/20">
-          <div className="flex flex-col items-center md:items-start gap-6">
-            <Link to="/" aria-label="MIMS Home">
-              <img
-                src={footerLogo}
-                alt="Minerva Investment Management Society"
-                width={200}
-                height={200}
-                className="h-36 sm:h-40 md:h-44 lg:h-48 w-auto"
-                loading="lazy"
-                decoding="async"
-              />
-            </Link>
-            <div className="flex flex-col gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="inline-flex items-center gap-2.5 text-background/80 hover:text-background transition-colors"
-                >
-                  {social.icon === 'linkedin' ? (
-                    <img
-                      src={linkedinIcon}
-                      alt=""
-                      width={36}
-                      height={36}
-                      className="h-9 w-9"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <Instagram size={36} />
-                  )}
-                  <span className="font-body text-body">{social.label}</span>
-                </a>
-              ))}
-            </div>
+        {/* Top: Logo + Socials + Contact (horizontally centered, vertically aligned) */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-16 pb-10 mb-10 border-b border-background/20">
+          <Link to="/" aria-label="MIMS Home" className="shrink-0">
+            <img
+              src={footerLogo}
+              alt="Minerva Investment Management Society"
+              width={200}
+              height={200}
+              className="h-36 sm:h-40 md:h-44 lg:h-48 w-auto"
+              loading="lazy"
+              decoding="async"
+            />
+          </Link>
+
+          <div className="flex flex-col gap-3">
+            {socialLinks.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.label}
+                className="inline-flex items-center gap-2.5 text-background/80 hover:text-background transition-colors"
+              >
+                {social.icon === 'linkedin' ? (
+                  <img
+                    src={linkedinIcon}
+                    alt=""
+                    width={36}
+                    height={36}
+                    className="h-9 w-9"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <Instagram size={36} />
+                )}
+                <span className="font-body text-body">{social.label}</span>
+              </a>
+            ))}
           </div>
 
-          <div>
+          <div className="text-center md:text-left">
             <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
               For partnerships, joining information, or general enquiries:
             </p>
@@ -131,7 +130,6 @@ export function Footer() {
               <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
             </a>
           </div>
-
         </div>
 
         {/* Bottom: 5 link columns */}
