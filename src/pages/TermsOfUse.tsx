@@ -1,6 +1,5 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
-import termsBg from '@/assets/terms-bg.webp';
 
 const sections: LegalSection[] = [
   { id: 'about', title: '1. About MIMS' },
@@ -31,7 +30,8 @@ const TermsOfUse = () => (
       title="Terms of Use"
       description="The rules that govern your use of this website and its content."
       lastUpdated="January 1st, 2026"
-      backgroundImage={termsBg}
+      effectiveDate="January 1st, 2026"
+      currentId="terms"
       sections={sections}
     >
       <LegalSectionBlock id="about" number="01" title="About MIMS and Independence from the University">

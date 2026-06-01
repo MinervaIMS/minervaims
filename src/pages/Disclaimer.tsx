@@ -1,6 +1,5 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
-import termsBg from '@/assets/terms-bg.webp';
 
 const sections: LegalSection[] = [
   { id: 'educational', title: '1. Educational Purpose' },
@@ -21,7 +20,8 @@ const Disclaimer = () => (
       title="Disclaimer"
       description="Educational notice and limits on the use of materials published on this website."
       lastUpdated="January 1st, 2026"
-      backgroundImage={termsBg}
+      effectiveDate="January 1st, 2026"
+      currentId="disclaimer"
       sections={sections}
     >
       <LegalSectionBlock id="educational" number="01" title="Educational Purpose">

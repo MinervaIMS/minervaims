@@ -1,6 +1,5 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
-import termsBg from '@/assets/terms-bg.webp';
 
 const sections: LegalSection[] = [
   { id: 'revision', title: '1. Document Under Revision' },
@@ -20,9 +19,19 @@ const Statute = () => (
     <LegalLayout
       title="Society Statute"
       description="The official statute of MIMS, currently under revision by the Board."
-      status="Under revision"
-      backgroundImage={termsBg}
+      lastUpdated="Under revision"
+      effectiveDate="Academic year 2026/27"
+      currentId="statute"
       sections={sections}
+      languageToggle={
+        <>
+          <span className="lp-lang-label">Language</span>
+          <div className="lp-lang-seg" role="group" aria-label="Statute language">
+            <button type="button" className="active" aria-pressed="true">English</button>
+            <button type="button" aria-pressed="false" disabled title="Italian version available with the revised statute">Italiano</button>
+          </div>
+        </>
+      }
     >
       <LegalSectionBlock id="revision" number="01" title="Document Under Revision">
         <p>

@@ -1,6 +1,5 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
-import privacyBg from '@/assets/privacy-bg.webp';
 
 const sections: LegalSection[] = [
   { id: 'who-we-are', title: '1. Who We Are' },
@@ -32,7 +31,8 @@ const PrivacyPolicy = () => (
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR."
       lastUpdated="January 1st, 2026"
-      backgroundImage={privacyBg}
+      effectiveDate="January 1st, 2026"
+      currentId="privacy"
       sections={sections}
     >
       <LegalSectionBlock id="who-we-are" number="01" title="Who We Are">
