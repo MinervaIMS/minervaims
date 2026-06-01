@@ -395,7 +395,7 @@ export function Header() {
                           <Link
                             key={sub.to}
                             to={sub.to}
-                            className="block pl-10 pr-6 py-3 font-serif text-[17px] text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]"
+                            className="block pl-10 pr-6 py-3 font-serif text-[18px] text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]"
                           >
                           {sub.label}
                         </Link>
