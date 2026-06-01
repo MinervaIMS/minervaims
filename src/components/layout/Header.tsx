@@ -53,9 +53,9 @@ const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const DROPDOWN_CLOSE_DELAY_MS = 220;
 
 const TEXT_SHADOW_TRANSPARENT =
-  "0 1px 2px rgba(29,16,42,0.55), 0 0 12px rgba(29,16,42,0.35)";
+  "0 1px 3px rgba(29,16,42,0.65), 0 0 16px rgba(29,16,42,0.45)";
 const LOGO_FILTER_TRANSPARENT =
-  "drop-shadow(0 1px 2px rgba(29,16,42,0.55)) drop-shadow(0 0 10px rgba(29,16,42,0.35))";
+  "drop-shadow(0 1px 3px rgba(29,16,42,0.65)) drop-shadow(0 0 14px rgba(29,16,42,0.45))";
 
 export function Header() {
   const location = useLocation();
@@ -220,7 +220,7 @@ export function Header() {
             <img
               src={transparent ? logoWhite : logoColor}
               alt="Minerva IMS"
-              className="h-[46px] w-auto block"
+              className="h-[50px] w-auto block"
               decoding="async"
               style={logoStyle}
             />
@@ -249,7 +249,7 @@ export function Header() {
                 </>
               );
               const linkClass = [
-                "relative inline-flex items-center whitespace-nowrap py-2 font-serif text-[17px] leading-none outline-none focus:outline-none",
+                "relative inline-flex items-center whitespace-nowrap py-2 font-serif text-[18px] leading-none outline-none focus:outline-none",
                 "after:absolute after:left-0 after:right-0 after:bottom-0.5 after:h-[1.5px] after:bg-current after:origin-left after:scale-x-0 after:transition-transform after:duration-[240ms]",
                 "hover:after:scale-x-100",
                 active ? "after:scale-x-100" : "",
@@ -304,7 +304,7 @@ export function Header() {
                           <Link
                             key={sub.to}
                             to={sub.to}
-                            className="block px-5 py-[11px] font-serif text-[16px] text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D]"
+                            className="block px-5 py-[11px] font-serif text-[17px] text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D]"
                           >
                             {sub.label}
                           </Link>
@@ -356,7 +356,7 @@ export function Header() {
         {/* Header row inside overlay */}
         <div className="flex items-center justify-between h-[84px] px-6 border-b border-[#E0E0E0] shrink-0">
           <Link to="/" aria-label="Minerva IMS — home" className="flex items-center">
-            <img src={logoColor} alt="Minerva IMS" className="h-[46px] w-auto block" />
+            <img src={logoColor} alt="Minerva IMS" className="h-[50px] w-auto block" />
           </Link>
           <button
             type="button"
@@ -380,7 +380,7 @@ export function Header() {
                     type="button"
                     onClick={() => setMobileOpenDd(expanded ? null : item.label)}
                     className={[
-                      "w-full flex items-center justify-between px-6 py-3 font-serif text-[17px]",
+                      "w-full flex items-center justify-between px-6 py-3 font-serif text-[18px]",
                       "text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]",
                       active ? "text-[#1F0F4D]" : "",
                     ].join(" ")}
@@ -392,11 +392,11 @@ export function Header() {
                   {expanded && (
                     <div className="pb-1">
                       {item.dropdown.map((sub) => (
-                        <Link
-                          key={sub.to}
-                          to={sub.to}
-                          className="block pl-10 pr-6 py-3 font-serif text-[16px] text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]"
-                        >
+                          <Link
+                            key={sub.to}
+                            to={sub.to}
+                            className="block pl-10 pr-6 py-3 font-serif text-[17px] text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]"
+                          >
                           {sub.label}
                         </Link>
                       ))}
@@ -410,7 +410,7 @@ export function Header() {
                 key={item.label}
                 to={item.to!}
                 className={[
-                  "block px-6 py-3 font-serif text-[17px]",
+                  "block px-6 py-3 font-serif text-[18px]",
                   "text-[#141414] hover:bg-[#F2F2F2] hover:text-[#1F0F4D] active:bg-[#F2F2F2] active:text-[#1F0F4D]",
                   active ? "text-[#1F0F4D]" : "",
                 ].join(" ")}
@@ -459,7 +459,7 @@ function Account({
     return (
       <Link
         to="/auth"
-        className="group relative inline-flex items-center font-serif text-[16px] leading-none outline-none focus:outline-none"
+        className="group relative inline-flex items-center font-serif text-[17px] leading-none outline-none focus:outline-none"
         style={linkStyle}
       >
         <span className="relative after:absolute after:left-0 after:right-0 after:-bottom-[3px] after:h-[1.5px] after:bg-current after:origin-left after:scale-x-0 after:transition-transform after:duration-[240ms] group-hover:after:scale-x-100">
@@ -475,7 +475,7 @@ function Account({
       className="group inline-flex items-center gap-3 outline-none focus:outline-none"
       style={linkStyle}
     >
-      <span className="relative font-serif text-[16px] leading-none after:absolute after:left-0 after:right-0 after:-bottom-[3px] after:h-[1.5px] after:bg-current after:origin-left after:scale-x-0 after:transition-transform after:duration-[240ms] group-hover:after:scale-x-100">
+      <span className="relative font-serif text-[17px] leading-none after:absolute after:left-0 after:right-0 after:-bottom-[3px] after:h-[1.5px] after:bg-current after:origin-left after:scale-x-0 after:transition-transform after:duration-[240ms] group-hover:after:scale-x-100">
         Workspace
       </span>
       <Avatar user={user} transparent={transparent} />
