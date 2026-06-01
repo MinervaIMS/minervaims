@@ -57,7 +57,6 @@ export function LegalLayout({
 }: LegalLayoutProps) {
   const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? '');
   const [tocOpen, setTocOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (!sections.length) return;
