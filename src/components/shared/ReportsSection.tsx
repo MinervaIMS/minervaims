@@ -387,27 +387,12 @@ function NavyVariant({
   reports,
   onPreview,
   id,
+  useRealCover = false,
 }: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
   const featured = reports[0];
-  const rest = reports.slice(1);
+  // Show up to 5 reports in the "Recently published" strip
+  const rest = reports.slice(1, 6);
   const railRef = useRef<HTMLDivElement>(null);
-  const [activeDot, setActiveDot] = useState(0);
-
-  const step = () => {
-    const rail = railRef.current;
-    if (!rail) return 0;
-    const first = rail.querySelector<HTMLElement>('.v2-card');
-    const gap = parseFloat(getComputedStyle(rail).columnGap || '18');
-    return (first?.offsetWidth || 120) + (isNaN(gap) ? 18 : gap);
-  };
-
-  const onScroll = () => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const s = step() || 1;
-    const idx = Math.min(rest.length - 1, Math.max(0, Math.round(rail.scrollLeft / s)));
-    setActiveDot(idx);
-  };
 
   if (!featured) {
     return (
@@ -434,7 +419,7 @@ function NavyVariant({
   }
 
   return (
-    <section className="rsec rsec--navy" aria-labelledby={id}>
+    <section className={`rsec rsec--navy${useRealCover ? ' rsec--navy-lg' : ''}`} aria-labelledby={id}>
       <div className="rwrap">
         <div className="rhead">
           <div>
@@ -453,33 +438,20 @@ function NavyVariant({
 
         <div className="v2-feature">
           <div className="v2-cover">
-            <Cover report={featured} />
-            <button className="rplus" aria-label={`Preview report: ${featured.title}`} onClick={() => onPreview(featured)}>
-              <IconPlus />
-            </button>
+            <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
           </div>
           <div className="v2-info">
-            <div className="reyebrow">{featured.div}</div>
             <h3>{featured.title}</h3>
             {featured.desc ? <p className="v2-desc">{featured.desc}</p> : null}
-            <div className="v2-meta">
-              <span>{featured.date}</span>
-              <span className="dot">·</span>
-              <span>Research Report · PDF</span>
-            </div>
             <div className="v2-actions">
               <a
-                className="rbtn rbtn--primary"
-                style={{ background: '#fff', color: 'hsl(var(--accent))', borderColor: '#fff' }}
+                className="rbtn rbtn--onnavy"
                 href={featured.pdf || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 Open report
               </a>
-              <button className="rbtn" onClick={() => onPreview(featured)}>
-                Quick preview
-              </button>
             </div>
           </div>
         </div>
@@ -488,25 +460,9 @@ function NavyVariant({
           <div className="v2-strip">
             <div className="v2-striphead">
               <span className="lbl">Recently published</span>
-              <div className="rnav">
-                <button
-                  className="rarrow"
-                  aria-label="Previous"
-                  onClick={() => railRef.current?.scrollBy({ left: -step() * 2, behavior: 'smooth' })}
-                >
-                  <IconArrowL />
-                </button>
-                <button
-                  className="rarrow"
-                  aria-label="Next"
-                  onClick={() => railRef.current?.scrollBy({ left: step() * 2, behavior: 'smooth' })}
-                >
-                  <IconArrowR />
-                </button>
-              </div>
             </div>
             <div className="rrail-wrap">
-              <div className="rrail" ref={railRef} onScroll={onScroll}>
+              <div className="rrail" ref={railRef}>
                 {rest.map((rep, i) => (
                   <button
                     key={i}
@@ -514,19 +470,12 @@ function NavyVariant({
                     onClick={() => onPreview(rep)}
                     aria-label={`Preview report: ${rep.title}`}
                   >
-                    <Cover report={rep} />
+                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 320 : undefined} />
                     <div className="t">{rep.title}</div>
                     <div className="dt">
                       {rep.div} · {rep.date}
                     </div>
                   </button>
-                ))}
-              </div>
-            </div>
-            <div className="v2-foot">
-              <div className="rdots" aria-hidden="true">
-                {rest.map((_, i) => (
-                  <span key={i} className={`rdot${i === activeDot ? ' is-active' : ''}`} />
                 ))}
               </div>
             </div>
@@ -552,7 +501,7 @@ export function ReportsSection(props: ReportsSectionProps) {
       ) : (
         <CardsVariant {...props} id={id} onPreview={onPreview} />
       )}
-      {preview && <PreviewLightbox report={preview} onClose={onClose} />}
+      {preview && <PreviewLightbox report={preview} onClose={onClose} useRealCover={props.useRealCover} />}
     </>
   );
 }
