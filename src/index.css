@@ -368,8 +368,10 @@ body[data-scroll-locked] {
 }
 .v2-strip-dots { display:none; justify-content:center; gap:.5rem; margin-top:1.25rem; }
 @media (max-width: 1023px) { .v2-strip-dots { display:flex; } }
-.v2-card { cursor:pointer; background:none; padding:0; text-align:left; width:100%;
-  display:flex; flex-direction:column; align-items:stretch; }
+.v2-card { cursor:pointer; background:none; padding:0; text-align:left; width:100%; border:0; color:inherit;
+  display:flex; flex-direction:column; align-items:stretch; font:inherit; }
+.v2-cover--btn { cursor:pointer; background:none; padding:0; border:0; color:inherit; font:inherit; display:block; width:100%; text-align:left; }
+.rprev-deck--btn { cursor:pointer; background:none; padding:0; border:0; color:inherit; font:inherit; display:block; }
 .v2-card .rcover { box-shadow:0 14px 36px -14px rgba(0,0,0,.7);
   aspect-ratio: 1 / 1.414; width:100%; height:auto;
   transition:transform var(--dur-base) var(--ease-standard); }
