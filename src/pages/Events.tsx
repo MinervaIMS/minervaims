@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
+import { Calendar, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -13,6 +14,7 @@ interface DbEvent {
   moderator?: string | null;
   guest?: string[] | null;
   description?: string | null;
+  poster_url?: string | null;
 }
 
 /**
@@ -20,14 +22,12 @@ interface DbEvent {
  *
  * Currently there are no upcoming events. When one is scheduled, populate this
  * object (or wire it up to the database) and the "Upcoming" band will render
- * automatically. Required: title, date (ISO), place. Optional: doors,
- * description, photoUrl, isFlagship, registrationUrl, registrationState
- * ("open" | "soon" | "closed").
+ * automatically.
  */
 interface UpcomingEvent {
   title: string;
-  date: string;            // ISO string
-  doors?: string | null;   // e.g. "18:30"
+  date: string;
+  doors?: string | null;
   place: string;
   description?: string | null;
   photoUrl?: string | null;
@@ -39,14 +39,9 @@ interface UpcomingEvent {
 // TODO: replace with real data when an upcoming event is announced.
 const UPCOMING_EVENT: UpcomingEvent | null = null;
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
-const MONTHS_SHORT = [
-  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
-];
-
-function formatLongDate(iso: string) {
+function formatLongDateUpper(iso: string) {
   const d = new Date(iso);
   return d
     .toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
@@ -64,8 +59,8 @@ function formatTime(iso: string) {
 const Events = () => {
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [yearFilter, setYearFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const imagesLoaded = useImagePreload([eventsBg]);
 
   useEffect(() => {
@@ -79,7 +74,7 @@ const Events = () => {
           console.error("Error fetching events:", error);
           return;
         }
-        setEvents(data || []);
+        setEvents((data as DbEvent[]) || []);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -89,7 +84,7 @@ const Events = () => {
     fetchEvents();
   }, []);
 
-  // Past events = anything strictly before now.
+  // Past events = anything strictly before now, newest first.
   const pastEvents = useMemo(() => {
     const now = Date.now();
     return events
@@ -97,43 +92,25 @@ const Events = () => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [events]);
 
-  const availableYears = useMemo(() => {
-    const set = new Set<number>();
-    pastEvents.forEach((e) => set.add(new Date(e.date).getFullYear()));
-    return Array.from(set).sort((a, b) => b - a);
-  }, [pastEvents]);
+  // Posters carousel for the lightbox: only events that have a poster, in display order.
+  const posterEvents = useMemo(
+    () => pastEvents.filter((e) => !!e.poster_url),
+    [pastEvents],
+  );
 
-  const filteredEvents = useMemo(() => {
-    if (yearFilter === "all") return pastEvents;
-    return pastEvents.filter(
-      (e) => new Date(e.date).getFullYear().toString() === yearFilter,
-    );
-  }, [pastEvents, yearFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(pastEvents.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedEvents = filteredEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-  // Group paginated events by year for the date-rail layout.
-  const groupedByYear = useMemo(() => {
-    const groups = new Map<number, DbEvent[]>();
-    paginatedEvents.forEach((e) => {
-      const y = new Date(e.date).getFullYear();
-      if (!groups.has(y)) groups.set(y, []);
-      groups.get(y)!.push(e);
-    });
-    return Array.from(groups.entries()).sort((a, b) => b[0] - a[0]);
-  }, [paginatedEvents]);
+  const paginatedEvents = pastEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
   };
 
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setYearFilter(e.target.value);
-    setCurrentPage(1);
-  };
+  const openLightboxForEvent = useCallback((eventId: string) => {
+    const idx = posterEvents.findIndex((e) => e.id === eventId);
+    if (idx >= 0) setLightboxIndex(idx);
+  }, [posterEvents]);
 
   if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
@@ -224,37 +201,11 @@ const Events = () => {
       {/* Past Events */}
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6 pb-3 border-b border-separator">
-            <h2 className="font-serif text-heading text-accent">
-              Past events
-            </h2>
+          <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">
+            Past events
+          </h2>
 
-            {availableYears.length > 1 && (
-              <div className="flex items-center gap-3">
-                <label
-                  htmlFor="event-year"
-                  className="font-body text-xs tracking-[0.18em] uppercase text-muted-foreground"
-                >
-                  Year
-                </label>
-                <select
-                  id="event-year"
-                  value={yearFilter}
-                  onChange={handleYearChange}
-                  className="font-serif uppercase text-sm tracking-wider border border-separator bg-background text-foreground px-3 py-2 focus:outline-none focus:border-accent"
-                >
-                  <option value="all">All years</option>
-                  {availableYears.map((y) => (
-                    <option key={y} value={y.toString()}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-
-          {filteredEvents.length === 0 ? (
+          {pastEvents.length === 0 ? (
             <p className="font-body text-muted-foreground py-8">
               No past events to display.
             </p>
@@ -262,20 +213,17 @@ const Events = () => {
             <>
               <p className="font-body text-small text-muted-foreground mb-6">
                 Showing {startIndex + 1}-
-                {Math.min(startIndex + ITEMS_PER_PAGE, filteredEvents.length)} of{" "}
-                {filteredEvents.length} events
+                {Math.min(startIndex + ITEMS_PER_PAGE, pastEvents.length)} of{" "}
+                {pastEvents.length} events
               </p>
 
-              <div className="space-y-10">
-                {groupedByYear.map(([year, items]) => (
-                  <div key={year}>
-                    <h3 className="font-serif text-2xl text-accent mb-4">{year}</h3>
-                    <div className="border-t border-separator">
-                      {items.map((event) => (
-                        <PastEventRow key={event.id} event={event} />
-                      ))}
-                    </div>
-                  </div>
+              <div className="border-t border-separator">
+                {paginatedEvents.map((event) => (
+                  <PastEventRow
+                    key={event.id}
+                    event={event}
+                    onPosterClick={() => openLightboxForEvent(event.id)}
+                  />
                 ))}
               </div>
 
@@ -290,6 +238,15 @@ const Events = () => {
           )}
         </div>
       </section>
+
+      {lightboxIndex !== null && posterEvents.length > 0 && (
+        <PosterLightbox
+          events={posterEvents}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
+      )}
     </>
   );
 };
@@ -307,7 +264,6 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 border border-separator">
-      {/* Photo */}
       <div className="relative bg-muted aspect-[4/3] md:aspect-auto md:min-h-[320px]">
         {event.photoUrl ? (
           <img
@@ -328,10 +284,9 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
         )}
       </div>
 
-      {/* Metadata */}
       <div className="p-6 md:p-8 flex flex-col">
         <div className="font-body text-xs tracking-[0.18em] uppercase text-muted-foreground mb-3">
-          {formatLongDate(event.date)}
+          {formatLongDateUpper(event.date)}
           {time && <span> &middot; {time}</span>}
           {event.doors && <span> &middot; DOORS {event.doors}</span>}
         </div>
@@ -372,34 +327,62 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
 
 /* ------------------------------ Past event row ----------------------------- */
 
-function PastEventRow({ event }: { event: DbEvent }) {
+function PastEventRow({
+  event,
+  onPosterClick,
+}: {
+  event: DbEvent;
+  onPosterClick: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
-  const d = new Date(event.date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const monthYear = `${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 
   const hasMeta = Boolean(event.moderator || (event.guest && event.guest.length > 0));
   const hasMore = Boolean(event.description) || hasMeta;
 
   return (
-    <article className="grid grid-cols-[88px_1fr] md:grid-cols-[120px_1fr] gap-4 md:gap-6 py-6 border-b border-separator">
-      {/* Date rail */}
-      <div className="text-accent">
-        <div className="font-serif text-3xl md:text-4xl leading-none">{day}</div>
-        <div className="font-body text-[10px] md:text-xs tracking-[0.18em] uppercase text-muted-foreground mt-2">
-          {monthYear}
-        </div>
+    <article className="grid grid-cols-[140px_1fr] md:grid-cols-[200px_1fr] gap-5 md:gap-8 py-8 border-b border-separator">
+      {/* Poster column */}
+      <div>
+        {event.poster_url ? (
+          <button
+            type="button"
+            onClick={onPosterClick}
+            className="block w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-accent"
+            aria-label={`Open poster for ${event.title}`}
+          >
+            <img
+              src={event.poster_url}
+              alt={`${event.title} poster`}
+              loading="lazy"
+              className="block w-full h-auto object-contain bg-muted"
+            />
+          </button>
+        ) : (
+          <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
+            <span className="font-serif text-xs text-muted-foreground text-center px-2">
+              No poster
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Body */}
+      {/* Info column */}
       <div>
-        <h4 className="font-serif text-lg md:text-xl text-foreground mb-2 break-words">
-          {event.title}
-        </h4>
-
-        <div className="font-body text-xs tracking-[0.18em] uppercase text-muted-foreground mb-3">
-          {event.place}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs tracking-[0.12em] uppercase text-muted-foreground mb-3">
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+            {formatLongDateUpper(event.date)}
+          </span>
+          <span aria-hidden="true" className="text-separator">|</span>
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+            {event.place}
+          </span>
         </div>
+
+        <h3 className="font-serif text-xl md:text-2xl text-foreground mb-3 break-words">
+          {event.title}
+        </h3>
 
         {event.description && !expanded && (
           <p className="font-body text-body text-muted-foreground mb-3 line-clamp-3">
@@ -416,7 +399,7 @@ function PastEventRow({ event }: { event: DbEvent }) {
             )}
 
             {hasMeta && (
-              <div className="font-body text-sm text-muted-foreground space-y-1">
+              <div className="font-body text-sm text-muted-foreground space-y-2">
                 {event.moderator && (
                   <div>
                     <span className="font-medium text-foreground">Moderator:</span>{" "}
@@ -428,7 +411,7 @@ function PastEventRow({ event }: { event: DbEvent }) {
                     <div className="font-medium text-foreground mb-1">
                       Guest{event.guest.length > 1 ? "s" : ""}:
                     </div>
-                    <ul className="list-none space-y-0.5">
+                    <ul className="list-disc list-inside space-y-0.5">
                       {event.guest.map((g, i) => (
                         <li key={i}>{g}</li>
                       ))}
@@ -452,6 +435,109 @@ function PastEventRow({ event }: { event: DbEvent }) {
         )}
       </div>
     </article>
+  );
+}
+
+/* ------------------------------ Poster Lightbox ---------------------------- */
+
+function PosterLightbox({
+  events,
+  index,
+  onClose,
+  onIndexChange,
+}: {
+  events: DbEvent[];
+  index: number;
+  onClose: () => void;
+  onIndexChange: (i: number) => void;
+}) {
+  const current = events[index];
+
+  useEffect(() => {
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight") onIndexChange((index + 1) % events.length);
+      else if (e.key === "ArrowLeft") onIndexChange((index - 1 + events.length) % events.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, events.length, onClose, onIndexChange]);
+
+  if (!current) return null;
+
+  const goPrev = () => onIndexChange((index - 1 + events.length) % events.length);
+  const goNext = () => onIndexChange((index + 1) % events.length);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Poster: ${current.title}`}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/80 backdrop-blur-md p-4 md:p-8"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        aria-label="Close poster"
+        className="absolute top-4 right-4 md:top-6 md:right-6 text-background hover:opacity-80 transition-opacity"
+      >
+        <X className="h-7 w-7 md:h-8 md:w-8" />
+      </button>
+
+      {/* Prev */}
+      {events.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goPrev(); }}
+          aria-label="Previous poster"
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 text-background hover:opacity-80 transition-opacity p-2"
+        >
+          <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" />
+        </button>
+      )}
+
+      {/* Poster */}
+      <div
+        className="relative flex flex-col items-center max-w-full max-h-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={current.poster_url ?? ""}
+          alt={`${current.title} poster`}
+          className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
+        />
+        <div className="mt-4 text-center max-w-[90vw]">
+          <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
+            {formatLongDateUpper(current.date)}
+          </div>
+          <div className="font-serif text-base md:text-lg text-background">
+            {current.title}
+          </div>
+        </div>
+      </div>
+
+      {/* Next */}
+      {events.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goNext(); }}
+          aria-label="Next poster"
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 text-background hover:opacity-80 transition-opacity p-2"
+        >
+          <ChevronRight className="h-8 w-8 md:h-10 md:w-10" />
+        </button>
+      )}
+    </div>
   );
 }
 

@@ -42,6 +42,7 @@ interface DbEvent {
   moderator?: string | null;
   guest?: string[] | null;
   description?: string | null;
+  poster_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -198,8 +199,9 @@ const MinervaWorkspace = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
   const [formData, setFormData] = useState({
-    title: '', date: '', place: '', moderator: '', guests: [''], description: '',
+    title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '',
   });
+  const [isUploadingPoster, setIsUploadingPoster] = useState(false);
   const [eventsCurrentPage, setEventsCurrentPage] = useState(1);
   const [eventsYearFilter, setEventsYearFilter] = useState<number | 'all'>('all');
   const [eventsSearchQuery, setEventsSearchQuery] = useState('');
@@ -298,7 +300,7 @@ const MinervaWorkspace = () => {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', date: '', place: '', moderator: '', guests: [''], description: '' });
+    setFormData({ title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '' });
     setEditingEvent(null);
   };
   const openCreateDialog = () => { resetForm(); setIsDialogOpen(true); };
@@ -309,8 +311,37 @@ const MinervaWorkspace = () => {
       moderator: event.moderator || '',
       guests: event.guest && event.guest.length > 0 ? event.guest : [''],
       description: event.description || '',
+      poster_url: event.poster_url || '',
     });
     setIsDialogOpen(true);
+  };
+
+  const handlePosterUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please select an image file.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Poster must be under 10 MB.', variant: 'destructive' });
+      return;
+    }
+    setIsUploadingPoster(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `event-posters/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from('team-photos').upload(path, file, {
+        cacheControl: '3600', upsert: false, contentType: file.type,
+      });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from('team-photos').getPublicUrl(path);
+      setFormData((prev) => ({ ...prev, poster_url: pub.publicUrl }));
+      toast({ title: 'Poster uploaded' });
+    } catch (err) {
+      console.error('Poster upload error:', err);
+      toast({ title: 'Upload failed', description: 'Could not upload poster.', variant: 'destructive' });
+    } finally {
+      setIsUploadingPoster(false);
+    }
   };
   const addGuestField = () => setFormData({ ...formData, guests: [...formData.guests, ''] });
   const removeGuestField = (i: number) => formData.guests.length > 1 && setFormData({ ...formData, guests: formData.guests.filter((_, idx) => idx !== i) });
@@ -333,6 +364,7 @@ const MinervaWorkspace = () => {
         moderator: formData.moderator || null,
         guest: filteredGuests.length > 0 ? filteredGuests : null,
         description: formData.description || null,
+        poster_url: formData.poster_url || null,
         ...(editingEvent && { id: editingEvent.id }),
       };
       const { data, error } = await supabase.functions.invoke('admin-events', {
@@ -558,6 +590,32 @@ const MinervaWorkspace = () => {
                 </div>
                 <div className="space-y-2"><Label htmlFor="description" className="font-body">Description (optional)</Label>
                   <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Event description" rows={3} /></div>
+                <div className="space-y-2">
+                  <Label htmlFor="poster" className="font-body">Poster (optional)</Label>
+                  {formData.poster_url && (
+                    <div className="flex items-start gap-3">
+                      <img src={formData.poster_url} alt="Poster preview" className="w-24 h-auto border border-separator" />
+                      <Button type="button" variant="outline" size="sm" onClick={() => setFormData({ ...formData, poster_url: '' })} className="font-body">
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                  <Input
+                    id="poster"
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingPoster}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePosterUpload(f); e.target.value = ''; }}
+                  />
+                  {isUploadingPoster && (
+                    <p className="text-xs text-muted-foreground font-body">
+                      <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />Uploading poster...
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground font-body">
+                    Any image format and aspect ratio. Max 10 MB.
+                  </p>
+                </div>
                 {isSubmitting && (
                   <div className="space-y-2"><Progress value={100} className="h-1 animate-pulse" />
                     <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p></div>

@@ -40,6 +40,11 @@ const EventSchema = z.object({
     .max(5000, 'Description too long')
     .trim()
     .nullable()
+    .optional(),
+  poster_url: z.string()
+    .max(2000, 'Poster URL too long')
+    .trim()
+    .nullable()
     .optional()
 })
 
@@ -249,6 +254,7 @@ Deno.serve(async (req) => {
             moderator: validatedEvent.moderator || null,
             guest: validatedEvent.guest || null,
             description: validatedEvent.description || null,
+            poster_url: validatedEvent.poster_url || null,
           })
           .select()
           .single()
@@ -298,6 +304,7 @@ Deno.serve(async (req) => {
             moderator: validatedEvent.moderator || null,
             guest: validatedEvent.guest || null,
             description: validatedEvent.description || null,
+            poster_url: validatedEvent.poster_url || null,
           })
           .eq('id', validatedEvent.id)
           .select()
