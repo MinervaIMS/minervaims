@@ -404,12 +404,16 @@ export default function AlumniGlobe() {
         const world = buildWorld(topo);
         api = createGlobe(canvasRef.current, THEME, world);
         apiRef.current = api;
+        // Desktop/tablet: default focus on Europe
+        if (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches) {
+          api.flyToEurope();
+        }
       })
       .catch(() => { /* leave the static frame in place on network failure */ });
     return () => { disposed = true; api?.destroy?.(); apiRef.current = null; };
   }, []);
 
-  const controls = (
+  const zoomButtons = (
     <>
       <button
         type="button"
@@ -427,27 +431,31 @@ export default function AlumniGlobe() {
       >
         −
       </button>
-      <button
-        type="button"
-        onClick={() => apiRef.current?.flyToEurope()}
-        className="flex h-[34px] sm:h-7 items-center justify-center border border-separator px-2.5 text-[11px] uppercase tracking-wide text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
-      >
-        Europe
-      </button>
     </>
+  );
+
+  const europeButton = (
+    <button
+      type="button"
+      onClick={() => apiRef.current?.flyToEurope()}
+      className="flex h-[34px] sm:h-7 items-center justify-center border border-separator px-2.5 text-[11px] uppercase tracking-wide text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
+    >
+      Europe
+    </button>
   );
 
   return (
     <div className="mb-16 sm:mb-20">
       <div className="relative w-full" style={{ height: "clamp(360px, 46vw, 560px)" }}>
         <canvas ref={canvasRef} className="block h-full w-full" />
-        {/* Desktop/tablet: overlay top-right */}
+        {/* Desktop/tablet: overlay top-right (zoom only) */}
         <div className="absolute right-3.5 top-3.5 z-10 hidden flex-col gap-1.5 sm:flex">
-          {controls}
+          {zoomButtons}
         </div>
-        {/* Mobile: overlay bottom-right */}
+        {/* Mobile: overlay bottom-right (zoom + Europe) */}
         <div className="absolute bottom-3 right-3 z-10 flex flex-row gap-1.5 sm:hidden">
-          {controls}
+          {zoomButtons}
+          {europeButton}
         </div>
       </div>
     </div>
