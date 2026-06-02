@@ -92,4 +92,19 @@
 .ck-acc__desc{margin:0;font-family:var(--font-body);font-size:.875rem;line-height:1.6;color:var(--mims-muted);max-width:58ch;}
 .ck-reqpill{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-body);font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mims-muted);border:1px solid var(--mims-line);padding:2px 7px;}
 
-.ck-modal__foot{border-top:1px solid var(--mims-line);padding:18px 34px;margin-top:6px;display:flex;gap:10px;align-items:center;}
+.ck-modal__foot{border-top:1px solid var(--mims-line);padding:18px 34px;margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+@media (max-width:640px){
+  .ck-overlay{padding:12px;align-items:flex-end;}
+  .ck-modal{max-height:90vh;width:100%;}
+  .ck-modal__head{padding:24px 20px 6px;}
+  .ck-modal__x{top:18px;right:16px;}
+  .ck-modal__title{font-size:1.4rem;}
+  .ck-modal__body{padding:10px 20px 4px;}
+  .ck-modal__foot{padding:14px 20px;flex-wrap:wrap;gap:8px;}
+  .ck-modal__foot .ck-btn{flex:1 1 calc(50% - 4px);padding:.7rem .6rem;font-size:.95rem;text-align:center;}
+  .ck-modal__foot .ck-btn--ghost{flex:1 1 100%;order:3;padding-left:0!important;padding-right:0!important;}
+  .ck-acc__row{gap:10px;padding:14px 0;}
+  .ck-acc__name{font-size:.98rem;}
+  .ck-reqpill{display:none;}
+}
