@@ -409,39 +409,48 @@ export default function AlumniGlobe() {
     return () => { disposed = true; api?.destroy?.(); apiRef.current = null; };
   }, []);
 
+  const controls = (
+    <>
+      <button
+        type="button"
+        aria-label="Zoom in"
+        onClick={() => apiRef.current?.zoomIn()}
+        className="flex h-[34px] w-[34px] items-center justify-center border border-separator text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
+      >
+        +
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom out"
+        onClick={() => apiRef.current?.zoomOut()}
+        className="flex h-[34px] w-[34px] items-center justify-center border border-separator text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        onClick={() => apiRef.current?.flyToEurope()}
+        className="flex h-[34px] sm:h-7 items-center justify-center border border-separator px-2.5 text-[11px] uppercase tracking-wide text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
+      >
+        Europe
+      </button>
+    </>
+  );
+
   return (
     <div className="mb-16 sm:mb-20">
       <div className="relative w-full" style={{ height: "clamp(360px, 46vw, 560px)" }}>
         <canvas ref={canvasRef} className="block h-full w-full" />
-      </div>
-      {/* zoom / Europe controls — below globe on mobile, overlay top-right on sm+ */}
-      <div className="relative">
-        <div className="mt-3 flex flex-row justify-center gap-1.5 sm:mt-0 sm:absolute sm:right-3.5 sm:flex-col sm:gap-1.5" style={{}}>
-          <button
-            type="button"
-            aria-label="Zoom in"
-            onClick={() => apiRef.current?.zoomIn()}
-            className="flex h-[34px] w-[34px] items-center justify-center border border-separator text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            aria-label="Zoom out"
-            onClick={() => apiRef.current?.zoomOut()}
-            className="flex h-[34px] w-[34px] items-center justify-center border border-separator text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
-          >
-            −
-          </button>
-          <button
-            type="button"
-            onClick={() => apiRef.current?.flyToEurope()}
-            className="flex h-[34px] sm:h-7 items-center justify-center border border-separator px-2.5 text-[11px] uppercase tracking-wide text-accent transition-colors hover:bg-accent hover:text-white hover:border-accent"
-          >
-            Europe
-          </button>
+        {/* Desktop/tablet: overlay top-right */}
+        <div className="absolute right-3.5 top-3.5 z-10 hidden flex-col gap-1.5 sm:flex">
+          {controls}
         </div>
+      </div>
+      {/* Mobile: below the globe */}
+      <div className="mt-3 flex flex-row justify-center gap-1.5 sm:hidden">
+        {controls}
       </div>
     </div>
   );
 }
+
