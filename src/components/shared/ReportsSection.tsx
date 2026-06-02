@@ -366,11 +366,17 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
           ×
         </button>
         <div className="rprev-stage">
-          <div className="rprev-deck" ref={deckRef}>
+          <button
+            type="button"
+            className="rprev-deck rprev-deck--btn"
+            ref={deckRef as any}
+            onClick={() => openReportInTab(report.title, report.pdf)}
+            aria-label={`Open report: ${report.title}`}
+          >
             {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
             {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
             <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
-          </div>
+          </button>
         </div>
         <FeaturedInfo report={report} matchHeightTo={deckRef} />
       </div>
