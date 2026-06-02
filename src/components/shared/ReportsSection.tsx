@@ -694,12 +694,19 @@ function formatMonthYear(iso: string) {
   return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 }
 
-export function archiveFilesToReports(rows: ArchiveFileRow[]): ReportItem[] {
+export function archiveFilesToReports(
+  rows: ArchiveFileRow[],
+  options?: { preferDivision?: boolean }
+): ReportItem[] {
+  const preferDivision = options?.preferDivision === true;
   return rows.map((r) => {
-    const divLabel =
-      (r.fund && FUND_LABELS[r.fund]) ||
-      (r.division && (DIVISION_LABELS[r.division] || r.division)) ||
-      'Research';
+    const divLabel = preferDivision
+      ? (r.division && (DIVISION_LABELS[r.division] || r.division)) ||
+        (r.fund && FUND_LABELS[r.fund]) ||
+        'Research'
+      : (r.fund && FUND_LABELS[r.fund]) ||
+        (r.division && (DIVISION_LABELS[r.division] || r.division)) ||
+        'Research';
     return {
       div: divLabel,
       title: r.title,
