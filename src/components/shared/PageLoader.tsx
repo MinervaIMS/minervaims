@@ -11,7 +11,7 @@ export function PageLoader() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center">
       <div className="animate-pulse">
         <img
           src={logoColor}
