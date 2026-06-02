@@ -373,9 +373,13 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
 /* ------------------------------ Past event row ----------------------------- */
 
 function PastEventRow({ event }: { event: DbEvent }) {
+  const [expanded, setExpanded] = useState(false);
   const d = new Date(event.date);
   const day = String(d.getDate()).padStart(2, "0");
   const monthYear = `${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+
+  const hasMeta = Boolean(event.moderator || (event.guest && event.guest.length > 0));
+  const hasMore = Boolean(event.description) || hasMeta;
 
   return (
     <article className="grid grid-cols-[88px_1fr] md:grid-cols-[120px_1fr] gap-4 md:gap-6 py-6 border-b border-separator">
@@ -397,28 +401,54 @@ function PastEventRow({ event }: { event: DbEvent }) {
           {event.place}
         </div>
 
-        {event.description && (
+        {event.description && !expanded && (
           <p className="font-body text-body text-muted-foreground mb-3 line-clamp-3">
             {event.description}
           </p>
         )}
 
-        {(event.moderator || (event.guest && event.guest.length > 0)) && (
-          <div className="font-body text-sm text-muted-foreground space-y-1">
-            {event.moderator && (
-              <div>
-                <span className="font-medium text-foreground">Moderator:</span> {event.moderator}
-              </div>
+        {expanded && (
+          <div className="space-y-3 mb-3">
+            {event.description && (
+              <p className="font-body text-body text-muted-foreground whitespace-pre-line">
+                {event.description}
+              </p>
             )}
-            {event.guest && event.guest.length > 0 && (
-              <div>
-                <span className="font-medium text-foreground">
-                  Guest{event.guest.length > 1 ? "s" : ""}:
-                </span>{" "}
-                {event.guest.join(", ")}
+
+            {hasMeta && (
+              <div className="font-body text-sm text-muted-foreground space-y-1">
+                {event.moderator && (
+                  <div>
+                    <span className="font-medium text-foreground">Moderator:</span>{" "}
+                    {event.moderator}
+                  </div>
+                )}
+                {event.guest && event.guest.length > 0 && (
+                  <div>
+                    <div className="font-medium text-foreground mb-1">
+                      Guest{event.guest.length > 1 ? "s" : ""}:
+                    </div>
+                    <ul className="list-none space-y-0.5">
+                      {event.guest.map((g, i) => (
+                        <li key={i}>{g}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
+        )}
+
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="font-body text-sm text-accent underline underline-offset-4 hover:opacity-80 transition-opacity"
+            aria-expanded={expanded}
+          >
+            {expanded ? "Read less" : "Read more"}
+          </button>
         )}
       </div>
     </article>
