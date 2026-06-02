@@ -104,7 +104,7 @@ const DivisionDetail = () => {
         .select('id, title, description, file_url, date, division, fund')
         .eq('division', division)
         .order('date', { ascending: false })
-        .limit(8);
+        .limit(9);
 
       if (error) throw error;
       setFiles(data || []);
