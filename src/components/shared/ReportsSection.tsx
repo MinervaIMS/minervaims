@@ -366,17 +366,11 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
           ×
         </button>
         <div className="rprev-stage">
-          <button
-            type="button"
-            className="rprev-deck rprev-deck--btn"
-            ref={deckRef as any}
-            onClick={() => openReportInTab(report.title, report.pdf)}
-            aria-label={`Open report: ${report.title}`}
-          >
+          <div className="rprev-deck" ref={deckRef}>
             {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
             {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
             <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
-          </button>
+          </div>
         </div>
         <FeaturedInfo report={report} matchHeightTo={deckRef} />
       </div>
@@ -586,15 +580,9 @@ function NavyVariant({
         </div>
 
         <div className="v2-feature">
-          <button
-            type="button"
-            className="v2-cover v2-cover--btn"
-            ref={coverRef as any}
-            onClick={() => openReportInTab(featured.title, featured.pdf)}
-            aria-label={`Open report: ${featured.title}`}
-          >
+          <div className="v2-cover" ref={coverRef}>
             <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
-          </button>
+          </div>
           <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} matchHeightTo={coverRef} />
         </div>
 
@@ -609,8 +597,8 @@ function NavyVariant({
                   <button
                     key={i}
                     className="v2-card"
-                    onClick={() => openReportInTab(rep.title, rep.pdf)}
-                    aria-label={`Open report: ${rep.title}`}
+                    onClick={() => onPreview(rep)}
+                    aria-label={`Preview report: ${rep.title}`}
                   >
                     <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 420 : undefined} />
                     <div className="t">{rep.title}</div>

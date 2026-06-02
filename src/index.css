@@ -235,7 +235,7 @@ body[data-scroll-locked] {
 .rsec--navy .rbtn:hover { background:#fff; color:hsl(var(--accent)); border-color:#fff; }
 
 /* ---- THE COVER (container queries — scales perfectly) ---- */
-.rcover { position:relative; width:100%; aspect-ratio:1/1.414; background:#fff; container-type:inline-size;
+.rcover { position:relative; width:100%; aspect-ratio:1/1.414; background:transparent; container-type:inline-size;
   box-shadow:var(--shadow-cover); overflow:hidden; }
 .rcover--photo { background:var(--mims-grey); }
 .rcover-img { width:100%; height:100%; object-fit:cover; }
@@ -259,7 +259,7 @@ body[data-scroll-locked] {
   border-top:1px solid var(--mims-line); font-size:2.7cqw; letter-spacing:.04em; color:var(--mims-muted); text-transform:uppercase; }
 .rcover--lg { width:min(46vh,360px); }
 .rprev-dialog--lg .rcover--lg { width:100%; }
-.rcover--pdf { background:#fff; overflow:hidden; }
+.rcover--pdf { background:transparent; overflow:hidden; }
 .rcover--pdf > div { aspect-ratio:unset !important; width:100%; height:100%; }
 
 /* ---- "+" affordance button ---- */
@@ -368,10 +368,8 @@ body[data-scroll-locked] {
 }
 .v2-strip-dots { display:none; justify-content:center; gap:.5rem; margin-top:1.25rem; }
 @media (max-width: 1023px) { .v2-strip-dots { display:flex; } }
-.v2-card { cursor:pointer; background:none; padding:0; text-align:left; width:100%; border:0; color:inherit;
-  display:flex; flex-direction:column; align-items:stretch; font:inherit; }
-.v2-cover--btn { cursor:pointer; background:none; padding:0; border:0; color:inherit; font:inherit; display:block; width:100%; text-align:left; }
-.rprev-deck--btn { cursor:pointer; background:none; padding:0; border:0; color:inherit; font:inherit; display:block; }
+.v2-card { cursor:pointer; background:none; padding:0; text-align:left; width:100%;
+  display:flex; flex-direction:column; align-items:stretch; }
 .v2-card .rcover { box-shadow:0 14px 36px -14px rgba(0,0,0,.7);
   aspect-ratio: 1 / 1.414; width:100%; height:auto;
   transition:transform var(--dur-base) var(--ease-standard); }
