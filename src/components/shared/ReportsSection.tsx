@@ -369,7 +369,14 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
           <div className="rprev-deck" ref={deckRef}>
             {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
             {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
-            <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
+            <button
+              type="button"
+              className="rcover-link"
+              onClick={() => openReportInTab(report.title, report.pdf)}
+              aria-label={`Open report: ${report.title}`}
+            >
+              <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
+            </button>
           </div>
         </div>
         <FeaturedInfo report={report} matchHeightTo={deckRef} />
@@ -581,7 +588,14 @@ function NavyVariant({
 
         <div className="v2-feature">
           <div className="v2-cover" ref={coverRef}>
-            <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
+            <button
+              type="button"
+              className="rcover-link"
+              onClick={() => openReportInTab(featured.title, featured.pdf)}
+              aria-label={`Open report: ${featured.title}`}
+            >
+              <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
+            </button>
           </div>
           <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} matchHeightTo={coverRef} />
         </div>

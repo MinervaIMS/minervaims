@@ -345,7 +345,10 @@ body[data-scroll-locked] {
   font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; }
 .rsec--navy .rbtn.rbtn--onnavy:hover, .rsec--navy .rbtn.rbtn--onnavy:focus-visible, .rsec--navy .rbtn.rbtn--onnavy:active, .rsec--navy .rbtn.rbtn--onnavy.is-active,
 .rprev-dialog--navy .rbtn.rbtn--onnavy:hover, .rprev-dialog--navy .rbtn.rbtn--onnavy:focus-visible, .rprev-dialog--navy .rbtn.rbtn--onnavy:active, .rprev-dialog--navy .rbtn.rbtn--onnavy.is-active {
-  background:hsl(var(--accent)); color:#fff; border-color:#fff; box-shadow:none; }
+  background:hsl(var(--accent)); color:#fff; border:1px solid #fff !important; box-shadow:none; }
+/* Clickable report cover (featured + lightbox) */
+.rcover-link { display:block; cursor:pointer; background:transparent; border:0; padding:0; width:100%; text-align:left; }
+.rcover-link:focus-visible { outline:2px solid #fff; outline-offset:4px; }
 /* Ghost variant of onnavy — same default look, used for the secondary archive link */
 .rsec--navy .rbtn.rbtn--onnavy-ghost, .rprev-dialog--navy .rbtn.rbtn--onnavy-ghost { background:transparent; color:#fff; border-color:#fff; }
 .rsec--navy .rbtn.rbtn--onnavy-ghost:hover, .rsec--navy .rbtn.rbtn--onnavy-ghost:focus-visible,
