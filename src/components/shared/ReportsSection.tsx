@@ -454,20 +454,21 @@ function CardsVariant({
               <div
                 key={i}
                 className="v3-card"
-                role="button"
-                tabIndex={0}
-                onClick={() => onPreview(rep)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onPreview(rep);
-                  }
-                }}
               >
                 <div className="d">{rep.div}</div>
                 <div className="t">{rep.title}</div>
                 <div className="v3-coverhold">
-                  <Cover report={rep} />
+                  <button
+                    type="button"
+                    className="rcover-link v3-cover-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openReportInTab(rep.title, rep.pdf);
+                    }}
+                    aria-label={`Open report PDF: ${rep.title}`}
+                  >
+                    <Cover report={rep} useRealCover renderWidth={520} />
+                  </button>
                 </div>
                 <button
                   className="rplus"
