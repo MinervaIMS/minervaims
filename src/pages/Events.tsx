@@ -334,9 +334,9 @@ function PastEventRow({
   const hasMore = Boolean(event.description) || hasMeta;
 
   return (
-    <article className="grid grid-cols-[140px_1fr] md:grid-cols-[200px_1fr] gap-5 md:gap-8 py-8 border-b border-separator">
+    <article className="flex flex-col sm:grid sm:grid-cols-[260px_1fr] gap-5 sm:gap-8 py-8 border-b border-separator">
       {/* Poster column */}
-      <div>
+      <div className="w-full max-w-[240px] sm:max-w-none mx-auto sm:mx-0">
         {event.poster_url ? (
           <button
             type="button"
@@ -361,7 +361,7 @@ function PastEventRow({
       </div>
 
       {/* Info column */}
-      <div>
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs tracking-[0.12em] uppercase text-muted-foreground mb-3">
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
@@ -379,7 +379,7 @@ function PastEventRow({
         </h3>
 
         {event.description && !expanded && (
-          <p className="font-body text-body text-muted-foreground mb-3 line-clamp-3">
+          <p className="font-body text-body text-muted-foreground mb-3 line-clamp-4 sm:line-clamp-6 md:line-clamp-7">
             {event.description}
           </p>
         )}
