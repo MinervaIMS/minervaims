@@ -514,6 +514,7 @@ function NavyVariant({
   // Show up to 5 reports in the "Recently published" strip
   const rest = reports.slice(1, 6);
   const railRef = useRef<HTMLDivElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [showDots, setShowDots] = useState(false);
 
