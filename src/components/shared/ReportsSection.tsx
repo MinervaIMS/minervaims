@@ -580,9 +580,15 @@ function NavyVariant({
         </div>
 
         <div className="v2-feature">
-          <div className="v2-cover" ref={coverRef}>
+          <button
+            type="button"
+            className="v2-cover v2-cover--btn"
+            ref={coverRef as any}
+            onClick={() => openReportInTab(featured.title, featured.pdf)}
+            aria-label={`Open report: ${featured.title}`}
+          >
             <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
-          </div>
+          </button>
           <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} matchHeightTo={coverRef} />
         </div>
 
@@ -597,8 +603,8 @@ function NavyVariant({
                   <button
                     key={i}
                     className="v2-card"
-                    onClick={() => onPreview(rep)}
-                    aria-label={`Preview report: ${rep.title}`}
+                    onClick={() => openReportInTab(rep.title, rep.pdf)}
+                    aria-label={`Open report: ${rep.title}`}
                   >
                     <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 420 : undefined} />
                     <div className="t">{rep.title}</div>
