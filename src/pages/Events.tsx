@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { Calendar, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageIntroduction, PageLoader } from "@/components/shared";
+import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
+
+const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].endsWith(".pdf");
 import { supabase } from "@/integrations/supabase/client";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import eventsBg from "@/assets/events-bg.webp";
