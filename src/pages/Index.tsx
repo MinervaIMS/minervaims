@@ -248,7 +248,7 @@ const Index = () => {
         variant="cards"
         heading="Latest Reports"
         archiveHref="/archive"
-        archiveLabel="Browse The Archive"
+        archiveLabel="Browse The Reports Archive"
         reports={archiveFilesToReports(carouselFiles, { preferDivision: true })}
         useRealCover
       />

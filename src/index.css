@@ -328,8 +328,8 @@ body[data-scroll-locked] {
   transition:transform var(--dur-base) var(--ease-standard); }
 .v3-card--cta:hover .v3-cta-circle { transform:scale(1.08); }
 .v3-cta-circle svg { width:1.4rem; height:1.4rem; }
-.v3-cta-label { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif;
-  font-size:.875rem; letter-spacing:.2em; text-transform:uppercase; color:hsl(var(--accent)); }
+.v3-cta-label { font-family:'Calibri','Carlito',Arial,Helvetica,sans-serif;
+  font-size:.875rem; letter-spacing:.13em; text-transform:uppercase; color:hsl(var(--accent)); }
 
 /* ---- V2 navy stage ---- */
 .v2-feature { display:grid; grid-template-columns:minmax(345px,450px) 1fr;
