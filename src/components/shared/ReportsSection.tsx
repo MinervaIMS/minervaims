@@ -471,6 +471,16 @@ function CardsVariant({
                 </button>
               </div>
             ))}
+            {archiveHref ? (
+              <a className="v3-card v3-card--cta" href={archiveHref} aria-label={archiveLabel}>
+                <div className="v3-cta-inner">
+                  <div className="v3-cta-circle" aria-hidden="true">
+                    <IconArrowUR />
+                  </div>
+                  <span className="v3-cta-label">{archiveLabel}</span>
+                </div>
+              </a>
+            ) : null}
           </div>
         </div>
 
@@ -488,14 +498,6 @@ function CardsVariant({
               />
             ))}
           </div>
-          {archiveHref ? (
-            <a className="rbtn" href={archiveHref}>
-              {archiveLabel}
-              <span className="rarw">
-                <IconArrowUR />
-              </span>
-            </a>
-          ) : null}
         </div>
       </div>
     </section>
