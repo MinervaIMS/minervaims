@@ -235,7 +235,7 @@ body[data-scroll-locked] {
 .rsec--navy .rbtn:hover { background:#fff; color:hsl(var(--accent)); border-color:#fff; }
 
 /* ---- THE COVER (container queries — scales perfectly) ---- */
-.rcover { position:relative; width:100%; aspect-ratio:1/1.414; background:#fff; container-type:inline-size;
+.rcover { position:relative; width:100%; aspect-ratio:1/1.414; background:transparent; container-type:inline-size;
   box-shadow:var(--shadow-cover); overflow:hidden; }
 .rcover--photo { background:var(--mims-grey); }
 .rcover-img { width:100%; height:100%; object-fit:cover; }
