@@ -66,12 +66,12 @@ export function TestimonialsSection() {
 
   return (
     <section className="relative bg-accent text-background py-20 md:py-28 overflow-hidden">
-      {/* Arrows */}
+      {/* Arrows — desktop only */}
       <button
         type="button"
         aria-label="Previous testimonial"
         onClick={() => go(index - 1, "right")}
-        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2"
+        className="hidden md:inline-flex absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2"
       >
         <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" strokeWidth={1} />
       </button>
@@ -79,7 +79,7 @@ export function TestimonialsSection() {
         type="button"
         aria-label="Next testimonial"
         onClick={() => go(index + 1, "left")}
-        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2"
+        className="hidden md:inline-flex absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2"
       >
         <ChevronRight className="h-8 w-8 md:h-10 md:w-10" strokeWidth={1} />
       </button>
