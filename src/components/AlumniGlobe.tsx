@@ -390,15 +390,7 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any) {
 }
 
 /* ---- React component ------------------------------------------------------ */
-interface AlumniGlobeProps {
-  heading?: string;
-  caption?: string;
-}
-
-export default function AlumniGlobe({
-  heading = "From Milan to the World",
-  caption = "Every line traces a path from Milan — home of Bocconi and MIMS — to a city where our alumni now live and work.",
-}: AlumniGlobeProps) {
+export default function AlumniGlobe() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const apiRef = useRef<any>(null);
 
@@ -419,13 +411,6 @@ export default function AlumniGlobe({
 
   return (
     <div className="mb-16 sm:mb-20">
-      <h2 className="font-serif text-xl sm:text-heading text-accent mb-4 pb-3 text-center max-w-2xl mx-auto border-b border-separator">
-        {heading}
-      </h2>
-      <p className="font-body text-body-lg text-muted-foreground text-center max-w-2xl mx-auto mb-2">
-        {caption}
-      </p>
-
       <div className="relative w-full" style={{ height: "clamp(360px, 46vw, 560px)" }}>
         <canvas ref={canvasRef} className="block h-full w-full" />
         {/* zoom / Europe controls */}
@@ -454,17 +439,6 @@ export default function AlumniGlobe({
             Europe
           </button>
         </div>
-      </div>
-
-      <div className="mt-1 flex items-center justify-center gap-6 font-body text-sm text-muted-foreground">
-        <span className="flex items-center gap-2">
-          <span className="inline-block h-3 w-3 rounded-full border-[1.5px]" style={{ borderColor: "#1F0F4D" }} />
-          Milan
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#1F0F4D" }} />
-          Alumni city
-        </span>
       </div>
     </div>
   );
