@@ -312,11 +312,24 @@ body[data-scroll-locked] {
 .v3-cover-btn { width:93%; display:block; }
 .v3-card:hover .v3-coverhold .rcover { transform:translateY(-6px) rotate(-1deg); }
 .v3-card .rplus { right:clamp(1.2rem,2vw,1.75rem); bottom:clamp(1.2rem,2vw,1.75rem); }
-.v3-foot { display:flex; align-items:center; justify-content:space-between; gap:1.5rem;
+.v3-foot { display:flex; align-items:center; justify-content:center; gap:1.5rem;
   margin-top:1.75rem; flex-wrap:wrap; }
-.v3-dots { cursor:pointer; }
-.v3-dots .rdot { cursor:pointer; background:hsl(var(--accent) / .28); }
-.v3-dots .rdot.is-active { background:hsl(var(--accent)); }
+.v3-dots { display:flex; justify-content:center; gap:.6rem; cursor:pointer; }
+.v3-dots .rdot { cursor:pointer; width:9px; height:9px; border-radius:9999px;
+  background:hsl(var(--accent) / .28); }
+.v3-dots .rdot.is-active { width:9px; background:hsl(var(--accent)); }
+/* CTA card at end of carousel */
+.v3-card--cta { display:flex; align-items:center; justify-content:center; text-decoration:none;
+  background:hsl(var(--secondary)); transition:background var(--dur-base) var(--ease-standard); }
+.v3-card--cta:hover { background:#ece9f4; }
+.v3-cta-inner { display:flex; flex-direction:column; align-items:center; gap:1.25rem; }
+.v3-cta-circle { width:4rem; height:4rem; border-radius:9999px; background:hsl(var(--accent));
+  display:grid; place-items:center; color:#fff;
+  transition:transform var(--dur-base) var(--ease-standard); }
+.v3-card--cta:hover .v3-cta-circle { transform:scale(1.08); }
+.v3-cta-circle svg { width:1.4rem; height:1.4rem; }
+.v3-cta-label { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif;
+  font-size:.875rem; letter-spacing:.2em; text-transform:uppercase; color:hsl(var(--accent)); }
 
 /* ---- V2 navy stage ---- */
 .v2-feature { display:grid; grid-template-columns:minmax(345px,450px) 1fr;
