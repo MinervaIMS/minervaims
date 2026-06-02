@@ -318,13 +318,13 @@ body[data-scroll-locked] {
 
 /* ---- V2 navy stage ---- */
 .v2-feature { display:grid; grid-template-columns:minmax(345px,450px) 1fr;
-  gap:clamp(1.75rem,4vw,3.5rem); align-items:stretch; }
+  gap:clamp(1.75rem,4vw,3.5rem); align-items:start; }
 .rsec--navy-lg .v2-feature { grid-template-columns:minmax(345px,450px) minmax(0,1fr); }
-.v2-cover { position:relative; display:flex; }
-.v2-cover .rcover { width:100%; align-self:stretch; }
+.v2-cover { position:relative; display:block; align-self:start; }
+.v2-cover .rcover { width:100%; align-self:auto; }
 .v2-cover .rplus { right:-.85rem; bottom:-.85rem; background:#fff; color:hsl(var(--accent)); }
 .v2-cover .rplus:hover { background:var(--mims-light-purple); color:hsl(var(--accent)); }
-.v2-info { width:100%; display:flex; flex-direction:column; min-height:100%; }
+.v2-info { width:100%; display:flex; flex-direction:column; min-height:0; }
 .v2-info .reyebrow { color:var(--mims-light-purple); }
 .v2-info-title { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:700;
   font-size:clamp(1.7rem,3.4vw,2.7rem); line-height:1.12; letter-spacing:-.015em; color:#fff;
@@ -377,7 +377,10 @@ body[data-scroll-locked] {
 @media (max-width:760px) {
   .v2-feature, .rsec--navy-lg .v2-feature { grid-template-columns:1fr; }
   .v2-cover { max-width:340px; }
-  .v2-info { min-height:0; }
+  .v2-info { min-height:0; max-height:none !important; }
+  /* Mobile: clamp description to 5 lines until expanded */
+  .v2-desc { display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; }
+  .v2-desc-wrap.is-expanded .v2-desc { display:block; -webkit-line-clamp:unset; }
 }
 
 /* ---- "+" PREVIEW LIGHTBOX ---- */
@@ -396,9 +399,9 @@ body[data-scroll-locked] {
 .rprev-dialog--navy .v2-info-title { color:#fff; }
 .rprev-dialog--navy .rprev-x { color:rgba(255,255,255,.75); }
 .rprev-dialog--navy .rprev-x:hover, .rprev-dialog--navy .rprev-x:focus-visible { color:#fff; }
-.rprev-stage { display:flex; align-items:stretch; justify-content:center; }
-.rprev-deck { position:relative; width:min(420px,60vw); display:flex; }
-.rprev-deck .rcover { width:100%; align-self:stretch; }
+.rprev-stage { display:flex; align-items:flex-start; justify-content:center; }
+.rprev-deck { position:relative; width:min(420px,60vw); display:block; }
+.rprev-deck .rcover { width:100%; align-self:auto; }
 .rprev-dialog--lg .rprev-deck { width:min(450px,60vw); }
 .rprev-ghost { position:absolute; inset:0; background:#fff; border:1px solid hsl(var(--separator));
   box-shadow:0 1px 3px rgba(0,0,0,.06); }

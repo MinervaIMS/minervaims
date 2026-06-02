@@ -230,20 +230,52 @@ function FeaturedInfo({
   report,
   archiveHref,
   archiveLabel,
+  matchHeightTo,
 }: {
   report: ReportItem;
   archiveHref?: string;
   archiveLabel?: string;
+  /** Optional ref to an element whose height the info column should match (desktop only). */
+  matchHeightTo?: React.RefObject<HTMLElement>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
   const descRef = useRef<HTMLParagraphElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
+
+  // Sync info column max-height to the cover height (desktop only) so the
+  // description area is bounded by the cover and can trigger "Read more".
+  useLayoutEffect(() => {
+    const info = infoRef.current;
+    const target = matchHeightTo?.current;
+    if (!info) return;
+
+    const mq = window.matchMedia('(min-width: 761px)');
+    const apply = () => {
+      if (!target || !mq.matches) {
+        info.style.maxHeight = '';
+        return;
+      }
+      const h = target.getBoundingClientRect().height;
+      info.style.maxHeight = h > 0 ? `${h}px` : '';
+    };
+
+    apply();
+    const ro = target ? new ResizeObserver(apply) : null;
+    if (target && ro) ro.observe(target);
+    window.addEventListener('resize', apply);
+    mq.addEventListener('change', apply);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', apply);
+      mq.removeEventListener('change', apply);
+    };
+  }, [matchHeightTo]);
 
   useLayoutEffect(() => {
     const el = descRef.current;
     if (!el) return;
     const check = () => {
-      // Temporarily measure: when collapsed, compare scrollHeight to clientHeight
       if (!expanded) setOverflowing(el.scrollHeight - el.clientHeight > 2);
     };
     check();
@@ -257,7 +289,7 @@ function FeaturedInfo({
   }, [expanded, report.desc]);
 
   return (
-    <div className="v2-info">
+    <div className="v2-info" ref={infoRef}>
       <h3 className="v2-info-title">{report.title}</h3>
       <div className={`v2-desc-wrap${expanded ? ' is-expanded' : ''}`}>
         {report.desc ? (
@@ -299,6 +331,7 @@ function FeaturedInfo({
 // ---------- Preview lightbox ----------
 function PreviewLightbox({ report, onClose, useRealCover = false }: { report: ReportItem; onClose: () => void; useRealCover?: boolean }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const prev = document.documentElement.style.overflow;
@@ -327,13 +360,13 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
           ×
         </button>
         <div className="rprev-stage">
-          <div className="rprev-deck">
+          <div className="rprev-deck" ref={deckRef}>
             {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
             {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
             <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
           </div>
         </div>
-        <FeaturedInfo report={report} />
+        <FeaturedInfo report={report} matchHeightTo={deckRef} />
       </div>
     </div>,
     document.body
@@ -481,6 +514,7 @@ function NavyVariant({
   // Show up to 5 reports in the "Recently published" strip
   const rest = reports.slice(1, 6);
   const railRef = useRef<HTMLDivElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [showDots, setShowDots] = useState(false);
 
@@ -540,10 +574,10 @@ function NavyVariant({
         </div>
 
         <div className="v2-feature">
-          <div className="v2-cover">
+          <div className="v2-cover" ref={coverRef}>
             <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
           </div>
-          <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} />
+          <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} matchHeightTo={coverRef} />
         </div>
 
         {rest.length > 0 && (
