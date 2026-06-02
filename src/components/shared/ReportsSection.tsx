@@ -201,6 +201,101 @@ function Cover({ report, className = '', useRealCover = false, renderWidth }: Co
   );
 }
 
+// ---------- Open PDF in new tab with custom title ----------
+function openReportInTab(title: string, url: string) {
+  if (!url) return;
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if (!w) {
+    // popup blocked → fallback
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  const safeTitle = String(title || 'Report').replace(/[<>&"']/g, (c) => ({
+    '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
+  }[c]!));
+  const safeUrl = String(url).replace(/"/g, '&quot;');
+  w.document.open();
+  w.document.write(
+    `<!doctype html><html><head><meta charset="utf-8"><title>${safeTitle}</title>` +
+    `<style>html,body{margin:0;height:100%;background:#1F0F4D;}iframe{border:0;width:100%;height:100%;display:block;}</style>` +
+    `</head><body><iframe src="${safeUrl}" title="${safeTitle}" allow="fullscreen"></iframe>` +
+    `<script>document.title=${JSON.stringify(title || 'Report')};</script>` +
+    `</body></html>`
+  );
+  w.document.close();
+}
+
+// ---------- "Read More" featured info block (shared by featured + lightbox) ----------
+function FeaturedInfo({
+  report,
+  archiveHref,
+  archiveLabel,
+}: {
+  report: ReportItem;
+  archiveHref?: string;
+  archiveLabel?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const descRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+    const check = () => {
+      // Temporarily measure: when collapsed, compare scrollHeight to clientHeight
+      if (!expanded) setOverflowing(el.scrollHeight - el.clientHeight > 2);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    window.addEventListener('resize', check);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', check);
+    };
+  }, [expanded, report.desc]);
+
+  return (
+    <div className="v2-info">
+      <h3 className="v2-info-title">{report.title}</h3>
+      <div className={`v2-desc-wrap${expanded ? ' is-expanded' : ''}`}>
+        {report.desc ? (
+          <p ref={descRef} className="v2-desc">
+            {report.desc}
+          </p>
+        ) : null}
+        {overflowing || expanded ? (
+          <button
+            type="button"
+            className="v2-readmore"
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? 'Read less' : 'Read more'}
+          </button>
+        ) : null}
+      </div>
+      <div className="v2-actions">
+        <button
+          type="button"
+          className="rbtn rbtn--onnavy"
+          onClick={() => openReportInTab(report.title, report.pdf)}
+        >
+          Open report
+        </button>
+        {archiveHref ? (
+          <a className="rbtn rbtn--onnavy-ghost" href={archiveHref}>
+            {archiveLabel}
+            <span className="rarw">
+              <IconArrowUR />
+            </span>
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // ---------- Preview lightbox ----------
 function PreviewLightbox({ report, onClose, useRealCover = false }: { report: ReportItem; onClose: () => void; useRealCover?: boolean }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -227,7 +322,7 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
       if ((e.target as HTMLElement).hasAttribute('data-close')) onClose();
     }}>
       <div className="rprev-backdrop" data-close />
-      <div className={`rprev-dialog${useRealCover ? ' rprev-dialog--lg' : ''}`} role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
+      <div className={`rprev-dialog rprev-dialog--navy${useRealCover ? ' rprev-dialog--lg' : ''}`} role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
         <button className="rprev-x" aria-label="Close preview" onClick={onClose}>
           ×
         </button>
@@ -238,20 +333,13 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
             <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
           </div>
         </div>
-        <div className="rprev-info">
-          <h3 className="rprev-title">{report.title}</h3>
-          {report.desc ? <p className="rprev-desc">{report.desc}</p> : null}
-          <div className="rprev-actions">
-            <a className="rbtn rbtn--primary" href={report.pdf || '#'} target="_blank" rel="noopener noreferrer">
-              Open full report (PDF)
-            </a>
-          </div>
-        </div>
+        <FeaturedInfo report={report} />
       </div>
     </div>,
     document.body
   );
 }
+
 
 // ---------- V3 — cards carousel (light bg) ----------
 function CardsVariant({
