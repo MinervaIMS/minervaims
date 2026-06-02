@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import logoWhite from "@/assets/logo-white.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
 import companiesImage from "@/assets/companies.webp";
-import { LatestArchiveCarousel } from "@/components/shared/LatestArchiveCarousel";
+import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import { PageLoader } from "@/components/shared";
 import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
@@ -16,12 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
-interface ArchiveFile {
+interface ArchiveFile extends ArchiveFileRow {
   id: string;
-  title: string;
-  file_url: string;
-  date: string;
-  division: string;
 }
 
 const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
@@ -49,9 +45,9 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('archive_files')
-        .select('id, title, file_url, date, division')
+        .select('id, title, description, file_url, date, division, fund')
         .order('date', { ascending: false })
-        .limit(15);
+        .limit(8);
 
       if (error) throw error;
       setCarouselFiles(data || []);
@@ -244,14 +240,14 @@ const Index = () => {
 
 
       {/* Latest Reports */}
-      <section className="py-10 md:py-14 bg-accent">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            Latest Reports
-          </h2>
-          <LatestArchiveCarousel files={carouselFiles} />
-        </div>
-      </section>
+      <ReportsSection
+        variant="cards"
+        eyebrow="Publications"
+        heading="Latest Reports"
+        archiveHref="/archive"
+        archiveLabel="Browse the archive"
+        reports={archiveFilesToReports(carouselFiles)}
+      />
     </>
   );
 };
