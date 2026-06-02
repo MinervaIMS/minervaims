@@ -136,10 +136,10 @@ const Events = () => {
       </div>
 
       {/* Description Section */}
-      <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
+      <section className="pt-section-sm md:pt-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Professional Exposure, Strong Network, Personal Development
+            Minerva Events, bridging the gap between academia and industry
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mb-4 max-w-4xl">
             Beyond research and portfolio management, MIMS delivers a year-round programme designed to develop technical
@@ -159,7 +159,7 @@ const Events = () => {
       </section>
 
       {/* Upcoming Section */}
-      <section className="pb-section-sm md:pb-section bg-background">
+      <section className="pt-section-sm md:pt-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Upcoming
@@ -202,7 +202,7 @@ const Events = () => {
       </section>
 
       {/* Past Events */}
-      <section className="pb-section-sm md:pb-section bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">
             Past events
