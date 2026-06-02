@@ -399,9 +399,9 @@ body[data-scroll-locked] {
 .rprev-dialog--navy .v2-info-title { color:#fff; }
 .rprev-dialog--navy .rprev-x { color:rgba(255,255,255,.75); }
 .rprev-dialog--navy .rprev-x:hover, .rprev-dialog--navy .rprev-x:focus-visible { color:#fff; }
-.rprev-stage { display:flex; align-items:stretch; justify-content:center; }
-.rprev-deck { position:relative; width:min(420px,60vw); display:flex; }
-.rprev-deck .rcover { width:100%; align-self:stretch; }
+.rprev-stage { display:flex; align-items:flex-start; justify-content:center; }
+.rprev-deck { position:relative; width:min(420px,60vw); display:block; }
+.rprev-deck .rcover { width:100%; align-self:auto; }
 .rprev-dialog--lg .rprev-deck { width:min(450px,60vw); }
 .rprev-ghost { position:absolute; inset:0; background:#fff; border:1px solid hsl(var(--separator));
   box-shadow:0 1px 3px rgba(0,0,0,.06); }
