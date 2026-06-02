@@ -165,7 +165,7 @@ const Alumni = () => {
       </div>
 
       {/* Description Section */}
-      <section className="pt-section-sm md:pt-section pb-12 md:pb-16 bg-background">
+      <section className="pt-section-sm md:pt-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             A Global Network, Still Close
