@@ -244,7 +244,7 @@ const Index = () => {
         variant="cards"
         heading="Latest Reports"
         archiveHref="/archive"
-        archiveLabel="Browse the archive"
+        archiveLabel="Browse The Archive"
         reports={archiveFilesToReports(carouselFiles)}
       />
     </>

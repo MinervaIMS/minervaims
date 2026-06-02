@@ -341,7 +341,8 @@ body[data-scroll-locked] {
 .v2-readmore:hover { color:var(--mims-light-purple); }
 .v2-actions { display:flex; gap:.8rem; flex-wrap:wrap; margin-top:auto; }
 /* White on-navy button with active-state swap */
-.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none; }
+.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none;
+  font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; }
 .rbtn--onnavy:hover, .rbtn--onnavy:focus-visible, .rbtn--onnavy:active,
 .rbtn--onnavy.is-active {
   background:hsl(var(--accent)); color:#fff; border-color:hsl(var(--accent)); box-shadow:none; }
