@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import logoMark from '@/assets/logo-color.svg';
+import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 
 // ---------- Public types ----------
 export type ReportChart = 'line' | 'area' | 'bars' | 'scatter';
@@ -26,6 +27,8 @@ export interface ReportsSectionProps {
   reports: ReportItem[];
   /** Optional id for the section heading (a11y). */
   id?: string;
+  /** Render the real first-page PDF preview as the cover (instead of generated motif). */
+  useRealCover?: boolean;
 }
 
 // ---------- Tiny deterministic PRNG so covers are stable per report ----------
