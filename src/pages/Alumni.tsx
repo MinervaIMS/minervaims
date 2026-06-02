@@ -176,7 +176,7 @@ const Alumni = () => {
         </div>
       </section>
 
-      <div className="container pb-section-sm md:pb-section">
+      <div className="container py-section-sm md:py-section">
         <AlumniGlobe />
 
         {/* Our Founders */}
