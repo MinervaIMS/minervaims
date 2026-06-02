@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
-import { DivisionArchiveCarousel } from '@/components/shared/DivisionArchiveCarousel';
+import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 
@@ -14,12 +14,8 @@ import macroBg from '@/assets/division-macro-bg.webp';
 import portfolioBg from '@/assets/division-portfolio-bg.webp';
 import quantBg from '@/assets/division-quant-bg.webp';
 
-interface ArchiveFile {
+interface ArchiveFile extends ArchiveFileRow {
   id: string;
-  title: string;
-  file_url: string;
-  date: string;
-  division: string;
 }
 
 // Division content configuration
@@ -105,7 +101,7 @@ const DivisionDetail = () => {
     try {
       const { data, error } = await supabase
         .from('archive_files')
-        .select('id, title, file_url, date, division')
+        .select('id, title, description, file_url, date, division, fund')
         .eq('division', division)
         .order('date', { ascending: false })
         .limit(8);
@@ -205,14 +201,14 @@ const DivisionDetail = () => {
       )}
 
       {/* Third Section: Latest Reports/Publications */}
-      <section className="py-section-sm md:py-section bg-accent">
-        <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            {content.sectionTitle}
-          </h2>
-          <DivisionArchiveCarousel division={divisionKey} files={files} />
-        </div>
-      </section>
+      <ReportsSection
+        variant="navy"
+        eyebrow="Research"
+        heading={content.sectionTitle}
+        archiveHref={`/archive?division=${divisionKey}`}
+        archiveLabel="Browse the archive"
+        reports={archiveFilesToReports(files)}
+      />
     </>
   );
 };

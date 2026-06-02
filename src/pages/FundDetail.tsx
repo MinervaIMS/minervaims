@@ -3,7 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
-import { FundArchiveCarousel } from '@/components/shared/FundArchiveCarousel';
+import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 
@@ -13,12 +13,8 @@ import multiAssetBg from '@/assets/fund-multi-asset-bg.webp';
 import pirBg from '@/assets/fund-pir-bg.webp';
 import dpsBg from '@/assets/fund-dps-bg.webp';
 
-interface ArchiveFile {
+interface ArchiveFile extends ArchiveFileRow {
   id: string;
-  title: string;
-  file_url: string;
-  date: string;
-  fund: string;
 }
 interface FundContent {
   title: string;
@@ -87,7 +83,7 @@ const FundDetail = () => {
     try {
       const { data, error } = await supabase
         .from('archive_files')
-        .select('id, title, file_url, date, fund')
+        .select('id, title, description, file_url, date, division, fund')
         .eq('fund', fund)
         .order('date', { ascending: false })
         .limit(8);
@@ -267,14 +263,14 @@ const FundDetail = () => {
       )}
 
       {/* Third Section: Latest Fund Updates */}
-      <section className="py-section-sm md:py-section bg-accent">
-        <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-background/20 text-background">
-            {content.sectionTitle}
-          </h2>
-          <FundArchiveCarousel fund={fundKey} files={files} />
-        </div>
-      </section>
+      <ReportsSection
+        variant="navy"
+        eyebrow="Publications"
+        heading={content.sectionTitle}
+        archiveHref={`/archive?fund=${fundKey}`}
+        archiveLabel="Browse the archive"
+        reports={archiveFilesToReports(files)}
+      />
     </>
   );
 };
