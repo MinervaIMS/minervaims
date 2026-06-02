@@ -299,7 +299,7 @@ body[data-scroll-locked] {
 .v3-rail::-webkit-scrollbar { display:none; }
 .v3-card { scroll-snap-align:start; position:relative; background:hsl(var(--secondary));
   padding:clamp(1.4rem,2.2vw,2rem); display:flex; flex-direction:column;
-  min-height:clamp(420px,52vw,520px); transition:background var(--dur-base) var(--ease-standard); cursor:pointer; }
+  min-height:clamp(560px,68vw,720px); transition:background var(--dur-base) var(--ease-standard); cursor:default; }
 .v3-card:hover, .v3-card:focus-within { background:#ece9f4; }
 .v3-card .d { font-size:.875rem; text-transform:uppercase; letter-spacing:.13em; color:hsl(var(--accent)); }
 .v3-card .t { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:400;
