@@ -258,6 +258,9 @@ body[data-scroll-locked] {
 .rc-foot { display:flex; justify-content:space-between; align-items:center; margin-top:3.4cqw; padding-top:3cqw;
   border-top:1px solid var(--mims-line); font-size:2.7cqw; letter-spacing:.04em; color:var(--mims-muted); text-transform:uppercase; }
 .rcover--lg { width:min(46vh,360px); }
+.rprev-dialog--lg .rcover--lg { width:100%; }
+.rcover--pdf { background:#fff; overflow:hidden; }
+.rcover--pdf > div { aspect-ratio:unset !important; width:100%; height:100%; }
 
 /* ---- "+" affordance button ---- */
 .rplus { position:absolute; right:0; bottom:0; width:2.6rem; height:2.6rem; border-radius:9999px;
