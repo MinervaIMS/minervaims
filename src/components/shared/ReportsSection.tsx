@@ -517,7 +517,7 @@ function NavyVariant({
   useRealCover = false,
 }: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
   const featured = reports[0];
-  // Show up to 8 reports in the "Recently published" strip
+  // Show up to 8 reports in the "Previously published" strip
   const rest = reports.slice(1, 9);
   const railRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
@@ -596,7 +596,7 @@ function NavyVariant({
         {rest.length > 0 && (
           <div className="v2-strip">
             <div className="v2-striphead">
-              <span className="lbl">Recently published</span>
+              <span className="lbl">Previously published</span>
             </div>
             <div className="rrail-wrap">
               <div className="v2-strip-rail" ref={railRef}>
