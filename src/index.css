@@ -318,13 +318,13 @@ body[data-scroll-locked] {
 
 /* ---- V2 navy stage ---- */
 .v2-feature { display:grid; grid-template-columns:minmax(345px,450px) 1fr;
-  gap:clamp(1.75rem,4vw,3.5rem); align-items:stretch; }
+  gap:clamp(1.75rem,4vw,3.5rem); align-items:start; }
 .rsec--navy-lg .v2-feature { grid-template-columns:minmax(345px,450px) minmax(0,1fr); }
-.v2-cover { position:relative; display:flex; }
-.v2-cover .rcover { width:100%; align-self:stretch; }
+.v2-cover { position:relative; display:block; align-self:start; }
+.v2-cover .rcover { width:100%; align-self:auto; }
 .v2-cover .rplus { right:-.85rem; bottom:-.85rem; background:#fff; color:hsl(var(--accent)); }
 .v2-cover .rplus:hover { background:var(--mims-light-purple); color:hsl(var(--accent)); }
-.v2-info { width:100%; display:flex; flex-direction:column; min-height:100%; }
+.v2-info { width:100%; display:flex; flex-direction:column; min-height:0; }
 .v2-info .reyebrow { color:var(--mims-light-purple); }
 .v2-info-title { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:700;
   font-size:clamp(1.7rem,3.4vw,2.7rem); line-height:1.12; letter-spacing:-.015em; color:#fff;
