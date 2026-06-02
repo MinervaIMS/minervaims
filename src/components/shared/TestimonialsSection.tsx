@@ -124,7 +124,6 @@ export function TestimonialsSection() {
               {current.role}
             </p>
           </div>
-          </div>
         </div>
       </div>
     </section>
