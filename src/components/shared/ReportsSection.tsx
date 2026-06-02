@@ -155,9 +155,18 @@ function trim(s: string, n: number) {
 interface CoverProps {
   report: ReportItem;
   className?: string;
+  useRealCover?: boolean;
+  renderWidth?: number;
 }
-function Cover({ report, className = '' }: CoverProps) {
+function Cover({ report, className = '', useRealCover = false, renderWidth }: CoverProps) {
   const label = `${report.div} report: ${report.title}`;
+  if (useRealCover && report.pdf) {
+    return (
+      <div className={`rcover rcover--pdf ${className}`.trim()} role="img" aria-label={label}>
+        <PdfThumbnail url={report.pdf} alt={report.title} renderWidth={renderWidth} className="w-full h-full" />
+      </div>
+    );
+  }
   if (report.img) {
     return (
       <div className={`rcover rcover--photo ${className}`.trim()} role="img" aria-label={label}>
@@ -193,7 +202,7 @@ function Cover({ report, className = '' }: CoverProps) {
 }
 
 // ---------- Preview lightbox ----------
-function PreviewLightbox({ report, onClose }: { report: ReportItem; onClose: () => void }) {
+function PreviewLightbox({ report, onClose, useRealCover = false }: { report: ReportItem; onClose: () => void; useRealCover?: boolean }) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -203,7 +212,6 @@ function PreviewLightbox({ report, onClose }: { report: ReportItem; onClose: () 
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    // Focus the close button so Esc/tabbing works naturally
     const id = window.setTimeout(() => {
       dialogRef.current?.querySelector<HTMLButtonElement>('.rprev-x')?.focus();
     }, 0);
@@ -219,26 +227,20 @@ function PreviewLightbox({ report, onClose }: { report: ReportItem; onClose: () 
       if ((e.target as HTMLElement).hasAttribute('data-close')) onClose();
     }}>
       <div className="rprev-backdrop" data-close />
-      <div className="rprev-dialog" role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
+      <div className={`rprev-dialog${useRealCover ? ' rprev-dialog--lg' : ''}`} role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
         <button className="rprev-x" aria-label="Close preview" onClick={onClose}>
           ×
         </button>
         <div className="rprev-stage">
           <div className="rprev-deck">
-            <div className="rprev-ghost rprev-ghost-2" />
-            <div className="rprev-ghost rprev-ghost-1" />
-            <Cover report={report} className="rcover--lg" />
+            {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
+            {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
+            <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
           </div>
         </div>
         <div className="rprev-info">
-          <div className="rprev-eyebrow">{report.div}</div>
           <h3 className="rprev-title">{report.title}</h3>
           {report.desc ? <p className="rprev-desc">{report.desc}</p> : null}
-          <div className="rprev-meta">
-            <span>{report.date}</span>
-            <span className="dot">·</span>
-            <span>PDF · Research Report</span>
-          </div>
           <div className="rprev-actions">
             <a className="rbtn rbtn--primary" href={report.pdf || '#'} target="_blank" rel="noopener noreferrer">
               Open full report (PDF)
