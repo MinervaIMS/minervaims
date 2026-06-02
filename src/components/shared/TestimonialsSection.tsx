@@ -117,10 +117,10 @@ export function TestimonialsSection() {
                 <span>{current.quote}</span>
               </p>
             </div>
-            <p className="font-serif text-base md:text-lg text-background mt-16">
+            <p className="font-body text-base md:text-lg text-background mt-16">
               {current.name}
             </p>
-            <p className="font-serif text-sm md:text-base text-background/70 mt-2">
+            <p className="font-body text-sm md:text-base text-background/70 mt-2">
               {current.role}
             </p>
           </div>
