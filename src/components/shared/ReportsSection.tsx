@@ -574,10 +574,10 @@ function NavyVariant({
         </div>
 
         <div className="v2-feature">
-          <div className="v2-cover">
+          <div className="v2-cover" ref={coverRef}>
             <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
           </div>
-          <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} />
+          <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} matchHeightTo={coverRef} />
         </div>
 
         {rest.length > 0 && (
