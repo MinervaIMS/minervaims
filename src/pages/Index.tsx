@@ -197,47 +197,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Activities & Events Section */}
-      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Activities & Events
-          </h2>
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              Each semester we host one flagship event with industry professionals, organise company visits, and hold
-              internal sessions where teams present their work and debate markets. Regular aperitivos and frequent
-              alumni calls strengthen relationships and provide guidance on academic and career paths.
-            </p>
-            <Link
-              to="/events?view=past"
-              className="cta-link whitespace-nowrap shrink-0"
-            >
-              View Past Events
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Join MIMS Section */}
-      <section className="pt-6 md:pt-8 pb-20 md:pb-28 bg-background">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Join MIMS</h2>
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              We select candidates with strong academic integrity, a clear interest in financial markets, and the
-              discipline to contribute to a research-driven community. Prior experience is not required; we value
-              potential, rigour, and a consistent commitment to learning.
-            </p>
-            <Link
-              to="/join"
-              className="cta-link whitespace-nowrap shrink-0"
-            >
-              How To Apply
-            </Link>
-          </div>
-        </div>
-      </section>
 
 
       {/* Alumni Testimonials */}
