@@ -517,11 +517,19 @@ function PosterLightbox({
         className="relative flex flex-col items-center max-w-full max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={current.poster_url ?? ""}
-          alt={`${current.title} poster`}
-          className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
-        />
+        {isPdf(current.poster_url) ? (
+          <iframe
+            src={`${current.poster_url}#view=FitH`}
+            title={`${current.title} poster`}
+            className="block w-[90vw] h-[80vh] bg-background"
+          />
+        ) : (
+          <img
+            src={current.poster_url ?? ""}
+            alt={`${current.title} poster`}
+            className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
+          />
+        )}
         <div className="mt-4 text-center max-w-[90vw]">
           <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
             {formatLongDateUpper(current.date)}
