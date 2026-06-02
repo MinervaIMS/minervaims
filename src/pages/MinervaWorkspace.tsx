@@ -342,7 +342,8 @@ const MinervaWorkspace = () => {
       toast({ title: 'Poster uploaded' });
     } catch (err) {
       console.error('Poster upload error:', err);
-      toast({ title: 'Upload failed', description: 'Could not upload poster.', variant: 'destructive' });
+      const message = err instanceof Error ? err.message : 'Could not upload poster.';
+      toast({ title: 'Upload failed', description: message, variant: 'destructive' });
     } finally {
       setIsUploadingPoster(false);
     }
