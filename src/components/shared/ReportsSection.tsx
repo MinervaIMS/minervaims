@@ -360,13 +360,13 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
           ×
         </button>
         <div className="rprev-stage">
-          <div className="rprev-deck">
+          <div className="rprev-deck" ref={deckRef}>
             {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
             {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
             <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
           </div>
         </div>
-        <FeaturedInfo report={report} />
+        <FeaturedInfo report={report} matchHeightTo={deckRef} />
       </div>
     </div>,
     document.body
