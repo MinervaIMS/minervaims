@@ -201,6 +201,101 @@ function Cover({ report, className = '', useRealCover = false, renderWidth }: Co
   );
 }
 
+// ---------- Open PDF in new tab with custom title ----------
+function openReportInTab(title: string, url: string) {
+  if (!url) return;
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if (!w) {
+    // popup blocked → fallback
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  const safeTitle = String(title || 'Report').replace(/[<>&"']/g, (c) => ({
+    '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
+  }[c]!));
+  const safeUrl = String(url).replace(/"/g, '&quot;');
+  w.document.open();
+  w.document.write(
+    `<!doctype html><html><head><meta charset="utf-8"><title>${safeTitle}</title>` +
+    `<style>html,body{margin:0;height:100%;background:#1F0F4D;}iframe{border:0;width:100%;height:100%;display:block;}</style>` +
+    `</head><body><iframe src="${safeUrl}" title="${safeTitle}" allow="fullscreen"></iframe>` +
+    `<script>document.title=${JSON.stringify(title || 'Report')};</script>` +
+    `</body></html>`
+  );
+  w.document.close();
+}
+
+// ---------- "Read More" featured info block (shared by featured + lightbox) ----------
+function FeaturedInfo({
+  report,
+  archiveHref,
+  archiveLabel,
+}: {
+  report: ReportItem;
+  archiveHref?: string;
+  archiveLabel?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const descRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+    const check = () => {
+      // Temporarily measure: when collapsed, compare scrollHeight to clientHeight
+      if (!expanded) setOverflowing(el.scrollHeight - el.clientHeight > 2);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    window.addEventListener('resize', check);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', check);
+    };
+  }, [expanded, report.desc]);
+
+  return (
+    <div className="v2-info">
+      <h3 className="v2-info-title">{report.title}</h3>
+      <div className={`v2-desc-wrap${expanded ? ' is-expanded' : ''}`}>
+        {report.desc ? (
+          <p ref={descRef} className="v2-desc">
+            {report.desc}
+          </p>
+        ) : null}
+        {overflowing || expanded ? (
+          <button
+            type="button"
+            className="v2-readmore"
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? 'Read less' : 'Read more'}
+          </button>
+        ) : null}
+      </div>
+      <div className="v2-actions">
+        <button
+          type="button"
+          className="rbtn rbtn--onnavy"
+          onClick={() => openReportInTab(report.title, report.pdf)}
+        >
+          Open report
+        </button>
+        {archiveHref ? (
+          <a className="rbtn rbtn--onnavy-ghost" href={archiveHref}>
+            {archiveLabel}
+            <span className="rarw">
+              <IconArrowUR />
+            </span>
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // ---------- Preview lightbox ----------
 function PreviewLightbox({ report, onClose, useRealCover = false }: { report: ReportItem; onClose: () => void; useRealCover?: boolean }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -227,7 +322,7 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
       if ((e.target as HTMLElement).hasAttribute('data-close')) onClose();
     }}>
       <div className="rprev-backdrop" data-close />
-      <div className={`rprev-dialog${useRealCover ? ' rprev-dialog--lg' : ''}`} role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
+      <div className={`rprev-dialog rprev-dialog--navy${useRealCover ? ' rprev-dialog--lg' : ''}`} role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
         <button className="rprev-x" aria-label="Close preview" onClick={onClose}>
           ×
         </button>
@@ -238,20 +333,13 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
             <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
           </div>
         </div>
-        <div className="rprev-info">
-          <h3 className="rprev-title">{report.title}</h3>
-          {report.desc ? <p className="rprev-desc">{report.desc}</p> : null}
-          <div className="rprev-actions">
-            <a className="rbtn rbtn--primary" href={report.pdf || '#'} target="_blank" rel="noopener noreferrer">
-              Open full report (PDF)
-            </a>
-          </div>
-        </div>
+        <FeaturedInfo report={report} />
       </div>
     </div>,
     document.body
   );
 }
+
 
 // ---------- V3 — cards carousel (light bg) ----------
 function CardsVariant({
@@ -393,6 +481,33 @@ function NavyVariant({
   // Show up to 5 reports in the "Recently published" strip
   const rest = reports.slice(1, 6);
   const railRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [showDots, setShowDots] = useState(false);
+
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const update = () => {
+      const overflowing = rail.scrollWidth - rail.clientWidth > 4;
+      setShowDots(overflowing);
+      const cardW = rail.scrollWidth / Math.max(rest.length, 1);
+      setActiveIdx(Math.round(rail.scrollLeft / Math.max(cardW, 1)));
+    };
+    update();
+    rail.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      rail.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [rest.length]);
+
+  const scrollToIdx = (i: number) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const cardW = rail.scrollWidth / Math.max(rest.length, 1);
+    rail.scrollTo({ left: cardW * i, behavior: 'smooth' });
+  };
 
   if (!featured) {
     return (
@@ -405,12 +520,6 @@ function NavyVariant({
                 {heading}
               </h2>
             </div>
-            <a className="rbtn" href={archiveHref}>
-              {archiveLabel}
-              <span className="rarw">
-                <IconArrowUR />
-              </span>
-            </a>
           </div>
           <p className="v2-desc">No reports available yet.</p>
         </div>
@@ -421,39 +530,20 @@ function NavyVariant({
   return (
     <section className={`rsec rsec--navy${useRealCover ? ' rsec--navy-lg' : ''}`} aria-labelledby={id}>
       <div className="rwrap">
-        <div className="rhead">
+        <div className="rhead rhead--noarchive">
           <div>
             {eyebrow ? <div className="reyebrow">{eyebrow}</div> : null}
             <h2 className="rtitle" id={id}>
               {heading}
             </h2>
           </div>
-          <a className="rbtn" href={archiveHref}>
-            {archiveLabel}
-            <span className="rarw">
-              <IconArrowUR />
-            </span>
-          </a>
         </div>
 
         <div className="v2-feature">
           <div className="v2-cover">
             <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
           </div>
-          <div className="v2-info">
-            <h3>{featured.title}</h3>
-            {featured.desc ? <p className="v2-desc">{featured.desc}</p> : null}
-            <div className="v2-actions">
-              <a
-                className="rbtn rbtn--onnavy"
-                href={featured.pdf || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open report
-              </a>
-            </div>
-          </div>
+          <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} />
         </div>
 
         {rest.length > 0 && (
@@ -462,7 +552,7 @@ function NavyVariant({
               <span className="lbl">Recently published</span>
             </div>
             <div className="rrail-wrap">
-              <div className="rrail" ref={railRef}>
+              <div className="v2-strip-rail" ref={railRef}>
                 {rest.map((rep, i) => (
                   <button
                     key={i}
@@ -470,14 +560,26 @@ function NavyVariant({
                     onClick={() => onPreview(rep)}
                     aria-label={`Preview report: ${rep.title}`}
                   >
-                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 320 : undefined} />
+                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 420 : undefined} />
                     <div className="t">{rep.title}</div>
-                    <div className="dt">
-                      {rep.div} · {rep.date}
-                    </div>
                   </button>
                 ))}
               </div>
+              {showDots && (
+                <div className="v2-strip-dots" role="tablist" aria-label="Reports pagination">
+                  {rest.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      role="tab"
+                      aria-selected={i === activeIdx}
+                      aria-label={`Go to report ${i + 1}`}
+                      className={`rdot${i === activeIdx ? ' is-active' : ''}`}
+                      onClick={() => scrollToIdx(i)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -485,6 +587,7 @@ function NavyVariant({
     </section>
   );
 }
+
 
 // ---------- Public component ----------
 export function ReportsSection(props: ReportsSectionProps) {
