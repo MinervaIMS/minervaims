@@ -1,55 +1,25 @@
-# Events page refactor
+## Problem
 
-## 1. Database
-Add a single optional column to `events`:
-- `poster_url text` (nullable) — points to a public storage object.
+The upload fails because the admin form uploads to the wrong bucket and rejects PDFs.
 
-No data backfill in this step — you'll upload posters from the admin UI once the column exists.
+- `handlePosterUpload` writes to the `team-photos` bucket, whose RLS policies only allow team-photo paths — so any `event-posters/...` write is rejected with a permission error.
+- The file-type guard is `file.type.startsWith('image/')`, which blocks PDFs.
+- The `<input accept="image/*">` also hides PDFs from the picker.
 
-## 2. Storage
-Create a new public bucket `event-posters` (separate from `archive-files` and `team-photos`) with public read, authenticated insert/update/delete via RLS on `storage.objects`. Accepts any image format/aspect ratio (JPG, PNG, WEBP). No transforms — the original poster is served as-is so any format is welcomed natively.
+The newly public `event-posters` bucket exists but is never used.
 
-## 3. Admin dashboard — Events management
-In the existing Events admin section, add a Poster field to the event create/edit form:
-- File picker (image/*), uploads to `event-posters`, stores the public URL in `events.poster_url`.
-- Preview of current poster + "Remove" button.
-- Optional — leave empty for events with no poster (row will fall back to a placeholder block on the public page).
+## Fix
 
-## 4. Public Events page (`src/pages/Events.tsx`)
-Past Events section rebuild:
-- **Remove** year-grouping headers (`groupedByYear`) and the year `<select>` filter + its state (`yearFilter`, `availableYears`, `handleYearChange`).
-- **Pagination:** 10 per page (was 8). Keep `SquarePagination` and smooth scroll-to-top behavior.
-- **Row layout** — restore the previous wider, info-rich layout, now with a poster column on the left:
+In `src/pages/MinervaWorkspace.tsx`:
 
-```text
-┌──────────┬──────────────────────────────────────────────┐
-│          │ 23 APRIL 2026  |  ROOM ZAPPA, VIA SARFATTI…  │
-│ POSTER   │ The third Gulf war: Economic and financial…  │
-│ ~200px   │ Description (line-clamp-3 collapsed)…        │
-│          │ Read more ▾                                  │
-│          │   ↳ full description                         │
-│          │   ↳ Moderator: …                             │
-│          │   ↳ Guests: • … • … • …                      │
-└──────────┴──────────────────────────────────────────────┘
-```
+1. Replace the file-type check with an allowlist: `image/jpeg`, `image/jpg`, `image/png`, `application/pdf` (fallback to extension `jpg|jpeg|png|pdf` if MIME is empty). Reject anything else with a clear toast.
+2. Upload to the `event-posters` bucket instead of `team-photos`. Drop the `event-posters/` path prefix (just `${timestamp}-${rand}.${ext}`).
+3. Read the public URL from `event-posters`.
+4. Update the file input `accept` to `image/jpeg,image/png,application/pdf`.
+5. Update the helper text under the input to mention JPG, PNG and PDF.
 
-- Poster column: fixed `w-[200px]` on desktop, `w-[140px]` on mobile. Container has `aspect-[3/4]` only as a placeholder when no poster; when a poster exists, the image renders at its natural ratio (`h-auto`, `object-contain`, no crop) so portrait/landscape/square formats are all welcomed natively. Hover cursor = zoom-in.
-- Right column: date + place on one line with `|` separator (calendar + pin icons from lucide-react, matching the reference screenshots), serif title, description with Read more toggle (existing behavior preserved, moderator + guests listed separately inside the expanded block).
+In `src/pages/Events.tsx` (public page) and `PosterLightbox`:
 
-## 5. Poster lightbox
-New `PosterLightbox` component opened on poster click:
-- Fixed full-screen overlay with `backdrop-blur-md` + dark translucent background.
-- Poster centered, max `90vh` height, natural aspect ratio (no cropping, no forced format).
-- Close: X button (top right), ESC key, click on backdrop.
-- **Arrows** (left/right) to navigate between all past-events posters in date-desc order. Arrow keys also work. Skips events without a poster. Wraps around at ends.
-- Body scroll locked while open (`overflow-hidden` on `<html>`), respecting the project's `scrollbar-gutter: stable` rule so layout doesn't shift.
+6. When `poster_url` ends in `.pdf`, render an `<embed>` / `<object>` (or a styled "PDF poster" tile with the filename) instead of an `<img>`, so PDFs don't render as a broken image. Same in the lightbox — use `<iframe src={url}>` for PDFs at the same max-size.
 
-## 6. Items left unchanged
-- Upcoming section, description paragraphs, hero, and SEO untouched.
-- Section heading styling continues to follow the project standard (serif, mb-6, pb-3, border-b border-separator).
-
-## Technical notes
-- New `DbEvent` field: `poster_url?: string | null`.
-- Filtered list (now just `pastEvents` sorted desc) drives both pagination and the lightbox carousel — they share the same ordered array so arrows match what's on screen.
-- No new dependencies; lucide-react already provides Calendar, MapPin, X, ChevronLeft, ChevronRight.
-- Admin upload reuses the same pattern as team-photos / archive-files (storage client with session access token).
+No database, edge function, or RLS changes are needed — the `event-posters` bucket is already public and the `events.poster_url` column accepts any URL.
