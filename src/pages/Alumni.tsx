@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
-import companiesImage from '@/assets/companies.webp';
+import AlumniGlobe from '@/components/AlumniGlobe';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
@@ -177,16 +177,7 @@ const Alumni = () => {
       </section>
 
       <div className="container pb-section-sm md:pb-section">
-        {/* Companies Image */}
-        <div className="mb-16 sm:mb-20">
-          <div className="overflow-x-auto sm:overflow-visible">
-            <img 
-              src={companiesImage} 
-              alt="Companies where MIMS alumni work" 
-              className="w-full min-w-[500px] sm:min-w-0 max-w-4xl mx-auto"
-            />
-          </div>
-        </div>
+        <AlumniGlobe />
 
         {/* Our Founders */}
         <div className="mb-24">
