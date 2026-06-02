@@ -235,7 +235,7 @@ body[data-scroll-locked] {
 .rsec--navy .rbtn:hover { background:#fff; color:hsl(var(--accent)); border-color:#fff; }
 
 /* ---- THE COVER (container queries — scales perfectly) ---- */
-.rcover { position:relative; width:100%; aspect-ratio:1/1.414; background:#fff; container-type:inline-size;
+.rcover { position:relative; width:100%; aspect-ratio:1/1.414; background:transparent; container-type:inline-size;
   box-shadow:var(--shadow-cover); overflow:hidden; }
 .rcover--photo { background:var(--mims-grey); }
 .rcover-img { width:100%; height:100%; object-fit:cover; }
@@ -259,7 +259,7 @@ body[data-scroll-locked] {
   border-top:1px solid var(--mims-line); font-size:2.7cqw; letter-spacing:.04em; color:var(--mims-muted); text-transform:uppercase; }
 .rcover--lg { width:min(46vh,360px); }
 .rprev-dialog--lg .rcover--lg { width:100%; }
-.rcover--pdf { background:#fff; overflow:hidden; }
+.rcover--pdf { background:transparent; overflow:hidden; }
 .rcover--pdf > div { aspect-ratio:unset !important; width:100%; height:100%; }
 
 /* ---- "+" affordance button ---- */
@@ -341,14 +341,14 @@ body[data-scroll-locked] {
 .v2-readmore:hover { color:var(--mims-light-purple); }
 .v2-actions { display:flex; gap:.8rem; flex-wrap:wrap; margin-top:auto; }
 /* White on-navy button with active-state swap */
-.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none;
+.rsec--navy .rbtn.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none;
   font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; }
-.rbtn--onnavy:hover, .rbtn--onnavy:focus-visible, .rbtn--onnavy:active,
-.rbtn--onnavy.is-active {
-  background:hsl(var(--accent)); color:#fff; border-color:hsl(var(--accent)); box-shadow:none; }
+.rsec--navy .rbtn.rbtn--onnavy:hover, .rsec--navy .rbtn.rbtn--onnavy:focus-visible, .rsec--navy .rbtn.rbtn--onnavy:active,
+.rsec--navy .rbtn.rbtn--onnavy.is-active {
+  background:hsl(var(--accent)); color:#fff; border-color:#fff; box-shadow:none; }
 /* Ghost variant of onnavy — same default look, used for the secondary archive link */
-.rbtn--onnavy-ghost { background:transparent; color:#fff; border-color:#fff; }
-.rbtn--onnavy-ghost:hover, .rbtn--onnavy-ghost:focus-visible {
+.rsec--navy .rbtn.rbtn--onnavy-ghost { background:transparent; color:#fff; border-color:#fff; }
+.rsec--navy .rbtn.rbtn--onnavy-ghost:hover, .rsec--navy .rbtn.rbtn--onnavy-ghost:focus-visible {
   background:#fff; color:hsl(var(--accent)); border-color:#fff; }
 .v2-strip { margin-top:clamp(2.5rem,5vw,3.75rem); padding-top:1.5rem; border-top:1px solid rgba(255,255,255,.22); }
 .v2-striphead { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; gap:1rem; }
