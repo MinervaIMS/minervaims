@@ -265,8 +265,8 @@ body[data-scroll-locked] {
 /* ---- "+" affordance button ---- */
 .rplus { position:absolute; right:0; bottom:0; width:2.6rem; height:2.6rem; border-radius:9999px;
   display:grid; place-items:center; background:var(--mims-ink); color:#fff; font-size:1.5rem; line-height:1;
-  box-shadow:0 3px 10px rgba(0,0,0,.28); transition:transform var(--dur-fast) var(--ease-standard), background var(--dur-fast); }
-.rplus:hover, .rplus:focus-visible { transform:scale(1.08); background:var(--mims-navy); outline:none; }
+  box-shadow:0 3px 10px rgba(0,0,0,.28); transition:transform var(--dur-fast) var(--ease-standard), background var(--dur-fast), color var(--dur-fast); }
+.rplus:hover, .rplus:focus-visible { transform:scale(1.08); background:var(--mims-navy); color:#fff; outline:none; }
 .rplus svg { width:1.15rem; height:1.15rem; }
 
 /* ---- Carousel rail + controls ---- */
