@@ -203,11 +203,11 @@ const DivisionDetail = () => {
       {/* Third Section: Latest Reports/Publications */}
       <ReportsSection
         variant="navy"
-        eyebrow="Research"
         heading={content.sectionTitle}
         archiveHref={`/archive?division=${divisionKey}`}
         archiveLabel="Browse The Archive"
         reports={archiveFilesToReports(files)}
+        useRealCover
       />
     </>
   );
