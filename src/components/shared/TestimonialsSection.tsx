@@ -98,14 +98,14 @@ export function TestimonialsSection() {
             <div className="relative">
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -top-6 md:-top-10 left-0 leading-none"
+                className="font-serif text-background select-none absolute -top-6 md:-top-10 -left-6 md:-left-10 leading-none"
                 style={{ fontSize: "8rem" }}
               >
                 “
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -bottom-10 md:-bottom-14 right-0 leading-none"
+                className="font-serif text-background select-none absolute -bottom-10 md:-bottom-14 -right-6 md:-right-10 leading-none"
                 style={{ fontSize: "8rem" }}
               >
                 ”
