@@ -318,18 +318,16 @@ body[data-scroll-locked] {
 .v3-dots .rdot { cursor:pointer; width:9px; height:9px; border-radius:9999px;
   background:hsl(var(--accent) / .28); }
 .v3-dots .rdot.is-active { width:9px; background:hsl(var(--accent)); }
-/* CTA card at end of carousel */
-.v3-card--cta { display:flex; align-items:center; justify-content:center; text-decoration:none;
-  background:hsl(var(--secondary)); transition:background var(--dur-base) var(--ease-standard); }
-.v3-card--cta:hover { background:#ece9f4; }
-.v3-cta-inner { display:flex; flex-direction:column; align-items:center; gap:1.25rem; }
+/* CTA card at end of carousel — matches v3-card grid */
+.v3-card--cta { text-decoration:none; }
+.v3-cta-coverhold { align-items:center; justify-content:flex-start; }
 .v3-cta-circle { width:4rem; height:4rem; border-radius:9999px; background:hsl(var(--accent));
   display:grid; place-items:center; color:#fff;
   transition:transform var(--dur-base) var(--ease-standard); }
 .v3-card--cta:hover .v3-cta-circle { transform:scale(1.08); }
 .v3-cta-circle svg { width:1.4rem; height:1.4rem; }
-.v3-cta-label { font-family:'Calibri','Carlito',Arial,Helvetica,sans-serif;
-  font-size:.875rem; letter-spacing:.13em; text-transform:uppercase; color:hsl(var(--accent)); }
+.v3-card--cta .v3-cta-label { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif;
+  text-transform:none; letter-spacing:-.01em; color:var(--mims-ink); }
 
 /* ---- V2 navy stage ---- */
 .v2-feature { display:grid; grid-template-columns:minmax(345px,450px) 1fr;
