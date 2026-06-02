@@ -398,21 +398,15 @@ function CardsVariant({
   id,
 }: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
   const railRef = useRef<HTMLDivElement>(null);
-  const fillRef = useRef<HTMLElement>(null);
-  const prevRef = useRef<HTMLButtonElement>(null);
-  const nextRef = useRef<HTMLButtonElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
 
   const update = useCallback(() => {
     const rail = railRef.current;
-    const fill = fillRef.current;
-    if (!rail || !fill) return;
-    const max = rail.scrollWidth - rail.clientWidth;
-    const vis = rail.clientWidth / Math.max(rail.scrollWidth, 1);
-    const fillPct = Math.max(12, vis * 100);
-    fill.style.width = fillPct + '%';
-    fill.style.left = (max > 0 ? (rail.scrollLeft / max) * (100 - fillPct) : 0) + '%';
-    if (prevRef.current) prevRef.current.disabled = rail.scrollLeft < 8;
-    if (nextRef.current) nextRef.current.disabled = rail.scrollLeft >= max - 8;
+    if (!rail) return;
+    const first = rail.querySelector<HTMLElement>('.v3-card');
+    const gap = parseFloat(getComputedStyle(rail).columnGap || '16');
+    const stepW = (first?.offsetWidth || 280) + (isNaN(gap) ? 16 : gap);
+    setActiveIdx(Math.round(rail.scrollLeft / Math.max(stepW, 1)));
   }, []);
 
   useLayoutEffect(() => {
@@ -422,30 +416,25 @@ function CardsVariant({
     return () => window.removeEventListener('resize', onResize);
   }, [update, reports.length]);
 
-  const step = () => {
+  const scrollToIdx = (i: number) => {
     const rail = railRef.current;
-    if (!rail) return 0;
+    if (!rail) return;
     const first = rail.querySelector<HTMLElement>('.v3-card');
     const gap = parseFloat(getComputedStyle(rail).columnGap || '16');
-    return (first?.offsetWidth || 280) + (isNaN(gap) ? 16 : gap);
+    const stepW = (first?.offsetWidth || 280) + (isNaN(gap) ? 16 : gap);
+    rail.scrollTo({ left: stepW * i, behavior: 'smooth' });
   };
 
   return (
     <section className="rsec rsec--light" aria-labelledby={id}>
       <div className="rwrap">
-        <div className="rhead">
+        <div className="rhead rhead--noarchive">
           <div>
             {eyebrow ? <div className="reyebrow">{eyebrow}</div> : null}
             <h2 className="rtitle" id={id}>
               {heading}
             </h2>
           </div>
-          <a className="rbtn" href={archiveHref}>
-            {archiveLabel}
-            <span className="rarw">
-              <IconArrowUR />
-            </span>
-          </a>
         </div>
 
         <div className="rrail-wrap">
@@ -486,27 +475,27 @@ function CardsVariant({
         </div>
 
         <div className="v3-foot">
-          <div className="v3-bar">
-            <i ref={fillRef} />
+          <div className="rdots v3-dots" role="tablist" aria-label="Reports pagination">
+            {reports.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIdx}
+                aria-label={`Go to report ${i + 1}`}
+                className={`rdot${i === activeIdx ? ' is-active' : ''}`}
+                onClick={() => scrollToIdx(i)}
+              />
+            ))}
           </div>
-          <div className="rnav">
-            <button
-              ref={prevRef}
-              className="rarrow"
-              aria-label="Previous"
-              onClick={() => railRef.current?.scrollBy({ left: -step(), behavior: 'smooth' })}
-            >
-              <IconArrowL />
-            </button>
-            <button
-              ref={nextRef}
-              className="rarrow"
-              aria-label="Next"
-              onClick={() => railRef.current?.scrollBy({ left: step(), behavior: 'smooth' })}
-            >
-              <IconArrowR />
-            </button>
-          </div>
+          {archiveHref ? (
+            <a className="rbtn" href={archiveHref}>
+              {archiveLabel}
+              <span className="rarw">
+                <IconArrowUR />
+              </span>
+            </a>
+          ) : null}
         </div>
       </div>
     </section>
