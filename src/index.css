@@ -302,12 +302,13 @@ body[data-scroll-locked] {
   min-height:clamp(420px,52vw,520px); transition:background var(--dur-base) var(--ease-standard); cursor:pointer; }
 .v3-card:hover, .v3-card:focus-within { background:#ece9f4; }
 .v3-card .d { font-size:.875rem; text-transform:uppercase; letter-spacing:.13em; color:hsl(var(--accent)); }
-.v3-card .t { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:700;
+.v3-card .t { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:400;
   font-size:clamp(1.3rem,2.4vw,1.7rem); line-height:1.16; letter-spacing:-.01em;
   color:var(--mims-ink); margin-top:.55rem; text-wrap:balance;
   display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .v3-coverhold { flex:1; display:flex; align-items:flex-end; justify-content:center; margin-top:1.4rem; }
-.v3-coverhold .rcover { width:62%; transition:transform var(--dur-base) var(--ease-standard); }
+.v3-coverhold .rcover { width:100%; transition:transform var(--dur-base) var(--ease-standard); }
+.v3-cover-btn { width:93%; display:block; }
 .v3-card:hover .v3-coverhold .rcover { transform:translateY(-6px) rotate(-1deg); }
 .v3-card .rplus { right:clamp(1.4rem,2.2vw,2rem); bottom:clamp(1.4rem,2.2vw,2rem); }
 .v3-bar { position:relative; height:3px; background:hsl(var(--separator)); margin-top:1.5rem; max-width:340px; }
