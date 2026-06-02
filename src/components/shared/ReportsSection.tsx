@@ -252,7 +252,7 @@ function FeaturedInfo({
 
     const mq = window.matchMedia('(min-width: 761px)');
     const apply = () => {
-      if (!target || !mq.matches) {
+      if (!target || !mq.matches || expanded) {
         info.style.maxHeight = '';
         info.style.minHeight = '';
         info.style.height = '';
