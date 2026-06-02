@@ -312,11 +312,11 @@ body[data-scroll-locked] {
 .v3-cover-btn { width:93%; display:block; }
 .v3-card:hover .v3-coverhold .rcover { transform:translateY(-6px) rotate(-1deg); }
 .v3-card .rplus { right:clamp(1.2rem,2vw,1.75rem); bottom:clamp(1.2rem,2vw,1.75rem); }
-.v3-bar { position:relative; height:3px; background:hsl(var(--separator)); margin-top:1.5rem; max-width:340px; }
-.v3-bar i { position:absolute; top:0; left:0; height:100%; background:hsl(var(--accent));
-  transition:left var(--dur-base) var(--ease-standard), width var(--dur-base); display:block; }
 .v3-foot { display:flex; align-items:center; justify-content:space-between; gap:1.5rem;
-  margin-top:1.25rem; flex-wrap:wrap; }
+  margin-top:1.75rem; flex-wrap:wrap; }
+.v3-dots { cursor:pointer; }
+.v3-dots .rdot { cursor:pointer; background:hsl(var(--accent) / .28); }
+.v3-dots .rdot.is-active { background:hsl(var(--accent)); }
 
 /* ---- V2 navy stage ---- */
 .v2-feature { display:grid; grid-template-columns:minmax(345px,450px) 1fr;
