@@ -319,7 +319,7 @@ function FeaturedInfo({
           className="rbtn rbtn--onnavy"
           onClick={() => openReportInTab(report.title, report.pdf)}
         >
-          Open report
+          Open Report
         </button>
         {archiveHref ? (
           <a className="rbtn rbtn--onnavy-ghost" href={archiveHref}>
