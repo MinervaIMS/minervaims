@@ -202,7 +202,7 @@ const Events = () => {
       </section>
 
       {/* Past Events */}
-      <section className="pb-section-sm md:pb-section bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">
             Past events
