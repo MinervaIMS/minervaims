@@ -211,13 +211,7 @@ const Events = () => {
             </p>
           ) : (
             <>
-              <p className="font-body text-small text-muted-foreground mb-6">
-                Showing {startIndex + 1}-
-                {Math.min(startIndex + ITEMS_PER_PAGE, pastEvents.length)} of{" "}
-                {pastEvents.length} events
-              </p>
-
-              <div className="border-t border-separator">
+              <div>
                 {paginatedEvents.map((event) => (
                   <PastEventRow
                     key={event.id}
