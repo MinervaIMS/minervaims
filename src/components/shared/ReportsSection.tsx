@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import logoMark from '@/assets/logo-color.svg';
+import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 
 // ---------- Public types ----------
 export type ReportChart = 'line' | 'area' | 'bars' | 'scatter';
@@ -26,6 +27,8 @@ export interface ReportsSectionProps {
   reports: ReportItem[];
   /** Optional id for the section heading (a11y). */
   id?: string;
+  /** Render the real first-page PDF preview as the cover (instead of generated motif). */
+  useRealCover?: boolean;
 }
 
 // ---------- Tiny deterministic PRNG so covers are stable per report ----------
@@ -152,9 +155,18 @@ function trim(s: string, n: number) {
 interface CoverProps {
   report: ReportItem;
   className?: string;
+  useRealCover?: boolean;
+  renderWidth?: number;
 }
-function Cover({ report, className = '' }: CoverProps) {
+function Cover({ report, className = '', useRealCover = false, renderWidth }: CoverProps) {
   const label = `${report.div} report: ${report.title}`;
+  if (useRealCover && report.pdf) {
+    return (
+      <div className={`rcover rcover--pdf ${className}`.trim()} role="img" aria-label={label}>
+        <PdfThumbnail url={report.pdf} alt={report.title} renderWidth={renderWidth} className="w-full h-full" />
+      </div>
+    );
+  }
   if (report.img) {
     return (
       <div className={`rcover rcover--photo ${className}`.trim()} role="img" aria-label={label}>
@@ -190,7 +202,7 @@ function Cover({ report, className = '' }: CoverProps) {
 }
 
 // ---------- Preview lightbox ----------
-function PreviewLightbox({ report, onClose }: { report: ReportItem; onClose: () => void }) {
+function PreviewLightbox({ report, onClose, useRealCover = false }: { report: ReportItem; onClose: () => void; useRealCover?: boolean }) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -200,7 +212,6 @@ function PreviewLightbox({ report, onClose }: { report: ReportItem; onClose: () 
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    // Focus the close button so Esc/tabbing works naturally
     const id = window.setTimeout(() => {
       dialogRef.current?.querySelector<HTMLButtonElement>('.rprev-x')?.focus();
     }, 0);
@@ -216,26 +227,20 @@ function PreviewLightbox({ report, onClose }: { report: ReportItem; onClose: () 
       if ((e.target as HTMLElement).hasAttribute('data-close')) onClose();
     }}>
       <div className="rprev-backdrop" data-close />
-      <div className="rprev-dialog" role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
+      <div className={`rprev-dialog${useRealCover ? ' rprev-dialog--lg' : ''}`} role="dialog" aria-modal="true" aria-label={report.title} ref={dialogRef}>
         <button className="rprev-x" aria-label="Close preview" onClick={onClose}>
           ×
         </button>
         <div className="rprev-stage">
           <div className="rprev-deck">
-            <div className="rprev-ghost rprev-ghost-2" />
-            <div className="rprev-ghost rprev-ghost-1" />
-            <Cover report={report} className="rcover--lg" />
+            {!useRealCover && <div className="rprev-ghost rprev-ghost-2" />}
+            {!useRealCover && <div className="rprev-ghost rprev-ghost-1" />}
+            <Cover report={report} className="rcover--lg" useRealCover={useRealCover} renderWidth={useRealCover ? 700 : undefined} />
           </div>
         </div>
         <div className="rprev-info">
-          <div className="rprev-eyebrow">{report.div}</div>
           <h3 className="rprev-title">{report.title}</h3>
           {report.desc ? <p className="rprev-desc">{report.desc}</p> : null}
-          <div className="rprev-meta">
-            <span>{report.date}</span>
-            <span className="dot">·</span>
-            <span>PDF · Research Report</span>
-          </div>
           <div className="rprev-actions">
             <a className="rbtn rbtn--primary" href={report.pdf || '#'} target="_blank" rel="noopener noreferrer">
               Open full report (PDF)
@@ -382,27 +387,12 @@ function NavyVariant({
   reports,
   onPreview,
   id,
+  useRealCover = false,
 }: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
   const featured = reports[0];
-  const rest = reports.slice(1);
+  // Show up to 5 reports in the "Recently published" strip
+  const rest = reports.slice(1, 6);
   const railRef = useRef<HTMLDivElement>(null);
-  const [activeDot, setActiveDot] = useState(0);
-
-  const step = () => {
-    const rail = railRef.current;
-    if (!rail) return 0;
-    const first = rail.querySelector<HTMLElement>('.v2-card');
-    const gap = parseFloat(getComputedStyle(rail).columnGap || '18');
-    return (first?.offsetWidth || 120) + (isNaN(gap) ? 18 : gap);
-  };
-
-  const onScroll = () => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const s = step() || 1;
-    const idx = Math.min(rest.length - 1, Math.max(0, Math.round(rail.scrollLeft / s)));
-    setActiveDot(idx);
-  };
 
   if (!featured) {
     return (
@@ -429,7 +419,7 @@ function NavyVariant({
   }
 
   return (
-    <section className="rsec rsec--navy" aria-labelledby={id}>
+    <section className={`rsec rsec--navy${useRealCover ? ' rsec--navy-lg' : ''}`} aria-labelledby={id}>
       <div className="rwrap">
         <div className="rhead">
           <div>
@@ -448,33 +438,20 @@ function NavyVariant({
 
         <div className="v2-feature">
           <div className="v2-cover">
-            <Cover report={featured} />
-            <button className="rplus" aria-label={`Preview report: ${featured.title}`} onClick={() => onPreview(featured)}>
-              <IconPlus />
-            </button>
+            <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
           </div>
           <div className="v2-info">
-            <div className="reyebrow">{featured.div}</div>
             <h3>{featured.title}</h3>
             {featured.desc ? <p className="v2-desc">{featured.desc}</p> : null}
-            <div className="v2-meta">
-              <span>{featured.date}</span>
-              <span className="dot">·</span>
-              <span>Research Report · PDF</span>
-            </div>
             <div className="v2-actions">
               <a
-                className="rbtn rbtn--primary"
-                style={{ background: '#fff', color: 'hsl(var(--accent))', borderColor: '#fff' }}
+                className="rbtn rbtn--onnavy"
                 href={featured.pdf || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 Open report
               </a>
-              <button className="rbtn" onClick={() => onPreview(featured)}>
-                Quick preview
-              </button>
             </div>
           </div>
         </div>
@@ -483,25 +460,9 @@ function NavyVariant({
           <div className="v2-strip">
             <div className="v2-striphead">
               <span className="lbl">Recently published</span>
-              <div className="rnav">
-                <button
-                  className="rarrow"
-                  aria-label="Previous"
-                  onClick={() => railRef.current?.scrollBy({ left: -step() * 2, behavior: 'smooth' })}
-                >
-                  <IconArrowL />
-                </button>
-                <button
-                  className="rarrow"
-                  aria-label="Next"
-                  onClick={() => railRef.current?.scrollBy({ left: step() * 2, behavior: 'smooth' })}
-                >
-                  <IconArrowR />
-                </button>
-              </div>
             </div>
             <div className="rrail-wrap">
-              <div className="rrail" ref={railRef} onScroll={onScroll}>
+              <div className="rrail" ref={railRef}>
                 {rest.map((rep, i) => (
                   <button
                     key={i}
@@ -509,19 +470,12 @@ function NavyVariant({
                     onClick={() => onPreview(rep)}
                     aria-label={`Preview report: ${rep.title}`}
                   >
-                    <Cover report={rep} />
+                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 320 : undefined} />
                     <div className="t">{rep.title}</div>
                     <div className="dt">
                       {rep.div} · {rep.date}
                     </div>
                   </button>
-                ))}
-              </div>
-            </div>
-            <div className="v2-foot">
-              <div className="rdots" aria-hidden="true">
-                {rest.map((_, i) => (
-                  <span key={i} className={`rdot${i === activeDot ? ' is-active' : ''}`} />
                 ))}
               </div>
             </div>
@@ -547,7 +501,7 @@ export function ReportsSection(props: ReportsSectionProps) {
       ) : (
         <CardsVariant {...props} id={id} onPreview={onPreview} />
       )}
-      {preview && <PreviewLightbox report={preview} onClose={onClose} />}
+      {preview && <PreviewLightbox report={preview} onClose={onClose} useRealCover={props.useRealCover} />}
     </>
   );
 }

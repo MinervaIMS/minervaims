@@ -5,6 +5,8 @@ interface PdfThumbnailProps {
   url: string;
   className?: string;
   alt?: string;
+  /** Internal canvas render width in CSS px. Larger = sharper for large displays. */
+  renderWidth?: number;
 }
 
 // PDF.js types (minimal subset we need)
@@ -77,7 +79,7 @@ const loadPdfJs = (): Promise<PDFJSLib> => {
   return loadingPromise;
 };
 
-export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfThumbnailProps) {
+export function PdfThumbnail({ url, className = '', alt = 'PDF Preview', renderWidth = 200 }: PdfThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -132,8 +134,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
         if (cancelled) return;
 
         // Use fixed dimensions to avoid reading clientWidth (prevents forced reflow)
-        const THUMBNAIL_WIDTH = 200;
-        const containerWidth = THUMBNAIL_WIDTH;
+        const containerWidth = renderWidth;
         const containerHeight = containerWidth * A4_ASPECT_RATIO;
 
         const viewport = page.getViewport({ scale: 1 });
@@ -198,7 +199,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview' }: PdfTh
     return () => {
       cancelled = true;
     };
-  }, [url, isVisible]);
+  }, [url, isVisible, renderWidth]);
 
   return (
     <div 

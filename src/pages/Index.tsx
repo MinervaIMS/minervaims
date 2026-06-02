@@ -242,7 +242,6 @@ const Index = () => {
       {/* Latest Reports */}
       <ReportsSection
         variant="cards"
-        eyebrow="Publications"
         heading="Latest Reports"
         archiveHref="/archive"
         archiveLabel="Browse the archive"
