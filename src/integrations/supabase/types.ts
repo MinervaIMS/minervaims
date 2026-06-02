@@ -272,6 +272,7 @@ export type Database = {
           id: string
           moderator: string | null
           place: string
+          poster_url: string | null
           title: string
           updated_at: string
         }
@@ -283,6 +284,7 @@ export type Database = {
           id?: string
           moderator?: string | null
           place: string
+          poster_url?: string | null
           title: string
           updated_at?: string
         }
@@ -294,6 +296,7 @@ export type Database = {
           id?: string
           moderator?: string | null
           place?: string
+          poster_url?: string | null
           title?: string
           updated_at?: string
         }
