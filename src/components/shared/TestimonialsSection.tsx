@@ -86,22 +86,6 @@ export function TestimonialsSection() {
 
       <div className="container relative">
         <div className="relative max-w-4xl mx-auto px-12 md:px-20 text-center">
-          {/* Decorative quote marks */}
-          <span
-            aria-hidden="true"
-            className="font-serif text-background select-none absolute -top-6 md:-top-10 left-0 leading-none"
-            style={{ fontSize: "8rem" }}
-          >
-            “
-          </span>
-          <span
-            aria-hidden="true"
-            className="font-serif text-background select-none absolute -bottom-20 md:-bottom-24 right-0 leading-none"
-            style={{ fontSize: "8rem" }}
-          >
-            ”
-          </span>
-
           <div
             key={animKey}
             className={
@@ -110,34 +94,35 @@ export function TestimonialsSection() {
                 : "animate-testimonial-in-right"
             }
           >
-            <p className="font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background">
-              {current.quote}
-            </p>
-            <p className="font-serif text-base md:text-lg text-background mt-10">
+            {/* Quote area with fixed height for up to 4 lines */}
+            <div className="relative">
+              <span
+                aria-hidden="true"
+                className="font-serif text-background select-none absolute -top-6 md:-top-10 left-0 leading-none"
+                style={{ fontSize: "8rem" }}
+              >
+                “
+              </span>
+              <span
+                aria-hidden="true"
+                className="font-serif text-background select-none absolute -bottom-10 md:-bottom-14 right-0 leading-none"
+                style={{ fontSize: "8rem" }}
+              >
+                ”
+              </span>
+              <p
+                className="font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
+                style={{ minHeight: "calc(1.375em * 4)" }}
+              >
+                <span>{current.quote}</span>
+              </p>
+            </div>
+            <p className="font-serif text-base md:text-lg text-background mt-16">
               {current.name}
             </p>
             <p className="font-serif text-sm md:text-base text-background/70 mt-2">
               {current.role}
             </p>
-          </div>
-
-          {/* Dots */}
-          <div className="flex items-center justify-center gap-3 mt-10">
-            {testimonials.map((_, i) => {
-              const active = i === index;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={`Go to testimonial ${i + 1}`}
-                  onClick={() => go(i, i > index ? "left" : "right")}
-                  className={
-                    "h-2 w-2 rounded-full border border-background/80 transition-colors " +
-                    (active ? "bg-background" : "bg-transparent hover:bg-background/40")
-                  }
-                />
-              );
-            })}
           </div>
         </div>
       </div>
