@@ -265,11 +265,11 @@ const FundDetail = () => {
       {/* Third Section: Latest Fund Updates */}
       <ReportsSection
         variant="navy"
-        eyebrow="Publications"
         heading={content.sectionTitle}
         archiveHref={`/archive?fund=${fundKey}`}
         archiveLabel="Browse the archive"
         reports={archiveFilesToReports(files)}
+        useRealCover
       />
     </>
   );
