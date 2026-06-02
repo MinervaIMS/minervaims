@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { Calendar, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageIntroduction, PageLoader } from "@/components/shared";
+import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
+
+const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].endsWith(".pdf");
 import { supabase } from "@/integrations/supabase/client";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import eventsBg from "@/assets/events-bg.webp";
@@ -344,12 +347,21 @@ function PastEventRow({
             className="block w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-accent"
             aria-label={`Open poster for ${event.title}`}
           >
-            <img
-              src={event.poster_url}
-              alt={`${event.title} poster`}
-              loading="lazy"
-              className="block w-full h-auto object-contain bg-muted"
-            />
+            {isPdf(event.poster_url) ? (
+              <PdfThumbnail
+                url={event.poster_url!}
+                alt={`${event.title} poster`}
+                className="block w-full h-auto bg-muted"
+                renderWidth={400}
+              />
+            ) : (
+              <img
+                src={event.poster_url}
+                alt={`${event.title} poster`}
+                loading="lazy"
+                className="block w-full h-auto object-contain bg-muted"
+              />
+            )}
           </button>
         ) : (
           <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
@@ -505,11 +517,19 @@ function PosterLightbox({
         className="relative flex flex-col items-center max-w-full max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={current.poster_url ?? ""}
-          alt={`${current.title} poster`}
-          className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
-        />
+        {isPdf(current.poster_url) ? (
+          <iframe
+            src={`${current.poster_url}#view=FitH`}
+            title={`${current.title} poster`}
+            className="block w-[90vw] h-[80vh] bg-background"
+          />
+        ) : (
+          <img
+            src={current.poster_url ?? ""}
+            alt={`${current.title} poster`}
+            className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
+          />
+        )}
         <div className="mt-4 text-center max-w-[90vw]">
           <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
             {formatLongDateUpper(current.date)}

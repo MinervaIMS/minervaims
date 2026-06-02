@@ -317,8 +317,12 @@ const MinervaWorkspace = () => {
   };
 
   const handlePosterUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please select an image file.', variant: 'destructive' });
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const allowedExts = ['jpg', 'jpeg', 'png', 'pdf'];
+    const typeOk = allowedTypes.includes(file.type) || allowedExts.includes(ext);
+    if (!typeOk) {
+      toast({ title: 'Invalid file', description: 'Please select a JPG, PNG or PDF file.', variant: 'destructive' });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -327,13 +331,13 @@ const MinervaWorkspace = () => {
     }
     setIsUploadingPoster(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = `event-posters/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from('team-photos').upload(path, file, {
-        cacheControl: '3600', upsert: false, contentType: file.type,
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext || 'bin'}`;
+      const contentType = file.type || (ext === 'pdf' ? 'application/pdf' : `image/${ext}`);
+      const { error } = await supabase.storage.from('event-posters').upload(path, file, {
+        cacheControl: '3600', upsert: false, contentType,
       });
       if (error) throw error;
-      const { data: pub } = supabase.storage.from('team-photos').getPublicUrl(path);
+      const { data: pub } = supabase.storage.from('event-posters').getPublicUrl(path);
       setFormData((prev) => ({ ...prev, poster_url: pub.publicUrl }));
       toast({ title: 'Poster uploaded' });
     } catch (err) {
@@ -594,7 +598,13 @@ const MinervaWorkspace = () => {
                   <Label htmlFor="poster" className="font-body">Poster (optional)</Label>
                   {formData.poster_url && (
                     <div className="flex items-start gap-3">
-                      <img src={formData.poster_url} alt="Poster preview" className="w-24 h-auto border border-separator" />
+                      {formData.poster_url.toLowerCase().endsWith('.pdf') ? (
+                        <div className="w-24 h-32 border border-separator flex items-center justify-center bg-muted">
+                          <span className="font-serif text-xs">PDF</span>
+                        </div>
+                      ) : (
+                        <img src={formData.poster_url} alt="Poster preview" className="w-24 h-auto border border-separator" />
+                      )}
                       <Button type="button" variant="outline" size="sm" onClick={() => setFormData({ ...formData, poster_url: '' })} className="font-body">
                         Remove
                       </Button>
@@ -603,7 +613,7 @@ const MinervaWorkspace = () => {
                   <Input
                     id="poster"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/jpg,application/pdf,.jpg,.jpeg,.png,.pdf"
                     disabled={isUploadingPoster}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePosterUpload(f); e.target.value = ''; }}
                   />
@@ -613,7 +623,7 @@ const MinervaWorkspace = () => {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground font-body">
-                    Any image format and aspect ratio. Max 10 MB.
+                    JPG, PNG or PDF. Any aspect ratio. Max 10 MB.
                   </p>
                 </div>
                 {isSubmitting && (
