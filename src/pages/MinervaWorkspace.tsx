@@ -364,6 +364,7 @@ const MinervaWorkspace = () => {
         moderator: formData.moderator || null,
         guest: filteredGuests.length > 0 ? filteredGuests : null,
         description: formData.description || null,
+        poster_url: formData.poster_url || null,
         ...(editingEvent && { id: editingEvent.id }),
       };
       const { data, error } = await supabase.functions.invoke('admin-events', {
