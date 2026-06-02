@@ -331,6 +331,7 @@ function FeaturedInfo({
 // ---------- Preview lightbox ----------
 function PreviewLightbox({ report, onClose, useRealCover = false }: { report: ReportItem; onClose: () => void; useRealCover?: boolean }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const prev = document.documentElement.style.overflow;
