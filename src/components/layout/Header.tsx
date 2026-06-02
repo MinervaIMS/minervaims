@@ -42,6 +42,7 @@ const NAV_LINKS: NavItem[] = [
       { label: "Alumni", to: "/people/alumni" },
     ],
   },
+  { label: "Events", to: "/events" },
   { label: "Join", to: "/join" },
 ];
 
