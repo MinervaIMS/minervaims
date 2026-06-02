@@ -254,10 +254,16 @@ function FeaturedInfo({
     const apply = () => {
       if (!target || !mq.matches) {
         info.style.maxHeight = '';
+        info.style.minHeight = '';
+        info.style.height = '';
         return;
       }
       const h = target.getBoundingClientRect().height;
-      info.style.maxHeight = h > 0 ? `${h}px` : '';
+      if (h > 0) {
+        info.style.height = `${h}px`;
+        info.style.maxHeight = `${h}px`;
+        info.style.minHeight = `${h}px`;
+      }
     };
 
     apply();
