@@ -445,10 +445,10 @@ export default function AlumniGlobe() {
         <div className="absolute right-3.5 top-3.5 z-10 hidden flex-col gap-1.5 sm:flex">
           {controls}
         </div>
-      </div>
-      {/* Mobile: below the globe */}
-      <div className="mt-3 flex flex-row justify-center gap-1.5 sm:hidden">
-        {controls}
+        {/* Mobile: overlay bottom-right */}
+        <div className="absolute bottom-3 right-3 z-10 flex flex-row gap-1.5 sm:hidden">
+          {controls}
+        </div>
       </div>
     </div>
   );
