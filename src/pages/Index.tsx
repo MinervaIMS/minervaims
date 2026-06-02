@@ -5,6 +5,7 @@ import logoWhite from "@/assets/logo-white.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
 import companiesImage from "@/assets/companies.webp";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
+import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
 import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
@@ -238,6 +239,9 @@ const Index = () => {
         </div>
       </section>
 
+
+      {/* Alumni Testimonials */}
+      <TestimonialsSection />
 
       {/* Latest Reports */}
       <ReportsSection
