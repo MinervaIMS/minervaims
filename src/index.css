@@ -341,10 +341,10 @@ body[data-scroll-locked] {
 .v2-readmore:hover { color:var(--mims-light-purple); }
 .v2-actions { display:flex; gap:.8rem; flex-wrap:wrap; margin-top:auto; }
 /* White on-navy button with active-state swap */
-.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:#fff; }
+.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none; }
 .rbtn--onnavy:hover, .rbtn--onnavy:focus-visible, .rbtn--onnavy:active,
 .rbtn--onnavy.is-active {
-  background:hsl(var(--accent)); color:#fff; border-color:#fff; box-shadow:0 6px 16px rgba(0,0,0,.18); }
+  background:hsl(var(--accent)); color:#fff; border-color:hsl(var(--accent)); box-shadow:none; }
 /* Ghost variant of onnavy — same default look, used for the secondary archive link */
 .rbtn--onnavy-ghost { background:transparent; color:#fff; border-color:#fff; }
 .rbtn--onnavy-ghost:hover, .rbtn--onnavy-ghost:focus-visible {
