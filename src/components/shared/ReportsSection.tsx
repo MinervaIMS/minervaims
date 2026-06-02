@@ -276,7 +276,7 @@ function FeaturedInfo({
       window.removeEventListener('resize', apply);
       mq.removeEventListener('change', apply);
     };
-  }, [matchHeightTo]);
+  }, [matchHeightTo, expanded]);
 
   useLayoutEffect(() => {
     const el = descRef.current;
