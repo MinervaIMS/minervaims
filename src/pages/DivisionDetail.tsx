@@ -206,7 +206,7 @@ const DivisionDetail = () => {
         eyebrow="Research"
         heading={content.sectionTitle}
         archiveHref={`/archive?division=${divisionKey}`}
-        archiveLabel="Browse the archive"
+        archiveLabel="Browse The Archive"
         reports={archiveFilesToReports(files)}
       />
     </>
