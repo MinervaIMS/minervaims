@@ -598,7 +598,13 @@ const MinervaWorkspace = () => {
                   <Label htmlFor="poster" className="font-body">Poster (optional)</Label>
                   {formData.poster_url && (
                     <div className="flex items-start gap-3">
-                      <img src={formData.poster_url} alt="Poster preview" className="w-24 h-auto border border-separator" />
+                      {formData.poster_url.toLowerCase().endsWith('.pdf') ? (
+                        <div className="w-24 h-32 border border-separator flex items-center justify-center bg-muted">
+                          <span className="font-serif text-xs">PDF</span>
+                        </div>
+                      ) : (
+                        <img src={formData.poster_url} alt="Poster preview" className="w-24 h-auto border border-separator" />
+                      )}
                       <Button type="button" variant="outline" size="sm" onClick={() => setFormData({ ...formData, poster_url: '' })} className="font-body">
                         Remove
                       </Button>
@@ -607,7 +613,7 @@ const MinervaWorkspace = () => {
                   <Input
                     id="poster"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/jpg,application/pdf,.jpg,.jpeg,.png,.pdf"
                     disabled={isUploadingPoster}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePosterUpload(f); e.target.value = ''; }}
                   />
@@ -617,7 +623,7 @@ const MinervaWorkspace = () => {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground font-body">
-                    Any image format and aspect ratio. Max 10 MB.
+                    JPG, PNG or PDF. Any aspect ratio. Max 10 MB.
                   </p>
                 </div>
                 {isSubmitting && (
