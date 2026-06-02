@@ -175,7 +175,7 @@ const DivisionDetail = () => {
 
       {/* Portfolio Management: MIMS Virtual Portfolios Section */}
       {isPortfolio && (
-        <section className="pt-6 md:pt-8 pb-10 md:pb-14 bg-background">
+        <section className="py-section-sm md:py-section bg-background">
           <div className="container">
             <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
               MIMS Virtual Portfolios
