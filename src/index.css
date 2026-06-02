@@ -327,7 +327,7 @@ body[data-scroll-locked] {
 .v2-cover .rplus:hover { background:var(--mims-light-purple); color:hsl(var(--accent)); }
 .v2-info { width:100%; display:flex; flex-direction:column; min-height:0; }
 .v2-info .reyebrow { color:var(--mims-light-purple); }
-.v2-info-title { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:700;
+.v2-info-title { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:400;
   font-size:clamp(1.7rem,3.4vw,2.7rem); line-height:1.12; letter-spacing:-.015em; color:#fff;
   margin:0 0 1rem; text-wrap:balance; }
 .v2-desc-wrap { flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
