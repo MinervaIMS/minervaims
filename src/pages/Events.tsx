@@ -188,14 +188,34 @@ const Events = () => {
           {UPCOMING_EVENT ? (
             <UpcomingBand event={UPCOMING_EVENT} />
           ) : (
-            <div className="border border-separator px-6 py-10 md:py-14 text-center">
-              <p className="font-body text-sm tracking-[0.18em] uppercase text-muted-foreground mb-2">
-                No upcoming event scheduled
+            <div className="px-6 py-16 md:py-20 text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="mx-auto mb-6 h-10 w-10 text-accent"
+              >
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              <h3 className="font-serif text-2xl md:text-3xl text-accent mb-4">
+                No upcoming events right now
+              </h3>
+              <p className="font-body text-body text-muted-foreground max-w-2xl mx-auto mb-6">
+                New events are announced each semester. Browse our past events below,
+                or follow along to hear about the next one first.
               </p>
-              <p className="font-body text-body text-muted-foreground max-w-2xl mx-auto">
-                The next Society event will be announced here. Members will be notified by email when
-                registration opens.
-              </p>
+              <a
+                href="/join"
+                className="inline-block font-body text-body text-accent underline underline-offset-4 hover:opacity-80 transition-opacity"
+              >
+                Get notified about the next event
+              </a>
             </div>
           )}
         </div>
