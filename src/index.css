@@ -377,7 +377,10 @@ body[data-scroll-locked] {
 @media (max-width:760px) {
   .v2-feature, .rsec--navy-lg .v2-feature { grid-template-columns:1fr; }
   .v2-cover { max-width:340px; }
-  .v2-info { min-height:0; }
+  .v2-info { min-height:0; max-height:none !important; }
+  /* Mobile: clamp description to 5 lines until expanded */
+  .v2-desc { display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; }
+  .v2-desc-wrap.is-expanded .v2-desc { display:block; -webkit-line-clamp:unset; }
 }
 
 /* ---- "+" PREVIEW LIGHTBOX ---- */
