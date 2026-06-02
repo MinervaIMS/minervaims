@@ -590,6 +590,32 @@ const MinervaWorkspace = () => {
                 </div>
                 <div className="space-y-2"><Label htmlFor="description" className="font-body">Description (optional)</Label>
                   <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Event description" rows={3} /></div>
+                <div className="space-y-2">
+                  <Label htmlFor="poster" className="font-body">Poster (optional)</Label>
+                  {formData.poster_url && (
+                    <div className="flex items-start gap-3">
+                      <img src={formData.poster_url} alt="Poster preview" className="w-24 h-auto border border-separator" />
+                      <Button type="button" variant="outline" size="sm" onClick={() => setFormData({ ...formData, poster_url: '' })} className="font-body">
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                  <Input
+                    id="poster"
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingPoster}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePosterUpload(f); e.target.value = ''; }}
+                  />
+                  {isUploadingPoster && (
+                    <p className="text-xs text-muted-foreground font-body">
+                      <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />Uploading poster...
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground font-body">
+                    Any image format and aspect ratio. Max 10 MB.
+                  </p>
+                </div>
                 {isSubmitting && (
                   <div className="space-y-2"><Progress value={100} className="h-1 animate-pulse" />
                     <p className="text-xs text-muted-foreground text-center font-body">Saving event...</p></div>
