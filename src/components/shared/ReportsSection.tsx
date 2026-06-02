@@ -481,6 +481,33 @@ function NavyVariant({
   // Show up to 5 reports in the "Recently published" strip
   const rest = reports.slice(1, 6);
   const railRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [showDots, setShowDots] = useState(false);
+
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const update = () => {
+      const overflowing = rail.scrollWidth - rail.clientWidth > 4;
+      setShowDots(overflowing);
+      const cardW = rail.scrollWidth / Math.max(rest.length, 1);
+      setActiveIdx(Math.round(rail.scrollLeft / Math.max(cardW, 1)));
+    };
+    update();
+    rail.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      rail.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [rest.length]);
+
+  const scrollToIdx = (i: number) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const cardW = rail.scrollWidth / Math.max(rest.length, 1);
+    rail.scrollTo({ left: cardW * i, behavior: 'smooth' });
+  };
 
   if (!featured) {
     return (
@@ -493,12 +520,6 @@ function NavyVariant({
                 {heading}
               </h2>
             </div>
-            <a className="rbtn" href={archiveHref}>
-              {archiveLabel}
-              <span className="rarw">
-                <IconArrowUR />
-              </span>
-            </a>
           </div>
           <p className="v2-desc">No reports available yet.</p>
         </div>
@@ -509,39 +530,20 @@ function NavyVariant({
   return (
     <section className={`rsec rsec--navy${useRealCover ? ' rsec--navy-lg' : ''}`} aria-labelledby={id}>
       <div className="rwrap">
-        <div className="rhead">
+        <div className="rhead rhead--noarchive">
           <div>
             {eyebrow ? <div className="reyebrow">{eyebrow}</div> : null}
             <h2 className="rtitle" id={id}>
               {heading}
             </h2>
           </div>
-          <a className="rbtn" href={archiveHref}>
-            {archiveLabel}
-            <span className="rarw">
-              <IconArrowUR />
-            </span>
-          </a>
         </div>
 
         <div className="v2-feature">
           <div className="v2-cover">
             <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
           </div>
-          <div className="v2-info">
-            <h3>{featured.title}</h3>
-            {featured.desc ? <p className="v2-desc">{featured.desc}</p> : null}
-            <div className="v2-actions">
-              <a
-                className="rbtn rbtn--onnavy"
-                href={featured.pdf || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open report
-              </a>
-            </div>
-          </div>
+          <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} />
         </div>
 
         {rest.length > 0 && (
@@ -550,7 +552,7 @@ function NavyVariant({
               <span className="lbl">Recently published</span>
             </div>
             <div className="rrail-wrap">
-              <div className="rrail" ref={railRef}>
+              <div className="v2-strip-rail" ref={railRef}>
                 {rest.map((rep, i) => (
                   <button
                     key={i}
@@ -558,14 +560,26 @@ function NavyVariant({
                     onClick={() => onPreview(rep)}
                     aria-label={`Preview report: ${rep.title}`}
                   >
-                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 320 : undefined} />
+                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 420 : undefined} />
                     <div className="t">{rep.title}</div>
-                    <div className="dt">
-                      {rep.div} · {rep.date}
-                    </div>
                   </button>
                 ))}
               </div>
+              {showDots && (
+                <div className="v2-strip-dots" role="tablist" aria-label="Reports pagination">
+                  {rest.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      role="tab"
+                      aria-selected={i === activeIdx}
+                      aria-label={`Go to report ${i + 1}`}
+                      className={`rdot${i === activeIdx ? ' is-active' : ''}`}
+                      onClick={() => scrollToIdx(i)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -573,6 +587,7 @@ function NavyVariant({
     </section>
   );
 }
+
 
 // ---------- Public component ----------
 export function ReportsSection(props: ReportsSectionProps) {
