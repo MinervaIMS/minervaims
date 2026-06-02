@@ -1,31 +1,33 @@
-## Fixes for `ReportsSection` (navy variant)
+## Diagnosis
 
-### 1. Align the "Recently published" cards (desktop strip)
+**Issue 1 — "Open report" looks wrong (still bordered/outlined like a ghost button)**
 
-Symptom: the 5th card sits lower than the others because card titles wrap to a different number of lines and the PDF cover heights aren't strictly locked, so each card has a slightly different total height.
+In `src/index.css` there are two competing rules for buttons inside the navy section:
 
-Changes in `src/index.css` (`.v2-card` / `.v2-strip-rail`):
-- Make `.v2-card` a column flex container so its inner blocks align consistently across all 5 grid cells.
-- Lock the cover to a fixed A4-style aspect ratio (`aspect-ratio: 1 / 1.414`) on `.v2-card .rcover` so every preview renders at the exact same height regardless of PDF page proportions.
-- Give `.v2-card .t` a fixed `min-height` equal to 3 lines (matching the existing `-webkit-line-clamp:3`) so the title block reserves the same vertical space whether the title is 1, 2 or 3 lines.
-- Keep grid `repeat(5, 1fr)` on desktop; behaviour on tablet/mobile (snap rail + dots) stays unchanged.
+- Line 234–235: `.rsec--navy .rbtn { border-color:rgba(255,255,255,.55); color:#fff; }` and `.rsec--navy .rbtn:hover { background:#fff; color:hsl(var(--accent)); border-color:#fff; }`
+- Line 344–348: `.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); ... }` and its hover swap to purple bg / white text.
 
-Result: covers line up at the same top and bottom edge; titles line up at the same baseline; the last card stops being visually offset.
+Specificity: `.rsec--navy .rbtn` = 0,2,0 wins over `.rbtn--onnavy` = 0,1,0. So the navy override always wins → the button renders transparent with a translucent white border (exactly what the screenshot shows), and on hover it goes white-bg/purple-text instead of the requested purple-bg/white-text.
 
-### 2. Fix the "Read more" bug on desktop (featured report)
+**Issue 2 — White borders around report cards**
 
-Symptom (second screenshot): when the user expands the description, the extra text overflows out of the bounded info column and overlaps the "Open report" / "Browse the archive" buttons, and "Read less" appears far below the cover.
+`.rcover` (line 238) and `.rcover--pdf` (line 262) set `background:#fff`. The PDF canvas rendered inside doesn't fill the container down to the last pixel (aspect-ratio rounding + canvas sizing), so the white background bleeds at the edges, producing the thin white border visible in the screenshot on the navy background.
 
-Root cause: `FeaturedInfo` pins the info column's `height` / `min-height` / `max-height` to the cover's height (so the description can be clamped and Read more can trigger). When the user expands, the wrapper switches to `overflow:visible` but the column stays capped at the cover's height, so the expanded text and the bottom-pinned actions render on top of each other.
+## Fix
 
-Changes in `src/components/shared/ReportsSection.tsx` (`FeaturedInfo` component only):
-- Make the height-syncing effect depend on `expanded`.
-- When `expanded === true` on desktop, clear all inline height constraints (`height`, `minHeight`, `maxHeight`) so the info column grows naturally to fit the full description, and the actions row (which uses `margin-top:auto`) is pushed below it.
-- When `expanded === false`, keep the current behaviour (height matches the cover so Read more correctly clamps and the buttons align with the bottom of the cover).
-- No change to mobile behaviour (5-line CSS clamp + Read more) and no change to the lightbox variant logic beyond inheriting the same `FeaturedInfo` fix.
+In `src/index.css`:
 
-### Scope
+1. Raise specificity of the on-navy button rules so they beat `.rsec--navy .rbtn`:
+   - Change `.rbtn--onnavy` → `.rsec--navy .rbtn.rbtn--onnavy` (default = white bg, purple text, purple border, squared corners).
+   - Change the hover/focus/active block → `.rsec--navy .rbtn.rbtn--onnavy:hover, ...:focus-visible, ...:active, ....is-active` (purple bg, white text, white border).
+   - Do the same for `.rbtn--onnavy-ghost` so the "Browse The Archive" button keeps its current look.
 
-- Files touched: `src/index.css`, `src/components/shared/ReportsSection.tsx`.
-- Variants affected: navy variant on `/funds/multi-asset`, `/funds/long-short`, plus the same component when rendered inside the preview lightbox.
-- No data, routing, or business-logic changes.
+2. Remove the white edge on the report covers:
+   - Set `.rcover` and `.rcover--pdf` `background` to `transparent` (or to `hsl(var(--accent))` so any sub-pixel gap matches the navy section instead of showing white).
+   - Keep the existing box-shadow on `.v2-card .rcover`.
+
+No component/JSX changes needed; this is purely CSS specificity + background color.
+
+## Files
+
+- `src/index.css` — update rules at lines 238, 262, 344–352.
