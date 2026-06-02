@@ -347,12 +347,21 @@ function PastEventRow({
             className="block w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-accent"
             aria-label={`Open poster for ${event.title}`}
           >
-            <img
-              src={event.poster_url}
-              alt={`${event.title} poster`}
-              loading="lazy"
-              className="block w-full h-auto object-contain bg-muted"
-            />
+            {isPdf(event.poster_url) ? (
+              <PdfThumbnail
+                url={event.poster_url!}
+                alt={`${event.title} poster`}
+                className="block w-full h-auto bg-muted"
+                renderWidth={400}
+              />
+            ) : (
+              <img
+                src={event.poster_url}
+                alt={`${event.title} poster`}
+                loading="lazy"
+                className="block w-full h-auto object-contain bg-muted"
+              />
+            )}
           </button>
         ) : (
           <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
