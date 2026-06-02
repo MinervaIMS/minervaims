@@ -200,7 +200,7 @@ body[data-scroll-locked] {
   --mims-grey: hsl(var(--secondary));
   --mims-line: hsl(var(--separator));
   --mims-muted: hsl(var(--muted-foreground));
-  --shadow-cover: 0 18px 50px -12px rgba(20,16,44,.45), 0 6px 18px -8px rgba(0,0,0,.25);
+  --shadow-cover: 0 8px 22px -10px rgba(20,16,44,.22), 0 3px 8px -4px rgba(0,0,0,.12);
   --ease-standard: cubic-bezier(.22,.61,.36,1);
   --dur-fast: 200ms;
   --dur-base: 320ms;
