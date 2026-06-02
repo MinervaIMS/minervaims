@@ -581,7 +581,14 @@ function NavyVariant({
 
         <div className="v2-feature">
           <div className="v2-cover" ref={coverRef}>
-            <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
+            <button
+              type="button"
+              className="rcover-link"
+              onClick={() => openReportInTab(featured.title, featured.pdf)}
+              aria-label={`Open report: ${featured.title}`}
+            >
+              <Cover report={featured} useRealCover={useRealCover} renderWidth={useRealCover ? 900 : undefined} />
+            </button>
           </div>
           <FeaturedInfo report={featured} archiveHref={archiveHref} archiveLabel={archiveLabel} matchHeightTo={coverRef} />
         </div>
