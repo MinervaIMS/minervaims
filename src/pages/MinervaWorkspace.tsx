@@ -317,8 +317,12 @@ const MinervaWorkspace = () => {
   };
 
   const handlePosterUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please select an image file.', variant: 'destructive' });
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const allowedExts = ['jpg', 'jpeg', 'png', 'pdf'];
+    const typeOk = allowedTypes.includes(file.type) || allowedExts.includes(ext);
+    if (!typeOk) {
+      toast({ title: 'Invalid file', description: 'Please select a JPG, PNG or PDF file.', variant: 'destructive' });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -327,13 +331,13 @@ const MinervaWorkspace = () => {
     }
     setIsUploadingPoster(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = `event-posters/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from('team-photos').upload(path, file, {
-        cacheControl: '3600', upsert: false, contentType: file.type,
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext || 'bin'}`;
+      const contentType = file.type || (ext === 'pdf' ? 'application/pdf' : `image/${ext}`);
+      const { error } = await supabase.storage.from('event-posters').upload(path, file, {
+        cacheControl: '3600', upsert: false, contentType,
       });
       if (error) throw error;
-      const { data: pub } = supabase.storage.from('team-photos').getPublicUrl(path);
+      const { data: pub } = supabase.storage.from('event-posters').getPublicUrl(path);
       setFormData((prev) => ({ ...prev, poster_url: pub.publicUrl }));
       toast({ title: 'Poster uploaded' });
     } catch (err) {
