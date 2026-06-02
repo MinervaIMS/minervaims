@@ -154,7 +154,7 @@ const DivisionDetail = () => {
       </div>
 
       {/* Second Section: Our Expertise */}
-      <section className={`py-10 md:py-14 ${isPortfolio ? 'pb-6 md:pb-8' : ''} bg-background`}>
+      <section className={`py-section-sm md:py-section ${isPortfolio ? 'pb-0 md:pb-0' : ''} bg-background`}>
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Expertise
