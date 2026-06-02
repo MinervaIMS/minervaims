@@ -341,14 +341,15 @@ body[data-scroll-locked] {
 .v2-readmore:hover { color:var(--mims-light-purple); }
 .v2-actions { display:flex; gap:.8rem; flex-wrap:wrap; margin-top:auto; }
 /* White on-navy button with active-state swap */
-.rsec--navy .rbtn.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none;
+.rsec--navy .rbtn.rbtn--onnavy, .rprev-dialog--navy .rbtn.rbtn--onnavy { background:#fff; color:hsl(var(--accent)); border-color:hsl(var(--accent)); border-radius:0; box-shadow:none;
   font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; }
-.rsec--navy .rbtn.rbtn--onnavy:hover, .rsec--navy .rbtn.rbtn--onnavy:focus-visible, .rsec--navy .rbtn.rbtn--onnavy:active,
-.rsec--navy .rbtn.rbtn--onnavy.is-active {
+.rsec--navy .rbtn.rbtn--onnavy:hover, .rsec--navy .rbtn.rbtn--onnavy:focus-visible, .rsec--navy .rbtn.rbtn--onnavy:active, .rsec--navy .rbtn.rbtn--onnavy.is-active,
+.rprev-dialog--navy .rbtn.rbtn--onnavy:hover, .rprev-dialog--navy .rbtn.rbtn--onnavy:focus-visible, .rprev-dialog--navy .rbtn.rbtn--onnavy:active, .rprev-dialog--navy .rbtn.rbtn--onnavy.is-active {
   background:hsl(var(--accent)); color:#fff; border-color:#fff; box-shadow:none; }
 /* Ghost variant of onnavy — same default look, used for the secondary archive link */
-.rsec--navy .rbtn.rbtn--onnavy-ghost { background:transparent; color:#fff; border-color:#fff; }
-.rsec--navy .rbtn.rbtn--onnavy-ghost:hover, .rsec--navy .rbtn.rbtn--onnavy-ghost:focus-visible {
+.rsec--navy .rbtn.rbtn--onnavy-ghost, .rprev-dialog--navy .rbtn.rbtn--onnavy-ghost { background:transparent; color:#fff; border-color:#fff; }
+.rsec--navy .rbtn.rbtn--onnavy-ghost:hover, .rsec--navy .rbtn.rbtn--onnavy-ghost:focus-visible,
+.rprev-dialog--navy .rbtn.rbtn--onnavy-ghost:hover, .rprev-dialog--navy .rbtn.rbtn--onnavy-ghost:focus-visible {
   background:#fff; color:hsl(var(--accent)); border-color:#fff; }
 .v2-strip { margin-top:clamp(2.5rem,5vw,3.75rem); padding-top:1.5rem; border-top:1px solid rgba(255,255,255,.22); }
 .v2-striphead { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; gap:1rem; }
