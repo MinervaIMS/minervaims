@@ -52,7 +52,10 @@ body[data-scroll-locked] {
 
     /* Hairline separator */
     --separator: 0 0% 85%;
-    
+
+    /* Soft accent (light purple) for hover text on dark accent surfaces */
+    --accent-soft: 252 41% 73%;
+
     /* Overlay for hero backgrounds */
     --overlay: 0 0% 0%;
   }
@@ -87,6 +90,7 @@ body[data-scroll-locked] {
     --ring: 252 68% 60%;
 
     --separator: 0 0% 25%;
+    --accent-soft: 252 41% 78%;
     --overlay: 0 0% 0%;
   }
 }
