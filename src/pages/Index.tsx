@@ -102,7 +102,7 @@ const Index = () => {
       </section>
 
       {/* Key Figures */}
-      <section className="py-10 md:py-14 bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <Link
