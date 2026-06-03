@@ -167,7 +167,7 @@ const Index = () => {
       </section>
 
       {/* Companies Image */}
-      <section className="py-8 md:py-10 bg-background">
+      <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <div className="overflow-x-auto sm:overflow-visible">
             <img 
