@@ -180,7 +180,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Section */}
-      <section className="pt-10 md:pt-14 pb-6 md:pb-8 bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
