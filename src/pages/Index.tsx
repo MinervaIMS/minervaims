@@ -102,7 +102,7 @@ const Index = () => {
       </section>
 
       {/* Key Figures */}
-      <section className="py-10 md:py-14 bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <Link
@@ -134,7 +134,7 @@ const Index = () => {
       </section>
 
       {/* About Preview */}
-      <section className="py-10 md:py-14 bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">About Minerva IMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -167,7 +167,7 @@ const Index = () => {
       </section>
 
       {/* Companies Image */}
-      <section className="py-8 md:py-10 bg-background">
+      <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <div className="overflow-x-auto sm:overflow-visible">
             <img 
@@ -180,7 +180,7 @@ const Index = () => {
       </section>
 
       {/* Divisions Section */}
-      <section className="pt-10 md:pt-14 pb-6 md:pb-8 bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Our Divisions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
