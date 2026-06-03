@@ -1,6 +1,7 @@
 export { PageIntroduction } from './PageIntroduction';
 export { ReportsList } from './ReportsList';
 export { TeamDirectory } from './TeamDirectory';
+export { MembersDirectory } from './MembersDirectory';
 export { AlumniTable } from './AlumniTable';
 export { EventsList } from './EventsList';
 export { EventsListNew } from './EventsListNew';
