@@ -134,7 +134,7 @@ const Index = () => {
       </section>
 
       {/* About Preview */}
-      <section className="py-10 md:py-14 bg-background">
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">About Minerva IMS</h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
