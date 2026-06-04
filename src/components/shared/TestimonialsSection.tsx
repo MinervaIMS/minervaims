@@ -98,26 +98,24 @@ export function TestimonialsSection() {
             <div className="relative">
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute top-4 md:top-0 -left-4 md:-left-32 leading-none pointer-events-none"
-                style={{ fontSize: "16rem" }}
+                className="font-serif text-background/90 select-none absolute -top-2 md:top-0 -left-2 sm:-left-4 md:-left-32 leading-none pointer-events-none text-[7rem] sm:text-[10rem] md:text-[16rem]"
               >
                 “
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -bottom-12 md:-bottom-20 -right-4 md:-right-32 leading-none pointer-events-none"
-                style={{ fontSize: "16rem" }}
+                className="font-serif text-background/90 select-none absolute -bottom-6 sm:-bottom-10 md:-bottom-20 -right-2 sm:-right-4 md:-right-32 leading-none pointer-events-none text-[7rem] sm:text-[10rem] md:text-[16rem]"
               >
                 ”
               </span>
               <p
-                className="relative font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
+                className="relative font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-2 sm:px-6 md:px-0"
                 style={{ minHeight: "calc(1.375em * 6)" }}
               >
                 <span>{current.quote}</span>
               </p>
             </div>
-            <p className="font-body text-base md:text-lg text-background mt-16">
+            <p className="font-body text-base md:text-lg text-background mt-10 md:mt-16">
               {current.name}
             </p>
             <p className="font-body text-sm md:text-base text-background/70 mt-2">
@@ -125,6 +123,26 @@ export function TestimonialsSection() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Arrows — mobile/tablet (below content) */}
+      <div className="md:hidden flex justify-center gap-8 mt-8">
+        <button
+          type="button"
+          aria-label="Previous testimonial"
+          onClick={() => go(index - 1, "right")}
+          className="text-background/80 hover:text-background transition-colors p-2"
+        >
+          <ChevronLeft className="h-7 w-7" strokeWidth={1} />
+        </button>
+        <button
+          type="button"
+          aria-label="Next testimonial"
+          onClick={() => go(index + 1, "left")}
+          className="text-background/80 hover:text-background transition-colors p-2"
+        >
+          <ChevronRight className="h-7 w-7" strokeWidth={1} />
+        </button>
       </div>
     </section>
   );
