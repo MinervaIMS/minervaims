@@ -85,7 +85,7 @@ export function TestimonialsSection() {
       </button>
 
       <div className="container relative">
-        <div className="relative max-w-4xl mx-auto px-4 md:px-20 text-center">
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 md:px-20 text-center">
           <div
             key={animKey}
             className={
@@ -95,22 +95,22 @@ export function TestimonialsSection() {
             }
           >
             {/* Quote area with fixed height for the longest quote */}
-            <div className="relative">
+            <div className="relative isolate">
               <span
                 aria-hidden="true"
-                className="font-serif text-background/90 select-none absolute -top-2 md:top-0 -left-2 sm:-left-4 md:-left-32 leading-none pointer-events-none text-[7rem] sm:text-[10rem] md:text-[16rem]"
+                className="font-serif text-background/25 md:text-background/90 select-none absolute -top-12 sm:-top-16 md:top-0 -left-1 sm:-left-3 md:-left-32 leading-none pointer-events-none -z-10 md:z-auto text-[8rem] sm:text-[10rem] md:text-[16rem]"
               >
                 “
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background/90 select-none absolute -bottom-6 sm:-bottom-10 md:-bottom-20 -right-2 sm:-right-4 md:-right-32 leading-none pointer-events-none text-[7rem] sm:text-[10rem] md:text-[16rem]"
+                className="font-serif text-background/25 md:text-background/90 select-none absolute -bottom-14 sm:-bottom-16 md:-bottom-20 -right-1 sm:-right-3 md:-right-32 leading-none pointer-events-none -z-10 md:z-auto text-[8rem] sm:text-[10rem] md:text-[16rem]"
               >
                 ”
               </span>
               <p
-                className="relative font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-2 sm:px-6 md:px-0"
-                style={{ minHeight: "calc(1.375em * 6)" }}
+                className="relative z-10 font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-1 sm:px-6 md:px-0"
+                style={{ minHeight: "calc(1.375em * 7)" }}
               >
                 <span>{current.quote}</span>
               </p>
