@@ -10,33 +10,33 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     quote:
-      "Among the many professionals whom I have met, those that I admire most are still my friends from Bocconi, many of whom were also part of the Society.",
-    name: "Placeholder Name One",
-    role: "Placeholder Role / Placeholder Institution",
+      "The perfect place to apply classroom knowledge in an industry-like setting while meeting inspiring students who share your passion.",
+    name: "Anna Maruccio",
+    role: "Former President",
   },
   {
     quote:
-      "Minerva gave me the analytical rigour and the network that have shaped every step of my career since graduation.",
-    name: "Placeholder Name Two",
-    role: "Placeholder Role / Placeholder Institution",
+      "Joining Minerva was one of the best choices I made throughout my studies. Beyond everything I learned, it was the people I met and the moments we shared that made this experience so meaningful and unforgettable.",
+    name: "Luigi Savarese",
+    role: "Former President",
   },
   {
     quote:
-      "The discussions and research we ran together at the Society remain a benchmark for the quality of work I expect today.",
-    name: "Placeholder Name Three",
-    role: "Placeholder Role / Placeholder Institution",
+      "Come for the finance, stay for the people. You will join expecting to contribute to interesting work, but what you might not expect is to build relationships that will last long after graduation while having lots of fun.",
+    name: "Matteo Consalvo",
+    role: "Former Head of Portfolio Management",
   },
   {
     quote:
-      "What I valued most was the culture: ambitious, curious, and built on a genuine respect for ideas and evidence.",
-    name: "Placeholder Name Four",
-    role: "Placeholder Role / Placeholder Institution",
+      "A community of students, peers, and friends united by a passion for financial markets, creating bonds that last far beyond in life.",
+    name: "Michele Rinaldi",
+    role: "Former Vice-president",
   },
   {
     quote:
-      "The friendships and intellectual habits formed in the Society have outlasted any single role or institution.",
-    name: "Placeholder Name Five",
-    role: "Placeholder Role / Placeholder Institution",
+      "An awesome place to meet people passionate about markets, exchange ideas and support peers in a friendly environment.",
+    name: "Marco Neri",
+    role: "Former Vice-president",
   },
 ];
 
