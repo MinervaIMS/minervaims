@@ -10,33 +10,33 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     quote:
-      "Among the many professionals whom I have met, those that I admire most are still my friends from Bocconi, many of whom were also part of the Society.",
-    name: "Placeholder Name One",
-    role: "Placeholder Role / Placeholder Institution",
+      "The perfect place to apply classroom knowledge in an industry-like setting while meeting inspiring students who share your passion.",
+    name: "Anna Maruccio",
+    role: "Former President",
   },
   {
     quote:
-      "Minerva gave me the analytical rigour and the network that have shaped every step of my career since graduation.",
-    name: "Placeholder Name Two",
-    role: "Placeholder Role / Placeholder Institution",
+      "Joining Minerva was one of the best choices I made throughout my studies. Beyond everything I learned, it was the people I met and the moments we shared that made this experience so meaningful and unforgettable.",
+    name: "Luigi Savarese",
+    role: "Former President",
   },
   {
     quote:
-      "The discussions and research we ran together at the Society remain a benchmark for the quality of work I expect today.",
-    name: "Placeholder Name Three",
-    role: "Placeholder Role / Placeholder Institution",
+      "Come for the finance, stay for the people. You will join expecting to contribute to interesting work, but what you might not expect is to build relationships that will last long after graduation while having lots of fun.",
+    name: "Matteo Consalvo",
+    role: "Former Head of Portfolio Management",
   },
   {
     quote:
-      "What I valued most was the culture: ambitious, curious, and built on a genuine respect for ideas and evidence.",
-    name: "Placeholder Name Four",
-    role: "Placeholder Role / Placeholder Institution",
+      "A community of students, peers, and friends united by a passion for financial markets, creating bonds that last far beyond in life.",
+    name: "Michele Rinaldi",
+    role: "Former Vice-president",
   },
   {
     quote:
-      "The friendships and intellectual habits formed in the Society have outlasted any single role or institution.",
-    name: "Placeholder Name Five",
-    role: "Placeholder Role / Placeholder Institution",
+      "An awesome place to meet people passionate about markets, exchange ideas and support peers in a friendly environment.",
+    name: "Marco Neri",
+    role: "Former Vice-president",
   },
 ];
 
@@ -85,7 +85,7 @@ export function TestimonialsSection() {
       </button>
 
       <div className="container relative">
-        <div className="relative max-w-4xl mx-auto px-12 md:px-20 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 md:px-20 text-center">
           <div
             key={animKey}
             className={
@@ -94,25 +94,25 @@ export function TestimonialsSection() {
                 : "animate-testimonial-in-right"
             }
           >
-            {/* Quote area with fixed height for up to 4 lines */}
+            {/* Quote area with fixed height for the longest quote */}
             <div className="relative">
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -top-6 md:-top-10 -left-[3.75rem] md:-left-[3.75rem] leading-none"
-                style={{ fontSize: "8rem" }}
+                className="font-serif text-background select-none absolute -top-16 md:-top-24 -left-4 md:-left-32 leading-none pointer-events-none"
+                style={{ fontSize: "16rem" }}
               >
                 “
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -bottom-10 md:-bottom-14 -right-[3.75rem] md:-right-[3.75rem] leading-none"
-                style={{ fontSize: "8rem" }}
+                className="font-serif text-background select-none absolute -bottom-24 md:-bottom-32 -right-4 md:-right-32 leading-none pointer-events-none"
+                style={{ fontSize: "16rem" }}
               >
                 ”
               </span>
               <p
-                className="font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
-                style={{ minHeight: "calc(1.375em * 4)" }}
+                className="relative font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
+                style={{ minHeight: "calc(1.375em * 6)" }}
               >
                 <span>{current.quote}</span>
               </p>
