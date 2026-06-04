@@ -105,7 +105,7 @@ export function TestimonialsSection() {
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -bottom-8 md:-bottom-12 -right-4 md:-right-32 leading-none pointer-events-none"
+                className="font-serif text-background select-none absolute -bottom-12 md:-bottom-20 -right-4 md:-right-32 leading-none pointer-events-none"
                 style={{ fontSize: "16rem" }}
               >
                 ”
