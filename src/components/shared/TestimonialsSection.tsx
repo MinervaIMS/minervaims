@@ -98,13 +98,13 @@ export function TestimonialsSection() {
             <div className="relative isolate">
               <span
                 aria-hidden="true"
-                className="font-serif text-background/25 md:text-background/90 select-none absolute -top-12 sm:-top-16 md:top-0 -left-1 sm:-left-3 md:-left-32 leading-none pointer-events-none -z-10 md:z-auto text-[8rem] sm:text-[10rem] md:text-[16rem]"
+                className="font-serif text-background/90 select-none absolute -top-16 sm:-top-20 md:top-0 -left-2 sm:-left-4 md:-left-32 leading-none pointer-events-none text-[6rem] sm:text-[8rem] md:text-[16rem]"
               >
                 “
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background/25 md:text-background/90 select-none absolute -bottom-14 sm:-bottom-16 md:-bottom-20 -right-1 sm:-right-3 md:-right-32 leading-none pointer-events-none -z-10 md:z-auto text-[8rem] sm:text-[10rem] md:text-[16rem]"
+                className="font-serif text-background/90 select-none absolute -bottom-20 sm:-bottom-24 md:-bottom-20 -right-2 sm:-right-4 md:-right-32 leading-none pointer-events-none text-[6rem] sm:text-[8rem] md:text-[16rem]"
               >
                 ”
               </span>
