@@ -85,7 +85,7 @@ export function TestimonialsSection() {
       </button>
 
       <div className="container relative">
-        <div className="relative max-w-4xl mx-auto px-12 md:px-20 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 md:px-20 text-center">
           <div
             key={animKey}
             className={
@@ -94,25 +94,25 @@ export function TestimonialsSection() {
                 : "animate-testimonial-in-right"
             }
           >
-            {/* Quote area with fixed height for up to 4 lines */}
+            {/* Quote area with fixed height for the longest quote */}
             <div className="relative">
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -top-6 md:-top-10 -left-[3.75rem] md:-left-[3.75rem] leading-none"
-                style={{ fontSize: "8rem" }}
+                className="font-serif text-background select-none absolute -top-16 md:-top-24 -left-4 md:-left-32 leading-none pointer-events-none"
+                style={{ fontSize: "16rem" }}
               >
                 “
               </span>
               <span
                 aria-hidden="true"
-                className="font-serif text-background select-none absolute -bottom-10 md:-bottom-14 -right-[3.75rem] md:-right-[3.75rem] leading-none"
-                style={{ fontSize: "8rem" }}
+                className="font-serif text-background select-none absolute -bottom-24 md:-bottom-32 -right-4 md:-right-32 leading-none pointer-events-none"
+                style={{ fontSize: "16rem" }}
               >
                 ”
               </span>
               <p
-                className="font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
-                style={{ minHeight: "calc(1.375em * 4)" }}
+                className="relative font-serif text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
+                style={{ minHeight: "calc(1.375em * 6)" }}
               >
                 <span>{current.quote}</span>
               </p>
