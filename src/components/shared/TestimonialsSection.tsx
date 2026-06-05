@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Testimonial {
@@ -65,27 +66,44 @@ export function TestimonialsSection() {
   const current = testimonials[index];
 
   return (
-    <section className="relative bg-accent text-background py-section-sm md:py-section overflow-hidden">
+    <section className="relative bg-accent text-background overflow-hidden min-h-[520px] md:min-h-[500px]">
+      {/* Decorative opening quote — anchored at section top-left corner */}
+      <span
+        aria-hidden="true"
+        className="font-serif text-background/20 select-none absolute -top-6 -left-4 sm:-top-8 sm:-left-6 md:-top-12 md:-left-8 leading-none pointer-events-none text-[8rem] sm:text-[11rem] md:text-[16rem]"
+      >
+        &ldquo;
+      </span>
+
+      {/* Decorative closing quote — anchored at section bottom-right corner */}
+      <span
+        aria-hidden="true"
+        className="font-serif text-background/20 select-none absolute -bottom-10 -right-4 sm:-bottom-14 sm:-right-6 md:-bottom-20 md:-right-8 leading-none pointer-events-none text-[8rem] sm:text-[11rem] md:text-[16rem]"
+      >
+        &rdquo;
+      </span>
+
       {/* Arrows — desktop only */}
       <button
         type="button"
         aria-label="Previous testimonial"
         onClick={() => go(index - 1, "right")}
-        className="hidden md:inline-flex absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2"
+        className="hidden md:inline-flex absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2 z-10"
       >
         <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" strokeWidth={1} />
       </button>
+
       <button
         type="button"
         aria-label="Next testimonial"
         onClick={() => go(index + 1, "left")}
-        className="hidden md:inline-flex absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2"
+        className="hidden md:inline-flex absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-background/80 hover:text-background transition-colors p-2 z-10"
       >
         <ChevronRight className="h-8 w-8 md:h-10 md:w-10" strokeWidth={1} />
       </button>
 
-      <div className="container relative">
-        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 md:px-20 text-center">
+      <div className="container relative z-10 py-section-sm md:py-section">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8 md:px-20 text-center">
           <div
             key={animKey}
             className={
@@ -94,27 +112,12 @@ export function TestimonialsSection() {
                 : "animate-testimonial-in-right"
             }
           >
-            {/* Quote area with fixed height for the longest quote */}
-            <div className="relative isolate">
-              <span
-                aria-hidden="true"
-                className="font-serif text-background/90 select-none absolute -top-16 sm:-top-20 md:top-0 -left-2 sm:-left-4 md:-left-32 leading-none pointer-events-none text-[6rem] sm:text-[8rem] md:text-[16rem]"
-              >
-                “
-              </span>
-              <span
-                aria-hidden="true"
-                className="font-serif text-background/90 select-none absolute -bottom-20 sm:-bottom-24 md:-bottom-20 -right-2 sm:-right-4 md:-right-32 leading-none pointer-events-none text-[6rem] sm:text-[8rem] md:text-[16rem]"
-              >
-                ”
-              </span>
-              <p
-                className="relative z-10 font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-1 sm:px-6 md:px-0"
-                style={{ minHeight: "calc(1.375em * 7)" }}
-              >
-                <span>{current.quote}</span>
-              </p>
-            </div>
+            <p
+              className="font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center"
+              style={{ minHeight: "calc(1.375em * 7)" }}
+            >
+              <span>{current.quote}</span>
+            </p>
             <p className="font-body text-base md:text-lg text-background mt-10 md:mt-16">
               {current.name}
             </p>
@@ -126,7 +129,7 @@ export function TestimonialsSection() {
       </div>
 
       {/* Arrows — mobile/tablet (below content) */}
-      <div className="md:hidden flex justify-center gap-8 mt-8">
+      <div className="relative z-10 md:hidden flex justify-center gap-8 pb-8">
         <button
           type="button"
           aria-label="Previous testimonial"
