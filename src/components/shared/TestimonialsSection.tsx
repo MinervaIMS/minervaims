@@ -43,7 +43,9 @@ const testimonials: Testimonial[] = [
 const AUTO_ADVANCE_MS = 7000;
 
 export function TestimonialsSection() {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() =>
+    Math.floor(Math.random() * testimonials.length)
+  );
   const [direction, setDirection] = useState<"left" | "right">("left");
   const [animKey, setAnimKey] = useState(0);
 
