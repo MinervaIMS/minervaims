@@ -17,7 +17,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
     const logo = logoRef.current;
     if (!overlay || !logo) return;
 
-    gsap.set(overlay, { scaleX: 0, transformOrigin: "center center" });
+    gsap.set(overlay, { scaleX: 1, transformOrigin: "center center" });
     gsap.set(logo, { opacity: 0, scale: 0.94 });
 
     const tl = gsap.timeline({
@@ -28,12 +28,6 @@ export function Preloader({ onComplete }: PreloaderProps) {
     });
 
     tl
-      // Narrow strip expands to full screen
-      .to(overlay, {
-        scaleX: 1,
-        duration: 0.72,
-        ease: "power2.inOut",
-      })
       // Logo settles in
       .to(logo, {
         opacity: 0.9,
