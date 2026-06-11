@@ -495,6 +495,14 @@ const MinervaWorkspace = () => {
 
   const renderContent = () => {
     if (activeSectionKey === 'my-role') return renderMyRole();
+    if (activeSectionKey === 'welcome') {
+      return (
+        <div className="py-16 text-center">
+          <h2 className="font-serif text-heading text-accent mb-3">Welcome</h2>
+          <p className="font-body text-muted-foreground">Coming soon.</p>
+        </div>
+      );
+    }
     if (activeSectionKey === 'dashboard') {
       return (
         <div className="py-16 text-center">
