@@ -71,6 +71,10 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
+    key: 'welcome', label: 'Welcome', Icon: Info,
+    subItems: [],
+  },
+  {
     key: 'dashboard', label: 'Dashboard', Icon: BarChart3,
     subItems: [],
   },
