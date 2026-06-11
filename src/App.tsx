@@ -42,10 +42,16 @@ const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
 
+const DESKTOP_MIN = 1024;
+
+const shouldRunPreloader = () => {
+  if (typeof window === "undefined") return false;
+  if (window.innerWidth >= DESKTOP_MIN) return false;
+  return !sessionStorage.getItem(PRELOADER_KEY);
+};
+
 const App = () => {
-  const [showPreloader, setShowPreloader] = useState(
-    () => !sessionStorage.getItem(PRELOADER_KEY),
-  );
+  const [showPreloader, setShowPreloader] = useState(shouldRunPreloader);
 
   const handlePreloaderComplete = () => {
     sessionStorage.setItem(PRELOADER_KEY, "1");
