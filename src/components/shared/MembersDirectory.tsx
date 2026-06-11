@@ -161,7 +161,7 @@ function FeatureGrid({ members }: { members: TeamMember[] }) {
     );
   }
   return (
-    <div className="grid grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
       {members.map((m) => (
         <FeatureCard key={m.id} member={m} />
       ))}
@@ -171,8 +171,8 @@ function FeatureGrid({ members }: { members: TeamMember[] }) {
 
 function FeatureCard({ member }: { member: TeamMember }) {
   return (
-    <article className="group bg-muted p-[1.1rem] flex flex-col transition-all duration-200 ease-out hover:-translate-y-[3px] hover:bg-accent hover:shadow-[0_12px_30px_-12px_hsl(var(--accent)/0.45)]">
-      <div className="w-full aspect-square bg-background flex items-center justify-center overflow-hidden">
+    <article className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]">
+      <div className="w-full aspect-square bg-background flex items-center justify-center overflow-hidden transition-transform duration-300 ease-out group-hover:-translate-y-[6px] group-focus-within:-translate-y-[6px]">
         {member.photoUrl ? (
           <img
             src={member.photoUrl}
@@ -185,10 +185,10 @@ function FeatureCard({ member }: { member: TeamMember }) {
           </span>
         )}
       </div>
-      <h3 className="font-serif text-[1.12rem] mt-4 text-foreground group-hover:text-background transition-colors">
+      <h3 className="font-serif text-[1.12rem] mt-4 text-foreground">
         {member.name} {member.surname}
       </h3>
-      <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1 group-hover:text-[hsl(var(--accent-soft))] transition-colors">
+      <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
         {member.position}
       </p>
       <div className="mt-auto pt-4">
@@ -196,7 +196,7 @@ function FeatureCard({ member }: { member: TeamMember }) {
           <LinkedInGlyph
             href={member.linkedinUrl}
             label={`${member.name} ${member.surname} LinkedIn profile`}
-            className="text-accent group-hover:text-background"
+            className="text-accent"
           />
         )}
       </div>
