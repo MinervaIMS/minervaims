@@ -117,33 +117,44 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
   return (
     <div>
       {/* Tab bar */}
-      <nav
-        className="flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-visible gap-x-1 gap-y-1 border-b border-separator -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide"
-        aria-label="Members section"
-      >
-        {TABS.map((t) => {
-          const isActive = t.key === active;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setActive(t.key)}
-              className={[
-                'whitespace-nowrap font-body transition-colors duration-200',
-                'px-4 py-3 md:px-5 md:py-3',
-                'text-[.95rem] md:text-[1.02rem]',
-                '-mb-px border-b-2',
-                isActive
-                  ? 'text-accent border-accent bg-muted'
-                  : 'text-foreground/70 border-transparent hover:text-accent hover:bg-muted/60',
-              ].join(' ')}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
+      <div className="relative -mx-4 lg:mx-0">
+        <nav
+          className="flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-visible gap-x-1 gap-y-1 border-b border-separator px-4 lg:px-0 scrollbar-hide"
+          aria-label="Members section"
+        >
+          {TABS.map((t) => {
+            const isActive = t.key === active;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActive(t.key)}
+                className={[
+                  'whitespace-nowrap font-body transition-colors duration-200',
+                  'px-4 py-3 md:px-5 md:py-3',
+                  'text-[.95rem] md:text-[1.02rem]',
+                  '-mb-px border-b-2',
+                  isActive
+                    ? 'text-accent border-accent bg-muted'
+                    : 'text-foreground/70 border-transparent hover:text-accent hover:bg-muted/60',
+                ].join(' ')}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
+        {/* Edge fade hints — invite horizontal scroll on mobile/tablet */}
+        <div
+          aria-hidden="true"
+          className="lg:hidden pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="lg:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent"
+        />
+      </div>
 
       {/* Section header */}
       <div className="mt-10 mb-6 flex items-baseline justify-between gap-4">
@@ -282,11 +293,15 @@ function CompactCard({
   return (
     <article
       className={[
-        'group flex items-center gap-4 p-[.9rem] transition-colors duration-300 ease-out',
+        'group transition-colors duration-300 ease-out',
         'bg-muted hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]',
+        // Mobile: vertical (photo above, info below) — matches board layout
+        'flex flex-col p-[1.1rem]',
+        // Tablet & up: horizontal row layout
+        'md:flex-row md:items-center md:gap-4 md:p-[.9rem]',
       ].join(' ')}
     >
-      <div className="shrink-0 w-[76px] h-[76px] md:w-[109px] md:h-[109px] bg-background flex items-center justify-center overflow-hidden">
+      <div className="shrink-0 w-full aspect-square md:w-[109px] md:h-[109px] md:aspect-auto bg-background flex items-center justify-center overflow-hidden">
         {member.photoUrl ? (
           <img
             src={member.photoUrl}
@@ -299,16 +314,16 @@ function CompactCard({
           </span>
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 mt-4 md:mt-0">
         <h3
           className={[
-            'font-serif text-[1.08rem] leading-tight truncate',
+            'font-serif text-[1.08rem] leading-tight md:truncate',
             isLead ? 'text-accent' : 'text-foreground',
           ].join(' ')}
         >
           {member.name} {member.surname}
         </h3>
-        <p className="font-body text-[.8rem] text-muted-foreground mt-1">
+        <p className="font-body text-[.74rem] md:text-[.8rem] uppercase md:normal-case tracking-[.08em] md:tracking-normal text-muted-foreground mt-1">
           {member.position}
           {member.division === 'portfolio' &&
             member.fund &&
@@ -318,11 +333,13 @@ function CompactCard({
         </p>
       </div>
       {member.linkedinUrl && (
-        <LinkedInGlyph
-          href={member.linkedinUrl}
-          label={`${member.name} ${member.surname} LinkedIn profile`}
-          className="text-accent shrink-0"
-        />
+        <div className="mt-4 md:mt-0 md:shrink-0">
+          <LinkedInGlyph
+            href={member.linkedinUrl}
+            label={`${member.name} ${member.surname} LinkedIn profile`}
+            className="text-accent"
+          />
+        </div>
       )}
     </article>
   );
