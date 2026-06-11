@@ -164,7 +164,7 @@ const NAV: NavSection[] = [
 function filterNav(permissions: Permissions): NavSection[] {
   return NAV
     .map((s) => ({ ...s, subItems: s.subItems.filter((si) => !si.allowed || si.allowed(permissions)) }))
-    .filter((s) => s.key === 'my-role' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
+    .filter((s) => s.key === 'my-role' || s.key === 'welcome' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
