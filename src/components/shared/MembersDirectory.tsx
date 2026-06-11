@@ -79,10 +79,26 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
     const byDivision: Record<Division, TeamMember[]> = {
       equity: [], investment: [], macro: [], portfolio: [], quant: [],
     };
+    const divisionHeadMap: Record<string, Division> = {
+      'Equity Research': 'equity',
+      'Investment Research': 'investment',
+      'Macro Research': 'macro',
+      'Portfolio Management': 'portfolio',
+      'Quantitative Research': 'quant',
+    };
     members.forEach((m) => {
-      if (m.isBoard) return;
-      if (m.division && m.division in byDivision) {
-        byDivision[m.division as Division].push(m);
+      if (!m.isBoard) {
+        if (m.division && m.division in byDivision) {
+          byDivision[m.division as Division].push(m);
+        }
+        return;
+      }
+      // Board members who are heads of a division also appear in that division tab
+      for (const [key, div] of Object.entries(divisionHeadMap)) {
+        if (m.position.includes(key)) {
+          byDivision[div].push(m);
+          break;
+        }
       }
     });
     (Object.keys(byDivision) as Division[]).forEach((k) => byDivision[k].sort(sortMembers));
@@ -269,12 +285,11 @@ function CompactCard({
   return (
     <article
       className={[
-        'group flex items-center gap-4 p-[.9rem] border transition-colors duration-300 ease-out',
-        isLead ? 'bg-muted border-separator' : 'bg-background border-separator',
-        'hover:bg-[#ece9f4] hover:border-accent focus-within:bg-[#ece9f4]',
+        'group flex items-center gap-4 p-[.9rem] transition-colors duration-300 ease-out',
+        'bg-muted hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]',
       ].join(' ')}
     >
-      <div className="shrink-0 w-[76px] h-[76px] md:w-[84px] md:h-[84px] bg-background flex items-center justify-center overflow-hidden border border-separator">
+      <div className="shrink-0 w-[76px] h-[76px] md:w-[109px] md:h-[109px] bg-background flex items-center justify-center overflow-hidden">
         {member.photoUrl ? (
           <img
             src={member.photoUrl}
