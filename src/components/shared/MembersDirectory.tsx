@@ -117,33 +117,44 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
   return (
     <div>
       {/* Tab bar */}
-      <nav
-        className="flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-visible gap-x-1 gap-y-1 border-b border-separator -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide"
-        aria-label="Members section"
-      >
-        {TABS.map((t) => {
-          const isActive = t.key === active;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setActive(t.key)}
-              className={[
-                'whitespace-nowrap font-body transition-colors duration-200',
-                'px-4 py-3 md:px-5 md:py-3',
-                'text-[.95rem] md:text-[1.02rem]',
-                '-mb-px border-b-2',
-                isActive
-                  ? 'text-accent border-accent bg-muted'
-                  : 'text-foreground/70 border-transparent hover:text-accent hover:bg-muted/60',
-              ].join(' ')}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
+      <div className="relative -mx-4 lg:mx-0">
+        <nav
+          className="flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-visible gap-x-1 gap-y-1 border-b border-separator px-4 lg:px-0 scrollbar-hide"
+          aria-label="Members section"
+        >
+          {TABS.map((t) => {
+            const isActive = t.key === active;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActive(t.key)}
+                className={[
+                  'whitespace-nowrap font-body transition-colors duration-200',
+                  'px-4 py-3 md:px-5 md:py-3',
+                  'text-[.95rem] md:text-[1.02rem]',
+                  '-mb-px border-b-2',
+                  isActive
+                    ? 'text-accent border-accent bg-muted'
+                    : 'text-foreground/70 border-transparent hover:text-accent hover:bg-muted/60',
+                ].join(' ')}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
+        {/* Edge fade hints — invite horizontal scroll on mobile/tablet */}
+        <div
+          aria-hidden="true"
+          className="lg:hidden pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="lg:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent"
+        />
+      </div>
 
       {/* Section header */}
       <div className="mt-10 mb-6 flex items-baseline justify-between gap-4">
