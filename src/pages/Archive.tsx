@@ -222,7 +222,7 @@ const Archive = () => {
         <title>Archive | MIMS</title>
       </Helmet>
       {/* Hero section with background image */}
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBg})` }} />
         <div className="relative z-10">
           <PageIntroduction

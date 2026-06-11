@@ -95,7 +95,7 @@ const Readings = () => {
         <title>Readings | MIMS</title>
       </Helmet>
       {/* First Section: Title with Background */}
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div 
           className="absolute inset-0 bg-cover bg-center" 
           style={{ backgroundImage: `url(${readingsBg})` }} 

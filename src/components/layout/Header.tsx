@@ -193,9 +193,11 @@ export function Header() {
     color: transparent ? "rgba(255,255,255,0.95)" : "#1F0F4D",
   };
 
+  const TEXT_SHADOW_SOLID =
+    "0 1px 3px rgba(29,16,42,0), 0 0 18px rgba(29,16,42,0)";
   const linkTextStyle: React.CSSProperties = {
     transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, text-shadow ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
-    textShadow: transparent ? TEXT_SHADOW_TRANSPARENT : "none",
+    textShadow: transparent ? TEXT_SHADOW_TRANSPARENT : TEXT_SHADOW_SOLID,
   };
 
   const logoStyle: React.CSSProperties = {
@@ -240,7 +242,7 @@ export function Header() {
                       className="text-[0.62em] translate-y-px ml-1"
                       style={{
                         color: transparent ? "rgba(255,255,255,0.85)" : "rgba(31,15,77,0.55)",
-                        textShadow: transparent ? TEXT_SHADOW_TRANSPARENT : "none",
+                        textShadow: transparent ? TEXT_SHADOW_TRANSPARENT : TEXT_SHADOW_SOLID,
                         transition: `color ${NAV_TRANSITION_MS}ms ${NAV_EASING}, text-shadow ${NAV_TRANSITION_MS}ms ${NAV_EASING}`,
                       }}
                     >

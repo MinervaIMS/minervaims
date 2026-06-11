@@ -125,7 +125,7 @@ const Events = () => {
         <title>Events | MIMS</title>
       </Helmet>
 
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${eventsBg})` }}
