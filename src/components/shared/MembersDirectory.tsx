@@ -269,9 +269,9 @@ function CompactCard({
   return (
     <article
       className={[
-        'flex items-center gap-4 p-[.9rem] border transition-colors duration-200',
+        'group flex items-center gap-4 p-[.9rem] border transition-colors duration-300 ease-out',
         isLead ? 'bg-muted border-separator' : 'bg-background border-separator',
-        'hover:border-accent',
+        'hover:bg-[#ece9f4] hover:border-accent focus-within:bg-[#ece9f4]',
       ].join(' ')}
     >
       <div className="shrink-0 w-[76px] h-[76px] md:w-[84px] md:h-[84px] bg-background flex items-center justify-center overflow-hidden border border-separator">
