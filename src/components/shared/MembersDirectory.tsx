@@ -62,7 +62,7 @@ const sortMembers = (a: TeamMember, b: TeamMember) => {
 };
 
 const isLeadership = (m: TeamMember) =>
-  m.position.includes('Head of') || m.position === 'Portfolio Manager';
+  m.position.includes('Head of') || m.position === 'Portfolio Manager' || m.position === 'Senior Analyst';
 
 const getInitials = (m: TeamMember) =>
   `${m.name?.charAt(0) ?? ''}${m.surname?.charAt(0) ?? ''}`.toUpperCase();
@@ -152,9 +152,6 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
           {currentMembers.length} {currentMembers.length === 1 ? 'member' : 'members'}
         </span>
       </div>
-      <p className="font-body text-body text-muted-foreground max-w-[46rem] mb-8">
-        {DIVISION_BLURBS[active]}
-      </p>
 
       {/* Body */}
       {active === 'executive' && <FeatureGrid members={currentMembers} />}
@@ -266,7 +263,7 @@ function CompactGrid({
   variant: 'leadership' | 'analyst';
 }) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {members.map((m) => (
         <CompactCard key={m.id} member={m} variant={variant} />
       ))}
