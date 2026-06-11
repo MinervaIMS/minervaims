@@ -119,7 +119,7 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
       {/* Tab bar */}
       <div className="relative -mx-4 lg:mx-0">
         <nav
-          className="flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-visible gap-x-1 gap-y-1 border-b border-separator px-4 lg:px-0 scrollbar-hide"
+          className="flex flex-nowrap overflow-x-auto gap-x-1 border-b border-separator px-4 lg:px-0 scrollbar-hide"
           aria-label="Members section"
         >
           {TABS.map((t) => {
