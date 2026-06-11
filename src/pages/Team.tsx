@@ -69,11 +69,13 @@ const Team = () => {
       <Helmet>
         <title>Members | MIMS</title>
       </Helmet>
-      <PageIntroduction
-        title="Members"
-        description="The students who research, build and manage MIMS' virtual funds."
-        backgroundImage={teamBg}
-      />
+      <div data-page-hero>
+        <PageIntroduction
+          title="Members"
+          description="The students who research, build and manage MIMS' virtual funds."
+          backgroundImage={teamBg}
+        />
+      </div>
 
       {/* Intro block */}
       <section className="pt-section-sm md:pt-section pb-10 md:pb-12 bg-background">

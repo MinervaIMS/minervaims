@@ -42,7 +42,7 @@ const About = () => {
         <title>About | MIMS</title>
       </Helmet>
       {/* SECTION 0 - Hero with title and photo background */}
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${aboutBg})` }} />
         <div className="relative z-10">
           <PageIntroduction

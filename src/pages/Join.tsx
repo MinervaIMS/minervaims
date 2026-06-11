@@ -70,7 +70,7 @@ const Join = () => {
       <Helmet>
         <title>Join Us | MIMS</title>
       </Helmet>
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg})` }} />
         <div className="relative z-10">
           <PageIntroduction title="Join Us" transparentBackground />

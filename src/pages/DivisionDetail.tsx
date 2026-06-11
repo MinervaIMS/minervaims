@@ -139,7 +139,7 @@ const DivisionDetail = () => {
         <title>{content.title} | MIMS</title>
       </Helmet>
       {/* First Section: Title and Subtitle with Background */}
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div 
           className="absolute inset-0 bg-cover bg-center" 
           style={{ backgroundImage: `url(${backgroundImage})` }} 

@@ -71,7 +71,7 @@ const Index = () => {
       </Helmet>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 md:pt-24">
+      <section data-page-hero className="relative min-h-screen flex items-center justify-center pt-20 md:pt-24">
         {/* Background image - extends behind transparent header */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
 

@@ -154,7 +154,7 @@ const Alumni = () => {
       <Helmet>
         <title>Alumni | MIMS</title>
       </Helmet>
-      <div className="relative">
+      <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${alumniBg})` }} />
         <div className="relative z-10">
           <PageIntroduction
