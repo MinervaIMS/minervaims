@@ -293,11 +293,15 @@ function CompactCard({
   return (
     <article
       className={[
-        'group flex items-center gap-4 p-[.9rem] transition-colors duration-300 ease-out',
+        'group transition-colors duration-300 ease-out',
         'bg-muted hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]',
+        // Mobile: vertical (photo above, info below) — matches board layout
+        'flex flex-col p-[1.1rem]',
+        // Tablet & up: horizontal row layout
+        'md:flex-row md:items-center md:gap-4 md:p-[.9rem]',
       ].join(' ')}
     >
-      <div className="shrink-0 w-[76px] h-[76px] md:w-[109px] md:h-[109px] bg-background flex items-center justify-center overflow-hidden">
+      <div className="shrink-0 w-full aspect-square md:w-[109px] md:h-[109px] md:aspect-auto bg-background flex items-center justify-center overflow-hidden">
         {member.photoUrl ? (
           <img
             src={member.photoUrl}
@@ -310,16 +314,16 @@ function CompactCard({
           </span>
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 mt-4 md:mt-0">
         <h3
           className={[
-            'font-serif text-[1.08rem] leading-tight truncate',
+            'font-serif text-[1.08rem] leading-tight md:truncate',
             isLead ? 'text-accent' : 'text-foreground',
           ].join(' ')}
         >
           {member.name} {member.surname}
         </h3>
-        <p className="font-body text-[.8rem] text-muted-foreground mt-1">
+        <p className="font-body text-[.74rem] md:text-[.8rem] uppercase md:normal-case tracking-[.08em] md:tracking-normal text-muted-foreground mt-1">
           {member.position}
           {member.division === 'portfolio' &&
             member.fund &&
@@ -329,11 +333,13 @@ function CompactCard({
         </p>
       </div>
       {member.linkedinUrl && (
-        <LinkedInGlyph
-          href={member.linkedinUrl}
-          label={`${member.name} ${member.surname} LinkedIn profile`}
-          className="text-accent shrink-0"
-        />
+        <div className="mt-4 md:mt-0 md:shrink-0">
+          <LinkedInGlyph
+            href={member.linkedinUrl}
+            label={`${member.name} ${member.surname} LinkedIn profile`}
+            className="text-accent"
+          />
+        </div>
       )}
     </article>
   );
