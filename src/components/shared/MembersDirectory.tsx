@@ -118,7 +118,7 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
     <div>
       {/* Tab bar */}
       <nav
-        className="flex flex-wrap gap-x-1 gap-y-1 border-b border-separator"
+        className="flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-visible gap-x-1 gap-y-1 border-b border-separator -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide"
         aria-label="Members section"
       >
         {TABS.map((t) => {
@@ -129,12 +129,12 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
               type="button"
               onClick={() => setActive(t.key)}
               className={[
-                'font-serif transition-colors duration-200',
+                'whitespace-nowrap font-body transition-colors duration-200',
                 'px-4 py-3 md:px-5 md:py-3',
                 'text-[.95rem] md:text-[1.02rem]',
                 '-mb-px border-b-2',
                 isActive
-                  ? 'text-accent font-bold border-accent bg-muted'
+                  ? 'text-accent border-accent bg-muted'
                   : 'text-foreground/70 border-transparent hover:text-accent hover:bg-muted/60',
               ].join(' ')}
               aria-current={isActive ? 'page' : undefined}
