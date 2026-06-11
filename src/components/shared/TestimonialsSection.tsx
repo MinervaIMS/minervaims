@@ -65,7 +65,7 @@ export function TestimonialsSection() {
   const current = testimonials[index];
 
   return (
-    <section className="relative bg-accent text-background py-section-sm md:py-section overflow-hidden">
+    <section className="relative bg-accent text-background pt-24 pb-section-sm md:py-section overflow-hidden">
       {/* Arrows — desktop only */}
       <button
         type="button"
