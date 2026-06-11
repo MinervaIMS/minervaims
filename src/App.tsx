@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +10,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import { PageLoader } from "@/components/shared/PageLoader";
+import { Preloader } from "@/components/shared/Preloader";
+
+const PRELOADER_KEY = "__mims_intro__";
 
 // Eagerly load the homepage for best LCP
 import Index from "./pages/Index";
@@ -39,7 +42,19 @@ const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
 
-const App = () => (
+const App = () => {
+  const [showPreloader, setShowPreloader] = useState(
+    () => !sessionStorage.getItem(PRELOADER_KEY),
+  );
+
+  const handlePreloaderComplete = () => {
+    sessionStorage.setItem(PRELOADER_KEY, "1");
+    setShowPreloader(false);
+  };
+
+  return (
+  <>
+  {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
@@ -84,6 +99,8 @@ const App = () => (
     </TooltipProvider>
 
   </QueryClientProvider>
-);
+  </>
+  );
+};
 
 export default App;
