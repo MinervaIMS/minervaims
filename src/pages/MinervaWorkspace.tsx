@@ -15,7 +15,7 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation, BarChart3, LayoutTemplate,
+  Presentation, BarChart3, LayoutTemplate, Info,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -68,6 +68,10 @@ type NavSection = {
 const NAV: NavSection[] = [
   {
     key: 'my-role', label: 'My Profile', Icon: UserIcon,
+    subItems: [],
+  },
+  {
+    key: 'welcome', label: 'Welcome', Icon: Info,
     subItems: [],
   },
   {
@@ -160,7 +164,7 @@ const NAV: NavSection[] = [
 function filterNav(permissions: Permissions): NavSection[] {
   return NAV
     .map((s) => ({ ...s, subItems: s.subItems.filter((si) => !si.allowed || si.allowed(permissions)) }))
-    .filter((s) => s.key === 'my-role' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
+    .filter((s) => s.key === 'my-role' || s.key === 'welcome' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -491,6 +495,14 @@ const MinervaWorkspace = () => {
 
   const renderContent = () => {
     if (activeSectionKey === 'my-role') return renderMyRole();
+    if (activeSectionKey === 'welcome') {
+      return (
+        <div className="py-16 text-center">
+          <h2 className="font-serif text-heading text-accent mb-3">Welcome</h2>
+          <p className="font-body text-muted-foreground">Coming soon.</p>
+        </div>
+      );
+    }
     if (activeSectionKey === 'dashboard') {
       return (
         <div className="py-16 text-center">
