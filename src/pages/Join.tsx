@@ -259,23 +259,31 @@ const CountUp = ({
 const Join = () => {
   const { settings } = useApplicationSettings();
   const imagesLoaded = useImagePreload([joinBg]);
+  const { counts: keyFigures, isLoading: keyFiguresLoading } = useKeyFigures();
 
   // Figures band trigger
   const figures = useInView<HTMLDivElement>({ threshold: 0.3 });
 
-  // Journey "lit" sequential effect
+  // Journey "lit" sequential effect — each step lights up on its own timer
+  // so its line-fill transition (1s) runs independently of the others.
   const journey = useInView<HTMLDivElement>({ threshold: 0.2 });
-  const [litStep, setLitStep] = useState(-1);
+  const [litSteps, setLitSteps] = useState<Set<number>>(new Set());
   useEffect(() => {
     if (!journey.inView) return;
     if (prefersReducedMotion()) {
-      setLitStep(APPLICATION_STEPS.length - 1);
+      setLitSteps(new Set(APPLICATION_STEPS.map((_, i) => i)));
       return;
     }
     const timers: number[] = [];
     APPLICATION_STEPS.forEach((_, i) => {
       timers.push(
-        window.setTimeout(() => setLitStep((s) => Math.max(s, i)), 250 + i * 400)
+        window.setTimeout(() => {
+          setLitSteps((prev) => {
+            const next = new Set(prev);
+            next.add(i);
+            return next;
+          });
+        }, 250 + i * 400)
       );
     });
     return () => timers.forEach(clearTimeout);
