@@ -319,7 +319,7 @@ const Join = () => {
                 style={{ backgroundImage: `url(${joinBg})` }}
                 aria-hidden
               />
-              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl mx-auto md:mx-0 md:ml-[max(1.5rem,calc((100vw-72rem)/2+3rem))]">
+              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl">
                 {settings.applicationsOpen ? (
                   <>
                     <h2 className="font-serif text-display md:text-hero text-background leading-tight">
