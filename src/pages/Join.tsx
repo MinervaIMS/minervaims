@@ -387,27 +387,34 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Figures */}
-        <section className="mb-20 md:mb-24 -mx-6 md:-mx-0">
-          <div ref={figures.ref} className="bg-accent text-accent-foreground py-10 md:py-14 px-6 md:px-12">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
-              {FIGURES.map((f, i) => (
-                <Reveal key={f.label} delay={i * 80} className="text-center">
-                  <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
-                    {f.count !== undefined ? (
-                      <CountUp value={f.count} suffix={f.suffix ?? ""} start={figures.inView} />
-                    ) : (
-                      f.num
-                    )}
-                  </div>
-                  <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
-                    {f.label}
-                  </div>
-                </Reveal>
-              ))}
+        {/* Figures — full-bleed band with live counters */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
+          <div ref={figures.ref} className="bg-accent text-accent-foreground py-12 md:py-16 px-6 md:px-12">
+            <div className="container">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
+                {FIGURES.map((f, i) => (
+                  <Reveal key={f.label} delay={i * 80} className="text-center">
+                    <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
+                      {f.staticValue !== undefined ? (
+                        f.staticValue
+                      ) : (
+                        <CountUp
+                          value={f.key ? keyFigures[f.key] : 0}
+                          suffix={f.suffix ?? ""}
+                          start={figures.inView && !keyFiguresLoading}
+                        />
+                      )}
+                    </div>
+                    <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
+                      {f.label}
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
             </div>
           </div>
         </section>
+
 
         {/* What You Gain */}
         <section className="mb-20 md:mb-24">
