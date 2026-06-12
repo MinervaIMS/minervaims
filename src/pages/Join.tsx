@@ -31,13 +31,13 @@ const WHY_JOIN = [
   },
 ];
 
-type Figure = { num: string; label: string; count?: number; suffix?: string };
+type Figure = { label: string; staticValue?: string; key?: "members" | "alumni" | "reports"; suffix?: string };
 const FIGURES: Figure[] = [
-  { num: "2017", label: "Founded" },
-  { num: "80+", label: "Active Members", count: 80, suffix: "+" },
-  { num: "250+", label: "Alumni Network", count: 250, suffix: "+" },
-  { num: "120+", label: "Research Reports", count: 120, suffix: "+" },
-  { num: "5", label: "Research Divisions", count: 5, suffix: "" },
+  { label: "Founded", staticValue: "2017" },
+  { label: "Active Members", key: "members", suffix: "+" },
+  { label: "Alumni Network", key: "alumni", suffix: "+" },
+  { label: "Research Reports", key: "reports", suffix: "+" },
+  { label: "Research Divisions", staticValue: "5" },
 ];
 
 const WHAT_YOU_GAIN = [
