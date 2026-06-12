@@ -311,7 +311,7 @@ const Join = () => {
 
       <div className="container py-section md:py-section-lg">
         {/* Status / CTA hero band (moved from the bottom) */}
-        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
+        <section className="mb-20 md:mb-24">
           <Reveal>
             <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
               <div
