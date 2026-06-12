@@ -310,14 +310,52 @@ const Join = () => {
       </div>
 
       <div className="container py-section md:py-section-lg">
-        {/* Application Status */}
-        <Reveal>
-          <ApplicationStatus
-            applicationsOpen={settings.applicationsOpen}
-            semesterLabel={settings.semesterLabel}
-            applyFormUrl={settings.applyFormUrl}
-          />
-        </Reveal>
+        {/* Status / CTA hero band (moved from the bottom) */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
+          <Reveal>
+            <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-30"
+                style={{ backgroundImage: `url(${joinBg})` }}
+                aria-hidden
+              />
+              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl mx-auto md:mx-0 md:ml-[max(1.5rem,calc((100vw-72rem)/2+3rem))]">
+                {settings.applicationsOpen ? (
+                  <>
+                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
+                      Prepare a strong application — then apply.
+                    </h2>
+                    <p className="font-body text-body-lg text-background/80 mt-5">
+                      Applications for {settings.semesterLabel} are open. Submit the form with your CV, motivation
+                      letter and written answer.
+                    </p>
+                    <div className="flex flex-wrap gap-4 items-center mt-8">
+                      <a
+                        href={settings.applyFormUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-background text-foreground font-serif text-body-lg px-8 py-4 hover:bg-background/90 transition-colors"
+                      >
+                        Submit Application Form <span aria-hidden>↗</span>
+                      </a>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
+                      Applications are closed. Start preparing now.
+                    </h2>
+                    <p className="font-body text-body-lg text-background/80 mt-5">
+                      Use the roadmap below to guide your journey. The next intake will be announced at the start of
+                      the upcoming semester.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
 
         {/* Why Join */}
         <section className="mb-20 md:mb-24">
