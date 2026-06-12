@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PageIntroduction, ApplicationStatus, PageLoader } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
 import joinBg from "@/assets/join-bg.webp";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const WHY_JOIN = [
@@ -30,13 +31,13 @@ const WHY_JOIN = [
   },
 ];
 
-type Figure = { num: string; label: string; count?: number; suffix?: string };
+type Figure = { label: string; staticValue?: string; key?: "members" | "alumni" | "reports"; suffix?: string };
 const FIGURES: Figure[] = [
-  { num: "2017", label: "Founded" },
-  { num: "80+", label: "Active Members", count: 80, suffix: "+" },
-  { num: "250+", label: "Alumni Network", count: 250, suffix: "+" },
-  { num: "120+", label: "Research Reports", count: 120, suffix: "+" },
-  { num: "5", label: "Research Divisions", count: 5, suffix: "" },
+  { label: "Founded", staticValue: "2017" },
+  { label: "Active Members", key: "members", suffix: "+" },
+  { label: "Alumni Network", key: "alumni", suffix: "+" },
+  { label: "Research Reports", key: "reports", suffix: "+" },
+  { label: "Research Divisions", staticValue: "5" },
 ];
 
 const WHAT_YOU_GAIN = [
@@ -258,23 +259,31 @@ const CountUp = ({
 const Join = () => {
   const { settings } = useApplicationSettings();
   const imagesLoaded = useImagePreload([joinBg]);
+  const { counts: keyFigures, isLoading: keyFiguresLoading } = useKeyFigures();
 
   // Figures band trigger
   const figures = useInView<HTMLDivElement>({ threshold: 0.3 });
 
-  // Journey "lit" sequential effect
+  // Journey "lit" sequential effect — each step lights up on its own timer
+  // so its line-fill transition (1s) runs independently of the others.
   const journey = useInView<HTMLDivElement>({ threshold: 0.2 });
-  const [litStep, setLitStep] = useState(-1);
+  const [litSteps, setLitSteps] = useState<Set<number>>(new Set());
   useEffect(() => {
     if (!journey.inView) return;
     if (prefersReducedMotion()) {
-      setLitStep(APPLICATION_STEPS.length - 1);
+      setLitSteps(new Set(APPLICATION_STEPS.map((_, i) => i)));
       return;
     }
     const timers: number[] = [];
     APPLICATION_STEPS.forEach((_, i) => {
       timers.push(
-        window.setTimeout(() => setLitStep((s) => Math.max(s, i)), 250 + i * 400)
+        window.setTimeout(() => {
+          setLitSteps((prev) => {
+            const next = new Set(prev);
+            next.add(i);
+            return next;
+          });
+        }, 250 + i * 400)
       );
     });
     return () => timers.forEach(clearTimeout);
@@ -301,14 +310,52 @@ const Join = () => {
       </div>
 
       <div className="container py-section md:py-section-lg">
-        {/* Application Status */}
-        <Reveal>
-          <ApplicationStatus
-            applicationsOpen={settings.applicationsOpen}
-            semesterLabel={settings.semesterLabel}
-            applyFormUrl={settings.applyFormUrl}
-          />
-        </Reveal>
+        {/* Status / CTA hero band (moved from the bottom) */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
+          <Reveal>
+            <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-30"
+                style={{ backgroundImage: `url(${joinBg})` }}
+                aria-hidden
+              />
+              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl mx-auto md:mx-0 md:ml-[max(1.5rem,calc((100vw-72rem)/2+3rem))]">
+                {settings.applicationsOpen ? (
+                  <>
+                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
+                      Prepare a strong application — then apply.
+                    </h2>
+                    <p className="font-body text-body-lg text-background/80 mt-5">
+                      Applications for {settings.semesterLabel} are open. Submit the form with your CV, motivation
+                      letter and written answer.
+                    </p>
+                    <div className="flex flex-wrap gap-4 items-center mt-8">
+                      <a
+                        href={settings.applyFormUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-background text-foreground font-serif text-body-lg px-8 py-4 hover:bg-background/90 transition-colors"
+                      >
+                        Submit Application Form <span aria-hidden>↗</span>
+                      </a>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
+                      Applications are closed. Start preparing now.
+                    </h2>
+                    <p className="font-body text-body-lg text-background/80 mt-5">
+                      Use the roadmap below to guide your journey. The next intake will be announced at the start of
+                      the upcoming semester.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
 
         {/* Why Join */}
         <section className="mb-20 md:mb-24">
@@ -340,27 +387,34 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Figures */}
-        <section className="mb-20 md:mb-24 -mx-6 md:-mx-0">
-          <div ref={figures.ref} className="bg-accent text-accent-foreground py-10 md:py-14 px-6 md:px-12">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
-              {FIGURES.map((f, i) => (
-                <Reveal key={f.label} delay={i * 80} className="text-center">
-                  <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
-                    {f.count !== undefined ? (
-                      <CountUp value={f.count} suffix={f.suffix ?? ""} start={figures.inView} />
-                    ) : (
-                      f.num
-                    )}
-                  </div>
-                  <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
-                    {f.label}
-                  </div>
-                </Reveal>
-              ))}
+        {/* Figures — full-bleed band with live counters */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
+          <div ref={figures.ref} className="bg-accent text-accent-foreground py-12 md:py-16 px-6 md:px-12">
+            <div className="container">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
+                {FIGURES.map((f, i) => (
+                  <Reveal key={f.label} delay={i * 80} className="text-center">
+                    <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
+                      {f.staticValue !== undefined ? (
+                        f.staticValue
+                      ) : (
+                        <CountUp
+                          value={f.key ? keyFigures[f.key] : 0}
+                          suffix={f.suffix ?? ""}
+                          start={figures.inView && !keyFiguresLoading}
+                        />
+                      )}
+                    </div>
+                    <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
+                      {f.label}
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
             </div>
           </div>
         </section>
+
 
         {/* What You Gain */}
         <section className="mb-20 md:mb-24">
@@ -380,21 +434,34 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Selectivity */}
-        <section className="mb-20 md:mb-24 -mx-6 md:-mx-0">
+        {/* Selectivity — full-bleed grey panel with giant quote watermark */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
           <Reveal>
-            <div className="bg-secondary px-6 md:px-12 py-12 md:py-16">
-              <div className="max-w-3xl">
-                <h2 className="font-serif text-heading text-accent mb-5">Demanding by design</h2>
-                <p className="font-serif text-xl md:text-2xl leading-snug text-foreground">
-                  We don't lead with acceptance rates — they understate the truth. The application itself is rigorous,
-                  so candidates effectively self-select before they ever submit. The bar is the preparation. Treat the
-                  steps below as the syllabus: meet them properly and you are already most of the way there.
-                </p>
+            <div className="bg-secondary relative overflow-hidden">
+              <span
+                aria-hidden
+                className="pointer-events-none select-none absolute -top-12 -left-6 font-serif leading-none z-0"
+                style={{
+                  fontSize: "clamp(12rem, 22vw, 22rem)",
+                  color: "hsl(var(--accent) / 0.06)",
+                }}
+              >
+                “
+              </span>
+              <div className="container relative z-10 px-6 md:px-12 py-12 md:py-16">
+                <div className="max-w-3xl">
+                  <h2 className="font-serif text-heading text-accent mb-5">Demanding by design</h2>
+                  <p className="font-serif text-xl md:text-2xl leading-snug text-foreground">
+                    We don't lead with acceptance rates — they understate the truth. The application itself is rigorous,
+                    so candidates effectively self-select before they ever submit. The bar is the preparation. Treat the
+                    steps below as the syllabus: meet them properly and you are already most of the way there.
+                  </p>
+                </div>
               </div>
             </div>
           </Reveal>
         </section>
+
 
         {/* Application Journey */}
         <section className="mb-20 md:mb-24">
@@ -403,7 +470,7 @@ const Join = () => {
           </h2>
           <div ref={journey.ref} className="max-w-4xl">
             {APPLICATION_STEPS.map((step, index) => {
-              const lit = index <= litStep;
+              const lit = litSteps.has(index);
               const isLast = index === APPLICATION_STEPS.length - 1;
               return (
                 <Reveal key={step.step} delay={index * 70}>
@@ -526,56 +593,6 @@ const Join = () => {
                   </AccordionItem>
                 ))}
               </Accordion>
-            </div>
-          </Reveal>
-        </section>
-
-        {/* Final CTA */}
-        <section className="-mx-6 md:-mx-0">
-          <Reveal>
-            <div
-              className="relative overflow-hidden"
-              style={{ backgroundColor: "#0b0720" }}
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: `url(${joinBg})` }}
-                aria-hidden
-              />
-              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl">
-                <p className="font-body text-xs uppercase tracking-[0.16em] text-background/70 mb-5">The next step</p>
-                {settings.applicationsOpen ? (
-                  <>
-                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Prepare a strong application — then apply.
-                    </h2>
-                    <p className="font-body text-body-lg text-background/80 mt-5">
-                      Applications for {settings.semesterLabel} are open. Submit the form with your CV, motivation
-                      letter and written answer.
-                    </p>
-                    <div className="flex flex-wrap gap-4 items-center mt-8">
-                      <a
-                        href={settings.applyFormUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-background text-foreground font-serif text-body-lg px-8 py-4 hover:bg-background/90 transition-colors"
-                      >
-                        Submit Application Form <span aria-hidden>↗</span>
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Applications are closed — start preparing now.
-                    </h2>
-                    <p className="font-body text-body-lg text-background/80 mt-5">
-                      Use the journey above as your syllabus. The next intake will be announced at the start of the
-                      upcoming semester.
-                    </p>
-                  </>
-                )}
-              </div>
             </div>
           </Reveal>
         </section>
