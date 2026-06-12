@@ -311,7 +311,35 @@ const Join = () => {
       </div>
 
       <div className="container py-section md:py-section-lg">
-        {/* Status / CTA hero band (moved from the bottom) */}
+        {/* Figures — full-bleed band with live counters */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24 -mt-section md:-mt-section-lg">
+          <div ref={figures.ref} className="bg-accent text-accent-foreground py-12 md:py-16 px-6 md:px-12">
+            <div className="container">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
+                {FIGURES.map((f, i) => (
+                  <Reveal key={f.label} delay={i * 80} className="text-center">
+                    <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
+                      {f.staticValue !== undefined ? (
+                        f.staticValue
+                      ) : (
+                        <CountUp
+                          value={f.key ? keyFigures[f.key] : 0}
+                          suffix={f.suffix ?? ""}
+                          start={figures.inView && !keyFiguresLoading}
+                        />
+                      )}
+                    </div>
+                    <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
+                      {f.label}
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Status / CTA hero band */}
         <section className="mb-20 md:mb-24">
           <Reveal>
             <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
@@ -356,6 +384,7 @@ const Join = () => {
             </div>
           </Reveal>
         </section>
+
 
 
         {/* Why Join */}
