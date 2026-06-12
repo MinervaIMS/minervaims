@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PageIntroduction, ApplicationStatus, PageLoader } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
 import joinBg from "@/assets/join-bg.webp";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const WHY_JOIN = [
