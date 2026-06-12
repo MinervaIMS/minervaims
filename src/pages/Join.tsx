@@ -470,7 +470,7 @@ const Join = () => {
           </h2>
           <div ref={journey.ref} className="max-w-4xl">
             {APPLICATION_STEPS.map((step, index) => {
-              const lit = index <= litStep;
+              const lit = litSteps.has(index);
               const isLast = index === APPLICATION_STEPS.length - 1;
               return (
                 <Reveal key={step.step} delay={index * 70}>
