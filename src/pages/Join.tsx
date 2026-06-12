@@ -434,21 +434,34 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Selectivity */}
-        <section className="mb-20 md:mb-24 -mx-6 md:-mx-0">
+        {/* Selectivity — full-bleed grey panel with giant quote watermark */}
+        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
           <Reveal>
-            <div className="bg-secondary px-6 md:px-12 py-12 md:py-16">
-              <div className="max-w-3xl">
-                <h2 className="font-serif text-heading text-accent mb-5">Demanding by design</h2>
-                <p className="font-serif text-xl md:text-2xl leading-snug text-foreground">
-                  We don't lead with acceptance rates — they understate the truth. The application itself is rigorous,
-                  so candidates effectively self-select before they ever submit. The bar is the preparation. Treat the
-                  steps below as the syllabus: meet them properly and you are already most of the way there.
-                </p>
+            <div className="bg-secondary relative overflow-hidden">
+              <span
+                aria-hidden
+                className="pointer-events-none select-none absolute -top-12 -left-6 font-serif leading-none z-0"
+                style={{
+                  fontSize: "clamp(12rem, 22vw, 22rem)",
+                  color: "hsl(var(--accent) / 0.06)",
+                }}
+              >
+                “
+              </span>
+              <div className="container relative z-10 px-6 md:px-12 py-12 md:py-16">
+                <div className="max-w-3xl">
+                  <h2 className="font-serif text-heading text-accent mb-5">Demanding by design</h2>
+                  <p className="font-serif text-xl md:text-2xl leading-snug text-foreground">
+                    We don't lead with acceptance rates — they understate the truth. The application itself is rigorous,
+                    so candidates effectively self-select before they ever submit. The bar is the preparation. Treat the
+                    steps below as the syllabus: meet them properly and you are already most of the way there.
+                  </p>
+                </div>
               </div>
             </div>
           </Reveal>
         </section>
+
 
         {/* Application Journey */}
         <section className="mb-20 md:mb-24">
