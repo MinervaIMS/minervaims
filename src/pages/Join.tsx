@@ -311,7 +311,7 @@ const Join = () => {
 
       <div className="container py-section md:py-section-lg">
         {/* Status / CTA hero band (moved from the bottom) */}
-        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
+        <section className="mb-20 md:mb-24">
           <Reveal>
             <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
               <div
@@ -319,7 +319,7 @@ const Join = () => {
                 style={{ backgroundImage: `url(${joinBg})` }}
                 aria-hidden
               />
-              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl mx-auto md:mx-0 md:ml-[max(1.5rem,calc((100vw-72rem)/2+3rem))]">
+              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl">
                 {settings.applicationsOpen ? (
                   <>
                     <h2 className="font-serif text-display md:text-hero text-background leading-tight">
