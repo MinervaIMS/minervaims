@@ -229,7 +229,7 @@ const CountUp = ({
   const [n, setN] = useState(0);
   const started = useRef(false);
   useEffect(() => {
-    if (!start || started.current) return;
+    if (!start || value <= 0 || started.current) return;
     started.current = true;
     if (prefersReducedMotion()) {
       setN(value);
@@ -253,6 +253,7 @@ const CountUp = ({
     </>
   );
 };
+
 
 /* ---------------------- Page ---------------------- */
 
