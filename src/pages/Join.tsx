@@ -596,56 +596,6 @@ const Join = () => {
             </div>
           </Reveal>
         </section>
-
-        {/* Final CTA */}
-        <section className="-mx-6 md:-mx-0">
-          <Reveal>
-            <div
-              className="relative overflow-hidden"
-              style={{ backgroundColor: "#0b0720" }}
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: `url(${joinBg})` }}
-                aria-hidden
-              />
-              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl">
-                <p className="font-body text-xs uppercase tracking-[0.16em] text-background/70 mb-5">The next step</p>
-                {settings.applicationsOpen ? (
-                  <>
-                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Prepare a strong application — then apply.
-                    </h2>
-                    <p className="font-body text-body-lg text-background/80 mt-5">
-                      Applications for {settings.semesterLabel} are open. Submit the form with your CV, motivation
-                      letter and written answer.
-                    </p>
-                    <div className="flex flex-wrap gap-4 items-center mt-8">
-                      <a
-                        href={settings.applyFormUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-background text-foreground font-serif text-body-lg px-8 py-4 hover:bg-background/90 transition-colors"
-                      >
-                        Submit Application Form <span aria-hidden>↗</span>
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Applications are closed — start preparing now.
-                    </h2>
-                    <p className="font-body text-body-lg text-background/80 mt-5">
-                      Use the journey above as your syllabus. The next intake will be announced at the start of the
-                      upcoming semester.
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </Reveal>
-        </section>
       </div>
     </>
   );
