@@ -216,7 +216,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '210px',              // inter-logo spacing (120 × 1.75)
+          gap: '250px',              // inter-logo spacing
           animation: `${anim} ${DURATION}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
