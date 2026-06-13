@@ -287,7 +287,7 @@ const AlumniTicker = () => {
       ))}
 
       {/* Bottom spacing */}
-      <div style={{ paddingBottom: '60px' }} />
+      <div style={{ paddingBottom: '24px' }} />
     </section>
   );
 };
