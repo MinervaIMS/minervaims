@@ -71,26 +71,60 @@ const Index = () => {
       </Helmet>
 
       {/* Hero Section */}
-      <section data-page-hero className="relative min-h-screen flex items-center justify-center pt-20 md:pt-24">
+      <section data-page-hero className="relative min-h-screen flex flex-col pt-20 md:pt-24">
         {/* Background image - extends behind transparent header */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
 
         {/* Content */}
-        <div className="relative z-10 text-center px-6 py-20">
-          <img
-            src={logoWhite}
-            alt="Minerva Investment Management Society"
-            className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
-            fetchPriority="high"
-          />
-          {appSettings.applicationsOpen && (
-            <Link
-              to="/join"
-              className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"
-            >
-              APPLY NOW
-            </Link>
-          )}
+        <div className="relative z-10 flex-1 flex items-center justify-center text-center px-6 py-12">
+          <div>
+            <img
+              src={logoWhite}
+              alt="Minerva Investment Management Society"
+              className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+              fetchPriority="high"
+            />
+            {appSettings.applicationsOpen && (
+              <Link
+                to="/join"
+                className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"
+              >
+                APPLY NOW
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Key Figures - inside hero so it appears within initial viewport */}
+        <div className="relative z-10 bg-background">
+          <div className="container py-8 md:py-section-sm lg:py-section">
+            <div className="grid grid-cols-3 gap-2 md:gap-12">
+              <Link
+                to="/archive"
+                className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
+              >
+                <p className="font-serif text-3xl sm:text-5xl md:text-hero text-primary mb-1 md:mb-2">
+                  <AnimatedFigure value={counts.reports} isLoading={false} />
+                </p>
+                <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
+              </Link>
+              <Link
+                to="/people/members"
+                className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
+              >
+                <p className="font-serif text-3xl sm:text-5xl md:text-hero text-primary mb-1 md:mb-2">
+                  <AnimatedFigure value={counts.members} isLoading={false} />
+                </p>
+                <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
+              </Link>
+              <Link to="/people/alumni" className="text-center py-4 md:py-6 hover:opacity-80 transition-opacity">
+                <p className="font-serif text-3xl sm:text-5xl md:text-hero text-primary mb-1 md:mb-2">
+                  <AnimatedFigure value={counts.alumni} isLoading={false} />
+                </p>
+                <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
