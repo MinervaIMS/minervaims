@@ -472,40 +472,49 @@ const Join = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Application Journey
           </h2>
-          <div ref={journey.ref} className="max-w-4xl">
+          <div ref={journey.ref} className="relative max-w-[54rem]">
             {APPLICATION_STEPS.map((step, index) => {
               const lit = litSteps.has(index);
               const isLast = index === APPLICATION_STEPS.length - 1;
               return (
                 <Reveal key={step.step} delay={index * 70}>
-                  <div className={`relative flex gap-5 ${!isLast ? "pb-10" : ""}`}>
-                    {/* Continuous spine rail (hidden on last step) */}
-                    {!isLast && (
-                      <div className="absolute left-[19px] sm:left-[23px] top-12 sm:top-14 bottom-0 w-px bg-separator overflow-hidden pointer-events-none">
-                        <div
-                          className="absolute inset-x-0 top-0 bg-accent transition-[height] ease-out"
-                          style={{
-                            height: lit ? "calc(100% + 2.5rem)" : "0%",
-                            transitionDuration: "1200ms",
-                          }}
-                        />
-                      </div>
-                    )}
-                    {/* Timeline Dot */}
-                    <div className="flex flex-col items-center relative z-10">
+                  <div
+                    className={`relative grid grid-cols-[60px_1fr] gap-[1.4rem] ${
+                      isLast ? "pb-0" : "pb-10"
+                    }`}
+                  >
+                    {/* Rail column: dot + connecting line */}
+                    <div className="relative flex justify-center">
                       <div
-                        className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background transition-[background-color,color,box-shadow] duration-[600ms] ease-out ${
+                        className={`relative z-[2] w-[60px] h-[60px] rounded-full border-[1.5px] border-accent bg-background flex items-center justify-center font-serif text-[1.4rem] transition-all duration-[550ms] ease-out ${
                           lit
                             ? "bg-accent text-background shadow-[0_0_0_6px_rgba(31,15,77,0.1),0_10px_28px_rgba(31,15,77,0.3)]"
                             : "text-accent"
                         }`}
+                        style={lit ? { backgroundColor: "hsl(var(--accent))" } : undefined}
                       >
-                        <span className="font-serif text-lg sm:text-xl">{step.step}</span>
+                        {step.step}
                       </div>
+                      {!isLast && (
+                        <div
+                          className="absolute top-[60px] -bottom-10 left-1/2 w-[2px] -translate-x-1/2 bg-separator overflow-hidden pointer-events-none"
+                          aria-hidden
+                        >
+                          <div
+                            className="absolute inset-x-0 top-0 bg-accent transition-[height] ease-linear"
+                            style={{
+                              height: lit ? "calc(100% + 2.5rem)" : "0%",
+                              transitionDuration: "1000ms",
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                     {/* Step Content */}
-                    <div className="flex-1 pt-1">
-                      <h3 className="font-serif text-lg sm:text-subheading mb-2">{step.title}</h3>
+                    <div>
+                      <h3 className="font-serif text-[1.5rem] text-foreground mt-[0.7rem] mb-2">
+                        {step.title}
+                      </h3>
                       <p className="font-body text-body-lg text-muted-foreground">
                         {step.description}
                         {step.fileName && (
@@ -518,7 +527,7 @@ const Join = () => {
                       </p>
 
                       {step.written && (
-                        <div className="mt-5 pt-5 border-t border-separator max-w-2xl flex flex-col gap-4">
+                        <div className="mt-5 pt-5 border-t border-separator max-w-[42rem] flex flex-col gap-4">
                           <p className="font-body text-small text-muted-foreground">
                             Answer the question for your first-choice division below. You may answer additional divisions
                             too — if you do, combine everything into the same PDF.
@@ -542,6 +551,7 @@ const Join = () => {
               );
             })}
           </div>
+
         </section>
 
         {/* How To Prepare For The Interview */}
