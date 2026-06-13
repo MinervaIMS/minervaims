@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBg from '@/assets/alumni-bg.webp';
@@ -37,26 +37,12 @@ const Alumni = () => {
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [jobAreaFilter, setJobAreaFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isSticky, setIsSticky] = useState(false);
-  const searchBarRef = useRef<HTMLDivElement>(null);
   const imagesLoaded = useImagePreload([alumniBg]);
 
   useEffect(() => {
     fetchAlumni();
   }, []);
 
-  // Detect sticky state
-  useEffect(() => {
-    const handleScroll = () => {
-      if (searchBarRef.current) {
-        const rect = searchBarRef.current.getBoundingClientRect();
-        setIsSticky(rect.top <= 64); // 64px = top-16 (4rem)
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const fetchAlumni = async () => {
     try {
@@ -222,14 +208,13 @@ const Alumni = () => {
         </div>
 
         {/* Search and Filters */}
-        <div 
-          ref={searchBarRef}
-          className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator"
+        <div
+          className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator max-h-[calc(100vh-4rem)] overflow-y-auto"
         >
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
             {/* Search */}
             <div className="flex-1 min-w-[200px]">
-              <label className={`font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2 ${isSticky ? 'sm:block hidden' : ''}`}>
+              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                 Search
               </label>
               <div className="relative">
@@ -244,9 +229,9 @@ const Alumni = () => {
                 />
               </div>
             </div>
-            
-            {/* Job Area Filter - hidden on mobile when sticky */}
-            <div className={`${isSticky ? 'hidden sm:block' : ''}`}>
+
+            {/* Job Area Filter */}
+            <div>
               <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                 Job Area
               </label>
@@ -263,8 +248,8 @@ const Alumni = () => {
               </select>
             </div>
 
-            {/* Company Filter - hidden on mobile when sticky */}
-            <div className={`${isSticky ? 'hidden sm:block' : ''}`}>
+            {/* Company Filter */}
+            <div>
               <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                 Company
               </label>
@@ -281,8 +266,8 @@ const Alumni = () => {
               </select>
             </div>
 
-            {/* City Filter - hidden on mobile when sticky */}
-            <div className={`${isSticky ? 'hidden sm:block' : ''}`}>
+            {/* City Filter */}
+            <div>
               <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                 City
               </label>
@@ -299,12 +284,13 @@ const Alumni = () => {
               </select>
             </div>
           </div>
-          
-          <p className={`text-small text-muted-foreground mt-4 ${isSticky ? 'hidden sm:block' : ''}`}>
+
+          <p className="text-small text-muted-foreground mt-4">
             Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
             {filteredAlumni.length !== alumni.length && ` (${alumni.length} total)`}
           </p>
         </div>
+
 
         {/* Alumni List */}
         {alumni.length === 0 ? (
