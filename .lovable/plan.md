@@ -1,67 +1,47 @@
-## Goal
+# Fix "Open Report" tab + filename issues
 
-On the homepage **Latest Reports** carousel (the `cards` variant in `ReportsSection.tsx`), make the rail extend to the full viewport width with a soft transparency fade on the left and right edges. The first card's resting position (at scroll start) and the last card's resting position (at scroll end) must remain visually identical to today — only the *scroll travel* benefits from the extra width.
+## Problems identified
 
-## Behaviour spec
+Both issues come from `openReportInTab()` in `src/components/shared/ReportsSection.tsx` (lines 205-226), which is invoked from the homepage cards, the lightbox cover, the "Open Report" button, and the division pages.
 
-- At `scrollLeft = 0`: first card sits exactly where it sits today (inside the current `.rwrap` gutter). No content visible to its left.
-- As the user scrolls right: earlier cards slide past the left gutter into a fade zone, gradually becoming transparent before disappearing at the viewport edge. The rail uses the full page width for scrolling.
-- At the right end: the last card stops at exactly the position it stops at today (inside the current right gutter). No empty space pulled in beyond it.
-- While scrolling in the middle: both left and right edges show the fade. The right fade hides automatically once the user reaches the end; the left fade hides at the very start.
-- Works on all viewports (mobile through desktop). No change to card sizes, gap, snap behaviour, dots, or any other content.
+1. **Two tabs open.** The call uses `window.open('', '_blank', 'noopener,noreferrer')`. With `noreferrer`, Chromium-based browsers return `null` from `window.open`, so the code falls into the `if (!w)` "popup blocked" branch and opens a **second** tab with the raw PDF URL — while the first `about:blank` tab (the one in your screenshot) is left orphaned.
 
-## Implementation (technical)
+2. **Ugly tab title and ugly downloaded filename.** Even when the wrapper does open, the iframe points directly at the Supabase Storage URL (e.g. `…/1779888546457-oscar-2.pdf`). The wrapper's `<title>` is correctly set, but as soon as the inner PDF viewer takes focus, browsers display the PDF's own filename in the tab, and any download from the built-in PDF toolbar uses that storage filename.
 
-Single file touched for layout: **`src/index.css`** (rules for `.rrail-wrap` and `.v3-rail` in the V3 cards section, ~lines 277, 300–303). Optional tiny JS toggle in **`src/components/shared/ReportsSection.tsx`** `CardsVariant` to drop the fades at start/end.
+## Fix
 
-1. **Break the rail out of `.rwrap` to full-bleed.** Inside `CardsVariant`, wrap only the rail (`.rrail-wrap` + `.v3-rail`) in a full-width container that escapes the centered `.rwrap` max-width using the standard full-bleed trick:
-   ```css
-   .v3-rail-bleed {
-     width: 100vw;
-     margin-left: calc(50% - 50vw);
-     margin-right: calc(50% - 50vw);
-   }
-   ```
-   The section heading and footer stay inside `.rwrap` (unchanged).
+Rewrite `openReportInTab(title, url)` to open exactly one tab with a clean title and provide a clean download name.
 
-2. **Preserve current start/end positions** by adding horizontal padding to `.v3-rail` equal to the current `.rwrap` gutter, plus the same `scroll-padding-inline-start` so snap still aligns the first card at the gutter:
-   ```css
-   .v3-rail {
-     padding-inline: max(clamp(1rem,4vw,1.5rem), calc((100vw - 1280px) / 2 + clamp(1rem,4vw,1.5rem)));
-     scroll-padding-inline-start: max(clamp(1rem,4vw,1.5rem), calc((100vw - 1280px) / 2 + clamp(1rem,4vw,1.5rem)));
-   }
-   ```
-   This ensures: at `scrollLeft = 0`, the first card lines up with where the old `.rwrap` content edge was; at max scroll, the last card stops at the symmetric right gutter.
+### 1. Single tab, reliable open
 
-3. **Edge transparency fade** via CSS mask on the bleed wrapper (mobile-safe, no JS required):
-   ```css
-   .v3-rail-bleed {
-     -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
-             mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
-     --fade: clamp(1rem, 4vw, 4rem);
-   }
-   ```
-   Width of fade scales with viewport so it stays subtle on mobile and pronounced on desktop.
+- Drop `noreferrer` from the feature string (keep `noopener` security via the wrapper, since the child page is same-origin `about:blank` we control).
+- `const w = window.open('about:blank', '_blank')`. If `w` is `null` (true popup-block), fall back to a temporary `<a href={url} target="_blank" rel="noopener">` click — no second `window.open`.
 
-4. **Hide fade at the extremes** (so the start/end *feels* like a hard stop, not a fade-out of the first/last card sitting at rest):
-   - Reuse the existing `onScroll` handler in `CardsVariant` to set two boolean state flags `atStart` / `atEnd` (with a small tolerance, e.g. `<= 2px`).
-   - Apply `data-at-start` / `data-at-end` attributes on the bleed wrapper.
-   - CSS toggles the gradient stops:
-     ```css
-     .v3-rail-bleed[data-at-start="true"] { /* drop left transparent stop */ }
-     .v3-rail-bleed[data-at-end="true"]   { /* drop right transparent stop */ }
-     ```
-     Implemented by swapping the `mask-image` to a one-sided gradient when at start or at end (and to no mask when both).
+### 2. Clean tab title that survives PDF viewer takeover
 
-5. **No changes to**: dots, pagination logic, card markup, hover effects, `useRealCover`, the navy variant, or any other carousel on the site. Only the V3 cards rail used by the homepage Latest Reports section is affected.
+- Sanitize the report title into a filename-safe string (`sanitize(title)` → letters/digits/spaces/`-`/`_`, collapsed; fallback `"Report"`).
+- In the wrapper document, set `<title>` and a meta description, and keep the wrapper page as the top-level document so its title remains the tab label. The PDF is embedded inside an iframe and cannot override the parent tab title.
 
-## Files to edit
+### 3. Clean download filename
 
-- `src/index.css` — add `.v3-rail-bleed` rules, tweak `.v3-rail` padding/scroll-padding (only the cards-variant rail).
-- `src/components/shared/ReportsSection.tsx` — wrap the existing `.rrail-wrap` of `CardsVariant` in a `<div className="v3-rail-bleed" data-at-start data-at-end>`; extend `update()` to also set `atStart`/`atEnd`.
+- Replace the direct-PDF iframe with a small wrapper UI:
+  - A slim top bar with the report title and a **Download** button.
+  - Below it, an iframe pointing to a **blob URL** of the PDF, fetched once via `fetch(url).then(r => r.blob())`. The blob URL hides the storage filename.
+- The Download button performs `fetch(url) → blob → <a download="{sanitizedTitle}.pdf">` so the saved file is named after the report (e.g. `Sector Analysis European Luxury Goods.pdf`).
+- If `fetch` fails (CORS / offline), fall back to the original URL in the iframe so the user still sees the PDF; the Download button then opens the URL directly in a new tab.
 
-## Out of scope
+### 4. No other behavior changes
 
-- Reveal fade-ins (already removed).
-- Application Journey (already addressed).
-- Other carousels (`DivisionArchiveCarousel`, `FundArchiveCarousel`, `LatestArchiveCarousel`) — not requested.
+- All call sites (`CardsVariant`, `NavyVariant`, `FeaturedInfo`, `PreviewLightbox`) keep calling `openReportInTab(report.title, report.pdf)` — only the implementation changes.
+- Styling matches existing brand: deep purple (`#1F0F4D`) top bar, white text in Times New Roman, white "Download" button with black border in serif font, consistent with the project's design memory.
+- No animations, no new dependencies.
+
+## Files touched
+
+- `src/components/shared/ReportsSection.tsx` — replace the `openReportInTab` helper (lines 204-226). No changes to call sites, props, layout, carousel logic, or other components.
+
+## Verification
+
+- Click a report card → exactly one tab opens, titled with the report name, showing the PDF.
+- Click Download inside that tab → file saves as `<Report Title>.pdf`.
+- Test on the homepage Latest Reports rail, the lightbox "Open Report" button, and a division page reports section.
