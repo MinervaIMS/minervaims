@@ -116,7 +116,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
                   placeholder="Search by name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 font-body text-small h-10"
+                  className="pl-10 font-body text-small h-10 rounded-none"
                 />
               </div>
             </div>
