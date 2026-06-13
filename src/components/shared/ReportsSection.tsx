@@ -399,6 +399,8 @@ function CardsVariant({
 }: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
   const railRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
 
   const update = useCallback(() => {
     const rail = railRef.current;
@@ -407,6 +409,9 @@ function CardsVariant({
     const gap = parseFloat(getComputedStyle(rail).columnGap || '16');
     const stepW = (first?.offsetWidth || 280) + (isNaN(gap) ? 16 : gap);
     setActiveIdx(Math.round(rail.scrollLeft / Math.max(stepW, 1)));
+    const max = rail.scrollWidth - rail.clientWidth;
+    setAtStart(rail.scrollLeft <= 2);
+    setAtEnd(rail.scrollLeft >= max - 2);
   }, []);
 
   useLayoutEffect(() => {
