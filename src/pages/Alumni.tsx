@@ -37,26 +37,12 @@ const Alumni = () => {
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [jobAreaFilter, setJobAreaFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isSticky, setIsSticky] = useState(false);
-  const searchBarRef = useRef<HTMLDivElement>(null);
   const imagesLoaded = useImagePreload([alumniBg]);
 
   useEffect(() => {
     fetchAlumni();
   }, []);
 
-  // Detect sticky state
-  useEffect(() => {
-    const handleScroll = () => {
-      if (searchBarRef.current) {
-        const rect = searchBarRef.current.getBoundingClientRect();
-        setIsSticky(rect.top <= 64); // 64px = top-16 (4rem)
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const fetchAlumni = async () => {
     try {
