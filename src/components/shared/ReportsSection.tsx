@@ -488,6 +488,7 @@ function CardsVariant({
                 </div>
               </a>
             ) : null}
+            </div>
           </div>
         </div>
 
