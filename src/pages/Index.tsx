@@ -94,7 +94,8 @@ const Index = () => {
 
         {/* Key Figures - inside hero so it appears within initial viewport */}
         <div className="relative z-10 bg-background">
-          <div className="container py-8 md:py-section-sm lg:py-section">
+          <div className="container py-section-sm md:py-section">
+
             <div className="grid grid-cols-3 gap-2 md:gap-12">
               <Link
                 to="/archive"
