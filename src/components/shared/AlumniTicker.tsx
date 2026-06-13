@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 // Uniform perceived speed: duration scales linearly with row's logo count,
 // so pixels/second is constant across rows (since each row's track width is
 // proportional to its logo count given fixed gap + maxWidth).
-const SECONDS_PER_LOGO = 3;
+const SECONDS_PER_LOGO = 4;
 
 interface Logo { name: string; file: string; }
 interface Row  { id: string; logos: Logo[]; direction: 'left' | 'right'; }
