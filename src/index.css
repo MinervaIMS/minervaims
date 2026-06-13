@@ -297,9 +297,22 @@ body[data-scroll-locked] {
 .rsec--navy .rdot.is-active { background:#fff; }
 
 /* ---- V3 card carousel ---- */
+.v3-rail-bleed { width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
+  --fade: clamp(1rem, 4vw, 4rem);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%); }
+.v3-rail-bleed[data-at-start="true"][data-at-end="true"] { -webkit-mask-image:none; mask-image:none; }
+.v3-rail-bleed[data-at-start="true"]:not([data-at-end="true"]) {
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--fade)), transparent 100%);
+          mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--fade)), transparent 100%); }
+.v3-rail-bleed[data-at-end="true"]:not([data-at-start="true"]) {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 100%); }
 .v3-rail { display:grid; grid-auto-flow:column; grid-auto-columns:clamp(252px,30vw,330px);
   gap:clamp(1rem,2vw,1.5rem); overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
-  scrollbar-width:none; padding-bottom:.5rem; }
+  scrollbar-width:none; padding-bottom:.5rem;
+  padding-inline: max(clamp(1rem,4vw,1.5rem), calc((100vw - 1280px) / 2 + clamp(1rem,4vw,1.5rem)));
+  scroll-padding-inline-start: max(clamp(1rem,4vw,1.5rem), calc((100vw - 1280px) / 2 + clamp(1rem,4vw,1.5rem))); }
 .v3-rail::-webkit-scrollbar { display:none; }
 .v3-card { scroll-snap-align:start; position:relative; background:hsl(var(--secondary));
   padding:clamp(1.2rem,2vw,1.75rem); display:flex; flex-direction:column;
