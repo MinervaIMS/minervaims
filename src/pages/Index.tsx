@@ -5,6 +5,7 @@ import logoWhite from "@/assets/footer-logo.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
 import companiesImage from "@/assets/companies.webp";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
+import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
 import { Division, divisionLabels } from "@/lib/types";
