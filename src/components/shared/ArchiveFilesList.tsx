@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
 import { Download, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PdfThumbnail } from './PdfThumbnail';
 import { useToast } from '@/hooks/use-toast';
+import { openReportInTab } from '@/lib/open-report';
 
 interface ArchiveFile {
   id: string;
