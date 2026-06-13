@@ -180,7 +180,7 @@ export function TestimonialsSection() {
               >
                 ”
               </span>
-              <p className="relative z-10 font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-1 sm:px-6 md:px-0">
+              <p className="relative z-10 font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-1 sm:px-6 md:px-0" style={{ minHeight: 'calc(1.375em * 7)' }}>
                 <span>{current.quote}</span>
               </p>
             </div>
