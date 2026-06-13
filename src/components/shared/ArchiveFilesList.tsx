@@ -112,7 +112,7 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
               {/* PDF Preview Thumbnail - A4 aspect ratio */}
               <div 
                 className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setPreviewFile(file)}
+                onClick={() => openReportInTab(file.title, file.file_url)}
                 title="Click to preview PDF"
               >
                 <PdfThumbnail
