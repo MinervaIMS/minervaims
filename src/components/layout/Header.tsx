@@ -207,17 +207,19 @@ export function Header() {
 
   return (
     <>
-      {!hasHero && <div className="h-[84px]" />}
+      {!hasHero && (
+        <div style={{ height: "calc(84px + env(safe-area-inset-top))" }} />
+      )}
       <header
         className={[
-          "fixed inset-x-0 top-0 z-50 h-[84px] border-b",
+          "fixed inset-x-0 top-0 z-50 border-b",
           transparent
             ? "bg-transparent border-transparent shadow-none"
             : "bg-white border-[#E0E0E0] shadow-[0_1px_3px_0_rgba(0,0,0,0.07)]",
         ].join(" ")}
-        style={headerStyle}
+        style={{ ...headerStyle, paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto grid h-full w-full max-w-[1280px] grid-cols-[1fr_auto_1fr] items-center gap-7 px-6 md:px-10 min-[880px]:grid-cols-[1fr_auto_1fr] max-[879px]:!grid-cols-[1fr_auto]">
+        <div className="mx-auto grid h-[84px] w-full max-w-[1280px] grid-cols-[1fr_auto_1fr] items-center gap-7 px-6 md:px-10 min-[880px]:grid-cols-[1fr_auto_1fr] max-[879px]:!grid-cols-[1fr_auto]">
           {/* zone 1 — logo */}
           <Link to="/" aria-label="Minerva IMS — home" className="justify-self-start flex items-center">
             <img
