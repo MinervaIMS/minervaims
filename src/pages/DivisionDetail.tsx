@@ -147,7 +147,6 @@ const DivisionDetail = () => {
         <div className="relative z-10">
           <PageIntroduction
             title={content.title}
-            description={content.subtitle}
             transparentBackground
           />
         </div>
@@ -157,7 +156,7 @@ const DivisionDetail = () => {
       <section className={`py-section-sm md:py-section ${isPortfolio ? 'pb-0 md:pb-0' : ''} bg-background`}>
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Our Expertise
+            {content.subtitle}
           </h2>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-12">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
