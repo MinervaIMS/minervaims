@@ -151,9 +151,9 @@ const FAQS = [
       "Yes. We encourage reapplication, particularly for first-year undergraduates. The February intake is typically more competitive due to fewer available places.",
   },
   {
-    question: "Are referrals a thing?",
+    question: "Are referrals available?",
     answer:
-      "Yes. Members are permitted to refer a maximum of 2 candidates each per round of application. Referred applicants are not required to submit written answers, cover letter, and do not need to submit the application form. More information about the application process is provided privately by the member who makes the referral. Referrals may be based upon a long and well-established academic or professional relationship. Applicants cannot request a referral through LinkedIn. We still encourage applicants to connect with members on LinkedIn.",
+      "No. We no longer accept referrals. In our experience they did not add value for candidates or for the Society. Our selection process is designed so that strong candidates can prove their value on the merits of their application, so we encourage everyone to apply directly. You are still welcome to connect with members on LinkedIn.",
   },
 ];
 
@@ -478,29 +478,33 @@ const Join = () => {
               const isLast = index === APPLICATION_STEPS.length - 1;
               return (
                 <Reveal key={step.step} delay={index * 70}>
-                  <div className="flex gap-5">
-                    {/* Timeline Column */}
-                    <div className="flex flex-col items-center">
+                  <div className={`relative flex gap-5 ${!isLast ? "pb-10" : ""}`}>
+                    {/* Continuous spine rail (hidden on last step) */}
+                    {!isLast && (
+                      <div className="absolute left-[19px] sm:left-[23px] top-12 sm:top-14 bottom-0 w-px bg-separator overflow-hidden pointer-events-none">
+                        <div
+                          className="absolute inset-x-0 top-0 bg-accent transition-[height] ease-out"
+                          style={{
+                            height: lit ? "calc(100% + 2.5rem)" : "0%",
+                            transitionDuration: "1200ms",
+                          }}
+                        />
+                      </div>
+                    )}
+                    {/* Timeline Dot */}
+                    <div className="flex flex-col items-center relative z-10">
                       <div
-                        className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center transition-[background-color,color,box-shadow] duration-500 ease-out ${
+                        className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-accent flex items-center justify-center bg-background transition-[background-color,color,box-shadow] duration-[600ms] ease-out ${
                           lit
                             ? "bg-accent text-background shadow-[0_0_0_6px_rgba(31,15,77,0.1),0_10px_28px_rgba(31,15,77,0.3)]"
-                            : "bg-background text-accent"
+                            : "text-accent"
                         }`}
                       >
                         <span className="font-serif text-lg sm:text-xl">{step.step}</span>
                       </div>
-                      {!isLast && (
-                        <div className="relative w-px flex-1 bg-separator my-2 overflow-hidden">
-                          <div
-                            className="absolute inset-x-0 top-0 bg-accent transition-[height] duration-1000 ease-out"
-                            style={{ height: lit ? "100%" : "0%" }}
-                          />
-                        </div>
-                      )}
                     </div>
                     {/* Step Content */}
-                    <div className={`flex-1 pt-1 ${!isLast ? "pb-10" : ""}`}>
+                    <div className="flex-1 pt-1">
                       <h3 className="font-serif text-lg sm:text-subheading mb-2">{step.title}</h3>
                       <p className="font-body text-body-lg text-muted-foreground">
                         {step.description}

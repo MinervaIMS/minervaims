@@ -1,19 +1,36 @@
-## Problem
+## Issues to fix in `src/pages/Join.tsx`
 
-The decorative `"` watermark in the "Demanding by design" panel (`src/pages/Join.tsx`, lines 445–454) uses `clamp(10rem, 28vw, 28rem)` and sits flush at `top-0 left-0`. At narrow widths the glyph's left side-bearing pushes it past the panel edge (and on some breakpoints the glyph's height pushes the heading down too much), so it visually clips off-screen — exactly what the attached screenshot shows.
+### 1. Application Journey animation — match the reference spine behavior
 
-## Fix
+Reference (`template.html`, `.jline` + IntersectionObserver):
+- Single vertical separator line per step rendered with `position:absolute; left:29px; top:60px; bottom:0` so the rail is **continuous** through the step's `padding-bottom: 2.5rem`.
+- The fill `<div>` animates `height` from `0` → `calc(100% + 2.5rem)` (overshooting into the next step's padding) with `transition: height 1.2s ease`. This makes the navy line visibly flow into the next dot rather than fill segment-by-segment with a gap.
+- Sequential lighting: `setTimeout(..., 250 + i * 400)` per step — already matches current `useEffect` timing.
 
-Rework only the watermark span (lines 445–454). No copy, color, or panel layout changes.
+Current code (lines 483–501) puts the line inside a flex column with `my-2` margin and animates from `0%` → `100%` within its own bounded segment, leaving a visible gap between the fill and the next dot and making each segment feel disconnected — what the user describes as "off".
 
-1. **Tame the size curve** — replace `clamp(10rem, 28vw, 28rem)` with `clamp(7rem, 18vw, 18rem)`. This keeps it readable on desktop while preventing the glyph from outgrowing the panel on phones/tablets.
-2. **Inset from the corner at every breakpoint** — replace `top-0 left-0 md:top-0 md:left-2 lg:top-0 lg:left-4` with `top-2 left-3 md:top-3 md:left-6 lg:top-4 lg:left-10`. The small inset accounts for the serif glyph's side-bearing so the visible mark sits inside the grey panel rather than hugging the very edge.
-3. **Prevent any residual overflow** — add `max-w-full overflow-hidden` semantics via inline style `maxWidth: '100%'` is unnecessary since the parent already has `overflow-hidden`; instead add `whitespace-nowrap` and rely on the parent clip. (No change to parent needed — `bg-secondary relative overflow-hidden` already handles edge clipping.)
-4. **Heading clearance** — keep container padding at `pt-16 md:pt-16 pb-12 md:pb-16`; with the smaller glyph this remains sufficient at all breakpoints.
+**Fix:**
+- Replace the per-step flex column line with an absolutely-positioned rail anchored to the dot column: `absolute left-[19px] sm:left-[23px] top-12 sm:top-14 bottom-0 w-px bg-separator overflow-hidden` on the outer row (which becomes `relative`).
+- Inside that rail render a fill `<div className="absolute inset-x-0 top-0 bg-accent transition-[height] duration-[1200ms] ease-out" style={{ height: lit ? 'calc(100% + 2.5rem)' : '0%' }} />`.
+- Hide the rail on the last step.
+- Bump dot transition to `duration-[600ms]` to match the reference's softer fade, and keep the box-shadow ring as-is.
 
-## Verification
+### 2. FAQs — match the reference 7-item list and copy
 
-- Mobile 390px: glyph ~70px tall, sits at top-left inside grey panel, heading clears it.
-- Tablet 820px: glyph ~148px, inset 6px from left, no overlap with heading.
-- Desktop 1440px+: glyph caps at 18rem (288px), inset 40px from left, reads as a true pull-quote watermark.
-- No horizontal scroll at any width.
+Reference order (`template.html` lines 1184–1192) and current `FAQS` array (lines 122–158) differ in the **last item only**:
+
+- Current #7: *"Are referrals a thing?"* — long answer permitting 2 referrals per member.
+- Reference #7: **"Are referrals available?"** — *"No. We no longer accept referrals. In our experience they did not add value for candidates or for the Society. Our selection process is designed so that strong candidates can prove their value on the merits of their application, so we encourage everyone to apply directly. You are still welcome to connect with members on LinkedIn."*
+
+All other 6 questions and answers already match.
+
+**Fix:** replace FAQ #7 question + answer with the reference copy. No other FAQ changes.
+
+> Note: the existing `mem://pages/join/ui-elements-spec-v7` records the old "2 referrals" policy. Per the user's explicit instruction to match the reference HTML, the new "No referrals" copy supersedes it; I will update that memory after the edit lands.
+
+### Files touched
+- `src/pages/Join.tsx` — FAQ array entry #7; journey row markup (lines ~480–501) restructured to a continuous absolute rail. No copy, color, typography, or layout changes elsewhere.
+
+### Verification
+- Scroll to "The Application Journey": dots light sequentially every 400ms; each fill flows continuously into the next dot with no visible gap; the line under the last step is hidden.
+- Open FAQs: 7 items, last reads "Are referrals available?" with the "No" answer.
