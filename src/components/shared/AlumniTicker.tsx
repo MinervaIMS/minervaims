@@ -148,8 +148,8 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '116px',   // 1:1 logos render at 116×116 (66 × 1.75)
-          maxWidth: '368px',    // wide wordmarks capped here (210 × 1.75)
+          maxHeight: '90px',    // 1:1 logos render at 90×90
+          maxWidth: '450px',    // wide wordmarks capped here
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
@@ -205,7 +205,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: '252px',             // tall enough for scaled logos + breathing room (144 × 1.75)
+        height: '101px',             // band height — reduced 60% from 252 (vertical spacing)
         display: 'flex',
         alignItems: 'center',
       }}
@@ -216,7 +216,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '210px',              // inter-logo spacing (120 × 1.75)
+          gap: '250px',              // inter-logo spacing
           animation: `${anim} ${DURATION}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
@@ -269,7 +269,7 @@ const AlumniTicker = () => {
       <style>{CSS}</style>
 
       {/* Title — styled as a standard section heading following site conventions */}
-      <div className="container" style={{ paddingTop: '60px' }}>
+      <div className="container" style={{ paddingTop: '24px' }}>
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our alumni stand at the forefront of global markets
         </h2>
@@ -287,7 +287,7 @@ const AlumniTicker = () => {
       ))}
 
       {/* Bottom spacing */}
-      <div style={{ paddingBottom: '60px' }} />
+      <div style={{ paddingBottom: '24px' }} />
     </section>
   );
 };
