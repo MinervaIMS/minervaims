@@ -148,8 +148,8 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '44px',    // 1:1 logos (LSE, LBS, ETH) render at 44×44
-          maxWidth: '140px',    // wide wordmarks capped here
+          maxHeight: '66px',    // 1:1 logos render at 66×66 (150%)
+          maxWidth: '210px',    // wide wordmarks capped here (150%)
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
