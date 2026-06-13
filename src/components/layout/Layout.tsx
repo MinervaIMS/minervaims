@@ -6,7 +6,7 @@ export function Layout() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith('/admin');
   return (
-    <div className="min-h-screen flex flex-col overflow-x-clip">
+    <div className="min-h-screen flex flex-col overflow-x-clip bg-background">
       {!isAdmin && <Header />}
       <main className="flex-1">
         <Outlet />
