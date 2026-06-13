@@ -151,9 +151,9 @@ const FAQS = [
       "Yes. We encourage reapplication, particularly for first-year undergraduates. The February intake is typically more competitive due to fewer available places.",
   },
   {
-    question: "Are referrals a thing?",
+    question: "Are referrals available?",
     answer:
-      "Yes. Members are permitted to refer a maximum of 2 candidates each per round of application. Referred applicants are not required to submit written answers, cover letter, and do not need to submit the application form. More information about the application process is provided privately by the member who makes the referral. Referrals may be based upon a long and well-established academic or professional relationship. Applicants cannot request a referral through LinkedIn. We still encourage applicants to connect with members on LinkedIn.",
+      "No. We no longer accept referrals. In our experience they did not add value for candidates or for the Society. Our selection process is designed so that strong candidates can prove their value on the merits of their application, so we encourage everyone to apply directly. You are still welcome to connect with members on LinkedIn.",
   },
 ];
 
