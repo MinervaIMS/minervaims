@@ -272,13 +272,13 @@ const AlumniTicker = () => {
   return (
     <section
       aria-label="MIMS alumni network — employers and academic institutions"
-      className="bg-background"
+      className="bg-background py-section-sm md:py-section"
       style={{ overflow: 'hidden' }}
     >
       <style>{CSS}</style>
 
       {/* Title — styled as a standard section heading following site conventions */}
-      <div className="container" style={{ paddingTop: isMobile ? '12px' : '24px' }}>
+      <div className="container">
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our alumni stand at the forefront of global markets
         </h2>
@@ -295,10 +295,8 @@ const AlumniTicker = () => {
           isMobile={isMobile}
         />
       ))}
-
-      {/* Bottom spacing */}
-      <div style={{ paddingBottom: isMobile ? '12px' : '24px' }} />
     </section>
+
   );
 };
 

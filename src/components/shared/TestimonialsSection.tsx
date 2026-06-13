@@ -137,7 +137,7 @@ export function TestimonialsSection() {
   const displayedRole = company ? `${current.role}, currently at ${company}` : current.role;
 
   return (
-    <section className="relative bg-accent text-background pt-24 pb-section-sm md:py-section overflow-hidden">
+    <section className="relative bg-accent text-background py-section-sm md:py-section overflow-hidden">
       {/* Arrows — desktop only */}
       <button
         type="button"
