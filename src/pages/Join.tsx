@@ -261,7 +261,12 @@ const Join = () => {
   const { counts: keyFigures, isLoading: keyFiguresLoading } = useKeyFigures();
 
   // Figures band trigger
-  const figures = useInView<HTMLDivElement>({ threshold: 0.3 });
+  const figures = useInView<HTMLDivElement>({ threshold: 0.15 });
+  const [figuresForceStart, setFiguresForceStart] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setFiguresForceStart(true), 1200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Journey "lit" sequential effect — each step lights up on its own timer
   // so its line-fill transition (1s) runs independently of the others.
