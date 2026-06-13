@@ -193,11 +193,13 @@ function TickerBand({
   paused,
   onEnter,
   onLeave,
+  isMobile,
 }: {
   row: Row;
   paused: boolean;
   onEnter: () => void;
   onLeave: () => void;
+  isMobile: boolean;
 }) {
   const doubled = [...row.logos, ...row.logos]; // 2 identical copies
   const anim    = row.direction === 'left' ? 'mimsLeft' : 'mimsRight';
@@ -210,7 +212,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: '152px',             // band height — +50% vertical spacing
+        height: isMobile ? '57px' : '114px',  // band height (mobile: 50%)
         display: 'flex',
         alignItems: 'center',
       }}
@@ -221,7 +223,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '100px',              // inter-logo spacing
+          gap: isMobile ? '50px' : '100px',
           animation: `${anim} ${duration}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
@@ -230,9 +232,10 @@ function TickerBand({
         }}
       >
         {doubled.map((logo, i) => (
-          <LogoItem key={`${logo.file}-${i}`} logo={logo} />
+          <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
         ))}
       </div>
+
 
       {/* ── Edge vignette ──
           Must sit INSIDE the overflow:hidden container so it doesn't scroll.
