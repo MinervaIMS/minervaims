@@ -190,37 +190,6 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
         ))}
       </div>
 
-      {/* PDF Preview Dialog */}
-      <Dialog open={!!previewFile} onOpenChange={() => setPreviewFile(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="font-serif">{previewFile?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="w-full h-[70vh] bg-muted rounded overflow-hidden">
-            {previewFile && (
-              <iframe
-                src={`${previewFile.file_url}#view=FitH`}
-                className="w-full h-full"
-                title={previewFile.title}
-              />
-            )}
-          </div>
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={() => previewFile && handleDownload(previewFile)}
-              disabled={previewFile ? downloadingFiles.has(previewFile.id) : false}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body text-small rounded hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-wait"
-            >
-              {previewFile && downloadingFiles.has(previewFile.id) ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {previewFile && downloadingFiles.has(previewFile.id) ? 'Downloading...' : 'Download PDF'}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
