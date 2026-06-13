@@ -1,25 +1,19 @@
-# Fix quotation-mark rendering in "Demanding by design"
+## Problem
 
-The decorative `"` watermark is positioned at `-top-12 -left-6` on a full-bleed (`w-screen`) panel, so on desktop it clips off the viewport's left edge and visually leaks into the cream margin outside the grey band (see screenshot). On mobile/tablet it also collides with the heading and sits awkwardly.
+The decorative `"` watermark in the "Demanding by design" panel (`src/pages/Join.tsx`, lines 445–454) uses `clamp(10rem, 28vw, 28rem)` and sits flush at `top-0 left-0`. At narrow widths the glyph's left side-bearing pushes it past the panel edge (and on some breakpoints the glyph's height pushes the heading down too much), so it visually clips off-screen — exactly what the attached screenshot shows.
 
-## Change (single edit in `src/pages/Join.tsx`, lines 442–467)
+## Fix
 
-Reposition the watermark so it always lives **inside** the grey panel, scales with viewport, and never clips:
+Rework only the watermark span (lines 445–454). No copy, color, or panel layout changes.
 
-- Keep the section full-bleed and `overflow-hidden` on the inner panel (already there) — this guarantees no horizontal scroll even if the glyph ever overflows.
-- Replace `-top-12 -left-6` with responsive insets that sit just inside the panel's content edge at every breakpoint:
-  - Mobile: `top-2 left-3`
-  - `md:top-4 md:left-6`
-  - `lg:top-6 lg:left-10`
-- Tighten the responsive font size so the glyph reads as a true pull-quote mark instead of a giant blob on small screens:
-  - `fontSize: "clamp(6rem, 18vw, 18rem)"` (down from `clamp(12rem, 22vw, 22rem)`)
-- Add `aria-hidden` is already present; also add `hidden sm:block` is NOT used — keep glyph visible on mobile too but at the smaller clamp floor (6rem) so it stays decorative rather than overwhelming.
-- Bump the text container's top padding on mobile (`py-12` → `pt-16 md:pt-16 pb-12 md:pb-16`) so the heading clears the watermark on narrow viewports.
-
-No copy, color, font, or other layout changes. Watermark color stays `hsl(var(--accent) / 0.06)`.
+1. **Tame the size curve** — replace `clamp(10rem, 28vw, 28rem)` with `clamp(7rem, 18vw, 18rem)`. This keeps it readable on desktop while preventing the glyph from outgrowing the panel on phones/tablets.
+2. **Inset from the corner at every breakpoint** — replace `top-0 left-0 md:top-0 md:left-2 lg:top-0 lg:left-4` with `top-2 left-3 md:top-3 md:left-6 lg:top-4 lg:left-10`. The small inset accounts for the serif glyph's side-bearing so the visible mark sits inside the grey panel rather than hugging the very edge.
+3. **Prevent any residual overflow** — add `max-w-full overflow-hidden` semantics via inline style `maxWidth: '100%'` is unnecessary since the parent already has `overflow-hidden`; instead add `whitespace-nowrap` and rely on the parent clip. (No change to parent needed — `bg-secondary relative overflow-hidden` already handles edge clipping.)
+4. **Heading clearance** — keep container padding at `pt-16 md:pt-16 pb-12 md:pb-16`; with the smaller glyph this remains sufficient at all breakpoints.
 
 ## Verification
 
-- Desktop (1700px): watermark hangs above the heading inside the grey panel, no clipping at viewport edge.
-- Tablet (~820px): watermark sits in the top-left of the panel, scaled down, heading clears it.
-- Mobile (~390px): watermark renders as a small decorative `"` in the corner, no overlap with body copy, no horizontal scroll.
+- Mobile 390px: glyph ~70px tall, sits at top-left inside grey panel, heading clears it.
+- Tablet 820px: glyph ~148px, inset 6px from left, no overlap with heading.
+- Desktop 1440px+: glyph caps at 18rem (288px), inset 40px from left, reads as a true pull-quote watermark.
+- No horizontal scroll at any width.
