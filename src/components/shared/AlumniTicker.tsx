@@ -151,7 +151,7 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '80px',    // 1:1 logos render at 80×80
+          maxHeight: '70px',    // 1:1 logos render at 70×70
           maxWidth: '320px',    // wide wordmarks capped here
           width: 'auto',
           height: 'auto',
@@ -220,7 +220,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '100px',              // inter-logo spacing
+          gap: '150px',              // inter-logo spacing
           animation: `${anim} ${duration}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
