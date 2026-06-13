@@ -7,7 +7,10 @@ import { useState } from 'react';
 // Do not apply any CSS filter to the images; use brand colours as-is.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DURATION = 40; // seconds — uniform across all rows
+// Uniform perceived speed: duration scales linearly with row's logo count,
+// so pixels/second is constant across rows (since each row's track width is
+// proportional to its logo count given fixed gap + maxWidth).
+const SECONDS_PER_LOGO = 3;
 
 interface Logo { name: string; file: string; }
 interface Row  { id: string; logos: Logo[]; direction: 'left' | 'right'; }
@@ -148,8 +151,8 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '90px',    // 1:1 logos render at 90×90
-          maxWidth: '450px',    // wide wordmarks capped here
+          maxHeight: '80px',    // 1:1 logos render at 80×80
+          maxWidth: '320px',    // wide wordmarks capped here
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
@@ -197,6 +200,7 @@ function TickerBand({
 }) {
   const doubled = [...row.logos, ...row.logos]; // 2 identical copies
   const anim    = row.direction === 'left' ? 'mimsLeft' : 'mimsRight';
+  const duration = row.logos.length * SECONDS_PER_LOGO; // uniform pixels/sec
 
   return (
     <div
@@ -205,7 +209,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: '101px',             // band height — reduced 60% from 252 (vertical spacing)
+        height: '152px',             // band height — +50% vertical spacing
         display: 'flex',
         alignItems: 'center',
       }}
@@ -216,8 +220,8 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '250px',              // inter-logo spacing
-          animation: `${anim} ${DURATION}s linear infinite`,
+          gap: '100px',              // inter-logo spacing
+          animation: `${anim} ${duration}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
           // NO padding here — padding breaks the -50% calculation.
