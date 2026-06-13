@@ -259,7 +259,7 @@ const Join = () => {
 
   // Journey "lit" sequential effect — each step lights up on its own timer
   // so its line-fill transition (1s) runs independently of the others.
-  const journey = useInView<HTMLDivElement>({ threshold: 0.2 });
+  const journey = useInView<HTMLElement>({ threshold: 0.05, rootMargin: "0px 0px -10% 0px" } as IntersectionObserverInit);
   const [litSteps, setLitSteps] = useState<Set<number>>(new Set());
   useEffect(() => {
     if (!journey.inView) return;
@@ -457,11 +457,11 @@ const Join = () => {
 
 
         {/* Application Journey */}
-        <section className="mb-20 md:mb-24">
+        <section ref={journey.ref} className="mb-20 md:mb-24">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Application Journey
           </h2>
-          <div ref={journey.ref} className="relative max-w-[54rem]">
+          <div className="relative max-w-[54rem]">
             {APPLICATION_STEPS.map((step, index) => {
               const lit = litSteps.has(index);
               const isLast = index === APPLICATION_STEPS.length - 1;

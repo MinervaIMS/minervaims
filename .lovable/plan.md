@@ -1,15 +1,20 @@
-The current implementation in `src/pages/Join.tsx` already matches the reference structure (60px rail, dot/line geometry, sequential `250 + i*400` timing, `calc(100% + 2.5rem)` overshoot). Three small details still diverge from the uploaded `journey-spine-demo.html` — align them exactly.
+## Problem identified
 
-**Changes to `src/pages/Join.tsx` (Application Journey only)**
+The Application Journey activation depends on `useInView` observing the journey container with `threshold: 0.2`. That means at least 20% of the whole journey block must be visible before `journey.inView` becomes true.
 
-1. **Line fill = gradient, not solid accent.**
-   Replace the fill `bg-accent` with an inline `background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--mims-light-purple)))` so the glow runs navy → light-purple top-to-bottom, matching `.jline .fill` in the spec. If a `--mims-light-purple` token isn't in `index.css`, fall back to the literal `#AFA2D2` as the gradient stop (the spec explicitly says do not substitute).
+Because the journey block is tall and placed below several large sections, on some scroll positions/viewports the heading and first step can be visible while the observed container still has not crossed the 20% intersection threshold. The result is that the dots/line appear inactive, so it feels like the effect “doesn't activate.”
 
-2. **Transition easing = `ease` (not `ease-out` / `ease-linear`).**
-   - Dot: `transition: all .55s ease` → change `ease-out` to `ease` on the dot.
-   - Fill: `transition: height 1s ease` → change `ease-linear` to `ease`, keep 1000ms.
+There is also a secondary issue: the trigger is attached to the content wrapper, not the section itself, so activation happens later than expected.
 
-3. **Keep everything else as-is** (geometry, sequential timing, IntersectionObserver threshold 0.2, content, FAQs, section heading style).
+## Proposed solution
 
-**Verification**
-- Reload `/join`, scroll to the Application Journey, confirm: dots light navy in sequence with the soft glow, and the connecting line fills with a navy→light-purple gradient that reaches into the next step.
+Update only the Application Journey trigger logic in `src/pages/Join.tsx`:
+
+1. Attach the `journey.ref` to the full Application Journey `<section>` instead of the inner `max-w-[54rem]` wrapper.
+2. Make the observer trigger earlier and more reliably by using a lower threshold, e.g. `threshold: 0.05`.
+3. Keep the existing sequential lighting behavior, timing, gradient fill, geometry, and content unchanged.
+4. Leave the removed `Reveal` fade-ins untouched, so text still appears immediately and remains consistent with the rest of the site.
+
+## Expected result
+
+When the Application Journey section enters the viewport, the step dots and rail fill activate sequentially without requiring the user to scroll unusually far into the section.
