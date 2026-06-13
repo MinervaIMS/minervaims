@@ -112,11 +112,18 @@ body[data-scroll-locked] {
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased;
+    @apply text-foreground font-body antialiased;
+    /* Body is intentionally transparent so the dark <html> background
+       shows through during overscroll/rubber-band — the visible "page"
+       white surface is painted by the Layout wrapper instead. */
+    background-color: transparent;
     /* iOS Safari's 100vh is the LARGE viewport; 100dvh follows the visible
        viewport so body always fills the screen and never exposes the
        html background through a short page. */
     min-height: 100dvh;
+    /* Belt-and-braces: some engines read overscroll-behavior from the
+       scrolling element (body), not <html>. */
+    overscroll-behavior-y: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
