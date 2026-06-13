@@ -444,9 +444,9 @@ const Join = () => {
             <div className="bg-secondary relative overflow-hidden">
               <span
                 aria-hidden
-                className="pointer-events-none select-none absolute top-0 left-0 md:top-0 md:left-2 lg:top-0 lg:left-4 font-serif leading-none z-0"
+                className="pointer-events-none select-none absolute top-2 left-3 md:top-3 md:left-6 lg:top-4 lg:left-10 font-serif leading-none whitespace-nowrap z-0"
                 style={{
-                  fontSize: "clamp(10rem, 28vw, 28rem)",
+                  fontSize: "clamp(7rem, 18vw, 18rem)",
                   color: "hsl(var(--accent) / 0.06)",
                 }}
               >
