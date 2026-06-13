@@ -205,7 +205,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: '252px',             // tall enough for scaled logos + breathing room (144 × 1.75)
+        height: '101px',             // band height — reduced 60% from 252 (vertical spacing)
         display: 'flex',
         alignItems: 'center',
       }}
