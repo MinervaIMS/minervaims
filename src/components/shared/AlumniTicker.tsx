@@ -269,8 +269,8 @@ const AlumniTicker = () => {
       <style>{CSS}</style>
 
       {/* Title — styled as a standard section heading following site conventions */}
-      <div className="container" style={{ paddingTop: '60px', paddingBottom: '36px' }}>
-        <h2 className="font-serif text-accent">
+      <div className="container" style={{ paddingTop: '60px' }}>
+        <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our alumni stand at the forefront of global markets
         </h2>
       </div>
