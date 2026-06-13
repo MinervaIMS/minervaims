@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
 import { Download, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PdfThumbnail } from './PdfThumbnail';
 import { useToast } from '@/hooks/use-toast';
+import { openReportInTab } from '@/lib/open-report';
 
 interface ArchiveFile {
   id: string;
@@ -22,7 +22,6 @@ interface ArchiveFilesListProps {
 }
 
 export function ArchiveFilesList({ files, showDivision = false, highlightedFileId }: ArchiveFilesListProps) {
-  const [previewFile, setPreviewFile] = useState<ArchiveFile | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -113,7 +112,7 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
               {/* PDF Preview Thumbnail - A4 aspect ratio */}
               <div 
                 className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setPreviewFile(file)}
+                onClick={() => openReportInTab(file.title, file.file_url)}
                 title="Click to preview PDF"
               >
                 <PdfThumbnail
@@ -191,37 +190,6 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
         ))}
       </div>
 
-      {/* PDF Preview Dialog */}
-      <Dialog open={!!previewFile} onOpenChange={() => setPreviewFile(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="font-serif">{previewFile?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="w-full h-[70vh] bg-muted rounded overflow-hidden">
-            {previewFile && (
-              <iframe
-                src={`${previewFile.file_url}#view=FitH`}
-                className="w-full h-full"
-                title={previewFile.title}
-              />
-            )}
-          </div>
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={() => previewFile && handleDownload(previewFile)}
-              disabled={previewFile ? downloadingFiles.has(previewFile.id) : false}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body text-small rounded hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-wait"
-            >
-              {previewFile && downloadingFiles.has(previewFile.id) ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {previewFile && downloadingFiles.has(previewFile.id) ? 'Downloading...' : 'Download PDF'}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
