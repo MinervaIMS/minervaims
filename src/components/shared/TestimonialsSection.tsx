@@ -194,25 +194,6 @@ export function TestimonialsSection() {
         </div>
       </div>
 
-      {/* Arrows — mobile/tablet (below content) */}
-      <div className="md:hidden flex justify-center gap-8 mt-8">
-        <button
-          type="button"
-          aria-label="Previous testimonial"
-          onClick={() => go(index - 1, "right")}
-          className="text-background/80 hover:text-background transition-colors p-2"
-        >
-          <ChevronLeft className="h-7 w-7" strokeWidth={1} />
-        </button>
-        <button
-          type="button"
-          aria-label="Next testimonial"
-          onClick={() => go(index + 1, "left")}
-          className="text-background/80 hover:text-background transition-colors p-2"
-        >
-          <ChevronRight className="h-7 w-7" strokeWidth={1} />
-        </button>
-      </div>
     </section>
   );
 }
