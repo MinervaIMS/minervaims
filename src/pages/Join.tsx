@@ -259,7 +259,7 @@ const Join = () => {
 
   // Journey "lit" sequential effect — each step lights up on its own timer
   // so its line-fill transition (1s) runs independently of the others.
-  const journey = useInView<HTMLDivElement>({ threshold: 0.2 });
+  const journey = useInView<HTMLElement>({ threshold: 0.05, rootMargin: "0px 0px -10% 0px" });
   const [litSteps, setLitSteps] = useState<Set<number>>(new Set());
   useEffect(() => {
     if (!journey.inView) return;
