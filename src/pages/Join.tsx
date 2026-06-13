@@ -227,20 +227,19 @@ const CountUp = ({
   duration?: number;
 }) => {
   const [n, setN] = useState(0);
-  const started = useRef(false);
   useEffect(() => {
-    if (!start || started.current) return;
-    started.current = true;
+    if (!start || value <= 0) return;
     if (prefersReducedMotion()) {
       setN(value);
       return;
     }
+    const from = 0;
     const t0 = performance.now();
     let raf = 0;
     const tick = (t: number) => {
       const p = Math.min(1, (t - t0) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(value * eased));
+      setN(Math.round(from + (value - from) * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -262,7 +261,12 @@ const Join = () => {
   const { counts: keyFigures, isLoading: keyFiguresLoading } = useKeyFigures();
 
   // Figures band trigger
-  const figures = useInView<HTMLDivElement>({ threshold: 0.3 });
+  const figures = useInView<HTMLDivElement>({ threshold: 0.15 });
+  const [figuresForceStart, setFiguresForceStart] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setFiguresForceStart(true), 1200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Journey "lit" sequential effect — each step lights up on its own timer
   // so its line-fill transition (1s) runs independently of the others.
@@ -392,8 +396,8 @@ const Join = () => {
           <div ref={figures.ref} className="bg-accent text-accent-foreground py-12 md:py-16 px-6 md:px-12">
             <div className="container">
               <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
-                {FIGURES.map((f, i) => (
-                  <Reveal key={f.label} delay={i * 80} className="text-center">
+                {FIGURES.map((f) => (
+                  <div key={f.label} className="text-center">
                     <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
                       {f.staticValue !== undefined ? (
                         f.staticValue
@@ -401,14 +405,14 @@ const Join = () => {
                         <CountUp
                           value={f.key ? keyFigures[f.key] : 0}
                           suffix={f.suffix ?? ""}
-                          start={figures.inView && !keyFiguresLoading}
+                          start={(figures.inView || figuresForceStart) && !keyFiguresLoading}
                         />
                       )}
                     </div>
                     <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
                       {f.label}
                     </div>
-                  </Reveal>
+                  </div>
                 ))}
               </div>
             </div>
