@@ -8,6 +8,13 @@
 /* Prevent layout shift when dialogs/dropdowns apply scroll-lock */
 html {
   scrollbar-gutter: stable;
+  /* Painted in the iOS safe-area bands and during rubber-band overscroll.
+     Matches the footer (bg-foreground) so the bounce is invisible at the
+     bottom and the hero image hides it at the top. */
+  background-color: hsl(var(--foreground));
+  /* Stop the address-bar pull from leaking the html background into
+     surrounding apps in PWA mode. Harmless in normal Safari. */
+  overscroll-behavior-y: none;
 }
 
 /* Override Radix scroll-lock to prevent layout shift */
@@ -106,6 +113,10 @@ body[data-scroll-locked] {
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    /* iOS Safari's 100vh is the LARGE viewport; 100dvh follows the visible
+       viewport so body always fills the screen and never exposes the
+       html background through a short page. */
+    min-height: 100dvh;
   }
 
   h1, h2, h3, h4, h5, h6 {
