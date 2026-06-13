@@ -191,7 +191,6 @@ function useInView<T extends HTMLElement>(options: IntersectionObserverInit = { 
 
 const Reveal = ({
   children,
-  delay = 0,
   className = "",
   as: Tag = "div",
 }: {
@@ -200,20 +199,10 @@ const Reveal = ({
   className?: string;
   as?: keyof JSX.IntrinsicElements;
 }) => {
-  const { ref, inView } = useInView<HTMLDivElement>();
   const Component = Tag as any;
-  return (
-    <Component
-      ref={ref as any}
-      className={`transition-[opacity,transform] duration-700 ease-out ${
-        inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[22px]"
-      } ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </Component>
-  );
+  return <Component className={className}>{children}</Component>;
 };
+
 
 const CountUp = ({
   value,
