@@ -1,47 +1,50 @@
-# Fix "Open Report" tab + filename issues
+# Unify PDF preview behavior across the site
 
-## Problems identified
+## Problem
 
-Both issues come from `openReportInTab()` in `src/components/shared/ReportsSection.tsx` (lines 205-226), which is invoked from the homepage cards, the lightbox cover, the "Open Report" button, and the division pages.
+The `/archive` page (and any other places previewing reports) currently opens an in-page `Dialog` with an iframe pointing at the raw Supabase Storage URL. As shown in the screenshot, that dialog renders a mostly empty white area — the embedded PDF often fails to display reliably across browsers, and the dialog adds no value over a real browser tab.
 
-1. **Two tabs open.** The call uses `window.open('', '_blank', 'noopener,noreferrer')`. With `noreferrer`, Chromium-based browsers return `null` from `window.open`, so the code falls into the `if (!w)` "popup blocked" branch and opens a **second** tab with the raw PDF URL — while the first `about:blank` tab (the one in your screenshot) is left orphaned.
+Meanwhile, the homepage Latest Reports rail uses `openReportInTab(title, url)` in `src/components/shared/ReportsSection.tsx`, which opens a single new tab with:
+- A clean tab title (sanitized report title, pinned via MutationObserver/interval)
+- A deep purple (`#1F0F4D`) wrapper bar with the report title in Times New Roman
+- A white "Download PDF" button using `?download=<Report Title>.pdf` for a clean saved filename
+- An embedded iframe with the PDF
 
-2. **Ugly tab title and ugly downloaded filename.** Even when the wrapper does open, the iframe points directly at the Supabase Storage URL (e.g. `…/1779888546457-oscar-2.pdf`). The wrapper's `<title>` is correctly set, but as soon as the inner PDF viewer takes focus, browsers display the PDF's own filename in the tab, and any download from the built-in PDF toolbar uses that storage filename.
+This is the experience we want everywhere.
 
 ## Fix
 
-Rewrite `openReportInTab(title, url)` to open exactly one tab with a clean title and provide a clean download name.
+### 1. Promote `openReportInTab` into a shared util
 
-### 1. Single tab, reliable open
+Extract the helper currently defined inside `src/components/shared/ReportsSection.tsx` (lines ~204-325, including `sanitizeFilename`, `escapeHtml`, `withDownloadParam`) into a new module:
 
-- Drop `noreferrer` from the feature string (keep `noopener` security via the wrapper, since the child page is same-origin `about:blank` we control).
-- `const w = window.open('about:blank', '_blank')`. If `w` is `null` (true popup-block), fall back to a temporary `<a href={url} target="_blank" rel="noopener">` click — no second `window.open`.
+- **New file:** `src/lib/open-report.ts` exporting `openReportInTab(title: string, url: string): void`.
+- Keep behavior bit-for-bit identical to the current implementation (single `window.open('about:blank', '_blank')`, anchor fallback, wrapper document, title pinning).
+- Update `ReportsSection.tsx` to import from the new module instead of defining it locally. No call-site changes there.
 
-### 2. Clean tab title that survives PDF viewer takeover
+### 2. Replace the Archive preview dialog with `openReportInTab`
 
-- Sanitize the report title into a filename-safe string (`sanitize(title)` → letters/digits/spaces/`-`/`_`, collapsed; fallback `"Report"`).
-- In the wrapper document, set `<title>` and a meta description, and keep the wrapper page as the top-level document so its title remains the tab label. The PDF is embedded inside an iframe and cannot override the parent tab title.
+In `src/components/shared/ArchiveFilesList.tsx`:
 
-### 3. Clean download filename
+- Remove the `Dialog` / `DialogContent` / `DialogHeader` / `DialogTitle` imports and the entire "PDF Preview Dialog" block (lines ~194-224).
+- Remove the `previewFile` state.
+- Change the thumbnail's `onClick` from `setPreviewFile(file)` to `openReportInTab(file.title, file.file_url)`.
+- Keep the existing Download button behavior (server-side download via `handleDownload`) unchanged on the list cards — only the preview path changes.
 
-- Replace the direct-PDF iframe with a small wrapper UI:
-  - A slim top bar with the report title and a **Download** button.
-  - Below it, an iframe pointing to a **blob URL** of the PDF, fetched once via `fetch(url).then(r => r.blob())`. The blob URL hides the storage filename.
-- The Download button performs `fetch(url) → blob → <a download="{sanitizedTitle}.pdf">` so the saved file is named after the report (e.g. `Sector Analysis European Luxury Goods.pdf`).
-- If `fetch` fails (CORS / offline), fall back to the original URL in the iframe so the user still sees the PDF; the Download button then opens the URL directly in a new tab.
+### 3. Scan for any other in-page PDF preview dialogs
 
-### 4. No other behavior changes
-
-- All call sites (`CardsVariant`, `NavyVariant`, `FeaturedInfo`, `PreviewLightbox`) keep calling `openReportInTab(report.title, report.pdf)` — only the implementation changes.
-- Styling matches existing brand: deep purple (`#1F0F4D`) top bar, white text in Times New Roman, white "Download" button with black border in serif font, consistent with the project's design memory.
-- No animations, no new dependencies.
-
-## Files touched
-
-- `src/components/shared/ReportsSection.tsx` — replace the `openReportInTab` helper (lines 204-226). No changes to call sites, props, layout, carousel logic, or other components.
+- `src/pages/Events.tsx` line ~521 embeds an iframe for event **posters** (images/PDFs in a lightbox). This is not a report preview and is out of scope unless you want it changed too — by default, leave it alone.
+- No other components currently open PDFs in-page (verified via `rg "#view=FitH"` and `rg "iframe"`).
 
 ## Verification
 
-- Click a report card → exactly one tab opens, titled with the report name, showing the PDF.
-- Click Download inside that tab → file saves as `<Report Title>.pdf`.
-- Test on the homepage Latest Reports rail, the lightbox "Open Report" button, and a division page reports section.
+- Click any thumbnail on `/archive` → exactly one new tab opens, titled with the report name, showing the embedded PDF with the deep-purple top bar and white Download button (identical to clicking a card on the homepage).
+- The dialog/lightbox no longer appears on `/archive`.
+- The "Download" button on each archive card still downloads the PDF inline as before (uses existing `handleDownload`).
+- Homepage Latest Reports, division pages, and the lightbox cover button continue to work unchanged (they import the same helper from the new shared module).
+
+## Files touched
+
+- **New:** `src/lib/open-report.ts` — extracted helper.
+- **Edit:** `src/components/shared/ReportsSection.tsx` — replace inline helper with an import.
+- **Edit:** `src/components/shared/ArchiveFilesList.tsx` — drop the preview dialog, use `openReportInTab` on thumbnail click.
