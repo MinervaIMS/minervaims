@@ -227,7 +227,6 @@ const Archive = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Archive"
-            description="Browse all research reports and publications."
             transparentBackground
           />
         </div>
@@ -236,8 +235,11 @@ const Archive = () => {
       {/* Content section */}
       <div className="bg-background">
         <div className="container py-section-sm md:py-section">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+            Browse all research reports and publications.
+          </h2>
           {/* Sticky Filters Bar */}
-          <div className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator">
+          <div className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6">
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               {/* Division filter */}
               <div>
