@@ -3,20 +3,16 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import logoWhite from "@/assets/footer-logo.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
-import companiesImage from "@/assets/companies.webp";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
-import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-
-const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -164,39 +160,9 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Companies Image */}
-      <section className="pb-section-sm md:pb-section bg-background">
-        <div className="container">
-          <div className="overflow-x-auto sm:overflow-visible">
-            <img 
-              src={companiesImage} 
-              alt="Companies where MIMS alumni work" 
-              className="w-full min-w-[500px] sm:min-w-0 max-w-5xl mx-auto px-4 sm:px-0"
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Alumni Ticker */}
       <AlumniTicker />
 
-      {/* Divisions Section */}
-      <section className="py-section-sm md:py-section bg-background">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Our Divisions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {divisions.map((division) => (
-              <Link
-                key={division}
-                to={`/divisions/${division}`}
-                className="group block bg-secondary p-6 text-center transition-all duration-300 hover:bg-accent hover:shadow-lg hover:-translate-y-1"
-              >
-                <span className="font-serif text-lg md:text-xl text-accent transition-colors duration-300 group-hover:text-background">{divisionLabels[division]}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
 
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SVG files are served from /public/logos/{file}.svg
@@ -127,7 +128,7 @@ const CSS = `
 // how tall they render; width is always auto to preserve aspect ratio.
 // maxWidth prevents very wide wordmarks from dominating.
 // ─────────────────────────────────────────────────────────────────────────────
-function LogoItem({ logo }: { logo: Logo }) {
+function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
   const [opacity, setOpacity] = useState(0);
 
@@ -151,8 +152,8 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '40px',    // 1:1 logos render at 40×40
-          maxWidth: '400px',    // wide wordmarks capped here
+          maxHeight: isMobile ? '20px' : '40px',
+          maxWidth: isMobile ? '325px' : '650px',
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
@@ -192,11 +193,13 @@ function TickerBand({
   paused,
   onEnter,
   onLeave,
+  isMobile,
 }: {
   row: Row;
   paused: boolean;
   onEnter: () => void;
   onLeave: () => void;
+  isMobile: boolean;
 }) {
   const doubled = [...row.logos, ...row.logos]; // 2 identical copies
   const anim    = row.direction === 'left' ? 'mimsLeft' : 'mimsRight';
@@ -209,7 +212,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: '152px',             // band height — +50% vertical spacing
+        height: isMobile ? '57px' : '114px',  // band height (mobile: 50%)
         display: 'flex',
         alignItems: 'center',
       }}
@@ -220,7 +223,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '100px',              // inter-logo spacing
+          gap: isMobile ? '50px' : '100px',
           animation: `${anim} ${duration}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
@@ -229,9 +232,10 @@ function TickerBand({
         }}
       >
         {doubled.map((logo, i) => (
-          <LogoItem key={`${logo.file}-${i}`} logo={logo} />
+          <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
         ))}
       </div>
+
 
       {/* ── Edge vignette ──
           Must sit INSIDE the overflow:hidden container so it doesn't scroll.
@@ -263,6 +267,7 @@ function TickerBand({
 // ─────────────────────────────────────────────────────────────────────────────
 const AlumniTicker = () => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   return (
     <section
@@ -273,7 +278,7 @@ const AlumniTicker = () => {
       <style>{CSS}</style>
 
       {/* Title — styled as a standard section heading following site conventions */}
-      <div className="container" style={{ paddingTop: '24px' }}>
+      <div className="container" style={{ paddingTop: isMobile ? '12px' : '24px' }}>
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our alumni stand at the forefront of global markets
         </h2>
@@ -287,11 +292,12 @@ const AlumniTicker = () => {
           paused={hoveredId === row.id}
           onEnter={() => setHoveredId(row.id)}
           onLeave={() => setHoveredId(null)}
+          isMobile={isMobile}
         />
       ))}
 
       {/* Bottom spacing */}
-      <div style={{ paddingBottom: '24px' }} />
+      <div style={{ paddingBottom: isMobile ? '12px' : '24px' }} />
     </section>
   );
 };
