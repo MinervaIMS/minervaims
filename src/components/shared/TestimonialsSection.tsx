@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Testimonial {
   quote: string;
@@ -40,7 +41,9 @@ const testimonials: Testimonial[] = [
   },
 ];
 
-const AUTO_ADVANCE_MS = 7000;
+const AUTO_ADVANCE_MS = 9800;
+
+const makeKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
 
 export function TestimonialsSection() {
   const [index, setIndex] = useState(() =>
@@ -48,6 +51,7 @@ export function TestimonialsSection() {
   );
   const [direction, setDirection] = useState<"left" | "right">("left");
   const [animKey, setAnimKey] = useState(0);
+  const [companies, setCompanies] = useState<Record<string, string>>({});
 
   const go = useCallback((next: number, dir: "left" | "right") => {
     const len = testimonials.length;
@@ -64,7 +68,73 @@ export function TestimonialsSection() {
     return () => clearInterval(id);
   }, [index, go]);
 
+  // Fetch alumni company info + subscribe to live updates. Failures degrade silently.
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCompanies = async () => {
+      try {
+        const surnames = testimonials.map((t) => t.name.split(" ").slice(-1)[0]);
+        const { data, error } = await supabase
+          .from("alumni")
+          .select("name, surname, company")
+          .in("surname", surnames);
+        if (error || !data || cancelled) return;
+
+        const map: Record<string, string> = {};
+        for (const t of testimonials) {
+          const parts = t.name.trim().split(/\s+/);
+          const firstName = parts[0];
+          const lastName = parts.slice(1).join(" ");
+          const match = data.find(
+            (a: { name: string; surname: string; company: string | null }) =>
+              a?.name?.trim().toLowerCase() === firstName.toLowerCase() &&
+              a?.surname?.trim().toLowerCase() === lastName.toLowerCase()
+          );
+          const company = match?.company?.trim();
+          if (company && company.length > 0) {
+            map[makeKey(t.name)] = company;
+          }
+        }
+        if (!cancelled) setCompanies(map);
+      } catch {
+        // Silently keep current state
+      }
+    };
+
+    fetchCompanies();
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel("testimonials-alumni-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "alumni" },
+          () => {
+            fetchCompanies();
+          }
+        )
+        .subscribe();
+    } catch {
+      // Realtime not available — static data still works
+    }
+
+    return () => {
+      cancelled = true;
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch {
+          /* noop */
+        }
+      }
+    };
+  }, []);
+
   const current = testimonials[index];
+  const company = companies[makeKey(current.name)];
+  const displayedRole = company ? `${current.role}, currently at ${company}` : current.role;
 
   return (
     <section className="relative bg-accent text-background pt-24 pb-section-sm md:py-section overflow-hidden">
@@ -87,7 +157,7 @@ export function TestimonialsSection() {
       </button>
 
       <div className="container relative">
-        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 md:px-20 text-center">
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 md:px-20 text-center flex flex-col justify-center min-h-[560px] sm:min-h-[520px] md:min-h-[480px] lg:min-h-[460px]">
           <div
             key={animKey}
             className={
@@ -96,7 +166,7 @@ export function TestimonialsSection() {
                 : "animate-testimonial-in-right"
             }
           >
-            {/* Quote area with fixed height for the longest quote */}
+            {/* Quote area */}
             <div className="relative isolate">
               <span
                 aria-hidden="true"
@@ -110,10 +180,7 @@ export function TestimonialsSection() {
               >
                 ”
               </span>
-              <p
-                className="relative z-10 font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-1 sm:px-6 md:px-0"
-                style={{ minHeight: "calc(1.375em * 7)" }}
-              >
+              <p className="relative z-10 font-serif text-[1.55rem] sm:text-2xl md:text-3xl lg:text-4xl leading-snug text-background flex items-center justify-center px-1 sm:px-6 md:px-0">
                 <span>{current.quote}</span>
               </p>
             </div>
@@ -121,7 +188,7 @@ export function TestimonialsSection() {
               {current.name}
             </p>
             <p className="font-body text-sm md:text-base text-background/70 mt-2">
-              {current.role}
+              {displayedRole}
             </p>
           </div>
         </div>
