@@ -275,16 +275,6 @@ body[data-scroll-locked] {
 
 /* ---- Carousel rail + controls ---- */
 .rrail-wrap { position:relative; }
-.rsec--light .rrail-wrap {
-  --fade: clamp(24px, 6vw, 96px);
-  /* Break out of .rwrap to span the full viewport width */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  padding-inline: clamp(1rem, 4vw, 1.5rem);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
-          mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
-}
 .rrail { display:grid; grid-auto-flow:column; gap:clamp(.85rem,1.8vw,1.4rem); overflow-x:auto;
   scroll-snap-type:x mandatory; scroll-behavior:smooth; padding-bottom:.5rem; scrollbar-width:none; }
 .rrail::-webkit-scrollbar { display:none; }
