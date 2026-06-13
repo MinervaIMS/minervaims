@@ -128,7 +128,7 @@ const CSS = `
 // how tall they render; width is always auto to preserve aspect ratio.
 // maxWidth prevents very wide wordmarks from dominating.
 // ─────────────────────────────────────────────────────────────────────────────
-function LogoItem({ logo }: { logo: Logo }) {
+function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
   const [opacity, setOpacity] = useState(0);
 
@@ -152,8 +152,8 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '40px',    // 1:1 logos render at 40×40
-          maxWidth: '400px',    // wide wordmarks capped here
+          maxHeight: isMobile ? '20px' : '40px',
+          maxWidth: isMobile ? '325px' : '650px',
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
