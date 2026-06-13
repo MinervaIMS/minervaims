@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import logoMark from '@/assets/logo-color.svg';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
+import { openReportInTab } from '@/lib/open-report';
 
 // ---------- Public types ----------
 export type ReportChart = 'line' | 'area' | 'bars' | 'scatter';
