@@ -148,8 +148,8 @@ function LogoItem({ logo }: { logo: Logo }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: '116px',   // 1:1 logos render at 116×116 (66 × 1.75)
-          maxWidth: '368px',    // wide wordmarks capped here (210 × 1.75)
+          maxHeight: '90px',    // 1:1 logos render at 90×90
+          maxWidth: '450px',    // wide wordmarks capped here
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
