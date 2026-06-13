@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import logoWhite from "@/assets/logo-white.svg";
+import logoWhite from "@/assets/footer-logo.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
 import companiesImage from "@/assets/companies.webp";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
@@ -79,17 +79,10 @@ const Index = () => {
         <div className="relative z-10 text-center px-6 py-20">
           <img
             src={logoWhite}
-            alt="MIMS"
-            width={192}
-            height={192}
-            className="h-32 md:h-40 lg:h-48 w-auto mx-auto mb-8 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+            alt="Minerva Investment Management Society"
+            className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
             fetchPriority="high"
           />
-          <h1 className="font-serif text-hero md:text-[4.5rem] text-background tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-            Minerva Investment
-            <br />
-            Management Society
-          </h1>
           {appSettings.applicationsOpen && (
             <Link
               to="/join"
