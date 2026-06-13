@@ -267,6 +267,7 @@ function TickerBand({
 // ─────────────────────────────────────────────────────────────────────────────
 const AlumniTicker = () => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   return (
     <section
@@ -277,7 +278,7 @@ const AlumniTicker = () => {
       <style>{CSS}</style>
 
       {/* Title — styled as a standard section heading following site conventions */}
-      <div className="container" style={{ paddingTop: '24px' }}>
+      <div className="container" style={{ paddingTop: isMobile ? '12px' : '24px' }}>
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our alumni stand at the forefront of global markets
         </h2>
@@ -291,11 +292,12 @@ const AlumniTicker = () => {
           paused={hoveredId === row.id}
           onEnter={() => setHoveredId(row.id)}
           onLeave={() => setHoveredId(null)}
+          isMobile={isMobile}
         />
       ))}
 
       {/* Bottom spacing */}
-      <div style={{ paddingBottom: '24px' }} />
+      <div style={{ paddingBottom: isMobile ? '12px' : '24px' }} />
     </section>
   );
 };
