@@ -1,56 +1,40 @@
-# Homepage Testimonials Section – Updates
+# Fix: Scroll glitch on /people/alumni
 
-Single file to edit: `src/components/shared/TestimonialsSection.tsx` (plus one animation duration tweak in `tailwind.config.ts`).
+## Root cause
 
-## 1. Fixed section height per breakpoint
+In `src/pages/Alumni.tsx` the search/filters block is `sticky top-16` and also subscribes to `window.scroll` to flip an `isSticky` state when `rect.top <= 64`. When `isSticky` becomes true, several things inside the bar are hidden:
 
-The section currently grows/shrinks because the quote paragraph's `min-height` is the only height lock and the name/role block sits outside it. Lock the entire content wrapper to a per-breakpoint minimum height so every quote (shortest → longest) fits without expansion:
+- The "Search" label (mobile only)
+- The three filter `<select>`s (Job Area, Company, City) on mobile
+- The "Showing X of Y" counter (mobile only)
 
-- Mobile: `min-h-[560px]`
-- Tablet (`sm`): `sm:min-h-[520px]`
-- Desktop (`md`): `md:min-h-[480px]`
-- Large (`lg`): `lg:min-h-[460px]`
+This shrinks the sticky bar's height significantly while you're scrolling. On mobile the filters are stacked, so the height delta is large (~200px+). That causes two visible problems:
 
-Applied to the inner `max-w-4xl` wrapper, with `flex flex-col justify-center` so the quote + author stay vertically centered regardless of content length. The current `minHeight: 'calc(1.375em * 7)'` on the `<p>` is removed (the wrapper now governs height). Values chosen against the longest quote (Matteo Consalvo) at each breakpoint with the existing font sizes.
+1. **Layout jump** at the boundary between the founders/filters area and the alumni list: when the bar collapses, the document below it shifts up, which makes the page appear to "jolt" right where the sticky bar meets the list.
+2. **Boundary oscillation**: shrinking the bar can move its own `rect.top` back above 64px on slow/inertial scrolls, briefly flipping `isSticky` back to false → bar re-expands → flips true again. This produces the small jitter the user noticed, and it can also occur on desktop near the threshold (though it's less visible there because only the labels hide).
 
-## 2. Duration 40% longer
+Two secondary contributors:
 
-`AUTO_ADVANCE_MS`: `7000` → `9800` ms.
+- `setIsSticky` is called on every scroll frame even when the value hasn't changed → unnecessary re-renders during scroll.
+- The bar uses `-mx-4 px-4 md:-mx-6 px-6` which can interact with body horizontal padding when it becomes sticky and cause a 1px horizontal shift in some viewports.
 
-## 3. Transition 70% slower + smoother
+## Fix
 
-In `tailwind.config.ts`, change both keyframe animation durations and easing:
-- `testimonial-in-left`: `0.6s ease-out` → `1.02s cubic-bezier(0.22, 1, 0.36, 1)` (easeOutExpo-like, smoother)
-- `testimonial-in-right`: same change
+Remove the scroll-driven shrinking of the sticky bar entirely. The bar stays the same height whether sticky or not — that eliminates both the layout jump and the oscillation. Specifically in `src/pages/Alumni.tsx`:
 
-(Keyframes themselves unchanged.)
+1. Delete the `isSticky` state, the `searchBarRef`, and the `useEffect` that adds the `scroll` listener (lines 40–41, 48–59).
+2. Remove every `${isSticky ? ... : ''}` conditional class on the labels, filter wrappers, and the "Showing X of Y" paragraph (lines 232, 249, 267, 285, 303). Labels, filters, and the counter render the same way whether the bar is sticky or not.
+3. Keep `sticky top-16 z-20` and the background/border so the bar still pins under the header.
+4. On mobile, to keep the sticky bar from taking up too much vertical space when pinned, set `max-height: calc(100vh - 4rem)` and `overflow-y: auto` on the sticky container so it can scroll internally if needed instead of resizing the page. This is a static rule, not scroll-driven, so it does not cause jitter.
 
-## 4. Append current company from alumni (live)
+## Technical details
 
-In `TestimonialsSection.tsx`:
-
-- On mount, fetch alumni matching the 5 testimonial contributors:
-  ```ts
-  supabase.from('alumni')
-    .select('name, surname, company')
-    .or('and(name.eq.Anna,surname.eq.Maruccio),...')
-  ```
-  (Use `.in('surname', [...])` then filter by name client-side for simplicity — small dataset.)
-- Build a `Map<"Name Surname", company>` in state.
-- Subscribe to realtime changes on the `alumni` table (`postgres_changes`, event `*`) and refetch when any row changes. Cleanup channel on unmount.
-- Render role as:
-  - If a company is found and non-empty: `${role}, currently at ${company}`
-  - Otherwise: `role` unchanged (current behavior).
-- All five contributors already have companies in the DB (verified): Anna Maruccio → D.E. Shaw Group, Luigi Savarese → Galileo Capital, Matteo Consalvo → EPAP, Michele Rinaldi → Citi, Marco Neri → Goldman Sachs. So output e.g. "Former Vice-president, currently at Citi".
-
-### Resilience
-- Wrap fetch + subscription in `try/catch`; on error keep the original role string (no UI break).
-- Guard against missing/empty `company` (trim + length check).
-- No throws bubble up — failures degrade silently to current text.
-- Lookup key is case-insensitive trimmed `"name surname"`.
+- Files touched: `src/pages/Alumni.tsx` only. No data, types, or other components change.
+- No new dependencies.
+- Result: the sticky filter bar has a constant height; scrolling past it produces no document reflow, so the seam between the filters and the alumni list no longer flickers on mobile, tablet, or desktop.
 
 ## Verification
-- Cycle through all 5 testimonials at desktop/tablet/mobile widths: section height stays constant.
-- Quote stays visible ~9.8s; cross-fade lasts ~1s with smooth easing.
-- Each author line shows `Former …, currently at <Company>` matching DB.
-- Edit a company in the admin Alumni table → testimonial role text updates without reload.
+
+- Load `/people/alumni` on mobile viewport (375px) and scroll from the founders section down through the alumni list — boundary between filters and list should be smooth, no jolt, no flicker.
+- Repeat at 768px and 1440px.
+- Confirm filters and search still work and stay accessible while pinned.
