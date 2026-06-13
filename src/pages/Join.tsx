@@ -296,7 +296,6 @@ const Join = () => {
         <div className="relative z-10">
           <PageIntroduction
             title="Join Minerva"
-            description="Built like an investment firm, run by students. Your first step toward a career in finance."
             transparentBackground
           />
         </div>

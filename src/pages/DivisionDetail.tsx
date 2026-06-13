@@ -147,7 +147,6 @@ const DivisionDetail = () => {
         <div className="relative z-10">
           <PageIntroduction
             title={content.title}
-            description={content.subtitle}
             transparentBackground
           />
         </div>

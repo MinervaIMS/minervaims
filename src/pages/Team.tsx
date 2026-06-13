@@ -72,7 +72,6 @@ const Team = () => {
       <div data-page-hero>
         <PageIntroduction
           title="Members"
-          description="The students who research, build and manage MIMS' virtual funds."
           backgroundImage={teamBg}
         />
       </div>
