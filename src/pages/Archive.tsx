@@ -285,7 +285,7 @@ const Archive = () => {
                     placeholder="Search by title or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 font-serif text-small h-10"
+                    className="pl-10 font-serif text-small h-10 rounded-none"
                   />
                 </div>
               </div>
