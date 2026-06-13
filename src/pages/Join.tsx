@@ -475,7 +475,7 @@ const Join = () => {
                     {/* Rail column: dot + connecting line */}
                     <div className="relative flex justify-center">
                       <div
-                        className={`relative z-[2] w-[60px] h-[60px] rounded-full border-[1.5px] border-accent bg-background flex items-center justify-center font-serif text-[1.4rem] transition-all duration-[550ms] ease-out ${
+                        className={`relative z-[2] w-[60px] h-[60px] rounded-full border-[1.5px] border-accent bg-background flex items-center justify-center font-serif text-[1.4rem] transition-all duration-[550ms] ease-[ease] ${
                           lit
                             ? "bg-accent text-background shadow-[0_0_0_6px_rgba(31,15,77,0.1),0_10px_28px_rgba(31,15,77,0.3)]"
                             : "text-accent"
@@ -490,14 +490,17 @@ const Join = () => {
                           aria-hidden
                         >
                           <div
-                            className="absolute inset-x-0 top-0 bg-accent transition-[height] ease-linear"
+                            className="absolute inset-x-0 top-0 transition-[height]"
                             style={{
                               height: lit ? "calc(100% + 2.5rem)" : "0%",
                               transitionDuration: "1000ms",
+                              transitionTimingFunction: "ease",
+                              background: "linear-gradient(180deg, hsl(var(--accent)), #AFA2D2)",
                             }}
                           />
                         </div>
                       )}
+
                     </div>
                     {/* Step Content */}
                     <div>

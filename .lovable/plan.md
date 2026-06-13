@@ -1,19 +1,15 @@
-Strip all `<Reveal>` fade-in wrappers from `src/pages/Join.tsx`, leaving CountUp and Application Journey spine intact.
+The current implementation in `src/pages/Join.tsx` already matches the reference structure (60px rail, dot/line geometry, sequential `250 + i*400` timing, `calc(100% + 2.5rem)` overshoot). Three small details still diverge from the uploaded `journey-spine-demo.html` — align them exactly.
 
-**What to change**
-1. Find every usage of `<Reveal>` on `src/pages/Join.tsx`.
-2. Replace each `<Reveal>...</Reveal>` block with its inner content only — removing the wrapper and its `delay`/`key`/`className` props.
-3. Keep the `<Reveal>` around the Figures band (it triggers `CountUp` start) **only if** it is necessary for the count; if the count trigger is separate, remove it too. Actually, to be safe, leave the Figures `<Reveal>` since CountUp needs it.
-4. Keep the `<Reveal>` around the Application Journey section because it drives the spine sequential lighting; do not remove it.
+**Changes to `src/pages/Join.tsx` (Application Journey only)**
 
-**What to preserve**
-- `CountUp` numbers animation in the Figures band.
-- Application Journey dot-lighting and vertical line-fill animation.
-- All content, layout, styling, and hover effects.
+1. **Line fill = gradient, not solid accent.**
+   Replace the fill `bg-accent` with an inline `background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--mims-light-purple)))` so the glow runs navy → light-purple top-to-bottom, matching `.jline .fill` in the spec. If a `--mims-light-purple` token isn't in `index.css`, fall back to the literal `#AFA2D2` as the gradient stop (the spec explicitly says do not substitute).
+
+2. **Transition easing = `ease` (not `ease-out` / `ease-linear`).**
+   - Dot: `transition: all .55s ease` → change `ease-out` to `ease` on the dot.
+   - Fill: `transition: height 1s ease` → change `ease-linear` to `ease`, keep 1000ms.
+
+3. **Keep everything else as-is** (geometry, sequential timing, IntersectionObserver threshold 0.2, content, FAQs, section heading style).
 
 **Verification**
-- After build, check `/join` loads without fade-ins on sections.
-- Confirm CountUp still counts and journey spine still lights sequentially.
-
-**Memory update**
-- Update `mem://pages/join/animations-spec` to reflect that Reveal fade-ins are removed; only CountUp and journey spine remain.
+- Reload `/join`, scroll to the Application Journey, confirm: dots light navy in sequence with the soft glow, and the connecting line fills with a navy→light-purple gradient that reaches into the next step.
