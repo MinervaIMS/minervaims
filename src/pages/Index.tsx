@@ -3,20 +3,16 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import logoWhite from "@/assets/footer-logo.svg";
 import homepageBg from "@/assets/homepage-bg.webp";
-import companiesImage from "@/assets/companies.webp";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
-import { Division, divisionLabels } from "@/lib/types";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-
-const divisions: Division[] = ["equity", "investment", "macro", "portfolio", "quant"];
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
