@@ -201,127 +201,99 @@ function Cover({ report, className = '', useRealCover = false, renderWidth }: Co
   );
 }
 
-// ---------- Open PDF in new tab with custom title + clean download filename ----------
-function sanitizeFilename(title: string): string {
-  const cleaned = String(title || '')
-    .replace(/[^a-zA-Z0-9 _-]+/g, ' ')
+// ---------- Open PDF in new tab with custom title ----------
+function sanitizeFilename(t: string): string {
+  const cleaned = String(t || '')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   return cleaned || 'Report';
 }
 
 function escapeHtml(s: string): string {
-  return String(s).replace(/[<>&"']/g, (c) => ({
-    '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]!));
+}
+
+function withDownloadParam(url: string, filename: string): string {
+  // Supabase Storage public URLs honour ?download=<name> by sending
+  // Content-Disposition: attachment; filename="<name>". No CORS needed:
+  // the browser navigates to the URL, it does not fetch it via JS.
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}download=${encodeURIComponent(filename)}`;
 }
 
 function openReportInTab(title: string, url: string) {
   if (!url) return;
 
-  // Open exactly one tab. Do NOT pass 'noreferrer' — it makes window.open
-  // return null in Chromium, which previously caused the fallback to open a
-  // second tab while leaving an orphaned about:blank one behind.
-  const w = window.open('about:blank', '_blank', 'noopener');
+  const niceTitle = sanitizeFilename(title);
+  const filename = `${niceTitle}.pdf`;
+  const downloadUrl = withDownloadParam(url, filename);
+
+  // IMPORTANT: pass no feature string. 'noopener' and 'noreferrer' both
+  // force window.open() to return null in Chromium while still opening
+  // the tab — that is what produced the orphan about:blank tab + the
+  // second fallback tab in the previous behaviour.
+  const w = window.open('about:blank', '_blank');
   if (!w) {
-    // True popup-block: use a single anchor click as fallback (no second window.open).
+    // Genuine popup-block: simulate a user-driven anchor click. A second
+    // window.open() here would also be blocked.
     const a = document.createElement('a');
     a.href = url;
     a.target = '_blank';
     a.rel = 'noopener';
-    a.download = `${sanitizeFilename(title)}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     return;
   }
 
-  const cleanName = sanitizeFilename(title);
-  const displayTitle = title || 'Report';
-  const safeDisplay = escapeHtml(displayTitle);
-  const safeName = escapeHtml(cleanName);
+  const safeTitle = escapeHtml(niceTitle);
   const safeUrl = escapeHtml(url);
+  const safeDownloadUrl = escapeHtml(downloadUrl);
+  const safeFilename = escapeHtml(filename);
 
-  const html = `<!doctype html>
+  w.document.open();
+  w.document.write(`<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>${safeDisplay}</title>
-<meta name="description" content="${safeDisplay}">
-<link rel="icon" href="data:,">
+<title>${safeTitle}</title>
+<meta name="description" content="${safeTitle}">
 <style>
-  html,body{margin:0;height:100%;background:#1F0F4D;font-family:'Times New Roman',Times,serif;color:#fff;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 18px;background:#1F0F4D;border-bottom:1px solid rgba(255,255,255,.12);}
-  .topbar .ttl{font-family:'Times New Roman',Times,serif;font-size:16px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .topbar .dl{font-family:'Times New Roman',Times,serif;font-size:14px;background:#fff;color:#000;border:1px solid #000;padding:6px 14px;cursor:pointer;text-decoration:none;display:inline-block;}
-  .topbar .dl:disabled{opacity:.6;cursor:wait;}
-  .stage{position:absolute;inset:48px 0 0 0;}
-  iframe,embed{border:0;width:100%;height:100%;display:block;background:#1F0F4D;}
+html,body{margin:0;height:100%;background:#1F0F4D;color:#fff;font-family:'Times New Roman',Times,serif;}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#1F0F4D;border-bottom:1px solid rgba(255,255,255,.15);height:56px;box-sizing:border-box;}
+.bar h1{margin:0;font-size:18px;font-weight:normal;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:16px;}
+.bar a.dl{flex-shrink:0;display:inline-block;padding:8px 18px;background:#fff;color:#1F0F4D;border:1px solid #000;text-decoration:none;font-family:'Times New Roman',Times,serif;font-size:15px;}
+.bar a.dl:hover{opacity:.9;}
+.stage{position:absolute;top:56px;left:0;right:0;bottom:0;}
+iframe{border:0;width:100%;height:100%;display:block;background:#fff;}
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="ttl">${safeDisplay}</div>
-    <button id="dl" class="dl" type="button">Download</button>
-  </div>
-  <div class="stage"><iframe id="pdf" title="${safeDisplay}" allow="fullscreen"></iframe></div>
+<header class="bar"><h1>${safeTitle}</h1><a class="dl" href="${safeDownloadUrl}" download="${safeFilename}">Download</a></header>
+<div class="stage"><iframe src="${safeUrl}" title="${safeTitle}" allow="fullscreen"></iframe></div>
 <script>
 (function(){
-  var SRC = ${JSON.stringify(url)};
-  var NAME = ${JSON.stringify(cleanName + '.pdf')};
-  var TITLE = ${JSON.stringify(displayTitle)};
-  document.title = TITLE;
-  var frame = document.getElementById('pdf');
-  var btn = document.getElementById('dl');
-  var blobUrl = null;
-
-  // Keep the tab title pinned even after the PDF viewer loads inside the iframe.
-  setInterval(function(){ if (document.title !== TITLE) document.title = TITLE; }, 500);
-
-  fetch(SRC, { credentials: 'omit' })
-    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.blob(); })
-    .then(function(blob){
-      blobUrl = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: 'application/pdf' }));
-      frame.src = blobUrl + '#view=FitH';
-    })
-    .catch(function(){
-      // Fallback: just show the original URL so the PDF is still visible.
-      frame.src = SRC;
-    });
-
-  btn.addEventListener('click', function(){
-    btn.disabled = true;
-    var done = function(){ btn.disabled = false; };
-    var triggerDownload = function(href, revoke){
-      var a = document.createElement('a');
-      a.href = href;
-      a.download = NAME;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      if (revoke) setTimeout(function(){ URL.revokeObjectURL(href); }, 1000);
-      done();
-    };
-    fetch(SRC, { credentials: 'omit' })
-      .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.blob(); })
-      .then(function(blob){
-        var b = blob.type ? blob : new Blob([blob], { type: 'application/pdf' });
-        triggerDownload(URL.createObjectURL(b), true);
-      })
-      .catch(function(){
-        // CORS or network: open the raw URL as a last resort.
-        window.open(SRC, '_blank', 'noopener');
-        done();
-      });
-  });
+  var TITLE=${JSON.stringify(niceTitle)};
+  function pin(){if(document.title!==TITLE){document.title=TITLE;}}
+  pin();
+  try{
+    var head=document.head||document.getElementsByTagName('head')[0];
+    if(head&&window.MutationObserver){
+      new MutationObserver(pin).observe(head,{childList:true,subtree:true,characterData:true});
+    }
+  }catch(e){}
+  setInterval(pin,1000);
+  window.addEventListener('focus',pin);
+  window.addEventListener('blur',pin);
 })();
 </script>
 </body>
-</html>`;
-
-  w.document.open();
-  w.document.write(html);
+</html>`);
   w.document.close();
+  try { w.document.title = niceTitle; } catch (e) {}
 }
 
 // ---------- "Read More" featured info block (shared by featured + lightbox) ----------
