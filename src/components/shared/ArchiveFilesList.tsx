@@ -22,7 +22,6 @@ interface ArchiveFilesListProps {
 }
 
 export function ArchiveFilesList({ files, showDivision = false, highlightedFileId }: ArchiveFilesListProps) {
-  const [previewFile, setPreviewFile] = useState<ArchiveFile | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const { toast } = useToast();
