@@ -54,7 +54,7 @@ const divisionContent: Record<Division, DivisionContent> = {
   quant: {
     title: 'Quantitative Research',
     subtitle: 'Models and tools for risk, forecasting, derivatives.',
-    description: 'Quantitative Research develops models and tooling for risk, forecasting and derivatives analysis, supporting portfolio construction and systematic research across MIMS. Recent publications cover coherent risk measures (CVaR/EVaR) with EVT estimation, regularised and Bayesian regression, neural networks for prediction, barrier-option pricing via Black–Scholes and Monte Carlo/importance sampling, and path-dependent volatility models calibrated to SPX/VIX and used for option-smile simulation. Led by a Head/Co-Head, the division is organised into Model Research and Implementation streams, staffed by analysts.',
+    description: 'Quantitative Research applies advanced mathematical and statistical methods to open problems at the frontier of financial markets. The division develops models for risk measurement, forecasting and derivatives pricing, drawing on probability theory, statistical inference, optimisation and machine learning. Since the most interesting problems sit at the intersection of disciplines, the team deliberately brings together students from different quantitative backgrounds. Mathematics, economics, finance, AI and computer science all have a seat at the table: each member brings their own expertise and way of framing problems, and builds new ones by working alongside people who were trained entirely differently, replicating the collaborative structure of a real quantitative research team.',
     sectionTitle: 'Latest Research Publications',
   },
 };
