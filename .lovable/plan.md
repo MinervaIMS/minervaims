@@ -1,50 +1,56 @@
-# Unify PDF preview behavior across the site
+# Homepage Testimonials Section – Updates
 
-## Problem
+Single file to edit: `src/components/shared/TestimonialsSection.tsx` (plus one animation duration tweak in `tailwind.config.ts`).
 
-The `/archive` page (and any other places previewing reports) currently opens an in-page `Dialog` with an iframe pointing at the raw Supabase Storage URL. As shown in the screenshot, that dialog renders a mostly empty white area — the embedded PDF often fails to display reliably across browsers, and the dialog adds no value over a real browser tab.
+## 1. Fixed section height per breakpoint
 
-Meanwhile, the homepage Latest Reports rail uses `openReportInTab(title, url)` in `src/components/shared/ReportsSection.tsx`, which opens a single new tab with:
-- A clean tab title (sanitized report title, pinned via MutationObserver/interval)
-- A deep purple (`#1F0F4D`) wrapper bar with the report title in Times New Roman
-- A white "Download PDF" button using `?download=<Report Title>.pdf` for a clean saved filename
-- An embedded iframe with the PDF
+The section currently grows/shrinks because the quote paragraph's `min-height` is the only height lock and the name/role block sits outside it. Lock the entire content wrapper to a per-breakpoint minimum height so every quote (shortest → longest) fits without expansion:
 
-This is the experience we want everywhere.
+- Mobile: `min-h-[560px]`
+- Tablet (`sm`): `sm:min-h-[520px]`
+- Desktop (`md`): `md:min-h-[480px]`
+- Large (`lg`): `lg:min-h-[460px]`
 
-## Fix
+Applied to the inner `max-w-4xl` wrapper, with `flex flex-col justify-center` so the quote + author stay vertically centered regardless of content length. The current `minHeight: 'calc(1.375em * 7)'` on the `<p>` is removed (the wrapper now governs height). Values chosen against the longest quote (Matteo Consalvo) at each breakpoint with the existing font sizes.
 
-### 1. Promote `openReportInTab` into a shared util
+## 2. Duration 40% longer
 
-Extract the helper currently defined inside `src/components/shared/ReportsSection.tsx` (lines ~204-325, including `sanitizeFilename`, `escapeHtml`, `withDownloadParam`) into a new module:
+`AUTO_ADVANCE_MS`: `7000` → `9800` ms.
 
-- **New file:** `src/lib/open-report.ts` exporting `openReportInTab(title: string, url: string): void`.
-- Keep behavior bit-for-bit identical to the current implementation (single `window.open('about:blank', '_blank')`, anchor fallback, wrapper document, title pinning).
-- Update `ReportsSection.tsx` to import from the new module instead of defining it locally. No call-site changes there.
+## 3. Transition 70% slower + smoother
 
-### 2. Replace the Archive preview dialog with `openReportInTab`
+In `tailwind.config.ts`, change both keyframe animation durations and easing:
+- `testimonial-in-left`: `0.6s ease-out` → `1.02s cubic-bezier(0.22, 1, 0.36, 1)` (easeOutExpo-like, smoother)
+- `testimonial-in-right`: same change
 
-In `src/components/shared/ArchiveFilesList.tsx`:
+(Keyframes themselves unchanged.)
 
-- Remove the `Dialog` / `DialogContent` / `DialogHeader` / `DialogTitle` imports and the entire "PDF Preview Dialog" block (lines ~194-224).
-- Remove the `previewFile` state.
-- Change the thumbnail's `onClick` from `setPreviewFile(file)` to `openReportInTab(file.title, file.file_url)`.
-- Keep the existing Download button behavior (server-side download via `handleDownload`) unchanged on the list cards — only the preview path changes.
+## 4. Append current company from alumni (live)
 
-### 3. Scan for any other in-page PDF preview dialogs
+In `TestimonialsSection.tsx`:
 
-- `src/pages/Events.tsx` line ~521 embeds an iframe for event **posters** (images/PDFs in a lightbox). This is not a report preview and is out of scope unless you want it changed too — by default, leave it alone.
-- No other components currently open PDFs in-page (verified via `rg "#view=FitH"` and `rg "iframe"`).
+- On mount, fetch alumni matching the 5 testimonial contributors:
+  ```ts
+  supabase.from('alumni')
+    .select('name, surname, company')
+    .or('and(name.eq.Anna,surname.eq.Maruccio),...')
+  ```
+  (Use `.in('surname', [...])` then filter by name client-side for simplicity — small dataset.)
+- Build a `Map<"Name Surname", company>` in state.
+- Subscribe to realtime changes on the `alumni` table (`postgres_changes`, event `*`) and refetch when any row changes. Cleanup channel on unmount.
+- Render role as:
+  - If a company is found and non-empty: `${role}, currently at ${company}`
+  - Otherwise: `role` unchanged (current behavior).
+- All five contributors already have companies in the DB (verified): Anna Maruccio → D.E. Shaw Group, Luigi Savarese → Galileo Capital, Matteo Consalvo → EPAP, Michele Rinaldi → Citi, Marco Neri → Goldman Sachs. So output e.g. "Former Vice-president, currently at Citi".
+
+### Resilience
+- Wrap fetch + subscription in `try/catch`; on error keep the original role string (no UI break).
+- Guard against missing/empty `company` (trim + length check).
+- No throws bubble up — failures degrade silently to current text.
+- Lookup key is case-insensitive trimmed `"name surname"`.
 
 ## Verification
-
-- Click any thumbnail on `/archive` → exactly one new tab opens, titled with the report name, showing the embedded PDF with the deep-purple top bar and white Download button (identical to clicking a card on the homepage).
-- The dialog/lightbox no longer appears on `/archive`.
-- The "Download" button on each archive card still downloads the PDF inline as before (uses existing `handleDownload`).
-- Homepage Latest Reports, division pages, and the lightbox cover button continue to work unchanged (they import the same helper from the new shared module).
-
-## Files touched
-
-- **New:** `src/lib/open-report.ts` — extracted helper.
-- **Edit:** `src/components/shared/ReportsSection.tsx` — replace inline helper with an import.
-- **Edit:** `src/components/shared/ArchiveFilesList.tsx` — drop the preview dialog, use `openReportInTab` on thumbnail click.
+- Cycle through all 5 testimonials at desktop/tablet/mobile widths: section height stays constant.
+- Quote stays visible ~9.8s; cross-fade lasts ~1s with smooth easing.
+- Each author line shows `Former …, currently at <Company>` matching DB.
+- Edit a company in the admin Alumni table → testimonial role text updates without reload.
