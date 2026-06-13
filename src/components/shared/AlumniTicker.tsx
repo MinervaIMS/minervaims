@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SVG files are served from /public/logos/{file}.svg
