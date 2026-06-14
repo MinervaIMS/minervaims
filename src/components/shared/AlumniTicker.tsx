@@ -111,6 +111,9 @@ const CSS = `
   @media (prefers-reduced-motion: reduce) {
     .mims-track { animation-play-state: paused !important; }
   }
+  /* Hide native scrollbar on ticker band — interaction stays available */
+  .mims-band { scrollbar-width: none; -ms-overflow-style: none; }
+  .mims-band::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
