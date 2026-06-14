@@ -480,3 +480,10 @@ body[data-scroll-locked] {
   .rsec *, .rprev * { transition:none !important; animation:none !important; }
 }
 
+
+/* Page visibility gate — blurs page content when a page is hidden */
+.page-blur-block {
+  filter: blur(18px) saturate(0.6);
+  user-select: none;
+  -webkit-user-select: none;
+}

@@ -11,6 +11,7 @@ import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { Preloader } from "@/components/shared/Preloader";
+import { PageVisibilityGate } from "@/components/shared/PageVisibilityGate";
 
 const PRELOADER_KEY = "__mims_intro__";
 
@@ -71,25 +72,25 @@ const App = () => {
             <Routes>
               <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
-                <Route path="/about" element={<Suspense fallback={<PageLoader />}><About /></Suspense>} />
-                <Route path="/divisions/:division" element={<Suspense fallback={<PageLoader />}><DivisionDetail /></Suspense>} />
-                <Route path="/funds/:fund" element={<Suspense fallback={<PageLoader />}><FundDetail /></Suspense>} />
-                <Route path="/people" element={<Suspense fallback={<PageLoader />}><MembersIndex /></Suspense>} />
-                <Route path="/people/members" element={<Suspense fallback={<PageLoader />}><Team /></Suspense>} />
-                <Route path="/people/alumni" element={<Suspense fallback={<PageLoader />}><Alumni /></Suspense>} />
+                <Route path="/about" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="about"><About /></PageVisibilityGate></Suspense>} />
+                <Route path="/divisions/:division" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="divisions"><DivisionDetail /></PageVisibilityGate></Suspense>} />
+                <Route path="/funds/:fund" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="funds"><FundDetail /></PageVisibilityGate></Suspense>} />
+                <Route path="/people" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="members-index"><MembersIndex /></PageVisibilityGate></Suspense>} />
+                <Route path="/people/members" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="team"><Team /></PageVisibilityGate></Suspense>} />
+                <Route path="/people/alumni" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="alumni"><Alumni /></PageVisibilityGate></Suspense>} />
                 {/* Legacy redirects */}
                 <Route path="/members" element={<Navigate to="/people" replace />} />
                 <Route path="/members/team" element={<Navigate to="/people/members" replace />} />
                 <Route path="/members/alumni" element={<Navigate to="/people/alumni" replace />} />
-                <Route path="/events" element={<Suspense fallback={<PageLoader />}><Events /></Suspense>} />
-                <Route path="/join" element={<Suspense fallback={<PageLoader />}><Join /></Suspense>} />
-                <Route path="/archive" element={<Suspense fallback={<PageLoader />}><Archive /></Suspense>} />
-                <Route path="/readings" element={<Suspense fallback={<PageLoader />}><Readings /></Suspense>} />
+                <Route path="/events" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="events"><Events /></PageVisibilityGate></Suspense>} />
+                <Route path="/join" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="join"><Join /></PageVisibilityGate></Suspense>} />
+                <Route path="/archive" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="archive"><Archive /></PageVisibilityGate></Suspense>} />
+                <Route path="/readings" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="readings"><Readings /></PageVisibilityGate></Suspense>} />
                 <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
                 <Route path="/cookie-policy" element={<Suspense fallback={<PageLoader />}><CookiePolicy /></Suspense>} />
                 <Route path="/terms-of-use" element={<Suspense fallback={<PageLoader />}><TermsOfUse /></Suspense>} />
                 <Route path="/disclaimer" element={<Suspense fallback={<PageLoader />}><Disclaimer /></Suspense>} />
-                <Route path="/statute" element={<Suspense fallback={<PageLoader />}><Statute /></Suspense>} />
+                <Route path="/statute" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="statute"><Statute /></PageVisibilityGate></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
