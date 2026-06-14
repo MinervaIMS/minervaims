@@ -33,15 +33,18 @@ const PagesVisibilityManagement = () => {
 
       // Activity log (best-effort)
       try {
-        await supabase.from('activity_logs').insert({
-          user_id: user?.id ?? null,
-          user_email: user?.email ?? null,
-          action_type: 'update',
-          entity_type: 'page_visibility',
-          entity_id: pageKey,
-          entity_name: label,
-          details: { is_hidden: next, page_key: pageKey },
-        });
+        if (user?.id && user?.email) {
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            user_email: user.email,
+            user_role: roles[0]?.role ?? 'admin',
+            action: 'update',
+            entity_type: 'page_visibility',
+            entity_id: pageKey,
+            entity_name: label,
+            details: { is_hidden: next, page_key: pageKey },
+          });
+        }
       } catch (e) {
         // non-fatal
         console.warn('activity log failed', e);
