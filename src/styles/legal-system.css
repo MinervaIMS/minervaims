@@ -202,7 +202,7 @@
   .legal-doc .lp-toc { display: none; }
   .legal-doc .lp-toc-collapse { display: block; }
   .legal-doc .lp-backtop-row { padding: 6px 48px 0; }
-  .legal-doc .lp-related { padding: 40px 48px; }
+  .legal-doc .lp-related { padding: 40px 0; }
   .legal-doc .lp-toc-collapse .lp-progress { display: none; }
 }
 
