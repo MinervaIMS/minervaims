@@ -165,22 +165,6 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
         {children}
       </div>
 
-      {treatHidden && (
-        <div
-          aria-hidden="true"
-          className="page-gate-scrim fixed left-0 right-0 z-20"
-          style={{
-            top: `${heroBottom}px`,
-            bottom: `${scrimBottom}px`,
-            backdropFilter: 'blur(22px) saturate(0.5)',
-            WebkitBackdropFilter: 'blur(22px) saturate(0.5)',
-            backgroundColor: 'hsl(var(--background) / 0.35)',
-          }}
-          onMouseDown={(e) => e.preventDefault()}
-          onContextMenu={(e) => e.preventDefault()}
-          onCopy={(e) => e.preventDefault()}
-        />
-      )}
 
       {treatHidden && noticeTop !== null && (
         <div
