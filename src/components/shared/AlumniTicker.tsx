@@ -129,6 +129,13 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   const draggingRef        = useRef(false);
   const lastInteractionRef = useRef(0);
   const initializedRef     = useRef(false);
+  // Float-precision scroll position. WebKit (Safari, iOS WebView) rounds
+  // Element.scrollLeft to integer pixels: a per-frame delta of ~0.92px
+  // (= 55 pps × 16.7ms at 60Hz) gets floored to 0 for the positive
+  // direction, freezing left-direction rows. We keep the true float
+  // here and always write the accumulated value, so the fractional
+  // component is never lost.
+  const scrollPosRef = useRef(0);
 
   useEffect(() => {
     const band  = bandRef.current;
@@ -148,7 +155,8 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       if (initializedRef.current) return;
       const sw = setWidth();
       if (sw > 0) {
-        band.scrollLeft = sw * 1.5;
+        scrollPosRef.current = sw * 1.5;
+        band.scrollLeft      = scrollPosRef.current;
         initializedRef.current = true;
       }
     };
@@ -164,16 +172,32 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       const sw = setWidth();
       if (sw === 0) { rafId = requestAnimationFrame(tick); return; }
 
+      // Reconcile with any external scroll change (user drag/wheel/touch
+      // wrote to scrollLeft outside our control). If the actual scroll
+      // position drifts from our float by more than the typical browser
+      // rounding tolerance (~1px), trust the actual position.
+      const actualSl = band.scrollLeft;
+      if (Math.abs(actualSl - scrollPosRef.current) > 2) {
+        scrollPosRef.current = actualSl;
+      }
+
       const idleFor = now - lastInteractionRef.current;
       const canAutoScroll =
         !reducedMotion && !pausedRef.current && !draggingRef.current && idleFor > RESUME_DELAY_MS;
+
+      let pos = scrollPosRef.current;
       if (canAutoScroll) {
-        band.scrollLeft += directionSign * targetPps * dt;
+        // Accumulate velocity on OUR float, not on scrollLeft (which
+        // WebKit floors to integer pixels and would drop sub-pixel deltas
+        // in the positive direction — see scrollPosRef doc).
+        pos += directionSign * targetPps * dt;
       }
 
-      const sl = band.scrollLeft;
-      if      (sl < sw)     band.scrollLeft = sl + sw;
-      else if (sl > sw * 2) band.scrollLeft = sl - sw;
+      if      (pos < sw)     pos += sw;
+      else if (pos > sw * 2) pos -= sw;
+
+      scrollPosRef.current = pos;
+      band.scrollLeft      = pos;
 
       rafId = requestAnimationFrame(tick);
     };
@@ -193,7 +217,9 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
     };
     const onPointerMove = (e: PointerEvent) => {
       if (!draggingRef.current) return;
-      band.scrollLeft = dragStartSL - (e.clientX - dragStartX);
+      const next = dragStartSL - (e.clientX - dragStartX);
+      band.scrollLeft      = next;
+      scrollPosRef.current = next; // keep our float in sync with user drag
       lastInteractionRef.current = performance.now();
     };
     const stopDrag = (e: PointerEvent) => {
@@ -218,8 +244,11 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
     const ro = new ResizeObserver(() => {
       const sw = setWidth();
       if (sw === 0) return;
-      if      (band.scrollLeft < sw)     band.scrollLeft += sw;
-      else if (band.scrollLeft > sw * 2) band.scrollLeft -= sw;
+      let pos = scrollPosRef.current;
+      if      (pos < sw)     pos += sw;
+      else if (pos > sw * 2) pos -= sw;
+      scrollPosRef.current = pos;
+      band.scrollLeft      = pos;
     });
     ro.observe(track);
 
@@ -251,7 +280,14 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
           overflowY: 'hidden',
           touchAction: 'pan-x',
           cursor: 'grab',
-        }}
+          // Explicit `auto` to defeat the global `html { scroll-behavior:
+          // smooth }` rule — smooth scrolling on programmatic scrollLeft
+          // writes would animate every per-frame nudge and produce stutter
+          // that compounds into a visible freeze.
+          scrollBehavior: 'auto',
+          // Disable iOS momentum scrolling; it fights our rAF writes.
+          WebkitOverflowScrolling: 'auto',
+        } as React.CSSProperties}
       >
         <div
           ref={trackRef}
