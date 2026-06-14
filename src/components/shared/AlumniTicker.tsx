@@ -100,17 +100,6 @@ const ROWS: Row[] = [
 // config changes. Class name is namespaced (mims-) to avoid collisions.
 // ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
-  @keyframes mimsLeft {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-  @keyframes mimsRight {
-    from { transform: translateX(-50%); }
-    to   { transform: translateX(0); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .mims-track { animation-play-state: paused !important; }
-  }
   /* Hide native scrollbar on ticker band — interaction stays available */
   .mims-band { scrollbar-width: none; -ms-overflow-style: none; }
   .mims-band::-webkit-scrollbar { display: none; width: 0; height: 0; }
