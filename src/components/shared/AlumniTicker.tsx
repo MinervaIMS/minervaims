@@ -8,16 +8,19 @@ import { useIsMobile } from '@/hooks/use-mobile';
 // Do not apply any CSS filter to the images; use brand colours as-is.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Uniform perceived speed across all rows: duration is derived from the
-// MEASURED track width, not the logo count. Pixels per second is constant.
+// Uniform perceived speed across all rows.
 const PIXELS_PER_SECOND_DESKTOP = 55;
 const PIXELS_PER_SECOND_MOBILE  = 28;
+
+// After a manual interaction stops, hold auto-scroll off this long so any
+// native momentum (touch / trackpad) can play out without auto-velocity on top.
+const INTERACTION_IDLE_MS = 900;
 
 interface Logo { name: string; file: string; }
 interface Row  { id: string; logos: Logo[]; direction: 'left' | 'right'; }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA — file names taken directly from manifest files
+// DATA
 // ─────────────────────────────────────────────────────────────────────────────
 const ROWS: Row[] = [
   {
@@ -32,7 +35,7 @@ const ROWS: Row[] = [
       { name: 'Barclays',         file: 'barclays'         },
       { name: 'Bank of America',  file: 'bank-of-america'  },
       { name: 'Deutsche Bank',    file: 'deutsche-bank'    },
-      { name: 'BNP Paribas',     file: 'bnp-paribas'     },
+      { name: 'BNP Paribas',      file: 'bnp-paribas'      },
       { name: 'HSBC',             file: 'hsbc'             },
       { name: 'Macquarie',        file: 'macquarie'        },
     ],
@@ -41,36 +44,36 @@ const ROWS: Row[] = [
     id: 'buyside',
     direction: 'right',
     logos: [
-      { name: 'BlackRock',          file: 'blackrock'           },
-      { name: 'PIMCO',              file: 'pimco'               },
-      { name: 'Vanguard',           file: 'vanguard'            },
-      { name: 'Citadel',            file: 'citadel'             },
-      { name: 'D.E. Shaw & Co.',    file: 'd-e-shaw'            },
+      { name: 'BlackRock',           file: 'blackrock'           },
+      { name: 'PIMCO',               file: 'pimco'               },
+      { name: 'Vanguard',            file: 'vanguard'            },
+      { name: 'Citadel',             file: 'citadel'             },
+      { name: 'D.E. Shaw & Co.',     file: 'd-e-shaw'            },
       { name: 'Squarepoint Capital', file: 'squarepoint-capital' },
-      { name: 'IMC Trading',        file: 'imc'                 },
-      { name: 'Ares Management',    file: 'ares-management'     },
-      { name: 'Lazard',             file: 'lazard'              },
-      { name: 'Rothschild & Co',    file: 'rothschild-and-co'   },
+      { name: 'IMC Trading',         file: 'imc'                 },
+      { name: 'Ares Management',     file: 'ares-management'     },
+      { name: 'Lazard',              file: 'lazard'              },
+      { name: 'Rothschild & Co',     file: 'rothschild-and-co'   },
     ],
   },
   {
     id: 'advisory',
     direction: 'left',
     logos: [
-      { name: 'McKinsey & Company',       file: 'mckinsey-and-company'       },
-      { name: 'BCG',                      file: 'boston-consulting-group'    },
-      { name: 'Bain & Company',           file: 'bain-and-company'           },
-      { name: 'Oliver Wyman',             file: 'oliver-wyman'               },
-      { name: 'KPMG',                     file: 'kpmg'                       },
-      { name: 'European Central Bank',    file: 'european-central-bank'      },
+      { name: 'McKinsey & Company',          file: 'mckinsey-and-company'        },
+      { name: 'BCG',                         file: 'boston-consulting-group'     },
+      { name: 'Bain & Company',              file: 'bain-and-company'            },
+      { name: 'Oliver Wyman',                file: 'oliver-wyman'                },
+      { name: 'KPMG',                        file: 'kpmg'                        },
+      { name: 'European Central Bank',       file: 'european-central-bank'       },
       { name: 'International Monetary Fund', file: 'international-monetary-fund' },
-      { name: 'European Investment Bank', file: 'european-investment-bank'   },
-      { name: "Banca d'Italia",           file: 'banca-d-italia'             },
-      { name: 'UniCredit',                file: 'unicredit'                  },
-      { name: 'Mediobanca',               file: 'mediobanca'                 },
-      { name: 'Equita',                   file: 'equita'                     },
-      { name: 'Intesa Sanpaolo',          file: 'intesa-sanpaolo'            },
-      { name: 'Generali',                 file: 'generali'                   },
+      { name: 'European Investment Bank',    file: 'european-investment-bank'    },
+      { name: "Banca d'Italia",              file: 'banca-d-italia'              },
+      { name: 'UniCredit',                   file: 'unicredit'                   },
+      { name: 'Mediobanca',                  file: 'mediobanca'                  },
+      { name: 'Equita',                      file: 'equita'                      },
+      { name: 'Intesa Sanpaolo',             file: 'intesa-sanpaolo'             },
+      { name: 'Generali',                    file: 'generali'                    },
     ],
   },
   {
@@ -95,35 +98,19 @@ const ROWS: Row[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ANIMATION
-// Injected as a <style> tag — @keyframes cannot be set via Tailwind without
-// config changes. Class name is namespaced (mims-) to avoid collisions.
+// CSS — hide native scrollbar; the row stays scrollable.
 // ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
-  /* Hide native scrollbar on ticker band — interaction stays available */
   .mims-band {
     scrollbar-width: none;
     -ms-overflow-style: none;
-    overflow-anchor: none;
-    contain: layout paint;
   }
   .mims-band::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOGO ITEM
-//
-// Graceful degradation for logos not yet uploaded:
-//   onError  → visibility: 'hidden'  keeps the reserved gap so the track
-//              width stays stable as files are added incrementally.
-//              Do NOT use display:'none' — that collapses the slot and
-//              the row appears to jump shorter between uploads.
-//   onLoad   → opacity transitions 0 → 1 to avoid a raster flash.
-//
-// All SVGs share a 250×250 viewBox (from manifests). Some logos have a
-// near-1:1 aspect ratio (LSE, LBS, ETH Zurich, ECB). maxHeight controls
-// how tall they render; width is always auto to preserve aspect ratio.
-// maxWidth prevents very wide wordmarks from dominating.
+// LOGO ITEM — graceful degradation for missing files (visibility:hidden keeps
+// layout stable so the row width doesn't jump as files are added).
 // ─────────────────────────────────────────────────────────────────────────────
 function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
@@ -136,7 +123,6 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        // visibility:hidden preserves the layout slot; the gap stays consistent
         visibility: visible ? 'visible' : 'hidden',
       }}
     >
@@ -144,7 +130,7 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         src={`/logos/${logo.file}.svg`}
         alt={logo.name}
         draggable={false}
-        loading="eager"           // load immediately — do not lazy-load ticker logos
+        loading="eager"
         decoding="async"
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
@@ -166,74 +152,65 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TICKER BAND — dual-mode (AUTO via GPU transform, MANUAL via native scroll)
+// TICKER BAND — single position channel (native scrollLeft).
 //
-// AUTO MODE (default):
-//   • The track translates via a Web-Animation `translateX(0) → -period`,
-//     iterations Infinity, easing linear. GPU-composited, sub-pixel smooth.
-//   • The scroll container's scrollLeft is pinned at 0.
-//
-// MANUAL MODE (during user interaction):
-//   • Animation paused. Current transform offset is folded into scrollLeft,
-//     transform is cleared, and the container takes over.
-//   • A scroll listener wraps scrollLeft inside [period, 2*period) so the
-//     loop is seamless in both directions.
-//
-// Hand-offs are single-frame and visually invisible because the three logo
-// copies are pixel-identical.
+// Auto-scroll: rAF loop nudges scrollLeft by PPS × dt each frame.
+// Manual: native overflow-x:scroll handles wheel / trackpad / touch swipe;
+//   custom pointer handlers handle mouse drag.
+// Pause: pausedRef = true → loop skips the nudge → position untouched.
+// Idle hold: bumpInteraction() postpones auto for INTERACTION_IDLE_MS after
+//   the last user input, so touch momentum can settle without overlap.
+// Wrap: scrollLeft is kept inside [setWidth, 2*setWidth); the tripled logo
+//   strip means the wrap is invisible.
 // ─────────────────────────────────────────────────────────────────────────────
-function TickerBand({
-  row,
-  isMobile,
-}: {
-  row: Row;
-  isMobile: boolean;
-}) {
+function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   const tripled = [...row.logos, ...row.logos, ...row.logos];
   const perSet  = row.logos.length;
 
-  const bandRef          = useRef<HTMLDivElement | null>(null);
-  const trackRef         = useRef<HTMLDivElement | null>(null);
-  const animationRef     = useRef<Animation | null>(null);
-  const periodRef        = useRef<number>(0);
-  const modeRef          = useRef<'auto' | 'manual'>('auto');
-  const suppressScrollRef = useRef<boolean>(false);
-  const wheelIdleTimerRef = useRef<number | null>(null);
+  const bandRef  = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
 
-  const [period, setPeriod] = useState(0);
+  const setWidthRef       = useRef<number>(0);
+  const pausedRef         = useRef<boolean>(false);
+  const interactionUntilRef = useRef<number>(0);
+  const rafRef            = useRef<number | null>(null);
+  const lastTsRef         = useRef<number | null>(null);
+  const draggingRef       = useRef<boolean>(false);
+  const dragStartXRef     = useRef<number>(0);
+  const dragStartScrollRef= useRef<number>(0);
+  const activePointerRef  = useRef<number | null>(null);
 
-  // ── Measure exact period via offsetLeft(child[N]) − offsetLeft(child[0]) ──
+  // Measure one-set width via offsetLeft(child[perSet]) − offsetLeft(child[0]).
+  const measure = () => {
+    const track = trackRef.current;
+    const band  = bandRef.current;
+    if (!track || !band) return;
+    const a = track.children[0] as HTMLElement | undefined;
+    const b = track.children[perSet] as HTMLElement | undefined;
+    if (!a || !b) return;
+    const w = b.offsetLeft - a.offsetLeft;
+    if (w <= 0) return;
+    const prev = setWidthRef.current;
+    setWidthRef.current = w;
+    // If we were already running, keep the visible offset stable: re-centre
+    // scrollLeft to the middle copy preserving the in-copy fractional offset.
+    if (prev > 0) {
+      const frac = ((band.scrollLeft - prev) % w + w) % w;
+      band.scrollLeft = w + frac;
+    } else {
+      band.scrollLeft = w; // start at the middle copy
+    }
+  };
+
+  // Measure on mount + when images load + on resize.
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
-    let frozen = false;
-    let ro: ResizeObserver | null = null;
-    const offs: Array<() => void> = [];
-
-    const measure = () => {
-      if (frozen) return;
-      const a = track.children[0] as HTMLElement | undefined;
-      const b = track.children[perSet] as HTMLElement | undefined;
-      if (!a || !b) return;
-      const p = b.offsetLeft - a.offsetLeft;
-      if (p <= 0) return;
-      periodRef.current = p;
-      setPeriod((prev) => (Math.abs(prev - p) > 0.5 ? p : prev));
-
-      const imgs = Array.from(track.querySelectorAll('img'));
-      const allReady = imgs.length > 0 && imgs.every((img) => img.complete);
-      if (allReady) {
-        frozen = true;
-        ro?.disconnect();
-        offs.forEach((off) => off());
-        offs.length = 0;
-      }
-    };
-
     measure();
 
     const imgs = Array.from(track.querySelectorAll('img'));
+    const offs: Array<() => void> = [];
     imgs.forEach((img) => {
       if (!img.complete) {
         const h = () => measure();
@@ -246,178 +223,122 @@ function TickerBand({
       }
     });
 
-    ro = new ResizeObserver(measure);
+    const ro = new ResizeObserver(measure);
     ro.observe(track);
 
     return () => {
-      ro?.disconnect();
+      ro.disconnect();
       offs.forEach((off) => off());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile, perSet]);
 
-  // ── Build / rebuild the WAAPI translate animation when period changes ────
+  // rAF loop.
   useEffect(() => {
-    const track = trackRef.current;
-    if (!track || period <= 0) return;
-
     const reduced =
       typeof window !== 'undefined' &&
       window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
 
     const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
-    const duration = (period / pps) * 1000; // ms
-    // direction 'left'  → content moves left  → translateX 0 → -period
-    // direction 'right' → content moves right → translateX -period → 0
-    const from = row.direction === 'left' ? 0 : -period;
-    const to   = row.direction === 'left' ? -period : 0;
+    const dir = row.direction === 'left' ? 1 : -1; // +1 = scrollLeft increases
 
-    // Cancel previous (if any) and create fresh.
-    try { animationRef.current?.cancel(); } catch { /* noop */ }
-
-    const anim = track.animate(
-      [
-        { transform: `translate3d(${from}px, 0, 0)` },
-        { transform: `translate3d(${to}px, 0, 0)` },
-      ],
-      { duration, iterations: Infinity, easing: 'linear' },
-    );
-    animationRef.current = anim;
-
-    // If we were already in manual mode, keep the animation paused; the
-    // hand-off back to auto will start it.
-    if (modeRef.current === 'manual') {
-      try { anim.pause(); } catch { /* noop */ }
-    }
-
-    return () => {
-      try { anim.cancel(); } catch { /* noop */ }
-      if (animationRef.current === anim) animationRef.current = null;
-    };
-  }, [period, isMobile, row.direction]);
-
-  // ── Read the current visible translateX (in px) from the WAAPI animation
-  const readTranslateX = (): number => {
-    const anim = animationRef.current;
-    const p = periodRef.current;
-    if (!anim || p <= 0) return 0;
-    const dur = typeof anim.effect?.getComputedTiming === 'function'
-      ? Number(anim.effect.getComputedTiming().duration) || 1
-      : 1;
-    const ct = Number(anim.currentTime ?? 0);
-    const t = ((ct % dur) + dur) % dur / dur; // progress 0..1
-    if (row.direction === 'left') return -p * t;          // 0 → -p
-    return -p + p * t;                                     // -p → 0
-  };
-
-  // ── Hand-off: AUTO → MANUAL ──────────────────────────────────────────────
-  const enterManual = () => {
-    if (modeRef.current === 'manual') return;
-    const band = bandRef.current;
-    const track = trackRef.current;
-    const p = periodRef.current;
-    if (!band || !track || p <= 0) return;
-
-    const tx = readTranslateX();              // ∈ [-p, 0]
-    try { animationRef.current?.pause(); } catch { /* noop */ }
-
-    // Clear the animated transform, set a static one we control.
-    track.style.transform = 'translate3d(0, 0, 0)';
-
-    // Park scrollLeft so visible content is unchanged: scrollLeft = p + (-tx).
-    suppressScrollRef.current = true;
-    band.scrollLeft = p + (-tx);
-
-    modeRef.current = 'manual';
-  };
-
-  // ── Hand-off: MANUAL → AUTO ──────────────────────────────────────────────
-  const enterAuto = () => {
-    if (modeRef.current === 'auto') return;
-    const band = bandRef.current;
-    const track = trackRef.current;
-    const anim = animationRef.current;
-    const p = periodRef.current;
-    if (!band || !track || !anim || p <= 0) return;
-
-    // Normalise scrollLeft to s ∈ [0, p).
-    let s = band.scrollLeft;
-    while (s >= p) s -= p;
-    while (s < 0) s += p;
-
-    // We want the visible offset to remain at -s. Convert to animation time.
-    const dur = typeof anim.effect?.getComputedTiming === 'function'
-      ? Number(anim.effect.getComputedTiming().duration) || 1
-      : 1;
-    const progress = row.direction === 'left'
-      ? s / p                 // -s on a 0→-p ramp
-      : 1 - s / p;            // -s on a -p→0 ramp
-    try { anim.currentTime = progress * dur; } catch { /* noop */ }
-
-    // Clear our static transform so the animation drives it again.
-    track.style.transform = '';
-
-    // Reset scrollLeft to 0. Suppress the resulting scroll event.
-    suppressScrollRef.current = true;
-    band.scrollLeft = 0;
-
-    try { anim.play(); } catch { /* noop */ }
-    modeRef.current = 'auto';
-  };
-
-  // ── Scroll wrap (manual mode only) ───────────────────────────────────────
-  useEffect(() => {
-    const band = bandRef.current;
-    if (!band) return;
-    const onScroll = () => {
-      if (suppressScrollRef.current) {
-        suppressScrollRef.current = false;
+    const tick = (ts: number) => {
+      const band = bandRef.current;
+      const w = setWidthRef.current;
+      if (!band || w <= 0) {
+        lastTsRef.current = ts;
+        rafRef.current = requestAnimationFrame(tick);
         return;
       }
-      if (modeRef.current !== 'manual') return;
-      const p = periodRef.current;
-      if (p <= 0) return;
-      let v = band.scrollLeft;
-      let wrapped = false;
-      while (v >= 2 * p) { v -= p; wrapped = true; }
-      while (v <  p)     { v += p; wrapped = true; }
-      if (wrapped) {
-        suppressScrollRef.current = true;
-        band.scrollLeft = v;
-      }
-    };
-    band.addEventListener('scroll', onScroll, { passive: true });
-    return () => band.removeEventListener('scroll', onScroll);
-  }, []);
 
-  // ── Event handlers ──────────────────────────────────────────────────────
-  const onMouseEnter = () => enterManual();
-  const onMouseLeave = () => enterAuto();
-  const onTouchStart = () => enterManual();
-  const onTouchEnd   = () => enterAuto();
-  const onWheel = () => {
-    enterManual();
-    // After wheel events stop for 250 ms, hand back to auto.
-    if (wheelIdleTimerRef.current != null) {
-      window.clearTimeout(wheelIdleTimerRef.current);
-    }
-    wheelIdleTimerRef.current = window.setTimeout(() => {
-      wheelIdleTimerRef.current = null;
-      // Only auto-resume if the cursor isn't still hovering (mouseenter
-      // would have set manual mode independently). The mouseleave handler
-      // covers cursor-leave; this covers trackpad wheels that arrived
-      // without a mouseenter.
-      if (!bandRef.current?.matches(':hover')) enterAuto();
-    }, 250);
+      const last = lastTsRef.current ?? ts;
+      let dt = (ts - last) / 1000;
+      if (dt > 0.05) dt = 0.05; // clamp tab-stall / jank
+      lastTsRef.current = ts;
+
+      const now = performance.now();
+      const idle = now >= interactionUntilRef.current;
+      const auto = !reduced && !pausedRef.current && !draggingRef.current && idle;
+
+      if (auto) {
+        band.scrollLeft += dir * pps * dt;
+      }
+
+      // Wrap into [w, 2w) — invisible because copies are identical.
+      let s = band.scrollLeft;
+      if (s >= 2 * w) {
+        s -= w;
+        band.scrollLeft = s;
+      } else if (s < w) {
+        s += w;
+        band.scrollLeft = s;
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      lastTsRef.current = null;
+    };
+  }, [isMobile, row.direction]);
+
+  const bumpInteraction = () => {
+    interactionUntilRef.current = performance.now() + INTERACTION_IDLE_MS;
   };
 
-  // Clean up the wheel-idle timer on unmount
-  useEffect(() => () => {
-    if (wheelIdleTimerRef.current != null) {
-      window.clearTimeout(wheelIdleTimerRef.current);
+  // ── Hover pause (mouse only) ────────────────────────────────────────────
+  const onMouseEnter = () => { pausedRef.current = true; };
+  const onMouseLeave = () => { pausedRef.current = false; };
+
+  // ── Mouse drag (custom; touch handled natively) ─────────────────────────
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') {
+      // For touch / pen, just yield auto-scroll; let native scroll do the work.
+      bumpInteraction();
+      return;
     }
-  }, []);
+    const band = bandRef.current;
+    if (!band) return;
+    draggingRef.current = true;
+    activePointerRef.current = e.pointerId;
+    dragStartXRef.current = e.clientX;
+    dragStartScrollRef.current = band.scrollLeft;
+    try { band.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    band.style.cursor = 'grabbing';
+    bumpInteraction();
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || e.pointerId !== activePointerRef.current) return;
+    const band = bandRef.current;
+    if (!band) return;
+    const dx = e.clientX - dragStartXRef.current;
+    band.scrollLeft = dragStartScrollRef.current - dx;
+    bumpInteraction();
+  };
+
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || e.pointerId !== activePointerRef.current) return;
+    draggingRef.current = false;
+    activePointerRef.current = null;
+    const band = bandRef.current;
+    if (band) {
+      try { band.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      band.style.cursor = 'grab';
+    }
+    bumpInteraction();
+  };
+
+  // ── Wheel / native scroll: just yield ───────────────────────────────────
+  const onWheel = () => { bumpInteraction(); };
+  const onTouchStart = () => { bumpInteraction(); };
+  const onTouchMove  = () => { bumpInteraction(); };
+  const onTouchEnd   = () => { bumpInteraction(); };
+  const onScroll     = () => { /* wrap handled in rAF */ };
 
   return (
     <div
@@ -426,16 +347,21 @@ function TickerBand({
         height: isMobile ? '57px' : '114px',
       }}
     >
-      {/* Scroll container — user can drag / wheel / swipe horizontally */}
       <div
         ref={bandRef}
         className="mims-band"
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onWheel={onWheel}
         onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
-        onWheel={onWheel}
+        onScroll={onScroll}
         style={{
           position: 'absolute',
           inset: 0,
@@ -445,6 +371,7 @@ function TickerBand({
           display: 'flex',
           alignItems: 'center',
           cursor: 'grab',
+          touchAction: 'pan-x',
         }}
       >
         <div
@@ -455,8 +382,6 @@ function TickerBand({
             alignItems: 'center',
             gap: isMobile ? '50px' : '100px',
             flexShrink: 0,
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
           }}
         >
           {tripled.map((logo, i) => (
@@ -481,7 +406,6 @@ function TickerBand({
   );
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // ALUMNI TICKER — main export
 // ─────────────────────────────────────────────────────────────────────────────
@@ -496,19 +420,16 @@ const AlumniTicker = () => {
     >
       <style>{CSS}</style>
 
-      {/* Title — styled as a standard section heading following site conventions */}
       <div className="container">
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our Alumni stand at the Forefront of Global Markets
         </h2>
       </div>
 
-      {/* Four ticker rows */}
       {ROWS.map((row) => (
         <TickerBand key={row.id} row={row} isMobile={isMobile} />
       ))}
     </section>
-
   );
 };
 
