@@ -28,6 +28,8 @@ import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
+import NewsletterManagement from '@/components/admin/NewsletterManagement';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
