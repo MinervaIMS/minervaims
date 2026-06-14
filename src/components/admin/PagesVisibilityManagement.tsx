@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 const PagesVisibilityManagement = () => {
   const { map, loading, isHidden, getRow, setHidden } = usePageVisibility();
   const { isFullAccess } = usePermissions();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const { toast } = useToast();
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
