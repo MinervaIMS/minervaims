@@ -158,10 +158,7 @@ export function Footer() {
                 </button>
               </div>
               <p className="font-body text-small text-background/80 leading-snug mt-4">
-                By signing up, you agree to receive email updates from us. You can unsubscribe at any time. See our{' '}
-                <Link to="/privacy-policy" className="underline hover:text-background transition-colors">
-                  Privacy Policy
-                </Link>.
+                By signing up, you agree to receive email updates from us. You can unsubscribe at any time.
               </p>
             </form>
           </div>
