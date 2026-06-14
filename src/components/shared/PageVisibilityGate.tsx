@@ -35,6 +35,7 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
   const [heroBottom, setHeroBottom] = useState<number>(0);
   const [noticeTop, setNoticeTop] = useState<number | null>(null);
   const [noticeVisible, setNoticeVisible] = useState(false);
+  const [scrimBottom, setScrimBottom] = useState<number>(0);
 
   // Keep --page-hidden-hero-height in sync with the actual hero bottom
   useEffect(() => {
@@ -95,9 +96,16 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
       }
       top = Math.min(top, vh * 0.6);
       let visible = true;
-      if (footer && footer.getBoundingClientRect().top < vh - 40) visible = false;
+      let sb = 0;
+      if (footer) {
+        const ft = footer.getBoundingClientRect().top;
+        if (ft < vh - 40) visible = false;
+        // Pin scrim bottom to footer top so footer is never blurred
+        sb = Math.max(0, vh - ft);
+      }
       setNoticeTop(top);
       setNoticeVisible(visible);
+      setScrimBottom(sb);
     };
     const schedule = () => {
       if (!rafId) rafId = requestAnimationFrame(recompute);
@@ -160,9 +168,10 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
       {treatHidden && (
         <div
           aria-hidden="true"
-          className="page-gate-scrim fixed left-0 right-0 bottom-0 z-20"
+          className="page-gate-scrim fixed left-0 right-0 z-20"
           style={{
             top: `${heroBottom}px`,
+            bottom: `${scrimBottom}px`,
             backdropFilter: 'blur(22px) saturate(0.5)',
             WebkitBackdropFilter: 'blur(22px) saturate(0.5)',
             backgroundColor: 'hsl(var(--background) / 0.35)',
