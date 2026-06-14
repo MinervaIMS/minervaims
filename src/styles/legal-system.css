@@ -227,7 +227,7 @@
   .legal-doc .lp-content p, .legal-doc .lp-content li { font-size: 16px; }
   .legal-doc .lp-backtop-row { padding: 6px 24px 0; }
   .legal-doc .lp-backtop { width: 100%; justify-content: center; }
-  .legal-doc .lp-related { padding: 32px 24px; }
+  .legal-doc .lp-related { padding: 32px 0; }
   .legal-doc .lp-related a { grid-template-columns: 1fr auto; gap: 10px; }
   .legal-doc .lp-related a .r-cat { display: none; }
 }
