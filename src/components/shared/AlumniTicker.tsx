@@ -129,6 +129,13 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   const draggingRef        = useRef(false);
   const lastInteractionRef = useRef(0);
   const initializedRef     = useRef(false);
+  // Float-precision scroll position. WebKit (Safari, iOS WebView) rounds
+  // Element.scrollLeft to integer pixels: a per-frame delta of ~0.92px
+  // (= 55 pps × 16.7ms at 60Hz) gets floored to 0 for the positive
+  // direction, freezing left-direction rows. We keep the true float
+  // here and always write the accumulated value, so the fractional
+  // component is never lost.
+  const scrollPosRef = useRef(0);
 
   useEffect(() => {
     const band  = bandRef.current;
