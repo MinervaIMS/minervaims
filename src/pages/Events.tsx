@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, FormEvent } from "react";
 import { Helmet } from "react-helmet-async";
 import { Calendar, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
 
 const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].endsWith(".pdf");
-import { supabase } from "@/integrations/supabase/client";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import eventsBg from "@/assets/events-bg.webp";
 
@@ -64,6 +66,8 @@ const Events = () => {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [eventEmail, setEventEmail] = useState('');
+  const { toast } = useToast();
   const imagesLoaded = useImagePreload([eventsBg]);
 
   useEffect(() => {
@@ -114,6 +118,32 @@ const Events = () => {
     const idx = posterEvents.findIndex((e) => e.id === eventId);
     if (idx >= 0) setLightboxIndex(idx);
   }, [posterEvents]);
+
+  const emailSchema = z.string().trim().email().max(255);
+
+  const handleEventEmailSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const parsed = emailSchema.safeParse(eventEmail);
+    if (!parsed.success) {
+      toast({ title: 'Please enter a valid email address.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({ email: parsed.data, consent: true, source: 'events' });
+
+    if (error) {
+      if (error.code === '23505') {
+        toast({ title: "You're already subscribed." });
+      } else {
+        toast({ title: 'Subscription failed. Please try again later.', variant: 'destructive' });
+        return;
+      }
+    } else {
+      toast({ title: 'Thank you for subscribing.' });
+    }
+    setEventEmail('');
+  };
 
   if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
@@ -190,12 +220,27 @@ const Events = () => {
                 New events are announced each semester. Browse our past events below,
                 or follow along to hear about the next one first.
               </p>
-              <a
-                href="/join"
-                className="inline-block font-body text-body text-accent underline underline-offset-4 hover:opacity-80 transition-opacity"
-              >
-                Get notified about the next event
-              </a>
+              <form onSubmit={handleEventEmailSubmit} className="max-w-xl mx-auto">
+                <div className="flex border border-accent">
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your email here"
+                    value={eventEmail}
+                    onChange={(e) => setEventEmail(e.target.value)}
+                    className="flex-1 min-w-0 bg-background px-3 py-2 font-body text-body text-foreground placeholder:text-muted-foreground border-0 focus:outline-none focus:ring-0"
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 bg-accent text-background font-serif uppercase tracking-wider text-sm px-5 py-2 hover:opacity-90 transition-opacity"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+                <p className="font-body text-small text-muted-foreground leading-snug mt-4">
+                  By signing up, you agree to receive email updates from us. You can unsubscribe at any time.
+                </p>
+              </form>
             </div>
           )}
         </div>
