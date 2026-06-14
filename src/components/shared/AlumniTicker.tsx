@@ -280,7 +280,14 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
           overflowY: 'hidden',
           touchAction: 'pan-x',
           cursor: 'grab',
-        }}
+          // Explicit `auto` to defeat the global `html { scroll-behavior:
+          // smooth }` rule — smooth scrolling on programmatic scrollLeft
+          // writes would animate every per-frame nudge and produce stutter
+          // that compounds into a visible freeze.
+          scrollBehavior: 'auto',
+          // Disable iOS momentum scrolling; it fights our rAF writes.
+          WebkitOverflowScrolling: 'auto',
+        } as React.CSSProperties}
       >
         <div
           ref={trackRef}
