@@ -152,8 +152,8 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: isMobile ? '20px' : '40px',
-          maxWidth: isMobile ? '325px' : '650px',
+          maxHeight: isMobile ? '10px' : '40px',
+          maxWidth: isMobile ? '162px' : '650px',
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
