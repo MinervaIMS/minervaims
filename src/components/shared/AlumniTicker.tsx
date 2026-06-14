@@ -1,27 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SVG files are served from /public/logos/{file}.svg
-// All files are normalised to a 250×250 viewBox with transparent backgrounds.
-// Missing files are handled gracefully — see LogoItem below.
-// Do not apply any CSS filter to the images; use brand colours as-is.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Uniform perceived speed across all rows.
 const PIXELS_PER_SECOND_DESKTOP = 55;
 const PIXELS_PER_SECOND_MOBILE  = 28;
-
-// After a manual interaction stops, hold auto-scroll off this long so any
-// native momentum (touch / trackpad) can play out without auto-velocity on top.
-const INTERACTION_IDLE_MS = 900;
+const RESUME_DELAY_MS = 900;
 
 interface Logo { name: string; file: string; }
 interface Row  { id: string; logos: Logo[]; direction: 'left' | 'right'; }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DATA
-// ─────────────────────────────────────────────────────────────────────────────
 const ROWS: Row[] = [
   {
     id: 'banking',
@@ -97,25 +83,14 @@ const ROWS: Row[] = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CSS — hide native scrollbar; the row stays scrollable.
-// ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
-  .mims-band {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .mims-band::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  .mims-band { -ms-overflow-style: none; scrollbar-width: none; }
+  .mims-band::-webkit-scrollbar { display: none; height: 0; width: 0; }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LOGO ITEM — graceful degradation for missing files (visibility:hidden keeps
-// layout stable so the row width doesn't jump as files are added).
-// ─────────────────────────────────────────────────────────────────────────────
 function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
   const [opacity, setOpacity] = useState(0);
-
   return (
     <div
       style={{
@@ -136,252 +111,155 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         onError={() => setVisible(false)}
         style={{
           maxHeight: isMobile ? '20px' : '40px',
-          maxWidth: isMobile ? '325px' : '650px',
-          width: 'auto',
-          height: 'auto',
-          objectFit: 'contain',
-          opacity,
-          transition: 'opacity 0.35s ease',
-          userSelect: 'none',
-          pointerEvents: 'none',
-          display: 'block',
+          maxWidth:  isMobile ? '325px' : '650px',
+          width: 'auto', height: 'auto', objectFit: 'contain',
+          opacity, transition: 'opacity 0.35s ease',
+          userSelect: 'none', pointerEvents: 'none', display: 'block',
         }}
       />
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TICKER BAND — single position channel (native scrollLeft).
-//
-// Auto-scroll: rAF loop nudges scrollLeft by PPS × dt each frame.
-// Manual: native overflow-x:scroll handles wheel / trackpad / touch swipe;
-//   custom pointer handlers handle mouse drag.
-// Pause: pausedRef = true → loop skips the nudge → position untouched.
-// Idle hold: bumpInteraction() postpones auto for INTERACTION_IDLE_MS after
-//   the last user input, so touch momentum can settle without overlap.
-// Wrap: scrollLeft is kept inside [setWidth, 2*setWidth); the tripled logo
-//   strip means the wrap is invisible.
-// ─────────────────────────────────────────────────────────────────────────────
 function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   const tripled = [...row.logos, ...row.logos, ...row.logos];
-  const perSet  = row.logos.length;
-
   const bandRef  = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const pausedRef          = useRef(false);
+  const draggingRef        = useRef(false);
+  const lastInteractionRef = useRef(0);
+  const initializedRef     = useRef(false);
 
-  const setWidthRef       = useRef<number>(0);
-  const pausedRef         = useRef<boolean>(false);
-  const interactionUntilRef = useRef<number>(0);
-  const rafRef            = useRef<number | null>(null);
-  const lastTsRef         = useRef<number | null>(null);
-  const draggingRef       = useRef<boolean>(false);
-  const dragStartXRef     = useRef<number>(0);
-  const dragStartScrollRef= useRef<number>(0);
-  const activePointerRef  = useRef<number | null>(null);
-
-  // Measure one-set width via offsetLeft(child[perSet]) − offsetLeft(child[0]).
-  const measure = () => {
-    const track = trackRef.current;
+  useEffect(() => {
     const band  = bandRef.current;
-    if (!track || !band) return;
-    const a = track.children[0] as HTMLElement | undefined;
-    const b = track.children[perSet] as HTMLElement | undefined;
-    if (!a || !b) return;
-    const w = b.offsetLeft - a.offsetLeft;
-    if (w <= 0) return;
-    const prev = setWidthRef.current;
-    setWidthRef.current = w;
-    // If we were already running, keep the visible offset stable: re-centre
-    // scrollLeft to the middle copy preserving the in-copy fractional offset.
-    if (prev > 0) {
-      const frac = ((band.scrollLeft - prev) % w + w) % w;
-      band.scrollLeft = w + frac;
-    } else {
-      band.scrollLeft = w; // start at the middle copy
-    }
-  };
-
-  // Measure on mount + when images load + on resize.
-  useEffect(() => {
     const track = trackRef.current;
-    if (!track) return;
+    if (!band || !track) return;
 
-    measure();
-
-    const imgs = Array.from(track.querySelectorAll('img'));
-    const offs: Array<() => void> = [];
-    imgs.forEach((img) => {
-      if (!img.complete) {
-        const h = () => measure();
-        img.addEventListener('load', h);
-        img.addEventListener('error', h);
-        offs.push(() => {
-          img.removeEventListener('load', h);
-          img.removeEventListener('error', h);
-        });
-      }
-    });
-
-    const ro = new ResizeObserver(measure);
-    ro.observe(track);
-
-    return () => {
-      ro.disconnect();
-      offs.forEach((off) => off());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, perSet]);
-
-  // rAF loop.
-  useEffect(() => {
-    const reduced =
+    const directionSign = row.direction === 'left' ? 1 : -1;
+    const targetPps     = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
+    const reducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
-    const dir = row.direction === 'left' ? 1 : -1; // +1 = scrollLeft increases
+    const setWidth = () => track.scrollWidth / 3;
 
-    const tick = (ts: number) => {
-      const band = bandRef.current;
-      const w = setWidthRef.current;
-      if (!band || w <= 0) {
-        lastTsRef.current = ts;
-        rafRef.current = requestAnimationFrame(tick);
-        return;
+    const tryInit = () => {
+      if (initializedRef.current) return;
+      const sw = setWidth();
+      if (sw > 0) {
+        band.scrollLeft = sw * 1.5;
+        initializedRef.current = true;
       }
-
-      const last = lastTsRef.current ?? ts;
-      let dt = (ts - last) / 1000;
-      if (dt > 0.05) dt = 0.05; // clamp tab-stall / jank
-      lastTsRef.current = ts;
-
-      const now = performance.now();
-      const idle = now >= interactionUntilRef.current;
-      const auto = !reduced && !pausedRef.current && !draggingRef.current && idle;
-
-      if (auto) {
-        band.scrollLeft += dir * pps * dt;
-      }
-
-      // Wrap into [w, 2w) — invisible because copies are identical.
-      let s = band.scrollLeft;
-      if (s >= 2 * w) {
-        s -= w;
-        band.scrollLeft = s;
-      } else if (s < w) {
-        s += w;
-        band.scrollLeft = s;
-      }
-
-      rafRef.current = requestAnimationFrame(tick);
     };
+    tryInit();
 
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      lastTsRef.current = null;
+    let lastTime = performance.now();
+    let rafId    = 0;
+
+    const tick = (now: number) => {
+      tryInit();
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const sw = setWidth();
+      if (sw === 0) { rafId = requestAnimationFrame(tick); return; }
+
+      const idleFor = now - lastInteractionRef.current;
+      const canAutoScroll =
+        !reducedMotion && !pausedRef.current && !draggingRef.current && idleFor > RESUME_DELAY_MS;
+      if (canAutoScroll) {
+        band.scrollLeft += directionSign * targetPps * dt;
+      }
+
+      const sl = band.scrollLeft;
+      if      (sl < sw)     band.scrollLeft = sl + sw;
+      else if (sl > sw * 2) band.scrollLeft = sl - sw;
+
+      rafId = requestAnimationFrame(tick);
     };
-  }, [isMobile, row.direction]);
+    rafId = requestAnimationFrame(tick);
 
-  const bumpInteraction = () => {
-    interactionUntilRef.current = performance.now() + INTERACTION_IDLE_MS;
-  };
-
-  // ── Hover pause (mouse only) ────────────────────────────────────────────
-  const onMouseEnter = () => { pausedRef.current = true; };
-  const onMouseLeave = () => { pausedRef.current = false; };
-
-  // ── Mouse drag (custom; touch handled natively) ─────────────────────────
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse') {
-      // For touch / pen, just yield auto-scroll; let native scroll do the work.
-      bumpInteraction();
-      return;
-    }
-    const band = bandRef.current;
-    if (!band) return;
-    draggingRef.current = true;
-    activePointerRef.current = e.pointerId;
-    dragStartXRef.current = e.clientX;
-    dragStartScrollRef.current = band.scrollLeft;
-    try { band.setPointerCapture(e.pointerId); } catch { /* noop */ }
-    band.style.cursor = 'grabbing';
-    bumpInteraction();
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || e.pointerId !== activePointerRef.current) return;
-    const band = bandRef.current;
-    if (!band) return;
-    const dx = e.clientX - dragStartXRef.current;
-    band.scrollLeft = dragStartScrollRef.current - dx;
-    bumpInteraction();
-  };
-
-  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || e.pointerId !== activePointerRef.current) return;
-    draggingRef.current = false;
-    activePointerRef.current = null;
-    const band = bandRef.current;
-    if (band) {
+    let dragStartX  = 0;
+    let dragStartSL = 0;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      e.preventDefault();
+      draggingRef.current = true;
+      dragStartX  = e.clientX;
+      dragStartSL = band.scrollLeft;
+      try { band.setPointerCapture(e.pointerId); } catch { /* noop */ }
+      lastInteractionRef.current = performance.now();
+      band.style.cursor = 'grabbing';
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      band.scrollLeft = dragStartSL - (e.clientX - dragStartX);
+      lastInteractionRef.current = performance.now();
+    };
+    const stopDrag = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
       try { band.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      lastInteractionRef.current = performance.now();
       band.style.cursor = 'grab';
-    }
-    bumpInteraction();
-  };
+    };
+    const bumpInteraction = () => { lastInteractionRef.current = performance.now(); };
 
-  // ── Wheel / native scroll: just yield ───────────────────────────────────
-  const onWheel = () => { bumpInteraction(); };
-  const onTouchStart = () => { bumpInteraction(); };
-  const onTouchMove  = () => { bumpInteraction(); };
-  const onTouchEnd   = () => { bumpInteraction(); };
-  const onScroll     = () => { /* wrap handled in rAF */ };
+    band.addEventListener('pointerdown',   onPointerDown);
+    band.addEventListener('pointermove',   onPointerMove);
+    band.addEventListener('pointerup',     stopDrag);
+    band.addEventListener('pointercancel', stopDrag);
+    band.addEventListener('pointerleave',  stopDrag);
+    band.addEventListener('touchstart',    bumpInteraction, { passive: true });
+    band.addEventListener('touchmove',     bumpInteraction, { passive: true });
+    band.addEventListener('touchend',      bumpInteraction, { passive: true });
+    band.addEventListener('wheel',         bumpInteraction, { passive: true });
+
+    const ro = new ResizeObserver(() => {
+      const sw = setWidth();
+      if (sw === 0) return;
+      if      (band.scrollLeft < sw)     band.scrollLeft += sw;
+      else if (band.scrollLeft > sw * 2) band.scrollLeft -= sw;
+    });
+    ro.observe(track);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      band.removeEventListener('pointerdown',   onPointerDown);
+      band.removeEventListener('pointermove',   onPointerMove);
+      band.removeEventListener('pointerup',     stopDrag);
+      band.removeEventListener('pointercancel', stopDrag);
+      band.removeEventListener('pointerleave',  stopDrag);
+      band.removeEventListener('touchstart',    bumpInteraction);
+      band.removeEventListener('touchmove',     bumpInteraction);
+      band.removeEventListener('touchend',      bumpInteraction);
+      band.removeEventListener('wheel',         bumpInteraction);
+      ro.disconnect();
+    };
+  }, [isMobile, row.direction, row.logos.length]);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: isMobile ? '57px' : '114px',
-      }}
-    >
+    <div style={{ position: 'relative', height: isMobile ? '57px' : '114px' }}>
       <div
         ref={bandRef}
         className="mims-band"
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onWheel={onWheel}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
-        onScroll={onScroll}
+        onMouseEnter={() => { pausedRef.current = true; }}
+        onMouseLeave={() => { pausedRef.current = false; }}
         style={{
-          position: 'absolute',
-          inset: 0,
-          overflowX: 'auto',
+          height: '100%',
+          overflowX: 'scroll',
           overflowY: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'grab',
           touchAction: 'pan-x',
+          cursor: 'grab',
         }}
       >
         <div
           ref={trackRef}
-          className="mims-track"
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: isMobile ? '50px' : '100px',
-            flexShrink: 0,
+            height: '100%',
           }}
         >
           {tripled.map((logo, i) => (
@@ -390,7 +268,6 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
         </div>
       </div>
 
-      {/* Edge vignette — above scroll container, doesn't intercept events */}
       <div
         aria-hidden="true"
         style={{
@@ -406,12 +283,8 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ALUMNI TICKER — main export
-// ─────────────────────────────────────────────────────────────────────────────
 const AlumniTicker = () => {
   const isMobile = useIsMobile();
-
   return (
     <section
       aria-label="MIMS alumni network — employers and academic institutions"
