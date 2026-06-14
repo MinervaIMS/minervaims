@@ -83,9 +83,6 @@ const Team = () => {
             <h2 className="font-serif text-xl sm:text-heading text-accent">
               The Team Behind the Work
             </h2>
-            <span className="font-body text-xs uppercase tracking-[.08em] text-muted-foreground shrink-0">
-              {totalMembers} Members · 6 Divisions
-            </span>
           </div>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-[46rem] flex-1">
