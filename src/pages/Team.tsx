@@ -89,7 +89,7 @@ const Team = () => {
           </div>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-[46rem] flex-1">
-              Our members operate in a structured, professional environment modelled on a real investment firm: five research divisions feeding a central Portfolio Management team, supported by Media, Communication &amp; Operations. Each team meets regularly to develop investment views, produce publishable research and support disciplined portfolio decisions.
+              Our members operate in a structured, professional environment modelled on a real investment firm: four&nbsp;research divisions feeding a central Portfolio Management team, supported by Media, Communication &amp; Operations. Each team meets regularly to develop investment views, produce publishable research and support disciplined portfolio decisions.
             </p>
             <Link
               to="/about#organisational-structure"
