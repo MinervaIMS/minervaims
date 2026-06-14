@@ -83,11 +83,6 @@ const ROWS: Row[] = [
   },
 ];
 
-const CSS = `
-  .mims-band { -ms-overflow-style: none; scrollbar-width: none; }
-  .mims-band::-webkit-scrollbar { display: none; height: 0; width: 0; }
-`;
-
 function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
   const [opacity, setOpacity] = useState(0);
@@ -125,23 +120,24 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   const tripled = [...row.logos, ...row.logos, ...row.logos];
   const bandRef  = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
+
+  // One source of truth: float offset in pixels. Positive = track is moved
+  // left by `offset` px (i.e. content appears to move right→left).
+  const offsetRef = useRef(0);
+  // Cached set width (scrollWidth / 3). Re-measured only on init/resize/image-load.
+  const setWidthRef = useRef(0);
+
   const pausedRef          = useRef(false);
   const draggingRef        = useRef(false);
   const lastInteractionRef = useRef(0);
-  const initializedRef     = useRef(false);
-  // Float-precision scroll position. WebKit (Safari, iOS WebView) rounds
-  // Element.scrollLeft to integer pixels: a per-frame delta of ~0.92px
-  // (= 55 pps × 16.7ms at 60Hz) gets floored to 0 for the positive
-  // direction, freezing left-direction rows. We keep the true float
-  // here and always write the accumulated value, so the fractional
-  // component is never lost.
-  const scrollPosRef = useRef(0);
 
   useEffect(() => {
     const band  = bandRef.current;
     const track = trackRef.current;
     if (!band || !track) return;
 
+    // direction: 'left'  → content moves leftward  → offset increases
+    // direction: 'right' → content moves rightward → offset decreases
     const directionSign = row.direction === 'left' ? 1 : -1;
     const targetPps     = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
     const reducedMotion =
@@ -149,77 +145,72 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const setWidth = () => track.scrollWidth / 3;
-
-    const tryInit = () => {
-      if (initializedRef.current) return;
-      const sw = setWidth();
-      if (sw > 0) {
-        scrollPosRef.current = sw * 1.5;
-        band.scrollLeft      = scrollPosRef.current;
-        initializedRef.current = true;
-      }
+    const measure = () => {
+      const sw = track.scrollWidth / 3;
+      if (sw > 0) setWidthRef.current = sw;
     };
-    tryInit();
+    measure();
+
+    const wrap = (v: number) => {
+      const sw = setWidthRef.current;
+      if (sw <= 0) return v;
+      // Keep offset in [0, sw); supports negative accumulation too.
+      let next = v % sw;
+      if (next < 0) next += sw;
+      return next;
+    };
+
+    const apply = () => {
+      // translate negative offset so content visually moves in expected dir.
+      track.style.transform = `translate3d(${-offsetRef.current}px, 0, 0)`;
+    };
+    apply();
 
     let lastTime = performance.now();
     let rafId    = 0;
 
     const tick = (now: number) => {
-      tryInit();
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
-      const sw = setWidth();
-      if (sw === 0) { rafId = requestAnimationFrame(tick); return; }
 
-      // Reconcile with any external scroll change (user drag/wheel/touch
-      // wrote to scrollLeft outside our control). If the actual scroll
-      // position drifts from our float by more than the typical browser
-      // rounding tolerance (~1px), trust the actual position.
-      const actualSl = band.scrollLeft;
-      if (Math.abs(actualSl - scrollPosRef.current) > 2) {
-        scrollPosRef.current = actualSl;
-      }
+      if (setWidthRef.current === 0) measure();
 
       const idleFor = now - lastInteractionRef.current;
       const canAutoScroll =
-        !reducedMotion && !pausedRef.current && !draggingRef.current && idleFor > RESUME_DELAY_MS;
+        !reducedMotion &&
+        !pausedRef.current &&
+        !draggingRef.current &&
+        idleFor > RESUME_DELAY_MS &&
+        setWidthRef.current > 0;
 
-      let pos = scrollPosRef.current;
       if (canAutoScroll) {
-        // Accumulate velocity on OUR float, not on scrollLeft (which
-        // WebKit floors to integer pixels and would drop sub-pixel deltas
-        // in the positive direction — see scrollPosRef doc).
-        pos += directionSign * targetPps * dt;
+        offsetRef.current = wrap(offsetRef.current + directionSign * targetPps * dt);
+        apply();
       }
-
-      if      (pos < sw)     pos += sw;
-      else if (pos > sw * 2) pos -= sw;
-
-      scrollPosRef.current = pos;
-      band.scrollLeft      = pos;
-
       rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);
 
-    let dragStartX  = 0;
-    let dragStartSL = 0;
+    // -------- Mouse drag (1:1 scrub) --------
+    let dragStartX      = 0;
+    let dragStartOffset = 0;
+
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return;
       e.preventDefault();
       draggingRef.current = true;
-      dragStartX  = e.clientX;
-      dragStartSL = band.scrollLeft;
+      dragStartX      = e.clientX;
+      dragStartOffset = offsetRef.current;
       try { band.setPointerCapture(e.pointerId); } catch { /* noop */ }
       lastInteractionRef.current = performance.now();
       band.style.cursor = 'grabbing';
     };
     const onPointerMove = (e: PointerEvent) => {
       if (!draggingRef.current) return;
-      const next = dragStartSL - (e.clientX - dragStartX);
-      band.scrollLeft      = next;
-      scrollPosRef.current = next; // keep our float in sync with user drag
+      // Drag right (clientX increases) → content moves right → offset decreases.
+      const dx = e.clientX - dragStartX;
+      offsetRef.current = wrap(dragStartOffset - dx);
+      apply();
       lastInteractionRef.current = performance.now();
     };
     const stopDrag = (e: PointerEvent) => {
@@ -229,28 +220,84 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       lastInteractionRef.current = performance.now();
       band.style.cursor = 'grab';
     };
-    const bumpInteraction = () => { lastInteractionRef.current = performance.now(); };
 
     band.addEventListener('pointerdown',   onPointerDown);
     band.addEventListener('pointermove',   onPointerMove);
     band.addEventListener('pointerup',     stopDrag);
     band.addEventListener('pointercancel', stopDrag);
     band.addEventListener('pointerleave',  stopDrag);
-    band.addEventListener('touchstart',    bumpInteraction, { passive: true });
-    band.addEventListener('touchmove',     bumpInteraction, { passive: true });
-    band.addEventListener('touchend',      bumpInteraction, { passive: true });
-    band.addEventListener('wheel',         bumpInteraction, { passive: true });
 
+    // -------- Touch (horizontal scrub; vertical → page scroll) --------
+    let touchStartX     = 0;
+    let touchStartY     = 0;
+    let touchStartOff   = 0;
+    let touchAxis: 'h' | 'v' | null = null;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      touchStartX   = e.touches[0].clientX;
+      touchStartY   = e.touches[0].clientY;
+      touchStartOff = offsetRef.current;
+      touchAxis     = null;
+      lastInteractionRef.current = performance.now();
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      if (touchAxis === null) {
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          touchAxis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        } else {
+          return;
+        }
+      }
+      if (touchAxis === 'h') {
+        if (e.cancelable) e.preventDefault();
+        offsetRef.current = wrap(touchStartOff - dx);
+        apply();
+        lastInteractionRef.current = performance.now();
+      }
+      // 'v' → let the page scroll; do nothing.
+    };
+    const onTouchEnd = () => {
+      touchAxis = null;
+      lastInteractionRef.current = performance.now();
+    };
+    band.addEventListener('touchstart', onTouchStart, { passive: true });
+    band.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    band.addEventListener('touchend',   onTouchEnd,   { passive: true });
+    band.addEventListener('touchcancel',onTouchEnd,   { passive: true });
+
+    // -------- Wheel / trackpad (horizontal scrub; vertical → page) --------
+    const onWheel = (e: WheelEvent) => {
+      const ax = Math.abs(e.deltaX);
+      const ay = Math.abs(e.deltaY);
+      if (ax > ay && ax > 0) {
+        e.preventDefault();
+        offsetRef.current = wrap(offsetRef.current + e.deltaX);
+        apply();
+        lastInteractionRef.current = performance.now();
+      }
+      // else: vertical wheel → page scroll, untouched.
+    };
+    band.addEventListener('wheel', onWheel, { passive: false });
+
+    // -------- Re-measure on resize and on image loads --------
     const ro = new ResizeObserver(() => {
-      const sw = setWidth();
-      if (sw === 0) return;
-      let pos = scrollPosRef.current;
-      if      (pos < sw)     pos += sw;
-      else if (pos > sw * 2) pos -= sw;
-      scrollPosRef.current = pos;
-      band.scrollLeft      = pos;
+      measure();
+      offsetRef.current = wrap(offsetRef.current);
+      apply();
     });
     ro.observe(track);
+
+    const imgs = Array.from(track.querySelectorAll('img'));
+    const onImgLoad = () => {
+      measure();
+      offsetRef.current = wrap(offsetRef.current);
+      apply();
+    };
+    imgs.forEach((img) => img.addEventListener('load', onImgLoad));
 
     return () => {
       cancelAnimationFrame(rafId);
@@ -259,11 +306,13 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       band.removeEventListener('pointerup',     stopDrag);
       band.removeEventListener('pointercancel', stopDrag);
       band.removeEventListener('pointerleave',  stopDrag);
-      band.removeEventListener('touchstart',    bumpInteraction);
-      band.removeEventListener('touchmove',     bumpInteraction);
-      band.removeEventListener('touchend',      bumpInteraction);
-      band.removeEventListener('wheel',         bumpInteraction);
+      band.removeEventListener('touchstart',    onTouchStart);
+      band.removeEventListener('touchmove',     onTouchMove);
+      band.removeEventListener('touchend',      onTouchEnd);
+      band.removeEventListener('touchcancel',   onTouchEnd);
+      band.removeEventListener('wheel',         onWheel);
       ro.disconnect();
+      imgs.forEach((img) => img.removeEventListener('load', onImgLoad));
     };
   }, [isMobile, row.direction, row.logos.length]);
 
@@ -271,23 +320,15 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
     <div style={{ position: 'relative', height: isMobile ? '57px' : '114px' }}>
       <div
         ref={bandRef}
-        className="mims-band"
         onMouseEnter={() => { pausedRef.current = true; }}
         onMouseLeave={() => { pausedRef.current = false; }}
         style={{
           height: '100%',
-          overflowX: 'scroll',
-          overflowY: 'hidden',
-          touchAction: 'pan-x',
+          overflow: 'hidden',
+          // Horizontal gestures scrub; vertical still scrolls the page.
+          touchAction: 'pan-y',
           cursor: 'grab',
-          // Explicit `auto` to defeat the global `html { scroll-behavior:
-          // smooth }` rule — smooth scrolling on programmatic scrollLeft
-          // writes would animate every per-frame nudge and produce stutter
-          // that compounds into a visible freeze.
-          scrollBehavior: 'auto',
-          // Disable iOS momentum scrolling; it fights our rAF writes.
-          WebkitOverflowScrolling: 'auto',
-        } as React.CSSProperties}
+        }}
       >
         <div
           ref={trackRef}
@@ -296,6 +337,9 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
             alignItems: 'center',
             gap: isMobile ? '50px' : '100px',
             height: '100%',
+            willChange: 'transform',
+            transform: 'translate3d(0,0,0)',
+            backfaceVisibility: 'hidden',
           }}
         >
           {tripled.map((logo, i) => (
@@ -327,8 +371,6 @@ const AlumniTicker = () => {
       className="bg-background py-section-sm md:py-section"
       style={{ overflow: 'hidden' }}
     >
-      <style>{CSS}</style>
-
       <div className="container">
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
           Our Alumni stand at the Forefront of Global Markets
