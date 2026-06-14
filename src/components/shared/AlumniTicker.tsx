@@ -155,7 +155,8 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       if (initializedRef.current) return;
       const sw = setWidth();
       if (sw > 0) {
-        band.scrollLeft = sw * 1.5;
+        scrollPosRef.current = sw * 1.5;
+        band.scrollLeft      = scrollPosRef.current;
         initializedRef.current = true;
       }
     };
@@ -171,16 +172,32 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
       const sw = setWidth();
       if (sw === 0) { rafId = requestAnimationFrame(tick); return; }
 
+      // Reconcile with any external scroll change (user drag/wheel/touch
+      // wrote to scrollLeft outside our control). If the actual scroll
+      // position drifts from our float by more than the typical browser
+      // rounding tolerance (~1px), trust the actual position.
+      const actualSl = band.scrollLeft;
+      if (Math.abs(actualSl - scrollPosRef.current) > 2) {
+        scrollPosRef.current = actualSl;
+      }
+
       const idleFor = now - lastInteractionRef.current;
       const canAutoScroll =
         !reducedMotion && !pausedRef.current && !draggingRef.current && idleFor > RESUME_DELAY_MS;
+
+      let pos = scrollPosRef.current;
       if (canAutoScroll) {
-        band.scrollLeft += directionSign * targetPps * dt;
+        // Accumulate velocity on OUR float, not on scrollLeft (which
+        // WebKit floors to integer pixels and would drop sub-pixel deltas
+        // in the positive direction — see scrollPosRef doc).
+        pos += directionSign * targetPps * dt;
       }
 
-      const sl = band.scrollLeft;
-      if      (sl < sw)     band.scrollLeft = sl + sw;
-      else if (sl > sw * 2) band.scrollLeft = sl - sw;
+      if      (pos < sw)     pos += sw;
+      else if (pos > sw * 2) pos -= sw;
+
+      scrollPosRef.current = pos;
+      band.scrollLeft      = pos;
 
       rafId = requestAnimationFrame(tick);
     };
