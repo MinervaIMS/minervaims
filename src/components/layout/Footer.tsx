@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Instagram, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 import footerLogo from '@/assets/footer-logo.svg';
-import linkedinIcon from '@/assets/linkedin-icon-small.png';
+import linkedinIcon from '@/assets/linkedin-black.svg';
+import instagramIcon from '@/assets/instagram-black.svg';
 
 const exploreLinks = [
   { label: 'About', href: '/about' },
@@ -39,8 +40,8 @@ const legalLinks = [
 ];
 
 const socialLinks = [
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/minerva-investment-management/', icon: 'linkedin' as const },
-  { label: 'Instagram', href: 'https://www.instagram.com/minerva.ims/', icon: 'instagram' as const },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/minerva-investment-management/', icon: linkedinIcon },
+  { label: 'Instagram', href: 'https://www.instagram.com/minerva.ims/', icon: instagramIcon },
 ];
 
 const linkClass =
@@ -107,7 +108,7 @@ export function Footer() {
             </a>
           </div>
 
-          <div className="flex flex-row lg:flex-col gap-5 lg:gap-3 shrink-0">
+          <div className="flex flex-row gap-4 shrink-0">
             {socialLinks.map((social) => (
               <a
                 key={social.label}
@@ -115,22 +116,17 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
-                className="inline-flex items-center gap-2.5 text-background/80 hover:text-background transition-colors"
+                className="inline-flex items-center hover:opacity-80 transition-opacity"
               >
-                {social.icon === 'linkedin' ? (
-                  <img
-                    src={linkedinIcon}
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="h-9 w-9"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <Instagram size={36} />
-                )}
-                <span className="font-body text-body">{social.label}</span>
+                <img
+                  src={social.icon}
+                  alt=""
+                  width={54}
+                  height={54}
+                  className="h-[3.375rem] w-[3.375rem]"
+                  loading="lazy"
+                  decoding="async"
+                />
               </a>
             ))}
           </div>
