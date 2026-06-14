@@ -194,15 +194,20 @@ function TickerBand({
   // in BOTH directions, whether the auto-scroll is running or the user is
   // dragging / wheeling / swiping the track.
   const tripled = [...row.logos, ...row.logos, ...row.logos];
+  const perSet  = row.logos.length;
 
   const bandRef     = useRef<HTMLDivElement | null>(null);
   const trackRef    = useRef<HTMLDivElement | null>(null);
   const pausedRef   = useRef<boolean>(false);
-  const halfRef     = useRef<number>(0);   // width of ONE logo set
+  const periodRef   = useRef<number>(0);   // EXACT pixel period of one logo set
+  const offsetRef   = useRef<number>(0);   // float accumulator for scrollLeft
+  const suppressScrollRef = useRef<boolean>(false);
   const rafRef      = useRef<number | null>(null);
   const lastTsRef   = useRef<number | null>(null);
 
-  // ── Measure: half = scrollWidth / 3 (we tripled the set) ────────────────
+  // ── Measure: period = offsetLeft(child[N]) − offsetLeft(child[0]) ────────
+  // This is exact in pixels regardless of gap, padding, or trailing-gap
+  // asymmetry that would otherwise make scrollWidth / 3 off by gap/3.
   useEffect(() => {
     const track = trackRef.current;
     const band  = bandRef.current;
@@ -214,14 +219,20 @@ function TickerBand({
 
     const measure = () => {
       if (frozen) return;
-      const w = track.scrollWidth / 3;
-      if (w <= 0) return;
-      halfRef.current = w;
-      // Park the viewport on the middle copy so the user can scroll either
-      // direction without ever hitting a hard edge.
-      if (band.scrollLeft < w * 0.5 || band.scrollLeft > w * 2.5) {
-        band.scrollLeft = w;
+      const a = track.children[0] as HTMLElement | undefined;
+      const b = track.children[perSet] as HTMLElement | undefined;
+      if (!a || !b) return;
+      const period = b.offsetLeft - a.offsetLeft;
+      if (period <= 0) return;
+      periodRef.current = period;
+
+      // Park on the middle copy so manual scroll has runway both ways.
+      if (offsetRef.current < period * 0.5 || offsetRef.current > period * 2.5) {
+        offsetRef.current = period;
+        suppressScrollRef.current = true;
+        band.scrollLeft = period;
       }
+
       const imgs = Array.from(track.querySelectorAll('img'));
       const allReady = imgs.length > 0 && imgs.every((img) => img.complete);
       if (allReady) {
@@ -254,28 +265,36 @@ function TickerBand({
       ro?.disconnect();
       offs.forEach((off) => off());
     };
-  }, [isMobile, row.logos.length]);
+  }, [isMobile, perSet]);
 
-  // ── Wrap scrollLeft on every scroll event (auto-driven OR user-driven) ──
+  // ── On USER scroll (wheel/drag/swipe), sync float accumulator and wrap ──
   useEffect(() => {
     const band = bandRef.current;
     if (!band) return;
     const onScroll = () => {
-      const w = halfRef.current;
-      if (w <= 0) return;
-      // Keep scrollLeft inside [w, 2w). Both boundaries land on identical
-      // pixels of the next/prev copy, so the jump is invisible.
-      if (band.scrollLeft >= 2 * w) {
-        band.scrollLeft -= w;
-      } else if (band.scrollLeft < w) {
-        band.scrollLeft += w;
+      // Ignore scroll events that we triggered ourselves; they're already
+      // wrapped in the float accumulator.
+      if (suppressScrollRef.current) {
+        suppressScrollRef.current = false;
+        return;
       }
+      const p = periodRef.current;
+      if (p <= 0) return;
+      // Take the integer scrollLeft as truth and re-wrap the accumulator.
+      let v = band.scrollLeft;
+      while (v >= 2 * p) v -= p;
+      while (v <  p)     v += p;
+      if (v !== band.scrollLeft) {
+        suppressScrollRef.current = true;
+        band.scrollLeft = v;
+      }
+      offsetRef.current = v;
     };
     band.addEventListener('scroll', onScroll, { passive: true });
     return () => band.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ── Auto-scroll via rAF driving scrollLeft (works with manual scroll) ───
+  // ── Auto-scroll: drive a float accumulator, then write scrollLeft once ──
   useEffect(() => {
     const band = bandRef.current;
     if (!band) return;
@@ -293,8 +312,16 @@ function TickerBand({
       if (lastTsRef.current == null) lastTsRef.current = ts;
       const dt = (ts - lastTsRef.current) / 1000;
       lastTsRef.current = ts;
-      if (!pausedRef.current && halfRef.current > 0) {
-        band.scrollLeft += dir * pps * dt;
+
+      const p = periodRef.current;
+      if (!pausedRef.current && p > 0) {
+        let next = offsetRef.current + dir * pps * dt;
+        // Wrap the float accumulator inside [p, 2p)
+        while (next >= 2 * p) next -= p;
+        while (next <  p)     next += p;
+        offsetRef.current = next;
+        suppressScrollRef.current = true;
+        band.scrollLeft = next;
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -309,6 +336,7 @@ function TickerBand({
 
   const pause  = () => { pausedRef.current = true;  };
   const resume = () => { pausedRef.current = false; lastTsRef.current = null; };
+
 
   return (
     <div
