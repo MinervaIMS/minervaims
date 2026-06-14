@@ -41,7 +41,7 @@ const testimonials: Testimonial[] = [
   },
 ];
 
-const AUTO_ADVANCE_MS = 9800;
+const AUTO_ADVANCE_MS = 15680;
 
 const makeKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
 
