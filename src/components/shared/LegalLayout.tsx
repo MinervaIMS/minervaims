@@ -214,25 +214,27 @@ export function LegalLayout({
 
       {related && related.length > 0 && (
         <nav className="lp-related" aria-label="Other legal pages">
-          <div className="r-h">Other legal &amp; technical pages</div>
-          <div className="r-list">
-            {related.map((r) => {
-              const isCurrent = r.id === currentId;
-              return (
-                <Link
-                  key={r.id}
-                  to={r.href}
-                  aria-current={isCurrent ? 'page' : undefined}
-                  onClick={(e) => {
-                    if (isCurrent) e.preventDefault();
-                  }}
-                >
-                  <span className="r-cat">{r.category}</span>
-                  <span className="r-title">{r.title}</span>
-                  <span className="r-arr">{isCurrent ? 'You are here' : '→'}</span>
-                </Link>
-              );
-            })}
+          <div className="container">
+            <div className="r-h">Other legal &amp; technical pages</div>
+            <div className="r-list">
+              {related.map((r) => {
+                const isCurrent = r.id === currentId;
+                return (
+                  <Link
+                    key={r.id}
+                    to={r.href}
+                    aria-current={isCurrent ? 'page' : undefined}
+                    onClick={(e) => {
+                      if (isCurrent) e.preventDefault();
+                    }}
+                  >
+                    <span className="r-cat">{r.category}</span>
+                    <span className="r-title">{r.title}</span>
+                    <span className="r-arr">{isCurrent ? 'You are here' : '→'}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </nav>
       )}
