@@ -519,7 +519,7 @@ function Avatar({
   return (
     <span
       aria-hidden="true"
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F0F4D] text-white font-bold text-[12.5px] tracking-wide uppercase ${ring}`}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black border border-[#1F0F4D] font-bold text-[12.5px] tracking-wide uppercase ${ring}`}
       style={{ fontFamily: '"Times New Roman", Times, serif' }}
     >
       {initials || "·"}
