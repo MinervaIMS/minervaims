@@ -123,6 +123,22 @@ body[data-scroll-locked] {
     overscroll-behavior-y: none;
   }
 
+  /* Pure-black safety band over the iOS home-indicator zone. Sits behind
+     everything (z-index: -1), pointer-events: none. Guarantees the bottom
+     safe-area is the same pure black regardless of which page is showing,
+     how short it is, or what Safari's translucent URL-bar backdrop mixes. */
+  body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: env(safe-area-inset-bottom);
+    background-color: #000000;
+    z-index: -1;
+    pointer-events: none;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif tracking-tight;
   }
