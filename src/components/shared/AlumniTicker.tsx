@@ -101,7 +101,12 @@ const ROWS: Row[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
   /* Hide native scrollbar on ticker band — interaction stays available */
-  .mims-band { scrollbar-width: none; -ms-overflow-style: none; overflow-anchor: none; }
+  .mims-band {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overflow-anchor: none;
+    contain: layout paint;
+  }
   .mims-band::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `;
 
