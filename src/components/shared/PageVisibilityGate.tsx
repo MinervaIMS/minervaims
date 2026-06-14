@@ -59,10 +59,8 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
             <h2 className="font-serif text-heading text-accent mb-4">
               Page Temporarily Unavailable
             </h2>
-            <p className="font-body text-body text-foreground whitespace-pre-line">
-              This page is currently being updated.&nbsp;{"\n"}
-              For urgent enquiries, please contact us.&nbsp;{"\n"}
-              Thank you for your patience and understanding.
+            <p className="font-body text-body text-foreground">
+              This page is currently being updated. For urgent enquiries, please contact us. Thank you for your patience and understanding.
             </p>
           </div>
         </div>
