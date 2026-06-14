@@ -66,6 +66,8 @@ const Events = () => {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [eventEmail, setEventEmail] = useState('');
+  const { toast } = useToast();
   const imagesLoaded = useImagePreload([eventsBg]);
 
   useEffect(() => {
