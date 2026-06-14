@@ -137,7 +137,9 @@ const NAV: NavSection[] = [
       { key: 'ops-treasury', label: 'Treasury' },
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
+      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.canAccessUsers },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
+
       { key: 'ops-docs', label: 'Statuto' },
     ],
   },
