@@ -266,7 +266,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '50px' : '100px',
+          gap: isMobile ? '25px' : '100px',
           animation: `${anim} ${duration}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
