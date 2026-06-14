@@ -244,8 +244,11 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
     const ro = new ResizeObserver(() => {
       const sw = setWidth();
       if (sw === 0) return;
-      if      (band.scrollLeft < sw)     band.scrollLeft += sw;
-      else if (band.scrollLeft > sw * 2) band.scrollLeft -= sw;
+      let pos = scrollPosRef.current;
+      if      (pos < sw)     pos += sw;
+      else if (pos > sw * 2) pos -= sw;
+      scrollPosRef.current = pos;
+      band.scrollLeft      = pos;
     });
     ro.observe(track);
 
