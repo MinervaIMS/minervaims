@@ -190,40 +190,6 @@ export function Footer() {
               ))}
             </div>
           </div>
-
-          {/* Right column: email icon + socials */}
-          <div className="flex flex-col items-center gap-5 shrink-0">
-            <a
-              href="mailto:as.minerva@unibocconi.it"
-              aria-label="Email as.minerva@unibocconi.it"
-              title="as.minerva@unibocconi.it"
-              className="inline-flex items-center justify-center hover:opacity-80 transition-opacity"
-            >
-              <Mail className="h-[3.375rem] w-[3.375rem] text-background" strokeWidth={1.5} />
-            </a>
-            <div className="flex flex-row gap-4">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="inline-flex items-center hover:opacity-80 transition-opacity"
-                >
-                  <img
-                    src={social.icon}
-                    alt=""
-                    width={54}
-                    height={54}
-                    className="h-[3.375rem] w-[3.375rem]"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </a>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Bottom: 5 link columns */}
