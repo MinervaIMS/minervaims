@@ -530,6 +530,8 @@ const MinervaWorkspace = () => {
         return <ApplicationSettings />;
       case 'website-readings':
         return <ReadingsManagement />;
+      case 'website-pages':
+        return <PagesVisibilityManagement />;
       case 'settings-users':
         return <UserManagement />;
       case 'settings-activity':
