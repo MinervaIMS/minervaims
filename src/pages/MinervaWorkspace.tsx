@@ -533,6 +533,9 @@ const MinervaWorkspace = () => {
         return <UserManagement />;
       case 'settings-activity':
         return <ActivityManagement />;
+      case 'ops-newsletter':
+        return <NewsletterManagement />;
+
       default:
         return (
           <div className="py-16 text-center">
