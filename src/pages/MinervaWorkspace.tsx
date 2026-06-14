@@ -29,6 +29,7 @@ import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
 import NewsletterManagement from '@/components/admin/NewsletterManagement';
+import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
@@ -147,7 +148,7 @@ const NAV: NavSection[] = [
   {
     key: 'website', label: 'Website', Icon: LayoutTemplate,
     subItems: [
-      { key: 'website-pages', label: 'Pages', allowed: (p) => p.canAccessUsers },
+      { key: 'website-pages', label: 'Pages', allowed: (p) => p.isFullAccess },
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'website-testimonials', label: 'Testimonials' },
       { key: 'website-alumni-companies', label: 'Alumni Companies' },
@@ -535,6 +536,10 @@ const MinervaWorkspace = () => {
         return <ActivityManagement />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
+      case 'website-pages':
+        return <PagesVisibilityManagement />;
+
+
 
       default:
         return (
