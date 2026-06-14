@@ -203,7 +203,49 @@ function TickerBand({
 }) {
   const doubled = [...row.logos, ...row.logos]; // 2 identical copies
   const anim    = row.direction === 'left' ? 'mimsLeft' : 'mimsRight';
-  const duration = row.logos.length * SECONDS_PER_LOGO; // uniform pixels/sec
+
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [duration, setDuration] = useState<number>(60); // sensible default until measured
+
+  // Recompute duration from the measured half-track width so every row scrolls
+  // at the same pixels/second regardless of logo aspect ratios.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
+
+    const measure = () => {
+      // scrollWidth includes both duplicated halves → divide by 2.
+      const half = el.scrollWidth / 2;
+      if (half > 0) setDuration(half / pps);
+    };
+
+    measure();
+
+    // Re-measure as images decode and when the track resizes (viewport, fonts).
+    const imgs = Array.from(el.querySelectorAll('img'));
+    const handlers: Array<() => void> = [];
+    imgs.forEach((img) => {
+      if (!img.complete) {
+        const h = () => measure();
+        img.addEventListener('load', h);
+        img.addEventListener('error', h);
+        handlers.push(() => {
+          img.removeEventListener('load', h);
+          img.removeEventListener('error', h);
+        });
+      }
+    });
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+
+    return () => {
+      ro.disconnect();
+      handlers.forEach((off) => off());
+    };
+  }, [isMobile, row.logos.length]);
 
   return (
     <div
@@ -219,6 +261,7 @@ function TickerBand({
     >
       {/* ── Scrolling track ── */}
       <div
+        ref={trackRef}
         className="mims-track"
         style={{
           display: 'flex',
