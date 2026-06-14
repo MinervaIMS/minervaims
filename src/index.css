@@ -482,8 +482,29 @@ body[data-scroll-locked] {
 
 
 /* Page visibility gate — blurs page content when a page is hidden */
-.page-blur-block {
-  filter: blur(18px) saturate(0.6);
-  user-select: none;
-  -webkit-user-select: none;
+.page-gate-blurred > *:not(:first-child) {
+  filter: blur(20px) saturate(0.5) !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: none !important;
 }
+.page-gate-blurred > :only-child > :not(:first-child),
+.page-gate-blurred > :only-child > header.lp-hero ~ *,
+.page-gate-blurred > :only-child > [data-page-hero] ~ * {
+  filter: blur(20px) saturate(0.5) !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: none !important;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .page-gate-scrim {
+    background-color: hsl(var(--background) / 0.94) !important;
+  }
+}
+.page-blur-block {
+  filter: blur(20px) saturate(0.5) !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: none !important;
+}
+
