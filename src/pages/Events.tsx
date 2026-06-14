@@ -119,6 +119,32 @@ const Events = () => {
     if (idx >= 0) setLightboxIndex(idx);
   }, [posterEvents]);
 
+  const emailSchema = z.string().trim().email().max(255);
+
+  const handleEventEmailSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const parsed = emailSchema.safeParse(eventEmail);
+    if (!parsed.success) {
+      toast({ title: 'Please enter a valid email address.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({ email: parsed.data, consent: true, source: 'events' });
+
+    if (error) {
+      if (error.code === '23505') {
+        toast({ title: "You're already subscribed." });
+      } else {
+        toast({ title: 'Subscription failed. Please try again later.', variant: 'destructive' });
+        return;
+      }
+    } else {
+      toast({ title: 'Thank you for subscribing.' });
+    }
+    setEventEmail('');
+  };
+
   if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
