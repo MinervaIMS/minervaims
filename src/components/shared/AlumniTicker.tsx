@@ -279,56 +279,57 @@ function TickerBand({
 
   return (
     <div
-      className="mims-band"
-      onMouseEnter={pause}
-      onMouseLeave={resume}
-      onTouchStart={pause}
-      onTouchEnd={resume}
-      onTouchCancel={resume}
-      onWheel={pause}
       style={{
         position: 'relative',
-        overflowX: 'auto',           // user can drag/scroll horizontally
-        overflowY: 'hidden',
-        WebkitOverflowScrolling: 'touch',
         height: isMobile ? '57px' : '114px',
-        display: 'flex',
-        alignItems: 'center',
-        cursor: 'grab',
       }}
     >
-      {/* ── Scrolling track ── */}
+      {/* Scroll container — user can drag/swipe/wheel horizontally */}
       <div
-        ref={trackRef}
-        className="mims-track"
+        className="mims-band"
+        onMouseEnter={pause}
+        onMouseLeave={resume}
+        onTouchStart={pause}
+        onTouchEnd={resume}
+        onTouchCancel={resume}
+        onWheel={pause}
         style={{
+          position: 'absolute',
+          inset: 0,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '50px' : '100px',
-          animation: `${anim} ${duration}s linear infinite`,
-          willChange: 'transform',
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-          flexShrink: 0,
+          cursor: 'grab',
         }}
       >
-        {doubled.map((logo, i) => (
-          <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
-        ))}
+        <div
+          ref={trackRef}
+          className="mims-track"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '50px' : '100px',
+            animation: `${anim} ${duration}s linear infinite`,
+            willChange: 'transform',
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {doubled.map((logo, i) => (
+            <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
+          ))}
+        </div>
       </div>
 
-
-      {/* ── Edge vignette ── */}
+      {/* Edge vignette — sits above the scroll container, doesn't intercept events */}
       <div
         aria-hidden="true"
         style={{
-          position: 'sticky',
-          left: 0,
-          right: 0,
-          top: 0,
-          height: '100%',
-          marginLeft: '-100%',
-          width: '100%',
+          position: 'absolute',
+          inset: 0,
           background:
             'linear-gradient(to right, #ffffff 0%, #ffffff 4%, transparent 18%, transparent 82%, #ffffff 96%, #ffffff 100%)',
           pointerEvents: 'none',
