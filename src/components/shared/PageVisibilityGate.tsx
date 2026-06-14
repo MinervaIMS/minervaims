@@ -35,6 +35,7 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
   const [heroBottom, setHeroBottom] = useState<number>(0);
   const [noticeTop, setNoticeTop] = useState<number | null>(null);
   const [noticeVisible, setNoticeVisible] = useState(false);
+  const [scrimBottom, setScrimBottom] = useState<number>(0);
 
   // Keep --page-hidden-hero-height in sync with the actual hero bottom
   useEffect(() => {
