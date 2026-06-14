@@ -332,30 +332,6 @@ export type Database = {
         }
         Relationships: []
       }
-      page_visibility: {
-        Row: {
-          created_at: string
-          is_hidden: boolean
-          page_key: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          is_hidden?: boolean
-          page_key: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          is_hidden?: boolean
-          page_key?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
