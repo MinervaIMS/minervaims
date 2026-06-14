@@ -1,10 +1,9 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail } from 'lucide-react';
 
 import footerLogo from '@/assets/footer-logo.svg';
-import linkedinIcon from '@/assets/linkedin-black.svg';
-import instagramIcon from '@/assets/instagram-black.svg';
+import linkedinIcon from '@/assets/linkedin-white.svg';
+import instagramIcon from '@/assets/instagram-white.svg';
 import { useToast } from '@/hooks/use-toast';
 
 const exploreLinks = [
