@@ -217,7 +217,9 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
     };
     const onPointerMove = (e: PointerEvent) => {
       if (!draggingRef.current) return;
-      band.scrollLeft = dragStartSL - (e.clientX - dragStartX);
+      const next = dragStartSL - (e.clientX - dragStartX);
+      band.scrollLeft      = next;
+      scrollPosRef.current = next; // keep our float in sync with user drag
       lastInteractionRef.current = performance.now();
     };
     const stopDrag = (e: PointerEvent) => {
