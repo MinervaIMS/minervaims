@@ -151,10 +151,7 @@ const FundDetail = () => {
       {fundKey === 'long-short' && (
         <section className="py-section-sm md:py-section bg-background">
           <div className="container">
-            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-              Performance Summary
-            </h2>
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <table className="w-full text-sm font-body border-collapse min-w-[900px]">
                 <thead>
                   <tr className="border-b border-separator bg-accent text-background font-body">
