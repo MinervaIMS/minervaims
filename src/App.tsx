@@ -90,7 +90,7 @@ const App = () => {
                 <Route path="/cookie-policy" element={<Suspense fallback={<PageLoader />}><CookiePolicy /></Suspense>} />
                 <Route path="/terms-of-use" element={<Suspense fallback={<PageLoader />}><TermsOfUse /></Suspense>} />
                 <Route path="/disclaimer" element={<Suspense fallback={<PageLoader />}><Disclaimer /></Suspense>} />
-                <Route path="/statute" element={<Suspense fallback={<PageLoader />}><Statute /></Suspense>} />
+                <Route path="/statute" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="statute"><Statute /></PageVisibilityGate></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
