@@ -232,7 +232,7 @@ const Events = () => {
                   />
                   <button
                     type="submit"
-                    className="shrink-0 bg-accent text-background font-serif uppercase tracking-wider text-sm px-5 py-2 hover:opacity-90 transition-opacity"
+                    className="shrink-0 bg-accent text-background font-serif tracking-wider text-sm px-5 py-2 hover:opacity-90 transition-opacity"
                   >
                     Sign Up
                   </button>
