@@ -152,8 +152,8 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: isMobile ? '10px' : '40px',
-          maxWidth: isMobile ? '162px' : '650px',
+          maxHeight: isMobile ? '20px' : '40px',
+          maxWidth: isMobile ? '325px' : '650px',
           width: 'auto',
           height: 'auto',
           objectFit: 'contain',
@@ -254,7 +254,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: isMobile ? '29px' : '114px',  // band height (mobile: 25%)
+        height: isMobile ? '57px' : '114px',  // band height (mobile: 50%)
         display: 'flex',
         alignItems: 'center',
       }}
@@ -266,7 +266,7 @@ function TickerBand({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '25px' : '100px',
+          gap: isMobile ? '50px' : '100px',
           animation: `${anim} ${duration}s linear infinite`,
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
