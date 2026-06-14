@@ -241,8 +241,8 @@ body[data-scroll-locked] {
 .rsec--navy .rhead { border-color:rgba(255,255,255,.22); }
 .reyebrow { font-size:.875rem; text-transform:uppercase; letter-spacing:.14em; color:var(--mims-muted); }
 .rsec--navy .reyebrow { color:var(--mims-light-purple); }
-.rtitle { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:400; font-size:clamp(1.6rem,3.4vw,2.4rem);
-  line-height:1.12; letter-spacing:-.01em; color:hsl(var(--accent)); margin-top:.35rem; }
+.rtitle { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-weight:400; font-size:2rem;
+  line-height:1.2; letter-spacing:-.01em; color:hsl(var(--accent)); margin-top:.35rem; }
 .rsec--navy .rtitle { color:#fff; }
 
 .rbtn { display:inline-flex; align-items:center; gap:.55rem; font-family:'Times New Roman','EB Garamond',Times,Georgia,serif;
