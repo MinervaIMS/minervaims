@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, FormEvent } from "react";
 import { Helmet } from "react-helmet-async";
 import { Calendar, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
 
