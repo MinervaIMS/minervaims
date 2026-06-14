@@ -52,7 +52,7 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
 
       {shouldBlur && (
         <div
-          className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none px-6"
+          className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none px-6 pb-48"
           data-page-gate-overlay="true"
         >
           <div className="pointer-events-auto max-w-xl w-full bg-background border-2 border-accent p-8 text-center shadow-xl">
@@ -60,14 +60,7 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
               Page Under Update
             </h2>
             <p className="font-body text-body text-foreground">
-              This page is currently being updated. For urgent enquiries, please{' '}
-              <a
-                href="mailto:as.minerva@unibocconi.it"
-                className="text-accent underline underline-offset-4 font-medium"
-              >
-                contact us
-              </a>
-              . Thank you for your understanding.
+              This page is currently being updated. For urgent enquiries, please contact us. Thank you for your understanding.
             </p>
           </div>
         </div>
