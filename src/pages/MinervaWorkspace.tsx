@@ -28,6 +28,8 @@ import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
+import NewsletterManagement from '@/components/admin/NewsletterManagement';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useIsDesktop } from '@/hooks/use-desktop';
@@ -135,7 +137,9 @@ const NAV: NavSection[] = [
       { key: 'ops-treasury', label: 'Treasury' },
       { key: 'ops-accounts', label: 'Accounts & Credentials' },
       { key: 'ops-external', label: 'External Relations' },
+      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.canAccessUsers },
       { key: 'ops-auto-emails', label: 'Auto Emails' },
+
       { key: 'ops-docs', label: 'Statuto' },
     ],
   },
@@ -529,6 +533,9 @@ const MinervaWorkspace = () => {
         return <UserManagement />;
       case 'settings-activity':
         return <ActivityManagement />;
+      case 'ops-newsletter':
+        return <NewsletterManagement />;
+
       default:
         return (
           <div className="py-16 text-center">

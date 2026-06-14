@@ -1,5 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+
 
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-black.svg';
@@ -81,23 +84,37 @@ export function Footer() {
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
 
-  const handleNewsletterSubmit = (e: FormEvent) => {
+  const emailSchema = z.string().trim().email().max(255);
+
+  const handleNewsletterSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
-      toast({ title: 'Please enter your email address.', variant: 'destructive' });
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      toast({ title: 'Please enter a valid email address.', variant: 'destructive' });
       return;
     }
     if (!consent) {
       toast({ title: 'Please confirm you would like to receive our newsletter.', variant: 'destructive' });
       return;
     }
-    const subject = encodeURIComponent('Newsletter signup');
-    const body = encodeURIComponent(`Please add ${email} to the Minerva IMS newsletter list.`);
-    window.location.href = `mailto:as.minerva@unibocconi.it?subject=${subject}&body=${body}`;
-    toast({ title: 'Thank you for subscribing.' });
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({ email: parsed.data, consent: true, source: 'footer' });
+
+    if (error) {
+      if (error.code === '23505') {
+        toast({ title: "You're already subscribed." });
+      } else {
+        toast({ title: 'Subscription failed. Please try again later.', variant: 'destructive' });
+        return;
+      }
+    } else {
+      toast({ title: 'Thank you for subscribing.' });
+    }
     setEmail('');
     setConsent(false);
   };
+
 
   return (
     <footer className="bg-black text-background" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
