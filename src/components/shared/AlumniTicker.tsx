@@ -334,7 +334,6 @@ function TickerBand({
 // ALUMNI TICKER — main export
 // ─────────────────────────────────────────────────────────────────────────────
 const AlumniTicker = () => {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   return (
@@ -354,14 +353,7 @@ const AlumniTicker = () => {
 
       {/* Four ticker rows */}
       {ROWS.map((row) => (
-        <TickerBand
-          key={row.id}
-          row={row}
-          paused={hoveredId === row.id}
-          onEnter={() => setHoveredId(row.id)}
-          onLeave={() => setHoveredId(null)}
-          isMobile={isMobile}
-        />
+        <TickerBand key={row.id} row={row} isMobile={isMobile} />
       ))}
     </section>
 
