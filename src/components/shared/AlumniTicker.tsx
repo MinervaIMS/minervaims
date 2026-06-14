@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -8,10 +8,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 // Do not apply any CSS filter to the images; use brand colours as-is.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Uniform perceived speed: duration scales linearly with row's logo count,
-// so pixels/second is constant across rows (since each row's track width is
-// proportional to its logo count given fixed gap + maxWidth).
-const SECONDS_PER_LOGO = 4;
+// Uniform perceived speed across all rows: duration is derived from the
+// MEASURED track width, not the logo count. Pixels per second is constant.
+const PIXELS_PER_SECOND_DESKTOP = 55;
+const PIXELS_PER_SECOND_MOBILE  = 28;
 
 interface Logo { name: string; file: string; }
 interface Row  { id: string; logos: Logo[]; direction: 'left' | 'right'; }
