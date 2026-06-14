@@ -220,12 +220,27 @@ const Events = () => {
                 New events are announced each semester. Browse our past events below,
                 or follow along to hear about the next one first.
               </p>
-              <a
-                href="/join"
-                className="inline-block font-body text-body text-accent underline underline-offset-4 hover:opacity-80 transition-opacity"
-              >
-                Get notified about the next event
-              </a>
+              <form onSubmit={handleEventEmailSubmit} className="max-w-xl mx-auto">
+                <div className="flex border border-accent">
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your email here"
+                    value={eventEmail}
+                    onChange={(e) => setEventEmail(e.target.value)}
+                    className="flex-1 min-w-0 bg-background px-3 py-2 font-body text-body text-foreground placeholder:text-muted-foreground border-0 focus:outline-none focus:ring-0"
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 bg-accent text-background font-serif uppercase tracking-wider text-sm px-5 py-2 hover:opacity-90 transition-opacity"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+                <p className="font-body text-small text-muted-foreground leading-snug mt-4">
+                  By signing up, you agree to receive email updates from us. You can unsubscribe at any time.
+                </p>
+              </form>
             </div>
           )}
         </div>
