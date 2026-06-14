@@ -111,6 +111,9 @@ const CSS = `
   @media (prefers-reduced-motion: reduce) {
     .mims-track { animation-play-state: paused !important; }
   }
+  /* Hide native scrollbar on ticker band — interaction stays available */
+  .mims-band { scrollbar-width: none; -ms-overflow-style: none; }
+  .mims-band::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -265,55 +268,63 @@ function TickerBand({
     return () => cancelAnimationFrame(id);
   }, [duration]);
 
-  const handleEnter = () => {
+  const pause = () => {
     const a = animationRef.current;
-    if (a) {
-      try { a.pause(); } catch { /* noop */ }
-    }
+    if (a) { try { a.pause(); } catch { /* noop */ } }
   };
-  const handleLeave = () => {
+  const resume = () => {
     const a = animationRef.current;
-    if (a) {
-      try { a.play(); } catch { /* noop */ }
-    }
+    if (a) { try { a.play(); } catch { /* noop */ } }
   };
 
   return (
     <div
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
       style={{
         position: 'relative',
-        overflow: 'hidden',          // clips the scrolling track
-        height: isMobile ? '57px' : '114px',  // band height (mobile: 50%)
-        display: 'flex',
-        alignItems: 'center',
+        height: isMobile ? '57px' : '114px',
       }}
     >
-      {/* ── Scrolling track ── */}
+      {/* Scroll container — user can drag/swipe/wheel horizontally */}
       <div
-        ref={trackRef}
-        className="mims-track"
+        className="mims-band"
+        onMouseEnter={pause}
+        onMouseLeave={resume}
+        onTouchStart={pause}
+        onTouchEnd={resume}
+        onTouchCancel={resume}
+        onWheel={pause}
         style={{
+          position: 'absolute',
+          inset: 0,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '50px' : '100px',
-          animation: `${anim} ${duration}s linear infinite`,
-          willChange: 'transform',
-          // translateZ keeps the GPU layer identical between running and
-          // paused so the committed transform on pause matches the last
-          // painted frame (no sub-pixel snap).
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
+          cursor: 'grab',
         }}
       >
-        {doubled.map((logo, i) => (
-          <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
-        ))}
+        <div
+          ref={trackRef}
+          className="mims-track"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '50px' : '100px',
+            animation: `${anim} ${duration}s linear infinite`,
+            willChange: 'transform',
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {doubled.map((logo, i) => (
+            <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
+          ))}
+        </div>
       </div>
 
-
-      {/* ── Edge vignette ── */}
+      {/* Edge vignette — sits above the scroll container, doesn't intercept events */}
       <div
         aria-hidden="true"
         style={{
