@@ -82,7 +82,6 @@ function LinkColumn({
 export function Footer() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
-  const [consent, setConsent] = useState(false);
 
   const emailSchema = z.string().trim().email().max(255);
 
@@ -91,10 +90,6 @@ export function Footer() {
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) {
       toast({ title: 'Please enter a valid email address.', variant: 'destructive' });
-      return;
-    }
-    if (!consent) {
-      toast({ title: 'Please confirm you would like to receive our newsletter.', variant: 'destructive' });
       return;
     }
     const { error } = await supabase
@@ -112,7 +107,6 @@ export function Footer() {
       toast({ title: 'Thank you for subscribing.' });
     }
     setEmail('');
-    setConsent(false);
   };
 
 
@@ -163,18 +157,12 @@ export function Footer() {
                   Sign Up
                 </button>
               </div>
-              <label className="flex items-center gap-3 mt-4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  className="h-4 w-4 shrink-0 rounded-none appearance-none border border-background bg-background checked:bg-background checked:after:content-['✓'] checked:after:text-foreground checked:after:text-[10px] checked:after:leading-none checked:after:flex checked:after:items-center checked:after:justify-center"
-                  style={{ borderRadius: 0 }}
-                />
-                <span className="font-body text-small text-background/80 leading-snug">
-                  Select this box to receive our newsletter. You can change your preferences at any time.
-                </span>
-              </label>
+              <p className="font-body text-small text-background/80 leading-snug mt-4">
+                By signing up, you agree to receive email updates from us. You can unsubscribe at any time. See our{' '}
+                <Link to="/privacy-policy" className="underline hover:text-background transition-colors">
+                  Privacy Policy
+                </Link>.
+              </p>
             </form>
           </div>
 
