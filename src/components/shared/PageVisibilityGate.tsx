@@ -7,37 +7,75 @@ interface Props {
   children: ReactNode;
 }
 
+const findHero = (root: HTMLElement): HTMLElement | null => {
+  const first = root.children[0] as HTMLElement | undefined;
+  if (!first) return null;
+  // Default: first DOM child is the hero
+  if (root.children.length > 1) return first;
+  // Single-wrapper page (e.g. LegalLayout). Look inside.
+  const wrapper = first;
+  const tagged = wrapper.querySelector(':scope > [data-page-hero]') as HTMLElement | null;
+  if (tagged) return tagged;
+  const lpHero = wrapper.querySelector(':scope > header.lp-hero') as HTMLElement | null;
+  if (lpHero) return lpHero;
+  return wrapper.children[0] as HTMLElement | null;
+};
+
 export const PageVisibilityGate = ({ pageKey, children }: Props) => {
   const { isHidden, loading } = usePageVisibility();
   const { isFullAccess } = usePermissions();
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  const hidden = !loading && isHidden(pageKey);
-  const shouldBlur = hidden && !isFullAccess;
+  const hiddenByDb = !loading && isHidden(pageKey);
+  // Defensive: while still loading visibility on first paint, treat as hidden
+  // for non-admin visitors so we never paint readable content first.
+  const treatHidden = (loading || hiddenByDb) && !isFullAccess;
+  const showAdminBanner = hiddenByDb && isFullAccess;
 
+  const [heroBottom, setHeroBottom] = useState<number>(0);
   const [noticeTop, setNoticeTop] = useState<number | null>(null);
   const [noticeVisible, setNoticeVisible] = useState(false);
 
+  // Keep --page-hidden-hero-height in sync with the actual hero bottom
   useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
-    const cls = 'page-blur-block';
-    (Array.from(root.children) as HTMLElement[]).forEach((el, idx) => {
-      if (el.dataset.pageGateOverlay === 'true') return;
-      if (idx === 0 || !shouldBlur) {
-        el.classList.remove(cls);
-        el.removeAttribute('aria-hidden');
-        el.style.pointerEvents = '';
-      } else {
-        el.classList.add(cls);
-        el.setAttribute('aria-hidden', 'true');
-        el.style.pointerEvents = 'none';
-      }
-    });
-  }, [shouldBlur, children]);
+    const root = wrapperRef.current;
+    if (!root || !treatHidden) return;
 
+    let rafId = 0;
+    const measure = () => {
+      rafId = 0;
+      const hero = findHero(root);
+      const bottom = hero ? hero.getBoundingClientRect().bottom + window.scrollY : 0;
+      setHeroBottom(bottom);
+    };
+    const schedule = () => {
+      if (!rafId) rafId = requestAnimationFrame(measure);
+    };
+
+    measure();
+    const ro = new ResizeObserver(schedule);
+    const mo = new MutationObserver(schedule);
+    ro.observe(root);
+    mo.observe(root, { childList: true, subtree: true });
+    window.addEventListener('resize', schedule);
+    window.addEventListener('scroll', schedule, { passive: true });
+    const t1 = window.setTimeout(measure, 120);
+    const t2 = window.setTimeout(measure, 500);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      ro.disconnect();
+      mo.disconnect();
+      window.removeEventListener('resize', schedule);
+      window.removeEventListener('scroll', schedule);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [treatHidden, children]);
+
+  // Notice position + footer fade
   useEffect(() => {
-    if (!shouldBlur) {
+    if (!treatHidden) {
       setNoticeTop(null);
       setNoticeVisible(false);
       return;
@@ -45,13 +83,16 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
     let rafId = 0;
     const recompute = () => {
       rafId = 0;
-      const root = containerRef.current;
+      const root = wrapperRef.current;
       if (!root) return;
-      const hero = root.children[0] as HTMLElement | undefined;
+      const hero = findHero(root);
       const footer = document.querySelector('footer');
       const vh = window.innerHeight;
       let top = Math.max(vh * 0.22, 120);
-      if (hero) top = Math.max(top, hero.getBoundingClientRect().bottom + 24);
+      if (hero) {
+        const hb = hero.getBoundingClientRect().bottom + 24;
+        top = Math.max(top, hb);
+      }
       top = Math.min(top, vh * 0.6);
       let visible = true;
       if (footer && footer.getBoundingClientRect().top < vh - 40) visible = false;
@@ -68,16 +109,37 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
     const t2 = window.setTimeout(recompute, 500);
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
-  }, [shouldBlur, children]);
+  }, [treatHidden, children]);
+
+  // Block copy/cut/contextmenu outside the hero
+  useEffect(() => {
+    if (!treatHidden) return;
+    const root = wrapperRef.current;
+    if (!root) return;
+    const block = (e: Event) => {
+      const target = e.target as Node | null;
+      const hero = findHero(root);
+      if (hero && target && hero.contains(target)) return;
+      e.preventDefault();
+    };
+    root.addEventListener('copy', block);
+    root.addEventListener('cut', block);
+    root.addEventListener('contextmenu', block);
+    return () => {
+      root.removeEventListener('copy', block);
+      root.removeEventListener('cut', block);
+      root.removeEventListener('contextmenu', block);
+    };
+  }, [treatHidden, children]);
 
   return (
     <>
-      {hidden && isFullAccess && (
+      {showAdminBanner && (
         <div
           className="fixed left-0 right-0 z-40 bg-accent text-accent-foreground font-body text-sm px-6 py-3 text-center shadow-md"
           style={{ top: 'calc(84px + env(safe-area-inset-top))' }}
@@ -87,11 +149,31 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
         </div>
       )}
 
-      <div ref={containerRef} className="relative contents">
+      <div
+        ref={wrapperRef}
+        className={treatHidden ? 'page-gate-blurred' : ''}
+        style={{ display: 'contents' }}
+      >
         {children}
       </div>
 
-      {shouldBlur && noticeTop !== null && (
+      {treatHidden && (
+        <div
+          aria-hidden="true"
+          className="page-gate-scrim fixed left-0 right-0 bottom-0 z-20"
+          style={{
+            top: `${heroBottom}px`,
+            backdropFilter: 'blur(22px) saturate(0.5)',
+            WebkitBackdropFilter: 'blur(22px) saturate(0.5)',
+            backgroundColor: 'hsl(var(--background) / 0.35)',
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+          onCopy={(e) => e.preventDefault()}
+        />
+      )}
+
+      {treatHidden && noticeTop !== null && (
         <div
           className={`fixed left-0 right-0 z-30 flex justify-center pointer-events-none px-6 transition-opacity duration-300 ${
             noticeVisible ? 'opacity-100' : 'opacity-0'
