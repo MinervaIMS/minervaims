@@ -373,7 +373,7 @@ const AlumniTicker = () => {
     >
       <div className="container">
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-          Our Alumni stand at the Forefront of Global Markets and Academia
+          Our Alumni Stand at the Forefront of Global Markets and Academia
         </h2>
       </div>
 
