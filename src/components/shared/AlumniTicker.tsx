@@ -190,67 +190,98 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function TickerBand({
   row,
-  paused,
-  onEnter,
-  onLeave,
   isMobile,
 }: {
   row: Row;
-  paused: boolean;
-  onEnter: () => void;
-  onLeave: () => void;
   isMobile: boolean;
 }) {
   const doubled = [...row.logos, ...row.logos]; // 2 identical copies
   const anim    = row.direction === 'left' ? 'mimsLeft' : 'mimsRight';
 
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const animationRef = useRef<Animation | null>(null);
   const [duration, setDuration] = useState<number>(60); // sensible default until measured
 
-  // Recompute duration from the measured half-track width so every row scrolls
-  // at the same pixels/second regardless of logo aspect ratios.
+  // Measure once images are decoded, then freeze duration so we never
+  // re-time a running animation (which would snap the transform).
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
 
     const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
+    let frozen = false;
+    let ro: ResizeObserver | null = null;
+    const offs: Array<() => void> = [];
 
     const measure = () => {
+      if (frozen) return;
       // scrollWidth includes both duplicated halves → divide by 2.
       const half = el.scrollWidth / 2;
-      if (half > 0) setDuration(half / pps);
+      if (half <= 0) return;
+      setDuration(half / pps);
+      const imgs = Array.from(el.querySelectorAll('img'));
+      const allReady = imgs.length > 0 && imgs.every((img) => img.complete);
+      if (allReady) {
+        frozen = true;
+        ro?.disconnect();
+        offs.forEach((off) => off());
+        offs.length = 0;
+      }
     };
 
     measure();
 
-    // Re-measure as images decode and when the track resizes (viewport, fonts).
     const imgs = Array.from(el.querySelectorAll('img'));
-    const handlers: Array<() => void> = [];
     imgs.forEach((img) => {
       if (!img.complete) {
         const h = () => measure();
         img.addEventListener('load', h);
         img.addEventListener('error', h);
-        handlers.push(() => {
+        offs.push(() => {
           img.removeEventListener('load', h);
           img.removeEventListener('error', h);
         });
       }
     });
 
-    const ro = new ResizeObserver(measure);
+    ro = new ResizeObserver(measure);
     ro.observe(el);
 
     return () => {
-      ro.disconnect();
-      handlers.forEach((off) => off());
+      ro?.disconnect();
+      offs.forEach((off) => off());
     };
   }, [isMobile, row.logos.length]);
 
+  // Acquire the live Animation handle after the track mounts / duration is set.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    // Wait a frame so the CSS animation is registered.
+    const id = requestAnimationFrame(() => {
+      const anims = el.getAnimations?.() ?? [];
+      animationRef.current = anims[0] ?? null;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [duration]);
+
+  const handleEnter = () => {
+    const a = animationRef.current;
+    if (a) {
+      try { a.pause(); } catch { /* noop */ }
+    }
+  };
+  const handleLeave = () => {
+    const a = animationRef.current;
+    if (a) {
+      try { a.play(); } catch { /* noop */ }
+    }
+  };
+
   return (
     <div
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
@@ -268,10 +299,12 @@ function TickerBand({
           alignItems: 'center',
           gap: isMobile ? '50px' : '100px',
           animation: `${anim} ${duration}s linear infinite`,
-          animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
-          // NO padding here — padding breaks the -50% calculation.
-          // The fade overlay handles visual edge treatment.
+          // translateZ keeps the GPU layer identical between running and
+          // paused so the committed transform on pause matches the last
+          // painted frame (no sub-pixel snap).
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
         }}
       >
         {doubled.map((logo, i) => (
@@ -280,16 +313,7 @@ function TickerBand({
       </div>
 
 
-      {/* ── Edge vignette ──
-          Must sit INSIDE the overflow:hidden container so it doesn't scroll.
-          Position absolute + inset:0 makes it span the full band.
-          The colour (#ffffff) must match the page background exactly.
-          If the page background resolves to something other than #ffffff,
-          update both colour stops accordingly.
-          The 9% fade zone ≈ 170px at 1920px viewport — enough to feel
-          organic without hiding the logos prematurely.
-          pointer-events:none is mandatory so the overlay never intercepts
-          mouse events (hover-pause must still trigger on the band below).  ──  */}
+      {/* ── Edge vignette ── */}
       <div
         aria-hidden="true"
         style={{
@@ -304,6 +328,7 @@ function TickerBand({
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ALUMNI TICKER — main export
