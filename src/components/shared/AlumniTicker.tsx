@@ -187,31 +187,42 @@ function TickerBand({
   row: Row;
   isMobile: boolean;
 }) {
-  const doubled = [...row.logos, ...row.logos]; // 2 identical copies
-  const anim    = row.direction === 'left' ? 'mimsLeft' : 'mimsRight';
+  // 3 copies of the logo set → the middle copy is always the "anchor".
+  // We keep scrollLeft inside [halfWidth, 2*halfWidth) by wrapping on every
+  // change. Because all three copies are identical, jumps of exactly
+  // halfWidth are visually invisible — this yields a true infinite loop
+  // in BOTH directions, whether the auto-scroll is running or the user is
+  // dragging / wheeling / swiping the track.
+  const tripled = [...row.logos, ...row.logos, ...row.logos];
 
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const animationRef = useRef<Animation | null>(null);
-  const [duration, setDuration] = useState<number>(60); // sensible default until measured
+  const bandRef     = useRef<HTMLDivElement | null>(null);
+  const trackRef    = useRef<HTMLDivElement | null>(null);
+  const pausedRef   = useRef<boolean>(false);
+  const halfRef     = useRef<number>(0);   // width of ONE logo set
+  const rafRef      = useRef<number | null>(null);
+  const lastTsRef   = useRef<number | null>(null);
 
-  // Measure once images are decoded, then freeze duration so we never
-  // re-time a running animation (which would snap the transform).
+  // ── Measure: half = scrollWidth / 3 (we tripled the set) ────────────────
   useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
+    const track = trackRef.current;
+    const band  = bandRef.current;
+    if (!track || !band) return;
 
-    const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
     let frozen = false;
     let ro: ResizeObserver | null = null;
     const offs: Array<() => void> = [];
 
     const measure = () => {
       if (frozen) return;
-      // scrollWidth includes both duplicated halves → divide by 2.
-      const half = el.scrollWidth / 2;
-      if (half <= 0) return;
-      setDuration(half / pps);
-      const imgs = Array.from(el.querySelectorAll('img'));
+      const w = track.scrollWidth / 3;
+      if (w <= 0) return;
+      halfRef.current = w;
+      // Park the viewport on the middle copy so the user can scroll either
+      // direction without ever hitting a hard edge.
+      if (band.scrollLeft < w * 0.5 || band.scrollLeft > w * 2.5) {
+        band.scrollLeft = w;
+      }
+      const imgs = Array.from(track.querySelectorAll('img'));
       const allReady = imgs.length > 0 && imgs.every((img) => img.complete);
       if (allReady) {
         frozen = true;
@@ -223,7 +234,7 @@ function TickerBand({
 
     measure();
 
-    const imgs = Array.from(el.querySelectorAll('img'));
+    const imgs = Array.from(track.querySelectorAll('img'));
     imgs.forEach((img) => {
       if (!img.complete) {
         const h = () => measure();
@@ -237,7 +248,7 @@ function TickerBand({
     });
 
     ro = new ResizeObserver(measure);
-    ro.observe(el);
+    ro.observe(track);
 
     return () => {
       ro?.disconnect();
@@ -245,26 +256,59 @@ function TickerBand({
     };
   }, [isMobile, row.logos.length]);
 
-  // Acquire the live Animation handle after the track mounts / duration is set.
+  // ── Wrap scrollLeft on every scroll event (auto-driven OR user-driven) ──
   useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    // Wait a frame so the CSS animation is registered.
-    const id = requestAnimationFrame(() => {
-      const anims = el.getAnimations?.() ?? [];
-      animationRef.current = anims[0] ?? null;
-    });
-    return () => cancelAnimationFrame(id);
-  }, [duration]);
+    const band = bandRef.current;
+    if (!band) return;
+    const onScroll = () => {
+      const w = halfRef.current;
+      if (w <= 0) return;
+      // Keep scrollLeft inside [w, 2w). Both boundaries land on identical
+      // pixels of the next/prev copy, so the jump is invisible.
+      if (band.scrollLeft >= 2 * w) {
+        band.scrollLeft -= w;
+      } else if (band.scrollLeft < w) {
+        band.scrollLeft += w;
+      }
+    };
+    band.addEventListener('scroll', onScroll, { passive: true });
+    return () => band.removeEventListener('scroll', onScroll);
+  }, []);
 
-  const pause = () => {
-    const a = animationRef.current;
-    if (a) { try { a.pause(); } catch { /* noop */ } }
-  };
-  const resume = () => {
-    const a = animationRef.current;
-    if (a) { try { a.play(); } catch { /* noop */ } }
-  };
+  // ── Auto-scroll via rAF driving scrollLeft (works with manual scroll) ───
+  useEffect(() => {
+    const band = bandRef.current;
+    if (!band) return;
+
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+
+    const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
+    const dir = row.direction === 'left' ? 1 : -1;
+
+    const tick = (ts: number) => {
+      if (lastTsRef.current == null) lastTsRef.current = ts;
+      const dt = (ts - lastTsRef.current) / 1000;
+      lastTsRef.current = ts;
+      if (!pausedRef.current && halfRef.current > 0) {
+        band.scrollLeft += dir * pps * dt;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      lastTsRef.current = null;
+    };
+  }, [isMobile, row.direction]);
+
+  const pause  = () => { pausedRef.current = true;  };
+  const resume = () => { pausedRef.current = false; lastTsRef.current = null; };
 
   return (
     <div
@@ -273,8 +317,9 @@ function TickerBand({
         height: isMobile ? '57px' : '114px',
       }}
     >
-      {/* Scroll container — user can drag/swipe/wheel horizontally */}
+      {/* Scroll container — user can drag / wheel / swipe horizontally */}
       <div
+        ref={bandRef}
         className="mims-band"
         onMouseEnter={pause}
         onMouseLeave={resume}
@@ -300,20 +345,19 @@ function TickerBand({
             display: 'flex',
             alignItems: 'center',
             gap: isMobile ? '50px' : '100px',
-            animation: `${anim} ${duration}s linear infinite`,
+            flexShrink: 0,
             willChange: 'transform',
             transform: 'translateZ(0)',
             backfaceVisibility: 'hidden',
-            flexShrink: 0,
           }}
         >
-          {doubled.map((logo, i) => (
+          {tripled.map((logo, i) => (
             <LogoItem key={`${logo.file}-${i}`} logo={logo} isMobile={isMobile} />
           ))}
         </div>
       </div>
 
-      {/* Edge vignette — sits above the scroll container, doesn't intercept events */}
+      {/* Edge vignette */}
       <div
         aria-hidden="true"
         style={{
