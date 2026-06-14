@@ -166,24 +166,21 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TICKER BAND
+// TICKER BAND — dual-mode (AUTO via GPU transform, MANUAL via native scroll)
 //
-// SEAMLESS LOOP TECHNIQUE:
-//   1. Duplicate logos array exactly once → 2 identical copies in one flex row.
-//   2. The inner track's total width = 2 × (one set's width).
-//   3. For LEFT:  animate translateX from 0 → -50%.
-//      -50% of the container = exactly one set's width.
-//      When the animation restarts at 0, the viewport content is identical
-//      to what was visible at -50% (both show the start of an identical set).
-//      The restart is instantaneous and visually undetectable.
-//   4. For RIGHT: animate translateX from -50% → 0. Same logic, reversed.
-//   5. timing-function MUST be linear — any ease produces a visible
-//      speed-change at the loop point.
-//   6. will-change: transform enables GPU compositing, preventing frame drops
-//      and any raster blit at the animation boundary.
-//   7. The outer div carries overflow:hidden and NO padding. Padding on the
-//      outer div shifts the clipping window without affecting the animation.
-//      padding on the INNER (scrolling) div would break the -50% math.
+// AUTO MODE (default):
+//   • The track translates via a Web-Animation `translateX(0) → -period`,
+//     iterations Infinity, easing linear. GPU-composited, sub-pixel smooth.
+//   • The scroll container's scrollLeft is pinned at 0.
+//
+// MANUAL MODE (during user interaction):
+//   • Animation paused. Current transform offset is folded into scrollLeft,
+//     transform is cleared, and the container takes over.
+//   • A scroll listener wraps scrollLeft inside [period, 2*period) so the
+//     loop is seamless in both directions.
+//
+// Hand-offs are single-frame and visually invisible because the three logo
+// copies are pixel-identical.
 // ─────────────────────────────────────────────────────────────────────────────
 function TickerBand({
   row,
@@ -192,31 +189,23 @@ function TickerBand({
   row: Row;
   isMobile: boolean;
 }) {
-  // 3 copies of the logo set → the middle copy is always the "anchor".
-  // We keep scrollLeft inside [halfWidth, 2*halfWidth) by wrapping on every
-  // change. Because all three copies are identical, jumps of exactly
-  // halfWidth are visually invisible — this yields a true infinite loop
-  // in BOTH directions, whether the auto-scroll is running or the user is
-  // dragging / wheeling / swiping the track.
   const tripled = [...row.logos, ...row.logos, ...row.logos];
   const perSet  = row.logos.length;
 
-  const bandRef     = useRef<HTMLDivElement | null>(null);
-  const trackRef    = useRef<HTMLDivElement | null>(null);
-  const pausedRef   = useRef<boolean>(false);
-  const periodRef   = useRef<number>(0);   // EXACT pixel period of one logo set
-  const offsetRef   = useRef<number>(0);   // float accumulator for scrollLeft
+  const bandRef          = useRef<HTMLDivElement | null>(null);
+  const trackRef         = useRef<HTMLDivElement | null>(null);
+  const animationRef     = useRef<Animation | null>(null);
+  const periodRef        = useRef<number>(0);
+  const modeRef          = useRef<'auto' | 'manual'>('auto');
   const suppressScrollRef = useRef<boolean>(false);
-  const rafRef      = useRef<number | null>(null);
-  const lastTsRef   = useRef<number | null>(null);
+  const wheelIdleTimerRef = useRef<number | null>(null);
 
-  // ── Measure: period = offsetLeft(child[N]) − offsetLeft(child[0]) ────────
-  // This is exact in pixels regardless of gap, padding, or trailing-gap
-  // asymmetry that would otherwise make scrollWidth / 3 off by gap/3.
+  const [period, setPeriod] = useState(0);
+
+  // ── Measure exact period via offsetLeft(child[N]) − offsetLeft(child[0]) ──
   useEffect(() => {
     const track = trackRef.current;
-    const band  = bandRef.current;
-    if (!track || !band) return;
+    if (!track) return;
 
     let frozen = false;
     let ro: ResizeObserver | null = null;
@@ -227,16 +216,10 @@ function TickerBand({
       const a = track.children[0] as HTMLElement | undefined;
       const b = track.children[perSet] as HTMLElement | undefined;
       if (!a || !b) return;
-      const period = b.offsetLeft - a.offsetLeft;
-      if (period <= 0) return;
-      periodRef.current = period;
-
-      // Park on the middle copy so manual scroll has runway both ways.
-      if (offsetRef.current < period * 0.5 || offsetRef.current > period * 2.5) {
-        offsetRef.current = period;
-        suppressScrollRef.current = true;
-        band.scrollLeft = period;
-      }
+      const p = b.offsetLeft - a.offsetLeft;
+      if (p <= 0) return;
+      periodRef.current = p;
+      setPeriod((prev) => (Math.abs(prev - p) > 0.5 ? p : prev));
 
       const imgs = Array.from(track.querySelectorAll('img'));
       const allReady = imgs.length > 0 && imgs.every((img) => img.complete);
@@ -272,37 +255,10 @@ function TickerBand({
     };
   }, [isMobile, perSet]);
 
-  // ── On USER scroll (wheel/drag/swipe), sync float accumulator and wrap ──
+  // ── Build / rebuild the WAAPI translate animation when period changes ────
   useEffect(() => {
-    const band = bandRef.current;
-    if (!band) return;
-    const onScroll = () => {
-      // Ignore scroll events that we triggered ourselves; they're already
-      // wrapped in the float accumulator.
-      if (suppressScrollRef.current) {
-        suppressScrollRef.current = false;
-        return;
-      }
-      const p = periodRef.current;
-      if (p <= 0) return;
-      // Take the integer scrollLeft as truth and re-wrap the accumulator.
-      let v = band.scrollLeft;
-      while (v >= 2 * p) v -= p;
-      while (v <  p)     v += p;
-      if (v !== band.scrollLeft) {
-        suppressScrollRef.current = true;
-        band.scrollLeft = v;
-      }
-      offsetRef.current = v;
-    };
-    band.addEventListener('scroll', onScroll, { passive: true });
-    return () => band.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // ── Auto-scroll: drive a float accumulator, then write scrollLeft once ──
-  useEffect(() => {
-    const band = bandRef.current;
-    if (!band) return;
+    const track = trackRef.current;
+    if (!track || period <= 0) return;
 
     const reduced =
       typeof window !== 'undefined' &&
@@ -311,37 +267,157 @@ function TickerBand({
     if (reduced) return;
 
     const pps = isMobile ? PIXELS_PER_SECOND_MOBILE : PIXELS_PER_SECOND_DESKTOP;
-    const dir = row.direction === 'left' ? 1 : -1;
+    const duration = (period / pps) * 1000; // ms
+    // direction 'left'  → content moves left  → translateX 0 → -period
+    // direction 'right' → content moves right → translateX -period → 0
+    const from = row.direction === 'left' ? 0 : -period;
+    const to   = row.direction === 'left' ? -period : 0;
 
-    const tick = (ts: number) => {
-      if (lastTsRef.current == null) lastTsRef.current = ts;
-      const dt = (ts - lastTsRef.current) / 1000;
-      lastTsRef.current = ts;
+    // Cancel previous (if any) and create fresh.
+    try { animationRef.current?.cancel(); } catch { /* noop */ }
 
-      const p = periodRef.current;
-      if (!pausedRef.current && p > 0) {
-        let next = offsetRef.current + dir * pps * dt;
-        // Wrap the float accumulator inside [p, 2p)
-        while (next >= 2 * p) next -= p;
-        while (next <  p)     next += p;
-        offsetRef.current = next;
-        suppressScrollRef.current = true;
-        band.scrollLeft = next;
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
+    const anim = track.animate(
+      [
+        { transform: `translate3d(${from}px, 0, 0)` },
+        { transform: `translate3d(${to}px, 0, 0)` },
+      ],
+      { duration, iterations: Infinity, easing: 'linear' },
+    );
+    animationRef.current = anim;
+
+    // If we were already in manual mode, keep the animation paused; the
+    // hand-off back to auto will start it.
+    if (modeRef.current === 'manual') {
+      try { anim.pause(); } catch { /* noop */ }
+    }
 
     return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      lastTsRef.current = null;
+      try { anim.cancel(); } catch { /* noop */ }
+      if (animationRef.current === anim) animationRef.current = null;
     };
-  }, [isMobile, row.direction]);
+  }, [period, isMobile, row.direction]);
 
-  const pause  = () => { pausedRef.current = true;  };
-  const resume = () => { pausedRef.current = false; lastTsRef.current = null; };
+  // ── Read the current visible translateX (in px) from the WAAPI animation
+  const readTranslateX = (): number => {
+    const anim = animationRef.current;
+    const p = periodRef.current;
+    if (!anim || p <= 0) return 0;
+    const dur = typeof anim.effect?.getComputedTiming === 'function'
+      ? Number(anim.effect.getComputedTiming().duration) || 1
+      : 1;
+    const ct = Number(anim.currentTime ?? 0);
+    const t = ((ct % dur) + dur) % dur / dur; // progress 0..1
+    if (row.direction === 'left') return -p * t;          // 0 → -p
+    return -p + p * t;                                     // -p → 0
+  };
 
+  // ── Hand-off: AUTO → MANUAL ──────────────────────────────────────────────
+  const enterManual = () => {
+    if (modeRef.current === 'manual') return;
+    const band = bandRef.current;
+    const track = trackRef.current;
+    const p = periodRef.current;
+    if (!band || !track || p <= 0) return;
+
+    const tx = readTranslateX();              // ∈ [-p, 0]
+    try { animationRef.current?.pause(); } catch { /* noop */ }
+
+    // Clear the animated transform, set a static one we control.
+    track.style.transform = 'translate3d(0, 0, 0)';
+
+    // Park scrollLeft so visible content is unchanged: scrollLeft = p + (-tx).
+    suppressScrollRef.current = true;
+    band.scrollLeft = p + (-tx);
+
+    modeRef.current = 'manual';
+  };
+
+  // ── Hand-off: MANUAL → AUTO ──────────────────────────────────────────────
+  const enterAuto = () => {
+    if (modeRef.current === 'auto') return;
+    const band = bandRef.current;
+    const track = trackRef.current;
+    const anim = animationRef.current;
+    const p = periodRef.current;
+    if (!band || !track || !anim || p <= 0) return;
+
+    // Normalise scrollLeft to s ∈ [0, p).
+    let s = band.scrollLeft;
+    while (s >= p) s -= p;
+    while (s < 0) s += p;
+
+    // We want the visible offset to remain at -s. Convert to animation time.
+    const dur = typeof anim.effect?.getComputedTiming === 'function'
+      ? Number(anim.effect.getComputedTiming().duration) || 1
+      : 1;
+    const progress = row.direction === 'left'
+      ? s / p                 // -s on a 0→-p ramp
+      : 1 - s / p;            // -s on a -p→0 ramp
+    try { anim.currentTime = progress * dur; } catch { /* noop */ }
+
+    // Clear our static transform so the animation drives it again.
+    track.style.transform = '';
+
+    // Reset scrollLeft to 0. Suppress the resulting scroll event.
+    suppressScrollRef.current = true;
+    band.scrollLeft = 0;
+
+    try { anim.play(); } catch { /* noop */ }
+    modeRef.current = 'auto';
+  };
+
+  // ── Scroll wrap (manual mode only) ───────────────────────────────────────
+  useEffect(() => {
+    const band = bandRef.current;
+    if (!band) return;
+    const onScroll = () => {
+      if (suppressScrollRef.current) {
+        suppressScrollRef.current = false;
+        return;
+      }
+      if (modeRef.current !== 'manual') return;
+      const p = periodRef.current;
+      if (p <= 0) return;
+      let v = band.scrollLeft;
+      let wrapped = false;
+      while (v >= 2 * p) { v -= p; wrapped = true; }
+      while (v <  p)     { v += p; wrapped = true; }
+      if (wrapped) {
+        suppressScrollRef.current = true;
+        band.scrollLeft = v;
+      }
+    };
+    band.addEventListener('scroll', onScroll, { passive: true });
+    return () => band.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // ── Event handlers ──────────────────────────────────────────────────────
+  const onMouseEnter = () => enterManual();
+  const onMouseLeave = () => enterAuto();
+  const onTouchStart = () => enterManual();
+  const onTouchEnd   = () => enterAuto();
+  const onWheel = () => {
+    enterManual();
+    // After wheel events stop for 250 ms, hand back to auto.
+    if (wheelIdleTimerRef.current != null) {
+      window.clearTimeout(wheelIdleTimerRef.current);
+    }
+    wheelIdleTimerRef.current = window.setTimeout(() => {
+      wheelIdleTimerRef.current = null;
+      // Only auto-resume if the cursor isn't still hovering (mouseenter
+      // would have set manual mode independently). The mouseleave handler
+      // covers cursor-leave; this covers trackpad wheels that arrived
+      // without a mouseenter.
+      if (!bandRef.current?.matches(':hover')) enterAuto();
+    }, 250);
+  };
+
+  // Clean up the wheel-idle timer on unmount
+  useEffect(() => () => {
+    if (wheelIdleTimerRef.current != null) {
+      window.clearTimeout(wheelIdleTimerRef.current);
+    }
+  }, []);
 
   return (
     <div
@@ -354,12 +430,12 @@ function TickerBand({
       <div
         ref={bandRef}
         className="mims-band"
-        onMouseEnter={pause}
-        onMouseLeave={resume}
-        onTouchStart={pause}
-        onTouchEnd={resume}
-        onTouchCancel={resume}
-        onWheel={pause}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+        onWheel={onWheel}
         style={{
           position: 'absolute',
           inset: 0,
@@ -380,7 +456,6 @@ function TickerBand({
             gap: isMobile ? '50px' : '100px',
             flexShrink: 0,
             willChange: 'transform',
-            transform: 'translateZ(0)',
             backfaceVisibility: 'hidden',
           }}
         >
@@ -390,7 +465,7 @@ function TickerBand({
         </div>
       </div>
 
-      {/* Edge vignette */}
+      {/* Edge vignette — above scroll container, doesn't intercept events */}
       <div
         aria-hidden="true"
         style={{
