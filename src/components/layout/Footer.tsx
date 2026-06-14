@@ -103,7 +103,7 @@ export function Footer() {
     <footer className="bg-black text-background" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
         {/* Top: Logo + Newsletter + Socials/Email (horizontally centered, vertically aligned) */}
-        <div className="flex flex-col lg:flex-row flex-wrap items-center lg:justify-between gap-10 lg:gap-8 pb-10 mb-10 border-b border-background/20">
+        <div className="flex flex-col lg:flex-row flex-wrap items-center lg:justify-between gap-10 lg:gap-8 pb-16 mb-16 border-b border-background/20">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             aria-label="Back to top"
@@ -189,7 +189,7 @@ export function Footer() {
         </div>
 
         {/* Bottom: 5 link columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
           <LinkColumn title="Explore" links={exploreLinks} />
           <LinkColumn title="Divisions" links={divisionLinks} />
           <LinkColumn title="Funds" links={fundLinks} />
@@ -200,7 +200,7 @@ export function Footer() {
         </div>
 
         {/* Builder Credit and Copyright */}
-        <div className="border-t border-background/20 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 px-2 sm:px-4">
+        <div className="border-t border-background/20 pt-10 sm:pt-12 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 px-2 sm:px-4">
           <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
             © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
           </p>
