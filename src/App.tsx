@@ -11,6 +11,7 @@ import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { Preloader } from "@/components/shared/Preloader";
+import { PageVisibilityGate } from "@/components/shared/PageVisibilityGate";
 
 const PRELOADER_KEY = "__mims_intro__";
 
