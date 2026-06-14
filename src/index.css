@@ -9,11 +9,8 @@
 html {
   scrollbar-gutter: stable;
   /* Painted in the iOS safe-area bands and during rubber-band overscroll.
-     Matches the footer (bg-foreground) so the bounce is invisible at the
-     bottom and the hero image hides it at the top. */
-  background-color: hsl(var(--foreground));
-  /* Stop the address-bar pull from leaking the html background into
-     surrounding apps in PWA mode. Harmless in normal Safari. */
+     Pure black so it matches the footer and the URL-bar backdrop. */
+  background-color: #000000;
   overscroll-behavior-y: none;
 }
 
