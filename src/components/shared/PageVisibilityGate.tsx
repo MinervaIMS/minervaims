@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { usePageVisibility } from '@/hooks/usePageVisibility';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -15,12 +15,14 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
   const hidden = !loading && isHidden(pageKey);
   const shouldBlur = hidden && !isFullAccess;
 
+  const [noticeTop, setNoticeTop] = useState<number | null>(null);
+  const [noticeVisible, setNoticeVisible] = useState(false);
+
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
     const cls = 'page-blur-block';
     (Array.from(root.children) as HTMLElement[]).forEach((el, idx) => {
-      // Skip the overlay notice itself
       if (el.dataset.pageGateOverlay === 'true') return;
       if (idx === 0 || !shouldBlur) {
         el.classList.remove(cls);
@@ -32,7 +34,46 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
         el.style.pointerEvents = 'none';
       }
     });
-  });
+  }, [shouldBlur, children]);
+
+  useEffect(() => {
+    if (!shouldBlur) {
+      setNoticeTop(null);
+      setNoticeVisible(false);
+      return;
+    }
+    let rafId = 0;
+    const recompute = () => {
+      rafId = 0;
+      const root = containerRef.current;
+      if (!root) return;
+      const hero = root.children[0] as HTMLElement | undefined;
+      const footer = document.querySelector('footer');
+      const vh = window.innerHeight;
+      let top = Math.max(vh * 0.22, 120);
+      if (hero) top = Math.max(top, hero.getBoundingClientRect().bottom + 24);
+      top = Math.min(top, vh * 0.6);
+      let visible = true;
+      if (footer && footer.getBoundingClientRect().top < vh - 40) visible = false;
+      setNoticeTop(top);
+      setNoticeVisible(visible);
+    };
+    const schedule = () => {
+      if (!rafId) rafId = requestAnimationFrame(recompute);
+    };
+    recompute();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    const t1 = window.setTimeout(recompute, 120);
+    const t2 = window.setTimeout(recompute, 500);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
+  }, [shouldBlur, children]);
 
   return (
     <>
@@ -50,9 +91,12 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
         {children}
       </div>
 
-      {shouldBlur && (
+      {shouldBlur && noticeTop !== null && (
         <div
-          className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none px-6 pb-48"
+          className={`fixed left-0 right-0 z-30 flex justify-center pointer-events-none px-6 transition-opacity duration-300 ${
+            noticeVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ top: `${noticeTop}px` }}
           data-page-gate-overlay="true"
         >
           <div className="pointer-events-auto max-w-xl w-full bg-background border-2 border-accent p-8 text-center shadow-xl">
