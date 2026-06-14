@@ -1,9 +1,11 @@
+import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-black.svg';
 import instagramIcon from '@/assets/instagram-black.svg';
+import { useToast } from '@/hooks/use-toast';
 
 const exploreLinks = [
   { label: 'About', href: '/about' },
@@ -74,10 +76,32 @@ function LinkColumn({
 }
 
 export function Footer() {
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
+
+  const handleNewsletterSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast({ title: 'Please enter your email address.', variant: 'destructive' });
+      return;
+    }
+    if (!consent) {
+      toast({ title: 'Please confirm you would like to receive our newsletter.', variant: 'destructive' });
+      return;
+    }
+    const subject = encodeURIComponent('Newsletter signup');
+    const body = encodeURIComponent(`Please add ${email} to the Minerva IMS newsletter list.`);
+    window.location.href = `mailto:as.minerva@unibocconi.it?subject=${subject}&body=${body}`;
+    toast({ title: 'Thank you for subscribing.' });
+    setEmail('');
+    setConsent(false);
+  };
+
   return (
     <footer className="bg-black text-background" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="container py-10 px-6 sm:py-12 md:py-16 md:px-8">
-        {/* Top: Logo + Socials + Contact (horizontally centered, vertically aligned) */}
+        {/* Top: Logo + Newsletter + Socials/Email (horizontally centered, vertically aligned) */}
         <div className="flex flex-col lg:flex-row flex-wrap items-center lg:justify-between gap-10 lg:gap-8 pb-10 mb-10 border-b border-background/20">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -95,40 +119,80 @@ export function Footer() {
             />
           </button>
 
-          <div className="text-center md:text-left">
-            <p className="font-body text-body text-background/80 mb-5 leading-relaxed">
-              For partnerships, joining information, or general enquiries:
+          {/* Newsletter form (center) */}
+          <div className="flex-1 w-full max-w-xl text-center">
+            <h3 className="font-serif text-background text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight mb-3">
+              Let's keep in touch
+            </h3>
+            <p className="font-body text-body text-background/80 mb-5">
+              Join our email list to get updates on our upcoming events and activities!
             </p>
-            <a
-              href="mailto:as.minerva@unibocconi.it"
-              className="font-serif text-background hover:underline hover:decoration-background transition-colors inline-flex items-center gap-2 text-[1.75rem] sm:text-[2rem] md:text-[2.25rem] leading-tight whitespace-nowrap"
-            >
-              <span>as.minerva@unibocconi.it</span>
-              <ArrowUpRight className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-background/70" strokeWidth={1.5} />
-            </a>
+            <form onSubmit={handleNewsletterSubmit} className="text-left">
+              <label htmlFor="newsletter-email" className="block font-body text-small text-background/80 mb-2">
+                Enter your email here *
+              </label>
+              <div className="flex w-full">
+                <input
+                  id="newsletter-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 min-w-0 bg-background text-foreground px-3 py-2 font-body text-body border-0 focus:outline-none focus:ring-2 focus:ring-background/40"
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 bg-background text-foreground font-serif text-body px-6 py-2 hover:opacity-90 transition-opacity"
+                >
+                  Sign Up
+                </button>
+              </div>
+              <label className="flex items-start gap-3 mt-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 accent-background"
+                />
+                <span className="font-body text-small text-background/80 leading-snug">
+                  Select this box to receive our newsletter. You can change your preferences at any time.
+                </span>
+              </label>
+            </form>
           </div>
 
-          <div className="flex flex-row gap-4 shrink-0">
-            {socialLinks.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-                className="inline-flex items-center hover:opacity-80 transition-opacity"
-              >
-                <img
-                  src={social.icon}
-                  alt=""
-                  width={54}
-                  height={54}
-                  className="h-[3.375rem] w-[3.375rem]"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </a>
-            ))}
+          {/* Right column: email icon + socials */}
+          <div className="flex flex-col items-center gap-5 shrink-0">
+            <a
+              href="mailto:as.minerva@unibocconi.it"
+              aria-label="Email as.minerva@unibocconi.it"
+              title="as.minerva@unibocconi.it"
+              className="inline-flex items-center justify-center hover:opacity-80 transition-opacity"
+            >
+              <Mail className="h-[3.375rem] w-[3.375rem] text-background" strokeWidth={1.5} />
+            </a>
+            <div className="flex flex-row gap-4">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="inline-flex items-center hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src={social.icon}
+                    alt=""
+                    width={54}
+                    height={54}
+                    className="h-[3.375rem] w-[3.375rem]"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
