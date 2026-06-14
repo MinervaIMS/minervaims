@@ -23,10 +23,10 @@ const divisionLinks = [
 ];
 
 const fundLinks = [
-  { label: 'Long Short Equity Fund', href: '/funds/long-short' },
-  { label: 'Multi Asset Global Opportunities Fund', href: '/funds/multi-asset' },
-  { label: 'Diversified Passive Selection Fund', href: '/funds/dps' },
-  { label: 'Italian Equity PIR Fund', href: '/funds/pir' },
+  { label: 'Long Short Equity', href: '/funds/long-short' },
+  { label: 'Multi Asset Global Opportunities', href: '/funds/multi-asset' },
+  { label: 'Diversified Passive Selection', href: '/funds/dps' },
+  { label: 'Italian Equity PIR', href: '/funds/pir' },
 ];
 
 const peopleLinks = [
