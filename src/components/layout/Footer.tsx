@@ -1,5 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+
 
 import footerLogo from '@/assets/footer-logo.svg';
 import linkedinIcon from '@/assets/linkedin-black.svg';
