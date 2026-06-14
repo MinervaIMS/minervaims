@@ -421,7 +421,7 @@ function CardsVariant({
           </div>
         </div>
 
-        <div className="v3-rail-bleed" data-at-start={atStart} data-at-end={atEnd}>
+        <div className="v3-rail-bleed" data-at-start={atStart} data-at-end={atEnd} style={{ WebkitMaskImage: 'none', maskImage: 'none' }}>
           <div className="rrail-wrap">
             <div className="v3-rail" ref={railRef} onScroll={update}>
             {reports.map((rep, i) => (

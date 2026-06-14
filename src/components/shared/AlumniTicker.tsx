@@ -296,7 +296,7 @@ function TickerBand({
           position: 'absolute',
           inset: 0,
           background:
-            'linear-gradient(to right, #ffffff 0%, transparent 9%, transparent 91%, #ffffff 100%)',
+            'linear-gradient(to right, #ffffff 0%, #ffffff 4%, transparent 18%, transparent 82%, #ffffff 96%, #ffffff 100%)',
           pointerEvents: 'none',
           zIndex: 10,
         }}
@@ -323,7 +323,7 @@ const AlumniTicker = () => {
       {/* Title — styled as a standard section heading following site conventions */}
       <div className="container">
         <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-          Our alumni stand at the forefront of global markets
+          Our Alumni stand at the Forefront of Global Markets
         </h2>
       </div>
 
