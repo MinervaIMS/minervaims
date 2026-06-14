@@ -268,29 +268,33 @@ function TickerBand({
     return () => cancelAnimationFrame(id);
   }, [duration]);
 
-  const handleEnter = () => {
+  const pause = () => {
     const a = animationRef.current;
-    if (a) {
-      try { a.pause(); } catch { /* noop */ }
-    }
+    if (a) { try { a.pause(); } catch { /* noop */ } }
   };
-  const handleLeave = () => {
+  const resume = () => {
     const a = animationRef.current;
-    if (a) {
-      try { a.play(); } catch { /* noop */ }
-    }
+    if (a) { try { a.play(); } catch { /* noop */ } }
   };
 
   return (
     <div
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
+      className="mims-band"
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onTouchStart={pause}
+      onTouchEnd={resume}
+      onTouchCancel={resume}
+      onWheel={pause}
       style={{
         position: 'relative',
-        overflow: 'hidden',          // clips the scrolling track
-        height: isMobile ? '57px' : '114px',  // band height (mobile: 50%)
+        overflowX: 'auto',           // user can drag/scroll horizontally
+        overflowY: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        height: isMobile ? '57px' : '114px',
         display: 'flex',
         alignItems: 'center',
+        cursor: 'grab',
       }}
     >
       {/* ── Scrolling track ── */}
@@ -303,11 +307,9 @@ function TickerBand({
           gap: isMobile ? '50px' : '100px',
           animation: `${anim} ${duration}s linear infinite`,
           willChange: 'transform',
-          // translateZ keeps the GPU layer identical between running and
-          // paused so the committed transform on pause matches the last
-          // painted frame (no sub-pixel snap).
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
+          flexShrink: 0,
         }}
       >
         {doubled.map((logo, i) => (
@@ -320,8 +322,13 @@ function TickerBand({
       <div
         aria-hidden="true"
         style={{
-          position: 'absolute',
-          inset: 0,
+          position: 'sticky',
+          left: 0,
+          right: 0,
+          top: 0,
+          height: '100%',
+          marginLeft: '-100%',
+          width: '100%',
           background:
             'linear-gradient(to right, #ffffff 0%, #ffffff 4%, transparent 18%, transparent 82%, #ffffff 96%, #ffffff 100%)',
           pointerEvents: 'none',
