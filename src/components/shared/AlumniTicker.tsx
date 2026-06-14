@@ -254,7 +254,7 @@ function TickerBand({
       style={{
         position: 'relative',
         overflow: 'hidden',          // clips the scrolling track
-        height: isMobile ? '57px' : '114px',  // band height (mobile: 50%)
+        height: isMobile ? '29px' : '114px',  // band height (mobile: 25%)
         display: 'flex',
         alignItems: 'center',
       }}
