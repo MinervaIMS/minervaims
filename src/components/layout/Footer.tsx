@@ -2,8 +2,8 @@ import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import footerLogo from '@/assets/footer-logo.svg';
-import linkedinIcon from '@/assets/linkedin-white.svg';
-import instagramIcon from '@/assets/instagram-white.svg';
+import linkedinIcon from '@/assets/linkedin-black.svg';
+import instagramIcon from '@/assets/instagram-black.svg';
 import { useToast } from '@/hooks/use-toast';
 
 const exploreLinks = [
@@ -25,6 +25,8 @@ const divisionLinks = [
 const fundLinks = [
   { label: 'Long Short Equity Fund', href: '/funds/long-short' },
   { label: 'Multi Asset Global Opportunities Fund', href: '/funds/multi-asset' },
+  { label: 'Diversified Passive Selection Fund', href: '/funds/dps' },
+  { label: 'Italian Equity PIR Fund', href: '/funds/pir' },
 ];
 
 const peopleLinks = [
@@ -132,14 +134,14 @@ export function Footer() {
                   id="newsletter-email"
                   type="email"
                   required
-                  placeholder="Enter your email here *"
+                  placeholder="Enter your email here"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 min-w-0 bg-background text-foreground px-3 py-2 font-body text-body border-0 focus:outline-none focus:ring-2 focus:ring-background/40 placeholder:text-foreground/60 rounded-none"
                 />
                 <button
                   type="submit"
-                  className="shrink-0 bg-black text-background border border-background font-serif text-body px-6 py-2 hover:bg-background hover:text-foreground transition-colors rounded-none"
+                  className="shrink-0 bg-muted text-foreground border border-background font-serif text-body px-6 py-2 hover:bg-[#ece9f4] transition-colors rounded-none"
                 >
                   Sign Up
                 </button>
@@ -149,7 +151,7 @@ export function Footer() {
                   type="checkbox"
                   checked={consent}
                   onChange={(e) => setConsent(e.target.checked)}
-                  className="h-4 w-4 shrink-0 accent-background rounded-none appearance-none border border-background bg-transparent checked:bg-background checked:after:content-['✓'] checked:after:text-foreground checked:after:text-[10px] checked:after:leading-none checked:after:flex checked:after:items-center checked:after:justify-center"
+                  className="h-4 w-4 shrink-0 rounded-none appearance-none border border-background bg-background checked:bg-background checked:after:content-['✓'] checked:after:text-foreground checked:after:text-[10px] checked:after:leading-none checked:after:flex checked:after:items-center checked:after:justify-center"
                   style={{ borderRadius: 0 }}
                 />
                 <span className="font-body text-small text-background/80 leading-snug">
@@ -159,14 +161,8 @@ export function Footer() {
             </form>
           </div>
 
-          {/* Right column: email + socials */}
+          {/* Right column: socials */}
           <div className="flex flex-col items-center gap-5 shrink-0">
-            <a
-              href="mailto:as.minerva@unibocconi.it"
-              className="font-body text-body text-background/80 hover:text-background transition-colors"
-            >
-              as.minerva@unibocconi.it
-            </a>
             <div className="flex flex-row gap-4">
               {socialLinks.map((social) => (
                 <a
@@ -180,9 +176,9 @@ export function Footer() {
                   <img
                     src={social.icon}
                     alt=""
-                    width={54}
-                    height={54}
-                    className="h-[3.375rem] w-[3.375rem]"
+                    width={65}
+                    height={65}
+                    className="h-[4.0625rem] w-[4.0625rem]"
                     loading="lazy"
                     decoding="async"
                   />
