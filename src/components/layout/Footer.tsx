@@ -136,8 +136,8 @@ export function Footer() {
             <h3 className="font-serif text-background text-[2rem] sm:text-[2.25rem] md:text-[2.5rem] leading-tight mb-3">
               Let's keep in touch
             </h3>
-            <p className="font-body text-body text-background/80 mb-5">
-              Join our email list to get updates on our upcoming events and activities!
+            <p className="font-body text-body text-background/80 mb-5 whitespace-pre-line">
+              Sign up for our email list to receive updates on upcoming events and activities.{"\n\n"}
             </p>
             <form onSubmit={handleNewsletterSubmit} className="text-left">
               <div className="flex w-full">
