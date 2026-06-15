@@ -10,12 +10,12 @@ const PasswordResetSuccess = () => {
   if (status === 'error') {
     return (
       <AuthLayout
-        title="Something went wrong"
-        cardTitle="Something went wrong"
+        title="Something Went Wrong"
+        cardTitle="Something Went Wrong"
         cardSubtitle="We couldn't update your password. The reset link may have expired. Request a new one and try again."
       >
         <AuthErrorBanner>The reset link is no longer valid.</AuthErrorBanner>
-        <AuthButton onClick={() => navigate('/forgot-password')}>Request a new link</AuthButton>
+        <AuthButton onClick={() => navigate('/forgot-password')}>Request A New Link</AuthButton>
         <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
           <Link to="/auth" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
             Back to sign-in
@@ -27,11 +27,11 @@ const PasswordResetSuccess = () => {
 
   return (
     <AuthLayout
-      title="Password updated"
-      cardTitle="Password updated"
+      title="Password Updated"
+      cardTitle="Password Updated"
       cardSubtitle="Your password has been changed successfully."
     >
-      <AuthButton onClick={() => navigate('/auth')}>Continue to sign-in</AuthButton>
+      <AuthButton onClick={() => navigate('/auth')}>Continue To Sign-In</AuthButton>
     </AuthLayout>
   );
 };
