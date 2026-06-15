@@ -68,8 +68,8 @@ const ResetPassword = () => {
 
   return (
     <AuthLayout
-      title="Set a new password"
-      cardTitle="Set a new password"
+      title="Set A New Password"
+      cardTitle="Set A New Password"
       cardSubtitle="Choose a strong password you don't use elsewhere."
     >
       {!ready && (
@@ -82,6 +82,7 @@ const ResetPassword = () => {
         <AuthPasswordField
           id="password"
           label="New password"
+          placeholder="Enter new password"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
@@ -99,6 +100,7 @@ const ResetPassword = () => {
         <AuthPasswordField
           id="confirm"
           label="Confirm password"
+          placeholder="Re-enter new password"
           value={confirm}
           onChange={(e) => {
             setConfirm(e.target.value);
@@ -109,9 +111,10 @@ const ResetPassword = () => {
           disabled={isSubmitting || !ready}
         />
         <AuthButton type="submit" disabled={!valid || isSubmitting || !ready}>
-          {isSubmitting ? 'Updating…' : 'Update password'}
+          {isSubmitting ? 'Updating…' : 'Update Password'}
         </AuthButton>
       </form>
+
       <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
         <Link to="/auth" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
           Back to sign-in

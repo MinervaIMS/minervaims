@@ -28,7 +28,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
       <Helmet>
         <title>{title} | MIMS</title>
       </Helmet>
-      <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background">
+      <div className="w-full flex flex-col lg:flex-row bg-background" style={{ minHeight: '100vh' }}>
         {/* Brand panel — desktop only */}
         <aside
           aria-hidden
@@ -107,7 +107,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
         </aside>
 
         {/* Form panel */}
-        <main className="flex-1 bg-background flex items-start lg:items-center justify-center px-6 py-10 lg:py-14">
+        <main className="flex-1 bg-background flex items-center justify-center px-6 py-[7.5vh] lg:py-[7.5vh]">
           <div
             className="w-full max-w-md bg-background"
             style={{
@@ -116,8 +116,9 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
             }}
           >
             <div className="flex justify-center mb-7">
-              <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '120px', width: 'auto' }} />
+              <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '138px', width: 'auto' }} />
             </div>
+
 
             {(cardTitle || cardSubtitle) && (
               <div className={align === 'center' ? 'text-center mb-6' : 'mb-6'}>

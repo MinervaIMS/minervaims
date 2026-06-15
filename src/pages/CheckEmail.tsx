@@ -50,7 +50,8 @@ const CheckEmail = () => {
       : `A reset link is on its way to ${maskEmail(emailParam)}.`;
 
   return (
-    <AuthLayout title="Check your email" cardTitle="Check your email" cardSubtitle={subtitle}>
+    <AuthLayout title="Check Your Email" cardTitle="Check Your Email" cardSubtitle={subtitle}>
+
       <ol
         className="font-body mb-6"
         style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', color: AUTH_TOKENS.MUTED }}
@@ -90,8 +91,9 @@ const CheckEmail = () => {
       </ol>
 
       <AuthButton onClick={resend} disabled={seconds > 0 || isSending}>
-        {seconds > 0 ? `Resend email in ${seconds}s` : isSending ? 'Sending…' : 'Resend email'}
+        {seconds > 0 ? `Resend Email In ${seconds}s` : isSending ? 'Sending…' : 'Resend Email'}
       </AuthButton>
+
 
       <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
         <AuthLink onClick={() => navigate(purpose === 'verify' ? '/auth' : '/forgot-password')}>

@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AuthLayout from '@/components/shared/AuthLayout';
 import {
   AuthButton,
-  AuthSteps,
   AuthErrorBanner,
   AUTH_TOKENS,
   AuthLink,
 } from '@/components/shared/AuthUI';
 
 const RESEND_SECONDS = 45;
+
+const STEPS = [
+  <>Open the message from Minerva IMS in your inbox.</>,
+  <>Click <strong style={{ color: AUTH_TOKENS.INK, fontWeight: 600 }}>Verify email</strong> to confirm it's you.</>,
+  <>Return here and continue to the Workspace.</>,
+];
 
 const EmailVerification = () => {
   const [params] = useSearchParams();
@@ -41,45 +46,79 @@ const EmailVerification = () => {
   if (expired) {
     return (
       <AuthLayout
-        title="Verification link expired"
-        cardTitle="Verification link expired"
+        title="Verification Link Expired"
+        cardTitle="Verification Link Expired"
         cardSubtitle="This link is no longer valid. We can send a fresh verification email to your address."
       >
         <AuthErrorBanner>This verification link has expired.</AuthErrorBanner>
         <AuthButton onClick={resend} disabled={seconds > 0 || isSending || !email}>
-          {seconds > 0 ? `Send a new link in ${seconds}s` : 'Send a new link'}
+          {seconds > 0 ? `Send A New Link In ${seconds}s` : 'Send A New Link'}
         </AuthButton>
-        <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
-          <AuthLink onClick={() => navigate('/auth')}>Change email address</AuthLink>
-        </p>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout
-      title="One more step"
-      cardTitle="One more step"
+      title="One More Step"
+      cardTitle="One More Step"
       cardSubtitle="We verify every member's email to keep the Workspace secure."
     >
-      <AuthSteps
-        items={[
-          'Open the email we just sent you.',
-          'Click Verify email inside the message.',
-          'Return here and continue to your Workspace.',
-        ]}
-      />
+      <ol
+        className="font-body"
+        style={{
+          listStyle: 'none',
+          padding: 0,
+          margin: '0 0 24px',
+          borderTop: `1px solid ${AUTH_TOKENS.HAIRLINE}`,
+        }}
+      >
+        {STEPS.map((s, i) => (
+          <li
+            key={i}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '32px 1fr',
+              gap: '16px',
+              alignItems: 'start',
+              padding: '18px 0',
+              borderBottom: `1px solid ${AUTH_TOKENS.HAIRLINE}`,
+              fontSize: '14px',
+              lineHeight: 1.55,
+              color: AUTH_TOKENS.INK,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Times New Roman', Times, Georgia, serif",
+                fontSize: '17px',
+                color: AUTH_TOKENS.NAVY,
+                lineHeight: 1.4,
+              }}
+            >
+              {i + 1}
+            </span>
+            <span style={{ color: AUTH_TOKENS.INK }}>{s}</span>
+          </li>
+        ))}
+      </ol>
+
       <AuthButton onClick={() => navigate('/auth')}>Continue</AuthButton>
-      <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
-        Didn't receive it?{' '}
-        <AuthLink onClick={resend} disabled={seconds > 0 || isSending || !email}>
-          {seconds > 0 ? `Resend in ${seconds}s` : 'Resend email'}
-        </AuthLink>
-      </p>
-      <p className="font-body text-center mt-2" style={{ fontSize: '13px', color: AUTH_TOKENS.MUTED }}>
-        <Link to="/auth" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
-          Back to sign-in
-        </Link>
+
+      <p
+        className="font-body text-center mt-5"
+        style={{ fontSize: '13px', color: AUTH_TOKENS.MUTED }}
+      >
+        {seconds > 0 ? (
+          `Resend available in ${seconds}s`
+        ) : (
+          <>
+            Didn't receive it?{' '}
+            <AuthLink onClick={resend} disabled={isSending || !email}>
+              Resend email
+            </AuthLink>
+          </>
+        )}
       </p>
     </AuthLayout>
   );

@@ -134,8 +134,8 @@ const Auth = () => {
   if (mode === 'signup') {
     return (
       <AuthLayout
-        title="Create your account"
-        cardTitle="Create your account"
+        title="Create Your Account"
+        cardTitle="Create Your Account"
         cardSubtitle="Access the Minerva Workspace."
       >
         <form onSubmit={submitSignup} noValidate>
@@ -143,6 +143,7 @@ const Auth = () => {
             <AuthField
               id="name"
               label="Name"
+              placeholder="First name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={suErr.name}
@@ -152,6 +153,7 @@ const Auth = () => {
             <AuthField
               id="surname"
               label="Surname"
+              placeholder="Last name"
               value={surname}
               onChange={(e) => setSurname(e.target.value)}
               error={suErr.surname}
@@ -163,6 +165,7 @@ const Auth = () => {
             id="suEmail"
             type="email"
             label="Email"
+            placeholder="name.surname@studbocconi.it"
             value={suEmail}
             onChange={(e) => setSuEmail(e.target.value)}
             error={suErr.email}
@@ -170,9 +173,11 @@ const Auth = () => {
             autoComplete="email"
             disabled={isSubmitting}
           />
+
           <AuthPasswordField
             id="suPassword"
             label="Password"
+            placeholder="Enter your password"
             value={suPassword}
             onChange={(e) => setSuPassword(e.target.value)}
             error={suErr.password}
@@ -187,12 +192,14 @@ const Auth = () => {
           <AuthPasswordField
             id="suConfirm"
             label="Confirm password"
+            placeholder="Re-enter your password"
             value={suConfirm}
             onChange={(e) => setSuConfirm(e.target.value)}
             error={suErr.confirm}
             autoComplete="new-password"
             disabled={isSubmitting}
           />
+
 
           <label
             className="font-body flex items-start gap-2 mb-5 cursor-pointer"
@@ -223,8 +230,9 @@ const Auth = () => {
           )}
 
           <AuthButton type="submit" disabled={!signupValid || isSubmitting}>
-            {isSubmitting ? 'Creating account…' : 'Create account'}
+            {isSubmitting ? 'Creating Account…' : 'Create Account'}
           </AuthButton>
+
         </form>
 
         <p
@@ -253,13 +261,14 @@ const Auth = () => {
   }
 
   return (
-    <AuthLayout title="Sign in" cardTitle="Welcome back" cardSubtitle="Access the Minerva Workspace.">
+    <AuthLayout title="Sign In" cardTitle="Welcome Back" cardSubtitle="Access the Minerva Workspace.">
       <form onSubmit={submitLogin} noValidate>
         {loginErr && <AuthErrorBanner>{loginErr}</AuthErrorBanner>}
         <AuthField
           id="email"
           type="email"
           label="Email"
+          placeholder="name.surname@studbocconi.it"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -273,6 +282,7 @@ const Auth = () => {
         <AuthPasswordField
           id="password"
           label="Password"
+          placeholder="Enter your password"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
@@ -307,9 +317,10 @@ const Auth = () => {
         </div>
 
         <AuthButton type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing in…' : 'Sign in'}
+          {isSubmitting ? 'Signing In…' : 'Sign In'}
         </AuthButton>
       </form>
+
 
       <p
         className="font-body text-center mt-5"

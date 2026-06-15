@@ -40,8 +40,8 @@ const ForgotPassword = () => {
 
   return (
     <AuthLayout
-      title="Reset your password"
-      cardTitle="Reset your password"
+      title="Reset Your Password"
+      cardTitle="Reset Your Password"
       cardSubtitle="Enter your email and we'll send a secure link to reset your password."
     >
       <form onSubmit={submit} noValidate>
@@ -49,6 +49,7 @@ const ForgotPassword = () => {
           id="email"
           type="email"
           label="Email"
+          placeholder="name.surname@studbocconi.it"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -59,9 +60,10 @@ const ForgotPassword = () => {
           disabled={isSubmitting}
         />
         <AuthButton type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Sending…' : 'Send reset link'}
+          {isSubmitting ? 'Sending…' : 'Send Reset Link'}
         </AuthButton>
       </form>
+
       <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
         <Link to="/auth" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
           Back to sign-in
