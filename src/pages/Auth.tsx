@@ -261,13 +261,14 @@ const Auth = () => {
   }
 
   return (
-    <AuthLayout title="Sign in" cardTitle="Welcome back" cardSubtitle="Access the Minerva Workspace.">
+    <AuthLayout title="Sign In" cardTitle="Welcome Back" cardSubtitle="Access the Minerva Workspace.">
       <form onSubmit={submitLogin} noValidate>
         {loginErr && <AuthErrorBanner>{loginErr}</AuthErrorBanner>}
         <AuthField
           id="email"
           type="email"
           label="Email"
+          placeholder="name.surname@studbocconi.it"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -281,6 +282,7 @@ const Auth = () => {
         <AuthPasswordField
           id="password"
           label="Password"
+          placeholder="Enter your password"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
@@ -315,9 +317,10 @@ const Auth = () => {
         </div>
 
         <AuthButton type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing in…' : 'Sign in'}
+          {isSubmitting ? 'Signing In…' : 'Sign In'}
         </AuthButton>
       </form>
+
 
       <p
         className="font-body text-center mt-5"
