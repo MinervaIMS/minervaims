@@ -25,8 +25,8 @@ const PendingApproval = () => {
 
   return (
     <AuthLayout
-      title="Approval pending"
-      cardTitle="Approval pending"
+      title="Approval Pending"
+      cardTitle="Approval Pending"
       cardSubtitle="Your account is awaiting approval."
     >
       <div
@@ -56,10 +56,9 @@ const PendingApproval = () => {
         .
       </p>
 
-      <AuthButton variant="outline" onClick={handleLogout}>
-        Log out
-      </AuthButton>
+      <AuthButton onClick={handleLogout}>Log Out</AuthButton>
     </AuthLayout>
+
   );
 };
 
