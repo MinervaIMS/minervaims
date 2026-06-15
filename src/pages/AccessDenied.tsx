@@ -14,13 +14,11 @@ const AccessDenied = () => {
 
   return (
     <AuthLayout
-      title="Access not approved"
-      cardTitle="Access not approved"
+      title="Access Not Approved"
+      cardTitle="Access Not Approved"
       cardSubtitle="Your request to join the Minerva Workspace wasn't approved at this time. You're welcome to re-apply in the next recruitment cycle."
     >
-      <AuthButton variant="outline" onClick={handleLogout}>
-        Log out
-      </AuthButton>
+      <AuthButton onClick={handleLogout}>Log Out</AuthButton>
     </AuthLayout>
   );
 };
