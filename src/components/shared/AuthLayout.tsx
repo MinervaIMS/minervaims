@@ -28,7 +28,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
       <Helmet>
         <title>{title} | MIMS</title>
       </Helmet>
-      <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background">
+      <div className="w-full flex flex-col lg:flex-row bg-background" style={{ minHeight: '100vh' }}>
         {/* Brand panel — desktop only */}
         <aside
           aria-hidden
