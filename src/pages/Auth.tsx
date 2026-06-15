@@ -177,6 +177,7 @@ const Auth = () => {
           <AuthPasswordField
             id="suPassword"
             label="Password"
+            placeholder="Enter your password"
             value={suPassword}
             onChange={(e) => setSuPassword(e.target.value)}
             error={suErr.password}
@@ -191,12 +192,14 @@ const Auth = () => {
           <AuthPasswordField
             id="suConfirm"
             label="Confirm password"
+            placeholder="Re-enter your password"
             value={suConfirm}
             onChange={(e) => setSuConfirm(e.target.value)}
             error={suErr.confirm}
             autoComplete="new-password"
             disabled={isSubmitting}
           />
+
 
           <label
             className="font-body flex items-start gap-2 mb-5 cursor-pointer"
