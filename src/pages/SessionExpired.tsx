@@ -6,14 +6,14 @@ const SessionExpired = () => {
   const navigate = useNavigate();
   return (
     <AuthLayout
-      title="Your session has expired"
-      cardTitle="Your session has expired"
+      title="Your Session Has Expired"
+      cardTitle="Your Session Has Expired"
       cardSubtitle="For your security, you've been signed out after a period of inactivity."
     >
-      <AuthButton onClick={() => navigate('/auth')}>Log in again</AuthButton>
+      <AuthButton onClick={() => navigate('/auth')}>Log In Again</AuthButton>
       <div className="mt-3">
-        <AuthButton variant="grey" onClick={() => navigate('/')}>
-          Return to homepage
+        <AuthButton onClick={() => navigate('/')}>
+          Return To Homepage
         </AuthButton>
       </div>
     </AuthLayout>
