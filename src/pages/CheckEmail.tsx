@@ -50,7 +50,8 @@ const CheckEmail = () => {
       : `A reset link is on its way to ${maskEmail(emailParam)}.`;
 
   return (
-    <AuthLayout title="Check your email" cardTitle="Check your email" cardSubtitle={subtitle}>
+    <AuthLayout title="Check Your Email" cardTitle="Check Your Email" cardSubtitle={subtitle}>
+
       <ol
         className="font-body mb-6"
         style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', color: AUTH_TOKENS.MUTED }}
