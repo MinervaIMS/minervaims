@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PageIntroduction, PageLoader } from "@/components/shared";
+import { PageIntroduction, PageLoader, ApplicationJourney } from "@/components/shared";
 import joinBg from "@/assets/join-bg.webp";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -63,61 +63,6 @@ const WHAT_YOU_GAIN = [
   },
 ];
 
-const WRITTEN_ANSWERS = [
-  {
-    division: "Equity Research",
-    question:
-      "Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.",
-  },
-  {
-    division: "Investment Research",
-    question:
-      "How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.",
-  },
-  {
-    division: "Macro Research",
-    question: "Choose a macroeconomic topic and explain how it may impact any of Minerva's funds.",
-  },
-  {
-    division: "Portfolio Management",
-    question:
-      "Submit a one-page investment pitch. It may cover a stock, bond, ETP, derivatives strategy, or a full portfolio. Place any charts/tables/math formulas in an Appendix after the first page.",
-  },
-  {
-    division: "Quantitative Research",
-    question:
-      "Provide brief answers to both: a topic in quantitative finance, risk management, or financial machine learning you are interested in; and a project (academic/personal/work) in which you wrote code (what you built and what you learned).",
-  },
-];
-
-const APPLICATION_STEPS = [
-  {
-    step: 1,
-    title: "Prepare Your Application",
-    description:
-      "Get your materials ready before you submit: a CV, a motivation letter, and the written answer for your first-choice division. In the form you rank your division preferences from 1 (first choice) to 5 (fifth choice); prepare your response as a single PDF named",
-    fileName: "Surname_Name_Answer.pdf",
-    written: WRITTEN_ANSWERS,
-  },
-  {
-    step: 2,
-    title: "Online Application",
-    description:
-      "Complete the application form and submit your CV, motivation letter, and the required written answers and/or investment pitch for the division you are applying for.",
-  },
-  {
-    step: 3,
-    title: "Interview",
-    description:
-      "Selected candidates are invited to interview with current members and Board representatives to discuss their application, assess cultural fit, and test hard skills and market knowledge. Historically, more than 50% of applicants are invited to interview.",
-  },
-  {
-    step: 4,
-    title: "Onboarding",
-    description:
-      "Successful candidates join MIMS and begin the training programme, including research methodology and financial modelling. Historically, c.4% of applicants are selected; intake capacity is typically higher at the start of the academic year.",
-  },
-];
 
 const FAQS = [
   {
@@ -257,30 +202,6 @@ const Join = () => {
     return () => window.clearTimeout(t);
   }, []);
 
-  // Journey "lit" sequential effect — each step lights up on its own timer
-  // so its line-fill transition (1s) runs independently of the others.
-  const journey = useInView<HTMLElement>({ threshold: 0.05, rootMargin: "0px 0px -10% 0px" } as IntersectionObserverInit);
-  const [litSteps, setLitSteps] = useState<Set<number>>(new Set());
-  useEffect(() => {
-    if (!journey.inView) return;
-    if (prefersReducedMotion()) {
-      setLitSteps(new Set(APPLICATION_STEPS.map((_, i) => i)));
-      return;
-    }
-    const timers: number[] = [];
-    APPLICATION_STEPS.forEach((_, i) => {
-      timers.push(
-        window.setTimeout(() => {
-          setLitSteps((prev) => {
-            const next = new Set(prev);
-            next.add(i);
-            return next;
-          });
-        }, 250 + i * 400)
-      );
-    });
-    return () => timers.forEach(clearTimeout);
-  }, [journey.inView]);
 
   if (!imagesLoaded) {
     return <PageLoader />;
@@ -455,95 +376,14 @@ const Join = () => {
         </section>
 
 
-        {/* Application Journey */}
-        <section ref={journey.ref} className="mb-20 md:mb-24">
+        {/* The Application Journey */}
+        <section className="mb-20 md:mb-24">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Application Journey
           </h2>
-          <div className="relative max-w-[54rem]">
-            {APPLICATION_STEPS.map((step, index) => {
-              const lit = litSteps.has(index);
-              const isLast = index === APPLICATION_STEPS.length - 1;
-              return (
-                <Reveal key={step.step} delay={index * 70}>
-                  <div
-                    className={`relative grid grid-cols-[60px_1fr] gap-[1.4rem] ${
-                      isLast ? "pb-0" : "pb-10"
-                    }`}
-                  >
-                    {/* Rail column: dot + connecting line */}
-                    <div className="relative flex justify-center">
-                      <div
-                        className={`relative z-[2] w-[60px] h-[60px] rounded-full border-[1.5px] border-accent bg-background flex items-center justify-center font-serif text-[1.4rem] transition-all duration-[550ms] ease-[ease] ${
-                          lit
-                            ? "bg-accent text-background shadow-[0_0_0_6px_rgba(31,15,77,0.1),0_10px_28px_rgba(31,15,77,0.3)]"
-                            : "text-accent"
-                        }`}
-                        style={lit ? { backgroundColor: "hsl(var(--accent))" } : undefined}
-                      >
-                        {step.step}
-                      </div>
-                      {!isLast && (
-                        <div
-                          className="absolute top-[60px] -bottom-10 left-1/2 w-[2px] -translate-x-1/2 bg-separator overflow-hidden pointer-events-none"
-                          aria-hidden
-                        >
-                          <div
-                            className="absolute inset-x-0 top-0 transition-[height]"
-                            style={{
-                              height: lit ? "calc(100% + 2.5rem)" : "0%",
-                              transitionDuration: "1000ms",
-                              transitionTimingFunction: "ease",
-                              background: "linear-gradient(180deg, hsl(var(--accent)), #AFA2D2)",
-                            }}
-                          />
-                        </div>
-                      )}
-
-                    </div>
-                    {/* Step Content */}
-                    <div>
-                      <h3 className="font-serif text-[1.5rem] text-foreground mt-[0.7rem] mb-2">
-                        {step.title}
-                      </h3>
-                      <p className="font-body text-body-lg text-muted-foreground">
-                        {step.description}
-                        {step.fileName && (
-                          <>
-                            {": "}
-                            <span className="font-serif text-accent bg-secondary px-1.5 py-0.5">{step.fileName}</span>
-                            {"."}
-                          </>
-                        )}
-                      </p>
-
-                      {step.written && (
-                        <div className="mt-5 pt-5 border-t border-separator max-w-[42rem] flex flex-col gap-4">
-                          <p className="font-body text-small text-muted-foreground">
-                            Answer the question for your first-choice division below. You may answer additional divisions
-                            too — if you do, combine everything into the same PDF.
-                          </p>
-                          {step.written.map((w) => (
-                            <div
-                              key={w.division}
-                              className="grid grid-cols-1 sm:grid-cols-[11rem_1fr] gap-y-1 gap-x-4"
-                            >
-                              <div className="font-body font-semibold text-xs uppercase tracking-wider text-accent">
-                                {w.division}
-                              </div>
-                              <div className="font-body text-small text-muted-foreground">{w.question}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Reveal>
-              );
-            })}
-          </div>
-
+          <ApplicationJourney />
         </section>
+
 
         {/* How To Prepare For The Interview */}
         <section className="mb-20 md:mb-24">
