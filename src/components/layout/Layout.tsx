@@ -4,15 +4,6 @@ import { Footer } from './Footer';
 
 const CHROMELESS_ROUTES = [
   '/admin',
-  '/auth',
-  '/forgot-password',
-  '/check-email',
-  '/reset-password',
-  '/password-reset-success',
-  '/verify-email',
-  '/session-expired',
-  '/access-denied',
-  '/pending-approval',
 ];
 
 export function Layout() {

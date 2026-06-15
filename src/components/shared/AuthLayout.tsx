@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logoWhite from '@/assets/logo-white.svg';
-import logoColor from '@/assets/logo-color.svg';
+import fullLogo from '@/assets/legal-hero-logo.svg';
 
 interface AuthLayoutProps {
   title: string;
@@ -34,10 +34,10 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
           aria-hidden
           className="hidden lg:flex relative overflow-hidden flex-col justify-center"
           style={{
-            flex: '0 0 33.333%',
+            flex: '0 0 25%',
             backgroundColor: '#1F0F4D',
             color: '#fff',
-            padding: '64px 54px',
+            padding: '64px 44px',
           }}
         >
           <span
@@ -109,15 +109,14 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
         {/* Form panel */}
         <main className="flex-1 bg-background flex items-start lg:items-center justify-center px-6 py-10 lg:py-14">
           <div
-            className="w-full max-w-md border bg-background"
+            className="w-full max-w-md bg-background"
             style={{
-              borderColor: '#E0E0E0',
               borderRadius: 0,
               padding: '38px 32px',
             }}
           >
             <div className="flex justify-center mb-7">
-              <img src={logoColor} alt="Minerva Investment Management Society" style={{ height: '72px', width: 'auto' }} />
+              <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '120px', width: 'auto' }} />
             </div>
 
             {(cardTitle || cardSubtitle) && (
