@@ -67,7 +67,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               zIndex: 1,
             }}
           >
-            The Minerva Workspace
+            The Minerva IMS Workspace
           </h4>
           <p
             className="font-body"
