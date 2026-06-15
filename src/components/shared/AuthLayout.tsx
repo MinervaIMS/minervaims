@@ -102,7 +102,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               zIndex: 1,
             }}
           >
-            Minerva Investment Management Society · Bocconi University
+            {"\n"}
           </div>
         </aside>
 
