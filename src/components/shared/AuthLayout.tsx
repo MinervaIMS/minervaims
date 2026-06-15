@@ -109,15 +109,14 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
         {/* Form panel */}
         <main className="flex-1 bg-background flex items-start lg:items-center justify-center px-6 py-10 lg:py-14">
           <div
-            className="w-full max-w-md border bg-background"
+            className="w-full max-w-md bg-background"
             style={{
-              borderColor: '#E0E0E0',
               borderRadius: 0,
               padding: '38px 32px',
             }}
           >
             <div className="flex justify-center mb-7">
-              <img src={logoColor} alt="Minerva Investment Management Society" style={{ height: '72px', width: 'auto' }} />
+              <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '120px', width: 'auto' }} />
             </div>
 
             {(cardTitle || cardSubtitle) && (
