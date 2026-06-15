@@ -75,7 +75,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               fontSize: '16px',
               lineHeight: 1.7,
               color: 'rgba(255,255,255,0.74)',
-              maxWidth: '32ch',
+              maxWidth: '38ch',
               position: 'relative',
               zIndex: 1,
             }}
@@ -84,7 +84,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
             {"\n"}
             Applicants follow their candidacy from day one.&nbsp;
             {"\n"}
-            Members edit their profile, upload reports, register for events, and stay connected to a network built to last long after.
+            Members edit their profile, upload reports, register for events, and stay connected to a network built-in many ways-continues long after.
             {"\n"}
           </p>
           <div
