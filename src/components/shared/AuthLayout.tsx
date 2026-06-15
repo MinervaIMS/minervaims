@@ -80,7 +80,11 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               zIndex: 1,
             }}
           >
-            One place for your entire Minerva experience. Applicants follow their candidacy from day one. Members edit their profile, upload reports, register for events, and stay plugged into a network that accelerates careers.
+            One place for your entire Minerva experience.&nbsp;
+            {"\n"}
+            Applicants follow their candidacy from day one.&nbsp;
+            {"\n"}
+            Members edit their profile, upload reports, register for events, and stay connected to a network built to last long after.
             {"\n"}
           </p>
           <div
