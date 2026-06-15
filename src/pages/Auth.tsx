@@ -230,8 +230,9 @@ const Auth = () => {
           )}
 
           <AuthButton type="submit" disabled={!signupValid || isSubmitting}>
-            {isSubmitting ? 'Creating account…' : 'Create account'}
+            {isSubmitting ? 'Creating Account…' : 'Create Account'}
           </AuthButton>
+
         </form>
 
         <p
