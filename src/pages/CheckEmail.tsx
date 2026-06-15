@@ -91,8 +91,9 @@ const CheckEmail = () => {
       </ol>
 
       <AuthButton onClick={resend} disabled={seconds > 0 || isSending}>
-        {seconds > 0 ? `Resend email in ${seconds}s` : isSending ? 'Sending…' : 'Resend email'}
+        {seconds > 0 ? `Resend Email In ${seconds}s` : isSending ? 'Sending…' : 'Resend Email'}
       </AuthButton>
+
 
       <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
         <AuthLink onClick={() => navigate(purpose === 'verify' ? '/auth' : '/forgot-password')}>
