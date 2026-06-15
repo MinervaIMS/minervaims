@@ -34,10 +34,10 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
           aria-hidden
           className="hidden lg:flex relative overflow-hidden flex-col justify-center"
           style={{
-            flex: '0 0 33.333%',
+            flex: '0 0 25%',
             backgroundColor: '#1F0F4D',
             color: '#fff',
-            padding: '64px 54px',
+            padding: '64px 44px',
           }}
         >
           <span
