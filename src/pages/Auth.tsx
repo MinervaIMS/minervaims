@@ -134,8 +134,8 @@ const Auth = () => {
   if (mode === 'signup') {
     return (
       <AuthLayout
-        title="Create your account"
-        cardTitle="Create your account"
+        title="Create Your Account"
+        cardTitle="Create Your Account"
         cardSubtitle="Access the Minerva Workspace."
       >
         <form onSubmit={submitSignup} noValidate>
@@ -143,6 +143,7 @@ const Auth = () => {
             <AuthField
               id="name"
               label="Name"
+              placeholder="First name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={suErr.name}
@@ -152,6 +153,7 @@ const Auth = () => {
             <AuthField
               id="surname"
               label="Surname"
+              placeholder="Last name"
               value={surname}
               onChange={(e) => setSurname(e.target.value)}
               error={suErr.surname}
@@ -163,6 +165,7 @@ const Auth = () => {
             id="suEmail"
             type="email"
             label="Email"
+            placeholder="name.surname@studbocconi.it"
             value={suEmail}
             onChange={(e) => setSuEmail(e.target.value)}
             error={suErr.email}
@@ -170,6 +173,7 @@ const Auth = () => {
             autoComplete="email"
             disabled={isSubmitting}
           />
+
           <AuthPasswordField
             id="suPassword"
             label="Password"
