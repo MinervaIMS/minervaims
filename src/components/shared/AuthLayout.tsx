@@ -75,7 +75,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               fontSize: '16px',
               lineHeight: 1.7,
               color: 'rgba(255,255,255,0.74)',
-              maxWidth: '32ch',
+              maxWidth: '38ch',
               position: 'relative',
               zIndex: 1,
             }}
