@@ -55,11 +55,6 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               opacity: 0.06,
             }}
           />
-          <img
-            src={logoWhite}
-            alt=""
-            style={{ height: '96px', width: 'auto', marginBottom: '38px', position: 'relative', zIndex: 1 }}
-          />
           <h4
             className="font-serif"
             style={{
