@@ -37,7 +37,13 @@ const Statute = lazy(() => import("./pages/Statute"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const CheckEmail = lazy(() => import("./pages/CheckEmail"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const PasswordResetSuccess = lazy(() => import("./pages/PasswordResetSuccess"));
+const EmailVerification = lazy(() => import("./pages/EmailVerification"));
+const SessionExpired = lazy(() => import("./pages/SessionExpired"));
+const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const MinervaWorkspace = lazy(() => import("./pages/MinervaWorkspace"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
@@ -93,7 +99,13 @@ const App = () => {
                 <Route path="/statute" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="statute"><Statute /></PageVisibilityGate></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
+                <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
+                <Route path="/check-email" element={<Suspense fallback={<PageLoader />}><CheckEmail /></Suspense>} />
                 <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
+                <Route path="/password-reset-success" element={<Suspense fallback={<PageLoader />}><PasswordResetSuccess /></Suspense>} />
+                <Route path="/verify-email" element={<Suspense fallback={<PageLoader />}><EmailVerification /></Suspense>} />
+                <Route path="/session-expired" element={<Suspense fallback={<PageLoader />}><SessionExpired /></Suspense>} />
+                <Route path="/access-denied" element={<Suspense fallback={<PageLoader />}><AccessDenied /></Suspense>} />
                 <Route path="/admin" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
                 <Route path="/pending-approval" element={<Suspense fallback={<PageLoader />}><PendingApproval /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />

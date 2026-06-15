@@ -1,342 +1,123 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
-import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import AuthLayout from '@/components/shared/AuthLayout';
+import {
+  AuthPasswordField,
+  AuthButton,
+  AuthErrorBanner,
+  AUTH_TOKENS,
+} from '@/components/shared/AuthUI';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
-import resetPasswordBg from '@/assets/reset-password-bg.webp';
-import { Helmet } from 'react-helmet-async';
 
-const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+const passwordSchema = z.string().min(8, 'Use at least 8 characters.');
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
-  const [isResetMode, setIsResetMode] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
-  
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  // Check if we're in reset mode (user clicked link from email)
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [err, setErr] = useState<{ password?: string; confirm?: string }>({});
+  const [banner, setBanner] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
-    const accessToken = searchParams.get('access_token');
-    const type = searchParams.get('type');
-    
-    if (type === 'recovery' || accessToken) {
-      setIsResetMode(true);
-    }
+    // Supabase v2 places tokens in URL hash on recovery links; client auto-detects them.
+    // Confirm a session is available to proceed.
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      const hashType = window.location.hash.includes('type=recovery');
+      const queryType = searchParams.get('type') === 'recovery';
+      setReady(!!data.session || hashType || queryType);
+    });
+    return () => {
+      active = false;
+    };
   }, [searchParams]);
 
-  const validateEmailForm = () => {
-    const newErrors: typeof errors = {};
+  const matches = password.length > 0 && password === confirm;
+  const valid = passwordSchema.safeParse(password).success && matches;
 
-    try {
-      emailSchema.parse(email);
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        newErrors.email = e.errors[0].message;
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validatePasswordForm = () => {
-    const newErrors: typeof errors = {};
-
-    try {
-      passwordSchema.parse(password);
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        newErrors.password = e.errors[0].message;
-      }
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleRequestReset = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateEmailForm()) return;
+    const next: typeof err = {};
+    const parsed = passwordSchema.safeParse(password);
+    if (!parsed.success) next.password = parsed.error.errors[0].message;
+    if (password !== confirm) next.confirm = 'Passwords do not match.';
+    setErr(next);
+    if (Object.keys(next).length > 0) return;
 
     setIsSubmitting(true);
-
+    setBanner(null);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) {
-        toast({
-          title: "Request Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        setBanner("We couldn't update your password. The reset link may have expired.");
+        navigate('/password-reset-success?status=error', { replace: true });
         return;
       }
-
-      setEmailSent(true);
+      navigate('/password-reset-success', { replace: true });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validatePasswordForm()) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) {
-        toast({
-          title: "Password Update Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Password Updated",
-        description: "Your password has been successfully updated.",
-      });
-
-      navigate('/auth');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Email sent confirmation screen
-  if (emailSent) {
-    return (
-      <div 
-        className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${resetPasswordBg})` }}
-      >
-        <Helmet>
-          <title>Reset Password | MIMS</title>
-        </Helmet>
-        <div className="container flex items-center justify-center">
-          <Card className="w-full max-w-md shadow-elevated">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-              <Mail className="h-6 w-6 text-accent" />
-            </div>
-            <CardTitle className="font-serif text-heading text-accent">Check Your Email</CardTitle>
-            <CardDescription className="font-body font-normal">
-              We've sent a password reset link to <span className="text-foreground">{email}</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center font-normal">
-              Click the link in the email to reset your password. If you don't see the email, check your spam folder.
-            </p>
-            <div className="flex flex-col gap-2">
-              <Button 
-                variant="outline" 
-                className="w-full font-body"
-                onClick={() => setEmailSent(false)}
-              >
-                Try a different email
-              </Button>
-              <Link to="/auth" className="w-full">
-                <Button variant="ghost" className="w-full font-body">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Login
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Password update form (after clicking email link)
-  if (isResetMode) {
-    return (
-      <div 
-        className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${resetPasswordBg})` }}
-      >
-        <Helmet>
-          <title>Reset Password | MIMS</title>
-        </Helmet>
-        <div className="container flex items-center justify-center">
-          <Card className="w-full max-w-md shadow-elevated">
-          <CardHeader className="text-center">
-            <CardTitle className="font-serif text-heading text-accent">Set New Password</CardTitle>
-            <CardDescription className="font-body font-normal">
-              Enter your new password below
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password" className="font-body font-normal">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    disabled={isSubmitting}
-                    className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <PasswordStrengthIndicator password={password} />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="font-body font-normal">Confirm Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                    disabled={isSubmitting}
-                    className={`pr-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-                )}
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full font-body text-lg px-10 py-4 mt-6"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating password...
-                  </>
-                ) : (
-                  'Update Password'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Request password reset form
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center py-section-sm md:py-section bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${resetPasswordBg})` }}
+    <AuthLayout
+      title="Set a new password"
+      cardTitle="Set a new password"
+      cardSubtitle="Choose a strong password you don't use elsewhere."
     >
-      <Helmet>
-        <title>Reset Password | MIMS</title>
-      </Helmet>
-      <div className="container flex items-center justify-center">
-        <Card className="w-full max-w-md shadow-elevated">
-        <CardHeader className="text-center">
-          <CardTitle className="font-serif text-heading text-accent">Reset Password</CardTitle>
-          <CardDescription className="font-body font-normal">
-            Enter your email address and we'll send you a link to reset your password
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRequestReset} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-body font-normal">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                disabled={isSubmitting}
-                className={errors.email ? 'border-destructive' : ''}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full font-body text-lg px-10 py-4 mt-6"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending reset link...
-                </>
-              ) : (
-                'Send Reset Link'
-              )}
-            </Button>
-
-            <Link to="/auth" className="block w-full">
-              <Button variant="ghost" className="w-full font-body">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Login
-              </Button>
-            </Link>
-          </form>
-        </CardContent>
-      </Card>
-      </div>
-    </div>
+      {!ready && (
+        <AuthErrorBanner>
+          This reset link is invalid or has expired. <Link to="/forgot-password" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>Request a new one</Link>.
+        </AuthErrorBanner>
+      )}
+      {banner && <AuthErrorBanner>{banner}</AuthErrorBanner>}
+      <form onSubmit={submit} noValidate>
+        <AuthPasswordField
+          id="password"
+          label="New password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setErr((p) => ({ ...p, password: undefined }));
+          }}
+          error={err.password}
+          autoComplete="new-password"
+          disabled={isSubmitting || !ready}
+        />
+        {password.length > 0 && (
+          <div className="-mt-3 mb-4">
+            <PasswordStrengthIndicator password={password} />
+          </div>
+        )}
+        <AuthPasswordField
+          id="confirm"
+          label="Confirm password"
+          value={confirm}
+          onChange={(e) => {
+            setConfirm(e.target.value);
+            setErr((p) => ({ ...p, confirm: undefined }));
+          }}
+          error={err.confirm}
+          autoComplete="new-password"
+          disabled={isSubmitting || !ready}
+        />
+        <AuthButton type="submit" disabled={!valid || isSubmitting || !ready}>
+          {isSubmitting ? 'Updating…' : 'Update password'}
+        </AuthButton>
+      </form>
+      <p className="font-body text-center mt-5" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
+        <Link to="/auth" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
+          Back to sign-in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 
