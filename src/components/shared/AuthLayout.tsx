@@ -80,8 +80,8 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               zIndex: 1,
             }}
           >
-            Where members manage research, reports, events and the alumni network — and applicants
-            follow their journey to membership.
+            One place for your entire Minerva experience. Applicants follow their candidacy from day one. Members edit their profile, upload reports, register for events, and stay plugged into a network that accelerates careers.
+            {"\n"}
           </p>
           <div
             className="font-body"
