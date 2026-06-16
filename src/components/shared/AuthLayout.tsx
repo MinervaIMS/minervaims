@@ -80,7 +80,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               zIndex: 1,
             }}
           >
-            From your first application to your last report. Applicants follow their candidacy from day one.&nbsp;
+            From your first application to your last report. Applicants follow their candidacy from day one.
             Members edit their profile, upload reports, register for events, and stay connected to a network built to last long after.
           </p>
           <div
