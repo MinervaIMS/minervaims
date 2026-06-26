@@ -174,19 +174,19 @@ const Alumni = () => {
                 key={founder.id}
                 className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]"
               >
-                <h3 className="font-serif text-[1.12rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
+                <h3 className="font-serif text-[1.25rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
                   {founder.surname} {founder.name}
                 </h3>
                 <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
                   {founder.degree} · Class of {founder.graduation_year}
                 </p>
-                <p className="font-serif text-body text-foreground mt-3">
+                <p className="font-body text-body font-medium text-foreground mt-3">
                   {founder.company}
                 </p>
                 <p className="font-body text-small text-muted-foreground mt-1">
                   {founder.job_area}
                 </p>
-                <p className="font-body text-small text-muted-foreground/70 mt-1">
+                <p className="font-body text-[0.95rem] text-muted-foreground mt-1">
                   {founder.city}
                 </p>
                 <div className="mt-auto pt-4">
