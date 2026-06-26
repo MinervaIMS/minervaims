@@ -189,7 +189,7 @@ const DivisionDetail = () => {
                   <h3 className="font-serif text-subheading text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
                     {fundLabels[fund]}
                   </h3>
-                  <p className="font-body text-body text-muted-foreground">
+                  <p className="font-body text-body-lg text-muted-foreground">
                     {fundDescriptions[fund]}
                   </p>
                 </Link>
