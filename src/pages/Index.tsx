@@ -45,7 +45,7 @@ const Index = () => {
         .from('archive_files')
         .select('id, title, description, file_url, date, division, fund')
         .order('date', { ascending: false })
-        .limit(8);
+        .limit(12);
 
       if (error) throw error;
       setCarouselFiles(data || []);

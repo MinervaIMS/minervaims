@@ -168,41 +168,44 @@ const Alumni = () => {
         {/* Our Founders */}
         <div className="mb-24">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2017</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
             {founders.map((founder) => (
-              <div
+              <article
                 key={founder.id}
-                className="border border-separator rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-serif text-body-lg font-medium leading-tight">
-                    {founder.surname} {founder.name}
-                  </h3>
-                  <a
-                    href={founder.linkedin_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 ml-2"
-                  >
-                    <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
-                  </a>
-                </div>
-                <p className="text-muted-foreground text-small">
+                <h3 className="font-serif text-[1.12rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
+                  {founder.surname} {founder.name}
+                </h3>
+                <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-2">
                   {founder.degree}
                 </p>
-                <p className="text-muted-foreground text-small mb-2">
+                <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
                   Class of {founder.graduation_year}
                 </p>
-                <p className="font-body text-small text-muted-foreground">
+                <p className="font-body text-small text-muted-foreground mt-3">
                   {founder.job_area}
                 </p>
-                <p className="font-serif text-body">
+                <p className="font-serif text-body text-foreground mt-1">
                   {founder.company}
                 </p>
-                <p className="font-body text-small text-muted-foreground/70">
+                <p className="font-body text-small text-muted-foreground/70 mt-1">
                   {founder.city}
                 </p>
-              </div>
+                <div className="mt-auto pt-4">
+                  {founder.linkedin_url && (
+                    <a
+                      href={founder.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${founder.name} ${founder.surname} LinkedIn profile`}
+                      className="inline-flex text-accent"
+                    >
+                      <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
+              </article>
             ))}
           </div>
         </div>
