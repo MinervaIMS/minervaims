@@ -177,19 +177,19 @@ const DivisionDetail = () => {
         <section className="py-section-sm md:py-section bg-background">
           <div className="container">
             <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
-              MIMS Virtual Portfolios
+              Minerva Virtual Funds
             </h2>
-            <div className="flex flex-col gap-4 max-w-4xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[.7rem] md:gap-5">
               {allFunds.map(({ fund }) => (
                 <Link
                   key={fund}
                   to={`/funds/${fund}`}
-                  className="group block bg-secondary p-6 transition-all duration-300 hover:bg-accent hover:shadow-lg"
+                  className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]"
                 >
-                  <h3 className="font-serif text-xl md:text-2xl mb-2 group-hover:text-accent-foreground transition-colors duration-300">
+                  <h3 className="font-serif text-[1.12rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
                     {fundLabels[fund]}
                   </h3>
-                  <p className="font-body text-body-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                  <p className="font-body text-small text-muted-foreground mt-3 flex-1">
                     {fundDescriptions[fund]}
                   </p>
                 </Link>
