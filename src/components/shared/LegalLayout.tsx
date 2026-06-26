@@ -215,7 +215,7 @@ export function LegalLayout({
       {related && related.length > 0 && (
         <nav className="lp-related" aria-label="Other legal pages">
           <div className="container">
-            <div className="r-h">Other legal &amp; technical pages</div>
+            <div className="r-h">Other Legal &amp; Technical Pages</div>
             <div className="r-list">
               {related.map((r) => {
                 const isCurrent = r.id === currentId;
