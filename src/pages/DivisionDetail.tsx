@@ -179,17 +179,17 @@ const DivisionDetail = () => {
             <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
               Minerva Virtual Funds
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[.7rem] md:gap-5">
+            <div className="flex flex-col gap-[.7rem] md:gap-4">
               {allFunds.map(({ fund }) => (
                 <Link
                   key={fund}
                   to={`/funds/${fund}`}
-                  className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]"
+                  className="group bg-muted p-6 md:p-7 grid grid-cols-1 md:grid-cols-[minmax(0,18rem)_1fr] gap-3 md:gap-10 items-baseline transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]"
                 >
-                  <h3 className="font-serif text-[1.12rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
+                  <h3 className="font-serif text-subheading text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
                     {fundLabels[fund]}
                   </h3>
-                  <p className="font-body text-small text-muted-foreground mt-3 flex-1">
+                  <p className="font-body text-body text-muted-foreground">
                     {fundDescriptions[fund]}
                   </p>
                 </Link>
