@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import contactsBgAsset from "@/assets/MIMS_Contacts.webp.asset.json";
-import linkedinIcon from "@/assets/linkedin-black.svg";
-import instagramIcon from "@/assets/instagram-black.svg";
 
 const Contacts = () => {
   const contactsBg = contactsBgAsset.url;
@@ -33,69 +31,24 @@ const Contacts = () => {
 
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-10 lg:gap-15">
-            {/* LEFT — Get in touch */}
-            <div>
-              <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-                Get in touch
-              </h2>
-              <p className="font-body text-body-lg text-muted-foreground max-w-xl">
-                For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
-              </p>
+          <div>
+            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+              Get in touch
+            </h2>
+            <p className="font-body text-body-lg text-muted-foreground max-w-xl">
+              For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
+            </p>
 
-              <div className="mt-14 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
-                <a
-                  href="mailto:as.minerva@unibocconi.it"
-                  className="group inline-flex items-center gap-3 font-serif text-3xl md:text-4xl text-accent break-words"
-                >
-                  <span className="underline-offset-4 group-hover:underline">
-                    as.minerva@unibocconi.it
-                  </span>
-                </a>
-              </div>
-            </div>
-
-            {/* RIGHT — Sidebar */}
-            <aside className="bg-muted p-8 self-start">
-              <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                Follow our work
-              </div>
-              <div className="flex gap-3 mt-3.5">
-                <a
-                  href="https://www.linkedin.com/company/minerva-investment-management/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="MIMS on LinkedIn"
-                  className="flex items-center justify-center hover:opacity-80 transition-opacity"
-                >
-                  <img src={linkedinIcon} alt="" className="w-14 h-14" />
-                </a>
-                <a
-                  href="https://www.instagram.com/minerva.ims/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="MIMS on Instagram"
-                  className="flex items-center justify-center hover:opacity-80 transition-opacity"
-                >
-                  <img src={instagramIcon} alt="" className="w-14 h-14" />
-                </a>
-              </div>
-
-              <div className="h-px bg-separator my-7" />
-
-              <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                Our members
-              </div>
-              <p className="font-body text-body-lg text-muted-foreground mt-2.5 leading-relaxed">
-                For those interested in getting to know our work and activities better, reach out to our members.
-              </p>
-              <Link
-                to="/people"
-                className="cta-link mt-4"
+            <div className="mt-14 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
+              <a
+                href="mailto:as.minerva@unibocconi.it"
+                className="group inline-flex items-center gap-3 font-serif text-3xl md:text-4xl text-accent break-words"
               >
-                Meet the members
-              </Link>
-            </aside>
+                <span className="underline-offset-4 group-hover:underline">
+                  as.minerva@unibocconi.it
+                </span>
+              </a>
+            </div>
           </div>
 
           {/* Partnerships & Collaborations section */}
