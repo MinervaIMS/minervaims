@@ -858,7 +858,7 @@ const MinervaWorkspace = () => {
             {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
                 <div className="shrink-0 h-14 flex items-center justify-between px-4">
-                  <h3 className="font-serif text-lg text-accent tracking-wide">{activeSection.label}</h3>
+                  <h3 className="font-serif text-[19px] text-accent tracking-wide">{activeSection.label}</h3>
                   <button
                     onClick={() => setSubmenuOpen(false)}
                     className="h-7 w-7 flex items-center justify-center hover:bg-background"
@@ -874,7 +874,7 @@ const MinervaWorkspace = () => {
                       <button
                         key={si.key}
                         onClick={() => setActiveSubKey(si.key)}
-                        className={`w-full text-left px-4 h-11 flex items-center transition-colors text-body ${
+                        className={`w-full text-left px-4 h-11 flex items-center transition-colors text-[17px] ${
                           isActive ? 'text-accent font-medium bg-[#ece9f4]' : 'text-foreground hover:bg-background/60'
                         }`}
                         style={{ fontFamily: '"Times New Roman", Times, serif' }}
