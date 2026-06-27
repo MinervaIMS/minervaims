@@ -45,7 +45,7 @@ const Contacts = () => {
 
               <div className="mt-9 pb-8 sm:pb-0 sm:pr-7">
                 <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                  General enquiries
+                  {"\n"}
                 </div>
                 <a
                   href="mailto:as.minerva@unibocconi.it"
