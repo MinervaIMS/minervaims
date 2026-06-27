@@ -14,10 +14,23 @@
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
+    <link rel="preload" as="image" href="/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/__l5e/assets-v1/1eaa5426-5147-4233-ae56-2cad28df4a47/logo-white-loader.webp" fetchpriority="high" />
     <link rel="preconnect" href="https://asjudzdgsccacpjbzsue.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://asjudzdgsccacpjbzsue.supabase.co" />
-    <link rel="preload" as="image" href="/src/assets/homepage-bg.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/src/assets/homepage-bg.webp" />
     <link rel="modulepreload" href="/src/main.tsx" />
+    <style>
+      #initial-loader{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#ffffff;}
+      #initial-loader img{height:48px;width:auto;animation:initial-loader-pulse 1.6s ease-in-out infinite;}
+      #initial-loader .loader-white{display:none;}
+      @keyframes initial-loader-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+      @media (prefers-color-scheme: dark){
+        #initial-loader{background:#000000;}
+        #initial-loader .loader-color{display:none;}
+        #initial-loader .loader-white{display:block;}
+      }
+    </style>
 
     
     
