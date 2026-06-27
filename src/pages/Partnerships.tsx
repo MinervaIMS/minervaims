@@ -19,7 +19,7 @@ const FORMATS: Format[] = [
     audience: "50 - 200 students, open to the Bocconi community",
     format: "In person, moderated by a Bocconi Core Faculty member",
     description:
-      "A member of your team joins a structured panel discussion on a theme of substantive professional and academic interest. On-campus events with external speakers require a Bocconi Core Faculty moderator.\u00a0",
+      "A member of your team participates in a structured panel discussion on a theme of substantive professional and academic interest. All on-campus events with external speakers require the presence of a Bocconi Core Faculty member acting as moderator.",
   },
   {
     title: "In-company Visit",
@@ -27,7 +27,7 @@ const FORMATS: Format[] = [
     audience: "15 - 45 Society members",
     format: "On-site at your offices",
     description:
-      "A selected delegation of students visits your offices for a structured programme covering divisional operations, areas of focus, and exchanges with junior and senior professionals.",
+      "A selected delegation of Society members visits your offices for a structured programme covering divisional operations, current areas of focus, and exchanges with junior and senior professionals.\n",
   },
   {
     title: "Online Seminar or Panel",
@@ -35,7 +35,7 @@ const FORMATS: Format[] = [
     audience: "Variable; open to the community or reserved to members",
     format: "Remote, via Microsoft Teams",
     description:
-      "Professionals deliver a session in a structured online format. When open to the student community, the same moderation and panel requirements as on-campus events apply.",
+      "Professionals deliver a session in a structured online format. When open to the broader community, the session follows the same moderation and panel requirements as on-campus events.",
   },
   {
     title: "Editorial Exchange",
@@ -43,7 +43,7 @@ const FORMATS: Format[] = [
     audience: "Society analysts and division heads",
     format: "In person or remote",
     description:
-      "A private engagement with our research divisions around a specific theme. A briefing, closed roundtable, or informal exchange in connection with one of our publications.",
+      "A private engagement with our research divisions, structured around a specific theme or area of inquiry. This may take the form of a briefing, a closed roundtable, or an informal exchange in connection with one of our publications.\n",
   },
 ];
 
