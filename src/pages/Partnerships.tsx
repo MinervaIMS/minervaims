@@ -145,8 +145,8 @@ const Partnerships = () => {
             Formats
           </h2>
 
-          {/* Mobile: cards */}
-          <div className="md:hidden space-y-4">
+          {/* Cards: all viewports */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {FORMATS.map((f) => (
               <article
                 key={f.title}
@@ -167,41 +167,6 @@ const Partnerships = () => {
                 </dl>
               </article>
             ))}
-          </div>
-
-          {/* Tablet/desktop: comparison matrix */}
-          <div className="hidden md:block overflow-x-auto">
-            <div className="grid grid-cols-[128px_repeat(4,1fr)] min-w-[860px]">
-              {/* header row */}
-              <div />
-              {FORMATS.map((f) => (
-                <div
-                  key={`h-${f.title}`}
-                  className="p-[18px] border-l border-separator font-serif text-lg text-accent leading-snug"
-                >
-                  {f.title}
-                </div>
-              ))}
-
-              {/* attribute rows */}
-              {ROW_LABELS.map(({ key, label }) => (
-                <Fragment key={label}>
-                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-xs text-muted-foreground self-start">
-                    {label}
-                  </div>
-                  {FORMATS.map((f) => (
-                    <div
-                      key={`${label}-${f.title}`}
-                      className={`p-4 border-l border-separator font-body text-small leading-relaxed ${
-                        key === "description" ? "text-muted-foreground" : "text-foreground"
-                      }`}
-                    >
-                      {f[key]}
-                    </div>
-                  ))}
-                </Fragment>
-              ))}
-            </div>
           </div>
         </div>
       </section>
