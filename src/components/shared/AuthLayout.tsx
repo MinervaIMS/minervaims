@@ -109,7 +109,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
         </aside>
 
         {/* Form panel */}
-        <main className="relative flex-1 bg-background flex items-center justify-center px-6 py-[7.5vh] lg:py-[7.5vh] overflow-hidden">
+        <main className="relative flex-1 flex items-center justify-center px-6 py-[7.5vh] lg:py-[7.5vh] overflow-hidden" style={{ backgroundColor: '#05030F' }}>
           <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
             <Beams
               beamWidth={8.4}
