@@ -99,6 +99,18 @@ body[data-scroll-locked] {
   }
 }
 
+/* Page-scoped accent overrides */
+.theme-alumni-accent {
+  --accent: 258 75% 22%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 258 75% 22%;
+}
+.theme-division-accent {
+  --accent: 259 71% 14%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 259 71% 14%;
+}
+
 @layer base {
   * {
     @apply border-border;
