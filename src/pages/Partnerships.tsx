@@ -241,7 +241,7 @@ const Partnerships = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Engagement framework
           </h2>
-          <p className="font-body text-base text-muted-foreground mt-2">
+          <p className="font-body text-body-lg text-muted-foreground mt-2">
             All initiatives are conducted within the regulatory framework Bocconi University establishes for its recognised student associations.
           </p>
 
@@ -251,10 +251,10 @@ const Partnerships = () => {
                 key={row.topic}
                 className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3 md:gap-8 py-5 border-t border-separator"
               >
-                <div className="font-serif text-base md:text-[1.05rem] text-accent">
+                <div className="font-serif text-base md:text-lg text-accent">
                   {row.topic}
                 </div>
-                <div className="font-body text-[15px] leading-relaxed text-muted-foreground">
+                <div className="font-body text-body leading-relaxed text-muted-foreground">
                   {row.terms}
                 </div>
               </div>
