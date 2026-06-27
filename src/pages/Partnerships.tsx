@@ -216,7 +216,7 @@ const Partnerships = () => {
                   Let's talk about your goals with Minerva IMS
                 </h2>
                 <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
-                  Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved. We respond within two business days.
+                  Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved.&nbsp;
                 </p>
               </div>
               <div className="md:justify-self-end md:text-right">
