@@ -158,7 +158,7 @@ const ApplicationSettings = () => {
   return (
     <div className="space-y-6">
       <WorkspacePageHeader
-        title="Applications · website page"
+        title="Website Page"
         description="Control whether the public application form is open and where candidates are sent when they apply."
       />
 
