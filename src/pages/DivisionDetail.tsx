@@ -134,7 +134,7 @@ const DivisionDetail = () => {
   ];
 
   return (
-    <>
+    <div className="theme-division-accent">
       <Helmet>
         <title>{content.title} | MIMS</title>
       </Helmet>
@@ -209,7 +209,7 @@ const DivisionDetail = () => {
         reports={archiveFilesToReports(files)}
         useRealCover
       />
-    </>
+    </div>
   );
 };
 
