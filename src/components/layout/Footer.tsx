@@ -155,11 +155,11 @@ export function Footer() {
                   type="submit"
                   className="shrink-0 bg-muted text-foreground border border-background font-serif text-body px-6 py-2 hover:bg-[#ece9f4] transition-colors rounded-none"
                 >
-                  Sign Up
+                  Sign Up*
                 </button>
               </div>
               <p className="font-body text-small text-background/80 leading-snug mt-4">
-                By signing up, you agree to receive email updates from us. You can unsubscribe at any time.
+                * By signing up you agree to receive updates from us. You can unsubscribe at any time.
               </p>
             </form>
           </div>
