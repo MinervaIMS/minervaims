@@ -764,7 +764,7 @@ const MinervaWorkspace = () => {
     <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
       {/* Nav column */}
       <aside
-        className="flex flex-col bg-accent text-accent-foreground transition-[width] duration-200 ease-in-out shrink-0"
+        className="flex flex-col bg-accent text-accent-foreground transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 overflow-hidden"
         style={{ width: navExpanded ? 240 : 72 }}
       >
         {/* Logo */}
@@ -783,17 +783,24 @@ const MinervaWorkspace = () => {
                 key={section.key}
                 onClick={() => handleNavClick(section)}
                 title={!navExpanded ? section.label : undefined}
-                className={`group w-full flex items-center gap-3 px-4 h-12 text-left transition-colors tracking-wide ${
+                className={`group w-full flex items-center gap-3 px-4 h-14 text-left transition-colors tracking-wide ${
                   isActive ? 'bg-background/15' : 'hover:bg-background/10'
                 } ${navExpanded ? '' : 'justify-center'}`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
               >
-                <section.Icon className="h-5 w-5 shrink-0" />
-                {navExpanded && <span className="text-base">{section.label}</span>}
+                <section.Icon className="h-6 w-6 shrink-0" />
+                <span
+                  className={`text-lg whitespace-nowrap transition-opacity duration-200 ${
+                    navExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none w-0 overflow-hidden'
+                  }`}
+                >
+                  {section.label}
+                </span>
               </button>
             );
           })}
         </nav>
+
 
         {/* Collapse toggle */}
         <div className="shrink-0 p-2">
@@ -842,8 +849,9 @@ const MinervaWorkspace = () => {
         <div className="flex-1 min-h-0 flex">
           {/* Submenu panel */}
           <div
-            className="bg-muted/30 border-r border-separator overflow-hidden transition-[width] duration-200 ease-in-out shrink-0"
+            className="bg-muted/30 border-r border-separator overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0"
             style={{ width: submenuOpen && activeSection && activeSection.subItems.length > 0 ? 240 : 0 }}
+
           >
             {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
