@@ -81,23 +81,37 @@ export const SessionWarningModal = ({ warningThresholdMinutes = 2 }: SessionWarn
 
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-warning" />
+      <AlertDialogContent className="max-w-md">
+        <div className="flex flex-col items-center text-center">
+          <Clock className="h-8 w-8 mb-4" style={{ color: AUTH_TOKENS.NAVY }} />
+          <h2
+            className="font-serif mb-3"
+            style={{ fontSize: '24px', color: AUTH_TOKENS.INK, fontWeight: 400 }}
+          >
             Session Expiring Soon
-          </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>Your session will expire in <span className="font-semibold text-foreground">{formatTime(countdown)}</span>.</p>
-            <p>Would you like to extend your session or log out?</p>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleLogout}>Log Out</AlertDialogCancel>
-          <AlertDialogAction onClick={handleExtendSession}>
-            Extend Session
-          </AlertDialogAction>
-        </AlertDialogFooter>
+          </h2>
+          <p
+            className="font-body mb-2"
+            style={{ fontSize: '14px', color: AUTH_TOKENS.MUTED }}
+          >
+            Your session will expire in{' '}
+            <span style={{ color: AUTH_TOKENS.INK }}>{formatTime(countdown)}</span>.
+          </p>
+          <p
+            className="font-body mb-6"
+            style={{ fontSize: '14px', color: AUTH_TOKENS.MUTED }}
+          >
+            Would you like to extend your session or log out?
+          </p>
+          <div className="w-full space-y-3">
+            <AuthButton variant="primary" onClick={handleLogout}>
+              Log Out
+            </AuthButton>
+            <AuthButton variant="outline" onClick={handleExtendSession}>
+              Extend Session
+            </AuthButton>
+          </div>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
