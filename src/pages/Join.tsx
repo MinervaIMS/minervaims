@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PageIntroduction, PageLoader, ApplicationJourney } from "@/components/shared";
-import joinBg from "@/assets/join-bg.webp";
+import joinBg from "@/assets/MIMS_Join_Background.webp.asset.json";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
@@ -191,7 +191,7 @@ const CountUp = ({
 
 const Join = () => {
   const { settings } = useApplicationSettings();
-  const imagesLoaded = useImagePreload([joinBg]);
+  const imagesLoaded = useImagePreload([joinBg.url]);
   const { counts: keyFigures, isLoading: keyFiguresLoading } = useKeyFigures();
 
   // Figures band trigger
@@ -213,7 +213,7 @@ const Join = () => {
         <title>Join Us | MIMS</title>
       </Helmet>
       <div data-page-hero className="relative">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg})` }} />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg.url})` }} />
         <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction
@@ -230,7 +230,7 @@ const Join = () => {
             <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
               <div
                 className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: `url(${joinBg})` }}
+                style={{ backgroundImage: `url(${joinBg.url})` }}
                 aria-hidden
               />
               <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl">
