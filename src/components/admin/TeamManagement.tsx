@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Download, RotateC
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { divisionLabels, Division } from '@/lib/types';
 import { downloadCSV } from '@/lib/download-utils';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import {
   DndContext,
   closestCenter,
@@ -686,10 +687,11 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-heading text-accent">Team Management</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Members"
+        description="Manage the members shown on the public team page, including roles, photos and division."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="font-body" disabled={members.length === 0}>
@@ -904,8 +906,10 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
             </form>
           </DialogContent>
         </Dialog>
-        </div>
-      </div>
+        </>}
+      />
+
+
 
       {/* Members List grouped by division */}
       {members.length === 0 ? (
