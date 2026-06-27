@@ -178,7 +178,7 @@ const DivisionDetail = () => {
         <section className="py-section-sm md:py-section bg-background">
           <div className="container">
             <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
-              Minerva IMS Virtual Funds
+              MIMS Virtual Funds
             </h2>
             <div className="flex flex-col gap-[.7rem] md:gap-4">
               {allFunds.map(({ fund }) => (
