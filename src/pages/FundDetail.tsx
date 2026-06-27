@@ -10,7 +10,7 @@ import { useImagePreload } from '@/hooks/useImagePreload';
 // Background images for funds
 import longShortBg from '@/assets/fund-long-short-bg.webp';
 import multiAssetBg from '@/assets/fund-multi-asset-bg.webp';
-import pirBg from '@/assets/fund-pir-bg.webp';
+import pirBgAsset from '@/assets/mims-pir-fund.webp.asset.json';
 import dpsBg from '@/assets/fund-dps-bg.webp';
 
 interface ArchiveFile extends ArchiveFileRow {
@@ -55,7 +55,7 @@ const fundBackgrounds: Record<Fund, string> = {
   'multi-asset': multiAssetBg,
   'long-short': longShortBg,
   'dps': dpsBg,
-  'pir': pirBg,
+  'pir': pirBgAsset.url,
 };
 
 const FundDetail = () => {

@@ -8,7 +8,7 @@ import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useImagePreload } from "@/hooks/useImagePreload";
-import archiveBg from "@/assets/archive-bg.webp";
+import archiveBgAsset from "@/assets/mims-archive.webp.asset.json";
 import {
   Pagination,
   PaginationContent,
@@ -31,6 +31,7 @@ interface ArchiveFile {
 const ITEMS_PER_PAGE = 15;
 
 const Archive = () => {
+  const archiveBg = archiveBgAsset.url;
   const [searchParams, setSearchParams] = useSearchParams();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -39,6 +40,7 @@ const Archive = () => {
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const hasScrolledToFile = useRef(false);
   const imagesLoaded = useImagePreload([archiveBg]);
+
 
   // Read fileId from URL params (for direct linking from carousels)
   const fileIdFromUrl = searchParams.get("fileId");

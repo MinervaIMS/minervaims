@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
-import readingsBg from '@/assets/readings-bg.webp';
+import readingsBgAsset from '@/assets/mims-readings.webp.asset.json';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
 
@@ -38,6 +38,7 @@ const readingsAccessRoles = [
 ];
 
 const Readings = () => {
+  const readingsBg = readingsBgAsset.url;
   const [readings, setReadings] = useState<Reading[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<ReadingType | 'all'>('all');
@@ -45,6 +46,7 @@ const Readings = () => {
   const { user, roles } = useAuth();
   const navigate = useNavigate();
   const imagesLoaded = useImagePreload([readingsBg]);
+
 
   // Check if user can submit readings
   const canSubmit = user && roles.some(r => readingsAccessRoles.includes(r.role));

@@ -5,7 +5,7 @@ import { PageIntroduction, MembersDirectory, PageLoader } from '@/components/sha
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
 import { useImagePreload } from '@/hooks/useImagePreload';
-import teamBg from '@/assets/team-bg.webp';
+import teamBgAsset from '@/assets/mims-members.webp.asset.json';
 
 interface DbTeamMember {
   id: string;
@@ -21,11 +21,13 @@ interface DbTeamMember {
 }
 
 const Team = () => {
+  const teamBg = teamBgAsset.url;
   const [searchParams] = useSearchParams();
   const divisionParam = searchParams.get('division') as Division | null;
   const [members, setMembers] = useState<DbTeamMember[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const imagesLoaded = useImagePreload([teamBg]);
+
 
   useEffect(() => {
     (async () => {

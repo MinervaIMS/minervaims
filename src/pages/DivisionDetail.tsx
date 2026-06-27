@@ -9,10 +9,10 @@ import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for each division
 import equityBg from '@/assets/division-equity-bg.webp';
-import investmentBg from '@/assets/division-investment-bg.webp';
+import investmentBgAsset from '@/assets/mims-investment-research.webp.asset.json';
 import macroBg from '@/assets/division-macro-bg.webp';
 import portfolioBg from '@/assets/division-portfolio-bg.webp';
-import quantBg from '@/assets/division-quant-bg.webp';
+import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -62,10 +62,10 @@ const divisionContent: Record<Division, DivisionContent> = {
 // Background images mapping
 const divisionBackgrounds: Record<Division, string> = {
   equity: equityBg,
-  investment: investmentBg,
+  investment: investmentBgAsset.url,
   macro: macroBg,
   portfolio: portfolioBg,
-  quant: quantBg,
+  quant: quantBgAsset.url,
 };
 
 // Fund descriptions for the Portfolio Management page

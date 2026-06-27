@@ -4,7 +4,7 @@ import { PageIntroduction, PageLoader } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import { Division, divisionLabels } from "@/lib/types";
 import { useImagePreload } from "@/hooks/useImagePreload";
-import aboutBg from "@/assets/about-bg.webp";
+import aboutBgAsset from "@/assets/mims-about-us.webp.asset.json";
 
 const divisionData: { division: Division; description: string }[] = [
   {
@@ -30,7 +30,9 @@ const divisionData: { division: Division; description: string }[] = [
 ];
 
 const About = () => {
+  const aboutBg = aboutBgAsset.url;
   const imagesLoaded = useImagePreload([aboutBg]);
+
 
   if (!imagesLoaded) {
     return <PageLoader />;
