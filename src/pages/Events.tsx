@@ -161,6 +161,7 @@ const Events = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${eventsBg})` }}
         />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction title="Events" transparentBackground />
         </div>

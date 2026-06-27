@@ -73,6 +73,7 @@ const Index = () => {
       <section data-page-hero className="relative min-h-screen flex flex-col pt-20 md:pt-24">
         {/* Background image - extends behind transparent header */}
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
+        <div className="absolute inset-0 hero-overlay" />
 
         {/* Content */}
         <div className="relative z-10 flex-1 flex items-center justify-center text-center px-6 py-12">

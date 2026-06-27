@@ -22,6 +22,7 @@ const Contacts = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${contactsBg})` }}
         />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction title="Contacts" transparentBackground />
         </div>

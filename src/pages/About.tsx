@@ -46,6 +46,7 @@ const About = () => {
       {/* SECTION 0 - Hero with title and photo background */}
       <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${aboutBg})` }} />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction
             title="About"

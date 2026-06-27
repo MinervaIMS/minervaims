@@ -102,6 +102,7 @@ const Readings = () => {
           className="absolute inset-0 bg-cover bg-center" 
           style={{ backgroundImage: `url(${readingsBg})` }} 
         />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction
             title="Reading Recommendations"
