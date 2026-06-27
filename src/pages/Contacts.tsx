@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import contactsBgAsset from "@/assets/MIMS_Contacts.webp.asset.json";
-import linkedinIcon from "@/assets/linkedin-black.svg";
-import instagramIcon from "@/assets/instagram-black.svg";
 
 const Contacts = () => {
   const contactsBg = contactsBgAsset.url;
