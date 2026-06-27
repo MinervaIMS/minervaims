@@ -811,7 +811,7 @@ const MinervaWorkspace = () => {
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
             {navExpanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
-            {navExpanded && <span className="text-sm opacity-80 tracking-wide">Collapse</span>}
+            {navExpanded && <span className="text-sm opacity-80 tracking-wide">{"\n\n"}</span>}
           </button>
         </div>
       </aside>
