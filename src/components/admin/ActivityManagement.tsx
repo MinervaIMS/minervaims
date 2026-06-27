@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, Download } from 'lucide-react';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -291,9 +292,11 @@ export default function ActivityManagement() {
 
   return (
     <div id="activity-section" className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-heading text-accent">Activity Tracking</h2>
+      <WorkspacePageHeader
+        title="Activity log"
+        description="Audit recent create, update and delete actions across the workspace."
+        actions={
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline" size="sm">
@@ -313,8 +316,10 @@ export default function ActivityManagement() {
               <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
-      </div>
+        }
+      />
+
+
 
       {/* Filters - matching Archive page UI */}
       <div className="mb-8 pb-6 border-b border-separator">
