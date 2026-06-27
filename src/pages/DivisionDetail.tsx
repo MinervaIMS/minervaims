@@ -41,7 +41,7 @@ const divisionContent: Record<Division, DivisionContent> = {
   },
   macro: {
     title: 'Macro Research',
-    subtitle: 'Global policy analysis with clear market transmission channels.',
+    subtitle: 'Global policy analysis with clear market transmission channels',
     description: 'Macro Research produces thematic reports on global policy regimes and structural shifts in the international economy, linking macro narratives to market channels. Recent work spans monetary-policy scenarios across major economies, Europe\'s growth divergences and fiscal sustainability, China\'s rebalancing/deflation risks, and the move from dollarisation toward a more multipolar monetary system, including payments infrastructure. The division is led by a Head and Co-Head, supported by group leaders and analysts who build data-backed frameworks, scenarios and cross-asset implications.',
     sectionTitle: 'Latest Reports',
   },
