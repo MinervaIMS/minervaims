@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Save } from 'lucide-react';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 interface ApplicationSettingsData {
   id: string;
@@ -156,9 +157,11 @@ const ApplicationSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-serif text-heading text-accent">Application Settings</h2>
-      </div>
+      <WorkspacePageHeader
+        title="Applications · website page"
+        description="Control whether the public application form is open and where candidates are sent when they apply."
+      />
+
 
       <Card>
         <CardHeader>
