@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import contactsBgAsset from "@/assets/MIMS_Contacts.webp.asset.json";
-import linkedinIcon from "@/assets/linkedin-white.svg";
-import instagramIcon from "@/assets/instagram-white.svg";
+import linkedinIcon from "@/assets/linkedin-black.svg";
+import instagramIcon from "@/assets/instagram-black.svg";
 
 const Contacts = () => {
   const contactsBg = contactsBgAsset.url;
@@ -43,10 +43,10 @@ const Contacts = () => {
                 For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
               </p>
 
-              <div className="mt-9 pb-8 sm:pb-0 sm:pr-7">
+              <div className="mt-9 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
                 <a
                   href="mailto:as.minerva@unibocconi.it"
-                  className="group inline-flex items-center gap-3 font-serif text-2xl md:text-3xl text-accent break-words"
+                  className="group inline-flex items-center gap-3 font-serif text-3xl md:text-4xl text-accent break-words"
                 >
                   <span className="underline-offset-4 group-hover:underline">
                     as.minerva@unibocconi.it
@@ -66,18 +66,18 @@ const Contacts = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="MIMS on LinkedIn"
-                  className="w-14 h-14 rounded-full bg-accent flex items-center justify-center hover:opacity-80 transition-opacity"
+                  className="flex items-center justify-center hover:opacity-80 transition-opacity"
                 >
-                  <img src={linkedinIcon} alt="" className="w-6 h-6" />
+                  <img src={linkedinIcon} alt="" className="w-10 h-10" />
                 </a>
                 <a
                   href="https://www.instagram.com/minerva.ims/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="MIMS on Instagram"
-                  className="w-14 h-14 rounded-full bg-accent flex items-center justify-center hover:opacity-80 transition-opacity"
+                  className="flex items-center justify-center hover:opacity-80 transition-opacity"
                 >
-                  <img src={instagramIcon} alt="" className="w-6 h-6" />
+                  <img src={instagramIcon} alt="" className="w-10 h-10" />
                 </a>
               </div>
 
@@ -91,7 +91,7 @@ const Contacts = () => {
               </p>
               <Link
                 to="/people"
-                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider uppercase hover:bg-accent hover:text-background transition-colors"
+                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider hover:bg-accent hover:text-background transition-colors"
               >
                 Meet the members
               </Link>
@@ -103,15 +103,14 @@ const Contacts = () => {
             <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
               Partnerships &amp; Collaborations
             </h2>
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-              From student associations to institutions and companies, Minerva has a long experience in promoting partnerships of great mutual return. Find out more
-            </p>
-            <Link
-              to="/partnerships"
-              className="inline-flex items-center justify-center mt-5 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider uppercase hover:bg-accent hover:text-background transition-colors"
-            >
-              Visit Partnerships
-            </Link>
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+                From student associations to institutions and companies, Minerva has a long experience in promoting partnerships of great mutual return. Find out more
+              </p>
+              <Link to="/partnerships" className="cta-link whitespace-nowrap shrink-0">
+                Visit Partnerships
+              </Link>
+            </div>
           </div>
         </div>
       </section>
