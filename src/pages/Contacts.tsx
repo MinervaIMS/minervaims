@@ -33,7 +33,7 @@ const Contacts = () => {
         <div className="container">
           <div>
             <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-              Get in touch
+              Get in touch with Minerva
             </h2>
             <p className="font-body text-body-lg text-muted-foreground max-w-xl">
               For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
