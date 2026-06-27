@@ -58,7 +58,7 @@ const Contacts = () => {
             </h2>
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
-                From student associations to institutions and companies, Minerva has a long experience in promoting partnerships of great mutual return. Find out more
+                Minerva collaborates with financial institutions, asset managers, and corporates on structured academic and editorial initiatives. For companies and professionals seeking to engage with the Society, our dedicated Partnerships page sets out available formats and the applicable terms.
               </p>
               <Link to="/partnerships" className="cta-link whitespace-nowrap shrink-0">
                 Visit Partnerships
