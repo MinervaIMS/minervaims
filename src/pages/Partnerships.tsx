@@ -129,10 +129,10 @@ const Partnerships = () => {
       {/* SECTION 1 — Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <p className="font-serif text-xl sm:text-2xl md:text-subheading leading-snug text-accent max-w-3xl">
-            Structured formats for collaboration with financial institutions, asset managers, advisory firms, and corporates.
-          </p>
-          <p className="font-body text-body-lg text-muted-foreground max-w-3xl mt-5">
+          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+            Our Approach to Collaborations
+          </h2>
+          <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
             Minerva Investment Management Society welcomes engagement with partners whose interests align with our commitment to rigorous financial research and academic excellence. We offer a range of structured formats, governed by the framework Bocconi University establishes for its recognised student associations.
           </p>
         </div>
