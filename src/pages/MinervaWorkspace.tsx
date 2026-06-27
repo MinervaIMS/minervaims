@@ -849,8 +849,9 @@ const MinervaWorkspace = () => {
         <div className="flex-1 min-h-0 flex">
           {/* Submenu panel */}
           <div
-            className="bg-muted/30 border-r border-separator overflow-hidden transition-[width] duration-200 ease-in-out shrink-0"
+            className="bg-muted/30 border-r border-separator overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0"
             style={{ width: submenuOpen && activeSection && activeSection.subItems.length > 0 ? 240 : 0 }}
+
           >
             {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
