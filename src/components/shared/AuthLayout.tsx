@@ -155,7 +155,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
                 {cardSubtitle && (
                   <p
                     className="font-body"
-                    style={{ fontSize: '14.5px', color: '#737373', lineHeight: 1.55 }}
+                    style={{ fontSize: '14.5px', color: '#737373', lineHeight: 1.55, whiteSpace: 'pre-line' }}
                   >
                     {cardSubtitle}
                   </p>
