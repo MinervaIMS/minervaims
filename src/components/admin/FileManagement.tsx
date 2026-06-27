@@ -13,6 +13,7 @@ import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp,
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-utils';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 interface ArchiveFile {
   id: string;
   title: string;
@@ -500,9 +501,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   return (
     <div id="files-section">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-heading text-accent">Archive Files</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Reports archive"
+        description="Browse, search and download every published report. Filter by division, year, fund or free-text search."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button 
@@ -676,8 +679,10 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             </form>
           </DialogContent>
         </Dialog>
-        </div>
-      </div>
+        </>}
+      />
+
+
 
       {/* Filters - matching Archive page UI */}
       <div className="mb-8 pb-6 border-b border-separator">

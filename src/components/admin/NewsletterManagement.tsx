@@ -10,6 +10,7 @@ import { Download, Trash2, Loader2, Search, ChevronLeft, ChevronRight } from 'lu
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { downloadCSV } from '@/lib/download-utils';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 interface Subscriber {
   id: string;
@@ -80,28 +81,32 @@ export default function NewsletterManagement() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-        <h2 className="font-serif text-heading text-accent">Newsletter Subscribers</h2>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" className="font-body" disabled={subscribers.length === 0}>
-              <Download className="h-4 w-4 mr-2" />Download CSV
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Download Newsletter Subscribers CSV</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will download a CSV file containing {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDownload}>Download</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      <WorkspacePageHeader
+        title="Newsletter"
+        description="Subscribers to the public newsletter form. Export the list or remove individual records."
+        actions={
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="font-body" disabled={subscribers.length === 0}>
+                <Download className="h-4 w-4 mr-2" />Download CSV
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download Newsletter Subscribers CSV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download a CSV file containing {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDownload}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        }
+      />
+
 
       <div className="mb-6 relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

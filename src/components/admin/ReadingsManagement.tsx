@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download, Search } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import {
   DndContext,
   closestCenter,
@@ -465,10 +466,11 @@ const ReadingsManagement = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-heading text-accent">Readings Management</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Readings"
+        description="Curate the books, papers and resources shown on the public Readings page."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="font-body" disabled={readings.length === 0}>
@@ -597,8 +599,10 @@ const ReadingsManagement = () => {
             </form>
           </DialogContent>
         </Dialog>
-        </div>
-      </div>
+        </>}
+      />
+
+
 
       {/* Search */}
       <div className="mb-6">

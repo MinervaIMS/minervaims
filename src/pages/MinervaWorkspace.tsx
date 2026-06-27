@@ -30,6 +30,7 @@ import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
 import NewsletterManagement from '@/components/admin/NewsletterManagement';
 import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
@@ -70,7 +71,7 @@ type NavSection = {
 
 const NAV: NavSection[] = [
   {
-    key: 'my-role', label: 'My Profile', Icon: UserIcon,
+    key: 'my-role', label: 'My profile', Icon: UserIcon,
     subItems: [],
   },
   {
@@ -90,8 +91,8 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'reports-upload', label: 'Upload', allowed: (p) => p.canAccessFiles },
       { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-templates', label: 'Templates & Code Repos' },
-      { key: 'reports-funds', label: "Funds' Performances" },
+      { key: 'reports-templates', label: 'Templates & code repos' },
+      { key: 'reports-funds', label: "Funds' performances" },
     ],
   },
   {
@@ -109,37 +110,37 @@ const NAV: NavSection[] = [
       { key: 'events-forms', label: 'Forms', allowed: (p) => p.canAccessEvents },
       { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
       { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
-      { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.canAccessEvents },
+      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-website', label: 'Website page', allowed: (p) => p.canAccessSettings },
       { key: 'applications-status', label: 'Status', allowed: (p) => p.canAccessSettings },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-joiners', label: 'New Joiners', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-form', label: 'Form Settings', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-form', label: 'Form settings', allowed: (p) => p.canAccessSettings },
     ],
   },
   {
-    key: 'smm', label: 'SMM & Graphics', Icon: ImageIcon,
+    key: 'smm', label: 'SMM & graphics', Icon: ImageIcon,
     subItems: [
       { key: 'smm-ig', label: 'Instagram' },
       { key: 'smm-li', label: 'LinkedIn' },
-      { key: 'smm-other', label: 'Other Templates' },
-      { key: 'smm-brand', label: 'Design, Brand & Logo' },
+      { key: 'smm-other', label: 'Other templates' },
+      { key: 'smm-brand', label: 'Design, brand & logo' },
     ],
   },
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-fee', label: 'Membership Fee' },
+      { key: 'ops-fee', label: 'Membership fee' },
       { key: 'ops-treasury', label: 'Treasury' },
-      { key: 'ops-accounts', label: 'Accounts & Credentials' },
-      { key: 'ops-external', label: 'External Relations' },
+      { key: 'ops-accounts', label: 'Accounts & credentials' },
+      { key: 'ops-external', label: 'External relations' },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.canAccessUsers },
-      { key: 'ops-auto-emails', label: 'Auto Emails' },
+      { key: 'ops-auto-emails', label: 'Auto emails' },
 
       { key: 'ops-docs', label: 'Statuto' },
     ],
@@ -151,7 +152,7 @@ const NAV: NavSection[] = [
       { key: 'website-pages', label: 'Pages', allowed: (p) => p.isFullAccess },
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'website-testimonials', label: 'Testimonials' },
-      { key: 'website-alumni-companies', label: 'Alumni Companies' },
+      { key: 'website-alumni-companies', label: 'Alumni companies' },
     ],
   },
 
@@ -159,9 +160,9 @@ const NAV: NavSection[] = [
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
-      { key: 'settings-edit-dashboard', label: 'Edit Workspace', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-roles', label: 'Roles permissions', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.canAccessActivity },
+      { key: 'settings-edit-dashboard', label: 'Edit workspace', allowed: (p) => p.canAccessUsers },
     ],
   },
 ];
@@ -483,9 +484,12 @@ const MinervaWorkspace = () => {
   // ────────────────────────────────────────────────────────────────────────────
 
   const renderMyRole = () => (
-    <div className="max-w-2xl">
-      <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">My Profile</h2>
-      <div className="space-y-4 font-body">
+    <div>
+      <WorkspacePageHeader
+        title="My profile"
+        description="Your account details and current workspace role."
+      />
+      <div className="max-w-2xl space-y-4 font-body">
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Role</div>
           <div className="text-lg text-foreground">{roleLabel}</div>
@@ -498,23 +502,25 @@ const MinervaWorkspace = () => {
     </div>
   );
 
+  const renderPlaceholder = (title: string, description: string) => (
+    <div>
+      <WorkspacePageHeader title={title} description={description} />
+      <div className="py-12 text-center">
+        <p className="font-body text-muted-foreground">Coming soon.</p>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     if (activeSectionKey === 'my-role') return renderMyRole();
     if (activeSectionKey === 'welcome') {
-      return (
-        <div className="py-16 text-center">
-          <h2 className="font-serif text-heading text-accent mb-3">Welcome</h2>
-          <p className="font-body text-muted-foreground">Coming soon.</p>
-        </div>
-      );
+      return renderPlaceholder('Welcome', 'Your entry point to the Minerva workspace.');
     }
     if (activeSectionKey === 'dashboard') {
-      return (
-        <div className="py-16 text-center">
-          <h2 className="font-serif text-heading text-accent mb-3">Dashboard</h2>
-          <p className="font-body text-muted-foreground">Coming soon.</p>
-        </div>
-      );
+      return renderPlaceholder('Dashboard', 'Role-aware overview of workspace activity.');
+    }
+    if (activeSectionKey === 'calendar' && !activeSubKey) {
+      return renderPlaceholder('Calendar', 'Upcoming events, deadlines and meetings.');
     }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
@@ -542,20 +548,17 @@ const MinervaWorkspace = () => {
 
 
       default:
-        return (
-          <div className="py-16 text-center">
-            <h2 className="font-serif text-heading text-accent mb-3">{activeSub?.label}</h2>
-            <p className="font-body text-muted-foreground">Coming soon.</p>
-          </div>
-        );
+        return renderPlaceholder(activeSub?.label ?? 'Coming soon', 'This section is under construction.');
     }
   };
 
   const renderEventsManagement = () => (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-heading text-accent">Events Management</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Events archive"
+        description="Past and upcoming events with posters, moderators and guests."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="font-body" disabled={events.length === 0}>
@@ -664,8 +667,9 @@ const MinervaWorkspace = () => {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>}
+      />
+
 
       <div className="mb-8 pb-6 border-b border-separator">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -770,7 +774,7 @@ const MinervaWorkspace = () => {
                 key={section.key}
                 onClick={() => handleNavClick(section)}
                 title={!navExpanded ? section.label : undefined}
-                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors uppercase tracking-wider ${
+                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors tracking-wide ${
                   isActive ? 'bg-background/15' : 'hover:bg-background/10'
                 } ${navExpanded ? '' : 'justify-center'}`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
@@ -791,7 +795,7 @@ const MinervaWorkspace = () => {
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
             {navExpanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
-            {navExpanded && <span className="text-sm opacity-80 uppercase tracking-wider">Collapse</span>}
+            {navExpanded && <span className="text-sm opacity-80 tracking-wide">Collapse</span>}
           </button>
         </div>
       </aside>
@@ -811,14 +815,14 @@ const MinervaWorkspace = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/')}
-              className="font-body"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <Globe className="h-4 w-4 mr-2" />Return to website
             </Button>
             <Button
               variant="outline"
               onClick={async () => { await signOut(); navigate('/auth'); }}
-              className="font-body"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <LogOut className="h-4 w-4 mr-2" />Log out
             </Button>
@@ -835,7 +839,7 @@ const MinervaWorkspace = () => {
             {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
                 <div className="shrink-0 h-14 flex items-center justify-between px-4">
-                  <h3 className="font-serif text-lg text-accent uppercase tracking-wider">{activeSection.label}</h3>
+                  <h3 className="font-serif text-lg text-accent tracking-wide">{activeSection.label}</h3>
                   <button
                     onClick={() => setSubmenuOpen(false)}
                     className="h-7 w-7 flex items-center justify-center hover:bg-background"
@@ -852,7 +856,7 @@ const MinervaWorkspace = () => {
                         key={si.key}
                         onClick={() => setActiveSubKey(si.key)}
                         className={`w-full text-left px-4 h-10 flex items-center transition-colors text-body ${
-                          isActive ? 'text-accent font-medium bg-background' : 'text-foreground hover:bg-background/60'
+                          isActive ? 'text-accent font-medium bg-[#ece9f4]' : 'text-foreground hover:bg-background/60'
                         }`}
                         style={{ fontFamily: '"Times New Roman", Times, serif' }}
                       >

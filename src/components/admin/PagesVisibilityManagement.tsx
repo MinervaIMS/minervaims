@@ -8,6 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 const formatDate = (iso: string | null | undefined) => {
   if (!iso) return '—';
@@ -84,16 +85,11 @@ const PagesVisibilityManagement = () => {
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">
-          Pages
-        </h2>
-        <p className="font-body text-body text-muted-foreground max-w-3xl">
-          Toggle individual public pages on or off. When a page is hidden, the
-          URL remains reachable but visitors see a "Page Under Update" notice
-          over a blurred body. Homepage and legal pages cannot be hidden.
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title="Pages"
+        description={`Toggle individual public pages on or off. When a page is hidden, the URL remains reachable but visitors see a "Page Under Update" notice over a blurred body. Homepage and legal pages cannot be hidden.`}
+      />
+
 
       <div className="border border-separator">
         <Table>
