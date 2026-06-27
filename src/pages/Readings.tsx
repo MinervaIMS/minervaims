@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
-import readingsBg from '@/assets/readings-bg.webp';
+import readingsBg from '@/assets/mims-readings.webp.asset.json';
 
 type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
 

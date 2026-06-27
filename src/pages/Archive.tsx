@@ -8,7 +8,7 @@ import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useImagePreload } from "@/hooks/useImagePreload";
-import archiveBg from "@/assets/archive-bg.webp";
+import archiveBg from "@/assets/mims-archive.webp.asset.json";
 import {
   Pagination,
   PaginationContent,

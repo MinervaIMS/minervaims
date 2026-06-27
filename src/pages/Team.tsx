@@ -5,7 +5,7 @@ import { PageIntroduction, MembersDirectory, PageLoader } from '@/components/sha
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
 import { useImagePreload } from '@/hooks/useImagePreload';
-import teamBg from '@/assets/team-bg.webp';
+import teamBg from '@/assets/mims-members.webp.asset.json';
 
 interface DbTeamMember {
   id: string;
