@@ -16,7 +16,7 @@ const AccessDenied = () => {
     <AuthLayout
       title="Access Not Approved"
       cardTitle="Access Not Approved"
-      cardSubtitle="Your request to join the Minerva Workspace wasn't approved at this time. You're welcome to re-apply in the next recruitment cycle."
+      cardSubtitle="Your request to join the Minerva Workspace has either been revoked or has not been approved."
     >
       <AuthButton onClick={handleLogout}>Log Out</AuthButton>
     </AuthLayout>
