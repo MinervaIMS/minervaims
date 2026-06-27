@@ -168,22 +168,20 @@ body[data-scroll-locked] {
                 0 6px 10px -3px hsl(var(--overlay) / 0.06);
   }
 
-  /* Hero overlay */
+  /* Hero overlay — fully opaque purple wash from uploaded asset */
   .hero-overlay {
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--overlay) / 0.65) 0%,
-      hsl(var(--overlay) / 0.75) 100%
-    );
+    background-image: url("/__l5e/assets-v1/ae58ae29-b120-4fbc-a3d5-f96b0c35dcc1/dark-purple-overlay.webp");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
-  /* Page intro overlay - slightly lighter */
+  /* Page intro overlay — same purple wash */
   .page-intro-overlay {
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--overlay) / 0.55) 0%,
-      hsl(var(--overlay) / 0.65) 100%
-    );
+    background-image: url("/__l5e/assets-v1/ae58ae29-b120-4fbc-a3d5-f96b0c35dcc1/dark-purple-overlay.webp");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 }
 
