@@ -251,7 +251,7 @@ const Partnerships = () => {
                 key={row.topic}
                 className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3 md:gap-8 py-5 border-t border-separator"
               >
-                <div className="font-serif text-base md:text-lg text-accent">
+                <div className="font-serif text-lg md:text-xl text-accent">
                   {row.topic}
                 </div>
                 <div className="font-body text-body leading-relaxed text-muted-foreground">
