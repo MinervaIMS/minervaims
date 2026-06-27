@@ -91,7 +91,7 @@ const Contacts = () => {
               </p>
               <Link
                 to="/people"
-                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif hover:bg-accent hover:text-background transition-colors"
+                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider uppercase hover:bg-accent hover:text-background transition-colors"
               >
                 Meet the members
               </Link>
