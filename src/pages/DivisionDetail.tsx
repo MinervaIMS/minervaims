@@ -9,10 +9,10 @@ import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for each division
 import equityBg from '@/assets/division-equity-bg.webp';
-import investmentBg from '@/assets/mims-investment-research.webp.asset.json';
+import investmentBgAsset from '@/assets/mims-investment-research.webp.asset.json';
 import macroBg from '@/assets/division-macro-bg.webp';
 import portfolioBg from '@/assets/division-portfolio-bg.webp';
-import quantBg from '@/assets/mims-quant-research.webp.asset.json';
+import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;

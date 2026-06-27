@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import logoWhite from "@/assets/footer-logo.svg";
-import homepageBg from "@/assets/mims-homepage.webp.asset.json";
+import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
