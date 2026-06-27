@@ -162,85 +162,83 @@ const ApplicationSettings = () => {
         description="Control whether the public application form is open and where candidates are sent when they apply."
       />
 
+      <div className="space-y-2">
+        <h2 className="font-serif text-xl text-accent">Recruitment Status</h2>
+        <p className="font-body text-body text-muted-foreground">
+          Control whether applications are open or closed for the current recruitment cycle.
+        </p>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-serif">Recruitment Status</CardTitle>
-          <CardDescription className="font-body">
-            Control whether applications are open or closed for the current recruitment cycle.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Application Status Toggle */}
-          <div className="flex items-center justify-between p-4 border border-separator rounded-lg">
-            <div>
-              <p className="font-body font-medium">Applications Open</p>
-              <p className="font-body text-sm text-muted-foreground">
-                {formData.applications_open 
-                  ? "Applications are currently open. The 'Apply Now' button is visible on the homepage."
-                  : "Applications are currently closed. The homepage shows recruitment is closed."
-                }
-              </p>
-            </div>
-            <Switch
-              checked={formData.applications_open}
-              onCheckedChange={handleToggle}
-            />
-          </div>
-
-          {/* Semester Label */}
-          <div className="space-y-2">
-            <Label htmlFor="semester_label" className="font-body">Semester Label</Label>
-            <Input
-              id="semester_label"
-              value={formData.semester_label}
-              onChange={(e) => setFormData(prev => ({ ...prev, semester_label: e.target.value }))}
-              placeholder="e.g., Spring 2026"
-            />
+      <div className="space-y-6">
+        {/* Application Status Toggle */}
+        <div className="flex items-center justify-between p-4 border border-separator rounded-lg">
+          <div>
+            <p className="font-body font-medium">Applications Open</p>
             <p className="font-body text-sm text-muted-foreground">
-              This label appears on the Join page when applications are open.
+              {formData.applications_open
+                ? "Applications are currently open. The 'Apply Now' button is visible on the homepage."
+                : "Applications are currently closed. The homepage shows recruitment is closed."
+              }
             </p>
           </div>
+          <Switch
+            checked={formData.applications_open}
+            onCheckedChange={handleToggle}
+          />
+        </div>
 
-          {/* Apply Form URL */}
-          <div className="space-y-2">
-            <Label htmlFor="apply_form_url" className="font-body">Application Form URL</Label>
-            <Input
-              id="apply_form_url"
-              value={formData.apply_form_url}
-              onChange={(e) => setFormData(prev => ({ ...prev, apply_form_url: e.target.value }))}
-              placeholder="https://forms.google.com/..."
-            />
-            <p className="font-body text-sm text-muted-foreground">
-              The URL candidates are directed to when they click "Apply Now" on the Join page.
-            </p>
-          </div>
+        {/* Semester Label */}
+        <div className="space-y-2">
+          <Label htmlFor="semester_label" className="font-body text-sm">Semester Label</Label>
+          <Input
+            id="semester_label"
+            value={formData.semester_label}
+            onChange={(e) => setFormData(prev => ({ ...prev, semester_label: e.target.value }))}
+            placeholder="e.g., Spring 2026"
+          />
+          <p className="font-body text-xs text-muted-foreground">
+            This label appears on the Join page when applications are open.
+          </p>
+        </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={isSaving} className="font-body">
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
+        {/* Apply Form URL */}
+        <div className="space-y-2">
+          <Label htmlFor="apply_form_url" className="font-body text-sm">Application Form URL</Label>
+          <Input
+            id="apply_form_url"
+            value={formData.apply_form_url}
+            onChange={(e) => setFormData(prev => ({ ...prev, apply_form_url: e.target.value }))}
+            placeholder="https://forms.google.com/..."
+          />
+          <p className="font-body text-xs text-muted-foreground">
+            The URL candidates are directed to when they click "Apply Now" on the Join page.
+          </p>
+        </div>
 
-          {/* Last Updated Info */}
-          {settings?.updated_at && (
-            <p className="font-body text-xs text-muted-foreground text-right">
-              Last updated: {new Date(settings.updated_at).toLocaleString()}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        {/* Save Button */}
+        <div className="flex justify-end pt-4">
+          <Button onClick={handleSave} disabled={isSaving} className="font-body">
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Last Updated Info */}
+        {settings?.updated_at && (
+          <p className="font-body text-xs text-muted-foreground text-right">
+            Last updated: {new Date(settings.updated_at).toLocaleString()}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
