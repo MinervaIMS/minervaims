@@ -55,7 +55,7 @@ const fundBackgrounds: Record<Fund, string> = {
   'multi-asset': multiAssetBg,
   'long-short': longShortBg,
   'dps': dpsBg,
-  'pir': pirBg,
+  'pir': pirBgAsset.url,
 };
 
 const FundDetail = () => {

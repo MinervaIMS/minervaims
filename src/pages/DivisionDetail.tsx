@@ -62,10 +62,10 @@ const divisionContent: Record<Division, DivisionContent> = {
 // Background images mapping
 const divisionBackgrounds: Record<Division, string> = {
   equity: equityBg,
-  investment: investmentBg,
+  investment: investmentBgAsset.url,
   macro: macroBg,
   portfolio: portfolioBg,
-  quant: quantBg,
+  quant: quantBgAsset.url,
 };
 
 // Fund descriptions for the Portfolio Management page

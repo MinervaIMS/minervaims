@@ -21,11 +21,13 @@ interface DbTeamMember {
 }
 
 const Team = () => {
+  const teamBg = teamBgAsset.url;
   const [searchParams] = useSearchParams();
   const divisionParam = searchParams.get('division') as Division | null;
   const [members, setMembers] = useState<DbTeamMember[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const imagesLoaded = useImagePreload([teamBg]);
+
 
   useEffect(() => {
     (async () => {

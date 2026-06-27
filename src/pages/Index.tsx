@@ -29,11 +29,13 @@ const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolea
 };
 
 const Index = () => {
+  const homepageBg = homepageBgAsset.url;
   const { counts, isLoading: isKeyFiguresLoading } = useKeyFigures();
   const { settings: appSettings } = useApplicationSettings();
   const [carouselFiles, setCarouselFiles] = useState<ArchiveFile[]>([]);
   const [isCarouselLoading, setIsCarouselLoading] = useState(true);
   const imagesLoaded = useImagePreload([homepageBg, logoWhite]);
+
 
   useEffect(() => {
     fetchCarouselFiles();

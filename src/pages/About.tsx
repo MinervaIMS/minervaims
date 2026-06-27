@@ -30,7 +30,9 @@ const divisionData: { division: Division; description: string }[] = [
 ];
 
 const About = () => {
+  const aboutBg = aboutBgAsset.url;
   const imagesLoaded = useImagePreload([aboutBg]);
+
 
   if (!imagesLoaded) {
     return <PageLoader />;
