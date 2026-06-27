@@ -215,7 +215,7 @@ const Partnerships = () => {
                 <h2 className="font-serif text-xl sm:text-heading text-background">
                   Establish a partnership
                 </h2>
-                <p className="font-body text-base md:text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
+                <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
                   Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved. We respond within two business days.
                 </p>
               </div>
@@ -225,7 +225,7 @@ const Partnerships = () => {
                 </div>
                 <a
                   href="mailto:as.minerva@unibocconi.it"
-                  className="block font-serif text-xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
+                  className="block font-serif text-2xl md:text-3xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
                 >
                   as.minerva@unibocconi.it
                 </a>
