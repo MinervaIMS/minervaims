@@ -14,31 +14,31 @@ interface Format {
 
 const FORMATS: Format[] = [
   {
-    title: "On-campus panel or lecture",
-    duration: "60–90 minutes, between 18:30 and 20:30",
-    audience: "50–200 students, open to the Bocconi community",
+    title: "On-campus Guest Speakers Panel",
+    duration: "60.- 90 minutes, between 18:30 and 20:30",
+    audience: "50 - 200 students, open to the Bocconi community",
     format: "In person, moderated by a Bocconi Core Faculty member",
     description:
       "A member of your team joins a structured panel discussion on a theme of substantive professional and academic interest. On-campus events with external speakers require a Bocconi Core Faculty moderator.",
   },
   {
-    title: "In-company visit",
+    title: "In-company Visit",
     duration: "Couple of hours, half or full day",
-    audience: "15–45 Society members",
+    audience: "15 - 45 Society members",
     format: "On-site at your offices",
     description:
       "A selected delegation visits your offices for a structured programme covering divisional operations, current areas of focus, and exchanges with junior and senior professionals.",
   },
   {
-    title: "Online seminar or panel",
-    duration: "45–75 minutes",
+    title: "Online Seminar or Panel",
+    duration: "45 - 75 minutes",
     audience: "Variable; open to the community or reserved to members",
     format: "Remote, via Microsoft Teams",
     description:
       "Professionals deliver a session in a structured online format. When open to the community, the same moderation and panel requirements as on-campus events apply.",
   },
   {
-    title: "Editorial exchange",
+    title: "Editorial Exchange",
     duration: "By arrangement",
     audience: "Society analysts and division heads",
     format: "In person or remote",
