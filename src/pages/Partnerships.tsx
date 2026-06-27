@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -18,7 +19,7 @@ const FORMATS: Format[] = [
     audience: "50–200 students, open to the Bocconi community",
     format: "In person, moderated by a Bocconi Core Faculty member",
     description:
-      "A member of your team participates in a structured panel discussion on a theme of substantive professional and academic interest. All on-campus events with external speakers require the presence of a Bocconi Core Faculty member acting as moderator.",
+      "A member of your team joins a structured panel discussion on a theme of substantive professional and academic interest. On-campus events with external speakers require a Bocconi Core Faculty moderator.",
   },
   {
     title: "In-company visit",
@@ -26,15 +27,15 @@ const FORMATS: Format[] = [
     audience: "15–45 Society members",
     format: "On-site at your offices",
     description:
-      "A selected delegation of Society members visits your offices for a structured programme covering divisional operations, current areas of focus, and exchanges with junior and senior professionals.",
+      "A selected delegation visits your offices for a structured programme covering divisional operations, current areas of focus, and exchanges with junior and senior professionals.",
   },
   {
     title: "Online seminar or panel",
     duration: "45–75 minutes",
-    audience: "Variable; open to the Bocconi community or reserved to Society members",
+    audience: "Variable; open to the community or reserved to members",
     format: "Remote, via Microsoft Teams",
     description:
-      "Professionals deliver a session in a structured online format. When open to the broader community, the session follows the same moderation and panel requirements as on-campus events.",
+      "Professionals deliver a session in a structured online format. When open to the community, the same moderation and panel requirements as on-campus events apply.",
   },
   {
     title: "Editorial exchange",
@@ -42,7 +43,7 @@ const FORMATS: Format[] = [
     audience: "Society analysts and division heads",
     format: "In person or remote",
     description:
-      "A private engagement with our research divisions, structured around a specific theme or area of inquiry. This may take the form of a briefing, a closed roundtable, or an informal exchange in connection with one of our publications.",
+      "A private engagement with our research divisions around a specific theme — a briefing, closed roundtable, or informal exchange in connection with one of our publications.",
   },
 ];
 
@@ -110,7 +111,7 @@ const Partnerships = () => {
         <title>Partnerships | MIMS</title>
         <meta
           name="description"
-          content="Partnership formats and engagement framework for companies and financial institutions collaborating with Minerva Investment Management Society."
+          content="Structured formats for collaboration between Minerva Investment Management Society and financial institutions, asset managers, advisory firms, and corporates."
         />
       </Helmet>
 
@@ -125,35 +126,33 @@ const Partnerships = () => {
         </div>
       </div>
 
-      {/* SECTION 1 — Introduction */}
+      {/* SECTION 1 — Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <div className="max-w-4xl">
-            <p className="font-body text-body-lg text-muted-foreground">
-              Minerva Investment Management Society welcomes engagement with financial institutions, asset managers, advisory firms, and corporates whose interests align with our commitment to rigorous financial research and academic excellence. We offer a range of structured formats for collaboration, governed by the framework Bocconi University establishes for its recognised student associations. The following sets out what we can offer and the terms under which engagements are conducted.
-            </p>
-          </div>
+          <p className="font-serif text-2xl md:text-[1.6rem] leading-snug text-accent max-w-3xl">
+            Structured formats for collaboration with financial institutions, asset managers, advisory firms, and corporates.
+          </p>
+          <p className="font-body text-body-lg text-muted-foreground max-w-3xl mt-5">
+            Minerva Investment Management Society welcomes engagement with partners whose interests align with our commitment to rigorous financial research and academic excellence. We offer a range of structured formats, governed by the framework Bocconi University establishes for its recognised student associations.
+          </p>
         </div>
       </section>
 
       {/* SECTION 2 — Formats */}
-      <section className="py-section-sm md:py-section bg-background">
+      <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Formats
           </h2>
-          <p className="font-body text-body-lg text-muted-foreground mb-8">
-            We can accommodate the following types of engagement.
-          </p>
 
           {/* Mobile: cards */}
           <div className="md:hidden space-y-4">
             {FORMATS.map((f) => (
               <article
                 key={f.title}
-                className="bg-muted p-[1.1rem] flex flex-col"
+                className="bg-muted p-5 transition-colors hover:bg-[#ece9f4]"
               >
-                <h3 className="font-serif text-[1.12rem] text-accent">{f.title}</h3>
+                <h3 className="font-serif text-lg text-accent">{f.title}</h3>
                 <dl className="mt-4 space-y-3">
                   {ROW_LABELS.map(({ key, label }) => (
                     <div key={label}>
@@ -172,103 +171,94 @@ const Partnerships = () => {
 
           {/* Tablet/desktop: comparison matrix */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left align-bottom font-body text-[.72rem] uppercase tracking-[.16em] text-muted-foreground p-4 border-b border-separator w-[140px]">
-                    &nbsp;
-                  </th>
+            <div className="grid grid-cols-[128px_repeat(4,1fr)] min-w-[860px]">
+              {/* header row */}
+              <div />
+              {FORMATS.map((f) => (
+                <div
+                  key={`h-${f.title}`}
+                  className="p-[18px] border-l border-separator font-serif text-[1.05rem] text-accent leading-snug"
+                >
+                  {f.title}
+                </div>
+              ))}
+
+              {/* attribute rows */}
+              {ROW_LABELS.map(({ key, label }) => (
+                <Fragment key={label}>
+                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-[.7rem] text-muted-foreground self-start">
+                    {label}
+                  </div>
                   {FORMATS.map((f) => (
-                    <th
-                      key={f.title}
-                      className="text-left align-bottom font-serif text-[1.05rem] text-accent p-4 border-b border-separator"
+                    <div
+                      key={`${label}-${f.title}`}
+                      className={`p-4 border-l border-separator font-body text-sm leading-relaxed ${
+                        key === "description" ? "text-muted-foreground" : "text-foreground"
+                      }`}
                     >
-                      {f.title}
-                    </th>
+                      {f[key]}
+                    </div>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ROW_LABELS.map(({ key, label }, idx) => (
-                  <tr
-                    key={label}
-                    className={idx % 2 === 1 ? "bg-[#F2F2F2]" : ""}
-                  >
-                    <td className="align-top font-body text-[.72rem] uppercase tracking-[.16em] text-muted-foreground p-4 border-b border-separator">
-                      {label}
-                    </td>
-                    {FORMATS.map((f) => (
-                      <td
-                        key={f.title + label}
-                        className="align-top font-body text-body text-foreground p-4 border-b border-separator"
-                      >
-                        {f[key]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </Fragment>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 3 — Framework */}
-      <section className="py-section-sm md:py-section bg-background">
+      {/* SECTION 3 — Establish a partnership (navy block) */}
+      <section className="pb-section-sm md:pb-section bg-background">
+        <div className="container">
+          <div className="bg-accent p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
+              <div>
+                <h2 className="font-serif text-xl sm:text-heading text-background">
+                  Establish a partnership
+                </h2>
+                <p className="font-body text-base md:text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
+                  Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved. We respond within two business days.
+                </p>
+              </div>
+              <div className="md:justify-self-end md:text-right">
+                <div className="font-body uppercase tracking-[.1em] text-xs text-background/70">
+                  Write to
+                </div>
+                <a
+                  href="mailto:as.minerva@unibocconi.it"
+                  className="block font-serif text-xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
+                >
+                  as.minerva@unibocconi.it
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4 — Engagement framework */}
+      <section className="py-section-sm md:py-section bg-muted">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Framework
+            Engagement framework
           </h2>
-          <p className="font-body text-body-lg text-muted-foreground mb-8">
-            All partnerships are conducted within the regulatory framework of the CASA Committee, Universit&agrave; Bocconi&rsquo;s student association oversight committee. The following parameters apply.
+          <p className="font-body text-base text-muted-foreground mt-2">
+            All initiatives are conducted within the regulatory framework Bocconi University establishes for its recognised student associations.
           </p>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left font-serif text-[1.05rem] text-accent p-4 border-b border-separator w-1/3">
-                    Topic
-                  </th>
-                  <th className="text-left font-serif text-[1.05rem] text-accent p-4 border-b border-separator">
-                    Terms
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {FRAMEWORK.map((row, idx) => (
-                  <tr key={row.topic} className={idx % 2 === 1 ? "bg-[#F2F2F2]" : ""}>
-                    <td className="align-top font-body text-body text-foreground p-4 border-b border-separator">
-                      {row.topic}
-                    </td>
-                    <td className="align-top font-body text-body text-muted-foreground p-4 border-b border-separator">
-                      {row.terms}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4 — Establish a partnership */}
-      <section className="py-section-sm md:py-section bg-background">
-        <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Establish a partnership
-          </h2>
-          <div className="max-w-4xl">
-            <p className="font-body text-body-lg text-muted-foreground">
-              To explore a collaboration, please write to{" "}
-              <a
-                href="mailto:as.minerva@unibocconi.it"
-                className="underline underline-offset-4 text-accent"
+          <div className="mt-6 border-b border-separator">
+            {FRAMEWORK.map((row) => (
+              <div
+                key={row.topic}
+                className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3 md:gap-8 py-5 border-t border-separator"
               >
-                as.minerva@unibocconi.it
-              </a>{" "}
-              with a brief description of the proposed format, the relevant topic or theme, and the individuals likely to be involved. We will respond within two business days to confirm next steps.
-            </p>
+                <div className="font-serif text-base md:text-[1.05rem] text-accent">
+                  {row.topic}
+                </div>
+                <div className="font-body text-[15px] leading-relaxed text-muted-foreground">
+                  {row.terms}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
