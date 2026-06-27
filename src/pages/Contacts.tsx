@@ -53,47 +53,6 @@ const Contacts = () => {
               </div>
             </div>
 
-            {/* RIGHT — Sidebar */}
-            <aside className="bg-muted p-8 self-start">
-              <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                Follow our work
-              </div>
-              <div className="flex gap-3 mt-3.5">
-                <a
-                  href="https://www.linkedin.com/company/minerva-investment-management/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="MIMS on LinkedIn"
-                  className="flex items-center justify-center hover:opacity-80 transition-opacity"
-                >
-                  <img src={linkedinIcon} alt="" className="w-14 h-14" />
-                </a>
-                <a
-                  href="https://www.instagram.com/minerva.ims/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="MIMS on Instagram"
-                  className="flex items-center justify-center hover:opacity-80 transition-opacity"
-                >
-                  <img src={instagramIcon} alt="" className="w-14 h-14" />
-                </a>
-              </div>
-
-              <div className="h-px bg-separator my-7" />
-
-              <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                Our members
-              </div>
-              <p className="font-body text-body-lg text-muted-foreground mt-2.5 leading-relaxed">
-                For those interested in getting to know our work and activities better, reach out to our members.
-              </p>
-              <Link
-                to="/people"
-                className="cta-link mt-4"
-              >
-                Meet the members
-              </Link>
-            </aside>
           </div>
 
           {/* Partnerships & Collaborations section */}
