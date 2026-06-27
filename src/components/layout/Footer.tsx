@@ -159,7 +159,7 @@ export function Footer() {
                 </button>
               </div>
               <p className="font-body text-small text-background/80 leading-snug mt-4">
-                * By signing up you agree to receive updates from us. You can unsubscribe at any time.
+                {"\u00a0"}* By signing up you agree to receive updates from us. You can unsubscribe at any time.
               </p>
             </form>
           </div>
