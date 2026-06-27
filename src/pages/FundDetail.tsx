@@ -129,7 +129,7 @@ const FundDetail = () => {
       </div>
 
       {/* Second Section: Fund Overview */}
-      <section className={`py-section-sm md:py-section ${(fundKey === 'long-short' || fundKey === 'multi-asset') ? 'pb-0 md:pb-0' : ''} bg-background`}>
+      <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             {content.subtitle}

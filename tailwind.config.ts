@@ -69,8 +69,8 @@ export default {
         'xs': ['0.75rem', { lineHeight: '1.4' }],
       },
       spacing: {
-        'section': '6rem',
-        'section-sm': '4rem',
+        'section': '8rem',
+        'section-sm': '5rem',
       },
       borderRadius: {
         lg: "var(--radius)",
