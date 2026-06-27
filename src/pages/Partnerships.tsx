@@ -185,11 +185,8 @@ const Partnerships = () => {
 
               {/* attribute rows */}
               {ROW_LABELS.map(({ key, label }) => (
-                <>
-                  <div
-                    key={`l-${label}`}
-                    className="py-4 pr-4 font-body uppercase tracking-[.1em] text-[.7rem] text-muted-foreground self-start"
-                  >
+                <Fragment key={label}>
+                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-[.7rem] text-muted-foreground self-start">
                     {label}
                   </div>
                   {FORMATS.map((f) => (
@@ -202,7 +199,7 @@ const Partnerships = () => {
                       {f[key]}
                     </div>
                   ))}
-                </>
+                </Fragment>
               ))}
             </div>
           </div>
