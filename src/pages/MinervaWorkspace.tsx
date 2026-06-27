@@ -479,12 +479,6 @@ const MinervaWorkspace = () => {
     }
   };
 
-  // Auto-collapse main nav rail when a submenu panel is shown
-  useEffect(() => {
-    if (submenuOpen && activeSection && activeSection.subItems.length > 0) {
-      setNavExpanded(false);
-    }
-  }, [submenuOpen, activeSectionKey]);
 
   // ────────────────────────────────────────────────────────────────────────────
   // Content router
