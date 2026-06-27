@@ -70,6 +70,7 @@ const Sitemap = () => {
       </Helmet>
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sitemapBg})` }} />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction
             title="Sitemap"
