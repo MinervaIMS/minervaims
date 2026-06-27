@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { Clock } from 'lucide-react';
+import { AuthButton, AUTH_TOKENS } from '@/components/shared/AuthUI';
 
 interface SessionWarningModalProps {
   warningThresholdMinutes?: number;
