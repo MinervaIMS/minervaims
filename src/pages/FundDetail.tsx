@@ -32,7 +32,7 @@ const fundContent: Record<Fund, FundContent> = {
   },
   'long-short': {
     title: 'Long Short Equity Fund',
-    subtitle: 'Market-neutral equity strategy driven by multi-factor signals.',
+    subtitle: 'Market-neutral equity strategy driven by multi-factor signals',
     description: 'MIMS\' Long Short Equity Fund is a semi-automated, actively managed, zero-net-investment portfolio designed to deliver positive absolute returns across market regimes. The team builds a market-neutral book across US and European equities by ranking stocks through a proprietary multi-factor model (value, momentum, quality, low volatility, yield and illiquidity) and taking offsetting long and short positions. Signals are standardised and winsorised, with sector and geographic balance checks. Allocations are reviewed at each rebalancing and documented in periodic reports.',
     sectionTitle: 'Latest Fund Updates',
   },
