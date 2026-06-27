@@ -12,6 +12,7 @@ export const HIDEABLE_PAGES: HideablePage[] = [
   { key: 'divisions',     label: 'Divisions', path: '/divisions/:division' },
   { key: 'funds',         label: 'Funds',     path: '/funds/:fund' },
   { key: 'events',        label: 'Events',    path: '/events' },
+  { key: 'contacts',      label: 'Contacts',  path: '/contacts' },
   { key: 'join',          label: 'Join',      path: '/join' },
   { key: 'archive',       label: 'Archive',   path: '/archive' },
   { key: 'readings',      label: 'Readings',  path: '/readings' },

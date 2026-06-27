@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 const exploreLinks = [
   { label: 'About', href: '/about' },
   { label: 'Events', href: '/events' },
+  { label: 'Contacts', href: '/contacts' },
   { label: 'Join Us', href: '/join' },
   { label: 'Reports', href: '/archive' },
   { label: 'Readings', href: '/readings' },
