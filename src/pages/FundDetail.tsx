@@ -150,7 +150,7 @@ const FundDetail = () => {
 
       {/* Performance Summary - long-short only */}
       {fundKey === 'long-short' && (
-        <section className="py-section-sm md:py-section bg-background">
+        <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
           <div className="container">
           <div className="overflow-x-auto">
               <table className="w-full text-sm font-body border-collapse min-w-[900px]">
@@ -204,7 +204,7 @@ const FundDetail = () => {
 
       {/* Performance Summary - multi-asset */}
       {fundKey === 'multi-asset' && (
-        <section className="py-section-sm md:py-section bg-background">
+        <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
           <div className="container">
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-body border-collapse min-w-[900px]">
