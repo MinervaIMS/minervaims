@@ -554,9 +554,11 @@ const MinervaWorkspace = () => {
 
   const renderEventsManagement = () => (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-heading text-accent">Events Management</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Events archive"
+        description="Past and upcoming events with posters, moderators and guests."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="font-body" disabled={events.length === 0}>
@@ -665,8 +667,9 @@ const MinervaWorkspace = () => {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>}
+      />
+
 
       <div className="mb-8 pb-6 border-b border-separator">
         <div className="flex flex-col sm:flex-row gap-4">
