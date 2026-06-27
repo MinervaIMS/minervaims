@@ -220,6 +220,7 @@ const Archive = () => {
       {/* Hero section with background image */}
       <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBg})` }} />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction title="Archive" transparentBackground />
         </div>
