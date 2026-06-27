@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logoWhite from '@/assets/logo-white.svg';
 import fullLogo from '@/assets/legal-hero-logo.svg';
+import Beams from './Beams';
 
 interface AuthLayoutProps {
   title: string;
