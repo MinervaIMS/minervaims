@@ -261,7 +261,7 @@ const Auth = () => {
   }
 
   return (
-    <AuthLayout title="Sign In" cardTitle="Welcome Back" cardSubtitle="Access the Minerva Workspace.">
+    <AuthLayout title="Sign In" cardTitle="Welcome Back" cardSubtitle={"Access the Minerva Workspace.\u00a0\nFrom application to membership, everything starts here.\n"}>
       <form onSubmit={submitLogin} noValidate>
         {loginErr && <AuthErrorBanner>{loginErr}</AuthErrorBanner>}
         <AuthField
