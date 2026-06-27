@@ -500,9 +500,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   return (
     <div id="files-section">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-heading text-accent">Archive Files</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Reports archive"
+        description="Browse, search and download every published report. Filter by division, year, fund or free-text search."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button 
