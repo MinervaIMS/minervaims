@@ -35,7 +35,7 @@ const divisionContent: Record<Division, DivisionContent> = {
   },
   investment: {
     title: 'Investment Research',
-    subtitle: 'Cross-asset views, scenarios, and actionable market positioning.',
+    subtitle: 'Cross-asset views, scenarios, and actionable market positioning',
     description: 'Investment Research delivers cross-asset strategy for MIMS\' virtual portfolios, translating macro conditions into actionable positioning. The team publishes periodic Global Outlooks and Trade Ideas covering growth, inflation and policy scenarios, tactical asset-allocation views, and focused recommendations across equities, rates/credit, FX and commodities. Structured under a Head/Co-Head, research is organised into specialist desks — Equities Strategy, Fixed Income, and FX & Commodities — each led by senior strategists and supported by analysts.',
     sectionTitle: 'Latest Outlooks',
   },
