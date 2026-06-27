@@ -316,8 +316,10 @@ export default function ActivityManagement() {
               <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
+        </AlertDialog>
         }
       />
+
 
 
 
