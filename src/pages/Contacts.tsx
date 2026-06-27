@@ -31,28 +31,24 @@ const Contacts = () => {
 
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-10 lg:gap-15">
-            {/* LEFT — Get in touch */}
-            <div>
-              <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-                Get in touch
-              </h2>
-              <p className="font-body text-body-lg text-muted-foreground max-w-xl">
-                For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
-              </p>
+          <div>
+            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+              Get in touch
+            </h2>
+            <p className="font-body text-body-lg text-muted-foreground max-w-xl">
+              For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
+            </p>
 
-              <div className="mt-14 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
-                <a
-                  href="mailto:as.minerva@unibocconi.it"
-                  className="group inline-flex items-center gap-3 font-serif text-3xl md:text-4xl text-accent break-words"
-                >
-                  <span className="underline-offset-4 group-hover:underline">
-                    as.minerva@unibocconi.it
-                  </span>
-                </a>
-              </div>
+            <div className="mt-14 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
+              <a
+                href="mailto:as.minerva@unibocconi.it"
+                className="group inline-flex items-center gap-3 font-serif text-3xl md:text-4xl text-accent break-words"
+              >
+                <span className="underline-offset-4 group-hover:underline">
+                  as.minerva@unibocconi.it
+                </span>
+              </a>
             </div>
-
           </div>
 
           {/* Partnerships & Collaborations section */}
