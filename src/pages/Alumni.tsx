@@ -136,7 +136,7 @@ const Alumni = () => {
   }
 
   return (
-    <>
+    <div className="theme-alumni-accent">
       <Helmet>
         <title>Alumni | MIMS</title>
       </Helmet>
@@ -426,7 +426,7 @@ const Alumni = () => {
           </Pagination>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
