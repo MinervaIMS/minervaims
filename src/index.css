@@ -170,7 +170,7 @@ body[data-scroll-locked] {
 
   /* Hero overlay — fully opaque purple wash from uploaded asset */
   .hero-overlay {
-    background-image: url("/__l5e/assets-v1/dbdcea76-08cc-44b2-b191-6809dde0b566/dark-purple-overlay.webp");
+    background-image: url("/__l5e/assets-v1/ff377998-a145-4378-8a1e-0c0702351f83/dark-purple-overlay.webp");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -178,7 +178,7 @@ body[data-scroll-locked] {
 
   /* Page intro overlay — same purple wash */
   .page-intro-overlay {
-    background-image: url("/__l5e/assets-v1/dbdcea76-08cc-44b2-b191-6809dde0b566/dark-purple-overlay.webp");
+    background-image: url("/__l5e/assets-v1/ff377998-a145-4378-8a1e-0c0702351f83/dark-purple-overlay.webp");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
