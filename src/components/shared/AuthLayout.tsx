@@ -39,6 +39,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
             backgroundColor: '#1F0F4D',
             color: '#fff',
             padding: '64px 44px',
+            boxShadow: 'inset -1px 0 0 rgba(0,0,0,0.12), 6px 0 24px -6px rgba(0,0,0,0.18)',
           }}
         >
           <span
@@ -49,11 +50,16 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               top: '-90px',
               width: '440px',
               height: '440px',
-              backgroundImage: `url(${logoWhite})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              backgroundSize: 'contain',
-              opacity: 0.06,
+              WebkitMaskImage: `url(${logoWhite})`,
+              maskImage: `url(${logoWhite})`,
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+              WebkitMaskPosition: 'center',
+              maskPosition: 'center',
+              WebkitMaskSize: 'contain',
+              maskSize: 'contain',
+              backgroundColor: '#AFA2D2',
+              opacity: 0.15,
             }}
           />
           <h4
