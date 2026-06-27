@@ -180,7 +180,7 @@ const Partnerships = () => {
             <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
               <div>
                 <h2 className="font-serif text-xl sm:text-heading text-background">
-                  Begin a Conversation to Partner with Minerva
+                  Begin the Conversation to Partner with Minerva
                 </h2>
                 <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
                   Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved.&nbsp;
