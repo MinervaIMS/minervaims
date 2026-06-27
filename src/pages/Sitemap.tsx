@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useImagePreload } from '@/hooks/useImagePreload';
-import sitemapBg from '@/assets/sitemap-bg.webp';
+import sitemapBgAsset from '@/assets/MIMS_Sitemap.webp.asset.json';
 
 const Sitemap = () => {
+  const sitemapBg = sitemapBgAsset.url;
   const imagesLoaded = useImagePreload([sitemapBg]);
 
   const sections = [
@@ -13,9 +14,11 @@ const Sitemap = () => {
       links: [
         { label: 'Home', href: '/' },
         { label: 'About', href: '/about' },
+        { label: 'Events', href: '/events' },
         { label: 'Join Us', href: '/join' },
         { label: 'Archive', href: '/archive' },
         { label: 'Readings', href: '/readings' },
+        { label: 'Contacts', href: '/contacts' },
       ],
     },
     {
