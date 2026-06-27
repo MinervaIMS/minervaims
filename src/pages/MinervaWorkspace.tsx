@@ -840,7 +840,7 @@ const MinervaWorkspace = () => {
               onClick={async () => { await signOut(); navigate('/auth'); }}
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
-              <LogOut className="h-4 w-4 mr-2" />Log out
+              <LogOut className="h-4 w-4 mr-2" />Log Out
             </Button>
           </div>
         </div>
