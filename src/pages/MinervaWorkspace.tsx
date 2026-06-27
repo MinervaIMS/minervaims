@@ -830,6 +830,7 @@ const MinervaWorkspace = () => {
           <div className="flex items-center gap-3 shrink-0">
             <Button
               variant="outline"
+              className="text-lg"
               onClick={() => navigate('/')}
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
@@ -837,6 +838,7 @@ const MinervaWorkspace = () => {
             </Button>
             <Button
               variant="outline"
+              className="text-lg"
               onClick={async () => { await signOut(); navigate('/auth'); }}
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
