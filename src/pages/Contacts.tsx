@@ -43,7 +43,7 @@ const Contacts = () => {
                 For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
               </p>
 
-              <div className="mt-9 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
+              <div className="mt-14 pb-8 sm:pb-0 sm:pr-7 flex justify-center">
                 <a
                   href="mailto:as.minerva@unibocconi.it"
                   className="group inline-flex items-center gap-3 font-serif text-3xl md:text-4xl text-accent break-words"
@@ -68,7 +68,7 @@ const Contacts = () => {
                   aria-label="MIMS on LinkedIn"
                   className="flex items-center justify-center hover:opacity-80 transition-opacity"
                 >
-                  <img src={linkedinIcon} alt="" className="w-10 h-10" />
+                  <img src={linkedinIcon} alt="" className="w-14 h-14" />
                 </a>
                 <a
                   href="https://www.instagram.com/minerva.ims/"
@@ -77,7 +77,7 @@ const Contacts = () => {
                   aria-label="MIMS on Instagram"
                   className="flex items-center justify-center hover:opacity-80 transition-opacity"
                 >
-                  <img src={instagramIcon} alt="" className="w-10 h-10" />
+                  <img src={instagramIcon} alt="" className="w-14 h-14" />
                 </a>
               </div>
 
@@ -91,7 +91,7 @@ const Contacts = () => {
               </p>
               <Link
                 to="/people"
-                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider hover:bg-accent hover:text-background transition-colors"
+                className="cta-link mt-4"
               >
                 Meet the members
               </Link>
