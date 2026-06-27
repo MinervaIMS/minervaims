@@ -53,7 +53,7 @@ const divisionContent: Record<Division, DivisionContent> = {
   },
   quant: {
     title: 'Quantitative Research',
-    subtitle: 'Models and tools for risk, forecasting, derivatives',
+    subtitle: 'Models and tools for risk, forecasting, derivatives and much more',
     description: 'Quantitative Research applies advanced mathematical and statistical methods to open problems at the frontier of financial markets. The division develops models for risk measurement, forecasting and derivatives pricing, drawing on probability theory, statistical inference, optimisation and machine learning. Since the most interesting problems sit at the intersection of disciplines, the team deliberately brings together students from different quantitative backgrounds. Mathematics, economics, finance, AI and computer science all have a seat at the table: each member brings their own expertise and way of framing problems, and builds new ones by working alongside people who were trained entirely differently, replicating the collaborative structure of a real quantitative research team.',
     sectionTitle: 'Latest Research Publications',
   },
