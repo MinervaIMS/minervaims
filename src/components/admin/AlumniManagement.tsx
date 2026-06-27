@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, Search, Loader2, Download } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import {
   Pagination,
   PaginationContent,
@@ -285,10 +286,11 @@ export default function AlumniManagement() {
 
   return (
     <div id="alumni-section">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-heading text-accent">Alumni Management</h2>
-        <div className="flex items-center gap-3">
+      <WorkspacePageHeader
+        title="Alumni"
+        description="Maintain the alumni directory, current roles and career history."
+        actions={<>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="font-body" disabled={alumni.length === 0}>
@@ -427,8 +429,10 @@ export default function AlumniManagement() {
             </form>
           </DialogContent>
         </Dialog>
-        </div>
-      </div>
+        </>}
+      />
+
+
 
       {/* Search */}
       <div className="mb-6">
