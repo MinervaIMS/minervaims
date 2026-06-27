@@ -1,39 +1,40 @@
-## Where the glitch comes from
+## Current state
 
-Two issues compound on a first mobile visit:
+The inline preloader in `index.html` (the `#initial-loader` div inside `#root`) currently shows on **every device** — mobile, tablet, and desktop — because there is no viewport restriction. The `<style>` block and the markup render unconditionally on first paint, and React only wipes it when it mounts into `#root`.
 
-1. **The logo file is huge and decodes top‑down.** `src/assets/logo-white.svg` (250 KB) and `logo-color.svg` (307 KB) are not real vector SVGs — they are SVG wrappers around a 2000×2000 **base64 PNG**. PNG decodes in scanlines on slow connections, so the top portion paints first while the rest streams in. That is exactly the "upper‑left quarter appears first, then the rest" effect you are seeing. On a fast desktop refresh it's invisible; on cold mobile cellular it's very visible.
+The same is true for the `<link rel="preload">` hints for `logo-color-loader.webp` and `logo-white-loader.webp` — they fire on every device.
 
-2. **The preloader is a React component**, not part of the initial HTML. On a cold visit the browser has to: download `index.html` → download `main.tsx` chunk → boot React → render `<PageLoader />` → only then start fetching the logo asset. So before the loader even shows, the screen is blank; then the giant logo streams in unevenly. The loader has no priority over the rest of the JS/CSS.
+So today: the loader works on mobile, tablet, AND desktop.
 
-## Plan
+## What to change
 
-### 1. Replace the logo asset with a lightweight version
-- Generate compact bitmap copies of the two logos optimised for the loader size (logo renders at ~48 px tall → 192 px @ 4x is plenty):
-  - `src/assets/logo-white-loader.webp` (~5–10 KB)
-  - `src/assets/logo-color-loader.webp` (~5–10 KB)
-- Keep the original 2 MB SVGs only where a giant logo is actually used; switch `PageLoader.tsx` and the inline HTML loader (below) to the small WebPs.
-- A small WebP decodes in one pass, eliminating the scanline reveal.
+Restrict the inline boot loader strictly to mobile (width < 768px, matching the project's `useIsMobile` breakpoint).
 
-### 2. Inline the preloader directly in `index.html`
-- Add a `<style>` block in `<head>` with the loader's layout (fixed full‑screen, background, centered img, pulse keyframes).
-- Add the loader markup inside `<div id="root">` so it is part of the server‑sent HTML and paints on the very first frame, before any JS runs. React will replace `#root`'s contents on mount, automatically removing it.
-- Use the small WebP via a plain `<img>` with `fetchpriority="high"` and `decoding="sync"`.
+### 1. `index.html` — gate the loader visually by viewport
+Wrap the existing `#initial-loader` CSS so it only displays under `(max-width: 767px)`:
 
-### 3. Give the logo absolute network priority
-- Add `<link rel="preload" as="image" href="/src/assets/logo-color-loader.webp" fetchpriority="high">` (and the white variant) in `<head>`, ahead of the existing `homepage-bg.webp` preload.
-- Lower the homepage background preload to `fetchpriority="low"` so it doesn't compete with the logo on a 3G/4G handshake.
+```css
+#initial-loader{display:none;}
+@media (max-width: 767px){
+  #initial-loader{position:fixed;inset:0;z-index:2147483647;display:flex;...}
+  #initial-loader img{...}
+  /* keep pulse + dark-mode rules nested inside the mobile media query */
+}
+```
 
-### 4. Keep the React `PageLoader` component
-- It still renders for route transitions after boot; just point it at the new small WebPs so subsequent loads are equally crisp.
-- No changes to how pages use `<Suspense fallback={<PageLoader/>}>`.
+Result: tablet and desktop get a blank `#root` for the brief moment before React mounts (same behaviour they had before the loader work), while mobile keeps the instant zero-JS loader.
 
-### Technical notes
-- Inline loader will be ~1 KB of CSS + markup, no JS — safe in `<head>`/`<body>` per the HTML5 rules in the system prompt (no `<noscript>` tricks).
-- React's root mount call (`createRoot(root).render(...)`) wipes the inline loader automatically; no manual removal script needed.
-- Dark‑mode handling in the inline loader: use `prefers-color-scheme` media query inside the inline `<style>` to pick which `<img>` is visible, mirroring the current Tailwind `dark:` logic.
-- Original heavy logo SVGs are left untouched for any place that still imports them; no risk to existing pages.
+### 2. `index.html` — keep logo preloads mobile-only too
+Add `media="(max-width: 767px)"` to the two `<link rel="preload" as="image" ... fetchpriority="high">` tags for `logo-color-loader.webp` and `logo-white-loader.webp`, so tablet/desktop don't waste a high-priority request on an asset they won't display.
+
+### 3. Leave `PageLoader.tsx` alone
+The React `PageLoader` (used as `<Suspense>` fallback for route transitions) should continue to work on all viewports — it's a different concern from the cold-boot inline loader. The user's request is about the boot-time animation specifically.
 
 ### Out of scope
-- No changes to routing, navigation, page content, or design tokens.
-- No new fonts/colors/components.
+- No changes to routing, components, design tokens, or the `PageLoader` React component.
+- No changes to the homepage background preload.
+
+### Verification
+After implementation, confirm via DevTools device toolbar that:
+- Mobile (<768px): inline loader paints immediately on first HTML frame.
+- Tablet/desktop (>=768px): no inline loader flash; React boots straight into the app.
