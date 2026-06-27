@@ -13,6 +13,7 @@ const exploreLinks = [
   { label: 'About', href: '/about' },
   { label: 'Events', href: '/events' },
   { label: 'Contacts', href: '/contacts' },
+  { label: 'Partnerships', href: '/partnerships' },
   { label: 'Join Us', href: '/join' },
   { label: 'Reports', href: '/archive' },
   { label: 'Readings', href: '/readings' },
