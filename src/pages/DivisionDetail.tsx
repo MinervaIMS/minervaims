@@ -47,7 +47,7 @@ const divisionContent: Record<Division, DivisionContent> = {
   },
   portfolio: {
     title: 'Portfolio Management',
-    subtitle: 'Converts research into disciplined portfolios and rebalancing.',
+    subtitle: 'Converts research into disciplined portfolios and rebalancing',
     description: 'The Portfolio Management Division designs, runs and reports on MIMS\'s proprietary student-managed portfolios, translating research into implementable allocations across equities, rates and commodities. The team sets strategic views, builds diversified portfolios, sizes positions via risk contribution and liquidity, and rebalances semi-annually with interim adjustments around market dislocations. Analysts conduct security and trade due diligence, monitor performance and exposures, and maintain transparent holdings disclosure. Derivatives are used only to hedge currency and tail risks, not to add net leverage.',
     sectionTitle: 'Latest Funds Updates',
   },
