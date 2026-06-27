@@ -30,6 +30,7 @@ import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
 import NewsletterManagement from '@/components/admin/NewsletterManagement';
 import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
@@ -483,9 +484,12 @@ const MinervaWorkspace = () => {
   // ────────────────────────────────────────────────────────────────────────────
 
   const renderMyRole = () => (
-    <div className="max-w-2xl">
-      <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">My Profile</h2>
-      <div className="space-y-4 font-body">
+    <div>
+      <WorkspacePageHeader
+        title="My profile"
+        description="Your account details and current workspace role."
+      />
+      <div className="max-w-2xl space-y-4 font-body">
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Role</div>
           <div className="text-lg text-foreground">{roleLabel}</div>
@@ -498,23 +502,25 @@ const MinervaWorkspace = () => {
     </div>
   );
 
+  const renderPlaceholder = (title: string, description: string) => (
+    <div>
+      <WorkspacePageHeader title={title} description={description} />
+      <div className="py-12 text-center">
+        <p className="font-body text-muted-foreground">Coming soon.</p>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     if (activeSectionKey === 'my-role') return renderMyRole();
     if (activeSectionKey === 'welcome') {
-      return (
-        <div className="py-16 text-center">
-          <h2 className="font-serif text-heading text-accent mb-3">Welcome</h2>
-          <p className="font-body text-muted-foreground">Coming soon.</p>
-        </div>
-      );
+      return renderPlaceholder('Welcome', 'Your entry point to the Minerva workspace.');
     }
     if (activeSectionKey === 'dashboard') {
-      return (
-        <div className="py-16 text-center">
-          <h2 className="font-serif text-heading text-accent mb-3">Dashboard</h2>
-          <p className="font-body text-muted-foreground">Coming soon.</p>
-        </div>
-      );
+      return renderPlaceholder('Dashboard', 'Role-aware overview of workspace activity.');
+    }
+    if (activeSectionKey === 'calendar' && !activeSubKey) {
+      return renderPlaceholder('Calendar', 'Upcoming events, deadlines and meetings.');
     }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
@@ -542,12 +548,7 @@ const MinervaWorkspace = () => {
 
 
       default:
-        return (
-          <div className="py-16 text-center">
-            <h2 className="font-serif text-heading text-accent mb-3">{activeSub?.label}</h2>
-            <p className="font-body text-muted-foreground">Coming soon.</p>
-          </div>
-        );
+        return renderPlaceholder(activeSub?.label ?? 'Coming soon', 'This section is under construction.');
     }
   };
 
