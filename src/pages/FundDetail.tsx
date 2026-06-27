@@ -8,10 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for funds
-import longShortBg from '@/assets/fund-long-short-bg.webp';
-import multiAssetBg from '@/assets/fund-multi-asset-bg.webp';
+import longShortBgAsset from '@/assets/MIMS_Long_Short_Fund.webp.asset.json';
+import multiAssetBgAsset from '@/assets/MIMS_Multi_Asset_Fund.webp.asset.json';
 import pirBgAsset from '@/assets/mims-pir-fund.webp.asset.json';
-import dpsBg from '@/assets/fund-dps-bg.webp';
+import dpsBgAsset from '@/assets/MIMS_Diversified_Passive_Fund.webp.asset.json';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -52,9 +52,9 @@ const fundContent: Record<Fund, FundContent> = {
 
 // Background images mapping
 const fundBackgrounds: Record<Fund, string> = {
-  'multi-asset': multiAssetBg,
-  'long-short': longShortBg,
-  'dps': dpsBg,
+  'multi-asset': multiAssetBgAsset.url,
+  'long-short': longShortBgAsset.url,
+  'dps': dpsBgAsset.url,
   'pir': pirBgAsset.url,
 };
 

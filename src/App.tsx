@@ -35,6 +35,7 @@ const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
 const Statute = lazy(() => import("./pages/Statute"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
+const Contacts = lazy(() => import("./pages/Contacts"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -98,6 +99,7 @@ const App = () => {
                 <Route path="/disclaimer" element={<Suspense fallback={<PageLoader />}><Disclaimer /></Suspense>} />
                 <Route path="/statute" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="statute"><Statute /></PageVisibilityGate></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
+                <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><Contacts /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
                 <Route path="/check-email" element={<Suspense fallback={<PageLoader />}><CheckEmail /></Suspense>} />

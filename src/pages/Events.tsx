@@ -9,7 +9,7 @@ import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
 
 const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].endsWith(".pdf");
 import { useImagePreload } from "@/hooks/useImagePreload";
-import eventsBg from "@/assets/events-bg.webp";
+import eventsBgAsset from "@/assets/MIMS_Events.webp.asset.json";
 
 interface DbEvent {
   id: string;
@@ -68,6 +68,7 @@ const Events = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [eventEmail, setEventEmail] = useState('');
   const { toast } = useToast();
+  const eventsBg = eventsBgAsset.url;
   const imagesLoaded = useImagePreload([eventsBg]);
 
   useEffect(() => {

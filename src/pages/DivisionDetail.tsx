@@ -8,10 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for each division
-import equityBg from '@/assets/division-equity-bg.webp';
+import equityBgAsset from '@/assets/MIMS_Equity_Research.webp.asset.json';
 import investmentBgAsset from '@/assets/mims-investment-research.webp.asset.json';
-import macroBg from '@/assets/division-macro-bg.webp';
-import portfolioBg from '@/assets/division-portfolio-bg.webp';
+import macroBgAsset from '@/assets/MIMS_Macro_Research.webp.asset.json';
+import portfolioBgAsset from '@/assets/MIMS_Portfolio_Management.webp.asset.json';
 import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
 
 interface ArchiveFile extends ArchiveFileRow {
@@ -61,10 +61,10 @@ const divisionContent: Record<Division, DivisionContent> = {
 
 // Background images mapping
 const divisionBackgrounds: Record<Division, string> = {
-  equity: equityBg,
+  equity: equityBgAsset.url,
   investment: investmentBgAsset.url,
-  macro: macroBg,
-  portfolio: portfolioBg,
+  macro: macroBgAsset.url,
+  portfolio: portfolioBgAsset.url,
   quant: quantBgAsset.url,
 };
 
