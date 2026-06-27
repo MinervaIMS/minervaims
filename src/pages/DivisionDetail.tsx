@@ -29,7 +29,7 @@ interface DivisionContent {
 const divisionContent: Record<Division, DivisionContent> = {
   equity: {
     title: 'Equity Research',
-    subtitle: 'Company analysis with valuation models and investment theses.',
+    subtitle: 'Company analysis with valuation models and investment theses',
     description: 'Equity Research produces single-name coverage reports across sectors, translating business fundamentals into actionable, risk-aware views. Each report combines industry and competitive analysis, full financial statement modelling, and a dual valuation framework (discounted cash flow and relative multiples) to derive a target price and recommendation. Work is organised in small coverage teams led by a Lead Analyst, under the oversight of the Division\'s Co-Heads, with standardised sections on thesis, catalysts, and key risks.',
     sectionTitle: 'Latest Reports',
   },
