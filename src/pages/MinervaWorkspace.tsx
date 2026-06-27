@@ -833,7 +833,7 @@ const MinervaWorkspace = () => {
               onClick={() => navigate('/')}
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
-              <Globe className="h-4 w-4 mr-2" />Return to website
+              <Globe className="h-4 w-4 mr-2" />Return to Website
             </Button>
             <Button
               variant="outline"
