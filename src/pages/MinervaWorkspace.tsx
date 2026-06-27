@@ -202,6 +202,14 @@ const MinervaWorkspace = () => {
     }
   }, [visibleNav, activeSectionKey]);
 
+  // Auto-collapse main nav rail when a submenu panel is shown
+  useEffect(() => {
+    const section = visibleNav.find((s) => s.key === activeSectionKey);
+    if (submenuOpen && section && section.subItems.length > 0) {
+      setNavExpanded(false);
+    }
+  }, [submenuOpen, activeSectionKey, visibleNav]);
+
   // Events state (existing logic preserved)
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
