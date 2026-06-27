@@ -136,7 +136,7 @@ const Auth = () => {
       <AuthLayout
         title="Create Your Account"
         cardTitle="Create Your Account"
-        cardSubtitle="Access the Minerva Workspace."
+        cardSubtitle={"Access the Minerva Workspace.\u00a0\nFrom application to membership, everything starts here.\n"}
       >
         <form onSubmit={submitSignup} noValidate>
           <div className="grid grid-cols-2 gap-3.5">
