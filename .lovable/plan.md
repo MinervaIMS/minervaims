@@ -1,24 +1,33 @@
-## Plan
+# Beams animated background on the right side of the login page
 
-### Problem
-Section spacing is inconsistent on division and fund pages because the second section uses a conditional `pb-0` override. This collapses the gap between sections 2 and 3, making it smaller than the gap between sections 3 and the final Reports section.
+Keep the existing navy left panel ("The Minerva Workspace") exactly as it is. Replace the plain white background on the right side (behind the login/signup card) with the animated React Bits Beams effect, using your exact parameters.
 
-### Where the overrides are
-- `src/pages/DivisionDetail.tsx` line 156 — `pb-0 md:pb-0` when `isPortfolio`
-- `src/pages/FundDetail.tsx` line 132 — `pb-0 md:pb-0` when fund is `long-short` or `multi-asset`
+## Behavior
 
-### Fix
-1. **Remove both `pb-0` overrides** so every section uses its full `py-section-sm md:py-section` padding.
-2. **Increase the global section spacing values** in `tailwind.config.ts` to add more breathing room:
-   - `section-sm`: `4rem` -> `5rem`
-   - `section`: `6rem` -> `8rem`
-3. **Update ReportsSection CSS** in `src/index.css` to keep its padding in sync with the new Tailwind values:
-   - `.rsec--light` and `.rsec--navy` padding: `clamp(3rem, 7vw, 6rem)` -> `clamp(3.5rem, 7.5vw, 8rem)`
+- Beams render as a full-bleed layer behind the right-hand `<main>` of `AuthLayout`, covering the area around the card (the white space you marked).
+- The card itself stays on a solid surface so the form remains perfectly readable — I'll give the inner card container a solid white background and a subtle shadow so it sits cleanly over the animation.
+- Desktop only by default (matches current layout). On tablet/mobile, where the navy aside is hidden, I'll also show the beams so the page still looks intentional.
+- Used on `/auth` (login + signup). Other auth utility pages (`/forgot-password`, `/reset-password`, `/check-email`, etc.) all use the same `AuthLayout`, so they'll inherit the beams too — say the word if you'd like to limit it to `/auth` only.
 
-This makes the vertical rhythm identical on every division and fund page, and gives all sections more breathing room without touching any other pages beyond the shared spacing tokens.
+## Beams settings (exactly as provided)
 
-### Files to change
-- `src/pages/DivisionDetail.tsx`
-- `src/pages/FundDetail.tsx`
-- `tailwind.config.ts`
-- `src/index.css`
+`beamWidth=8.4`, `beamHeight=30`, `beamNumber=38`, `lightColor="#afa2d2"`, `speed=2`, `noiseIntensity=0.6`, `scale=0.2`, `rotation=30`.
+
+## Files
+
+1. **New** `src/components/shared/Beams.tsx` — full React Bits Beams component (Canvas + shader-extended `MeshStandardMaterial` + merged stacked planes + directional light), TypeScript-clean.
+2. **New** `src/components/shared/Beams.css` — `.beams-container { position: relative; width: 100%; height: 100%; }`.
+3. **Edit** `src/components/shared/AuthLayout.tsx` — wrap the right `<main>` in a relative container; add an absolutely-positioned `<Beams …/>` layer behind it (`z-index: 0`, `pointer-events: none`); lift the card wrapper to `z-index: 1` and give it a solid white background + soft shadow so it reads cleanly over the animation.
+
+## Dependencies (React 18 compatible, exact versions per project memory)
+
+- `three@^0.160.0`
+- `@react-three/fiber@^8.18.0`
+- `@react-three/drei@^9.122.0`
+
+(React Bits is copy-paste, not a shadcn registry, so we add the component file directly — that's the canonical install path.)
+
+## Notes
+
+- No business logic, routing, or auth code changes.
+- This is one scoped animation on the auth surface — consistent with existing documented animation exceptions (e.g. `/join`). If you'd rather keep `/auth` strictly static, I won't proceed.

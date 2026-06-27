@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet-async';
 import logoWhite from '@/assets/logo-white.svg';
 import fullLogo from '@/assets/legal-hero-logo.svg';
+import Beams from './Beams';
 
 interface AuthLayoutProps {
   title: string;
@@ -102,12 +103,25 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
         </aside>
 
         {/* Form panel */}
-        <main className="flex-1 bg-background flex items-center justify-center px-6 py-[7.5vh] lg:py-[7.5vh]">
+        <main className="relative flex-1 bg-background flex items-center justify-center px-6 py-[7.5vh] lg:py-[7.5vh] overflow-hidden">
+          <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
+            <Beams
+              beamWidth={8.4}
+              beamHeight={30}
+              beamNumber={38}
+              lightColor="#afa2d2"
+              speed={2}
+              noiseIntensity={0.6}
+              scale={0.2}
+              rotation={30}
+            />
+          </div>
           <div
-            className="w-full max-w-md bg-background"
+            className="relative z-10 w-full max-w-md bg-background"
             style={{
               borderRadius: 0,
               padding: '38px 32px',
+              boxShadow: '0 20px 60px -20px rgba(31, 15, 77, 0.18)',
             }}
           >
             <div className="flex justify-center mb-7">
