@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, UserCheck, Clock, Info, Trash2, HelpCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import {
   Table,
   TableBody,
@@ -279,6 +280,11 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-8">
+      <WorkspacePageHeader
+        title="Users"
+        description="Approve new members, assign workspace roles and review who has access to which sections."
+      />
+
       {/* Role Access Table - Always visible */}
       <Card>
         <CardContent className="py-4">
