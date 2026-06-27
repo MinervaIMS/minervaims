@@ -1,42 +1,39 @@
-## Diagnosis
+## Where the glitch comes from
 
-The dark purple wash is missing because the overlay was never actually placed on top of the hero images.
+Two issues compound on a first mobile visit:
 
-- `src/index.css` defines two utility classes — `.hero-overlay` and `.page-intro-overlay` — that point to the uploaded `dark-purple-overlay.webp` asset.
-- **Nothing in the codebase uses those classes.** A grep for `hero-overlay` / `page-intro-overlay` across `src/pages` and `src/components` returns zero matches.
-- Every page that renders a hero/background image does so with a single `bg-cover bg-center` div and then puts the text directly on top — no overlay layer in between:
-  - `Index.tsx` (homepage hero)
-  - `About.tsx`, `Alumni.tsx`, `Archive.tsx`, `Events.tsx`, `Join.tsx`, `Readings.tsx`, `Sitemap.tsx`, `Contacts.tsx`
-  - `DivisionDetail.tsx`, `FundDetail.tsx`
-- `components/shared/PageIntroduction.tsx` also renders the background image without any overlay element.
+1. **The logo file is huge and decodes top‑down.** `src/assets/logo-white.svg` (250 KB) and `logo-color.svg` (307 KB) are not real vector SVGs — they are SVG wrappers around a 2000×2000 **base64 PNG**. PNG decodes in scanlines on slow connections, so the top portion paints first while the rest streams in. That is exactly the "upper‑left quarter appears first, then the rest" effect you are seeing. On a fast desktop refresh it's invisible; on cold mobile cellular it's very visible.
 
-The older images appeared "shaded" only because the purple wash was baked into those specific source files. The newly uploaded `MIMS_*.webp` images are clean photos with no baked-in tint, so they look bright — exposing the fact that the overlay was never wired up in JSX.
+2. **The preloader is a React component**, not part of the initial HTML. On a cold visit the browser has to: download `index.html` → download `main.tsx` chunk → boot React → render `<PageLoader />` → only then start fetching the logo asset. So before the loader even shows, the screen is blank; then the giant logo streams in unevenly. The loader has no priority over the rest of the JS/CSS.
 
-## Fix
+## Plan
 
-Add a single overlay `<div>` directly after every hero/background image div, sitting below the content (`z-10` content already exists, so the overlay just needs to sit between the image and the content with no extra z-index).
+### 1. Replace the logo asset with a lightweight version
+- Generate compact bitmap copies of the two logos optimised for the loader size (logo renders at ~48 px tall → 192 px @ 4x is plenty):
+  - `src/assets/logo-white-loader.webp` (~5–10 KB)
+  - `src/assets/logo-color-loader.webp` (~5–10 KB)
+- Keep the original 2 MB SVGs only where a giant logo is actually used; switch `PageLoader.tsx` and the inline HTML loader (below) to the small WebPs.
+- A small WebP decodes in one pass, eliminating the scanline reveal.
 
-For full-screen homepage hero use `hero-overlay`; for shorter page headers use `page-intro-overlay` (they currently point to the same asset, but keeping the semantic split matches the existing CSS).
+### 2. Inline the preloader directly in `index.html`
+- Add a `<style>` block in `<head>` with the loader's layout (fixed full‑screen, background, centered img, pulse keyframes).
+- Add the loader markup inside `<div id="root">` so it is part of the server‑sent HTML and paints on the very first frame, before any JS runs. React will replace `#root`'s contents on mount, automatically removing it.
+- Use the small WebP via a plain `<img>` with `fetchpriority="high"` and `decoding="sync"`.
 
-### Files to update
+### 3. Give the logo absolute network priority
+- Add `<link rel="preload" as="image" href="/src/assets/logo-color-loader.webp" fetchpriority="high">` (and the white variant) in `<head>`, ahead of the existing `homepage-bg.webp` preload.
+- Lower the homepage background preload to `fetchpriority="low"` so it doesn't compete with the logo on a 3G/4G handshake.
 
-1. `src/components/shared/PageIntroduction.tsx` — inside the `!transparentBackground && backgroundImage` branch, add `<div className="absolute inset-0 page-intro-overlay" />` right after the background div. This single change covers About, Alumni, DivisionDetail, FundDetail, Readings, Team, Sitemap, Join, and any page that passes `backgroundImage` to `PageIntroduction`.
+### 4. Keep the React `PageLoader` component
+- It still renders for route transitions after boot; just point it at the new small WebPs so subsequent loads are equally crisp.
+- No changes to how pages use `<Suspense fallback={<PageLoader/>}>`.
 
-2. Pages that render their own background div (bypassing `PageIntroduction`) — add `<div className="absolute inset-0 hero-overlay" />` immediately after the existing `bg-cover bg-center` div:
-   - `src/pages/Index.tsx` (line 75 — homepage hero)
-   - `src/pages/About.tsx` (line 48)
-   - `src/pages/Alumni.tsx` (line 144)
-   - `src/pages/Archive.tsx` (line 222)
-   - `src/pages/Events.tsx` (line 161)
-   - `src/pages/Sitemap.tsx` (line 72)
-   - `src/pages/Contacts.tsx` (line 22)
-   - `src/pages/Join.tsx` (line 216 — main hero; line 231 is already an intentional `opacity-30` decorative band further down the page, leave it alone)
-   - `src/pages/DivisionDetail.tsx` (line 144)
-   - `src/pages/FundDetail.tsx` (line 120)
-   - `src/pages/Readings.tsx` (line 102)
+### Technical notes
+- Inline loader will be ~1 KB of CSS + markup, no JS — safe in `<head>`/`<body>` per the HTML5 rules in the system prompt (no `<noscript>` tricks).
+- React's root mount call (`createRoot(root).render(...)`) wipes the inline loader automatically; no manual removal script needed.
+- Dark‑mode handling in the inline loader: use `prefers-color-scheme` media query inside the inline `<style>` to pick which `<img>` is visible, mirroring the current Tailwind `dark:` logic.
+- Original heavy logo SVGs are left untouched for any place that still imports them; no risk to existing pages.
 
-Some of these pages additionally use `PageIntroduction` further down — once (1) is applied, those secondary intros also get the overlay automatically.
-
-### Result
-
-Every hero and page-intro background photo across the site gets the fully opaque purple wash from `dark-purple-overlay.webp` on top, restoring the uniform shaded look while keeping the new `MIMS_*` source images untouched.
+### Out of scope
+- No changes to routing, navigation, page content, or design tokens.
+- No new fonts/colors/components.
