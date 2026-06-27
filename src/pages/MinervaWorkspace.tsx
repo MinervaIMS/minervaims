@@ -70,7 +70,7 @@ type NavSection = {
 
 const NAV: NavSection[] = [
   {
-    key: 'my-role', label: 'My Profile', Icon: UserIcon,
+    key: 'my-role', label: 'My profile', Icon: UserIcon,
     subItems: [],
   },
   {
@@ -90,8 +90,8 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'reports-upload', label: 'Upload', allowed: (p) => p.canAccessFiles },
       { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-templates', label: 'Templates & Code Repos' },
-      { key: 'reports-funds', label: "Funds' Performances" },
+      { key: 'reports-templates', label: 'Templates & code repos' },
+      { key: 'reports-funds', label: "Funds' performances" },
     ],
   },
   {
@@ -109,37 +109,37 @@ const NAV: NavSection[] = [
       { key: 'events-forms', label: 'Forms', allowed: (p) => p.canAccessEvents },
       { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
       { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
-      { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.canAccessEvents },
+      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-website', label: 'Website page', allowed: (p) => p.canAccessSettings },
       { key: 'applications-status', label: 'Status', allowed: (p) => p.canAccessSettings },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-joiners', label: 'New Joiners', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-form', label: 'Form Settings', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-form', label: 'Form settings', allowed: (p) => p.canAccessSettings },
     ],
   },
   {
-    key: 'smm', label: 'SMM & Graphics', Icon: ImageIcon,
+    key: 'smm', label: 'SMM & graphics', Icon: ImageIcon,
     subItems: [
       { key: 'smm-ig', label: 'Instagram' },
       { key: 'smm-li', label: 'LinkedIn' },
-      { key: 'smm-other', label: 'Other Templates' },
-      { key: 'smm-brand', label: 'Design, Brand & Logo' },
+      { key: 'smm-other', label: 'Other templates' },
+      { key: 'smm-brand', label: 'Design, brand & logo' },
     ],
   },
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-fee', label: 'Membership Fee' },
+      { key: 'ops-fee', label: 'Membership fee' },
       { key: 'ops-treasury', label: 'Treasury' },
-      { key: 'ops-accounts', label: 'Accounts & Credentials' },
-      { key: 'ops-external', label: 'External Relations' },
+      { key: 'ops-accounts', label: 'Accounts & credentials' },
+      { key: 'ops-external', label: 'External relations' },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.canAccessUsers },
-      { key: 'ops-auto-emails', label: 'Auto Emails' },
+      { key: 'ops-auto-emails', label: 'Auto emails' },
 
       { key: 'ops-docs', label: 'Statuto' },
     ],
@@ -151,7 +151,7 @@ const NAV: NavSection[] = [
       { key: 'website-pages', label: 'Pages', allowed: (p) => p.isFullAccess },
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'website-testimonials', label: 'Testimonials' },
-      { key: 'website-alumni-companies', label: 'Alumni Companies' },
+      { key: 'website-alumni-companies', label: 'Alumni companies' },
     ],
   },
 
@@ -159,9 +159,9 @@ const NAV: NavSection[] = [
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-roles', label: 'Roles Permissions', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.canAccessActivity },
-      { key: 'settings-edit-dashboard', label: 'Edit Workspace', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-roles', label: 'Roles permissions', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.canAccessActivity },
+      { key: 'settings-edit-dashboard', label: 'Edit workspace', allowed: (p) => p.canAccessUsers },
     ],
   },
 ];
