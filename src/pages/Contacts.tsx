@@ -44,27 +44,14 @@ const Contacts = () => {
               </p>
 
               <div className="mt-9 pb-8 sm:pb-0 sm:pr-7">
-                <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                  {"\n"}
-                </div>
                 <a
                   href="mailto:as.minerva@unibocconi.it"
-                  className="group inline-flex items-center gap-3 font-serif text-2xl md:text-[1.75rem] text-accent mt-2.5 break-words"
+                  className="group inline-flex items-center gap-3 font-serif text-2xl md:text-3xl text-accent break-words"
                 >
                   <span className="underline-offset-4 group-hover:underline">
                     as.minerva@unibocconi.it
                   </span>
-                  <span
-                    className="inline-block text-accent origin-center"
-                    style={{ transform: 'rotate(45deg)' }}
-                    aria-hidden="true"
-                  >
-                    {"\n"}
-                  </span>
                 </a>
-                <p className="font-body text-sm text-muted-foreground mt-2">
-                  {"\n"}
-                </p>
               </div>
             </div>
 
@@ -104,7 +91,7 @@ const Contacts = () => {
               </p>
               <Link
                 to="/people"
-                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif hover:bg-accent hover:text-background transition-colors"
+                className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider uppercase hover:bg-accent hover:text-background transition-colors"
               >
                 Meet the members
               </Link>
@@ -121,7 +108,7 @@ const Contacts = () => {
             </p>
             <Link
               to="/partnerships"
-              className="inline-flex items-center justify-center mt-5 px-6 py-2.5 bg-background border border-accent text-accent font-serif hover:bg-accent hover:text-background transition-colors"
+              className="inline-flex items-center justify-center mt-5 px-6 py-2.5 bg-background border border-accent text-accent font-serif text-sm tracking-wider uppercase hover:bg-accent hover:text-background transition-colors"
             >
               Visit Partnerships
             </Link>

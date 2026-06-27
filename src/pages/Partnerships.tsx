@@ -129,7 +129,7 @@ const Partnerships = () => {
       {/* SECTION 1 — Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <p className="font-serif text-2xl md:text-[1.6rem] leading-snug text-accent max-w-3xl">
+          <p className="font-serif text-xl sm:text-2xl md:text-subheading leading-snug text-accent max-w-3xl">
             Structured formats for collaboration with financial institutions, asset managers, advisory firms, and corporates.
           </p>
           <p className="font-body text-body-lg text-muted-foreground max-w-3xl mt-5">
@@ -152,11 +152,11 @@ const Partnerships = () => {
                 key={f.title}
                 className="bg-muted p-5 transition-colors hover:bg-[#ece9f4]"
               >
-                <h3 className="font-serif text-lg text-accent">{f.title}</h3>
+                <h3 className="font-serif text-subheading text-accent">{f.title}</h3>
                 <dl className="mt-4 space-y-3">
                   {ROW_LABELS.map(({ key, label }) => (
                     <div key={label}>
-                      <dt className="font-body text-[.72rem] uppercase tracking-[.08em] text-muted-foreground">
+                      <dt className="font-body text-xs uppercase tracking-[.08em] text-muted-foreground">
                         {label}
                       </dt>
                       <dd className="font-body text-body text-foreground mt-1">
@@ -177,7 +177,7 @@ const Partnerships = () => {
               {FORMATS.map((f) => (
                 <div
                   key={`h-${f.title}`}
-                  className="p-[18px] border-l border-separator font-serif text-[1.05rem] text-accent leading-snug"
+                  className="p-[18px] border-l border-separator font-serif text-lg text-accent leading-snug"
                 >
                   {f.title}
                 </div>
@@ -186,13 +186,13 @@ const Partnerships = () => {
               {/* attribute rows */}
               {ROW_LABELS.map(({ key, label }) => (
                 <Fragment key={label}>
-                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-[.7rem] text-muted-foreground self-start">
+                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-xs text-muted-foreground self-start">
                     {label}
                   </div>
                   {FORMATS.map((f) => (
                     <div
                       key={`${label}-${f.title}`}
-                      className={`p-4 border-l border-separator font-body text-sm leading-relaxed ${
+                      className={`p-4 border-l border-separator font-body text-small leading-relaxed ${
                         key === "description" ? "text-muted-foreground" : "text-foreground"
                       }`}
                     >
@@ -215,7 +215,7 @@ const Partnerships = () => {
                 <h2 className="font-serif text-xl sm:text-heading text-background">
                   Establish a partnership
                 </h2>
-                <p className="font-body text-base md:text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
+                <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
                   Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved. We respond within two business days.
                 </p>
               </div>
@@ -225,7 +225,7 @@ const Partnerships = () => {
                 </div>
                 <a
                   href="mailto:as.minerva@unibocconi.it"
-                  className="block font-serif text-xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
+                  className="block font-serif text-2xl md:text-3xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
                 >
                   as.minerva@unibocconi.it
                 </a>
@@ -241,7 +241,7 @@ const Partnerships = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Engagement framework
           </h2>
-          <p className="font-body text-base text-muted-foreground mt-2">
+          <p className="font-body text-body-lg text-muted-foreground mt-2">
             All initiatives are conducted within the regulatory framework Bocconi University establishes for its recognised student associations.
           </p>
 
@@ -251,10 +251,10 @@ const Partnerships = () => {
                 key={row.topic}
                 className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-3 md:gap-8 py-5 border-t border-separator"
               >
-                <div className="font-serif text-base md:text-[1.05rem] text-accent">
+                <div className="font-serif text-base md:text-lg text-accent">
                   {row.topic}
                 </div>
-                <div className="font-body text-[15px] leading-relaxed text-muted-foreground">
+                <div className="font-body text-body leading-relaxed text-muted-foreground">
                   {row.terms}
                 </div>
               </div>
