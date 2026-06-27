@@ -129,7 +129,7 @@ const Partnerships = () => {
       {/* SECTION 1 — Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <p className="font-serif text-2xl md:text-[1.6rem] leading-snug text-accent max-w-3xl">
+          <p className="font-serif text-xl sm:text-2xl md:text-subheading leading-snug text-accent max-w-3xl">
             Structured formats for collaboration with financial institutions, asset managers, advisory firms, and corporates.
           </p>
           <p className="font-body text-body-lg text-muted-foreground max-w-3xl mt-5">
