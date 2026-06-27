@@ -132,9 +132,9 @@ const Partnerships = () => {
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
             Our Approach
           </h2>
-          <p className="font-body text-body-lg text-muted-foreground max-w-3xl whitespace-pre-line">
+          <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
             Minerva Investment Management Society welcomes engagement with partners whose interests align with our commitment to rigorous financial research and academic excellence.&nbsp;
-            {"\n"}
+            <br />
             We offer a range of structured formats, each governed by the framework Bocconi University establishes for its recognised student associations.
           </p>
         </div>
