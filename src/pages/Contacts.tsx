@@ -59,7 +59,7 @@ const Contacts = () => {
                     style={{ transform: 'rotate(45deg)' }}
                     aria-hidden="true"
                   >
-                    →
+                    {"\n"}
                   </span>
                 </a>
                 <p className="font-body text-sm text-muted-foreground mt-2">
