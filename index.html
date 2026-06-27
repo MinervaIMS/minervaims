@@ -21,14 +21,17 @@
     <link rel="preload" as="image" href="/src/assets/homepage-bg.webp" />
     <link rel="modulepreload" href="/src/main.tsx" />
     <style>
-      #initial-loader{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#ffffff;}
-      #initial-loader img{height:48px;width:auto;animation:initial-loader-pulse 1.6s ease-in-out infinite;}
-      #initial-loader .loader-white{display:none;}
-      @keyframes initial-loader-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
-      @media (prefers-color-scheme: dark){
-        #initial-loader{background:#000000;}
-        #initial-loader .loader-color{display:none;}
-        #initial-loader .loader-white{display:block;}
+      #initial-loader{display:none;}
+      @media (max-width: 767px){
+        #initial-loader{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#ffffff;}
+        #initial-loader img{height:48px;width:auto;animation:initial-loader-pulse 1.6s ease-in-out infinite;}
+        #initial-loader .loader-white{display:none;}
+        @keyframes initial-loader-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+        @media (prefers-color-scheme: dark){
+          #initial-loader{background:#000000;}
+          #initial-loader .loader-color{display:none;}
+          #initial-loader .loader-white{display:block;}
+        }
       }
     </style>
 
