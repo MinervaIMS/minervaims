@@ -774,7 +774,7 @@ const MinervaWorkspace = () => {
                 key={section.key}
                 onClick={() => handleNavClick(section)}
                 title={!navExpanded ? section.label : undefined}
-                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors uppercase tracking-wider ${
+                className={`group w-full flex items-center gap-3 px-4 h-11 text-left transition-colors tracking-wide ${
                   isActive ? 'bg-background/15' : 'hover:bg-background/10'
                 } ${navExpanded ? '' : 'justify-center'}`}
                 style={{ fontFamily: '"Times New Roman", Times, serif' }}
@@ -795,7 +795,7 @@ const MinervaWorkspace = () => {
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
             {navExpanded ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
-            {navExpanded && <span className="text-sm opacity-80 uppercase tracking-wider">Collapse</span>}
+            {navExpanded && <span className="text-sm opacity-80 tracking-wide">Collapse</span>}
           </button>
         </div>
       </aside>
@@ -815,14 +815,14 @@ const MinervaWorkspace = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/')}
-              className="font-body"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <Globe className="h-4 w-4 mr-2" />Return to website
             </Button>
             <Button
               variant="outline"
               onClick={async () => { await signOut(); navigate('/auth'); }}
-              className="font-body"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <LogOut className="h-4 w-4 mr-2" />Log out
             </Button>
@@ -839,7 +839,7 @@ const MinervaWorkspace = () => {
             {activeSection && activeSection.subItems.length > 0 && (
               <div className="w-[240px] h-full flex flex-col">
                 <div className="shrink-0 h-14 flex items-center justify-between px-4">
-                  <h3 className="font-serif text-lg text-accent uppercase tracking-wider">{activeSection.label}</h3>
+                  <h3 className="font-serif text-lg text-accent tracking-wide">{activeSection.label}</h3>
                   <button
                     onClick={() => setSubmenuOpen(false)}
                     className="h-7 w-7 flex items-center justify-center hover:bg-background"
@@ -856,7 +856,7 @@ const MinervaWorkspace = () => {
                         key={si.key}
                         onClick={() => setActiveSubKey(si.key)}
                         className={`w-full text-left px-4 h-10 flex items-center transition-colors text-body ${
-                          isActive ? 'text-accent font-medium bg-background' : 'text-foreground hover:bg-background/60'
+                          isActive ? 'text-accent font-medium bg-[#ece9f4]' : 'text-foreground hover:bg-background/60'
                         }`}
                         style={{ fontFamily: '"Times New Roman", Times, serif' }}
                       >
