@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PageIntroduction, PageLoader, ApplicationJourney } from "@/components/shared";
-import joinBg from "@/assets/join-bg.webp";
+import joinBg from "@/assets/MIMS_Join_Background.webp.asset.json";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
