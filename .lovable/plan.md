@@ -1,92 +1,42 @@
-## Goal
-Polish the Minerva Workspace shell + shared page header for better hierarchy, readability and visual restraint.
+## Diagnosis
 
----
+The dark purple wash is missing because the overlay was never actually placed on top of the hero images.
 
-## 1. Page header layout (`WorkspacePageHeader.tsx`)
-Restructure so **actions sit below the description**, full-width row, and **remove the bottom border**.
+- `src/index.css` defines two utility classes — `.hero-overlay` and `.page-intro-overlay` — that point to the uploaded `dark-purple-overlay.webp` asset.
+- **Nothing in the codebase uses those classes.** A grep for `hero-overlay` / `page-intro-overlay` across `src/pages` and `src/components` returns zero matches.
+- Every page that renders a hero/background image does so with a single `bg-cover bg-center` div and then puts the text directly on top — no overlay layer in between:
+  - `Index.tsx` (homepage hero)
+  - `About.tsx`, `Alumni.tsx`, `Archive.tsx`, `Events.tsx`, `Join.tsx`, `Readings.tsx`, `Sitemap.tsx`, `Contacts.tsx`
+  - `DivisionDetail.tsx`, `FundDetail.tsx`
+- `components/shared/PageIntroduction.tsx` also renders the background image without any overlay element.
 
-New structure:
-```
-Title
-Description
-─ (no rule)
-Actions row (right-aligned, under description)
-[ content ]
-```
+The older images appeared "shaded" only because the purple wash was baked into those specific source files. The newly uploaded `MIMS_*.webp` images are clean photos with no baked-in tint, so they look bright — exposing the fact that the overlay was never wired up in JSX.
 
-- Drop `border-b border-separator pb-4`.
-- Keep title on its own row (no actions next to it).
-- Render `actions` in a separate row beneath the description, right-aligned, with top margin (`mt-6`).
-- Keep spacing below the header block (`mb-8`).
+## Fix
 
-Applies automatically to every page already using this component (Alumni, Team, Users, Activity, Newsletter, Readings, Files, Pages visibility, Application settings, Events, etc.) — no per-page edits needed.
+Add a single overlay `<div>` directly after every hero/background image div, sitting below the content (`z-10` content already exists, so the overlay just needs to sit between the image and the content with no extra z-index).
 
----
+For full-screen homepage hero use `hero-overlay`; for shorter page headers use `page-intro-overlay` (they currently point to the same asset, but keeping the semantic split matches the existing CSS).
 
-## 2. Nav rail typography (left sidebar in `MinervaWorkspace.tsx`)
-Increase size of the section labels for better readability and hierarchy:
+### Files to update
 
-- Section buttons (line 783): `text-small` → `text-base` (≈16px), keep Times New Roman.
-- Section button row height: `h-11` → `h-12` for breathing room.
-- Submenu heading (line 842): keep `text-lg`.
-- Submenu items (line 858): `text-body` stays, row height `h-10` → `h-11`.
-- Collapse label (line 798): keep `text-sm`.
+1. `src/components/shared/PageIntroduction.tsx` — inside the `!transparentBackground && backgroundImage` branch, add `<div className="absolute inset-0 page-intro-overlay" />` right after the background div. This single change covers About, Alumni, DivisionDetail, FundDetail, Readings, Team, Sitemap, Join, and any page that passes `backgroundImage` to `PageIntroduction`.
 
-(Points 2 and 3 of the request are the same instruction — applied once.)
+2. Pages that render their own background div (bypassing `PageIntroduction`) — add `<div className="absolute inset-0 hero-overlay" />` immediately after the existing `bg-cover bg-center` div:
+   - `src/pages/Index.tsx` (line 75 — homepage hero)
+   - `src/pages/About.tsx` (line 48)
+   - `src/pages/Alumni.tsx` (line 144)
+   - `src/pages/Archive.tsx` (line 222)
+   - `src/pages/Events.tsx` (line 161)
+   - `src/pages/Sitemap.tsx` (line 72)
+   - `src/pages/Contacts.tsx` (line 22)
+   - `src/pages/Join.tsx` (line 216 — main hero; line 231 is already an intentional `opacity-30` decorative band further down the page, leave it alone)
+   - `src/pages/DivisionDetail.tsx` (line 144)
+   - `src/pages/FundDetail.tsx` (line 120)
+   - `src/pages/Readings.tsx` (line 102)
 
----
+Some of these pages additionally use `PageIntroduction` further down — once (1) is applied, those secondary intros also get the overlay automatically.
 
-## 3. Auto-collapse main nav when a submenu opens
-In `MinervaWorkspace.tsx`, add an effect:
+### Result
 
-```ts
-useEffect(() => {
-  if (submenuOpen && activeSection && activeSection.subItems.length > 0) {
-    setNavExpanded(false);
-  }
-}, [submenuOpen, activeSectionKey]);
-```
-
-Behaviour:
-- Clicking a section that has sub-items → submenu panel opens → main rail collapses to 72px automatically.
-- Clicking a section with no sub-items → submenu stays closed → main rail keeps current state.
-- User can still manually re-expand the main rail via the collapse toggle; reopening another submenu will collapse it again.
-
----
-
-## 4. Remove "useless corners" (decorative card chrome)
-Audit pass across workspace pages to strip purely decorative `Card`/`CardHeader`/`CardContent` wrappers that only add a border + rounded corners around a single block of form fields.
-
-Concrete first target (called out in the request):
-- **`ApplicationSettings.tsx`** — remove the outer `<Card>` around "Recruitment Status". Render `CardTitle`/`CardDescription` as a plain serif sub-heading + muted paragraph, keep the inner form fields and Save button as-is, no border wrapper.
-
-Same treatment applied where the pattern recurs (single-card pages with no real grouping value). Pages with multiple cards used as genuine grouping (e.g. permission matrices, lists) keep their cards.
-
----
-
-## 5. Typography consistency pass (workspace only)
-Standardise the scale used inside the content slot so hierarchy reads cleanly:
-
-| Level | Token | Font |
-|---|---|---|
-| Page title (h1) | `text-heading` | serif, accent |
-| Section sub-heading inside a page | `text-xl` | serif, accent |
-| Description / helper text | `text-body` | body, muted-foreground |
-| Form labels | `text-sm` | body |
-| Table / list rows | `text-sm` | body |
-| Meta (timestamps, counts) | `text-xs` | body, muted-foreground |
-
-Where existing pages drift (e.g. `CardTitle` defaults, ad-hoc `text-lg`/`text-base` mixes), align to the table above. Limited to the workspace pages — public site untouched.
-
----
-
-## Files touched
-- `src/components/admin/WorkspacePageHeader.tsx` — layout rework (point 1).
-- `src/pages/MinervaWorkspace.tsx` — nav typography + auto-collapse effect (points 2, 3).
-- `src/components/admin/ApplicationSettings.tsx` — strip outer card (point 4 example).
-- Other admin components only where a clear "useless card" or typography drift is found during the pass (point 4 + 5). No behavioural/logic changes — visual only.
-
-## Out of scope
-- No changes to permissions, data, edge functions, routing, or public website.
-- No new dependencies.
+Every hero and page-intro background photo across the site gets the fully opaque purple wash from `dark-purple-overlay.webp` on top, restoring the uniform shaded look while keeping the new `MIMS_*` source images untouched.

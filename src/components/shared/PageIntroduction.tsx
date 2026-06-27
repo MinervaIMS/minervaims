@@ -16,10 +16,13 @@ export function PageIntroduction({
       {!transparentBackground && (
         <>
           {backgroundImage ? (
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${backgroundImage})` }}
-            />
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${backgroundImage})` }}
+              />
+              <div className="absolute inset-0 page-intro-overlay" />
+            </>
           ) : (
             <div className="absolute inset-0 bg-muted" />
           )}
