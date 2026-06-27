@@ -26,7 +26,7 @@ interface FundContent {
 const fundContent: Record<Fund, FundContent> = {
   'multi-asset': {
     title: 'Multi Asset Global Opportunities Fund',
-    subtitle: 'Global diversified portfolio across equities, bonds, commodities.',
+    subtitle: 'Global diversified portfolio across equities, bonds, commodities',
     description: 'The Multi Asset Global Opportunities Fund is MIMS\' actively managed, disclosed portfolio investing in listed equities, sovereign and credit instruments, and commodities. The mandate targets long-term capital growth with controlled volatility through diversified, opportunity-driven allocation across geographies, currencies and sectors. Position sizing is guided by marginal risk contribution, correlations and liquidity, typically across ~30 holdings. The team publishes semi-annual rebalancing reports and interim adjustments around market dislocations. Derivatives are used only for currency and tail-risk hedging, never for net leverage.',
     sectionTitle: 'Latest Fund Updates',
   },
