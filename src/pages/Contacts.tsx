@@ -63,7 +63,7 @@ const Contacts = () => {
                   </span>
                 </a>
                 <p className="font-body text-sm text-muted-foreground mt-2">
-                  Membership, events, and publications.
+                  {"\n"}
                 </p>
               </div>
             </div>
