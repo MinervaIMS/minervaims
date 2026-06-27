@@ -43,35 +43,28 @@ const Contacts = () => {
                 For general enquiries, research collaborations, or Society-related matters, the team can be reached directly by email. We endeavour to respond to all correspondence within three business days.
               </p>
 
-              <div className="mt-9 grid grid-cols-1 sm:grid-cols-2">
-                <div className="pb-8 sm:pb-0 sm:pr-7 border-b sm:border-b-0 border-separator">
-                  <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                    General enquiries
-                  </div>
-                  <a
-                    href="mailto:as.minerva@unibocconi.it"
-                    className="block font-serif text-xl text-accent mt-2.5 underline-offset-4 hover:underline break-words"
-                  >
+              <div className="mt-9 pb-8 sm:pb-0 sm:pr-7">
+                <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
+                  General enquiries
+                </div>
+                <a
+                  href="mailto:as.minerva@unibocconi.it"
+                  className="group inline-flex items-center gap-3 font-serif text-2xl md:text-[1.75rem] text-accent mt-2.5 break-words"
+                >
+                  <span className="underline-offset-4 group-hover:underline">
                     as.minerva@unibocconi.it
-                  </a>
-                  <p className="font-body text-sm text-muted-foreground mt-2">
-                    Membership, events, and publications.
-                  </p>
-                </div>
-                <div className="pt-8 sm:pt-0 sm:pl-7 sm:border-l border-separator">
-                  <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
-                    Institutions &amp; partnerships
-                  </div>
-                  <p className="font-body text-sm text-muted-foreground mt-2.5">
-                    Collaboration with firms and faculty.
-                  </p>
-                  <Link
-                    to="/partnerships"
-                    className="inline-flex items-center justify-center mt-4 px-6 py-2.5 bg-background border border-accent text-accent font-serif hover:bg-accent hover:text-background transition-colors"
+                  </span>
+                  <span
+                    className="inline-block text-accent origin-center"
+                    style={{ transform: 'rotate(45deg)' }}
+                    aria-hidden="true"
                   >
-                    Visit Partnerships
-                  </Link>
-                </div>
+                    →
+                  </span>
+                </a>
+                <p className="font-body text-sm text-muted-foreground mt-2">
+                  Membership, events, and publications.
+                </p>
               </div>
             </div>
 
@@ -86,18 +79,18 @@ const Contacts = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="MIMS on LinkedIn"
-                  className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:opacity-80 transition-opacity"
+                  className="w-14 h-14 rounded-full bg-accent flex items-center justify-center hover:opacity-80 transition-opacity"
                 >
-                  <img src={linkedinIcon} alt="" className="w-4 h-4" />
+                  <img src={linkedinIcon} alt="" className="w-6 h-6" />
                 </a>
                 <a
                   href="https://www.instagram.com/minerva.ims/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="MIMS on Instagram"
-                  className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:opacity-80 transition-opacity"
+                  className="w-14 h-14 rounded-full bg-accent flex items-center justify-center hover:opacity-80 transition-opacity"
                 >
-                  <img src={instagramIcon} alt="" className="w-4 h-4" />
+                  <img src={instagramIcon} alt="" className="w-6 h-6" />
                 </a>
               </div>
 
@@ -106,7 +99,7 @@ const Contacts = () => {
               <div className="font-body uppercase tracking-[.1em] text-xs text-muted-foreground">
                 Our members
               </div>
-              <p className="font-body text-sm text-muted-foreground mt-2.5 leading-relaxed">
+              <p className="font-body text-body-lg text-muted-foreground mt-2.5 leading-relaxed">
                 For those interested in getting to know our work and activities better, reach out to our members.
               </p>
               <Link
@@ -116,6 +109,22 @@ const Contacts = () => {
                 Meet the members
               </Link>
             </aside>
+          </div>
+
+          {/* Partnerships & Collaborations section */}
+          <div className="mt-16 md:mt-20">
+            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+              Partnerships &amp; Collaborations
+            </h2>
+            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+              From student associations to institutions and companies, Minerva has a long experience in promoting partnerships of great mutual return. Find out more
+            </p>
+            <Link
+              to="/partnerships"
+              className="inline-flex items-center justify-center mt-5 px-6 py-2.5 bg-background border border-accent text-accent font-serif hover:bg-accent hover:text-background transition-colors"
+            >
+              Visit Partnerships
+            </Link>
           </div>
         </div>
       </section>
