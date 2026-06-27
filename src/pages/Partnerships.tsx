@@ -144,7 +144,7 @@ const Partnerships = () => {
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Formats
+            Collaboration Formats
           </h2>
 
           {/* Cards: all viewports */}
