@@ -152,11 +152,11 @@ const Partnerships = () => {
                 key={f.title}
                 className="bg-muted p-5 transition-colors hover:bg-[#ece9f4]"
               >
-                <h3 className="font-serif text-lg text-accent">{f.title}</h3>
+                <h3 className="font-serif text-subheading text-accent">{f.title}</h3>
                 <dl className="mt-4 space-y-3">
                   {ROW_LABELS.map(({ key, label }) => (
                     <div key={label}>
-                      <dt className="font-body text-[.72rem] uppercase tracking-[.08em] text-muted-foreground">
+                      <dt className="font-body text-xs uppercase tracking-[.08em] text-muted-foreground">
                         {label}
                       </dt>
                       <dd className="font-body text-body text-foreground mt-1">
