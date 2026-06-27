@@ -116,7 +116,7 @@ const NAV: NavSection[] = [
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', label: 'Website page', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.canAccessSettings },
       { key: 'applications-status', label: 'Status', allowed: (p) => p.canAccessSettings },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
       { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.canAccessSettings },
