@@ -177,7 +177,7 @@ const Partnerships = () => {
               {FORMATS.map((f) => (
                 <div
                   key={`h-${f.title}`}
-                  className="p-[18px] border-l border-separator font-serif text-[1.05rem] text-accent leading-snug"
+                  className="p-[18px] border-l border-separator font-serif text-lg text-accent leading-snug"
                 >
                   {f.title}
                 </div>
@@ -186,13 +186,13 @@ const Partnerships = () => {
               {/* attribute rows */}
               {ROW_LABELS.map(({ key, label }) => (
                 <Fragment key={label}>
-                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-[.7rem] text-muted-foreground self-start">
+                  <div className="py-4 pr-4 font-body uppercase tracking-[.1em] text-xs text-muted-foreground self-start">
                     {label}
                   </div>
                   {FORMATS.map((f) => (
                     <div
                       key={`${label}-${f.title}`}
-                      className={`p-4 border-l border-separator font-body text-sm leading-relaxed ${
+                      className={`p-4 border-l border-separator font-body text-small leading-relaxed ${
                         key === "description" ? "text-muted-foreground" : "text-foreground"
                       }`}
                     >
