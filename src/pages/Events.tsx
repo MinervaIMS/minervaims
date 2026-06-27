@@ -386,7 +386,7 @@ function PastEventRow({
   return (
     <article className="flex flex-col sm:grid sm:grid-cols-[260px_1fr] gap-5 sm:gap-8 py-8 border-b border-separator">
       {/* Poster column */}
-      <div className="w-full max-w-[240px] sm:max-w-none mx-auto sm:mx-0">
+      <div className="w-full sm:max-w-none mx-auto sm:mx-0">
         {event.poster_url ? (
           <button
             type="button"
