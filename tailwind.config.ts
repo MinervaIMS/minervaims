@@ -61,7 +61,7 @@ export default {
       fontSize: {
         'hero': ['4rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
         'display': ['3rem', { lineHeight: '1.15', letterSpacing: '-0.01em' }],
-        'heading': ['2rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
+        'heading': ['clamp(1.625rem, 4.5vw + 0.5rem, 2rem)', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
         'subheading': ['1.5rem', { lineHeight: '1.3' }],
         'body-lg': ['1.125rem', { lineHeight: '1.6' }],
         'body': ['1rem', { lineHeight: '1.6' }],
