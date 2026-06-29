@@ -1,64 +1,36 @@
-## Why this happens
+The user wants the mobile initial loader (the `#initial-loader` shown before React hydrates) to visually cover the entire screen on mobile, including the top and bottom browser chrome areas, with the brand purple background.
 
-Every section title across the site uses the same Tailwind pattern:
+## What I found
 
-```
-font-serif text-xl sm:text-heading ...
-```
+- The initial mobile loader lives as inline CSS/HTML in `index.html` (`#initial-loader`).
+- It is scoped to `@media (max-width: 767px)` and currently uses `position:fixed; inset:0` with a white (light mode) / black (dark mode) background.
+- The user's screenshot shows a purple loader with white bars at the very top (iOS status bar) and bottom (Safari tab bar). Web content cannot paint over those browser chrome areas, but Safari 15+ colours them using the `theme-color` meta tag.
 
-- `text-xl` = **1.25rem (20px)** → applied below 640px (mobile)
-- `text-heading` = **2rem (32px)** → applied from `sm:` (≥640px) upward
+## Plan
 
-So on a 390px viewport, section `<h2>` titles render at **20px**. The "secondary" labels inside those sections use `text-lg md:text-xl` → **18–20px**. The two end up visually identical, and the hierarchy collapses. This is exactly what happens to "Engagement Framework" vs. the row labels ("Topic", terms, etc.) in `src/pages/Partnerships.tsx` (line 208 vs. 221).
+### 1. Change loader background to brand purple
 
-The pattern is duplicated in **22 places** across 11 page files (Team, Readings, Alumni, Archive, FundDetail, DivisionDetail, Join, Contacts, Partnerships, Events, …). Each file repeats the same `text-xl sm:text-heading` string, so the problem is structural, not a single-page mistake.
+Update the `#initial-loader` inline styles in `index.html` so the background is `#1F0F4D` in **both** light and dark mode (removing the white/black split).
 
-There is already a single source of truth defined in `src/index.css`:
+### 2. Ensure full dynamic viewport coverage
 
-```css
-.section-heading { @apply font-serif text-heading mb-6 pb-3 border-b border-separator text-accent; }
-```
+Replace `inset:0` with explicit `width: 100dvw; height: 100dvh; top: 0; left: 0;` so the loader fills the dynamic viewport on mobile Safari and does not shrink when the URL bar collapses/expands.
 
-…but nearly no page uses it; they re-implement the heading inline and add the mobile shrink.
+### 3. Match browser chrome colour
 
-## Fix
+- Update `<meta name="theme-color" content="#000000">` to `#1F0F4D` so iOS Safari tints the status bar and bottom tab bar to the same purple.
+- Add `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">` so the status-bar text remains readable over the purple backdrop.
 
-Two coordinated changes so section titles stay clearly larger than sub-labels on every screen, and the rule lives in one place going forward.
+### 4. Align manifest colours
 
-### 1. Make `text-heading` intrinsically responsive (one place)
+Update `public/manifest.json`:
+- `theme_color`: `#1E2047` → `#1F0F4D`
+- `background_color`: `#FFFFFF` → `#1F0F4D`
 
-In `tailwind.config.ts`, replace the fixed value:
+This keeps the PWA splash screen consistent with the in-browser loader.
 
-```ts
-// before
-'heading': ['2rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
-// after
-'heading': ['clamp(1.625rem, 4.5vw + 0.5rem, 2rem)', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
-```
+### Files to change
+- `index.html`
+- `public/manifest.json`
 
-Result: section titles render at ~**26px on a 390px mobile**, scale smoothly, and cap at **32px on desktop** (current desktop look is preserved). No HTML changes needed for the size to recover.
-
-### 2. Drop the `text-xl sm:` mobile override on section `<h2>`s
-
-Across the 22 occurrences, remove `text-xl sm:` so the heading uses `text-heading` at every breakpoint. Two equivalent shapes depending on the site convention you prefer:
-
-- **Minimal diff:** replace `font-serif text-xl sm:text-heading` → `font-serif text-heading` on each `<h2>` (keeps the rest of the className intact).
-- **Cleaner / future-proof:** where the full pattern matches `font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent`, replace the whole className with the existing `section-heading` utility from `src/index.css`. This guarantees future titles can't drift again.
-
-Special cases to handle while editing:
-- `src/pages/Partnerships.tsx:182` — title sits on a dark background and uses `text-background`. Keep that color; only drop the size override.
-- `src/pages/Readings.tsx:117,150` — currently use `text-lg sm:text-xl md:text-heading` (even smaller on mobile). Normalize these to `text-heading` as well.
-- `src/pages/Alumni.tsx:306` — this is an `<h3>` subsection title. Keep it visually smaller than the section `<h2>`s, e.g. `text-2xl` on mobile, `text-heading` from `sm:` — or leave it as-is, since the `<h2>`s above it will now be larger and hierarchy is restored.
-
-### 3. Verify
-
-- On 390×844, "Engagement Framework" should render noticeably larger than the row topic labels ("Engagement Topic", "Terms", etc.).
-- Spot-check Team, Join FAQs, Contacts, Archive, Events list — all section titles should look the same size as each other and clearly dominate sub-labels.
-- Desktop view should be unchanged (cap at 2rem / 32px).
-
-## Files touched
-
-- `tailwind.config.ts` — update the `heading` font-size token to `clamp(...)`.
-- 11 page files under `src/pages/` — strip the `text-xl sm:` (and `text-lg sm:text-xl md:`) mobile overrides on section `<h2>`s; optionally swap matching ones to the `.section-heading` class.
-
-No business logic, data, or component-API changes.
+No other components or pages are affected.
