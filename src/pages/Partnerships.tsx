@@ -129,7 +129,7 @@ const Partnerships = () => {
       {/* SECTION 1 — Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Let's make it happen
           </h2>
           <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
@@ -143,7 +143,7 @@ const Partnerships = () => {
       {/* SECTION 2 — Formats */}
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Collaboration Formats
           </h2>
 
@@ -179,7 +179,7 @@ const Partnerships = () => {
           <div className="bg-accent p-8 md:p-12">
             <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
               <div>
-                <h2 className="font-serif text-xl sm:text-heading text-background">
+                <h2 className="font-serif text-heading text-background">
                   Begin the Conversation to Partner with Minerva
                 </h2>
                 <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
@@ -205,7 +205,7 @@ const Partnerships = () => {
       {/* SECTION 4 — Engagement framework */}
       <section className="py-section-sm md:py-section bg-muted">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Engagement Framework
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mt-2">

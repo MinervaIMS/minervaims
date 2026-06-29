@@ -114,7 +114,7 @@ const Readings = () => {
       {/* Second Section: Description */}
       <section className="pt-section-sm md:pt-section pb-6 md:pb-8 bg-background">
         <div className="container px-4 sm:px-6 lg:px-8">
-          <h2 className="font-serif text-lg sm:text-xl md:text-heading mb-4 sm:mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-4 sm:mb-6 pb-3 border-b border-separator text-accent">
             Curated Readings to Share Knowledge
           </h2>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6 lg:gap-12">
@@ -147,7 +147,7 @@ const Readings = () => {
       {/* Third Section: Readings List */}
       <section className="pt-6 md:pt-8 pb-section-sm md:pb-section bg-background">
         <div className="container px-4 sm:px-6 lg:px-8">
-          <h2 className="font-serif text-lg sm:text-xl md:text-heading mb-4 sm:mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-4 sm:mb-6 pb-3 border-b border-separator text-accent">
             Our Library
           </h2>
 

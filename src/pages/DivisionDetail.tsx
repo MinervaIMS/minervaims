@@ -156,7 +156,7 @@ const DivisionDetail = () => {
       {/* Second Section: Our Expertise */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             {content.subtitle}
           </h2>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-12">
@@ -177,7 +177,7 @@ const DivisionDetail = () => {
       {isPortfolio && (
         <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
           <div className="container">
-            <h2 className="font-serif text-xl sm:text-heading mb-8 pb-3 border-b border-separator text-accent">
+            <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
               MIMS Virtual Funds
             </h2>
             <div className="flex flex-col gap-[.7rem] md:gap-4">

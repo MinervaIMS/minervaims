@@ -170,7 +170,7 @@ const Events = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Minerva Events, bridging the gap between academia and industry
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mb-4 max-w-4xl">

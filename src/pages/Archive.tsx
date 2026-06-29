@@ -229,7 +229,7 @@ const Archive = () => {
       {/* Content section */}
       <div className="bg-background">
         <div className="container py-section-sm md:py-section">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Browse all research reports and publications
           </h2>
           {/* Sticky Filters Bar */}
