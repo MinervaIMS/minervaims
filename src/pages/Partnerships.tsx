@@ -22,7 +22,7 @@ const FORMATS: Format[] = [
       "A member of your team participates in a structured panel discussion on a theme of substantive professional and academic interest. All on-campus events with external speakers require the presence of a Bocconi Core Faculty member acting as moderator.",
   },
   {
-    title: "In-company Visit",
+    title: "2. In-company Visit",
     duration: "Few hours, half or full day",
     audience: "15 - 45 Society members",
     format: "On-site at your offices",
@@ -30,7 +30,7 @@ const FORMATS: Format[] = [
       "A selected delegation of Society members visits your offices for a structured programme covering divisional operations, current areas of focus, and exchanges with junior and senior professionals.\n",
   },
   {
-    title: "Online Seminar or Guest Speakers Panel",
+    title: "3. Online Seminar or Guest Speakers Panel",
     duration: "45 - 90 minutes",
     audience: "Variable; open to the community or reserved to members",
     format: "Remote, via Microsoft Teams",
@@ -38,7 +38,7 @@ const FORMATS: Format[] = [
       "Professionals deliver a session in a structured online format. When open to the broader community, the session follows the same moderation and panel requirements as on-campus events.",
   },
   {
-    title: "Case Study & Editorial Exchange",
+    title: "4. Case Study & Editorial Exchange",
     duration: "60 - 120 minutes\n",
     audience: "Society analysts and division heads",
     format: "In person or remote",
