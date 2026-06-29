@@ -206,7 +206,7 @@ const Partnerships = () => {
       <section className="py-section-sm md:py-section bg-muted">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Engagement Framework
+            Regulatory&nbsp;Framework for&nbsp;Engagement
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mt-2">
             All initiatives are conducted within the regulatory framework Bocconi University establishes for its recognised student associations.
