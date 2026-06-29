@@ -273,7 +273,7 @@ const Join = () => {
 
         {/* Why Join */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Why Join
           </h2>
           <Reveal>
@@ -332,7 +332,7 @@ const Join = () => {
 
         {/* What You Gain */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             What You Gain
           </h2>
           <div className="border-t border-separator">
@@ -379,7 +379,7 @@ const Join = () => {
 
         {/* The Application Journey */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             The Application Journey
           </h2>
           <ApplicationJourney />
@@ -388,7 +388,7 @@ const Join = () => {
 
         {/* How To Prepare For The Interview */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             How To Prepare For The Interview
           </h2>
           <Reveal>
@@ -428,7 +428,7 @@ const Join = () => {
 
         {/* FAQs */}
         <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
           <Reveal>
             <div className="max-w-3xl">
               <Accordion type="multiple" className="w-full">

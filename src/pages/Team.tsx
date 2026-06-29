@@ -82,7 +82,7 @@ const Team = () => {
       <section className="pt-section-sm md:pt-section pb-10 md:pb-12 bg-background">
         <div className="container">
           <div className="flex items-baseline justify-between gap-4 mb-6 pb-3 border-b border-separator">
-            <h2 className="font-serif text-xl sm:text-heading text-accent">
+            <h2 className="font-serif text-heading text-accent">
               The Team Behind the Work
             </h2>
           </div>

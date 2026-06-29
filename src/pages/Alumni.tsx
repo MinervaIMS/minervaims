@@ -155,7 +155,7 @@ const Alumni = () => {
       {/* Description Section */}
       <section className="pt-section-sm md:pt-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             A Global Network, Still Close
           </h2>
           <p className="font-body text-body-lg text-muted-foreground">
@@ -169,7 +169,7 @@ const Alumni = () => {
 
         {/* Our Founders */}
         <div className="mb-24">
-          <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2017</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2017</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
             {founders.map((founder) => (
               <article
@@ -303,7 +303,7 @@ const Alumni = () => {
           <div className="space-y-8">
             {sortedYears.map((year) => (
               <div key={year}>
-                <h3 className="font-serif text-xl sm:text-heading mb-4 pb-2 border-b border-separator text-accent">
+                <h3 className="font-serif text-heading mb-4 pb-2 border-b border-separator text-accent">
                   Class of {year}
                 </h3>
                 <div className="space-y-1">

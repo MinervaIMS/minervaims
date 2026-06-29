@@ -32,7 +32,7 @@ const Contacts = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <div>
-            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
               Get in touch with Minerva
             </h2>
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
@@ -53,7 +53,7 @@ const Contacts = () => {
 
           {/* Partnerships & Collaborations section */}
           <div className="mt-16 md:mt-20">
-            <h2 className="font-serif text-xl sm:text-heading mb-6 pb-3 border-b border-separator text-accent">
+            <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
               Partnerships &amp; Collaborations
             </h2>
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
