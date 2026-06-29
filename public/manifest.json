@@ -4,8 +4,8 @@
   "description": "Student-run investment research society at Università Bocconi",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#1E2047",
+  "background_color": "#1F0F4D",
+  "theme_color": "#1F0F4D",
   "icons": [
     {
       "src": "/favicon.png",
