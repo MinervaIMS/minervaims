@@ -14,7 +14,7 @@ interface Format {
 
 const FORMATS: Format[] = [
   {
-    title: "On-campus Guest Speakers Panel",
+    title: "1. On-campus Guest Speakers Panel",
     duration: "60 - 90 minutes, between 18:30 and 20:30",
     audience: "50 - 150 students, open to the Bocconi community",
     format: "In person, moderated by a Bocconi Core Faculty member",
