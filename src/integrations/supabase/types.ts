@@ -851,6 +851,39 @@ export type Database = {
         }
         Relationships: []
       }
+      report_deadlines: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          division: Database["public"]["Enums"]["org_division"] | null
+          due_date: string
+          id: string
+          notes: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
