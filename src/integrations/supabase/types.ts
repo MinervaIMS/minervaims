@@ -432,6 +432,39 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_email_templates: {
+        Row: {
+          body: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          subject: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          subject?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -629,6 +662,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fee_periods: {
+        Row: {
+          closed: boolean
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          fee_amount: number
+          id: string
+          semester_label: string
+          treasury_entry_id: string | null
+        }
+        Insert: {
+          closed?: boolean
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          fee_amount?: number
+          id?: string
+          semester_label: string
+          treasury_entry_id?: string | null
+        }
+        Update: {
+          closed?: boolean
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          fee_amount?: number
+          id?: string
+          semester_label?: string
+          treasury_entry_id?: string | null
+        }
+        Relationships: []
+      }
       fund_performances: {
         Row: {
           created_at: string
@@ -727,6 +793,51 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      membership_fees: {
+        Row: {
+          amount: number | null
+          collected_at: string | null
+          collected_by: string | null
+          id: string
+          member_id: string
+          paid: boolean
+          period_id: string
+        }
+        Insert: {
+          amount?: number | null
+          collected_at?: string | null
+          collected_by?: string | null
+          id?: string
+          member_id: string
+          paid?: boolean
+          period_id: string
+        }
+        Update: {
+          amount?: number | null
+          collected_at?: string | null
+          collected_by?: string | null
+          id?: string
+          member_id?: string
+          paid?: boolean
+          period_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_fees_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_fees_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fee_periods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       newsletter_subscribers: {
         Row: {
@@ -990,6 +1101,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      treasury_entries: {
+        Row: {
+          academic_semester: string | null
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string
+          execution_date: string
+          flow: string
+          id: string
+          is_auto: boolean
+          locked: boolean
+          registration_date: string
+          source: string | null
+        }
+        Insert: {
+          academic_semester?: string | null
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description: string
+          execution_date: string
+          flow: string
+          id?: string
+          is_auto?: boolean
+          locked?: boolean
+          registration_date?: string
+          source?: string | null
+        }
+        Update: {
+          academic_semester?: string | null
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          execution_date?: string
+          flow?: string
+          id?: string
+          is_auto?: boolean
+          locked?: boolean
+          registration_date?: string
+          source?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
