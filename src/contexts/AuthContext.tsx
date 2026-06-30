@@ -75,9 +75,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       .select('*')
       .eq('user_id', userId);
 
-    // `division` is added by the Phase 0 migration; cast until the generated
-    // Supabase types are regenerated to include it.
-    setRoles((rolesData as unknown as UserRole[]) || []);
+    setRoles((rolesData as UserRole[]) || []);
   };
 
   const refreshProfile = async () => {
