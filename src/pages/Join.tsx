@@ -245,12 +245,10 @@ const Join = () => {
                     </p>
                     <div className="flex flex-wrap gap-4 items-center mt-8">
                       <a
-                        href={settings.applyFormUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="/apply"
                         className="inline-flex items-center gap-2 bg-background text-foreground font-serif text-body-lg px-8 py-4 hover:bg-background/90 transition-colors"
                       >
-                        Submit Application Form <span aria-hidden>↗</span>
+                        Submit Application Form <span aria-hidden>→</span>
                       </a>
                     </div>
                   </>

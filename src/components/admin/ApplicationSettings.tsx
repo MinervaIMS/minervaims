@@ -1,243 +1,167 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Save } from 'lucide-react';
+import { useAccess } from '@/hooks/useAccess';
+import { Save, Loader2 } from 'lucide-react';
+import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { listQuestions, setDivisionQuestion } from '@/lib/applications-api';
 
-interface ApplicationSettingsData {
-  id: string;
-  applications_open: boolean;
-  semester_label: string;
-  apply_form_url: string;
-  updated_at: string;
-}
+const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+
+// timestamptz <-> datetime-local helpers
+const toLocal = (iso: string | null | undefined) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+};
+const toIso = (local: string) => (local ? new Date(local).toISOString() : null);
 
 const ApplicationSettings = () => {
-  const [settings, setSettings] = useState<ApplicationSettingsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    applications_open: false,
-    semester_label: '',
-    apply_form_url: '',
-  });
-  const { toast } = useToast();
   const { session } = useAuth();
+  const access = useAccess();
+  const { toast } = useToast();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ applications_open: false, semester_label: '', auto_open: true, start_local: '', end_local: '' });
+  const [questions, setQuestions] = useState<Record<string, string>>({});
+  const [savingQ, setSavingQ] = useState<string | null>(null);
+
+  const editableDivisions = useMemo<OrgDivision[]>(() => {
+    if (access.isFullAccess) return CORE;
+    return (access.allowedDivisions || []).filter((d) => (CORE as string[]).includes(d)) as OrgDivision[];
+  }, [access]);
 
   useEffect(() => {
-    if (session?.access_token) {
-      fetchSettings();
-    }
-  }, [session?.access_token]);
-
-  const fetchSettings = async () => {
-    if (!session?.access_token) {
-      console.log('No session token available for fetching settings');
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      console.log('Fetching application settings...');
-      const { data, error } = await supabase.functions.invoke('admin-settings', {
-        body: { action: 'get' },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      console.log('Fetch response:', { data, error });
-
-      if (error) throw error;
-
-      if (data?.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
+    if (!session?.access_token) return;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('admin-settings', {
+          body: { action: 'get' }, headers: { Authorization: `Bearer ${session.access_token}` },
         });
-        return;
-      }
-
-      if (data?.data) {
-        setSettings(data.data);
-        setFormData({
-          applications_open: data.data.applications_open,
-          semester_label: data.data.semester_label,
-          apply_form_url: data.data.apply_form_url,
+        const s = data?.data;
+        if (s) setForm({
+          applications_open: s.applications_open, semester_label: s.semester_label,
+          auto_open: s.auto_open ?? true, start_local: toLocal(s.start_date), end_local: toLocal(s.end_date),
         });
-      }
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch application settings",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const qs = await listQuestions();
+        setQuestions(Object.fromEntries(qs.map((q) => [q.division, q.question])));
+      } catch (e) {
+        toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+      } finally { setLoading(false); }
+    })();
+  }, [session?.access_token, toast]);
 
-  const handleSave = async () => {
-    if (!session?.access_token) {
-      toast({
-        title: "Error",
-        description: "No active session. Please log in again.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsSaving(true);
+  const save = async () => {
+    setSaving(true);
     try {
-      console.log('Saving application settings...', formData);
       const { data, error } = await supabase.functions.invoke('admin-settings', {
-        body: { 
+        body: {
           action: 'update',
-          settings: formData,
+          settings: {
+            applications_open: form.applications_open, semester_label: form.semester_label,
+            auto_open: form.auto_open, start_date: toIso(form.start_local), end_date: toIso(form.end_local),
+          },
         },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
-
-      console.log('Save response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      if (data?.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.data) {
-        setSettings(data.data);
-      }
-      toast({
-        title: "Success",
-        description: "Application settings updated successfully",
-      });
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast({
-        title: "Error",
-        description: `Failed to save application settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Settings saved' });
+    } catch (e) {
+      toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setSaving(false); }
   };
 
-  const handleToggle = async (checked: boolean) => {
-    setFormData(prev => ({ ...prev, applications_open: checked }));
+  const saveQuestion = async (division: OrgDivision) => {
+    setSavingQ(division);
+    try {
+      await setDivisionQuestion(session, division, questions[division] ?? '');
+      toast({ title: `${divisionLabels[division]} question saved` });
+    } catch (e) {
+      toast({ title: 'Could not save question', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setSavingQ(null); }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+  if (loading) {
+    return <div><WorkspacePageHeader title="Website Page" description="Control the public application area of the website." /><WorkspaceLoader /></div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <WorkspacePageHeader
         title="Website Page"
-        description="Control whether the public application form is open and where candidates are sent when they apply."
+        description="Control the public application area: open or close applications, schedule the window, set the semester label, and manage each division’s written question."
       />
 
-      <div className="space-y-2">
-        <h2 className="font-serif text-xl text-accent">Recruitment Status</h2>
-        <p className="font-body text-body text-muted-foreground">
-          Control whether applications are open or closed for the current recruitment cycle.
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        {/* Application Status Toggle */}
-        <div className="flex items-center justify-between p-4 border border-separator rounded-lg">
-          <div>
-            <p className="font-body font-medium">Applications Open</p>
-            <p className="font-body text-sm text-muted-foreground">
-              {formData.applications_open
-                ? "Applications are currently open. The 'Apply Now' button is visible on the homepage."
-                : "Applications are currently closed. The homepage shows recruitment is closed."
-              }
-            </p>
+      {access.isFullAccess && (
+        <div className="space-y-6 max-w-2xl">
+          <div className="flex items-center justify-between p-4 border border-separator rounded-lg">
+            <div>
+              <p className="font-body font-medium">Applications open</p>
+              <p className="font-body text-sm text-muted-foreground">
+                {form.applications_open ? 'The internal application form is currently available on the website.' : 'Applications are closed; the form is not available.'}
+              </p>
+            </div>
+            <Switch checked={form.applications_open} onCheckedChange={(v) => setForm({ ...form, applications_open: v })} />
           </div>
-          <Switch
-            checked={formData.applications_open}
-            onCheckedChange={handleToggle}
-          />
-        </div>
 
-        {/* Semester Label */}
-        <div className="space-y-2">
-          <Label htmlFor="semester_label" className="font-body text-sm">Semester Label</Label>
-          <Input
-            id="semester_label"
-            value={formData.semester_label}
-            onChange={(e) => setFormData(prev => ({ ...prev, semester_label: e.target.value }))}
-            placeholder="e.g., Spring 2026"
-          />
-          <p className="font-body text-xs text-muted-foreground">
-            This label appears on the Join page when applications are open.
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-body">
+            <div className="space-y-1">
+              <Label>Semester label</Label>
+              <Input value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
+            </div>
+            <div className="flex items-center justify-between sm:pt-6">
+              <Label htmlFor="auto">Open/close automatically by schedule</Label>
+              <Switch id="auto" checked={form.auto_open} onCheckedChange={(v) => setForm({ ...form, auto_open: v })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Opens at</Label>
+              <Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Closes at</Label>
+              <Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={save} disabled={saving} className="font-body">
+              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save settings</>}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Per-division written questions */}
+      <div className="space-y-4 max-w-2xl">
+        <div>
+          <h2 className="font-serif text-xl text-accent">Division questions</h2>
+          <p className="font-body text-sm text-muted-foreground">
+            Each division’s written question shown to candidates. {access.isFullAccess ? 'You can edit all divisions.' : 'You can edit your own division.'}
           </p>
         </div>
-
-        {/* Apply Form URL */}
-        <div className="space-y-2">
-          <Label htmlFor="apply_form_url" className="font-body text-sm">Application Form URL</Label>
-          <Input
-            id="apply_form_url"
-            value={formData.apply_form_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, apply_form_url: e.target.value }))}
-            placeholder="https://forms.google.com/..."
-          />
-          <p className="font-body text-xs text-muted-foreground">
-            The URL candidates are directed to when they click "Apply Now" on the Join page.
-          </p>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end pt-4">
-          <Button onClick={handleSave} disabled={isSaving} className="font-body">
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Last Updated Info */}
-        {settings?.updated_at && (
-          <p className="font-body text-xs text-muted-foreground text-right">
-            Last updated: {new Date(settings.updated_at).toLocaleString()}
-          </p>
-        )}
+        {editableDivisions.length === 0 && <p className="font-body text-sm text-muted-foreground">No divisions available to edit.</p>}
+        {editableDivisions.map((d) => (
+          <div key={d} className="space-y-2 border border-separator p-4">
+            <Label className="font-body">{divisionLabels[d]}</Label>
+            <Textarea rows={3} value={questions[d] ?? ''} onChange={(e) => setQuestions({ ...questions, [d]: e.target.value })} />
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={() => saveQuestion(d)} disabled={savingQ === d}>
+                {savingQ === d ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Save question
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

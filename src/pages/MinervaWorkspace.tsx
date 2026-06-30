@@ -24,6 +24,10 @@ import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
 import MembersManagement from '@/components/admin/MembersManagement';
 import MyProfile from '@/components/admin/MyProfile';
+import CandidatesManagement from '@/components/admin/CandidatesManagement';
+import NewJoiners from '@/components/admin/NewJoiners';
+import FormSettings from '@/components/admin/FormSettings';
+import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
@@ -120,11 +124,11 @@ const NAV: NavSection[] = [
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-status', label: 'Status', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.canAccessSettings },
-      { key: 'applications-form', label: 'Form settings', allowed: (p) => p.canAccessSettings },
+      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.can('applications-website') },
+      { key: 'applications-status', label: 'Status', allowed: (p) => p.can('applications-status') },
+      { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.can('applications-screening') },
+      { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.can('applications-joiners') },
+      { key: 'applications-form', label: 'Form settings', allowed: (p) => p.can('applications-form') },
     ],
   },
   {
@@ -516,9 +520,7 @@ const MinervaWorkspace = () => {
   const renderContent = () => {
     // Hard guard: a candidate can only ever render their profile or status.
     if (isCandidate) {
-      if (activeSubKey === 'applications-status') {
-        return renderPlaceholder('Application status', 'The current status of your application will appear here.');
-      }
+      if (activeSubKey === 'applications-status') return <ApplicationStatus />;
       return <MyProfile />;
     }
     if (activeSectionKey === 'my-role') return <MyProfile />;
@@ -545,6 +547,14 @@ const MinervaWorkspace = () => {
         return renderEventsManagement();
       case 'applications-website':
         return <ApplicationSettings />;
+      case 'applications-screening':
+        return <CandidatesManagement />;
+      case 'applications-joiners':
+        return <NewJoiners />;
+      case 'applications-form':
+        return <FormSettings />;
+      case 'applications-status':
+        return <ApplicationStatus />;
       case 'website-readings':
         return <ReadingsManagement />;
       case 'settings-users':
