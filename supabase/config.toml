@@ -29,6 +29,12 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.admin-aod]
     verify_jwt = false
+  [functions.admin-fees]
+    verify_jwt = false
+  [functions.admin-treasury]
+    verify_jwt = false
+  [functions.admin-auto-emails]
+    verify_jwt = false
   [functions.admin-settings]
     verify_jwt = false
   [functions.admin-team]

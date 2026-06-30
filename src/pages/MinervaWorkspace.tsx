@@ -30,7 +30,6 @@ import FormSettings from '@/components/admin/FormSettings';
 import QuestionsManagement from '@/components/admin/QuestionsManagement';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import ReportUpload from '@/components/admin/ReportUpload';
-import ReportDeadlines from '@/components/admin/ReportDeadlines';
 import ResourceManager from '@/components/admin/ResourceManager';
 import FundsPerformances from '@/components/admin/FundsPerformances';
 import EventCreate from '@/components/admin/EventCreate';
@@ -39,6 +38,9 @@ import EventAttendance from '@/components/admin/EventAttendance';
 import AlumniCalls from '@/components/admin/AlumniCalls';
 import AssociationOnDisplay from '@/components/admin/AssociationOnDisplay';
 import WorkspaceCalendar from '@/components/admin/WorkspaceCalendar';
+import MembershipFee from '@/components/admin/MembershipFee';
+import Treasury from '@/components/admin/Treasury';
+import AutoEmails from '@/components/admin/AutoEmails';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
@@ -112,7 +114,6 @@ const NAV: NavSection[] = [
       { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
       { key: 'reports-templates', label: 'Templates & code repos', allowed: (p) => p.canAccessFiles },
       { key: 'reports-funds', label: "Funds' performances", allowed: (p) => p.can('reports-funds') },
-      { key: 'reports-deadlines', label: 'Deadlines', allowed: (p) => p.canAccessFiles },
     ],
   },
   {
@@ -157,14 +158,12 @@ const NAV: NavSection[] = [
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-fee', label: 'Membership fee' },
-      { key: 'ops-treasury', label: 'Treasury' },
-      { key: 'ops-accounts', label: 'Accounts & credentials' },
-      { key: 'ops-external', label: 'External relations' },
-      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.canAccessUsers },
-      { key: 'ops-auto-emails', label: 'Auto emails' },
-
-      { key: 'ops-docs', label: 'Statuto' },
+      { key: 'ops-fee', label: 'Membership fee', allowed: (p) => p.can('ops-fee') },
+      { key: 'ops-treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
+      { key: 'ops-external', label: 'External relations', allowed: (p) => p.can('ops-external') },
+      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
+      { key: 'ops-auto-emails', label: 'Auto emails', allowed: (p) => p.can('ops-auto-emails') },
+      { key: 'ops-docs', label: 'Statuto', allowed: (p) => p.can('ops-docs') },
     ],
   },
 
@@ -560,8 +559,6 @@ const MinervaWorkspace = () => {
         />;
       case 'reports-funds':
         return <FundsPerformances />;
-      case 'reports-deadlines':
-        return <ReportDeadlines />;
       case 'people-members':
         return <MembersManagement />;
       case 'people-advisors':
@@ -598,6 +595,16 @@ const MinervaWorkspace = () => {
         return <UserManagement />;
       case 'settings-activity':
         return <ActivityManagement />;
+      case 'ops-fee':
+        return <MembershipFee />;
+      case 'ops-treasury':
+        return <Treasury />;
+      case 'ops-external':
+        return <ResourceManager category="external_relations" title="External relations" description="A flexible repository for external relationships: files, links, documents, relationship notes and useful references." divisions={['none']} />;
+      case 'ops-auto-emails':
+        return <AutoEmails />;
+      case 'ops-docs':
+        return <ResourceManager category="operations_statuto" title="Statuto" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible." divisions={['none']} />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
       case 'website-pages':
