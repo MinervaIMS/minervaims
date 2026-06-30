@@ -1109,6 +1109,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string
+          division: Database["public"]["Enums"]["org_division"] | null
           execution_date: string
           flow: string
           id: string
@@ -1123,6 +1124,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description: string
+          division?: Database["public"]["Enums"]["org_division"] | null
           execution_date: string
           flow: string
           id?: string
@@ -1137,6 +1139,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string
+          division?: Database["public"]["Enums"]["org_division"] | null
           execution_date?: string
           flow?: string
           id?: string
