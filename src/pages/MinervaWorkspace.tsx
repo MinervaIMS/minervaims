@@ -30,6 +30,7 @@ import FormSettings from '@/components/admin/FormSettings';
 import QuestionsManagement from '@/components/admin/QuestionsManagement';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import ReportUpload from '@/components/admin/ReportUpload';
+import ReportDeadlines from '@/components/admin/ReportDeadlines';
 import ResourceManager from '@/components/admin/ResourceManager';
 import FundsPerformances from '@/components/admin/FundsPerformances';
 import EventCreate from '@/components/admin/EventCreate';
@@ -111,6 +112,7 @@ const NAV: NavSection[] = [
       { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
       { key: 'reports-templates', label: 'Templates & code repos', allowed: (p) => p.canAccessFiles },
       { key: 'reports-funds', label: "Funds' performances", allowed: (p) => p.can('reports-funds') },
+      { key: 'reports-deadlines', label: 'Deadlines', allowed: (p) => p.canAccessFiles },
     ],
   },
   {
@@ -558,6 +560,8 @@ const MinervaWorkspace = () => {
         />;
       case 'reports-funds':
         return <FundsPerformances />;
+      case 'reports-deadlines':
+        return <ReportDeadlines />;
       case 'people-members':
         return <MembersManagement />;
       case 'people-advisors':
