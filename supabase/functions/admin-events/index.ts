@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
@@ -45,8 +46,28 @@ const EventSchema = z.object({
     .max(2000, 'Poster URL too long')
     .trim()
     .nullable()
-    .optional()
+    .optional(),
+  event_type: z.enum(['meeting','assembly','division_event','online_call','guest','alumni_call','association_wide','other']).optional(),
+  division: z.enum(['equity','investment','macro','portfolio','quant','media','operations','board','none']).nullable().optional(),
+  start_at: z.string().nullable().optional(),
+  end_at: z.string().nullable().optional(),
+  online: z.boolean().optional(),
+  registration_enabled: z.boolean().optional(),
+  registration_audience: z.enum(['members','members_external','guests','public']).optional()
 })
+
+// Extra event columns shared by create and update.
+function extraEventCols(v: Record<string, unknown>) {
+  return {
+    event_type: v.event_type ?? 'other',
+    division: v.division ?? null,
+    start_at: v.start_at ?? null,
+    end_at: v.end_at ?? null,
+    online: v.online ?? false,
+    registration_enabled: v.registration_enabled ?? false,
+    registration_audience: v.registration_audience ?? 'members',
+  }
+}
 
 const ActionSchema = z.enum(['create', 'update', 'delete'])
 
@@ -255,6 +276,8 @@ Deno.serve(async (req) => {
             guest: validatedEvent.guest || null,
             description: validatedEvent.description || null,
             poster_url: validatedEvent.poster_url || null,
+            ...extraEventCols(validatedEvent),
+            created_by: user.id,
           })
           .select()
           .single()
@@ -305,6 +328,7 @@ Deno.serve(async (req) => {
             guest: validatedEvent.guest || null,
             description: validatedEvent.description || null,
             poster_url: validatedEvent.poster_url || null,
+            ...extraEventCols(validatedEvent),
           })
           .eq('id', validatedEvent.id)
           .select()

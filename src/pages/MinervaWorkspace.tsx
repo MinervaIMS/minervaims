@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,12 @@ import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import ReportUpload from '@/components/admin/ReportUpload';
 import ResourceManager from '@/components/admin/ResourceManager';
 import FundsPerformances from '@/components/admin/FundsPerformances';
+import EventCreate from '@/components/admin/EventCreate';
+import EventForms from '@/components/admin/EventForms';
+import EventAttendance from '@/components/admin/EventAttendance';
+import AlumniCalls from '@/components/admin/AlumniCalls';
+import AssociationOnDisplay from '@/components/admin/AssociationOnDisplay';
+import WorkspaceCalendar from '@/components/admin/WorkspaceCalendar';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
@@ -123,6 +129,7 @@ const NAV: NavSection[] = [
       { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
       { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
       { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.canAccessEvents },
+      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
@@ -352,7 +359,6 @@ const MinervaWorkspace = () => {
     setFormData({ title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '' });
     setEditingEvent(null);
   };
-  const openCreateDialog = () => { resetForm(); setIsDialogOpen(true); };
   const openEditDialog = (event: DbEvent) => {
     setEditingEvent(event);
     setFormData({
@@ -536,7 +542,7 @@ const MinervaWorkspace = () => {
       return renderPlaceholder('Dashboard', 'Role-aware overview of workspace activity.');
     }
     if (activeSectionKey === 'calendar' && !activeSubKey) {
-      return renderPlaceholder('Calendar', 'Upcoming events, deadlines and meetings.');
+      return <WorkspaceCalendar />;
     }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
@@ -558,6 +564,16 @@ const MinervaWorkspace = () => {
         return <MembersManagement silentAdvisors />;
       case 'people-alumni':
         return <AlumniManagement />;
+      case 'events-create':
+        return <EventCreate />;
+      case 'events-forms':
+        return <EventForms />;
+      case 'events-attendance':
+        return <EventAttendance />;
+      case 'events-alumni-calls':
+        return <AlumniCalls />;
+      case 'events-on-display':
+        return <AssociationOnDisplay />;
       case 'events-archive':
         return renderEventsManagement();
       case 'applications-website':
@@ -627,12 +643,8 @@ const MinervaWorkspace = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {/* Event creation moved to Events → Create. This dialog edits existing events. */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog} className="font-body">
-                <Plus className="h-4 w-4 mr-2" />Add Event
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-serif">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>

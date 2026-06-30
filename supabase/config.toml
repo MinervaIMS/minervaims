@@ -21,6 +21,14 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.admin-funds]
     verify_jwt = false
+  [functions.register-event]
+    verify_jwt = false
+  [functions.admin-event-reg]
+    verify_jwt = false
+  [functions.admin-alumni-calls]
+    verify_jwt = false
+  [functions.admin-aod]
+    verify_jwt = false
   [functions.admin-settings]
     verify_jwt = false
   [functions.admin-team]
