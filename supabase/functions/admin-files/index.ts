@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
@@ -33,10 +34,12 @@ const FileMetadataSchema = z.object({
   }),
   fund: z.enum(['long-short', 'multi-asset', 'dps', 'pir'])
     .nullable()
-    .optional()
+    .optional(),
+  status: z.enum(['draft', 'published', 'blocked']).optional(),
+  project: z.string().max(200).nullable().optional()
 })
 
-const ActionSchema = z.enum(['create', 'update', 'delete', 'upload'])
+const ActionSchema = z.enum(['create', 'update', 'delete', 'upload', 'set-status'])
 
 const DeleteFileSchema = z.object({
   id: z.string().uuid('Invalid file ID')
@@ -163,49 +166,35 @@ Deno.serve(async (req) => {
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it'
     
     // Full access roles - can manage files for all divisions
+    // Role x division model (Phase 0). Full access roles see/manage all
+    // divisions; division-scoped roles manage only their own division.
     const fullAccessRoles = [
       'admin', 'president', 'vice_president', 'head_of_asset_management',
       'head_of_operations', 'head_of_media'
     ]
-    
-    // Division head roles - can manage files for their division
-    const divisionHeadRoles = [
-      'head_of_equity', 'head_of_investment',
-      'head_of_macro', 'head_of_portfolio', 'head_of_quant'
-    ]
-    
-    // Role to division mapping
-    const roleToDivision: Record<string, string> = {
-      head_of_equity: 'equity',
-      head_of_investment: 'investment',
-      head_of_macro: 'macro',
-      head_of_portfolio: 'portfolio',
-      head_of_quant: 'quant',
-      portfolio_manager: 'portfolio',
-    }
-    
+    const scopedRoles = ['head_of_division', 'portfolio_manager', 'team_leader', 'analyst']
+    const blockRoles = ['admin', 'president', 'vice_president', 'head_of_asset_management']
+
     const { data: userRoles } = await supabase
       .from('user_roles')
-      .select('role')
+      .select('role, division')
       .eq('user_id', user.id)
-    
-    const userRoleNames = userRoles?.map(r => r.role) || []
-    const hasFullAccess = isAdminEmail || userRoleNames.some(r => fullAccessRoles.includes(r))
-    const divisionHeadUserRoles = userRoleNames.filter(r => divisionHeadRoles.includes(r))
-    const isPortfolioManager = userRoleNames.includes('portfolio_manager')
-    const isDivisionHead = divisionHeadUserRoles.length > 0
-    
-    // Determine allowed divisions
-    let allowedDivisions: string[] | null = null
-    if (!hasFullAccess) {
-      if (isDivisionHead) {
-        allowedDivisions = divisionHeadUserRoles.map(r => roleToDivision[r]).filter(Boolean)
-      } else if (isPortfolioManager) {
-        allowedDivisions = ['portfolio']
-      }
-    }
 
-    const hasFileAccess = hasFullAccess || isDivisionHead || isPortfolioManager
+    const roleRows = (userRoles || []) as { role: string; division: string | null }[]
+    const userRoleNames = roleRows.map(r => r.role)
+    const hasFullAccess = isAdminEmail || userRoleNames.some(r => fullAccessRoles.includes(r))
+    const canBlock = isAdminEmail || userRoleNames.some(r => blockRoles.includes(r))
+    const isHead = roleRows.some(r => r.role === 'head_of_division')
+
+    // Divisions the user is scoped to (head_of_division / portfolio_manager /
+    // team_leader / analyst carry their division on the role row).
+    const scopedDivisions = roleRows
+      .filter(r => scopedRoles.includes(r.role))
+      .map(r => r.division || (r.role === 'portfolio_manager' ? 'portfolio' : null))
+      .filter((d): d is string => !!d && d !== 'none' && d !== 'board')
+
+    const allowedDivisions: string[] | null = hasFullAccess ? null : (scopedDivisions.length ? scopedDivisions : null)
+    const hasFileAccess = hasFullAccess || scopedDivisions.length > 0
 
     if (!hasFileAccess) {
       return new Response(
@@ -370,6 +359,10 @@ Deno.serve(async (req) => {
             date: validatedFile.date,
             division: validatedFile.division,
             fund: validatedFile.fund || null,
+            // Heads can publish directly; others default to draft for review.
+            status: validatedFile.status || (isHead || hasFullAccess ? 'published' : 'draft'),
+            project: validatedFile.project || null,
+            created_by: user.id,
           })
           .select()
           .single()
@@ -448,6 +441,8 @@ Deno.serve(async (req) => {
             date: validatedFile.date,
             division: validatedFile.division,
             fund: validatedFile.fund || null,
+            ...(validatedFile.status ? { status: validatedFile.status } : {}),
+            project: validatedFile.project ?? null,
           })
           .eq('id', validatedFile.id)
           .select()
@@ -478,6 +473,55 @@ Deno.serve(async (req) => {
         console.log('File updated:', data.id)
         return new Response(
           JSON.stringify({ success: true, file: data }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'set-status': {
+        // Publish / block / revert to draft. Blocking is reserved for
+        // President, Vice President and Head of Asset Management (report 7.1).
+        const statusSchema = z.object({
+          id: z.string().uuid('Invalid file ID'),
+          status: z.enum(['draft', 'published', 'blocked']),
+        })
+        const parsed = statusSchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid status request' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        if (parsed.data.status === 'blocked' && !canBlock) {
+          return new Response(
+            JSON.stringify({ error: 'Only the President, Vice President or Head of Asset Management can block a report.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        const { data: existing } = await supabase
+          .from('archive_files').select('division, status').eq('id', parsed.data.id).maybeSingle()
+        if (allowedDivisions && existing && !allowedDivisions.includes(existing.division)) {
+          return new Response(
+            JSON.stringify({ error: 'You can only change reports in your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // A blocked report can only be unblocked by someone who can block.
+        if (existing?.status === 'blocked' && !canBlock) {
+          return new Response(
+            JSON.stringify({ error: 'This report is blocked and can only be changed by senior roles.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        const { error } = await supabase.from('archive_files')
+          .update({ status: parsed.data.status }).eq('id', parsed.data.id)
+        if (error) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to update status' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response(
+          JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }

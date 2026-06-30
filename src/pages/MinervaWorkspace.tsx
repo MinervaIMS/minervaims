@@ -29,6 +29,9 @@ import NewJoiners from '@/components/admin/NewJoiners';
 import FormSettings from '@/components/admin/FormSettings';
 import QuestionsManagement from '@/components/admin/QuestionsManagement';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
+import ReportUpload from '@/components/admin/ReportUpload';
+import ResourceManager from '@/components/admin/ResourceManager';
+import FundsPerformances from '@/components/admin/FundsPerformances';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
@@ -100,8 +103,8 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'reports-upload', label: 'Upload', allowed: (p) => p.canAccessFiles },
       { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-templates', label: 'Templates & code repos' },
-      { key: 'reports-funds', label: "Funds' performances" },
+      { key: 'reports-templates', label: 'Templates & code repos', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-funds', label: "Funds' performances", allowed: (p) => p.can('reports-funds') },
     ],
   },
   {
@@ -537,8 +540,18 @@ const MinervaWorkspace = () => {
     }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
+      case 'reports-upload':
+        return <ReportUpload />;
       case 'reports-archive':
         return <FileManagement allowedDivisions={permissions.allowedDivisions} />;
+      case 'reports-templates':
+        return <ResourceManager
+          category="reports_templates"
+          title="Templates & code repos"
+          description="Useful division material: drive links, Office files, PDFs, code repositories and notes. Each item records why it is useful."
+        />;
+      case 'reports-funds':
+        return <FundsPerformances />;
       case 'people-members':
         return <MembersManagement />;
       case 'people-advisors':
