@@ -34,6 +34,8 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
+import { useAccess } from '@/hooks/useAccess';
+import { primaryAssignment, roleLabel as composeRoleLabel } from '@/lib/roles';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { downloadCSV } from '@/lib/download-utils';
 import logoWhite from '@/assets/logo-white.svg';
@@ -173,6 +175,17 @@ function filterNav(permissions: Permissions): NavSection[] {
     .filter((s) => s.key === 'my-role' || s.key === 'welcome' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
 }
 
+// Candidates are hard-isolated: they may only ever reach their own profile and
+// their application status. This is enforced here, plus by the render guard
+// below, plus by row-level security in the database (defence in depth).
+const CANDIDATE_NAV: NavSection[] = [
+  { key: 'my-role', label: 'My profile', Icon: UserIcon, subItems: [] },
+  {
+    key: 'applications', label: 'Applications', Icon: ClipboardList,
+    subItems: [{ key: 'applications-status', label: 'Status' }],
+  },
+];
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────────────────────────────────────
@@ -182,6 +195,8 @@ const MinervaWorkspace = () => {
   const { toast } = useToast();
   const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
   const permissions = usePermissions();
+  const access = useAccess();
+  const isCandidate = access.isCandidate;
   const isDesktop = useIsDesktop();
 
   // Shell state
@@ -190,7 +205,10 @@ const MinervaWorkspace = () => {
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [activeSubKey, setActiveSubKey] = useState<string | null>(null);
 
-  const visibleNav = useMemo(() => filterNav(permissions), [permissions]);
+  const visibleNav = useMemo(
+    () => (isCandidate ? CANDIDATE_NAV : filterNav(permissions)),
+    [permissions, isCandidate],
+  );
 
   // Set initial active section/sub-item
   useEffect(() => {
@@ -241,20 +259,22 @@ const MinervaWorkspace = () => {
         return;
       }
       const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
-      const isMemberOnly = roles.length > 0 && roles.every((r) => r.role === 'member');
-      const hasNoRoles = roles.length === 0;
-      if (!isAdminEmail && (isMemberOnly || hasNoRoles)) {
-        navigate('/pending-approval');
-        return;
-      }
-      if (!permissions.hasAnyAccess) {
+      // Candidates are allowed into a heavily restricted view; everyone with no
+      // workspace role (members / pending) is sent to the holding page.
+      if (!isAdminEmail && !isCandidate && !permissions.hasAnyAccess) {
+        const isMemberOnly = roles.length > 0 && roles.every((r) => r.role === 'member');
+        const hasNoRoles = roles.length === 0;
+        if (isMemberOnly || hasNoRoles) {
+          navigate('/pending-approval');
+          return;
+        }
         toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
-      fetchEvents();
+      if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, permissions.hasAnyAccess]);
+  }, [user, authLoading, navigate, roles, permissions.hasAnyAccess, isCandidate]);
 
   const fetchEvents = async () => {
     try {
@@ -453,22 +473,16 @@ const MinervaWorkspace = () => {
     );
   }
 
-  if (!user || !permissions.hasAnyAccess) return null;
+  if (!user || (!permissions.hasAnyAccess && !isCandidate)) return null;
 
-  const roleLabels: Record<string, string> = {
-    admin: 'Admin', president: 'President', vice_president: 'Vice President',
-    head_of_asset_management: 'Head of Asset Management',
-    head_of_equity: 'Head of Equity Research', head_of_investment: 'Head of Investment Research',
-    head_of_macro: 'Head of Macro Research', head_of_portfolio: 'Head of Portfolio Management',
-    head_of_quant: 'Head of Quantitative Research', head_of_operations: 'Head of Operations',
-    head_of_media: 'Head of Media', portfolio_manager: 'Portfolio Manager', member: 'Member',
-  };
-  const priorityOrder = ['president', 'vice_president', 'admin', 'head_of_asset_management',
-    'head_of_operations', 'head_of_media', 'head_of_equity', 'head_of_investment',
-    'head_of_macro', 'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'member'];
-  const userRoleNames = roles.map((r) => r.role);
-  const primaryRole = priorityOrder.find((r) => userRoleNames.includes(r as any)) || (roles[0]?.role ?? '');
-  const roleLabel = roleLabels[primaryRole] || primaryRole || 'No Role';
+  const primaryRoleAssignment = primaryAssignment(
+    roles.map((r) => ({ role: r.role, division: r.division ?? null })),
+  );
+  const roleLabel = isCandidate
+    ? 'Candidate'
+    : primaryRoleAssignment
+      ? composeRoleLabel(primaryRoleAssignment.role, primaryRoleAssignment.division)
+      : 'No Role';
 
   const activeSection = visibleNav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
@@ -521,6 +535,13 @@ const MinervaWorkspace = () => {
   );
 
   const renderContent = () => {
+    // Hard guard: a candidate can only ever render their profile or status.
+    if (isCandidate) {
+      if (activeSubKey === 'applications-status') {
+        return renderPlaceholder('Application status', 'The current status of your application will appear here.');
+      }
+      return renderMyRole();
+    }
     if (activeSectionKey === 'my-role') return renderMyRole();
     if (activeSectionKey === 'welcome') {
       return renderPlaceholder('Welcome', 'Your entry point to the Minerva workspace.');
