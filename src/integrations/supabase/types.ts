@@ -117,24 +117,33 @@ export type Database = {
         Row: {
           applications_open: boolean
           apply_form_url: string
+          auto_open: boolean
+          end_date: string | null
           id: string
           semester_label: string
+          start_date: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           applications_open?: boolean
           apply_form_url?: string
+          auto_open?: boolean
+          end_date?: string | null
           id?: string
           semester_label?: string
+          start_date?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           applications_open?: boolean
           apply_form_url?: string
+          auto_open?: boolean
+          end_date?: string | null
           id?: string
           semester_label?: string
+          start_date?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -482,6 +491,33 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          resource: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: string
+          resource: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          resource?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -594,6 +630,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -614,6 +651,8 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_candidate: { Args: { _user_id: string }; Returns: boolean }
+      is_full_access: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       member_rank: {
         Args: {
@@ -645,6 +684,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: Database["public"]["Enums"]["team_position"]
+      }
+      user_divisions: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["org_division"][]
       }
       verify_admin_credentials: {
         Args: { _password: string; _username: string }
