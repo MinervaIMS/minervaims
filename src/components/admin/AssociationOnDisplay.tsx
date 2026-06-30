@@ -1,0 +1,132 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { divisionLabels } from '@/lib/roles';
+import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import {
+  listAod, createAodDay, deleteAodDay, setAodOpen, aodSignup, aodRemoveSignup,
+  AOD_SLOTS, type AodDay, type AodSignup,
+} from '@/lib/alumni-aod-api';
+
+export default function AssociationOnDisplay() {
+  const { session, user } = useAuth();
+  const { toast } = useToast();
+  const [days, setDays] = useState<AodDay[]>([]);
+  const [signups, setSignups] = useState<AodSignup[]>([]);
+  const [isSenior, setIsSenior] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [newDate, setNewDate] = useState('');
+  const [busySlot, setBusySlot] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    try { const res = await listAod(session); setDays(res.days); setSignups(res.signups); setIsSenior(res.isSenior); }
+    catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setLoading(false); }
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+
+  const addDay = async () => {
+    if (!newDate) { toast({ title: 'Pick a date', variant: 'destructive' }); return; }
+    try { await createAodDay(session, newDate); setNewDate(''); await load(); }
+    catch (e) { toast({ title: 'Could not create', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
+  const signupsFor = (dayId: string, slot: string) => signups.filter((s) => s.day_id === dayId && s.slot_time === slot);
+
+  const handleSignup = async (dayId: string, slot: string) => {
+    setBusySlot(`${dayId}-${slot}`);
+    try { await aodSignup(session, dayId, slot); await load(); }
+    catch (e) { toast({ title: 'Could not sign up', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setBusySlot(null); }
+  };
+  const handleRemove = async (id: string) => {
+    try { await aodRemoveSignup(session, id); await load(); }
+    catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
+  return (
+    <div>
+      <WorkspacePageHeader title="Association on Display" description="Organise stand coverage. The stand runs 10:00–19:00 in 30-minute slots; multiple people can take the same slot. Senior roles open or close a day; everyone else can register or de-register up to 48 hours before." />
+
+      {isSenior && (
+        <div className="flex gap-2 mb-6 font-body">
+          <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="max-w-[200px]" />
+          <Button variant="outline" onClick={addDay}><Plus className="h-4 w-4 mr-2" />Add a day</Button>
+        </div>
+      )}
+
+      {loading ? <WorkspaceLoader /> : days.length === 0 ? (
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No Association on Display day scheduled yet.</p></CardContent></Card>
+      ) : (
+        <div className="space-y-8">
+          {days.map((day) => (
+            <DayBlock key={day.id} day={day} isSenior={isSenior} userId={user?.id ?? null}
+              signupsFor={(slot) => signupsFor(day.id, slot)} busySlot={busySlot}
+              onSignup={(slot) => handleSignup(day.id, slot)} onRemove={handleRemove}
+              onToggleOpen={async (open) => { try { await setAodOpen(session, day.id, open); await load(); } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); } }}
+              onDelete={async () => { if (confirm('Delete this day and all signups?')) { try { await deleteAodDay(session, day.id); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); } } }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRemove, onToggleOpen, onDelete }: {
+  day: AodDay; isSenior: boolean; userId: string | null;
+  signupsFor: (slot: string) => AodSignup[]; busySlot: string | null;
+  onSignup: (slot: string) => void; onRemove: (id: string) => void;
+  onToggleOpen: (open: boolean) => void; onDelete: () => void;
+}) {
+  const coverage = useMemo(() => AOD_SLOTS.filter((s) => signupsFor(s).length > 0).length, [signupsFor]);
+  return (
+    <div className="border border-separator">
+      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 font-body">
+        <div>
+          <div className="font-serif text-lg text-accent">{new Date(`${day.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
+        </div>
+        {isSenior && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Open</span>
+            <Switch checked={day.registration_open} onCheckedChange={onToggleOpen} />
+            <Button variant="destructive" size="icon" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-separator">
+        {AOD_SLOTS.map((slot) => {
+          const people = signupsFor(slot);
+          const mine = people.find((p) => p.user_id === userId);
+          const uncovered = people.length === 0;
+          return (
+            <div key={slot} className={`bg-background p-3 font-body ${uncovered ? 'border-l-2 border-amber-500' : ''}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">{slot}</span>
+                {mine
+                  ? <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => onRemove(mine.id)}>Leave</Button>
+                  : <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
+                      {busySlot === `${day.id}-${slot}` ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Join'}
+                    </Button>}
+              </div>
+              <div className="mt-1 space-y-0.5">
+                {people.length === 0 ? <span className="text-xs text-amber-600">Uncovered</span> : people.map((p) => (
+                  <div key={p.id} className="text-xs text-muted-foreground truncate">{p.member_name}{p.division && p.division !== 'none' ? ` · ${divisionLabels[p.division]}` : ''}</div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
