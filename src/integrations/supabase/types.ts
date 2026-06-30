@@ -1230,6 +1230,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      build_member_email: {
+        Args: { _first: string; _surname: string }
+        Returns: string
+      }
       cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -1270,6 +1274,7 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_email_part: { Args: { _s: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
