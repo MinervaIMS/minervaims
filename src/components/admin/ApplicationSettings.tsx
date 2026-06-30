@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +31,7 @@ const ApplicationSettings = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ applications_open: false, semester_label: '', auto_open: true, start_local: '', end_local: '' });
+  const [form, setForm] = useState({ semester_label: '', start_local: '', end_local: '' });
   const [questions, setQuestions] = useState<Record<string, string>>({});
   const [savingQ, setSavingQ] = useState<string | null>(null);
 
