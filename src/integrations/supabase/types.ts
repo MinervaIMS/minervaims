@@ -277,34 +277,43 @@ export type Database = {
       archive_files: {
         Row: {
           created_at: string
+          created_by: string | null
           date: string
           description: string | null
           division: string
           file_url: string
           fund: string | null
           id: string
+          project: string | null
+          status: string
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           date: string
           description?: string | null
           division: string
           file_url: string
           fund?: string | null
           id?: string
+          project?: string | null
+          status?: string
           title: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           date?: string
           description?: string | null
           division?: string
           file_url?: string
           fund?: string | null
           id?: string
+          project?: string | null
+          status?: string
           title?: string
           updated_at?: string
         }
@@ -433,6 +442,45 @@ export type Database = {
           poster_url?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      fund_performances: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fund: string
+          id: string
+          monthly_return: number | null
+          nav: number | null
+          notes: string | null
+          period_month: string
+          updated_at: string
+          ytd_return: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fund: string
+          id?: string
+          monthly_return?: number | null
+          nav?: number | null
+          notes?: string | null
+          period_month: string
+          updated_at?: string
+          ytd_return?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fund?: string
+          id?: string
+          monthly_return?: number | null
+          nav?: number | null
+          notes?: string | null
+          period_month?: string
+          updated_at?: string
+          ytd_return?: number | null
         }
         Relationships: []
       }
@@ -750,6 +798,57 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      workspace_resources: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          body: string | null
+          category: string
+          created_at: string
+          description: string | null
+          division: Database["public"]["Enums"]["org_division"]
+          file_url: string | null
+          id: string
+          link_url: string | null
+          reason: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          body?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          division?: Database["public"]["Enums"]["org_division"]
+          file_url?: string | null
+          id?: string
+          link_url?: string | null
+          reason?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          body?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          division?: Database["public"]["Enums"]["org_division"]
+          file_url?: string | null
+          id?: string
+          link_url?: string | null
+          reason?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
         }
         Relationships: []
       }
