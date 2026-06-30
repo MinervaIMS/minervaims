@@ -41,6 +41,8 @@ import WorkspaceCalendar from '@/components/admin/WorkspaceCalendar';
 import MembershipFee from '@/components/admin/MembershipFee';
 import Treasury from '@/components/admin/Treasury';
 import AutoEmails from '@/components/admin/AutoEmails';
+import EditorialCalendar from '@/components/admin/EditorialCalendar';
+import AdsRegister from '@/components/admin/AdsRegister';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
@@ -149,10 +151,12 @@ const NAV: NavSection[] = [
   {
     key: 'smm', label: 'SMM & graphics', Icon: ImageIcon,
     subItems: [
-      { key: 'smm-ig', label: 'Instagram' },
-      { key: 'smm-li', label: 'LinkedIn' },
-      { key: 'smm-other', label: 'Other templates' },
-      { key: 'smm-brand', label: 'Design, brand & logo' },
+      { key: 'smm-editorial', label: 'Editorial calendar', allowed: (p) => p.can('smm-editorial') },
+      { key: 'smm-ads', label: 'Ads & spending', allowed: (p) => p.can('smm-ads') },
+      { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
+      { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
+      { key: 'smm-other', label: 'Other templates', allowed: (p) => p.can('smm-other') },
+      { key: 'smm-brand', label: 'Design, brand & logo', allowed: (p) => p.can('smm-brand') },
     ],
   },
   {
@@ -595,6 +599,18 @@ const MinervaWorkspace = () => {
         return <UserManagement />;
       case 'settings-activity':
         return <ActivityManagement />;
+      case 'smm-editorial':
+        return <EditorialCalendar />;
+      case 'smm-ads':
+        return <AdsRegister />;
+      case 'smm-ig':
+        return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: images, files, links and notes — each with why it’s useful." divisions={['none']} />;
+      case 'smm-li':
+        return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: images, files, links and notes — each with why it’s useful." divisions={['none']} />;
+      case 'smm-other':
+        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material — images, files, links and notes." divisions={['none']} />;
+      case 'smm-brand':
+        return <ResourceManager category="smm_brand" title="Design, brand & logo" description="The association’s visual identity. Set one main reference document (fonts, colours, logo usage, visual style, tone, design rules); other files and notes appear below." divisions={['none']} allowPrimary />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':

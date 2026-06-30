@@ -24,6 +24,7 @@ const ResourceSchema = z.object({
   file_url: z.string().max(1000).nullable().optional(),
   link_url: z.string().max(1000).nullable().optional(),
   body: z.string().max(10000).nullable().optional(),
+  is_primary: z.boolean().optional(),
 });
 
 // Roles that can manage resources across all divisions/categories.
@@ -94,7 +95,13 @@ Deno.serve(async (req) => {
       category: r.category, division: r.division, type: r.type, title: r.title,
       description: r.description ?? null, reason: r.reason ?? null,
       file_url: r.file_url ?? null, link_url: r.link_url ?? null, body: r.body ?? null,
+      is_primary: r.is_primary ?? false,
     };
+
+    // Only one primary reference per category.
+    if (payload.is_primary) {
+      await supabase.from('workspace_resources').update({ is_primary: false }).eq('category', r.category);
+    }
 
     if (action === 'create') {
       const { data, error } = await supabase.from('workspace_resources')
