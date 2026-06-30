@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase.from('treasury_entries').insert({
         amount: signed, flow: e.flow, description: e.description, source: e.source ?? null,
         execution_date: e.execution_date, academic_semester: academicSemester(new Date(e.execution_date)),
+        division: e.division ?? null,
         is_auto: false, locked: false, created_by: user.id,
       }).select().single();
       if (error) throw error;
