@@ -20,6 +20,8 @@ import {
 } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import linkedinIcon from '@/assets/linkedin-icon.png';
 import {
   listMembers, saveMember, deleteMember, uploadMemberPhoto,
   type MemberRow, type MemberInput,
@@ -34,7 +36,7 @@ const ROLE_OPTIONS: AppRole[] = [
 ];
 
 const MEMBERSHIP_OPTIONS = ['active', 'temporary_leave', 'alumni', 'expelled'] as const;
-const FEE_OPTIONS = ['paid', 'unpaid', 'exempt'] as const;
+const ACCOUNT_OPTIONS = ['approved', 'pending', 'to_redeem'] as const;
 
 const EMPTY: MemberInput = {
   first_name: '', surname: '', email: '', phone: '', linkedin_url: '', photo_url: '',
@@ -57,6 +59,8 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [divisionFilter, setDivisionFilter] = useState<OrgDivision | 'all'>('all');
+  const [membershipFilter, setMembershipFilter] = useState<string>('all');
+  const [accountFilter, setAccountFilter] = useState<string>('all');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -84,15 +88,19 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members
+      // The admin role is a user, not a member — never list it.
+      .filter((m) => m.role !== 'admin')
       .filter((m) => (silentAdvisors ? isSilent(m) : !isSilent(m)))
       .filter((m) => divisionFilter === 'all' || m.division === divisionFilter)
+      .filter((m) => membershipFilter === 'all' || m.membership_status === membershipFilter)
+      .filter((m) => accountFilter === 'all' || m.account_status === accountFilter)
       .filter((m) => !q || `${m.first_name} ${m.surname} ${m.email ?? ''}`.toLowerCase().includes(q))
       .sort((a, b) => {
         const r = memberRank(a.role) - memberRank(b.role);
         if (r !== 0) return r;
         return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
       });
-  }, [members, search, divisionFilter, silentAdvisors]);
+  }, [members, search, divisionFilter, membershipFilter, accountFilter, silentAdvisors]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -158,18 +166,19 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   };
 
   const exportCsv = () => {
+    // Export reflects the current filters (what the table is showing).
     const flat = rows.map((m) => ({
       first_name: m.first_name, surname: m.surname,
       division: m.division !== 'none' ? divisionLabels[m.division] : '',
       role: composeRoleLabel(m.role, m.division), phone: m.phone ?? '', email: m.email ?? '',
-      fee_status: m.fee_status, membership_status: m.membership_status, account_status: m.account_status,
+      linkedin_url: m.linkedin_url ?? '', membership_status: m.membership_status, account_status: m.account_status,
     }));
     downloadCSV(flat, [
       { key: 'first_name', header: 'First name' }, { key: 'surname', header: 'Surname' },
       { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' },
       { key: 'phone', header: 'Phone' }, { key: 'email', header: 'Email' },
-      { key: 'fee_status', header: 'Fee' }, { key: 'membership_status', header: 'Membership' },
-      { key: 'account_status', header: 'Account' },
+      { key: 'linkedin_url', header: 'LinkedIn' },
+      { key: 'membership_status', header: 'Membership' }, { key: 'account_status', header: 'Account' },
     ], silentAdvisors ? 'silent-advisors.csv' : 'members-register.csv');
     toast({ title: 'Download started' });
   };
@@ -178,9 +187,6 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const description = silentAdvisors
     ? 'Silent Advisors — people with workspace access who are not shown on the public Members page.'
     : 'The association members register. Photo and the public subset feed the website; phone, fee and membership status are internal.';
-
-  const feeBadge = (s: string) =>
-    s === 'paid' ? 'text-green-700' : s === 'exempt' ? 'text-muted-foreground' : 'text-amber-700';
 
   return (
     <div>
@@ -203,7 +209,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
           <div>
             <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Division</label>
             <Select value={divisionFilter} onValueChange={(v) => setDivisionFilter(v as OrgDivision | 'all')}>
-              <SelectTrigger className="min-w-[180px] font-body"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="min-w-[160px] font-body"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All divisions</SelectItem>
                 {DIVISION_OPTIONS.filter((d) => d !== 'none').map((d) => (
@@ -213,6 +219,28 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
             </Select>
           </div>
         )}
+        {!silentAdvisors && (
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Membership</label>
+            <Select value={membershipFilter} onValueChange={setMembershipFilter}>
+              <SelectTrigger className="min-w-[150px] font-body"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {MEMBERSHIP_OPTIONS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <div>
+          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Account</label>
+          <Select value={accountFilter} onValueChange={setAccountFilter}>
+            <SelectTrigger className="min-w-[150px] font-body"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {ACCOUNT_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s === 'to_redeem' ? 'To redeem' : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex-1">
           <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Search</label>
           <div className="relative">
@@ -223,7 +251,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <WorkspaceLoader />
       ) : rows.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No {silentAdvisors ? 'advisors' : 'members'} yet.</p></CardContent></Card>
       ) : (
@@ -237,7 +265,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                 <th className="px-3 py-2 font-normal">Role</th>
                 <th className="px-3 py-2 font-normal">Phone</th>
                 <th className="px-3 py-2 font-normal">Email</th>
-                {!silentAdvisors && <th className="px-3 py-2 font-normal">Fee</th>}
+                <th className="px-3 py-2 font-normal text-center">In</th>
                 <th className="px-3 py-2 font-normal">Status</th>
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
               </tr>
@@ -255,7 +283,13 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{m.phone || '—'}</td>
                   <td className="px-3 py-2">{m.email || <span className="text-amber-700">to redeem</span>}</td>
-                  {!silentAdvisors && <td className={`px-3 py-2 capitalize ${feeBadge(m.fee_status)}`}>{m.fee_status}</td>}
+                  <td className="px-3 py-2 text-center">
+                    {m.linkedin_url ? (
+                      <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
+                        <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 opacity-80 hover:opacity-100" />
+                      </a>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
                   <td className="px-3 py-2">
                     <span className="capitalize">{m.account_status === 'to_redeem' ? 'to redeem' : m.account_status}</span>
                   </td>
@@ -324,13 +358,6 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                     <Select value={form.membership_status as string} onValueChange={(v) => setForm({ ...form, membership_status: v as MemberInput['membership_status'] })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{MEMBERSHIP_OPTIONS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Fee status</Label>
-                    <Select value={form.fee_status as string} onValueChange={(v) => setForm({ ...form, fee_status: v as MemberInput['fee_status'] })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{FEE_OPTIONS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center justify-between col-span-2 pt-1">

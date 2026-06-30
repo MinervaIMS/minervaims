@@ -99,9 +99,21 @@ export async function uploadMemberPhoto(session: Session | null, file: File): Pr
 
 // ── Self-service (My Profile) ────────────────────────────────────────
 
+export interface ClaimableMember {
+  id: string;
+  first_name: string;
+  surname: string;
+  photo_url: string | null;
+  role: AppRole;
+  division: OrgDivision;
+}
+
 export interface MyProfileResult {
   member: MemberRow | null;
   isCandidate?: boolean;
+  isAdmin?: boolean;
+  needsRedemption?: boolean;
+  claimable?: ClaimableMember[];
 }
 
 export async function getMyMember(session: Session | null): Promise<MyProfileResult> {
@@ -112,6 +124,20 @@ export async function getMyMember(session: Session | null): Promise<MyProfileRes
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data as MyProfileResult;
+}
+
+/** Claim a placeholder (memberId) or create a new member (create: true). */
+export async function redeemProfile(
+  session: Session | null,
+  choice: { memberId?: string; create?: boolean },
+): Promise<MemberRow> {
+  const { data, error } = await supabase.functions.invoke('member-profile', {
+    body: { action: 'redeem', ...choice },
+    headers: { Authorization: `Bearer ${session?.access_token}` },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data.member as MemberRow;
 }
 
 export async function updateMyProfile(

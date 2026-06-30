@@ -69,7 +69,7 @@ export function Header() {
     typeof document !== "undefined" && document.body.hasAttribute("data-page-loading"),
   );
   const closeTimerRef = useRef<number | null>(null);
-  const { user, profile } = useAuth();
+  const { user, profile, memberPhotoUrl } = useAuth();
 
   // Observe body[data-page-loading] so the header hides while Suspense fallback renders.
   useEffect(() => {
@@ -169,7 +169,7 @@ export function Header() {
   const accountUser = user
     ? {
         fullName: profile?.full_name ?? user.email ?? "",
-        avatarUrl: null as string | null,
+        avatarUrl: memberPhotoUrl,
       }
     : null;
 

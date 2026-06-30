@@ -9,8 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { roleLabel as composeRoleLabel, divisionLabels } from '@/lib/roles';
 import { statuteExtractFor } from '@/lib/statute-extracts';
-import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
+import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow, type ClaimableMember } from '@/lib/members-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import RedeemProfileDialog from '@/components/admin/RedeemProfileDialog';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -32,6 +34,7 @@ export default function MyProfile() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [claimable, setClaimable] = useState<ClaimableMember[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const roleText = primaryRole ? composeRoleLabel(primaryRole, primaryDivision) : isCandidate ? 'Candidate' : 'No role';
@@ -47,6 +50,7 @@ export default function MyProfile() {
         setMember(res.member);
         setPhone(res.member?.phone ?? '');
         setPhotoUrl(res.member?.photo_url ?? null);
+        if (res.needsRedemption) setClaimable(res.claimable ?? []);
       } catch (e) {
         console.error(e);
         toast({ title: 'Could not load your profile', variant: 'destructive' });
@@ -95,12 +99,22 @@ export default function MyProfile() {
     return (
       <div>
         <WorkspacePageHeader title="My profile" description="Your account details and current workspace role." />
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <WorkspaceLoader />
       </div>
     );
   }
 
-  // Candidates do not have a member record; show a minimal, read-only view.
+  // First-login redemption: not linked to a member yet → prompt to claim/create.
+  if (!isCandidate && !member && claimable) {
+    return (
+      <div>
+        <WorkspacePageHeader title="My profile" description="Set up your profile to get started." />
+        <RedeemProfileDialog open claimable={claimable} onRedeemed={() => window.location.reload()} />
+      </div>
+    );
+  }
+
+  // Candidates (and the admin user) do not have a member record; minimal view.
   if (isCandidate || !member) {
     return (
       <div>

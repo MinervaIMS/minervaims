@@ -24,6 +24,7 @@ import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
 import MembersManagement from '@/components/admin/MembersManagement';
 import MyProfile from '@/components/admin/MyProfile';
+import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
@@ -452,11 +453,7 @@ const MinervaWorkspace = () => {
   const shellHeight = 'h-screen';
 
   if (authLoading) {
-    return (
-      <div className={`${shellHeight} flex items-center justify-center`}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!isDesktop) {
