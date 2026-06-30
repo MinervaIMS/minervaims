@@ -26,7 +26,7 @@ export default function FormSettings() {
     <div className="space-y-8">
       <WorkspacePageHeader
         title="Form settings"
-        description="The internal application form is part of the website and is only accessible while applications are open. Its structure is fixed for consistency; the division-specific questions are managed in Website Page."
+        description="The internal application form is part of the website and is only accessible while applications are open. Its structure is fixed for consistency; the division-specific questions are managed in the Questions subsection."
       />
 
       <div className="max-w-2xl space-y-6 font-body">

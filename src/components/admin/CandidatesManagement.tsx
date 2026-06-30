@@ -39,6 +39,7 @@ export default function CandidatesManagement() {
   const [search, setSearch] = useState('');
   const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [yearFilter, setYearFilter] = useState<string>('all');
   const [bulkBusy, setBulkBusy] = useState(false);
 
   const [openId, setOpenId] = useState<string | null>(null);
@@ -62,8 +63,9 @@ export default function CandidatesManagement() {
     return apps
       .filter((a) => divFilter === 'all' || a.first_choice === divFilter || a.second_choice === divFilter)
       .filter((a) => statusFilter === 'all' || a.status === statusFilter)
+      .filter((a) => yearFilter === 'all' || a.academic_year === yearFilter)
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, divFilter, statusFilter]);
+  }, [apps, search, divFilter, statusFilter, yearFilter]);
 
   const openDetail = async (id: string) => {
     setOpenId(id); setDetail(null); setPreviewUrl(null); setDetailLoading(true);
@@ -154,10 +156,20 @@ export default function CandidatesManagement() {
         <div>
           <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Status</label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="min-w-[180px] font-body"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="min-w-[170px] font-body"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               {STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Academic year</label>
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="min-w-[160px] font-body"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All years</SelectItem>
+              {(Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => <SelectItem key={y} value={y}>{ACADEMIC_YEAR_LABELS[y]}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
