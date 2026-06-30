@@ -51,8 +51,7 @@ export async function feeBreakdown(session: Session | null): Promise<FeeBreakdow
 export async function feeHistory(session: Session | null): Promise<FeePeriod[]> {
   return (await invoke('admin-fees', session, { action: 'history' })).periods;
 }
-  return (await invoke('admin-fees', session, { action: 'history' })).periods;
-}
+
 
 // Treasury
 export async function listTreasury(session: Session | null): Promise<TreasuryEntry[]> {
