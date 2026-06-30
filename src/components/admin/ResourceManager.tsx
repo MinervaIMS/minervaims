@@ -10,7 +10,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, ExternalLink, FileText, StickyNote, Loader2, Upload } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Edit, Trash2, ExternalLink, FileText, StickyNote, Loader2, Upload, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
@@ -31,11 +32,13 @@ interface Props {
   description: string;
   /** Divisions selectable for items; defaults to the five core divisions + none. */
   divisions?: OrgDivision[];
+  /** Enable a single "main reference" highlighted item (Design, Brand & Logo). */
+  allowPrimary?: boolean;
 }
 
 const DEFAULT_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'none'];
 
-export default function ResourceManager({ category, title, description, divisions = DEFAULT_DIVISIONS }: Props) {
+export default function ResourceManager({ category, title, description, divisions = DEFAULT_DIVISIONS, allowPrimary = false }: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -49,7 +52,7 @@ export default function ResourceManager({ category, title, description, division
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const empty: ResourceInput = { category, division: divisions[0], type: 'note', title: '', description: '', reason: '', file_url: '', link_url: '', body: '' };
+  const empty: ResourceInput = { category, division: divisions[0], type: 'note', title: '', description: '', reason: '', file_url: '', link_url: '', body: '', is_primary: false };
   const [form, setForm] = useState<ResourceInput>(empty);
 
   // Members with access to more than one division get the filter selector.
@@ -64,15 +67,16 @@ export default function ResourceManager({ category, title, description, division
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [category]);
 
+  const primaryItem = allowPrimary ? items.find((i) => i.is_primary) : undefined;
   const rows = useMemo(
-    () => items.filter((i) => divFilter === 'all' || i.division === divFilter),
-    [items, divFilter],
+    () => items.filter((i) => (divFilter === 'all' || i.division === divFilter) && !(allowPrimary && i.is_primary)),
+    [items, divFilter, allowPrimary],
   );
 
   const openCreate = () => { setEditingId(null); setForm({ ...empty }); setDialogOpen(true); };
   const openEdit = (r: ResourceRow) => {
     setEditingId(r.id);
-    setForm({ id: r.id, category, division: r.division, type: r.type, title: r.title, description: r.description ?? '', reason: r.reason ?? '', file_url: r.file_url ?? '', link_url: r.link_url ?? '', body: r.body ?? '' });
+    setForm({ id: r.id, category, division: r.division, type: r.type, title: r.title, description: r.description ?? '', reason: r.reason ?? '', file_url: r.file_url ?? '', link_url: r.link_url ?? '', body: r.body ?? '', is_primary: r.is_primary });
     setDialogOpen(true);
   };
 
@@ -116,6 +120,26 @@ export default function ResourceManager({ category, title, description, division
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {allowPrimary && primaryItem && (
+        <Card className="mb-4 border-accent/40 bg-accent/5"><CardContent className="py-4">
+          <div className="flex items-start justify-between gap-4 font-body">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-accent"><Star className="h-4 w-4 fill-accent" /><span className="text-xs uppercase tracking-wider">Main reference</span></div>
+              <div className="text-foreground font-medium mt-1">{primaryItem.title}</div>
+              {primaryItem.description && <p className="text-sm text-muted-foreground mt-1">{primaryItem.description}</p>}
+              <div className="flex gap-4 mt-2">
+                {primaryItem.link_url && <a href={primaryItem.link_url} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline">Open link</a>}
+                {primaryItem.file_url && <a href={primaryItem.file_url} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline">Open file</a>}
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button variant="outline" size="icon" onClick={() => openEdit(primaryItem)}><Edit className="h-4 w-4" /></Button>
+              <Button variant="destructive" size="icon" onClick={() => setDeleteTarget(primaryItem)}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        </CardContent></Card>
       )}
 
       {loading ? <WorkspaceLoader /> : rows.length === 0 ? (
@@ -189,6 +213,13 @@ export default function ResourceManager({ category, title, description, division
                   {form.file_url && <span className="text-xs text-green-700">File attached</span>}
                 </div>
                 <Input className="mt-2" value={form.link_url ?? ''} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="…or paste an external link" />
+              </div>
+            )}
+
+            {allowPrimary && (
+              <div className="flex items-center justify-between border border-separator p-3">
+                <Label htmlFor="primary">Main reference document</Label>
+                <Switch id="primary" checked={!!form.is_primary} onCheckedChange={(v) => setForm({ ...form, is_primary: v })} />
               </div>
             )}
 

@@ -20,6 +20,7 @@ export interface ResourceRow {
   file_url: string | null;
   link_url: string | null;
   body: string | null;
+  is_primary: boolean;
   author_name: string | null;
   created_at: string;
 }
@@ -35,6 +36,7 @@ export interface ResourceInput {
   file_url?: string | null;
   link_url?: string | null;
   body?: string | null;
+  is_primary?: boolean;
 }
 
 export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {

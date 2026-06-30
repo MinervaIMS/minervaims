@@ -74,6 +74,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ads_spending: {
+        Row: {
+          ad_date: string | null
+          amount: number | null
+          campaign_purpose: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          effectiveness_notes: string | null
+          id: string
+          platform: string | null
+        }
+        Insert: {
+          ad_date?: string | null
+          amount?: number | null
+          campaign_purpose?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          effectiveness_notes?: string | null
+          id?: string
+          platform?: string | null
+        }
+        Update: {
+          ad_date?: string | null
+          amount?: number | null
+          campaign_purpose?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          effectiveness_notes?: string | null
+          id?: string
+          platform?: string | null
+        }
+        Relationships: []
+      }
       alumni: {
         Row: {
           city: string | null
@@ -464,6 +500,62 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      editorial_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_id: string | null
+          format: string
+          id: string
+          notes: string | null
+          paid: boolean
+          platform: string
+          responsible_person: string | null
+          scheduled_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          format?: string
+          id?: string
+          notes?: string | null
+          paid?: boolean
+          platform?: string
+          responsible_person?: string | null
+          scheduled_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          format?: string
+          id?: string
+          notes?: string | null
+          paid?: boolean
+          platform?: string
+          responsible_person?: string | null
+          scheduled_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {
@@ -1188,6 +1280,7 @@ export type Database = {
           division: Database["public"]["Enums"]["org_division"]
           file_url: string | null
           id: string
+          is_primary: boolean
           link_url: string | null
           reason: string | null
           title: string
@@ -1204,6 +1297,7 @@ export type Database = {
           division?: Database["public"]["Enums"]["org_division"]
           file_url?: string | null
           id?: string
+          is_primary?: boolean
           link_url?: string | null
           reason?: string | null
           title: string
@@ -1220,6 +1314,7 @@ export type Database = {
           division?: Database["public"]["Enums"]["org_division"]
           file_url?: string | null
           id?: string
+          is_primary?: boolean
           link_url?: string | null
           reason?: string | null
           title?: string
