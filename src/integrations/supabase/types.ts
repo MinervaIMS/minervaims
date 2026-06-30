@@ -113,6 +113,119 @@ export type Database = {
         }
         Relationships: []
       }
+      alumni_calls: {
+        Row: {
+          alumnus_name: string
+          created_at: string
+          created_by: string | null
+          current_company: string | null
+          current_position: string | null
+          division: Database["public"]["Enums"]["org_division"] | null
+          former_role: string | null
+          id: string
+          notes: string | null
+          planned_date: string | null
+          responsible_person: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alumnus_name: string
+          created_at?: string
+          created_by?: string | null
+          current_company?: string | null
+          current_position?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
+          former_role?: string | null
+          id?: string
+          notes?: string | null
+          planned_date?: string | null
+          responsible_person?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alumnus_name?: string
+          created_at?: string
+          created_by?: string | null
+          current_company?: string | null
+          current_position?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
+          former_role?: string | null
+          id?: string
+          notes?: string | null
+          planned_date?: string | null
+          responsible_person?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      aod_days: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_date: string
+          id: string
+          notes: string | null
+          registration_open: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_date: string
+          id?: string
+          notes?: string | null
+          registration_open?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_date?: string
+          id?: string
+          notes?: string | null
+          registration_open?: boolean
+        }
+        Relationships: []
+      }
+      aod_signups: {
+        Row: {
+          created_at: string
+          day_id: string
+          division: Database["public"]["Enums"]["org_division"] | null
+          id: string
+          member_name: string
+          slot_time: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          day_id: string
+          division?: Database["public"]["Enums"]["org_division"] | null
+          id?: string
+          member_name: string
+          slot_time: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          day_id?: string
+          division?: Database["public"]["Enums"]["org_division"] | null
+          id?: string
+          member_name?: string
+          slot_time?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aod_signups_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "aod_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_notes: {
         Row: {
           application_id: string
@@ -406,40 +519,111 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          added_by: string | null
+          attended: boolean
+          email: string | null
+          event_id: string
+          id: string
+          is_external: boolean
+          is_member: boolean
+          name: string
+          registered_at: string
+          user_id: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          attended?: boolean
+          email?: string | null
+          event_id: string
+          id?: string
+          is_external?: boolean
+          is_member?: boolean
+          name: string
+          registered_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          attended?: boolean
+          email?: string | null
+          event_id?: string
+          id?: string
+          is_external?: boolean
+          is_member?: boolean
+          name?: string
+          registered_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string
+          created_by: string | null
           date: string
           description: string | null
+          division: Database["public"]["Enums"]["org_division"] | null
+          end_at: string | null
+          event_type: string
           guest: string[] | null
           id: string
           moderator: string | null
+          online: boolean
           place: string
           poster_url: string | null
+          registration_audience: string
+          registration_enabled: boolean
+          start_at: string | null
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           date: string
           description?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
+          end_at?: string | null
+          event_type?: string
           guest?: string[] | null
           id?: string
           moderator?: string | null
+          online?: boolean
           place: string
           poster_url?: string | null
+          registration_audience?: string
+          registration_enabled?: boolean
+          start_at?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           date?: string
           description?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
+          end_at?: string | null
+          event_type?: string
           guest?: string[] | null
           id?: string
           moderator?: string | null
+          online?: boolean
           place?: string
           poster_url?: string | null
+          registration_audience?: string
+          registration_enabled?: boolean
+          start_at?: string | null
           title?: string
           updated_at?: string
         }
