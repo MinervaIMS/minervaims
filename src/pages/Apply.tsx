@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
@@ -21,7 +21,7 @@ export default function Apply() {
   const { user, session } = useAuth();
   const { settings, isLoading } = useApplicationSettings();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
 
   const [questions, setQuestions] = useState<ApplicationQuestion[]>([]);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
@@ -66,8 +66,8 @@ export default function Apply() {
       Object.entries(f).forEach(([k, v]) => fd.append(k, v));
       fd.append('cv', cv); fd.append('answer', answer);
       await submitApplication(session, fd);
-      toast({ title: 'Application submitted', description: 'You can follow its status in your workspace.' });
-      navigate('/admin');
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       toast({ title: 'Could not submit', description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
     } finally { setSubmitting(false); }
@@ -98,11 +98,25 @@ export default function Apply() {
     </Shell>;
   }
 
-  if (alreadyApplied) {
+  if (submitted || alreadyApplied) {
     return <Shell>
-      <h1 className="font-serif text-heading text-accent mb-3">Application received</h1>
-      <p className="font-body text-muted-foreground mb-6">You have already submitted an application for {settings.semesterLabel}. Applications cannot be edited after submission.</p>
-      <Button asChild className="font-body"><Link to="/admin">View status</Link></Button>
+      <div className="flex items-start gap-4 mb-6">
+        <CheckCircle2 className="h-10 w-10 text-accent shrink-0 mt-1" aria-hidden />
+        <div>
+          <h1 className="font-serif text-heading text-accent mb-2">Application submitted</h1>
+          <p className="font-body text-muted-foreground">
+            {submitted
+              ? `Thank you — your application for ${settings.semesterLabel} has been received. You will be contacted by email about the next steps.`
+              : `You have already submitted an application for ${settings.semesterLabel}. Applications cannot be edited after submission.`}
+          </p>
+        </div>
+      </div>
+      <div className="border border-separator p-6 bg-muted/30 font-body">
+        <p className="text-sm text-muted-foreground mb-3">
+          You can follow the status of your application — Received, Under review, Interview, Outcome — from your workspace.
+        </p>
+        <Button asChild className="font-body"><Link to="/admin">View application status</Link></Button>
+      </div>
     </Shell>;
   }
 

@@ -138,7 +138,13 @@ export async function listQuestions(): Promise<ApplicationQuestion[]> {
 
 /** The signed-in candidate's own application (RLS returns only their row). */
 export async function getMyApplication(): Promise<ApplicationRow | null> {
-  const { data, error } = await sb.from('applications').select('*').limit(1).maybeSingle();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await sb
+    .from('applications').select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1).maybeSingle();
   if (error) throw new Error(error.message);
   return (data as ApplicationRow) ?? null;
 }
