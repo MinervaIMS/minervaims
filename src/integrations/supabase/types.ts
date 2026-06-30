@@ -580,6 +580,24 @@ export type Database = {
         | "head_of_media"
         | "member"
         | "portfolio_manager"
+        | "head_of_division"
+        | "team_leader"
+        | "analyst"
+        | "media_analyst"
+        | "advisor"
+        | "silent_advisor"
+        | "candidate"
+        | "alumni"
+      org_division:
+        | "equity"
+        | "investment"
+        | "macro"
+        | "portfolio"
+        | "quant"
+        | "media"
+        | "operations"
+        | "board"
+        | "none"
       reading_type:
         | "academic_papers"
         | "technical_textbooks"
@@ -757,6 +775,25 @@ export const Constants = {
         "head_of_media",
         "member",
         "portfolio_manager",
+        "head_of_division",
+        "team_leader",
+        "analyst",
+        "media_analyst",
+        "advisor",
+        "silent_advisor",
+        "candidate",
+        "alumni",
+      ],
+      org_division: [
+        "equity",
+        "investment",
+        "macro",
+        "portfolio",
+        "quant",
+        "media",
+        "operations",
+        "board",
+        "none",
       ],
       reading_type: [
         "academic_papers",
