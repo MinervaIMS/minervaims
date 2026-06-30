@@ -3,20 +3,7 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type AppRole = 
-  | 'admin'
-  | 'president'
-  | 'vice_president'
-  | 'head_of_asset_management'
-  | 'head_of_equity'
-  | 'head_of_investment'
-  | 'head_of_macro'
-  | 'head_of_portfolio'
-  | 'head_of_quant'
-  | 'head_of_operations'
-  | 'head_of_media'
-  | 'portfolio_manager'
-  | 'member';
+import type { AppRole, OrgDivision } from '@/lib/roles';
 
 interface Profile {
   id: string;
@@ -28,6 +15,7 @@ interface UserRole {
   id: string;
   user_id: string;
   role: AppRole;
+  division?: OrgDivision | null;
   assigned_at: string;
 }
 
@@ -86,8 +74,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       .from('user_roles')
       .select('*')
       .eq('user_id', userId);
-    
-    setRoles(rolesData || []);
+
+    // `division` is added by the Phase 0 migration; cast until the generated
+    // Supabase types are regenerated to include it.
+    setRoles((rolesData as unknown as UserRole[]) || []);
   };
 
   const refreshProfile = async () => {

@@ -117,24 +117,33 @@ export type Database = {
         Row: {
           applications_open: boolean
           apply_form_url: string
+          auto_open: boolean
+          end_date: string | null
           id: string
           semester_label: string
+          start_date: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           applications_open?: boolean
           apply_form_url?: string
+          auto_open?: boolean
+          end_date?: string | null
           id?: string
           semester_label?: string
+          start_date?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           applications_open?: boolean
           apply_form_url?: string
+          auto_open?: boolean
+          end_date?: string | null
           id?: string
           semester_label?: string
+          start_date?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -302,6 +311,63 @@ export type Database = {
         }
         Relationships: []
       }
+      members: {
+        Row: {
+          account_status: string
+          created_at: string
+          display_order: number
+          division: Database["public"]["Enums"]["org_division"]
+          email: string | null
+          first_name: string
+          id: string
+          is_public: boolean
+          linkedin_url: string | null
+          membership_status: string
+          phone: string | null
+          photo_url: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          surname: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          account_status?: string
+          created_at?: string
+          display_order?: number
+          division?: Database["public"]["Enums"]["org_division"]
+          email?: string | null
+          first_name: string
+          id?: string
+          is_public?: boolean
+          linkedin_url?: string | null
+          membership_status?: string
+          phone?: string | null
+          photo_url?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          surname: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_status?: string
+          created_at?: string
+          display_order?: number
+          division?: Database["public"]["Enums"]["org_division"]
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_public?: boolean
+          linkedin_url?: string | null
+          membership_status?: string
+          phone?: string | null
+          photo_url?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          surname?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           consent: boolean
@@ -425,6 +491,33 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          resource: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: string
+          resource: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          resource?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -458,6 +551,7 @@ export type Database = {
           id: string
           is_board: boolean
           linkedin_url: string | null
+          member_id: string | null
           name: string
           photo_url: string | null
           position: Database["public"]["Enums"]["team_position"]
@@ -472,6 +566,7 @@ export type Database = {
           id?: string
           is_board?: boolean
           linkedin_url?: string | null
+          member_id?: string | null
           name: string
           photo_url?: string | null
           position: Database["public"]["Enums"]["team_position"]
@@ -486,18 +581,28 @@ export type Database = {
           id?: string
           is_board?: boolean
           linkedin_url?: string | null
+          member_id?: string | null
           name?: string
           photo_url?: string | null
           position?: Database["public"]["Enums"]["team_position"]
           surname?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
           assigned_at: string
           assigned_by: string | null
+          division: Database["public"]["Enums"]["org_division"] | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -505,6 +610,7 @@ export type Database = {
         Insert: {
           assigned_at?: string
           assigned_by?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -512,6 +618,7 @@ export type Database = {
         Update: {
           assigned_at?: string
           assigned_by?: string | null
+          division?: Database["public"]["Enums"]["org_division"] | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -523,9 +630,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      division_to_team_division: {
+        Args: { _division: Database["public"]["Enums"]["org_division"] }
+        Returns: Database["public"]["Enums"]["team_division"]
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
@@ -539,6 +651,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_candidate: { Args: { _user_id: string }; Returns: boolean }
+      is_full_access: { Args: { _user_id: string }; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      member_rank: {
+        Args: {
+          _division: Database["public"]["Enums"]["org_division"]
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: number
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -555,6 +677,17 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      role_to_team_position: {
+        Args: {
+          _division: Database["public"]["Enums"]["org_division"]
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Database["public"]["Enums"]["team_position"]
+      }
+      user_divisions: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["org_division"][]
       }
       verify_admin_credentials: {
         Args: { _password: string; _username: string }
@@ -580,6 +713,25 @@ export type Database = {
         | "head_of_media"
         | "member"
         | "portfolio_manager"
+        | "head_of_division"
+        | "team_leader"
+        | "analyst"
+        | "media_analyst"
+        | "advisor"
+        | "silent_advisor"
+        | "candidate"
+        | "alumni"
+        | "pending"
+      org_division:
+        | "equity"
+        | "investment"
+        | "macro"
+        | "portfolio"
+        | "quant"
+        | "media"
+        | "operations"
+        | "board"
+        | "none"
       reading_type:
         | "academic_papers"
         | "technical_textbooks"
@@ -757,6 +909,26 @@ export const Constants = {
         "head_of_media",
         "member",
         "portfolio_manager",
+        "head_of_division",
+        "team_leader",
+        "analyst",
+        "media_analyst",
+        "advisor",
+        "silent_advisor",
+        "candidate",
+        "alumni",
+        "pending",
+      ],
+      org_division: [
+        "equity",
+        "investment",
+        "macro",
+        "portfolio",
+        "quant",
+        "media",
+        "operations",
+        "board",
+        "none",
       ],
       reading_type: [
         "academic_papers",
