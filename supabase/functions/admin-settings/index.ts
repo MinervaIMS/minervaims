@@ -146,6 +146,16 @@ Deno.serve(async (req) => {
         if (settings.apply_form_url) {
           updateData.apply_form_url = settings.apply_form_url;
         }
+        // Scheduling (Phase 0 columns): allow setting or clearing the window.
+        if ('start_date' in settings) {
+          updateData.start_date = settings.start_date || null;
+        }
+        if ('end_date' in settings) {
+          updateData.end_date = settings.end_date || null;
+        }
+        if (typeof settings.auto_open === 'boolean') {
+          updateData.auto_open = settings.auto_open;
+        }
 
         const { data, error } = await supabaseAdmin
           .from('application_settings')

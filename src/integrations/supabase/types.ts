@@ -113,6 +113,62 @@ export type Database = {
         }
         Relationships: []
       }
+      application_notes: {
+        Row: {
+          application_id: string
+          author_id: string | null
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          application_id: string
+          author_id?: string | null
+          author_name?: string | null
+          body: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          application_id?: string
+          author_id?: string | null
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_notes_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_questions: {
+        Row: {
+          division: Database["public"]["Enums"]["org_division"]
+          question: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          division: Database["public"]["Enums"]["org_division"]
+          question?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          division?: Database["public"]["Enums"]["org_division"]
+          question?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       application_settings: {
         Row: {
           applications_open: boolean
@@ -146,6 +202,75 @@ export type Database = {
           start_date?: string | null
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      applications: {
+        Row: {
+          academic_year: string
+          answer_path: string | null
+          bocconi_id: string
+          created_at: string
+          cv_path: string | null
+          cv_viewed_at: string | null
+          cv_viewed_by: string | null
+          degree_course: string
+          email: string
+          first_choice: Database["public"]["Enums"]["org_division"]
+          first_name: string
+          id: string
+          linkedin_url: string | null
+          phone: string
+          second_choice: Database["public"]["Enums"]["org_division"] | null
+          semester_label: string
+          status: string
+          surname: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          academic_year: string
+          answer_path?: string | null
+          bocconi_id: string
+          created_at?: string
+          cv_path?: string | null
+          cv_viewed_at?: string | null
+          cv_viewed_by?: string | null
+          degree_course: string
+          email: string
+          first_choice: Database["public"]["Enums"]["org_division"]
+          first_name: string
+          id?: string
+          linkedin_url?: string | null
+          phone: string
+          second_choice?: Database["public"]["Enums"]["org_division"] | null
+          semester_label: string
+          status?: string
+          surname: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          academic_year?: string
+          answer_path?: string | null
+          bocconi_id?: string
+          created_at?: string
+          cv_path?: string | null
+          cv_viewed_at?: string | null
+          cv_viewed_by?: string | null
+          degree_course?: string
+          email?: string
+          first_choice?: Database["public"]["Enums"]["org_division"]
+          first_name?: string
+          id?: string
+          linkedin_url?: string | null
+          phone?: string
+          second_choice?: Database["public"]["Enums"]["org_division"] | null
+          semester_label?: string
+          status?: string
+          surname?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
