@@ -6,6 +6,7 @@ import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
+import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { PageLoader } from "@/components/shared";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
