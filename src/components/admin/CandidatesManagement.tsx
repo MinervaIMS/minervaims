@@ -230,9 +230,9 @@ export default function CandidatesManagement() {
                   <Info label="Bocconi ID" value={detail.application.bocconi_id} />
                   <Info label="Academic year" value={ACADEMIC_YEAR_LABELS[detail.application.academic_year]} />
                   <Info label="Degree / course" value={detail.application.degree_course} />
-                  <Info label="LinkedIn" value={detail.application.linkedin_url || '—'} link={detail.application.linkedin_url || undefined} />
+                  <Info label="LinkedIn" value={detail.application.linkedin_url || '-'} link={detail.application.linkedin_url || undefined} />
                   <Info label="First choice" value={divisionLabels[detail.application.first_choice]} />
-                  <Info label="Second choice" value={detail.application.second_choice ? divisionLabels[detail.application.second_choice] : '—'} />
+                  <Info label="Second choice" value={detail.application.second_choice ? divisionLabels[detail.application.second_choice] : '-'} />
                 </div>
 
                 <div className="space-y-1">

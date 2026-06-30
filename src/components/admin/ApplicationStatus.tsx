@@ -70,7 +70,7 @@ export default function ApplicationStatus() {
 
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-separator">
           <Field label="First choice" value={divisionLabels[app.first_choice]} />
-          <Field label="Second choice" value={app.second_choice ? divisionLabels[app.second_choice] : '—'} />
+          <Field label="Second choice" value={app.second_choice ? divisionLabels[app.second_choice] : '-'} />
           <Field label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
           <Field label="Submitted" value={new Date(app.created_at).toLocaleDateString()} />
         </div>

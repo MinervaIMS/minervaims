@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Upload, User as UserIcon } from 'lucide-react';
+import { Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,18 +8,27 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { roleLabel as composeRoleLabel, divisionLabels } from '@/lib/roles';
-import { statuteExtractFor } from '@/lib/statute-extracts';
-import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow, type ClaimableMember } from '@/lib/members-api';
+import { roleGuideFor, MEMBERSHIP_RULES } from '@/lib/statute-extracts';
+import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import RedeemProfileDialog from '@/components/admin/RedeemProfileDialog';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-      <div className="text-foreground">{value || '—'}</div>
+      <div className="text-foreground text-sm">{value || 'Not set'}</div>
     </div>
+  );
+}
+
+function Bullets({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((t, i) => (
+        <li key={i} className="text-sm text-foreground pl-4 relative leading-relaxed before:content-['•'] before:absolute before:left-0 before:text-accent">{t}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -34,12 +43,12 @@ export default function MyProfile() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [claimable, setClaimable] = useState<ClaimableMember[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const roleText = primaryRole ? composeRoleLabel(primaryRole, primaryDivision) : isCandidate ? 'Candidate' : 'No role';
-  const divisionText = primaryDivision && primaryDivision !== 'none' ? divisionLabels[primaryDivision] : '—';
-  const extract = primaryRole ? statuteExtractFor(primaryRole) : null;
+  const divisionText = primaryDivision && primaryDivision !== 'none' ? divisionLabels[primaryDivision] : 'Board';
+  const guide = primaryRole ? roleGuideFor(primaryRole) : null;
+  const email = member?.email || user?.email || '';
 
   useEffect(() => {
     let active = true;
@@ -50,7 +59,6 @@ export default function MyProfile() {
         setMember(res.member);
         setPhone(res.member?.phone ?? '');
         setPhotoUrl(res.member?.photo_url ?? null);
-        if (res.needsRedemption) setClaimable(res.claimable ?? []);
       } catch (e) {
         console.error(e);
         toast({ title: 'Could not load your profile', variant: 'destructive' });
@@ -62,27 +70,45 @@ export default function MyProfile() {
   }, [session, toast]);
 
   const handleUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please choose an image.', variant: 'destructive' });
-      return;
-    }
+    if (!file.type.startsWith('image/')) { toast({ title: 'Please choose an image', variant: 'destructive' }); return; }
     setUploading(true);
     try {
       const url = await uploadMyPhoto(session, file);
       setPhotoUrl(url);
-      toast({ title: 'Photo uploaded', description: 'Remember to save to apply the change.' });
+      // Persist immediately if a phone number is already present.
+      if (phone.trim().length >= 3) {
+        const updated = await updateMyProfile(session, { phone: phone.trim(), photo_url: url });
+        setMember(updated);
+      }
+      toast({ title: 'Photo updated' });
     } catch (e) {
       toast({ title: 'Upload failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally {
-      setUploading(false);
-    }
+    } finally { setUploading(false); }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (phone.trim().length < 3) { setPhotoUrl(null); toast({ title: 'Photo removed', description: 'Add your phone number and save to apply.' }); return; }
+    try {
+      const updated = await updateMyProfile(session, { phone: phone.trim(), photo_url: null });
+      setMember(updated); setPhotoUrl(null);
+      toast({ title: 'Photo removed' });
+    } catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
+  const handleDownloadPhoto = async () => {
+    if (!photoUrl) return;
+    try {
+      const res = await fetch(photoUrl);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${member?.first_name || 'profile'}_${member?.surname || 'photo'}.jpg`;
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch { window.open(photoUrl, '_blank'); }
   };
 
   const handleSave = async () => {
-    if (phone.trim().length < 3) {
-      toast({ title: 'Phone number required', description: 'A phone number is required and cannot be removed.', variant: 'destructive' });
-      return;
-    }
+    if (phone.trim().length < 3) { toast({ title: 'Phone number required', description: 'A phone number is required and cannot be removed.', variant: 'destructive' }); return; }
     setSaving(true);
     try {
       const updated = await updateMyProfile(session, { phone: phone.trim(), photo_url: photoUrl });
@@ -90,42 +116,25 @@ export default function MyProfile() {
       toast({ title: 'Profile updated' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   if (loading) {
-    return (
-      <div>
-        <WorkspacePageHeader title="My profile" description="Your account details and current workspace role." />
-        <WorkspaceLoader />
-      </div>
-    );
+    return <div><WorkspacePageHeader title="My profile" description="Your account details and current workspace role." /><WorkspaceLoader /></div>;
   }
 
-  // First-login redemption: not linked to a member yet → prompt to claim/create.
-  if (!isCandidate && !member && claimable) {
-    return (
-      <div>
-        <WorkspacePageHeader title="My profile" description="Set up your profile to get started." />
-        <RedeemProfileDialog open claimable={claimable} onRedeemed={() => window.location.reload()} />
-      </div>
-    );
-  }
-
-  // Candidates (and the admin user) do not have a member record; minimal view.
+  // Candidates (and the admin user) have no member record: minimal view.
   if (isCandidate || !member) {
     return (
       <div>
         <WorkspacePageHeader title="My profile" description="Your account details and current workspace role." />
         <div className="max-w-2xl space-y-4 font-body">
-          <Field label="Email" value={user?.email ?? ''} />
+          <Field label="Email" value={email} />
           <Field label="Role" value={roleText} />
-          {extract && (
+          {guide && (
             <Card className="mt-6"><CardContent className="py-5">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your role in the statute</div>
-              <p className="font-body text-foreground leading-relaxed">{extract}</p>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your role</div>
+              <p className="text-sm text-foreground leading-relaxed">{guide.summary}</p>
             </CardContent></Card>
           )}
         </div>
@@ -133,64 +142,126 @@ export default function MyProfile() {
     );
   }
 
+  const missingPhone = phone.trim().length < 3;
+  const missingEmail = !email;
   const dirty = phone.trim() !== (member.phone ?? '') || (photoUrl ?? '') !== (member.photo_url ?? '');
 
   return (
-    <div>
+    <div className="font-body">
       <WorkspacePageHeader
         title="My profile"
         description="Your personal information. You can update your phone number and profile picture; the picture is also used on the public Members page."
       />
 
-      <div className="max-w-3xl">
-        <div className="flex flex-col sm:flex-row gap-8">
-          {/* Photo */}
-          <div className="shrink-0">
-            <div className="w-40 h-48 border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
-              {photoUrl
-                ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
-                : <UserIcon className="h-12 w-12 text-muted-foreground" />}
-            </div>
-            <input
-              ref={fileRef} type="file" accept="image/*" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }}
-            />
-            <Button
-              variant="outline" size="sm" className="mt-3 w-40 font-body"
-              disabled={uploading} onClick={() => fileRef.current?.click()}
-            >
-              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><Upload className="h-4 w-4 mr-2" />Change photo</>}
-            </Button>
+      {(missingPhone || missingEmail) && (
+        <div className="max-w-3xl mb-6 flex items-start gap-2 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            {missingPhone && missingEmail ? 'Please add your phone number and email address to continue.'
+              : missingPhone ? 'Please add your phone number to continue.'
+              : 'Please add your email address to continue.'}
+          </span>
+        </div>
+      )}
+
+      <div className="max-w-3xl flex flex-col sm:flex-row gap-8">
+        {/* Square photo */}
+        <div className="shrink-0">
+          <div className="w-44 aspect-square border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
+            {photoUrl ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" /> : <UserIcon className="h-14 w-14 text-muted-foreground" />}
           </div>
-
-          {/* Details */}
-          <div className="flex-1 space-y-4 font-body min-w-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="First name" value={member.first_name} />
-              <Field label="Surname" value={member.surname} />
-              <Field label="Email" value={member.email ?? user?.email ?? ''} />
-              <Field label="Role" value={roleText} />
-              <Field label="Division" value={divisionText} />
-            </div>
-
-            <div className="space-y-2 max-w-sm">
-              <Label htmlFor="phone" className="font-body">Phone number <span className="text-muted-foreground">(required)</span></Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
-            </div>
-
-            <Button onClick={handleSave} disabled={saving || !dirty} className="font-body">
-              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
+          <div className="mt-3 flex flex-wrap gap-2 w-44">
+            <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             </Button>
+            <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto}><Download className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto}><Trash2 className="h-4 w-4" /></Button>
           </div>
         </div>
 
-        {extract && (
-          <Card className="mt-8"><CardContent className="py-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your role in the statute</div>
-            <p className="font-body text-foreground leading-relaxed">{extract}</p>
-          </CardContent></Card>
-        )}
+        {/* Details, grouped: name+surname, email+phone, role+division */}
+        <div className="flex-1 min-w-0 space-y-5">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+            <Field label="First name" value={member.first_name} />
+            <Field label="Surname" value={member.surname} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+            <Field label="Email" value={email} />
+            <div>
+              <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
+              <Input id="phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+            <Field label="Role" value={roleText} />
+            <Field label="Division" value={divisionText} />
+          </div>
+
+          <Button onClick={handleSave} disabled={saving || !dirty}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
+          </Button>
+        </div>
       </div>
+
+      {/* Role guide */}
+      {guide && (
+        <div className="max-w-3xl mt-10 space-y-6">
+          <div>
+            <h2 className="font-serif text-xl text-accent mb-1">Your role</h2>
+            <p className="text-sm text-foreground leading-relaxed">{guide.summary}</p>
+          </div>
+
+          <section>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Responsibilities</div>
+            <Bullets items={guide.responsibilities} />
+          </section>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <section>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">You report to</div>
+              <p className="text-sm text-foreground">{guide.reportsTo}</p>
+            </section>
+            {guide.oversees && (
+              <section>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">You coordinate</div>
+                <p className="text-sm text-foreground">{guide.oversees.join(', ')}</p>
+              </section>
+            )}
+          </div>
+
+          <section>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your rights</div>
+            <Bullets items={guide.rights} />
+          </section>
+
+          <section>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Who to contact</div>
+            <p className="text-sm text-foreground">{guide.contact}</p>
+          </section>
+
+          {/* Shared membership rules */}
+          <Card><CardContent className="py-5 space-y-5">
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your duties as a member</div>
+              <Bullets items={MEMBERSHIP_RULES.duties} />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Grounds for expulsion</div>
+              <Bullets items={MEMBERSHIP_RULES.expulsion} />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Report publication and blocking</div>
+              <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.publicationControl}</p>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Hierarchy</div>
+              <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.hierarchyNote}</p>
+            </div>
+          </CardContent></Card>
+        </div>
+      )}
     </div>
   );
 }

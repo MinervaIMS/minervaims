@@ -117,11 +117,21 @@ Deno.serve(async (req) => {
       [...roleList].sort((a, b) => (ROLE_RANK[a.role] ?? 99) - (ROLE_RANK[b.role] ?? 99))[0];
 
     // ── GET ──────────────────────────────────────────────────────────────
+    // A member row is provisioned silently for any staff user: their login is
+    // their identity, so there is no separate "redeem" step. We still link an
+    // existing placeholder by email when one happens to match.
     if (action === 'get') {
       const linked = await findLinked();
-      if (linked) return json({ member: linked });
+      if (linked) {
+        // Backfill the email from the login if it is missing.
+        if (!linked.email && user.email) {
+          const { data: u } = await supabase.from('members')
+            .update({ email: user.email }).eq('id', linked.id).select().single();
+          return json({ member: u ?? linked });
+        }
+        return json({ member: linked });
+      }
 
-      // Auto-claim a placeholder by email (the secure, pre-arranged path).
       if (user.email) {
         const { data: byEmail } = await supabase.from('members').select('*')
           .is('user_id', null).ilike('email', user.email).limit(1).maybeSingle();
@@ -133,12 +143,18 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Otherwise offer the unclaimed placeholders for explicit redemption.
-      const { data: claimable } = await supabase.from('members')
-        .select('id, first_name, surname, photo_url, role, division')
-        .is('user_id', null).eq('account_status', 'to_redeem')
-        .order('first_name', { ascending: true });
-      return json({ member: null, needsRedemption: true, claimable: claimable || [] });
+      // Create a fresh member from the user's profile + role.
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+      const { first, surname } = splitName(profile?.full_name, user.email || '');
+      const primary = primaryAssignment();
+      const role = primary?.role ?? 'member';
+      const division = primary?.division ?? 'none';
+      const { data: created } = await supabase.from('members').insert({
+        user_id: user.id, first_name: first, surname, email: user.email ?? null,
+        division, role, account_status: 'approved', membership_status: 'active',
+        is_public: PUBLIC_ROLES.has(role),
+      }).select().single();
+      return json({ member: created });
     }
 
     // ── REDEEM ─────────────────────────────────────────────────────────────
@@ -182,8 +198,10 @@ Deno.serve(async (req) => {
     const parsed = UpdateSchema.safeParse(body);
     if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
 
+    // photo_url: undefined keeps the current value; null clears it (delete).
+    const nextPhoto = 'photo_url' in body ? (parsed.data.photo_url ?? null) : member.photo_url;
     const { data: updated, error } = await supabase.from('members')
-      .update({ phone: parsed.data.phone, photo_url: parsed.data.photo_url ?? member.photo_url })
+      .update({ phone: parsed.data.phone, photo_url: nextPhoto })
       .eq('id', member.id).eq('user_id', user.id).select().single();
     if (error) throw error;
     return json({ success: true, member: updated });

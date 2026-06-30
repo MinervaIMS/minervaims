@@ -61,7 +61,7 @@ export default function AlumniCalls() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Alumni calls" description="Track which alumni have been invited, by which division, by whom, when, and the status — to avoid double-inviting and keep the calendar of calls clear."
+      <WorkspacePageHeader title="Alumni calls" description="Track which alumni have been invited, by which division, by whom, when, and the status - to avoid double-inviting and keep the calendar of calls clear."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add call</Button>} />
 
       {loading ? <WorkspaceLoader /> : calls.length === 0 ? (
@@ -84,10 +84,10 @@ export default function AlumniCalls() {
               {calls.map((c) => (
                 <tr key={c.id} className="border-t border-separator">
                   <td className="px-3 py-2 text-foreground whitespace-nowrap">{c.alumnus_name}{c.former_role ? <span className="block text-xs text-muted-foreground">{c.former_role}</span> : null}</td>
-                  <td className="px-3 py-2">{[c.current_position, c.current_company].filter(Boolean).join(' · ') || '—'}</td>
-                  <td className="px-3 py-2">{c.division && c.division !== 'none' ? divisionLabels[c.division] : '—'}</td>
-                  <td className="px-3 py-2">{c.responsible_person || '—'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{c.planned_date ? new Date(c.planned_date).toLocaleDateString() : '—'}</td>
+                  <td className="px-3 py-2">{[c.current_position, c.current_company].filter(Boolean).join(' · ') || '-'}</td>
+                  <td className="px-3 py-2">{c.division && c.division !== 'none' ? divisionLabels[c.division] : '-'}</td>
+                  <td className="px-3 py-2">{c.responsible_person || '-'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{c.planned_date ? new Date(c.planned_date).toLocaleDateString() : '-'}</td>
                   <td className="px-3 py-2">{CALL_STATUS_LABELS[c.status]}</td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-2 justify-end">
@@ -113,7 +113,7 @@ export default function AlumniCalls() {
                 <Label>Inviting division</Label>
                 <Select value={form.division || 'none'} onValueChange={(v) => setForm({ ...form, division: v === 'none' ? null : v as OrgDivision })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="none">—</SelectItem>{DIVISIONS.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
+                  <SelectContent><SelectItem value="none">-</SelectItem>{DIVISIONS.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1"><Label>Current company</Label><Input value={form.current_company ?? ''} onChange={(e) => setForm({ ...form, current_company: e.target.value })} /></div>

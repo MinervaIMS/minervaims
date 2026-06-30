@@ -78,7 +78,7 @@ export default function EventCreate() {
             <Select value={form.division || 'none'} onValueChange={(v) => setForm({ ...form, division: v === 'none' ? '' : v as OrgDivision })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">—</SelectItem>
+                <SelectItem value="none">-</SelectItem>
                 {DIVISIONS.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}
               </SelectContent>
             </Select>

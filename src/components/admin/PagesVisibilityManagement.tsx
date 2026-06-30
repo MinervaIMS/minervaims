@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 const formatDate = (iso: string | null | undefined) => {
-  if (!iso) return '—';
+  if (!iso) return '-';
   try {
     const d = new Date(iso);
     const day = String(d.getDate()).padStart(2, '0');
@@ -21,7 +21,7 @@ const formatDate = (iso: string | null | undefined) => {
     const mm = String(d.getMinutes()).padStart(2, '0');
     return `${day} ${month} ${year}, ${hh}:${mm}`;
   } catch {
-    return '—';
+    return '-';
   }
 };
 
