@@ -49,8 +49,9 @@ const ApplicationSettings = () => {
         });
         const s = data?.data;
         if (s) setForm({
-          applications_open: s.applications_open, semester_label: s.semester_label,
-          auto_open: s.auto_open ?? true, start_local: toLocal(s.start_date), end_local: toLocal(s.end_date),
+          semester_label: s.semester_label,
+          start_local: toLocal(s.start_date),
+          end_local: toLocal(s.end_date),
         });
         const qs = await listQuestions();
         setQuestions(Object.fromEntries(qs.map((q) => [q.division, q.question])));
@@ -67,8 +68,9 @@ const ApplicationSettings = () => {
         body: {
           action: 'update',
           settings: {
-            applications_open: form.applications_open, semester_label: form.semester_label,
-            auto_open: form.auto_open, start_date: toIso(form.start_local), end_date: toIso(form.end_local),
+            semester_label: form.semester_label,
+            start_date: toIso(form.start_local),
+            end_date: toIso(form.end_local),
           },
         },
         headers: { Authorization: `Bearer ${session?.access_token}` },
