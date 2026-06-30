@@ -3,17 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown } from 'lucide-react';
+import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
 interface ArchiveFile {
   id: string;
   title: string;
@@ -22,6 +24,8 @@ interface ArchiveFile {
   date: string;
   division: string;
   fund: string | null;
+  status?: string;
+  project?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +64,23 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     fund: '' as Fund | '',
   });
   const { toast } = useToast();
+  const { session } = useAuth();
+  const access = useAccess();
+
+  const handleSetStatus = async (fileId: string, status: 'draft' | 'published' | 'blocked') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-files', {
+        body: { action: 'set-status', file: { id: fileId, status } },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status } : f)));
+      toast({ title: `Report ${status === 'published' ? 'published' : status === 'blocked' ? 'blocked' : 'set to draft'}` });
+    } catch (e) {
+      toast({ title: 'Could not update status', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    }
+  };
 
   useEffect(() => {
     fetchFiles();
@@ -175,11 +196,6 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     });
     setEditingFile(null);
     setUploadProgress(0);
-  };
-
-  const openCreateDialog = () => {
-    resetForm();
-    setIsDialogOpen(true);
   };
 
   const openEditDialog = (file: ArchiveFile) => {
@@ -539,13 +555,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {/* Report creation now lives in Reports → Upload. This dialog is
+              kept for editing existing reports only. */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog} className="font-body">
-                <Plus className="h-4 w-4 mr-2" />
-                Add File
-              </Button>
-            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -793,6 +805,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                     </time>
                     <h3 className="font-serif text-subheading mt-2 mb-2">
                       {file.title}
+                      {file.status && file.status !== 'published' && (
+                        <span className={`ml-3 align-middle text-xs uppercase tracking-wider font-body px-2 py-0.5 border ${file.status === 'blocked' ? 'text-destructive border-destructive/40' : 'text-amber-700 border-amber-700/40'}`}>
+                          {file.status}
+                        </span>
+                      )}
                     </h3>
                     {file.description && (
                       <div>
@@ -836,7 +853,22 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   </div>
 
                   {/* Admin Actions */}
-                  <div className="flex gap-2 mt-2 md:mt-6 flex-shrink-0">
+                  <div className="flex gap-2 mt-2 md:mt-6 flex-shrink-0 flex-wrap justify-end">
+                    {file.status !== 'published' && file.status !== 'blocked' && (
+                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'published')}>
+                        Publish
+                      </Button>
+                    )}
+                    {access.isFullAccess && file.status !== 'blocked' && (
+                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'blocked')}>
+                        Block
+                      </Button>
+                    )}
+                    {access.isFullAccess && file.status === 'blocked' && (
+                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'published')}>
+                        Unblock
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="icon"
