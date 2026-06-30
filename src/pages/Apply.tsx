@@ -21,7 +21,7 @@ export default function Apply() {
   const { user, session } = useAuth();
   const { settings, isLoading } = useApplicationSettings();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
 
   const [questions, setQuestions] = useState<ApplicationQuestion[]>([]);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
@@ -66,8 +66,8 @@ export default function Apply() {
       Object.entries(f).forEach(([k, v]) => fd.append(k, v));
       fd.append('cv', cv); fd.append('answer', answer);
       await submitApplication(session, fd);
-      toast({ title: 'Application submitted', description: 'You can follow its status in your workspace.' });
-      navigate('/admin');
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       toast({ title: 'Could not submit', description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
     } finally { setSubmitting(false); }
