@@ -57,19 +57,18 @@ Deno.serve(async (req) => {
     );
     if (isStaffAlready) return json({ error: 'Members of the association cannot submit an application.' }, 403);
 
-    // Applications window — scheduling is the single source of truth.
+    // Applications open and close strictly by the scheduled window.
     const { data: settings } = await supabase
       .from('application_settings')
       .select('semester_label, start_date, end_date')
-      .limit(1).maybeSingle();
-    if (!settings) return json({ error: 'Applications are currently closed.' }, 403);
+      .limit(1).single();
     const now = Date.now();
-    const start = settings.start_date ? new Date(settings.start_date).getTime() : null;
-    const end = settings.end_date ? new Date(settings.end_date).getTime() : null;
+    const start = settings?.start_date ? new Date(settings.start_date).getTime() : null;
+    const end = settings?.end_date ? new Date(settings.end_date).getTime() : null;
     if (start === null || end === null) return json({ error: 'Applications are currently closed.' }, 403);
     if (now < start) return json({ error: 'Applications have not opened yet.' }, 403);
     if (now > end) return json({ error: 'Applications have closed.' }, 403);
-    const semester = settings.semester_label as string;
+    const semester = settings!.semester_label as string;
 
     // Must not already exist for this semester (locked after submission).
     const { data: existing } = await supabase.from('applications')

@@ -62,6 +62,7 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
     'applications-screening': 'edit',
     'applications-joiners': 'edit',
     'applications-website': 'edit',
+    'applications-questions': 'edit',
     'applications-form': 'edit',
     'events-create': 'edit',
     'events-alumni-calls': 'edit',

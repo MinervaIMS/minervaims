@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WrittenAnswer {
   div: string;
+  key: string; // org_division key, used to read the live question
   q: string;
 }
 
@@ -26,23 +28,23 @@ const STEPS: JourneyStep[] = [
     ),
     written: [
       {
-        div: 'Equity Research',
+        div: 'Equity Research', key: 'equity',
         q: 'Submit an equity investment pitch (maximum one page). Place any charts/tables in an Appendix after the first page.',
       },
       {
-        div: 'Investment Research',
+        div: 'Investment Research', key: 'investment',
         q: 'How do you keep your knowledge of business and finance current? Which recent financial markets story has interested you most, and why? Explain in detail.',
       },
       {
-        div: 'Macro Research',
+        div: 'Macro Research', key: 'macro',
         q: 'Choose a macroeconomic topic and explain how it may impact any of Minerva’s funds.',
       },
       {
-        div: 'Portfolio Management',
+        div: 'Portfolio Management', key: 'portfolio',
         q: 'Submit a one-page investment pitch. It may cover a stock, bond, ETP, derivatives strategy, or a full portfolio. Place any charts/tables/math formulas in an Appendix after the first page.',
       },
       {
-        div: 'Quantitative Research',
+        div: 'Quantitative Research', key: 'quant',
         q: 'Provide brief answers to both: a topic in quantitative finance, risk management, or financial machine learning you are interested in; and a project (academic/personal/work) in which you wrote code (what you built and what you learned).',
       },
     ],
@@ -66,6 +68,27 @@ const STEPS: JourneyStep[] = [
 
 export function ApplicationJourney() {
   const rootRef = useRef<HTMLDivElement>(null);
+  // Live, editable per-division questions (managed in the workspace). Falls
+  // back to the defaults above if the fetch fails.
+  const [liveQuestions, setLiveQuestions] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('application_questions' as never)
+          .select('division, question');
+        if (!active || !data) return;
+        const map: Record<string, string> = {};
+        for (const row of data as unknown as { division: string; question: string }[]) {
+          if (row.question?.trim()) map[row.division] = row.question;
+        }
+        setLiveQuestions(map);
+      } catch { /* keep defaults */ }
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -134,7 +157,7 @@ export function ApplicationJourney() {
                 {s.written.map((w) => (
                   <div key={w.div} className="jw-row">
                     <div className="jw-div">{w.div}</div>
-                    <div className="jw-q">{w.q}</div>
+                    <div className="jw-q">{liveQuestions[w.key] ?? w.q}</div>
                   </div>
                 ))}
               </div>

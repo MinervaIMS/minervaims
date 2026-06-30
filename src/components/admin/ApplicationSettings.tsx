@@ -1,44 +1,40 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccess } from '@/hooks/useAccess';
 import { Save, Loader2 } from 'lucide-react';
-import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { listQuestions, setDivisionQuestion } from '@/lib/applications-api';
-
-const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
 // timestamptz <-> datetime-local helpers
 const toLocal = (iso: string | null | undefined) => {
   if (!iso) return '';
   const d = new Date(iso);
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 const toIso = (local: string) => (local ? new Date(local).toISOString() : null);
 
+function windowState(startLocal: string, endLocal: string): { label: string; tone: string } {
+  if (!startLocal || !endLocal) return { label: 'Schedule incomplete — applications stay closed until both dates are set.', tone: 'text-amber-700' };
+  const now = Date.now();
+  const s = new Date(startLocal).getTime();
+  const e = new Date(endLocal).getTime();
+  if (e <= s) return { label: 'The closing time must be after the opening time.', tone: 'text-destructive' };
+  if (now < s) return { label: 'Scheduled — applications will open automatically at the start time.', tone: 'text-muted-foreground' };
+  if (now > e) return { label: 'Closed — the scheduled window has ended.', tone: 'text-muted-foreground' };
+  return { label: 'Open now — applications are accepting submissions.', tone: 'text-green-700' };
+}
+
 const ApplicationSettings = () => {
   const { session } = useAuth();
-  const access = useAccess();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ semester_label: '', start_local: '', end_local: '' });
-  const [questions, setQuestions] = useState<Record<string, string>>({});
-  const [savingQ, setSavingQ] = useState<string | null>(null);
-
-  const editableDivisions = useMemo<OrgDivision[]>(() => {
-    if (access.isFullAccess) return CORE;
-    return (access.allowedDivisions || []).filter((d) => (CORE as string[]).includes(d)) as OrgDivision[];
-  }, [access]);
 
   useEffect(() => {
     if (!session?.access_token) return;
@@ -48,13 +44,7 @@ const ApplicationSettings = () => {
           body: { action: 'get' }, headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const s = data?.data;
-        if (s) setForm({
-          semester_label: s.semester_label,
-          start_local: toLocal(s.start_date),
-          end_local: toLocal(s.end_date),
-        });
-        const qs = await listQuestions();
-        setQuestions(Object.fromEntries(qs.map((q) => [q.division, q.question])));
+        if (s) setForm({ semester_label: s.semester_label || '', start_local: toLocal(s.start_date), end_local: toLocal(s.end_date) });
       } catch (e) {
         toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
       } finally { setLoading(false); }
@@ -62,98 +52,77 @@ const ApplicationSettings = () => {
   }, [session?.access_token, toast]);
 
   const save = async () => {
+    if (!form.start_local || !form.end_local) {
+      toast({ title: 'Both dates are required', description: 'Applications open and close strictly by schedule.', variant: 'destructive' });
+      return;
+    }
+    if (new Date(form.end_local).getTime() <= new Date(form.start_local).getTime()) {
+      toast({ title: 'Invalid window', description: 'The closing time must be after the opening time.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
+      // Keep the legacy boolean consistent with the schedule for any reader
+      // that still checks it; the schedule is the source of truth.
+      const now = Date.now();
+      const open = now >= new Date(form.start_local).getTime() && now <= new Date(form.end_local).getTime();
       const { data, error } = await supabase.functions.invoke('admin-settings', {
-        body: {
-          action: 'update',
-          settings: {
-            semester_label: form.semester_label,
-            start_date: toIso(form.start_local),
-            end_date: toIso(form.end_local),
-          },
-        },
+        body: { action: 'update', settings: { semester_label: form.semester_label, start_date: toIso(form.start_local), end_date: toIso(form.end_local), auto_open: true, applications_open: open } },
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast({ title: 'Settings saved' });
+      toast({ title: 'Schedule saved' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
     } finally { setSaving(false); }
-  };
-
-  const saveQuestion = async (division: OrgDivision) => {
-    setSavingQ(division);
-    try {
-      await setDivisionQuestion(session, division, questions[division] ?? '');
-      toast({ title: `${divisionLabels[division]} question saved` });
-    } catch (e) {
-      toast({ title: 'Could not save question', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { setSavingQ(null); }
   };
 
   if (loading) {
     return <div><WorkspacePageHeader title="Website Page" description="Control the public application area of the website." /><WorkspaceLoader /></div>;
   }
 
+  const state = windowState(form.start_local, form.end_local);
+
   return (
     <div className="space-y-8">
       <WorkspacePageHeader
         title="Website Page"
-        description="Control the public application area: schedule the open/close window, set the semester label, and manage each division’s written question. Applications open and close automatically based on the schedule below — there is no manual override."
+        description="Applications open and close automatically by schedule. Set the recruitment window and the semester label; the public Join page and the application form follow this schedule."
       />
 
-      {access.isFullAccess && (
-        <div className="space-y-6 max-w-2xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-body">
-            <div className="space-y-1 sm:col-span-2">
-              <Label>Semester label</Label>
-              <Input value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
-            </div>
-            <div className="space-y-1">
-              <Label>Opens at</Label>
-              <Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <Label>Closes at</Label>
-              <Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} />
-            </div>
+      <div className="space-y-6 max-w-2xl font-body">
+        <div className={`p-4 border border-separator rounded-lg ${state.tone}`}>
+          <p className="font-medium">Recruitment status</p>
+          <p className="text-sm">{state.label}</p>
+        </div>
+
+        <div className="space-y-1">
+          <Label>Semester label</Label>
+          <Input value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
+          <p className="text-xs text-muted-foreground">Shown on the Join page and the application form.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label>Applications open at *</Label>
+            <Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} />
           </div>
-
-          <p className="font-body text-xs text-muted-foreground">
-            The application form is publicly available only between the dates above. Clear both dates to keep applications closed indefinitely.
-          </p>
-
-          <div className="flex justify-end">
-            <Button onClick={save} disabled={saving} className="font-body">
-              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save settings</>}
-            </Button>
+          <div className="space-y-1">
+            <Label>Applications close at *</Label>
+            <Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} />
           </div>
         </div>
-      )}
 
-
-      {/* Per-division written questions */}
-      <div className="space-y-4 max-w-2xl">
-        <div>
-          <h2 className="font-serif text-xl text-accent">Division questions</h2>
-          <p className="font-body text-sm text-muted-foreground">
-            Each division’s written question shown to candidates. {access.isFullAccess ? 'You can edit all divisions.' : 'You can edit your own division.'}
-          </p>
+        <div className="flex justify-end">
+          <Button onClick={save} disabled={saving}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save schedule</>}
+          </Button>
         </div>
-        {editableDivisions.length === 0 && <p className="font-body text-sm text-muted-foreground">No divisions available to edit.</p>}
-        {editableDivisions.map((d) => (
-          <div key={d} className="space-y-2 border border-separator p-4">
-            <Label className="font-body">{divisionLabels[d]}</Label>
-            <Textarea rows={3} value={questions[d] ?? ''} onChange={(e) => setQuestions({ ...questions, [d]: e.target.value })} />
-            <div className="flex justify-end">
-              <Button size="sm" variant="outline" onClick={() => saveQuestion(d)} disabled={savingQ === d}>
-                {savingQ === d ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Save question
-              </Button>
-            </div>
-          </div>
-        ))}
+
+        <p className="text-xs text-muted-foreground">
+          Division-specific written questions are managed in the <span className="text-foreground">Questions</span> subsection.
+        </p>
       </div>
     </div>
   );

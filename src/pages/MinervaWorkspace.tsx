@@ -27,6 +27,7 @@ import MyProfile from '@/components/admin/MyProfile';
 import CandidatesManagement from '@/components/admin/CandidatesManagement';
 import NewJoiners from '@/components/admin/NewJoiners';
 import FormSettings from '@/components/admin/FormSettings';
+import QuestionsManagement from '@/components/admin/QuestionsManagement';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
@@ -125,6 +126,7 @@ const NAV: NavSection[] = [
     key: 'applications', label: 'Applications', Icon: ClipboardList,
     subItems: [
       { key: 'applications-website', label: 'Website Page', allowed: (p) => p.can('applications-website') },
+      { key: 'applications-questions', label: 'Questions', allowed: (p) => p.can('applications-questions') },
       { key: 'applications-status', label: 'Status', allowed: (p) => p.can('applications-status') },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.can('applications-screening') },
       { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.can('applications-joiners') },
@@ -547,6 +549,8 @@ const MinervaWorkspace = () => {
         return renderEventsManagement();
       case 'applications-website':
         return <ApplicationSettings />;
+      case 'applications-questions':
+        return <QuestionsManagement />;
       case 'applications-screening':
         return <CandidatesManagement />;
       case 'applications-joiners':
