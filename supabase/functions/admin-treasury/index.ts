@@ -17,12 +17,14 @@ function json(body: unknown, status = 200) {
 }
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 
+const DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'operations'] as const;
 const EntrySchema = z.object({
   amount: z.number().positive('Amount must be greater than zero'),
   flow: z.enum(['in', 'out']),
   description: z.string().min(1).max(500),
   source: z.string().max(300).nullable().optional(),
   execution_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  division: z.enum(DIVISIONS).nullable().optional(),
 });
 
 function academicSemester(d: Date): string {
@@ -60,6 +62,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase.from('treasury_entries').insert({
         amount: signed, flow: e.flow, description: e.description, source: e.source ?? null,
         execution_date: e.execution_date, academic_semester: academicSemester(new Date(e.execution_date)),
+        division: e.division ?? null,
         is_auto: false, locked: false, created_by: user.id,
       }).select().single();
       if (error) throw error;
