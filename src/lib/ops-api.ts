@@ -13,9 +13,10 @@ export interface MembershipFeeRow { id: string; period_id: string; member_id: st
 export interface TreasuryEntry {
   id: string; amount: number; flow: 'in' | 'out'; description: string; source: string | null;
   execution_date: string; registration_date: string; academic_semester: string | null;
+  division: OrgDivision | null;
   is_auto: boolean; locked: boolean; created_at: string;
 }
-export interface TreasuryInput { amount: number; flow: 'in' | 'out'; description: string; source?: string | null; execution_date: string; }
+export interface TreasuryInput { amount: number; flow: 'in' | 'out'; description: string; source?: string | null; execution_date: string; division?: OrgDivision | null; }
 
 export interface AutoTemplate { id: string; key: string; name: string; subject: string; body: string; description: string | null; updated_at: string; }
 export interface EmailLogRow { id: string; template_name: string; recipient_email: string; status: string; created_at: string; }
