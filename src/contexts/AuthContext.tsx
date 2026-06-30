@@ -24,6 +24,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   roles: UserRole[];
+  memberPhotoUrl: string | null;
   isLoading: boolean;
   isAdmin: boolean;
   isSessionExpired: boolean;
@@ -53,6 +54,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
+  const [memberPhotoUrl, setMemberPhotoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const { toast } = useToast();
@@ -75,12 +77,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       .select('*')
       .eq('user_id', userId);
 
-    setRoles((rolesData as UserRole[]) || []);
+    // `division` is added by the Phase 0 migration; cast until the generated
+    // Supabase types are regenerated to include it.
+    setRoles((rolesData as unknown as UserRole[]) || []);
+  };
+
+  // The member's photo (used as the account avatar across the site). `members`
+  // is added by the Phase 0 migration; cast until the types are regenerated.
+  const fetchMemberPhoto = async (userId: string) => {
+    try {
+      const client = supabase as unknown as {
+        from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: { photo_url: string | null } | null }> } } };
+      };
+      const { data } = await client.from('members').select('photo_url').eq('user_id', userId).maybeSingle();
+      setMemberPhotoUrl(data?.photo_url ?? null);
+    } catch {
+      setMemberPhotoUrl(null);
+    }
   };
 
   const refreshProfile = async () => {
     if (user) {
-      await Promise.all([fetchProfile(user.id), fetchRoles(user.id)]);
+      await Promise.all([fetchProfile(user.id), fetchRoles(user.id), fetchMemberPhoto(user.id)]);
     }
   };
 
@@ -138,6 +156,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(null);
           setProfile(null);
           setRoles([]);
+          setMemberPhotoUrl(null);
           setIsSessionExpired(false);
           return;
         }
@@ -157,6 +176,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setTimeout(() => {
               fetchProfile(currentSession.user.id);
               fetchRoles(currentSession.user.id);
+              fetchMemberPhoto(currentSession.user.id);
             }, 0);
           }
         }
@@ -178,7 +198,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (existingSession?.user) {
         Promise.all([
           fetchProfile(existingSession.user.id),
-          fetchRoles(existingSession.user.id)
+          fetchRoles(existingSession.user.id),
+          fetchMemberPhoto(existingSession.user.id)
         ]).finally(() => setIsLoading(false));
       } else {
         setIsLoading(false);
@@ -251,6 +272,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setSession(null);
     setProfile(null);
     setRoles([]);
+    setMemberPhotoUrl(null);
     setIsSessionExpired(false);
   };
 
@@ -261,6 +283,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         session,
         profile,
         roles,
+        memberPhotoUrl,
         isLoading,
         isAdmin,
         isSessionExpired,

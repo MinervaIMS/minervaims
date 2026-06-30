@@ -1,41 +1,28 @@
-## Phase 1 — People & My Profile
+## Phase 1 fixes (round 1) — code-only
 
-Apply the Phase 1 bundle on top of Phase 0. No behavioural surprises: one schema change, one new edge function, one updated edge function, three new frontend files, one workspace page replacement.
+Apply the eight files from `minerva-workspace-phase1-fixes.zip` exactly as shipped, then redeploy the one edge function. No DB migration this round.
 
-### 1. Database migration (`supabase--migration`)
-`supabase/migrations/20260630120300_phase1_members_fee.sql`:
-```sql
-ALTER TABLE public.members
-  ADD COLUMN IF NOT EXISTS fee_status text NOT NULL DEFAULT 'unpaid'
-    CHECK (fee_status IN ('paid','unpaid','exempt'));
-```
-Adds the per-member fee status shown on the merged register. Phase 5 will drive it automatically; until then it is set manually.
+### Files (overwrite at the same paths)
 
-### 2. Edge functions
-- **New** `supabase/functions/member-profile/index.ts` — self-service profile for the logged-in user. Resolves/claims their member row (by email then full name → the "to_redeem" flow), and accepts edits only to `phone` + `photo_url`.
-- **Updated** `supabase/functions/admin-members/index.ts` — now accepts `fee_status`.
-- Deploy both via `supabase--deploy_edge_functions`.
+**New**
+- `src/components/admin/WorkspaceLoader.tsx` — inline pulsing-logo loader for in-page workspace loads.
+- `src/components/admin/RedeemProfileDialog.tsx` — first-login dialog: claim an existing placeholder member by name, or pick "I'm new here".
 
-### 3. `supabase/config.toml`
-Add the `[functions.member-profile]` block with `verify_jwt = false`. No other entries change.
-
-### 4. Frontend
-- **New** `src/lib/members-api.ts` — typed CRUD over `members` plus the self-service / admin edge calls (also the single place that casts around the not-yet-regenerated Supabase types).
-- **New** `src/lib/statute-extracts.ts` — role-specific statute text used by My Profile.
-- **New** `src/components/admin/MyProfile.tsx` — My Profile page (edit phone + photo, see statute extract).
-- **New** `src/components/admin/MembersManagement.tsx` — merged register; renders the Silent Advisors variant when `silentAdvisors` prop is set. Auto-ordered by seniority then alphabetical, division filter, search, CSV export.
-- **Replace** `src/pages/MinervaWorkspace.tsx` — wires My Profile, People → Members, People → Advisors to the new components. The existing `TeamManagement` stays in the codebase (still powers the public Team page through the Phase 0 projection) but is no longer the workspace's editing surface.
+**Replace**
+- `supabase/functions/member-profile/index.ts` — no longer silently creates a member; returns `needsRedemption` + claimable placeholders; never creates a member for the `admin` role; auto-claims by email match.
+- `src/lib/members-api.ts` — updated typed API surface for the new redemption flow.
+- `src/contexts/AuthContext.tsx` — also loads the member's `photo_url` so the header avatar can use it.
+- `src/components/admin/MyProfile.tsx` — opens `RedeemProfileDialog` on first login when redemption is needed.
+- `src/components/admin/MembersManagement.tsx` — drops fee column / fee selector / fee in CSV, filters out `admin` rows, adds Membership and Account-status filters, clickable LinkedIn icon, CSV always reflects current filters.
+- `src/pages/MinervaWorkspace.tsx` — uses `PageLoader` for auth loading and `WorkspaceLoader` for in-page loads.
+- `src/components/layout/Header.tsx` — one-line change: avatar uses the member `photo_url` (falls back to initials). No other visual change to the public header.
 
 ### Execution order
-1. Run the migration.
-2. In parallel: write the four new/replaced frontend files, the two edge function files, and the updated `config.toml`.
-3. Deploy `member-profile` and `admin-members`.
-4. Run `tsgo` to confirm typecheck passes (cast in `members-api.ts` keeps it green even before Supabase types regenerate).
-
-### After execution (manual, by the user)
-- Types regenerate automatically after the migration runs; no action needed unless they want to remove the cast in `members-api.ts` later.
-- In People → Members, set the **email** on each seeded `to_redeem` member so they can claim their account on first login. Full redemption mechanics are in `MINERVA_WORKSPACE_PHASE1.md`.
+1. Write all 8 files from the zip to their target paths (parallel).
+2. Deploy the `member-profile` edge function.
+3. Run `tsgo` to confirm typecheck passes.
 
 ### Out of scope
-- No changes to the public website, public Team page, or `team_members` table.
-- No new RLS policies — the migration is purely additive on an existing table.
+- No SQL / migration.
+- No changes to the public website beyond the single avatar-source line in `Header.tsx`.
+- Phase 5 (Operations → Membership Fee) still owns the fee surface; removed from People here.
