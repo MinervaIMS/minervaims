@@ -5,14 +5,23 @@ interface ApplicationSettings {
   applicationsOpen: boolean;
   semesterLabel: string;
   applyFormUrl: string;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 const DEFAULT_SETTINGS: ApplicationSettings = {
   applicationsOpen: false,
   semesterLabel: 'Spring 2026',
-  applyFormUrl: 'https://forms.google.com/your-form-url',
+  applyFormUrl: '/apply',
+  startDate: null,
+  endDate: null,
 };
 
+/**
+ * Window-driven applications gate.
+ * `applicationsOpen` is derived purely from start_date/end_date — the manual
+ * toggle has been removed so scheduling is the single source of truth.
+ */
 export const useApplicationSettings = () => {
   const [settings, setSettings] = useState<ApplicationSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,10 +29,9 @@ export const useApplicationSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        // Use raw query to avoid type issues with new table
         const { data, error } = await supabase
-          .from('application_settings' as any)
-          .select('applications_open, semester_label, apply_form_url')
+          .from('application_settings' as never)
+          .select('semester_label, apply_form_url, start_date, end_date')
           .limit(1)
           .maybeSingle();
 
@@ -33,11 +41,22 @@ export const useApplicationSettings = () => {
         }
 
         if (data) {
-          const typedData = data as unknown as { applications_open: boolean; semester_label: string; apply_form_url: string };
+          const row = data as unknown as {
+            semester_label: string;
+            apply_form_url: string | null;
+            start_date: string | null;
+            end_date: string | null;
+          };
+          const now = Date.now();
+          const start = row.start_date ? new Date(row.start_date).getTime() : null;
+          const end = row.end_date ? new Date(row.end_date).getTime() : null;
+          const open = start !== null && end !== null && now >= start && now <= end;
           setSettings({
-            applicationsOpen: typedData.applications_open,
-            semesterLabel: typedData.semester_label,
-            applyFormUrl: typedData.apply_form_url,
+            applicationsOpen: open,
+            semesterLabel: row.semester_label,
+            applyFormUrl: row.apply_form_url || '/apply',
+            startDate: row.start_date,
+            endDate: row.end_date,
           });
         }
       } catch (error) {
