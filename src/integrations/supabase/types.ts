@@ -588,6 +588,7 @@ export type Database = {
         | "silent_advisor"
         | "candidate"
         | "alumni"
+        | "pending"
       org_division:
         | "equity"
         | "investment"
@@ -783,6 +784,7 @@ export const Constants = {
         "silent_advisor",
         "candidate",
         "alumni",
+        "pending",
       ],
       org_division: [
         "equity",
