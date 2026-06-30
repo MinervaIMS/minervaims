@@ -168,6 +168,18 @@ const Index = () => {
       {/* Alumni Ticker */}
       <AlumniTicker />
 
+      {/* Divisions Scroll Stack */}
+      <section className="bg-background pt-section-sm md:pt-section">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+            Our Divisions
+          </h2>
+        </div>
+        <DivisionScrollStack />
+      </section>
+
+
+
 
 
 
