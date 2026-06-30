@@ -22,7 +22,8 @@ import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
-import TeamManagement from '@/components/admin/TeamManagement';
+import MembersManagement from '@/components/admin/MembersManagement';
+import MyProfile from '@/components/admin/MyProfile';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
@@ -506,25 +507,6 @@ const MinervaWorkspace = () => {
   // Content router
   // ────────────────────────────────────────────────────────────────────────────
 
-  const renderMyRole = () => (
-    <div>
-      <WorkspacePageHeader
-        title="My profile"
-        description="Your account details and current workspace role."
-      />
-      <div className="max-w-2xl space-y-4 font-body">
-        <div>
-          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Role</div>
-          <div className="text-lg text-foreground">{roleLabel}</div>
-        </div>
-        <div>
-          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Email</div>
-          <div className="text-foreground">{user.email}</div>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderPlaceholder = (title: string, description: string) => (
     <div>
       <WorkspacePageHeader title={title} description={description} />
@@ -540,9 +522,9 @@ const MinervaWorkspace = () => {
       if (activeSubKey === 'applications-status') {
         return renderPlaceholder('Application status', 'The current status of your application will appear here.');
       }
-      return renderMyRole();
+      return <MyProfile />;
     }
-    if (activeSectionKey === 'my-role') return renderMyRole();
+    if (activeSectionKey === 'my-role') return <MyProfile />;
     if (activeSectionKey === 'welcome') {
       return renderPlaceholder('Welcome', 'Your entry point to the Minerva workspace.');
     }
@@ -557,7 +539,9 @@ const MinervaWorkspace = () => {
       case 'reports-archive':
         return <FileManagement allowedDivisions={permissions.allowedDivisions} />;
       case 'people-members':
-        return <TeamManagement allowedDivisions={permissions.allowedDivisions} isFullAccess={permissions.isFullAccess} />;
+        return <MembersManagement />;
+      case 'people-advisors':
+        return <MembersManagement silentAdvisors />;
       case 'people-alumni':
         return <AlumniManagement />;
       case 'events-archive':

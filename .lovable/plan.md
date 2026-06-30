@@ -1,38 +1,41 @@
-## 1. Remove defensive cast in AuthContext
+## Phase 1 — People & My Profile
 
-Generated types already include `members`, `role_permissions`, and `user_roles.division`. No regeneration step is needed — just clean up the temporary cast.
+Apply the Phase 1 bundle on top of Phase 0. No behavioural surprises: one schema change, one new edge function, one updated edge function, three new frontend files, one workspace page replacement.
 
-**File:** `src/contexts/AuthContext.tsx`
-- Drop the `as unknown as UserRole[]` cast in `fetchRoles`; rely on the real generated row type, mapping it to the local `UserRole` shape if needed.
-- Keep the `AppRole` / `OrgDivision` imports from `@/lib/roles`.
-
-## 2. Schedule `cleanup_expired_candidates()` daily via pg_cron
-
-Enable the extensions and register a daily cron job that calls the function directly (it's a SQL function, no HTTP needed).
-
-**Step A — schema migration** (`supabase--migration`):
+### 1. Database migration (`supabase--migration`)
+`supabase/migrations/20260630120300_phase1_members_fee.sql`:
 ```sql
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+ALTER TABLE public.members
+  ADD COLUMN IF NOT EXISTS fee_status text NOT NULL DEFAULT 'unpaid'
+    CHECK (fee_status IN ('paid','unpaid','exempt'));
 ```
+Adds the per-member fee status shown on the merged register. Phase 5 will drive it automatically; until then it is set manually.
 
-**Step B — schedule the job** (`supabase--insert`, since cron rows are data, not schema):
-```sql
-SELECT cron.schedule(
-  'cleanup-expired-candidates-daily',
-  '0 3 * * *',  -- 03:00 UTC every day
-  $$ SELECT public.cleanup_expired_candidates(); $$
-);
-```
+### 2. Edge functions
+- **New** `supabase/functions/member-profile/index.ts` — self-service profile for the logged-in user. Resolves/claims their member row (by email then full name → the "to_redeem" flow), and accepts edits only to `phone` + `photo_url`.
+- **Updated** `supabase/functions/admin-members/index.ts` — now accepts `fee_status`.
+- Deploy both via `supabase--deploy_edge_functions`.
 
-The function is a no-op until `max(application_settings.end_date) + 1 month` has passed, so running it daily is safe.
+### 3. `supabase/config.toml`
+Add the `[functions.member-profile]` block with `verify_jwt = false`. No other entries change.
 
-## Verification
+### 4. Frontend
+- **New** `src/lib/members-api.ts` — typed CRUD over `members` plus the self-service / admin edge calls (also the single place that casts around the not-yet-regenerated Supabase types).
+- **New** `src/lib/statute-extracts.ts` — role-specific statute text used by My Profile.
+- **New** `src/components/admin/MyProfile.tsx` — My Profile page (edit phone + photo, see statute extract).
+- **New** `src/components/admin/MembersManagement.tsx` — merged register; renders the Silent Advisors variant when `silentAdvisors` prop is set. Auto-ordered by seniority then alphabetical, division filter, search, CSV export.
+- **Replace** `src/pages/MinervaWorkspace.tsx` — wires My Profile, People → Members, People → Advisors to the new components. The existing `TeamManagement` stays in the codebase (still powers the public Team page through the Phase 0 projection) but is no longer the workspace's editing surface.
 
-- `tsgo` typecheck passes after removing the cast.
-- `SELECT * FROM cron.job WHERE jobname = 'cleanup-expired-candidates-daily';` returns one row.
+### Execution order
+1. Run the migration.
+2. In parallel: write the four new/replaced frontend files, the two edge function files, and the updated `config.toml`.
+3. Deploy `member-profile` and `admin-members`.
+4. Run `tsgo` to confirm typecheck passes (cast in `members-api.ts` keeps it green even before Supabase types regenerate).
 
-## Out of scope
+### After execution (manual, by the user)
+- Types regenerate automatically after the migration runs; no action needed unless they want to remove the cast in `members-api.ts` later.
+- In People → Members, set the **email** on each seeded `to_redeem` member so they can claim their account on first login. Full redemption mechanics are in `MINERVA_WORKSPACE_PHASE1.md`.
 
-- Edge-function fallback scheduler (only needed if you decline pg_cron).
-- Any UI or behavioural changes.
+### Out of scope
+- No changes to the public website, public Team page, or `team_members` table.
+- No new RLS policies — the migration is purely additive on an existing table.

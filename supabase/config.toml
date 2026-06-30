@@ -11,6 +11,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.admin-members]
     verify_jwt = false
+  [functions.member-profile]
+    verify_jwt = false
   [functions.admin-settings]
     verify_jwt = false
   [functions.admin-team]

@@ -38,6 +38,7 @@ const MemberSchema = z.object({
   role: z.enum(ASSIGNABLE_ROLES),
   membership_status: z.enum(['active', 'temporary_leave', 'alumni', 'expelled', 'silent_advisor']).optional(),
   account_status: z.enum(['approved', 'pending', 'to_redeem']).optional(),
+  fee_status: z.enum(['paid', 'unpaid', 'exempt']).optional(),
   is_public: z.boolean().optional(),
 });
 
@@ -201,6 +202,7 @@ Deno.serve(async (req) => {
       role: m.role,
       membership_status: m.membership_status || 'active',
       account_status: m.account_status || 'to_redeem',
+      fee_status: m.fee_status || 'unpaid',
       is_public: m.is_public ?? true,
     };
 

@@ -318,6 +318,7 @@ export type Database = {
           display_order: number
           division: Database["public"]["Enums"]["org_division"]
           email: string | null
+          fee_status: string
           first_name: string
           id: string
           is_public: boolean
@@ -336,6 +337,7 @@ export type Database = {
           display_order?: number
           division?: Database["public"]["Enums"]["org_division"]
           email?: string | null
+          fee_status?: string
           first_name: string
           id?: string
           is_public?: boolean
@@ -354,6 +356,7 @@ export type Database = {
           display_order?: number
           division?: Database["public"]["Enums"]["org_division"]
           email?: string | null
+          fee_status?: string
           first_name?: string
           id?: string
           is_public?: boolean
