@@ -38,12 +38,20 @@ export function openFeePeriod(session: Session | null, semester_label: string, f
 export function setFeePaid(session: Session | null, period_id: string, member_id: string, paid: boolean) {
   return invoke('admin-fees', session, { action: 'set-paid', period_id, member_id, paid });
 }
+export function updateFeePeriod(session: Session | null, period_id: string, patch: { semester_label?: string; fee_amount?: number }) {
+  return invoke('admin-fees', session, { action: 'update', period_id, ...patch });
+}
 export function closeFeePeriod(session: Session | null, period_id: string) {
   return invoke('admin-fees', session, { action: 'close', period_id });
+}
+export interface FeeBreakdownEntry { period: FeePeriod; by_division: Record<string, { total: number; paid: number; collected: number }>; }
+export async function feeBreakdown(session: Session | null): Promise<FeeBreakdownEntry[]> {
+  return (await invoke('admin-fees', session, { action: 'breakdown' })).breakdown;
 }
 export async function feeHistory(session: Session | null): Promise<FeePeriod[]> {
   return (await invoke('admin-fees', session, { action: 'history' })).periods;
 }
+
 
 // Treasury
 export async function listTreasury(session: Session | null): Promise<TreasuryEntry[]> {

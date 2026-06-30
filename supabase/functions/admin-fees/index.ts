@@ -86,6 +86,54 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    if (action === 'update') {
+      const { data: period } = await supabase.from('fee_periods').select('*').eq('id', body.period_id).maybeSingle();
+      if (!period) return json({ error: 'Period not found' }, 404);
+      if (period.closed) return json({ error: 'Closed periods cannot be edited.' }, 403);
+      const patch: Record<string, unknown> = {};
+      if (typeof body.semester_label === 'string') {
+        const label = body.semester_label.trim();
+        if (!label) return json({ error: 'A semester label is required' }, 400);
+        patch.semester_label = label;
+      }
+      if (body.fee_amount != null) {
+        const amount = Number(body.fee_amount);
+        if (!Number.isFinite(amount) || amount < 10) return json({ error: 'The minimum fee is €10 per semester.' }, 400);
+        patch.fee_amount = amount;
+        // Re-price already-paid rows so totals stay consistent.
+        await supabase.from('membership_fees').update({ amount }).eq('period_id', period.id).eq('paid', true);
+      }
+      if (!Object.keys(patch).length) return json({ error: 'Nothing to update' }, 400);
+      const { data, error } = await supabase.from('fee_periods').update(patch).eq('id', period.id).select().single();
+      if (error) {
+        if ((error as any).code === '23505') return json({ error: 'A period with this label already exists.' }, 409);
+        throw error;
+      }
+      return json({ success: true, period: data });
+    }
+
+    if (action === 'breakdown') {
+      const { data: periods } = await supabase.from('fee_periods').select('*').order('created_at', { ascending: false });
+      const { data: allFees } = await supabase.from('membership_fees').select('period_id, member_id, paid, amount');
+      const { data: allMembers } = await supabase.from('members').select('id, division, first_name, surname');
+      const memberDiv = new Map<string, string>();
+      (allMembers || []).forEach((m: any) => memberDiv.set(m.id, m.division || 'none'));
+      const result = (periods || []).map((p: any) => {
+        const rows = (allFees || []).filter((f: any) => f.period_id === p.id);
+        const byDiv: Record<string, { total: number; paid: number; collected: number }> = {};
+        rows.forEach((r: any) => {
+          const d = memberDiv.get(r.member_id) || 'none';
+          if (!byDiv[d]) byDiv[d] = { total: 0, paid: 0, collected: 0 };
+          byDiv[d].total += 1;
+          if (r.paid) { byDiv[d].paid += 1; byDiv[d].collected += Number(r.amount || p.fee_amount); }
+        });
+        return { period: p, by_division: byDiv };
+      });
+      return json({ breakdown: result });
+    }
+
+
+
     if (action === 'close') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('id', body.period_id).maybeSingle();
       if (!period) return json({ error: 'Period not found' }, 404);
