@@ -101,29 +101,15 @@ const ApplicationSettings = () => {
     <div className="space-y-8">
       <WorkspacePageHeader
         title="Website Page"
-        description="Control the public application area: open or close applications, schedule the window, set the semester label, and manage each division’s written question."
+        description="Control the public application area: schedule the open/close window, set the semester label, and manage each division’s written question. Applications open and close automatically based on the schedule below — there is no manual override."
       />
 
       {access.isFullAccess && (
         <div className="space-y-6 max-w-2xl">
-          <div className="flex items-center justify-between p-4 border border-separator rounded-lg">
-            <div>
-              <p className="font-body font-medium">Applications open</p>
-              <p className="font-body text-sm text-muted-foreground">
-                {form.applications_open ? 'The internal application form is currently available on the website.' : 'Applications are closed; the form is not available.'}
-              </p>
-            </div>
-            <Switch checked={form.applications_open} onCheckedChange={(v) => setForm({ ...form, applications_open: v })} />
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-body">
-            <div className="space-y-1">
+            <div className="space-y-1 sm:col-span-2">
               <Label>Semester label</Label>
               <Input value={form.semester_label} onChange={(e) => setForm({ ...form, semester_label: e.target.value })} placeholder="e.g. Autumn 2026" />
-            </div>
-            <div className="flex items-center justify-between sm:pt-6">
-              <Label htmlFor="auto">Open/close automatically by schedule</Label>
-              <Switch id="auto" checked={form.auto_open} onCheckedChange={(v) => setForm({ ...form, auto_open: v })} />
             </div>
             <div className="space-y-1">
               <Label>Opens at</Label>
@@ -135,6 +121,10 @@ const ApplicationSettings = () => {
             </div>
           </div>
 
+          <p className="font-body text-xs text-muted-foreground">
+            The application form is publicly available only between the dates above. Clear both dates to keep applications closed indefinitely.
+          </p>
+
           <div className="flex justify-end">
             <Button onClick={save} disabled={saving} className="font-body">
               {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save settings</>}
@@ -142,6 +132,7 @@ const ApplicationSettings = () => {
           </div>
         </div>
       )}
+
 
       {/* Per-division written questions */}
       <div className="space-y-4 max-w-2xl">
