@@ -130,6 +130,9 @@ Deno.serve(async (req) => {
         return { period: p, by_division: byDiv };
       });
       return json({ breakdown: result });
+    }
+
+
 
     if (action === 'close') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('id', body.period_id).maybeSingle();
