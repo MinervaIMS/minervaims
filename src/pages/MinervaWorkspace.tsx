@@ -222,6 +222,13 @@ const MinervaWorkspace = () => {
   const isCandidate = access.isCandidate;
   const isDesktop = useIsDesktop();
 
+  // Flag <html> while the workspace is mounted so the dark site backdrop
+  // (and its black ::after) cannot show through Radix scroll-locks.
+  useEffect(() => {
+    document.documentElement.classList.add('ws-active');
+    return () => document.documentElement.classList.remove('ws-active');
+  }, []);
+
   // Shell state
   const [navExpanded, setNavExpanded] = useState(true);
   const [submenuOpen, setSubmenuOpen] = useState(true);
@@ -604,11 +611,11 @@ const MinervaWorkspace = () => {
       case 'smm-ads':
         return <AdsRegister />;
       case 'smm-ig':
-        return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: images, files, links and notes — each with why it’s useful." divisions={['none']} />;
+        return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: images, files, links and notes - each with why it’s useful." divisions={['none']} />;
       case 'smm-li':
-        return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: images, files, links and notes — each with why it’s useful." divisions={['none']} />;
+        return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: images, files, links and notes - each with why it’s useful." divisions={['none']} />;
       case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material — images, files, links and notes." divisions={['none']} />;
+        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material - images, files, links and notes." divisions={['none']} />;
       case 'smm-brand':
         return <ResourceManager category="smm_brand" title="Design, brand & logo" description="The association’s visual identity. Set one main reference document (fonts, colours, logo usage, visual style, tone, design rules); other files and notes appear below." divisions={['none']} allowPrimary />;
       case 'ops-fee':
@@ -829,16 +836,16 @@ const MinervaWorkspace = () => {
     <Helmet>
       <title>Workspace | MIMS</title>
     </Helmet>
-    <div className={`${shellHeight} w-full flex bg-background overflow-hidden`}>
+    <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden`}>
       {/* Nav column */}
       <aside
-        className="flex flex-col bg-accent text-accent-foreground transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 overflow-hidden"
+        className="minerva-nav flex flex-col bg-accent text-accent-foreground transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 overflow-hidden"
         style={{ width: navExpanded ? 240 : 72 }}
       >
         {/* Logo */}
         <div className="shrink-0 flex items-center justify-center px-4 h-20">
           <Link to="/" title="Return to homepage" className="flex items-center justify-center">
-            <img src={logoWhite} alt="Minerva — Return to homepage" className="h-14 w-14 shrink-0" />
+            <img src={logoWhite} alt="Minerva - Return to homepage" className="h-14 w-14 shrink-0" />
           </Link>
         </div>
 

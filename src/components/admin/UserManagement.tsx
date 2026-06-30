@@ -389,19 +389,19 @@ const UserManagement = () => {
                   <TableRow key={idx}>
                     <TableCell className="font-body font-medium">{row.role}</TableCell>
                     <TableCell className="text-center">
-                      {row.users ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                      {row.users ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
-                      {row.alumni ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                      {row.alumni ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
-                      {row.events === true ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                      {row.events === true ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       {typeof row.files === 'string' ? (
                         <span className="text-green-600 text-sm">{row.files}</span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
@@ -410,14 +410,14 @@ const UserManagement = () => {
                       ) : row.team ? (
                         <span className="text-green-600">✓</span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      {row.readings ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                      {row.readings ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
-                      {row.applications ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">—</span>}
+                      {row.applications ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                   </TableRow>
                 ))}

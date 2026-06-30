@@ -47,7 +47,7 @@ export default function FormSettings() {
               {questions.map((q) => (
                 <div key={q.division} className="border border-separator p-3 text-sm">
                   <div className="font-medium text-foreground">{divisionLabels[q.division as OrgDivision] ?? q.division}</div>
-                  <div className="text-muted-foreground mt-1">{q.question || '—'}</div>
+                  <div className="text-muted-foreground mt-1">{q.question || '-'}</div>
                 </div>
               ))}
             </div>

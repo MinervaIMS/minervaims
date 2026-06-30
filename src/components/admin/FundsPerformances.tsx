@@ -18,8 +18,8 @@ import {
 
 const FUNDS: ActiveFund[] = ['long-short', 'multi-asset'];
 
-const fmt = (n: number | null) => (n === null || n === undefined ? '—' : n.toString());
-const pct = (n: number | null) => (n === null || n === undefined ? '—' : `${n}%`);
+const fmt = (n: number | null) => (n === null || n === undefined ? '-' : n.toString());
+const pct = (n: number | null) => (n === null || n === undefined ? '-' : `${n}%`);
 const monthLabel = (d: string) => new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 
 export default function FundsPerformances() {
@@ -110,7 +110,7 @@ export default function FundsPerformances() {
                   <td className="px-3 py-2">{fmt(r.nav)}</td>
                   <td className="px-3 py-2">{pct(r.monthly_return)}</td>
                   <td className="px-3 py-2">{pct(r.ytd_return)}</td>
-                  <td className="px-3 py-2 max-w-xs truncate">{r.notes || '—'}</td>
+                  <td className="px-3 py-2 max-w-xs truncate">{r.notes || '-'}</td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Edit className="h-4 w-4" /></Button>

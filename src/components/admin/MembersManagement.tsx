@@ -88,7 +88,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members
-      // The admin role is a user, not a member — never list it.
+      // The admin role is a user, not a member - never list it.
       .filter((m) => m.role !== 'admin')
       .filter((m) => (silentAdvisors ? isSilent(m) : !isSilent(m)))
       .filter((m) => divisionFilter === 'all' || m.division === divisionFilter)
@@ -185,7 +185,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
 
   const title = silentAdvisors ? 'Advisors' : 'Members';
   const description = silentAdvisors
-    ? 'Silent Advisors — people with workspace access who are not shown on the public Members page.'
+    ? 'Silent Advisors - people with workspace access who are not shown on the public Members page.'
     : 'The association members register. Photo and the public subset feed the website; phone, fee and membership status are internal.';
 
   return (
@@ -279,16 +279,16 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                     </div>
                   </td>
                   <td className="px-3 py-2 text-foreground whitespace-nowrap">{m.first_name} {m.surname}</td>
-                  <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '—'}</td>
+                  <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{m.phone || '—'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{m.phone || '-'}</td>
                   <td className="px-3 py-2">{m.email || <span className="text-amber-700">to redeem</span>}</td>
                   <td className="px-3 py-2 text-center">
                     {m.linkedin_url ? (
                       <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
                         <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 opacity-80 hover:opacity-100" />
                       </a>
-                    ) : <span className="text-muted-foreground">—</span>}
+                    ) : <span className="text-muted-foreground">-</span>}
                   </td>
                   <td className="px-3 py-2">
                     <span className="capitalize">{m.account_status === 'to_redeem' ? 'to redeem' : m.account_status}</span>
@@ -350,7 +350,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                     <Label>Division</Label>
                     <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{DIVISION_OPTIONS.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? '—' : divisionLabels[d]}</SelectItem>)}</SelectContent>
+                      <SelectContent>{DIVISION_OPTIONS.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? '-' : divisionLabels[d]}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">

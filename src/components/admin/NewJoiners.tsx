@@ -63,7 +63,7 @@ export default function NewJoiners() {
     <div>
       <WorkspacePageHeader
         title="New joiners"
-        description="Accepted candidates who join Minerva. Approve, assign a specific role and division, and mark the membership fee as due — this converts the candidate account into a member."
+        description="Accepted candidates who join Minerva. Approve, assign a specific role and division, and mark the membership fee as due - this converts the candidate account into a member."
       />
 
       {loading ? <WorkspaceLoader /> : joiners.length === 0 ? (

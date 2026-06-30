@@ -83,12 +83,12 @@ export default function EditorialCalendar() {
             <tbody>
               {items.map((i) => (
                 <tr key={i.id} className="border-t border-separator">
-                  <td className="px-3 py-2 whitespace-nowrap">{i.scheduled_date ? new Date(i.scheduled_date).toLocaleDateString() : '—'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{i.scheduled_date ? new Date(i.scheduled_date).toLocaleDateString() : '-'}</td>
                   <td className="px-3 py-2 text-foreground">{i.title}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{FORMAT_LABELS[i.format]}</td>
-                  <td className="px-3 py-2">{i.responsible_person || '—'}</td>
+                  <td className="px-3 py-2">{i.responsible_person || '-'}</td>
                   <td className="px-3 py-2">{ED_STATUS_LABELS[i.status]}</td>
-                  <td className="px-3 py-2 text-center">{i.paid ? '€' : '—'}</td>
+                  <td className="px-3 py-2 text-center">{i.paid ? '€' : '-'}</td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="icon" onClick={() => openEdit(i)}><Edit className="h-4 w-4" /></Button>

@@ -83,7 +83,7 @@ export default function EventAttendance() {
           <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Event</label>
           <Select value={eventId} onValueChange={setEventId}>
             <SelectTrigger className="font-body"><SelectValue placeholder="Select an event…" /></SelectTrigger>
-            <SelectContent>{events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} — {new Date(e.start_at || e.date).toLocaleDateString()}</SelectItem>)}</SelectContent>
+            <SelectContent>{events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {new Date(e.start_at || e.date).toLocaleDateString()}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <Button variant="outline" className="font-body" disabled={regs.length === 0} onClick={exportCsv}><Download className="h-4 w-4 mr-2" />CSV</Button>
@@ -117,7 +117,7 @@ export default function EventAttendance() {
                 <tr key={r.id} className="border-t border-separator">
                   <td className="px-3 py-2 text-center"><Checkbox checked={r.attended} onCheckedChange={() => toggle(r)} /></td>
                   <td className="px-3 py-2 text-foreground">{r.name}</td>
-                  <td className="px-3 py-2">{r.email || '—'}</td>
+                  <td className="px-3 py-2">{r.email || '-'}</td>
                   <td className="px-3 py-2">{r.is_member ? 'Member' : 'External'}</td>
                   <td className="px-3 py-2 text-right"><Button variant="destructive" size="icon" onClick={() => remove(r.id)}><Trash2 className="h-4 w-4" /></Button></td>
                 </tr>

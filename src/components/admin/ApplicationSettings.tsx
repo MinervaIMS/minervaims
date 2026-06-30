@@ -18,14 +18,14 @@ const toLocal = (iso: string | null | undefined) => {
 const toIso = (local: string) => (local ? new Date(local).toISOString() : null);
 
 function windowState(startLocal: string, endLocal: string): { label: string; tone: string } {
-  if (!startLocal || !endLocal) return { label: 'Schedule incomplete — applications stay closed until both dates are set.', tone: 'text-amber-700' };
+  if (!startLocal || !endLocal) return { label: 'Schedule incomplete - applications stay closed until both dates are set.', tone: 'text-amber-700' };
   const now = Date.now();
   const s = new Date(startLocal).getTime();
   const e = new Date(endLocal).getTime();
   if (e <= s) return { label: 'The closing time must be after the opening time.', tone: 'text-destructive' };
-  if (now < s) return { label: 'Scheduled — applications will open automatically at the start time.', tone: 'text-muted-foreground' };
-  if (now > e) return { label: 'Closed — the scheduled window has ended.', tone: 'text-muted-foreground' };
-  return { label: 'Open now — applications are accepting submissions.', tone: 'text-green-700' };
+  if (now < s) return { label: 'Scheduled - applications will open automatically at the start time.', tone: 'text-muted-foreground' };
+  if (now > e) return { label: 'Closed - the scheduled window has ended.', tone: 'text-muted-foreground' };
+  return { label: 'Open now - applications are accepting submissions.', tone: 'text-green-700' };
 }
 
 const ApplicationSettings = () => {

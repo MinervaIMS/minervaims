@@ -664,3 +664,30 @@ body[data-scroll-locked] {
   .jdot,
   .jline .fill { transition: none; }
 }
+
+/* =====================================================================
+   Minerva Workspace overrides (only inside /admin, scoped by .ws-flat
+   on the shell and .ws-active on <html>).
+   ===================================================================== */
+
+/* The workspace fills the screen with the light background, so the dark
+   <html> backdrop (and its black ::after) must not show through when a
+   Radix popover momentarily locks body scroll. */
+html.ws-active { background-color: hsl(var(--background)); }
+html.ws-active body { background-color: hsl(var(--background)); }
+html.ws-active body::after { content: none !important; display: none !important; }
+
+/* Filters, search bars and other inputs in the workspace are flat
+   (radius 0) for a consistent look. */
+.ws-flat input:not([type='checkbox']):not([type='radio']),
+.ws-flat textarea,
+.ws-flat [role='combobox'] {
+  border-radius: 0 !important;
+}
+
+/* No card/hover shadows inside the workspace (kept on the public site).
+   Targets Tailwind shadow utilities only, so focus rings are preserved. */
+.ws-flat [class*='shadow'] { box-shadow: none !important; }
+
+/* No shadows in the left navigation rail. */
+.minerva-nav, .minerva-nav * { box-shadow: none !important; }

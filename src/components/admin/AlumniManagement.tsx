@@ -490,17 +490,17 @@ export default function AlumniManagement() {
                               <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
                             </a>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </span>
                         <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
-                          {record.job_area || '—'}
+                          {record.job_area || '-'}
                         </span>
                         <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
                           {record.company}
                         </span>
                         <span className="font-body text-body text-muted-foreground w-[20%] truncate text-left">
-                          {record.city || '—'}
+                          {record.city || '-'}
                         </span>
                       </div>
                       {/* Mobile layout */}

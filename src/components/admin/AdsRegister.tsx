@@ -60,7 +60,7 @@ export default function AdsRegister() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Ads & spending register" description="Track paid advertising — content, platform, date, amount, campaign purpose, and notes on whether it worked — so future media teams know what was effective."
+      <WorkspacePageHeader title="Ads & spending register" description="Track paid advertising - content, platform, date, amount, campaign purpose, and notes on whether it worked - so future media teams know what was effective."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add entry</Button>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
@@ -87,12 +87,12 @@ export default function AdsRegister() {
             <tbody>
               {ads.map((a) => (
                 <tr key={a.id} className="border-t border-separator">
-                  <td className="px-3 py-2 whitespace-nowrap">{a.ad_date ? new Date(a.ad_date).toLocaleDateString() : '—'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{a.ad_date ? new Date(a.ad_date).toLocaleDateString() : '-'}</td>
                   <td className="px-3 py-2 text-foreground">{a.content}</td>
-                  <td className="px-3 py-2">{a.platform || '—'}</td>
-                  <td className="px-3 py-2 text-right whitespace-nowrap">{a.amount != null ? eur(Number(a.amount)) : '—'}</td>
-                  <td className="px-3 py-2">{a.campaign_purpose || '—'}</td>
-                  <td className="px-3 py-2 max-w-xs truncate">{a.effectiveness_notes || '—'}</td>
+                  <td className="px-3 py-2">{a.platform || '-'}</td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">{a.amount != null ? eur(Number(a.amount)) : '-'}</td>
+                  <td className="px-3 py-2">{a.campaign_purpose || '-'}</td>
+                  <td className="px-3 py-2 max-w-xs truncate">{a.effectiveness_notes || '-'}</td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="icon" onClick={() => openEdit(a)}><Edit className="h-4 w-4" /></Button>
