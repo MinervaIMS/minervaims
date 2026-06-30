@@ -98,11 +98,25 @@ export default function Apply() {
     </Shell>;
   }
 
-  if (alreadyApplied) {
+  if (submitted || alreadyApplied) {
     return <Shell>
-      <h1 className="font-serif text-heading text-accent mb-3">Application received</h1>
-      <p className="font-body text-muted-foreground mb-6">You have already submitted an application for {settings.semesterLabel}. Applications cannot be edited after submission.</p>
-      <Button asChild className="font-body"><Link to="/admin">View status</Link></Button>
+      <div className="flex items-start gap-4 mb-6">
+        <CheckCircle2 className="h-10 w-10 text-accent shrink-0 mt-1" aria-hidden />
+        <div>
+          <h1 className="font-serif text-heading text-accent mb-2">Application submitted</h1>
+          <p className="font-body text-muted-foreground">
+            {submitted
+              ? `Thank you — your application for ${settings.semesterLabel} has been received. You will be contacted by email about the next steps.`
+              : `You have already submitted an application for ${settings.semesterLabel}. Applications cannot be edited after submission.`}
+          </p>
+        </div>
+      </div>
+      <div className="border border-separator p-6 bg-muted/30 font-body">
+        <p className="text-sm text-muted-foreground mb-3">
+          You can follow the status of your application — Received, Under review, Interview, Outcome — from your workspace.
+        </p>
+        <Button asChild className="font-body"><Link to="/admin">View application status</Link></Button>
+      </div>
     </Shell>;
   }
 
