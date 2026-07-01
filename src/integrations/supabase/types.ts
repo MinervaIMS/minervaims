@@ -1318,6 +1318,7 @@ export type Database = {
         Row: {
           author_id: string | null
           author_name: string | null
+          author_role: string | null
           body: string | null
           category: string
           created_at: string
@@ -1325,6 +1326,7 @@ export type Database = {
           division: Database["public"]["Enums"]["org_division"]
           file_url: string | null
           id: string
+          is_favourite: boolean
           is_primary: boolean
           link_url: string | null
           reason: string | null
@@ -1335,6 +1337,7 @@ export type Database = {
         Insert: {
           author_id?: string | null
           author_name?: string | null
+          author_role?: string | null
           body?: string | null
           category: string
           created_at?: string
@@ -1342,6 +1345,7 @@ export type Database = {
           division?: Database["public"]["Enums"]["org_division"]
           file_url?: string | null
           id?: string
+          is_favourite?: boolean
           is_primary?: boolean
           link_url?: string | null
           reason?: string | null
@@ -1352,6 +1356,7 @@ export type Database = {
         Update: {
           author_id?: string | null
           author_name?: string | null
+          author_role?: string | null
           body?: string | null
           category?: string
           created_at?: string
@@ -1359,6 +1364,7 @@ export type Database = {
           division?: Database["public"]["Enums"]["org_division"]
           file_url?: string | null
           id?: string
+          is_favourite?: boolean
           is_primary?: boolean
           link_url?: string | null
           reason?: string | null
