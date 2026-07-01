@@ -8,10 +8,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Download, Lock, Loader2 } from 'lucide-react';
+import { Download, Lock, Loader2, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { divisionLabels, roleLabel as composeRoleLabel } from '@/lib/roles';
+import { divisionLabels, roleLabel as composeRoleLabel, memberRank } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -29,8 +29,8 @@ export default function MembershipFee() {
   const [fees, setFees] = useState<MembershipFeeRow[]>([]);
   const [newLabel, setNewLabel] = useState('');
   const [newAmount, setNewAmount] = useState('10');
-  const [newFirstDeadline, setNewFirstDeadline] = useState('');
-  const [newSecondDeadline, setNewSecondDeadline] = useState('');
+  const [firstDeadline, setFirstDeadline] = useState('');
+  const [secondDeadline, setSecondDeadline] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -45,14 +45,44 @@ export default function MembershipFee() {
   const paidMap = useMemo(() => { const m: Record<string, boolean> = {}; for (const f of fees) m[f.member_id] = f.paid; return m; }, [fees]);
   const paidCount = useMemo(() => members.filter((m) => paidMap[m.id]).length, [members, paidMap]);
 
+  // Excel-style sorting by role seniority, division, name or phone.
+  type SortKey = 'name' | 'division' | 'role' | 'phone';
+  const [sortKey, setSortKey] = useState<SortKey>('role');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const toggleSort = (k: SortKey) => { if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc')); else { setSortKey(k); setSortDir('asc'); } };
+
+  const sortedMembers = useMemo(() => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const val = (m: FeeMember) =>
+      sortKey === 'role' ? memberRank(m.role)
+        : sortKey === 'division' ? (m.division !== 'none' ? divisionLabels[m.division] : '~')
+        : sortKey === 'phone' ? (m.phone || '~')
+        : `${m.surname} ${m.first_name}`;
+    return [...members].sort((a, b) => {
+      const va = val(a), vb = val(b);
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
+    });
+  }, [members, sortKey, sortDir]);
+
+  const SortHead = ({ label, k, className }: { label: string; k: SortKey; className?: string }) => (
+    <th className={`px-3 py-2 font-normal ${className ?? ''}`}>
+      <button type="button" className="inline-flex items-center gap-1 hover:text-accent" onClick={() => toggleSort(k)}>
+        {label}
+        {sortKey === k ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-50" />}
+      </button>
+    </th>
+  );
+
   const open = async () => {
     if (!newLabel.trim()) { toast({ title: 'Enter a semester label', variant: 'destructive' }); return; }
-    if (!newFirstDeadline) { toast({ title: 'A first deadline is required', variant: 'destructive' }); return; }
+    if (!firstDeadline) { toast({ title: 'Set a first deadline', variant: 'destructive' }); return; }
+    if (secondDeadline && secondDeadline <= firstDeadline) { toast({ title: 'The second deadline must be after the first', variant: 'destructive' }); return; }
     setBusy(true);
     try {
-      await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, newFirstDeadline, newSecondDeadline || null);
-      setNewLabel(''); setNewFirstDeadline(''); setNewSecondDeadline('');
-      await load(); toast({ title: 'Collection opened' });
+      await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null);
+      setNewLabel(''); setFirstDeadline(''); setSecondDeadline(''); await load(); toast({ title: 'Collection opened' });
     }
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
@@ -90,18 +120,14 @@ export default function MembershipFee() {
 
       {!period ? (
         <Card><CardContent className="py-8">
-          <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown to everyone on the calendar; the second stays hidden until the first passes and is then shown only to members who have not paid.</p>
-          <div className="flex flex-col gap-3 font-body max-w-2xl">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
-              <div className="space-y-1"><Label>Fee (€)</Label><Input className="w-24" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} /></div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 space-y-1"><Label>First deadline</Label><Input type="date" value={newFirstDeadline} onChange={(e) => setNewFirstDeadline(e.target.value)} /></div>
-              <div className="flex-1 space-y-1"><Label>Second deadline (optional)</Label><Input type="date" value={newSecondDeadline} onChange={(e) => setNewSecondDeadline(e.target.value)} /></div>
-            </div>
-            <Button className="self-start" onClick={open} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
+          <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown to everyone on the Calendar as an association deadline; the second deadline stays hidden until the first has passed and is then shown only to members who have not paid.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-body max-w-2xl">
+            <div className="space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
+            <div className="space-y-1"><Label>Fee (€)</Label><Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="e.g. 10" /></div>
+            <div className="space-y-1"><Label>First deadline</Label><Input type="date" value={firstDeadline} onChange={(e) => setFirstDeadline(e.target.value)} /></div>
+            <div className="space-y-1"><Label>Second deadline (optional, hidden until the first passes)</Label><Input type="date" value={secondDeadline} onChange={(e) => setSecondDeadline(e.target.value)} /></div>
           </div>
+          <Button className="mt-4" onClick={open} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
         </CardContent></Card>
       ) : (
         <>
@@ -109,6 +135,12 @@ export default function MembershipFee() {
             <div>
               <span className="font-serif text-xl text-accent">{period.semester_label}</span>
               <span className="ml-3 text-sm text-muted-foreground">€{period.fee_amount} · {paidCount}/{members.length} paid</span>
+              {period.first_deadline && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  First deadline {new Date(period.first_deadline).toLocaleDateString()}
+                  {period.second_deadline ? ` · second deadline ${new Date(period.second_deadline).toLocaleDateString()}` : ''}
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />CSV</Button>
@@ -135,14 +167,14 @@ export default function MembershipFee() {
               <thead className="bg-muted/40 text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-normal text-center">Paid</th>
-                  <th className="px-3 py-2 font-normal">Name</th>
-                  <th className="px-3 py-2 font-normal">Division</th>
-                  <th className="px-3 py-2 font-normal">Role</th>
-                  <th className="px-3 py-2 font-normal">Phone</th>
+                  <SortHead label="Name" k="name" />
+                  <SortHead label="Division" k="division" />
+                  <SortHead label="Role" k="role" />
+                  <SortHead label="Phone" k="phone" />
                 </tr>
               </thead>
               <tbody>
-                {members.map((m) => (
+                {sortedMembers.map((m) => (
                   <tr key={m.id} className="border-t border-separator">
                     <td className="px-3 py-2 text-center"><Checkbox checked={!!paidMap[m.id]} onCheckedChange={() => toggle(m.id)} /></td>
                     <td className="px-3 py-2 text-foreground whitespace-nowrap">{m.first_name} {m.surname}</td>
