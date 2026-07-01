@@ -149,9 +149,51 @@ export type Database = {
         }
         Relationships: []
       }
+      alumni_call_participants: {
+        Row: {
+          alumni_id: string | null
+          alumnus_name: string
+          call_id: string
+          created_at: string
+          former_role: string | null
+          id: string
+        }
+        Insert: {
+          alumni_id?: string | null
+          alumnus_name: string
+          call_id: string
+          created_at?: string
+          former_role?: string | null
+          id?: string
+        }
+        Update: {
+          alumni_id?: string | null
+          alumnus_name?: string
+          call_id?: string
+          created_at?: string
+          former_role?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alumni_call_participants_alumni_id_fkey"
+            columns: ["alumni_id"]
+            isOneToOne: false
+            referencedRelation: "alumni"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alumni_call_participants_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "alumni_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alumni_calls: {
         Row: {
-          alumnus_name: string
+          alumnus_name: string | null
           created_at: string
           created_by: string | null
           current_company: string | null
@@ -160,13 +202,14 @@ export type Database = {
           former_role: string | null
           id: string
           notes: string | null
+          organiser_name: string | null
           planned_date: string | null
           responsible_person: string | null
           status: string
           updated_at: string
         }
         Insert: {
-          alumnus_name: string
+          alumnus_name?: string | null
           created_at?: string
           created_by?: string | null
           current_company?: string | null
@@ -175,13 +218,14 @@ export type Database = {
           former_role?: string | null
           id?: string
           notes?: string | null
+          organiser_name?: string | null
           planned_date?: string | null
           responsible_person?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
-          alumnus_name?: string
+          alumnus_name?: string | null
           created_at?: string
           created_by?: string | null
           current_company?: string | null
@@ -190,6 +234,7 @@ export type Database = {
           former_role?: string | null
           id?: string
           notes?: string | null
+          organiser_name?: string | null
           planned_date?: string | null
           responsible_person?: string | null
           status?: string
