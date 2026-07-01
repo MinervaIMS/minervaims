@@ -128,7 +128,7 @@ export interface EventRegistrationPayload {
   affiliation?: string;
 }
 export async function registerForEvent(session: Session | null, payload: EventRegistrationPayload) {
-  return invoke('register-event', session, payload);
+  return invoke('register-event', session, { ...payload });
 }
 
 async function invoke(fn: string, session: Session | null, body: Record<string, unknown>) {
