@@ -153,3 +153,24 @@ export async function uploadMyPhoto(session: Session | null, file: File): Promis
   if (data?.error) throw new Error(data.error);
   return data.photo_url as string;
 }
+
+export interface ClaimableMember {
+  id: string;
+  first_name: string;
+  surname: string;
+  role: string;
+  division: string;
+}
+
+export async function redeemProfile(
+  session: Session | null,
+  choice: { memberId?: string; create?: boolean },
+): Promise<MemberRow> {
+  const { data, error } = await supabase.functions.invoke('member-profile', {
+    body: { action: 'redeem', ...choice },
+    headers: { Authorization: `Bearer ${session?.access_token}` },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data.member as MemberRow;
+}
