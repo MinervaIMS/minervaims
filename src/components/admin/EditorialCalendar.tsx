@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -19,6 +19,12 @@ import {
 } from '@/lib/smm-api';
 
 const EMPTY: EditorialInput = { title: '', platform: 'instagram', format: 'ig_post', scheduled_date: '', responsible_person: '', status: 'idea', paid: false, notes: '' };
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const monthKey = (y: number, m: number) => `ed-${y}-${m}`;
+
+const platformColor = (p: EditorialPlatform) =>
+  p === 'instagram' ? 'bg-pink-100 text-pink-800' : p === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-muted text-foreground';
 
 export default function EditorialCalendar() {
   const { session } = useAuth();
@@ -39,7 +45,35 @@ export default function EditorialCalendar() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditingId(null); setForm(EMPTY); setDialogOpen(true); };
+  const dated = useMemo(() => items.filter((i) => i.scheduled_date), [items]);
+  const undated = useMemo(() => items.filter((i) => !i.scheduled_date), [items]);
+
+  const itemsByDate = useMemo(() => {
+    const map: Record<string, EditorialItem[]> = {};
+    for (const i of dated) (map[i.scheduled_date!.slice(0, 10)] ??= []).push(i);
+    return map;
+  }, [dated]);
+
+  const months = useMemo(() => {
+    const now = new Date();
+    const ds = dated.map((i) => i.scheduled_date!.slice(0, 10)).sort();
+    const earliest = ds.length ? new Date(ds[0]) : now;
+    const latest = ds.length ? new Date(ds[ds.length - 1]) : now;
+    const start = new Date(Math.min(new Date(earliest.getFullYear(), earliest.getMonth() - 1, 1).getTime(), new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()));
+    const end = new Date(Math.max(latest.getTime(), new Date(now.getFullYear(), now.getMonth() + 3, 1).getTime()));
+    const list: { year: number; month: number }[] = [];
+    const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cur <= end) { list.push({ year: cur.getFullYear(), month: cur.getMonth() }); cur.setMonth(cur.getMonth() + 1); }
+    return list;
+  }, [dated]);
+
+  useEffect(() => {
+    if (loading) return;
+    const now = new Date();
+    document.getElementById(monthKey(now.getFullYear(), now.getMonth()))?.scrollIntoView({ block: 'start' });
+  }, [loading]);
+
+  const openCreate = (date?: string) => { setEditingId(null); setForm({ ...EMPTY, scheduled_date: date ?? '' }); setDialogOpen(true); };
   const openEdit = (i: EditorialItem) => {
     setEditingId(i.id);
     setForm({ id: i.id, title: i.title, platform: i.platform, format: i.format, scheduled_date: i.scheduled_date ?? '', responsible_person: i.responsible_person ?? '', status: i.status, paid: i.paid, notes: i.notes ?? '' });
@@ -55,51 +89,74 @@ export default function EditorialCalendar() {
   };
 
   const remove = async (i: EditorialItem) => {
-    if (!confirm(`Delete “${i.title}”?`)) return;
-    try { await deleteEditorial(session, i.id); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    if (!confirm(`Delete "${i.title}"?`)) return;
+    try { await deleteEditorial(session, i.id); setDialogOpen(false); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
+
+  const monthCells = (year: number, month: number): (string | null)[] => {
+    const first = new Date(year, month, 1);
+    const startDow = (first.getDay() + 6) % 7;
+    const days = new Date(year, month + 1, 0).getDate();
+    const cells: (string | null)[] = [];
+    for (let i = 0; i < startDow; i++) cells.push(null);
+    for (let d = 1; d <= days; d++) cells.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+    return cells;
+  };
+
+  const todayStr = ymd(new Date());
 
   return (
     <div>
-      <WorkspacePageHeader title="Editorial calendar" description="Plan what needs promoting and when: platform, format, the responsible person, status, and whether paid advertising is used."
-        actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add item</Button>} />
+      <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
+        actions={<Button className="font-body" onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" />Add item</Button>} />
 
-      {loading ? <WorkspaceLoader /> : items.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">Nothing planned yet.</p></CardContent></Card>
-      ) : (
-        <div className="border border-separator overflow-x-auto">
-          <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 font-normal">Date</th>
-                <th className="px-3 py-2 font-normal">Content</th>
-                <th className="px-3 py-2 font-normal">Format</th>
-                <th className="px-3 py-2 font-normal">Responsible</th>
-                <th className="px-3 py-2 font-normal">Status</th>
-                <th className="px-3 py-2 font-normal text-center">Paid</th>
-                <th className="px-3 py-2 font-normal text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((i) => (
-                <tr key={i.id} className="border-t border-separator">
-                  <td className="px-3 py-2 whitespace-nowrap">{i.scheduled_date ? new Date(i.scheduled_date).toLocaleDateString() : '-'}</td>
-                  <td className="px-3 py-2 text-foreground">{i.title}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{FORMAT_LABELS[i.format]}</td>
-                  <td className="px-3 py-2">{i.responsible_person || '-'}</td>
-                  <td className="px-3 py-2">{ED_STATUS_LABELS[i.status]}</td>
-                  <td className="px-3 py-2 text-center">{i.paid ? '€' : '-'}</td>
-                  <td className="px-3 py-2 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="icon" onClick={() => openEdit(i)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="destructive" size="icon" onClick={() => remove(i)}><Trash2 className="h-4 w-4" /></Button>
+      {loading ? <WorkspaceLoader /> : (
+        <>
+          <div className="flex flex-wrap gap-4 mb-3 text-xs text-muted-foreground font-body">
+            <span><span className="inline-block w-3 h-3 rounded-sm bg-pink-200 mr-1 align-middle" />Instagram</span>
+            <span><span className="inline-block w-3 h-3 rounded-sm bg-blue-200 mr-1 align-middle" />LinkedIn</span>
+            <span><span className="inline-block w-3 h-3 rounded-sm bg-muted mr-1 align-middle" />Other</span>
+          </div>
+
+          <div className="max-h-[68vh] overflow-y-auto border border-separator">
+            {months.map(({ year, month }) => (
+              <section key={monthKey(year, month)} id={monthKey(year, month)} className="border-b border-separator last:border-b-0">
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur px-3 py-2 border-b border-separator">
+                  <h2 className="font-serif text-2xl text-accent">{new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h2>
+                </div>
+                <div className="grid grid-cols-7 gap-px bg-separator font-body">
+                  {WEEKDAYS.map((d) => <div key={d} className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider px-2 py-1 text-center">{d}</div>)}
+                  {monthCells(year, month).map((date, i) => (
+                    <div key={i} className={`bg-background min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}>
+                      {date && <>
+                        <button className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'} hover:text-accent`} onClick={() => openCreate(date)} title="Add on this day">{parseInt(date.slice(-2), 10)}</button>
+                        <div className="space-y-1">
+                          {(itemsByDate[date] || []).map((it) => (
+                            <button key={it.id} onClick={() => openEdit(it)} title={`${FORMAT_LABELS[it.format]} · ${ED_STATUS_LABELS[it.status]}`}
+                              className={`block w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${platformColor(it.platform)}`}>
+                              {it.paid ? '€ ' : ''}{it.title}
+                            </button>
+                          ))}
+                        </div>
+                      </>}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          {undated.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-serif text-lg text-accent mb-2">Unscheduled ideas</h3>
+              <div className="flex flex-wrap gap-2">
+                {undated.map((it) => (
+                  <button key={it.id} onClick={() => openEdit(it)} className={`text-sm px-2 py-1 rounded ${platformColor(it.platform)}`}>{it.title}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -123,7 +180,7 @@ export default function EditorialCalendar() {
                 </Select>
               </div>
               <div className="space-y-1"><Label>Scheduled date</Label><Input type="date" value={form.scheduled_date ?? ''} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Responsible</Label><Input value={form.responsible_person ?? ''} onChange={(e) => setForm({ ...form, responsible_person: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Responsible</Label><Input value={form.responsible_person ?? ''} onChange={(e) => setForm({ ...form, responsible_person: e.target.value })} placeholder="e.g. Jane Smith" /></div>
               <div className="space-y-1">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as EditorialStatus })}>
@@ -133,9 +190,10 @@ export default function EditorialCalendar() {
               </div>
               <div className="flex items-center justify-between pt-6"><Label htmlFor="paid">Paid advertising</Label><Switch id="paid" checked={!!form.paid} onCheckedChange={(v) => setForm({ ...form, paid: v })} /></div>
             </div>
-            <div className="space-y-1"><Label>Notes</Label><Textarea rows={2} value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+            <div className="space-y-1"><Label>Notes</Label><Textarea rows={2} value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Anything the team should know" /></div>
             <div className="flex gap-3 pt-1">
               <Button className="flex-1" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
+              {editingId && <Button variant="destructive" size="icon" onClick={() => { const it = items.find((x) => x.id === editingId); if (it) remove(it); }}><Trash2 className="h-4 w-4" /></Button>}
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             </div>
           </div>
