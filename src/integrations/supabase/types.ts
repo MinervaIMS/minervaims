@@ -85,6 +85,7 @@ export type Database = {
           effectiveness_notes: string | null
           id: string
           platform: string | null
+          treasury_entry_id: string | null
         }
         Insert: {
           ad_date?: string | null
@@ -96,6 +97,7 @@ export type Database = {
           effectiveness_notes?: string | null
           id?: string
           platform?: string | null
+          treasury_entry_id?: string | null
         }
         Update: {
           ad_date?: string | null
@@ -107,8 +109,17 @@ export type Database = {
           effectiveness_notes?: string | null
           id?: string
           platform?: string | null
+          treasury_entry_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ads_spending_treasury_entry_id_fkey"
+            columns: ["treasury_entry_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alumni: {
         Row: {
