@@ -2,73 +2,85 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Trash2, Edit } from 'lucide-react';
+import { Plus, Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
-  listPerformances, upsertPerformance, deletePerformance,
-  ACTIVE_FUND_LABELS, type ActiveFund, type FundPerformance,
+  listFundYears, upsertFundYear, deleteFundYear,
+  ACTIVE_FUND_LABELS, MONTH_LABELS, type ActiveFund, type FundYear,
 } from '@/lib/funds-api';
 
 const FUNDS: ActiveFund[] = ['long-short', 'multi-asset'];
+const emptyMonths = () => Array.from({ length: 12 }, () => '');
 
-const fmt = (n: number | null) => (n === null || n === undefined ? '-' : n.toString());
-const pct = (n: number | null) => (n === null || n === undefined ? '-' : `${n}%`);
-const monthLabel = (d: string) => new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+interface EditState {
+  fund: ActiveFund;
+  id: string | null;
+  year: string;
+  itd: string;
+  months: string[];
+  ytd: string;
+  vol: string;
+  sharpe: string;
+}
 
 export default function FundsPerformances() {
   const { session } = useAuth();
   const { toast } = useToast();
-  const [rows, setRows] = useState<FundPerformance[]>([]);
+  const [rows, setRows] = useState<FundYear[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fund, setFund] = useState<ActiveFund>('long-short');
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [edit, setEdit] = useState<EditState | null>(null);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ period: new Date().toISOString().slice(0, 7), nav: '', monthly_return: '', ytd_return: '', notes: '' });
 
   const load = async () => {
     setLoading(true);
-    try { setRows(await listPerformances()); }
+    try { setRows(await listFundYears()); }
     catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
-  const fundRows = useMemo(() => rows.filter((r) => r.fund === fund), [rows, fund]);
+  const byFund = useMemo(() => {
+    const m: Record<ActiveFund, FundYear[]> = { 'long-short': [], 'multi-asset': [] };
+    for (const r of rows) m[r.fund]?.push(r);
+    for (const f of FUNDS) m[f].sort((a, b) => a.year - b.year);
+    return m;
+  }, [rows]);
 
-  const openAdd = () => { setForm({ period: new Date().toISOString().slice(0, 7), nav: '', monthly_return: '', ytd_return: '', notes: '' }); setDialogOpen(true); };
-  const openEdit = (r: FundPerformance) => {
-    setForm({ period: r.period_month.slice(0, 7), nav: r.nav?.toString() ?? '', monthly_return: r.monthly_return?.toString() ?? '', ytd_return: r.ytd_return?.toString() ?? '', notes: r.notes ?? '' });
-    setDialogOpen(true);
+  const openAdd = (fund: ActiveFund) => {
+    const existing = byFund[fund].map((r) => r.year);
+    const nextYear = existing.length ? Math.max(...existing) + 1 : new Date().getFullYear();
+    setEdit({ fund, id: null, year: String(nextYear), itd: '', months: emptyMonths(), ytd: '', vol: '', sharpe: '' });
+  };
+  const openEdit = (r: FundYear) => {
+    setEdit({ fund: r.fund, id: r.id, year: String(r.year), itd: r.itd, months: [...r.months], ytd: r.ytd, vol: r.vol, sharpe: r.sharpe });
   };
 
-  const num = (s: string) => (s.trim() === '' ? null : Number(s));
-
   const save = async () => {
-    if (!form.period) { toast({ title: 'Month is required', variant: 'destructive' }); return; }
+    if (!edit) return;
+    const year = parseInt(edit.year, 10);
+    if (!year || year < 2000 || year > 2100) { toast({ title: 'Enter a valid year', variant: 'destructive' }); return; }
     setBusy(true);
     try {
-      await upsertPerformance(session, {
-        fund, period_month: `${form.period}-01`,
-        nav: num(form.nav), monthly_return: num(form.monthly_return), ytd_return: num(form.ytd_return), notes: form.notes || null,
+      await upsertFundYear(session, {
+        fund: edit.fund, year, itd: edit.itd.trim(), months: edit.months.map((m) => m.trim()),
+        ytd: edit.ytd.trim(), vol: edit.vol.trim(), sharpe: edit.sharpe.trim(),
       });
-      toast({ title: 'Performance saved', description: 'It will appear on the public fund table.' });
-      setDialogOpen(false);
+      toast({ title: 'Saved', description: 'The public fund table now shows this data.' });
+      setEdit(null);
       await load();
     } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
 
-  const remove = async (r: FundPerformance) => {
-    if (!confirm(`Delete ${monthLabel(r.period_month)} for ${ACTIVE_FUND_LABELS[r.fund]}?`)) return;
-    try { await deletePerformance(session, r.id); await load(); toast({ title: 'Deleted' }); }
+  const remove = async (r: FundYear) => {
+    if (!confirm(`Delete ${r.year} for ${ACTIVE_FUND_LABELS[r.fund]}? This also removes it from the public fund table.`)) return;
+    try { await deleteFundYear(session, r.id); await load(); toast({ title: 'Deleted' }); }
     catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -76,73 +88,93 @@ export default function FundsPerformances() {
     <div>
       <WorkspacePageHeader
         title="Funds' performances"
-        description="Upload monthly performance data for the active simulated funds. This feeds the public fund performance tables."
-        actions={<Button className="font-body" onClick={openAdd}><Plus className="h-4 w-4 mr-2" />Add month</Button>}
+        description="Update the monthly performance of the active simulated funds. Both fund tables are shown together and mirror the tables on the public fund pages: any change here appears there immediately. Enter each value exactly as it should read on the site (for example +1.2% or -0.4%)."
       />
 
-      <div className="mb-6">
-        <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Fund</label>
-        <Select value={fund} onValueChange={(v) => setFund(v as ActiveFund)}>
-          <SelectTrigger className="min-w-[280px] font-body"><SelectValue /></SelectTrigger>
-          <SelectContent>{FUNDS.map((f) => <SelectItem key={f} value={f}>{ACTIVE_FUND_LABELS[f]}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
-
-      {loading ? <WorkspaceLoader /> : fundRows.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No performance data yet for {ACTIVE_FUND_LABELS[fund]}.</p></CardContent></Card>
-      ) : (
-        <div className="border border-separator overflow-x-auto">
-          <table className="w-full text-left font-body text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 font-normal">Month</th>
-                <th className="px-3 py-2 font-normal">NAV</th>
-                <th className="px-3 py-2 font-normal">Monthly return</th>
-                <th className="px-3 py-2 font-normal">YTD return</th>
-                <th className="px-3 py-2 font-normal">Notes</th>
-                <th className="px-3 py-2 font-normal text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fundRows.map((r) => (
-                <tr key={r.id} className="border-t border-separator">
-                  <td className="px-3 py-2 whitespace-nowrap text-foreground">{monthLabel(r.period_month)}</td>
-                  <td className="px-3 py-2">{fmt(r.nav)}</td>
-                  <td className="px-3 py-2">{pct(r.monthly_return)}</td>
-                  <td className="px-3 py-2">{pct(r.ytd_return)}</td>
-                  <td className="px-3 py-2 max-w-xs truncate">{r.notes || '-'}</td>
-                  <td className="px-3 py-2 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="destructive" size="icon" onClick={() => remove(r)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading ? <WorkspaceLoader /> : (
+        <div className="space-y-10">
+          {FUNDS.map((fund) => (
+            <section key={fund}>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-serif text-xl text-accent">{ACTIVE_FUND_LABELS[fund]}</h2>
+                <Button variant="outline" size="sm" onClick={() => openAdd(fund)}><Plus className="h-4 w-4 mr-2" />Add year</Button>
+              </div>
+              {byFund[fund].length === 0 ? (
+                <Card><CardContent className="py-10 text-center"><p className="font-body text-muted-foreground">No performance data yet.</p></CardContent></Card>
+              ) : (
+                <div className="border border-separator overflow-x-auto">
+                  <table className="w-full text-left font-body text-sm min-w-[960px]">
+                    <thead className="bg-muted/40 text-muted-foreground">
+                      <tr>
+                        <th className="px-2 py-2 font-normal text-center">Year</th>
+                        <th className="px-2 py-2 font-normal text-center">ITD</th>
+                        {MONTH_LABELS.map((m) => <th key={m} className="px-2 py-2 font-normal text-center">{m}</th>)}
+                        <th className="px-2 py-2 font-normal text-center">YTD</th>
+                        <th className="px-2 py-2 font-normal text-center">Vol</th>
+                        <th className="px-2 py-2 font-normal text-center">Sharpe</th>
+                        <th className="px-2 py-2 font-normal text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {byFund[fund].map((r) => (
+                        <tr key={r.id} className="border-t border-separator">
+                          <td className="px-2 py-2 text-center text-accent">{r.year}</td>
+                          <td className="px-2 py-2 text-center">{r.itd || '-'}</td>
+                          {r.months.map((v, i) => <td key={i} className="px-2 py-2 text-center whitespace-nowrap">{v || ''}</td>)}
+                          <td className="px-2 py-2 text-center">{r.ytd || '-'}</td>
+                          <td className="px-2 py-2 text-center">{r.vol || '-'}</td>
+                          <td className="px-2 py-2 text-center">{r.sharpe || '-'}</td>
+                          <td className="px-2 py-2 text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
+                              <Button variant="destructive" size="icon" onClick={() => remove(r)}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          ))}
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-serif">{ACTIVE_FUND_LABELS[fund]}</DialogTitle>
-            <DialogDescription className="font-body">Adding a month that already exists updates it.</DialogDescription>
+            <DialogTitle className="font-serif">{edit && ACTIVE_FUND_LABELS[edit.fund]}</DialogTitle>
+            <DialogDescription className="font-body">
+              {edit?.id ? 'Update this year. Add the latest month to publish it on the public fund table.' : 'Add a new year. Fill in the months as they are reported.'}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 font-body">
-            <div className="space-y-1"><Label>Month *</Label><Input type="month" value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value })} /></div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1"><Label>NAV</Label><Input value={form.nav} onChange={(e) => setForm({ ...form, nav: e.target.value })} placeholder="100.0" /></div>
-              <div className="space-y-1"><Label>Monthly %</Label><Input value={form.monthly_return} onChange={(e) => setForm({ ...form, monthly_return: e.target.value })} placeholder="1.2" /></div>
-              <div className="space-y-1"><Label>YTD %</Label><Input value={form.ytd_return} onChange={(e) => setForm({ ...form, ytd_return: e.target.value })} placeholder="4.5" /></div>
+          {edit && (
+            <div className="space-y-4 font-body">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="space-y-1"><Label>Year</Label><Input value={edit.year} onChange={(e) => setEdit({ ...edit, year: e.target.value })} placeholder="e.g. 2026" disabled={!!edit.id} /></div>
+                <div className="space-y-1"><Label>ITD</Label><Input value={edit.itd} onChange={(e) => setEdit({ ...edit, itd: e.target.value })} placeholder="e.g. 52.8%" /></div>
+                <div className="space-y-1"><Label>YTD</Label><Input value={edit.ytd} onChange={(e) => setEdit({ ...edit, ytd: e.target.value })} placeholder="e.g. +8.0%" /></div>
+                <div className="space-y-1"><Label>Vol</Label><Input value={edit.vol} onChange={(e) => setEdit({ ...edit, vol: e.target.value })} placeholder="e.g. 5.5%" /></div>
+              </div>
+              <div className="space-y-1 max-w-[8rem]"><Label>Sharpe</Label><Input value={edit.sharpe} onChange={(e) => setEdit({ ...edit, sharpe: e.target.value })} placeholder="e.g. 1.20" /></div>
+              <div>
+                <Label className="mb-2 block">Monthly returns</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {MONTH_LABELS.map((m, i) => (
+                    <div key={m} className="space-y-1">
+                      <span className="text-xs text-muted-foreground">{m}</span>
+                      <Input value={edit.months[i]} onChange={(e) => { const months = [...edit.months]; months[i] = e.target.value; setEdit({ ...edit, months }); }} placeholder="+0.0%" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <Button className="flex-1" onClick={save} disabled={busy}>{busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
+                <Button variant="outline" onClick={() => setEdit(null)}>Cancel</Button>
+              </div>
             </div>
-            <div className="space-y-1"><Label>Notes</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-            <div className="flex gap-3 pt-1">
-              <Button className="flex-1" onClick={save} disabled={busy}>{busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

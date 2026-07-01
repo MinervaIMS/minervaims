@@ -16,6 +16,14 @@ import dpsBgAsset from '@/assets/MIMS_Diversified_Passive_Fund.webp.asset.json';
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
 }
+interface FundYearRow {
+  year: number;
+  itd: string;
+  months: string[];
+  ytd: string;
+  vol: string;
+  sharpe: string;
+}
 interface FundContent {
   title: string;
   subtitle: string;
@@ -61,6 +69,7 @@ const fundBackgrounds: Record<Fund, string> = {
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
+  const [perfRows, setPerfRows] = useState<FundYearRow[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Get the background image for the current fund
@@ -81,15 +90,38 @@ const FundDetail = () => {
   const fetchFiles = async () => {
     setIsDataLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('archive_files')
-        .select('id, title, description, file_url, date, division, fund')
-        .eq('fund', fund)
-        .order('date', { ascending: false })
-        .limit(9);
+      const [filesRes, perfRes] = await Promise.all([
+        supabase
+          .from('archive_files')
+          .select('id, title, description, file_url, date, division, fund')
+          .eq('fund', fund)
+          .order('date', { ascending: false })
+          .limit(9),
+        // Performance matrix is only shown for the two active funds.
+        (fund === 'long-short' || fund === 'multi-asset')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ? (supabase as any)
+              .from('fund_performance_years')
+              .select('year, itd, months, ytd, vol, sharpe')
+              .eq('fund', fund)
+              .order('year', { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-      if (error) throw error;
-      setFiles(data || []);
+      if (filesRes.error) throw filesRes.error;
+      setFiles(filesRes.data || []);
+
+      if (!perfRes.error && Array.isArray(perfRes.data)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setPerfRows((perfRes.data as any[]).map((r) => ({
+          year: r.year,
+          itd: r.itd ?? '',
+          months: Array.from({ length: 12 }, (_, i) => (Array.isArray(r.months) ? (r.months[i] ?? '') : '')),
+          ytd: r.ytd ?? '',
+          vol: r.vol ?? '',
+          sharpe: r.sharpe ?? '',
+        })));
+      }
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
@@ -167,16 +199,9 @@ const FundDetail = () => {
                   </tr>
                 </thead>
                 <tbody className="text-foreground">
-                  {[
-                    { y: '2021', itd: '7.9%', months: ['','','','','','','','','','','+0.9%','+6.9%'], ytd: '+7.9%', vol: '4.6%', sharpe: '1.68' },
-                    { y: '2022', itd: '29.1%', months: ['+9.3%','+0.1%','+0.7%','+4.9%','+2.2%','+0.6%','-3.7%','+2.2%','+0.9%','+1.0%','-1.0%','+1.5%'], ytd: '+19.6%', vol: '10.1%', sharpe: '1.61' },
-                    { y: '2023', itd: '29.8%', months: ['-2.2%','+0.3%','+2.5%','+1.6%','-0.4%','+0.1%','-3.8%','+5.2%','+1.6%','+1.7%','-4.0%','-1.8%'], ytd: '+0.5%', vol: '7.0%', sharpe: '-0.64' },
-                    { y: '2024', itd: '46.5%', months: ['+6.6%','+0.9%','-0.3%','+1.2%','+0.9%','-1.7%','+0.5%','+0.7%','-2.4%','+3.1%','+1.6%','+1.4%'], ytd: '+12.9%', vol: '6.0%', sharpe: '1.20' },
-                    { y: '2025', itd: '58.3%', months: ['-1.1%','+0.3%','+1.0%','-1.6%','+2.1%','+2.4%','+2.2%','+0.5%','+1.6%','+0.3%','-0.9%','+0.9%'], ytd: '+8.0%', vol: '5.5%', sharpe: '0.73' },
-                    { y: '2026', itd: '52.8%', months: ['-1.4%','-1.0%','-1.1%','','','','','','','','',''], ytd: '-2.2%', vol: '3.1%', sharpe: '-1.06' },
-                  ].map(row => (
-                    <tr key={row.y} className="border-b border-separator/60">
-                      <td className="py-3 pr-4 font-body text-accent text-center">{row.y}</td>
+                  {perfRows.map(row => (
+                    <tr key={row.year} className="border-b border-separator/60">
+                      <td className="py-3 pr-4 font-body text-accent text-center">{row.year}</td>
                       <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
                       {row.months.map((v, i) => (
                         <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
@@ -221,17 +246,9 @@ const FundDetail = () => {
                   </tr>
                 </thead>
                 <tbody className="text-foreground">
-                  {[
-                    { y: '2020', itd: '15.1%', months: ['+0.1%','-0.3%','+0.1%','+1.4%','+3.4%','+1.9%','-1.8%','+1.2%','-1.4%','+2.2%','+5.0%','+2.6%'], ytd: '+15.1%', vol: '6.9%', sharpe: '2.18' },
-                    { y: '2021', itd: '45.2%', months: ['+3.0%','+2.3%','+1.5%','+0.7%','+0.5%','+2.4%','+2.0%','+1.5%','-2.3%','+4.7%','+2.4%','+4.9%'], ytd: '+26.1%', vol: '6.6%', sharpe: '3.94' },
-                    { y: '2022', itd: '35.7%', months: ['-2.0%','+0.4%','+2.1%','-2.8%','-0.2%','-7.8%','+6.5%','+5.1%','-9.2%','+3.7%','+2.9%','-4.1%'], ytd: '-6.6%', vol: '17.1%', sharpe: '-0.53' },
-                    { y: '2023', itd: '36.6%', months: ['+0.2%','-2.1%','-0.3%','-0.3%','-1.0%','+1.3%','-1.5%','+0.1%','-3.7%','-0.7%','+7.3%','+1.8%'], ytd: '+0.7%', vol: '9.4%', sharpe: '-0.49' },
-                    { y: '2024', itd: '38.4%', months: ['+0.5%','+0.2%','+1.6%','-0.4%','+0.4%','-0.1%','+0.7%','0.0%','-0.4%','-0.2%','+0.9%','-1.9%'], ytd: '+1.3%', vol: '3.0%', sharpe: '-1.24' },
-                    { y: '2025', itd: '58.8%', months: ['+0.6%','+4.5%','-3.3%','+1.6%','+1.7%','-0.2%','+0.2%','+2.7%','+2.1%','+3.7%','0.0%','+0.4%'], ytd: '+14.8%', vol: '7.1%', sharpe: '1.51' },
-                    { y: '2026', itd: '69.9%', months: ['+5.8%','+1.1%','-2.0%','+4.1%','','','','','','','',''], ytd: '+9.1%', vol: '11.8%', sharpe: '0.67' },
-                  ].map(row => (
-                    <tr key={row.y} className="border-b border-separator/60">
-                      <td className="py-3 pr-4 font-body text-accent text-center">{row.y}</td>
+                  {perfRows.map(row => (
+                    <tr key={row.year} className="border-b border-separator/60">
+                      <td className="py-3 pr-4 font-body text-accent text-center">{row.year}</td>
                       <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
                       {row.months.map((v, i) => (
                         <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
