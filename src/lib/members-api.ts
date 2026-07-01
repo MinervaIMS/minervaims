@@ -158,8 +158,9 @@ export interface ClaimableMember {
   id: string;
   first_name: string;
   surname: string;
-  role: string;
-  division: string;
+  role: import('@/lib/roles').AppRole;
+  division: import('@/lib/roles').OrgDivision;
+  photo_url?: string | null;
 }
 
 export async function redeemProfile(
