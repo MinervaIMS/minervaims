@@ -197,6 +197,38 @@ export type Database = {
         }
         Relationships: []
       }
+      alumni_contacts: {
+        Row: {
+          alumni_id: string
+          created_at: string
+          email: string | null
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          alumni_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+        }
+        Update: {
+          alumni_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alumni_contacts_alumni_id_fkey"
+            columns: ["alumni_id"]
+            isOneToOne: true
+            referencedRelation: "alumni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aod_days: {
         Row: {
           created_at: string
