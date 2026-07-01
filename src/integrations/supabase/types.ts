@@ -559,7 +559,9 @@ export type Database = {
       auto_email_templates: {
         Row: {
           body: string
+          connected: boolean
           description: string | null
+          file_url: string | null
           id: string
           key: string
           name: string
@@ -569,7 +571,9 @@ export type Database = {
         }
         Insert: {
           body?: string
+          connected?: boolean
           description?: string | null
+          file_url?: string | null
           id?: string
           key: string
           name: string
@@ -579,7 +583,9 @@ export type Database = {
         }
         Update: {
           body?: string
+          connected?: boolean
           description?: string | null
+          file_url?: string | null
           id?: string
           key?: string
           name?: string

@@ -29,6 +29,22 @@ Deno.serve(async (req) => {
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
     if (!canManage) return json({ error: 'Access denied' }, 403);
 
+    // File upload (multipart) for the email layout — reuses the public bucket.
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      const form = await req.formData();
+      const file = form.get('file') as File | null;
+      if (!file) return json({ error: 'No file provided' }, 400);
+      if (file.size > 25 * 1024 * 1024) return json({ error: 'File must be under 25 MB.' }, 400);
+      const safe = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const path = `auto-emails/${Date.now()}-${safe}`;
+      const { data: up, error: upErr } = await supabase.storage.from('workspace-resources')
+        .upload(path, await file.arrayBuffer(), { contentType: file.type || 'application/octet-stream', upsert: false });
+      if (upErr) return json({ error: 'Upload failed' }, 500);
+      const { data: pub } = supabase.storage.from('workspace-resources').getPublicUrl(up.path);
+      return json({ success: true, file_url: pub.publicUrl });
+    }
+
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
 
@@ -46,11 +62,27 @@ Deno.serve(async (req) => {
     if (action === 'save-template') {
       const t = body.template || {};
       if (!t.id) return json({ error: 'Missing template id' }, 400);
-      const { error } = await supabase.from('auto_email_templates')
-        .update({ subject: t.subject ?? '', body: t.body ?? '', description: t.description ?? null, updated_by: user.id })
-        .eq('id', t.id);
+      const patch: Record<string, unknown> = { subject: t.subject ?? '', body: t.body ?? '', description: t.description ?? null, updated_by: user.id };
+      if ('file_url' in t) patch.file_url = t.file_url ?? null;
+      if ('name' in t && t.name) patch.name = t.name;
+      const { error } = await supabase.from('auto_email_templates').update(patch).eq('id', t.id);
       if (error) throw error;
       return json({ success: true });
+    }
+
+    // Add a new custom template. It starts as "not connected" (red) until it
+    // is wired into an automated flow.
+    if (action === 'create-template') {
+      const t = body.template || {};
+      const name = (t.name as string || '').trim();
+      if (!name) return json({ error: 'A title is required' }, 400);
+      const key = `custom_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40)}_${Math.random().toString(36).slice(2, 6)}`;
+      const { data, error } = await supabase.from('auto_email_templates').insert({
+        key, name, description: t.description ?? null, file_url: t.file_url ?? null,
+        subject: t.subject ?? '', body: t.body ?? '', connected: false, updated_by: user.id,
+      }).select().single();
+      if (error) throw error;
+      return json({ success: true, template: data });
     }
 
     return json({ error: 'Invalid action' }, 400);
