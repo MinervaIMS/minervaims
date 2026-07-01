@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
         .eq('membership_status', 'active')
-        .not('role', 'in', '(candidate,pending,admin,alumni,silent_advisor)')).data || [];
+        .not('role', 'in', '(candidate,pending,admin,alumni,silent_advisor)')
+        .neq('email', 'as.minerva@unibocconi.it')).data || [];
 
     if (action === 'current') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
