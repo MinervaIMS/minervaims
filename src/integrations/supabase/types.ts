@@ -761,7 +761,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           fee_amount: number
+          first_deadline: string | null
           id: string
+          second_deadline: string | null
           semester_label: string
           treasury_entry_id: string | null
         }
@@ -771,7 +773,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           fee_amount?: number
+          first_deadline?: string | null
           id?: string
+          second_deadline?: string | null
           semester_label: string
           treasury_entry_id?: string | null
         }
@@ -781,7 +785,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           fee_amount?: number
+          first_deadline?: string | null
           id?: string
+          second_deadline?: string | null
           semester_label?: string
           treasury_entry_id?: string | null
         }
