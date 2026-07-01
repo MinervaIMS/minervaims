@@ -167,7 +167,7 @@ const NAV: NavSection[] = [
       { key: 'ops-external', label: 'External relations', allowed: (p) => p.can('ops-external') },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
       { key: 'ops-auto-emails', label: 'Auto emails', allowed: (p) => p.can('ops-auto-emails') },
-      { key: 'ops-docs', label: 'Statuto', allowed: (p) => p.can('ops-docs') },
+      { key: 'ops-docs', label: 'Statute & documents', allowed: (p) => p.can('ops-docs') },
     ],
   },
 
@@ -566,7 +566,7 @@ const MinervaWorkspace = () => {
         return <ResourceManager
           category="reports_templates"
           title="Templates & code repos"
-          description="Useful division material: drive links, Office files, PDFs, code repositories and notes. Each item records why it is useful."
+          description="Useful division material: text, files, links and code repositories. Star up to five favourites to pin them on top; each item shows who added it and when."
         />;
       case 'reports-funds':
         return <FundsPerformances />;
@@ -611,23 +611,23 @@ const MinervaWorkspace = () => {
       case 'smm-ads':
         return <AdsRegister />;
       case 'smm-ig':
-        return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: images, files, links and notes - each with why it’s useful." divisions={['none']} />;
+        return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-li':
-        return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: images, files, links and notes - each with why it’s useful." divisions={['none']} />;
+        return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material - images, files, links and notes." divisions={['none']} />;
+        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
-        return <ResourceManager category="smm_brand" title="Design, brand & logo" description="The association’s visual identity. Set one main reference document (fonts, colours, logo usage, visual style, tone, design rules); other files and notes appear below." divisions={['none']} allowPrimary />;
+        return <ResourceManager category="smm_brand" title="Design, brand & logo" description="The association's visual identity: fonts, colours, logo usage, visual style, tone and design rules. Star the key references to pin them on top (up to five)." divisions={['none']} />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':
         return <Treasury />;
       case 'ops-external':
-        return <ResourceManager category="external_relations" title="External relations" description="A flexible repository for external relationships: files, links, documents, relationship notes and useful references." divisions={['none']} />;
+        return <ResourceManager category="external_relations" title="External relations" description="A flexible repository for external relationships: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-auto-emails':
         return <AutoEmails />;
       case 'ops-docs':
-        return <ResourceManager category="operations_statuto" title="Statuto" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible." divisions={['none']} />;
+        return <ResourceManager category="operations_statuto" title="Statute and important documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
       case 'website-pages':

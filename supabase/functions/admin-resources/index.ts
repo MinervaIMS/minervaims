@@ -17,19 +17,46 @@ const ResourceSchema = z.object({
   id: z.string().uuid().optional(),
   category: z.string().min(1).max(60),
   division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations', 'board', 'none']),
-  type: z.enum(['drive_link', 'code_repo', 'ppt', 'excel', 'word', 'pdf', 'file', 'note', 'other']),
+  type: z.enum(['text', 'file', 'link', 'code', 'other']),
   title: z.string().min(1).max(200).trim(),
   description: z.string().max(2000).nullable().optional(),
-  reason: z.string().max(2000).nullable().optional(),
   file_url: z.string().max(1000).nullable().optional(),
   link_url: z.string().max(1000).nullable().optional(),
   body: z.string().max(10000).nullable().optional(),
-  is_primary: z.boolean().optional(),
+  is_favourite: z.boolean().optional(),
 });
+
+const MAX_FAVOURITES = 5;
 
 // Roles that can manage resources across all divisions/categories.
 const MANAGE_ALL = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_media', 'head_of_operations'];
 const SCOPED = ['head_of_division', 'portfolio_manager', 'team_leader', 'analyst', 'media_analyst'];
+
+const DIV_LABELS: Record<string, string> = {
+  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
+  portfolio: 'Portfolio Management', quant: 'Quantitative Research', media: 'Media & Communication', operations: 'Operations',
+};
+const ROLE_BASE: Record<string, string> = {
+  president: 'President', vice_president: 'Vice President', head_of_asset_management: 'Head of Asset Management',
+  head_of_media: 'Head of Media & Communication', head_of_operations: 'Head of Operations',
+  portfolio_manager: 'Portfolio Manager', team_leader: 'Team Leader / Senior Analyst', analyst: 'Analyst',
+  media_analyst: 'Media & Communication Analyst', advisor: 'Advisor', silent_advisor: 'Silent Advisor',
+  member: 'Member', admin: 'Admin',
+};
+const ROLE_RANK: Record<string, number> = {
+  president: 1, vice_president: 2, admin: 2, head_of_asset_management: 3, head_of_division: 4,
+  head_of_media: 5, head_of_operations: 6, portfolio_manager: 7, team_leader: 8, analyst: 9,
+  media_analyst: 10, advisor: 11, silent_advisor: 12, member: 95,
+};
+function roleLabel(role: string, division: string | null): string {
+  const div = division && division !== 'none' && division !== 'board' ? division : null;
+  if (role === 'head_of_division' && div && DIV_LABELS[div]) return `Head of ${DIV_LABELS[div]}`;
+  if ((role === 'analyst' || role === 'team_leader' || role === 'portfolio_manager') && div && DIV_LABELS[div]) {
+    const suffix = role === 'analyst' ? 'Analyst' : role === 'team_leader' ? 'Team Leader' : 'Portfolio Manager';
+    return `${DIV_LABELS[div]} ${suffix}`;
+  }
+  return ROLE_BASE[role] || role;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -55,6 +82,9 @@ Deno.serve(async (req) => {
     if (!isStaff) return json({ error: 'Access denied' }, 403);
 
     const authorName = (await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.email;
+    // The uploader's role at the time of upload, shown next to their name.
+    const primary = [...roles].sort((a, b) => (ROLE_RANK[a.role] ?? 99) - (ROLE_RANK[b.role] ?? 99))[0];
+    const authorRole = primary ? roleLabel(primary.role, primary.division) : null;
 
     // Photo/file upload (multipart) to the public workspace-resources bucket.
     const contentType = req.headers.get('content-type') || '';
@@ -86,26 +116,47 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // Toggle a favourite (star). At most five favourites per category.
+    if (action === 'favourite') {
+      const id = body.id as string;
+      const want = !!body.is_favourite;
+      const { data: existing } = await supabase.from('workspace_resources').select('division, category').eq('id', id).maybeSingle();
+      if (!existing) return json({ error: 'Not found' }, 404);
+      if (!inScope(existing.division)) return json({ error: 'Out of scope' }, 403);
+      if (want) {
+        const { count } = await supabase.from('workspace_resources')
+          .select('id', { count: 'exact', head: true })
+          .eq('category', existing.category).eq('is_favourite', true).neq('id', id);
+        if ((count ?? 0) >= MAX_FAVOURITES) return json({ error: `You can pin at most ${MAX_FAVOURITES} favourites in this section.` }, 409);
+      }
+      const { error } = await supabase.from('workspace_resources').update({ is_favourite: want }).eq('id', id);
+      if (error) throw error;
+      return json({ success: true });
+    }
+
     const parsed = ResourceSchema.safeParse(body.resource);
     if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     const r = parsed.data;
     if (!inScope(r.division)) return json({ error: 'You can only manage resources in your division' }, 403);
 
+    // Enforce the five-favourite cap when creating/updating a starred item.
+    if (r.is_favourite) {
+      const { count } = await supabase.from('workspace_resources')
+        .select('id', { count: 'exact', head: true })
+        .eq('category', r.category).eq('is_favourite', true).neq('id', r.id ?? '00000000-0000-0000-0000-000000000000');
+      if ((count ?? 0) >= MAX_FAVOURITES) return json({ error: `You can pin at most ${MAX_FAVOURITES} favourites in this section.` }, 409);
+    }
+
     const payload = {
       category: r.category, division: r.division, type: r.type, title: r.title,
-      description: r.description ?? null, reason: r.reason ?? null,
+      description: r.description ?? null,
       file_url: r.file_url ?? null, link_url: r.link_url ?? null, body: r.body ?? null,
-      is_primary: r.is_primary ?? false,
+      is_favourite: r.is_favourite ?? false,
     };
-
-    // Only one primary reference per category.
-    if (payload.is_primary) {
-      await supabase.from('workspace_resources').update({ is_primary: false }).eq('category', r.category);
-    }
 
     if (action === 'create') {
       const { data, error } = await supabase.from('workspace_resources')
-        .insert({ ...payload, author_id: user.id, author_name: authorName }).select().single();
+        .insert({ ...payload, author_id: user.id, author_name: authorName, author_role: authorRole }).select().single();
       if (error) throw error;
       return json({ success: true, resource: data });
     }
