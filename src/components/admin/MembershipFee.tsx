@@ -29,6 +29,8 @@ export default function MembershipFee() {
   const [fees, setFees] = useState<MembershipFeeRow[]>([]);
   const [newLabel, setNewLabel] = useState('');
   const [newAmount, setNewAmount] = useState('10');
+  const [newFirstDeadline, setNewFirstDeadline] = useState('');
+  const [newSecondDeadline, setNewSecondDeadline] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -45,8 +47,13 @@ export default function MembershipFee() {
 
   const open = async () => {
     if (!newLabel.trim()) { toast({ title: 'Enter a semester label', variant: 'destructive' }); return; }
+    if (!newFirstDeadline) { toast({ title: 'A first deadline is required', variant: 'destructive' }); return; }
     setBusy(true);
-    try { await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10); setNewLabel(''); await load(); toast({ title: 'Collection opened' }); }
+    try {
+      await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, newFirstDeadline, newSecondDeadline || null);
+      setNewLabel(''); setNewFirstDeadline(''); setNewSecondDeadline('');
+      await load(); toast({ title: 'Collection opened' });
+    }
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
@@ -83,11 +90,17 @@ export default function MembershipFee() {
 
       {!period ? (
         <Card><CardContent className="py-8">
-          <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester:</p>
-          <div className="flex flex-col sm:flex-row gap-3 font-body max-w-lg">
-            <div className="flex-1 space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
-            <div className="space-y-1"><Label>Fee (€)</Label><Input className="w-24" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} /></div>
-            <Button className="self-end" onClick={open} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
+          <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown to everyone on the calendar; the second stays hidden until the first passes and is then shown only to members who have not paid.</p>
+          <div className="flex flex-col gap-3 font-body max-w-2xl">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
+              <div className="space-y-1"><Label>Fee (€)</Label><Input className="w-24" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} /></div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 space-y-1"><Label>First deadline</Label><Input type="date" value={newFirstDeadline} onChange={(e) => setNewFirstDeadline(e.target.value)} /></div>
+              <div className="flex-1 space-y-1"><Label>Second deadline (optional)</Label><Input type="date" value={newSecondDeadline} onChange={(e) => setNewSecondDeadline(e.target.value)} /></div>
+            </div>
+            <Button className="self-start" onClick={open} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
           </div>
         </CardContent></Card>
       ) : (

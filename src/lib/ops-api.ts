@@ -6,17 +6,16 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import type { OrgDivision, AppRole } from '@/lib/roles';
 
-export interface FeePeriod { id: string; semester_label: string; fee_amount: number; closed: boolean; closed_at: string | null; }
+export interface FeePeriod { id: string; semester_label: string; fee_amount: number; closed: boolean; closed_at: string | null; first_deadline: string | null; second_deadline: string | null; }
 export interface FeeMember { id: string; first_name: string; surname: string; division: OrgDivision; role: AppRole; phone: string | null; email: string | null; }
 export interface MembershipFeeRow { id: string; period_id: string; member_id: string; paid: boolean; }
 
 export interface TreasuryEntry {
   id: string; amount: number; flow: 'in' | 'out'; description: string; source: string | null;
   execution_date: string; registration_date: string; academic_semester: string | null;
-  division: OrgDivision | null;
   is_auto: boolean; locked: boolean; created_at: string;
 }
-export interface TreasuryInput { amount: number; flow: 'in' | 'out'; description: string; source?: string | null; execution_date: string; division?: OrgDivision | null; }
+export interface TreasuryInput { amount: number; flow: 'in' | 'out'; description: string; source?: string | null; execution_date: string; }
 
 export interface AutoTemplate { id: string; key: string; name: string; subject: string; body: string; description: string | null; updated_at: string; }
 export interface EmailLogRow { id: string; template_name: string; recipient_email: string; status: string; created_at: string; }
@@ -32,26 +31,18 @@ async function invoke(fn: string, session: Session | null, body: Record<string, 
 export async function getCurrentFees(session: Session | null): Promise<{ period: FeePeriod | null; members: FeeMember[]; fees: MembershipFeeRow[] }> {
   return await invoke('admin-fees', session, { action: 'current' });
 }
-export function openFeePeriod(session: Session | null, semester_label: string, fee_amount: number) {
-  return invoke('admin-fees', session, { action: 'open', semester_label, fee_amount });
+export function openFeePeriod(session: Session | null, semester_label: string, fee_amount: number, first_deadline: string, second_deadline: string | null) {
+  return invoke('admin-fees', session, { action: 'open', semester_label, fee_amount, first_deadline, second_deadline });
 }
 export function setFeePaid(session: Session | null, period_id: string, member_id: string, paid: boolean) {
   return invoke('admin-fees', session, { action: 'set-paid', period_id, member_id, paid });
 }
-export function updateFeePeriod(session: Session | null, period_id: string, patch: { semester_label?: string; fee_amount?: number }) {
-  return invoke('admin-fees', session, { action: 'update', period_id, ...patch });
-}
 export function closeFeePeriod(session: Session | null, period_id: string) {
   return invoke('admin-fees', session, { action: 'close', period_id });
-}
-export interface FeeBreakdownEntry { period: FeePeriod; by_division: Record<string, { total: number; paid: number; collected: number }>; }
-export async function feeBreakdown(session: Session | null): Promise<FeeBreakdownEntry[]> {
-  return (await invoke('admin-fees', session, { action: 'breakdown' })).breakdown;
 }
 export async function feeHistory(session: Session | null): Promise<FeePeriod[]> {
   return (await invoke('admin-fees', session, { action: 'history' })).periods;
 }
-
 
 // Treasury
 export async function listTreasury(session: Session | null): Promise<TreasuryEntry[]> {
