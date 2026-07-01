@@ -20,6 +20,8 @@ interface DbEvent {
   guest?: string[] | null;
   description?: string | null;
   poster_url?: string | null;
+  start_at?: string | null;
+  registration_enabled?: boolean | null;
 }
 
 /**
@@ -40,9 +42,6 @@ interface UpcomingEvent {
   registrationUrl?: string | null;
   registrationState?: "open" | "soon" | "closed";
 }
-
-// TODO: replace with real data when an upcoming event is announced.
-const UPCOMING_EVENT: UpcomingEvent | null = null;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -91,6 +90,25 @@ const Events = () => {
     };
     fetchEvents();
   }, []);
+
+  // The soonest upcoming event that has open registration, if any. This feeds
+  // the "Upcoming" band (data connection only; the layout is unchanged).
+  const upcomingEvent = useMemo<UpcomingEvent | null>(() => {
+    const now = Date.now();
+    const next = events
+      .filter((e) => e.registration_enabled && new Date(e.start_at || e.date).getTime() >= now)
+      .sort((a, b) => new Date(a.start_at || a.date).getTime() - new Date(b.start_at || b.date).getTime())[0];
+    if (!next) return null;
+    return {
+      title: next.title,
+      date: next.start_at || next.date,
+      place: next.place,
+      description: next.description ?? null,
+      photoUrl: next.poster_url ?? null,
+      registrationUrl: `/events/${next.id}/register`,
+      registrationState: 'open',
+    };
+  }, [events]);
 
   // Past events = anything strictly before now, newest first.
   const pastEvents = useMemo(() => {
@@ -197,8 +215,8 @@ const Events = () => {
             Upcoming
           </h2>
 
-          {UPCOMING_EVENT ? (
-            <UpcomingBand event={UPCOMING_EVENT} />
+          {upcomingEvent ? (
+            <UpcomingBand event={upcomingEvent} />
           ) : (
             <div className="px-6 py-16 md:py-20 text-center">
               <svg

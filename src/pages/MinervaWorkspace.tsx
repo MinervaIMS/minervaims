@@ -71,9 +71,13 @@ interface DbEvent {
   guest?: string[] | null;
   description?: string | null;
   poster_url?: string | null;
+  event_type?: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// Only alumni calls and guest events are recorded in the Events archive.
+const ARCHIVED_EVENT_TYPES = ['alumni_call', 'guest'];
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Navigation model
@@ -322,6 +326,8 @@ const MinervaWorkspace = () => {
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
+      // The archive only records alumni calls and guest events.
+      if (!ARCHIVED_EVENT_TYPES.includes(event.event_type ?? '')) return false;
       if (eventsYearFilter !== 'all') {
         const eventYear = new Date(event.date).getFullYear();
         if (eventYear !== eventsYearFilter) return false;
