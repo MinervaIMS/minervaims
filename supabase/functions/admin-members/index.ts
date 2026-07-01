@@ -43,7 +43,14 @@ const MemberSchema = z.object({
 });
 
 const DeleteSchema = z.object({ id: z.string().uuid('Valid member ID is required') });
-const ActionSchema = z.enum(['create', 'update', 'delete', 'upload-photo']);
+const MoveToAlumniSchema = z.object({
+  id: z.string().uuid('Valid member ID is required'),
+  graduation_year: z.number().int().min(1990).max(2100),
+  company: z.string().min(1, 'Company is required').max(200).trim(),
+  city: z.string().max(120).nullable().optional(),
+  keep_as_silent_advisor: z.boolean().optional(),
+});
+const ActionSchema = z.enum(['create', 'update', 'delete', 'move-to-alumni', 'upload-photo']);
 
 // Roles a division head may assign within their own division.
 const DIVISION_HEAD_ALLOWED_ROLES = ['analyst', 'team_leader', 'portfolio_manager'];
@@ -182,6 +189,47 @@ Deno.serve(async (req) => {
       await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'delete',
         parsed.data.id, existing ? `${existing.first_name} ${existing.surname}` : null);
       return json({ success: true });
+    }
+
+    // ── Move a member into the alumni directory ─────────────────────────
+    // The public alumni row carries no contact data; phone/email are kept in
+    // the staff-only alumni_contacts table. Board members can optionally stay
+    // in the workspace as a silent advisor instead of being removed.
+    if (action === 'move-to-alumni') {
+      const parsed = MoveToAlumniSchema.safeParse(body);
+      if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
+      const { data: member } = await supabase.from('members')
+        .select('first_name, surname, division, role, phone, email, linkedin_url').eq('id', parsed.data.id).single();
+      if (!member) return json({ error: 'Member not found' }, 404);
+      const scopeError = denyIfOutOfScope(member.division, member.role);
+      if (scopeError) return json({ error: scopeError }, 403);
+
+      const { data: alum, error: alumErr } = await supabase.from('alumni').insert({
+        name: member.first_name, surname: member.surname,
+        graduation_year: parsed.data.graduation_year, company: parsed.data.company,
+        city: parsed.data.city || null, linkedin_url: member.linkedin_url || null,
+      }).select('id').single();
+      if (alumErr) throw alumErr;
+
+      // Retain the contact details privately.
+      if (member.phone || member.email) {
+        await supabase.from('alumni_contacts').insert({ alumni_id: alum.id, phone: member.phone || null, email: member.email || null });
+      }
+
+      if (parsed.data.keep_as_silent_advisor) {
+        const { error } = await supabase.from('members')
+          .update({ role: 'silent_advisor', membership_status: 'silent_advisor', is_public: false })
+          .eq('id', parsed.data.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('members').delete().eq('id', parsed.data.id);
+        if (error) throw error;
+      }
+
+      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'move-to-alumni',
+        parsed.data.id, `${member.first_name} ${member.surname}`,
+        { keep_as_silent_advisor: !!parsed.data.keep_as_silent_advisor });
+      return json({ success: true, alumni_id: alum.id });
     }
 
     const parsed = MemberSchema.safeParse(body.member);
