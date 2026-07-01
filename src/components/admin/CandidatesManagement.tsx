@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import {
   listApplications, getApplication, signDocumentUrl, bulkDocumentUrls,
   updateApplicationStatus, addApplicationNote,
@@ -37,9 +38,9 @@ export default function CandidatesManagement() {
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [divFilter, setDivFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
 
   const [openId, setOpenId] = useState<string | null>(null);
@@ -61,11 +62,15 @@ export default function CandidatesManagement() {
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return apps
-      .filter((a) => divFilter === 'all' || a.first_choice === divFilter || a.second_choice === divFilter)
-      .filter((a) => statusFilter === 'all' || a.status === statusFilter)
-      .filter((a) => yearFilter === 'all' || a.academic_year === yearFilter)
+      .filter((a) => divFilter.length === 0 || divFilter.includes(a.first_choice) || (a.second_choice ? divFilter.includes(a.second_choice) : false))
+      .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
+      .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
   }, [apps, search, divFilter, statusFilter, yearFilter]);
+
+  const divOptions = CORE.map((d) => ({ value: d, label: divisionLabels[d] }));
+  const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
+  const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
 
   const openDetail = async (id: string) => {
     setOpenId(id); setDetail(null); setPreviewUrl(null); setDetailLoading(true);
@@ -142,43 +147,10 @@ export default function CandidatesManagement() {
         }
       />
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div>
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Division preference</label>
-          <Select value={divFilter} onValueChange={(v) => setDivFilter(v as OrgDivision | 'all')}>
-            <SelectTrigger className="min-w-[180px] font-body"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All divisions</SelectItem>
-              {CORE.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Status</label>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="min-w-[170px] font-body"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Academic year</label>
-          <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="min-w-[160px] font-body"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All years</SelectItem>
-              {(Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => <SelectItem key={y} value={y}>{ACADEMIC_YEAR_LABELS[y]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex-1">
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Search</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-10 font-body" placeholder="Name, email or Bocconi ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+      <div className="mb-4 max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -190,9 +162,9 @@ export default function CandidatesManagement() {
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
-                <th className="px-3 py-2 font-normal">1st / 2nd choice</th>
-                <th className="px-3 py-2 font-normal">Year</th>
-                <th className="px-3 py-2 font-normal">Status</th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="1st / 2nd choice" options={divOptions} selected={divFilter} onChange={setDivFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
                 <th className="px-3 py-2 font-normal text-center">CV</th>
                 <th className="px-3 py-2 font-normal text-center"><MessageSquare className="h-3.5 w-3.5 inline" /></th>
                 <th className="px-3 py-2 font-normal text-right">Actions</th>
@@ -200,7 +172,7 @@ export default function CandidatesManagement() {
             </thead>
             <tbody>
               {rows.map((a) => (
-                <tr key={a.id} className="border-t border-separator hover:bg-muted/30">
+                <tr key={a.id} className="border-t border-separator">
                   <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}<div className="text-xs text-muted-foreground">{a.email}</div></td>
                   <td className="px-3 py-2 whitespace-nowrap">{divisionLabels[a.first_choice]}{a.second_choice ? ` / ${divisionLabels[a.second_choice]}` : ''}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year]}</td>

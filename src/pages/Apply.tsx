@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -136,7 +137,19 @@ export default function Apply() {
           <Field label="Bocconi email *"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="name.surname@studbocconi.it" /></Field>
           <Field label="Phone *"><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="+39 333 000 0000" /></Field>
           <Field label="LinkedIn"><Input value={f.linkedin_url} onChange={(e) => setF({ ...f, linkedin_url: e.target.value })} placeholder="https://linkedin.com/in/…" /></Field>
-          <Field label="Degree / course code *"><Input value={f.degree_course} onChange={(e) => setF({ ...f, degree_course: e.target.value })} placeholder="e.g. BSc Economics & Finance" /></Field>
+          <Field label="Bocconi programme *">
+            <Select value={f.degree_course} onValueChange={(v) => setF({ ...f, degree_course: v })}>
+              <SelectTrigger><SelectValue placeholder="Select your programme" /></SelectTrigger>
+              <SelectContent>
+                {BOCCONI_PROGRAMMES.map((g) => (
+                  <SelectGroup key={g.label}>
+                    <SelectLabel>{g.label}</SelectLabel>
+                    {g.options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Academic year *">
             <Select value={f.academic_year} onValueChange={(v) => setF({ ...f, academic_year: v as AcademicYear })}>
               <SelectTrigger><SelectValue placeholder="Select your year…" /></SelectTrigger>
