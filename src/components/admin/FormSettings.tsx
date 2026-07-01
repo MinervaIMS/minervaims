@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Eye } from 'lucide-react';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -27,6 +28,7 @@ export default function FormSettings() {
       <WorkspacePageHeader
         title="Form settings"
         description="The internal application form is part of the website and is only accessible while applications are open. Its structure is fixed for consistency; the division-specific questions are managed in the Questions subsection."
+        actions={<Button variant="outline" className="font-body" onClick={() => window.open('/apply', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
       />
 
       <div className="max-w-2xl space-y-6 font-body">
