@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { activeFunds, fundLabels, type Fund } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
@@ -30,7 +31,7 @@ export default function ReportUpload() {
   }, [access]);
 
   const [form, setForm] = useState({
-    title: '', description: '', project: '',
+    title: '', description: '',
     date: new Date().toISOString().slice(0, 10),
     division: (allowedDivisions[0] ?? '') as OrgDivision | '',
     fund: '' as Fund | '',
@@ -65,7 +66,7 @@ export default function ReportUpload() {
 
   const submit = async () => {
     if (!form.title.trim() || !form.date || !form.division) { toast({ title: 'Title, date and division are required', variant: 'destructive' }); return; }
-    if (!fileUrl) { toast({ title: 'Please upload the report PDF first', variant: 'destructive' }); return; }
+    if (!fileUrl) { toast({ title: 'Please attach the report PDF first', variant: 'destructive' }); return; }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-files', {
@@ -74,7 +75,7 @@ export default function ReportUpload() {
           file: {
             title: form.title, description: form.description || null, file_url: fileUrl,
             date: form.date, division: form.division, fund: form.division === 'portfolio' ? (form.fund || null) : null,
-            project: form.project || null, status: publishNow ? 'published' : 'draft',
+            status: publishNow ? 'published' : 'draft',
           },
         },
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -84,10 +85,10 @@ export default function ReportUpload() {
       toast({
         title: publishNow ? 'Report published' : 'Report saved as draft',
         description: isFundReport
-          ? 'Reminder: add the updated performance data in Funds’ Performances so it appears on the public fund table.'
-          : 'You can find it in Reports → Archive.',
+          ? 'Reminder: add the updated performance data in Funds\' Performances so it appears on the public fund table.'
+          : 'You can find it in Reports > Archive.',
       });
-      setForm((f) => ({ ...f, title: '', description: '', project: '', fund: '' }));
+      setForm((f) => ({ ...f, title: '', description: '', fund: '' }));
       setFileUrl(''); setFileName('');
     } catch (e) {
       toast({ title: 'Could not save report', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -98,70 +99,93 @@ export default function ReportUpload() {
     <div>
       <WorkspacePageHeader
         title="Upload"
-        description="Upload a new report: attach the file, complete the details, and publish it to the Archive (or save it as a draft for review)."
+        description="Add a new report: complete the details, attach the PDF, then publish it to the Archive or save it as a draft for review."
       />
 
-      <div className="max-w-2xl space-y-5 font-body">
-        {/* File */}
-        <div className="space-y-2">
-          <Label>Report file (PDF) *</Label>
-          <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-          {fileUrl ? (
-            <div className="flex items-center gap-3 border border-separator p-3">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm flex-1 truncate">{fileName}</span>
-              <Button variant="outline" size="sm" onClick={() => { setFileUrl(''); setFileName(''); }}>Replace</Button>
-            </div>
-          ) : (
-            <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
-              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><UploadIcon className="h-4 w-4 mr-2" />Choose PDF</>}
-            </Button>
-          )}
-        </div>
+      <div className="max-w-4xl grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-8 font-body">
+        {/* Details */}
+        <div className="space-y-5 min-w-0">
+          <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity Research - Q1 2026 sector outlook" /></div>
+          <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="A short summary of what this report covers and its main conclusions." /></div>
 
-        <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Report title" /></div>
-        <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Short summary of the report" /></div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-          <div className="space-y-1">
-            <Label>Division *</Label>
-            <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision, fund: '' })}>
-              <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-              <SelectContent>{allowedDivisions.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          {form.division === 'portfolio' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
             <div className="space-y-1">
-              <Label>Fund</Label>
-              <Select value={form.fund} onValueChange={(v) => setForm({ ...form, fund: v as Fund })}>
-                <SelectTrigger><SelectValue placeholder="Optional…" /></SelectTrigger>
-                <SelectContent>{activeFunds.map((f) => <SelectItem key={f} value={f}>{fundLabels[f]}</SelectItem>)}</SelectContent>
+              <Label>Division *</Label>
+              <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision, fund: '' })}>
+                <SelectTrigger><SelectValue placeholder="Select a division" /></SelectTrigger>
+                <SelectContent>{allowedDivisions.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-          )}
-          <div className="space-y-1"><Label>Project (optional)</Label><Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="e.g. Q1 sector review" /></div>
-        </div>
-
-        {isFundReport && (
-          <Card className="border-accent/30 bg-accent/5"><CardContent className="py-3 flex gap-2 items-start">
-            <Info className="h-4 w-4 text-accent mt-0.5 shrink-0" />
-            <p className="text-sm text-foreground">Please remember to add the updated performance data in the <strong>Funds’ Performances</strong> section, so it appears correctly on the public fund performance table.</p>
-          </CardContent></Card>
-        )}
-
-        <div className="flex items-center justify-between border border-separator p-3">
-          <div>
-            <Label htmlFor="publish">Publish now</Label>
-            <p className="text-xs text-muted-foreground">{canPublishDirectly ? 'Publish straight to the Archive, or save as a draft for review.' : 'You can save a draft; a Head publishes it.'}</p>
+            {form.division === 'portfolio' && (
+              <div className="space-y-1">
+                <Label>Fund</Label>
+                <Select value={form.fund} onValueChange={(v) => setForm({ ...form, fund: v as Fund })}>
+                  <SelectTrigger><SelectValue placeholder="Optional - select a fund" /></SelectTrigger>
+                  <SelectContent>{activeFunds.map((f) => <SelectItem key={f} value={f}>{fundLabels[f]}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
-          <Switch id="publish" checked={publishNow} disabled={!canPublishDirectly} onCheckedChange={setPublishNow} />
+
+          {isFundReport && (
+            <Card className="border-accent/30 bg-accent/5"><CardContent className="py-3 flex gap-2 items-start">
+              <Info className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+              <p className="text-sm text-foreground">Remember to add the updated performance data in the Funds' Performances section, so it appears correctly on the public fund performance table.</p>
+            </CardContent></Card>
+          )}
+
+          {/* Publish control - clarified */}
+          <div className="border border-separator p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="publish">Publish now</Label>
+              <Switch id="publish" checked={publishNow} disabled={!canPublishDirectly} onCheckedChange={setPublishNow} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {publishNow
+                ? 'On: the report is published straight away and listed in Reports > Archive.'
+                : 'Off: the report is saved as a draft and held for a Head to review; it is not listed in the Archive until it is published.'}
+            </p>
+            {!canPublishDirectly && <p className="text-xs text-muted-foreground">You can save drafts; a Head of Division publishes them.</p>}
+          </div>
+
+          {/* PDF picker - moved to the end */}
+          <div className="space-y-2">
+            <Label>Report file (PDF) *</Label>
+            <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
+            {fileUrl ? (
+              <div className="flex items-center gap-3 border border-separator p-3">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm flex-1 truncate">{fileName}</span>
+                <Button variant="outline" size="sm" onClick={() => { setFileUrl(''); setFileName(''); }}>Replace</Button>
+              </div>
+            ) : (
+              <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><UploadIcon className="h-4 w-4 mr-2" />Attach PDF</>}
+              </Button>
+            )}
+          </div>
+
+          <Button onClick={submit} disabled={submitting || uploading}>
+            {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : publishNow ? 'Publish report' : 'Save draft'}
+          </Button>
         </div>
 
-        <Button onClick={submit} disabled={submitting || uploading} className="font-body">
-          {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save report'}
-        </Button>
+        {/* Cover preview */}
+        <div className="lg:pt-7">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Cover preview</Label>
+          <div className="mt-2 border border-separator bg-muted/30">
+            {fileUrl ? (
+              <PdfThumbnail url={fileUrl} renderWidth={300} className="w-full" />
+            ) : (
+              <div className="aspect-[1/1.4142] flex flex-col items-center justify-center text-center gap-2 text-muted-foreground p-4">
+                <FileText className="h-8 w-8" />
+                <span className="text-xs">Attach a PDF to preview its cover here.</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

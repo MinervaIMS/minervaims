@@ -2,11 +2,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 // =====================================================================
-// admin-funds — monthly performance for the active simulated funds.
+// admin-funds — fund performance matrix for the active simulated funds.
 // Portfolio Managers and the Head of Portfolio Management upload data;
 // Head of Asset Management / President / Vice President have oversight.
-// The fund_performances table is public-readable so it can feed the
-// public fund pages.
+// One row per (fund, year) feeds the public fund page tables directly.
 // =====================================================================
 
 const corsHeaders = {
@@ -15,14 +14,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const PerfSchema = z.object({
-  id: z.string().uuid().optional(),
+const YearSchema = z.object({
   fund: z.enum(['long-short', 'multi-asset']),
-  period_month: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-01'),
-  nav: z.number().nullable().optional(),
-  monthly_return: z.number().nullable().optional(),
-  ytd_return: z.number().nullable().optional(),
-  notes: z.string().max(1000).nullable().optional(),
+  year: z.number().int().min(2000).max(2100),
+  itd: z.string().max(20).default(''),
+  months: z.array(z.string().max(20)).length(12),
+  ytd: z.string().max(20).default(''),
+  vol: z.string().max(20).default(''),
+  sharpe: z.string().max(20).default(''),
 });
 
 const ALLOWED = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'portfolio_manager'];
@@ -52,31 +51,30 @@ Deno.serve(async (req) => {
     const action = body.action as string;
 
     if (action === 'list') {
-      const { data, error } = await supabase.from('fund_performances').select('*').order('period_month', { ascending: false });
+      const { data, error } = await supabase.from('fund_performance_years').select('*').order('year', { ascending: true });
       if (error) throw error;
-      return json({ performances: data || [] });
+      return json({ years: data || [] });
     }
 
     if (action === 'delete') {
-      const { error } = await supabase.from('fund_performances').delete().eq('id', body.id);
+      const { error } = await supabase.from('fund_performance_years').delete().eq('id', body.id);
       if (error) throw error;
       return json({ success: true });
     }
 
-    // upsert (create or update by fund + month)
+    // upsert (create or update by fund + year)
     if (action === 'upsert') {
-      const parsed = PerfSchema.safeParse(body.performance);
+      const parsed = YearSchema.safeParse(body.year);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
-      const p = parsed.data;
-      const { data, error } = await supabase.from('fund_performances')
+      const y = parsed.data;
+      const { data, error } = await supabase.from('fund_performance_years')
         .upsert({
-          fund: p.fund, period_month: p.period_month, nav: p.nav ?? null,
-          monthly_return: p.monthly_return ?? null, ytd_return: p.ytd_return ?? null,
-          notes: p.notes ?? null, created_by: user.id,
-        }, { onConflict: 'fund,period_month' })
+          fund: y.fund, year: y.year, itd: y.itd, months: y.months,
+          ytd: y.ytd, vol: y.vol, sharpe: y.sharpe, updated_by: user.id,
+        }, { onConflict: 'fund,year' })
         .select().single();
       if (error) throw error;
-      return json({ success: true, performance: data });
+      return json({ success: true, year: data });
     }
 
     return json({ error: 'Invalid action' }, 400);
