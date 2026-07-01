@@ -678,38 +678,50 @@ export type Database = {
       }
       event_registrations: {
         Row: {
+          academic_year: string | null
           added_by: string | null
+          affiliation: string | null
           attended: boolean
           email: string | null
           event_id: string
           id: string
+          is_bocconi: boolean | null
           is_external: boolean
           is_member: boolean
           name: string
+          programme: string | null
           registered_at: string
           user_id: string | null
         }
         Insert: {
+          academic_year?: string | null
           added_by?: string | null
+          affiliation?: string | null
           attended?: boolean
           email?: string | null
           event_id: string
           id?: string
+          is_bocconi?: boolean | null
           is_external?: boolean
           is_member?: boolean
           name: string
+          programme?: string | null
           registered_at?: string
           user_id?: string | null
         }
         Update: {
+          academic_year?: string | null
           added_by?: string | null
+          affiliation?: string | null
           attended?: boolean
           email?: string | null
           event_id?: string
           id?: string
+          is_bocconi?: boolean | null
           is_external?: boolean
           is_member?: boolean
           name?: string
+          programme?: string | null
           registered_at?: string
           user_id?: string | null
         }
