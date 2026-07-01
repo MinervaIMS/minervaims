@@ -64,6 +64,11 @@ Deno.serve(async (req) => {
       displayName = profile?.full_name || userEmail || 'Member';
     }
 
+    const isBocconi = typeof body.is_bocconi === 'boolean' ? body.is_bocconi : (isMember ? true : null);
+    const programme = (body.programme as string | undefined)?.trim() || null;
+    const academicYear = (body.academic_year as string | undefined)?.trim() || null;
+    const affiliation = (body.affiliation as string | undefined)?.trim() || null;
+
     // Dedupe by event + email.
     const { data: existing } = await supabase.from('event_registrations')
       .select('id').eq('event_id', eventId).ilike('email', email).maybeSingle();
@@ -72,8 +77,15 @@ Deno.serve(async (req) => {
     const { error } = await supabase.from('event_registrations').insert({
       event_id: eventId, user_id: userId, name: displayName, email,
       is_member: isMember, is_external: !isMember,
+      is_bocconi: isBocconi, programme, academic_year: academicYear, affiliation,
     });
     if (error) throw error;
+
+    // External (non-member) registrants are added to the newsletter.
+    if (!isMember && email) {
+      try { await supabase.from('newsletter_subscribers').insert({ email, consent: true, source: 'event' }); }
+      catch { /* ignore duplicates */ }
+    }
     return json({ success: true });
   } catch (error) {
     console.error('register-event error:', error);

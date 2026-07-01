@@ -23,7 +23,7 @@ export default function EventAttendance() {
   const [regs, setRegs] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingRegs, setLoadingRegs] = useState(false);
-  const [ext, setExt] = useState({ name: '', email: '' });
+  const [ext, setExt] = useState({ name: '', surname: '', email: '' });
 
   useEffect(() => {
     (async () => {
@@ -58,7 +58,7 @@ export default function EventAttendance() {
 
   const addExt = async () => {
     if (!ext.name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
-    try { await addExternalAttendee(session, eventId, ext.name.trim(), ext.email.trim(), true); setExt({ name: '', email: '' }); await loadRegs(eventId); }
+    try { await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true); setExt({ name: '', surname: '', email: '' }); await loadRegs(eventId); }
     catch (e) { toast({ title: 'Could not add', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -91,10 +91,11 @@ export default function EventAttendance() {
 
       <p className="font-body text-sm text-muted-foreground mb-4">{counts.attended}/{counts.total} attended · {counts.members} members · {counts.external} external</p>
 
-      {/* Add external */}
+      {/* Add external attendee: name, surname and email (email is added to the newsletter). */}
       <div className="flex flex-col sm:flex-row gap-2 mb-6 font-body">
-        <Input placeholder="External participant name" value={ext.name} onChange={(e) => setExt({ ...ext, name: e.target.value })} />
-        <Input placeholder="Email (optional)" value={ext.email} onChange={(e) => setExt({ ...ext, email: e.target.value })} />
+        <Input placeholder="Name" value={ext.name} onChange={(e) => setExt({ ...ext, name: e.target.value })} />
+        <Input placeholder="Surname" value={ext.surname} onChange={(e) => setExt({ ...ext, surname: e.target.value })} />
+        <Input placeholder="Email (added to newsletter)" value={ext.email} onChange={(e) => setExt({ ...ext, email: e.target.value })} />
         <Button variant="outline" onClick={addExt} disabled={!eventId}><Plus className="h-4 w-4 mr-2" />Add</Button>
       </div>
 

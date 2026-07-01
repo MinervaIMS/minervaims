@@ -6,8 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import type { OrgDivision } from '@/lib/roles';
 
-export type EventType = 'meeting' | 'assembly' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'other';
-export type RegistrationAudience = 'members' | 'members_external' | 'guests' | 'public';
+export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'other';
+export type RegistrationAudience = 'members' | 'members_external' | 'public';
+
+// Event types for which choosing an organising division is mandatory.
+export const DIVISION_REQUIRED_TYPES: EventType[] = ['division_event', 'alumni_call', 'meeting'];
+// Event types that are recorded in the Events archive (auto, not user choice).
+export const ARCHIVED_TYPES: EventType[] = ['alumni_call', 'guest'];
 
 export interface EventRow {
   id: string;
@@ -55,17 +60,20 @@ export interface EventRegistration {
   is_member: boolean;
   is_external: boolean;
   attended: boolean;
+  is_bocconi: boolean | null;
+  programme: string | null;
+  academic_year: string | null;
+  affiliation: string | null;
   registered_at: string;
 }
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
-  meeting: 'Internal meeting', assembly: 'Assembly', division_event: 'Division event',
+  meeting: 'Internal meeting', aperitivo: 'Aperitivo', division_event: 'Division event',
   online_call: 'Online call', guest: 'Guest event', alumni_call: 'Alumni call',
   association_wide: 'Association-wide', other: 'Other',
 };
 export const AUDIENCE_LABELS: Record<RegistrationAudience, string> = {
-  members: 'Members only', members_external: 'Members & external students',
-  guests: 'Selected guests', public: 'Public',
+  members: 'Members only', members_external: 'Members & other students', public: 'Public',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,13 +112,22 @@ export async function listRegistrations(session: Session | null, eventId: string
 export function markAttended(session: Session | null, id: string, attended: boolean) {
   return invoke('admin-event-reg', session, { action: 'mark-attended', id, attended });
 }
-export function addExternalAttendee(session: Session | null, eventId: string, name: string, email: string, attended: boolean) {
-  return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, email, attended });
+export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean) {
+  return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, surname, email, attended });
 }
 export function removeRegistration(session: Session | null, id: string) {
   return invoke('admin-event-reg', session, { action: 'remove', id });
 }
-export async function registerForEvent(session: Session | null, payload: { event_id: string; name?: string; email?: string }) {
+export interface EventRegistrationPayload {
+  event_id: string;
+  name?: string;
+  email?: string;
+  is_bocconi?: boolean;
+  programme?: string;
+  academic_year?: string;
+  affiliation?: string;
+}
+export async function registerForEvent(session: Session | null, payload: EventRegistrationPayload) {
   return invoke('register-event', session, payload);
 }
 

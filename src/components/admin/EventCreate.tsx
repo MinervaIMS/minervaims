@@ -5,17 +5,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, Loader2, Upload } from 'lucide-react';
+import { Plus, X, Loader2, Upload, Archive, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import {
   saveEvent, uploadEventPoster, EVENT_TYPE_LABELS, AUDIENCE_LABELS,
+  DIVISION_REQUIRED_TYPES, ARCHIVED_TYPES,
   type EventType, type RegistrationAudience,
 } from '@/lib/events-api';
 
-const DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
+// Only the five core research divisions organise events (Media and Operations
+// do not; Operations events are association-wide, not divisional).
+const DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
 export default function EventCreate() {
   const { session } = useAuth();
@@ -32,6 +35,9 @@ export default function EventCreate() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const divisionRequired = DIVISION_REQUIRED_TYPES.includes(form.event_type);
+  const willArchive = ARCHIVED_TYPES.includes(form.event_type);
+
   const upload = async (file: File) => {
     setUploading(true);
     try { const url = await uploadEventPoster(file); setForm((f) => ({ ...f, poster_url: url })); toast({ title: 'Poster uploaded' }); }
@@ -42,6 +48,7 @@ export default function EventCreate() {
   const submit = async () => {
     if (!form.title.trim() || !form.start_local) { toast({ title: 'Title and start time are required', variant: 'destructive' }); return; }
     if (!form.online && !form.place.trim()) { toast({ title: 'Add a location (or mark the event online)', variant: 'destructive' }); return; }
+    if (divisionRequired && !form.division) { toast({ title: 'Choose the organising division', description: 'This event type requires a division.', variant: 'destructive' }); return; }
     setSaving(true);
     try {
       await saveEvent(session, {
@@ -51,7 +58,7 @@ export default function EventCreate() {
         start_at: new Date(form.start_local).toISOString(), end_at: form.end_local ? new Date(form.end_local).toISOString() : null,
         online: form.online, registration_enabled: form.registration_enabled, registration_audience: form.registration_audience,
       });
-      toast({ title: 'Event created', description: 'Find it in the Calendar and Archive.' });
+      toast({ title: 'Event created', description: 'Find it in the Calendar.' });
       setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members' });
       setGuests(['']);
     } catch (e) { toast({ title: 'Could not create event', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -60,29 +67,28 @@ export default function EventCreate() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Create" description="Create a new event: meetings, assemblies, division events, online calls, guest events, alumni calls or association-wide events. Enable registration to collect attendees." />
+      <WorkspacePageHeader title="Create" description="Create a new event: internal meetings, aperitivi, division events, online calls, guest events, alumni calls or association-wide events. Enable registration to collect attendees." />
 
-      <div className="max-w-2xl space-y-5 font-body">
-        <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" /></div>
+      <div className="max-w-3xl space-y-5 font-body">
+        <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest talk: Markets outlook 2026" /></div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Type</Label>
-            <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v as EventType })}>
+            <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v as EventType, division: DIVISION_REQUIRED_TYPES.includes(v as EventType) ? form.division : '' })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label>Division (optional)</Label>
-            <Select value={form.division || 'none'} onValueChange={(v) => setForm({ ...form, division: v === 'none' ? '' : v as OrgDivision })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">-</SelectItem>
-                {DIVISIONS.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          {divisionRequired && (
+            <div className="space-y-1">
+              <Label>Organising division *</Label>
+              <Select value={form.division || undefined} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
+                <SelectTrigger><SelectValue placeholder="Select a division" /></SelectTrigger>
+                <SelectContent>{DIVISIONS.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1"><Label>Starts *</Label><Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} /></div>
           <div className="space-y-1"><Label>Ends</Label><Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} /></div>
         </div>
@@ -91,22 +97,22 @@ export default function EventCreate() {
           <Label htmlFor="online">Online event</Label>
           <Switch id="online" checked={form.online} onCheckedChange={(v) => setForm({ ...form, online: v })} />
         </div>
-        <div className="space-y-1"><Label>{form.online ? 'Meeting link / platform' : 'Location *'}</Label><Input value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} placeholder={form.online ? 'e.g. Zoom link' : 'e.g. Room AS01'} /></div>
+        <div className="space-y-1"><Label>{form.online ? 'Meeting link / platform' : 'Location *'}</Label><Input value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} placeholder={form.online ? 'e.g. https://zoom.us/j/123456789' : 'e.g. Bocconi, Room AS01'} /></div>
 
-        <div className="space-y-1"><Label>Moderator (optional)</Label><Input value={form.moderator} onChange={(e) => setForm({ ...form, moderator: e.target.value })} /></div>
+        <div className="space-y-1"><Label>Moderator (optional)</Label><Input value={form.moderator} onChange={(e) => setForm({ ...form, moderator: e.target.value })} placeholder="e.g. Jane Smith" /></div>
 
         <div className="space-y-2">
           <Label>Guests (optional)</Label>
           {guests.map((g, i) => (
             <div key={i} className="flex gap-2">
-              <Input value={g} onChange={(e) => { const n = [...guests]; n[i] = e.target.value; setGuests(n); }} placeholder={`Guest ${i + 1}`} />
+              <Input value={g} onChange={(e) => { const n = [...guests]; n[i] = e.target.value; setGuests(n); }} placeholder="e.g. John Doe, Portfolio Manager at BlackRock" />
               {guests.length > 1 && <Button type="button" variant="outline" size="icon" onClick={() => setGuests(guests.filter((_, idx) => idx !== i))}><X className="h-4 w-4" /></Button>}
             </div>
           ))}
           <Button type="button" variant="outline" size="sm" onClick={() => setGuests([...guests, ''])}><Plus className="h-4 w-4 mr-2" />Add guest</Button>
         </div>
 
-        <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+        <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is this event about? Who is it for? What will happen?" /></div>
 
         <div className="space-y-2">
           <Label>Poster (optional)</Label>
@@ -131,6 +137,14 @@ export default function EventCreate() {
               </Select>
             </div>
           )}
+        </div>
+
+        {/* Archive rule - automatic, not user-editable. */}
+        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+          {willArchive ? <Archive className="h-4 w-4 mt-0.5 shrink-0 text-accent" /> : <Info className="h-4 w-4 mt-0.5 shrink-0" />}
+          <span>{willArchive
+            ? 'This event will be recorded in the archive (alumni calls and guest events are archived).'
+            : 'This event will not be recorded in the archive (only alumni calls and guest events are archived).'}</span>
         </div>
 
         <Button onClick={submit} disabled={saving || uploading}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating</> : 'Create event'}</Button>

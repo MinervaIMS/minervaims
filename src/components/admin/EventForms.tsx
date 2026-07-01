@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Copy } from 'lucide-react';
+import { Copy, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -47,9 +47,11 @@ export default function EventForms() {
     toast({ title: 'Registration link copied', description: url });
   };
 
+  const preview = (id: string) => window.open(`/events/${id}/register`, '_blank', 'noopener');
+
   return (
     <div>
-      <WorkspacePageHeader title="Forms" description="Manage event registration. Turn registration on for an event, choose who can register, and share the public registration link." />
+      <WorkspacePageHeader title="Forms" description="Manage event registration. Turn registration on for an event, choose who can register, preview the public form, and share the registration link." />
 
       {loading ? <WorkspaceLoader /> : ordered.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Create one in Events → Create.</p></CardContent></Card>
@@ -69,9 +71,10 @@ export default function EventForms() {
                 {ev.registration_enabled && (
                   <>
                     <Select value={ev.registration_audience} onValueChange={(v) => update(ev, { registration_audience: v as RegistrationAudience })}>
-                      <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
                       <SelectContent>{(Object.keys(AUDIENCE_LABELS) as RegistrationAudience[]).map((a) => <SelectItem key={a} value={a}>{AUDIENCE_LABELS[a]}</SelectItem>)}</SelectContent>
                     </Select>
+                    <Button variant="outline" size="sm" onClick={() => preview(ev.id)}><Eye className="h-4 w-4 mr-2" />Preview</Button>
                     <Button variant="outline" size="sm" onClick={() => copyLink(ev.id)}><Copy className="h-4 w-4 mr-2" />Link</Button>
                   </>
                 )}

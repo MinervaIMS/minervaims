@@ -44,12 +44,21 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
     if (action === 'add-external') {
-      if (!body.name?.trim()) return json({ error: 'Name is required' }, 400);
+      const first = (body.name as string | undefined)?.trim();
+      const surname = (body.surname as string | undefined)?.trim() || '';
+      if (!first) return json({ error: 'Name is required' }, 400);
+      const fullName = `${first} ${surname}`.trim();
+      const email = (body.email as string | undefined)?.trim() || null;
       const { error } = await supabase.from('event_registrations').insert({
-        event_id: body.event_id, name: body.name.trim(), email: body.email?.trim() || null,
+        event_id: body.event_id, name: fullName, email,
         is_member: false, is_external: true, attended: !!body.attended, added_by: user.id,
       });
       if (error) throw error;
+      // External attendees are added to the newsletter (name, surname, email).
+      if (email) {
+        try { await supabase.from('newsletter_subscribers').insert({ email, consent: true, source: 'event' }); }
+        catch { /* ignore duplicates */ }
+      }
       return json({ success: true });
     }
     if (action === 'remove') {
