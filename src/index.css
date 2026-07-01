@@ -677,6 +677,19 @@ html.ws-active { background-color: hsl(var(--background)); }
 html.ws-active body { background-color: hsl(var(--background)); }
 html.ws-active body::after { content: none !important; display: none !important; }
 
+/* Stop the layout from shrinking/expanding when a dropdown, popover or
+   dialog opens. Radix's scroll-lock (react-remove-scroll) hides the document
+   scrollbar and adds a compensating padding-right to <body>, which makes the
+   full-width workspace shell narrow and then widen again. The workspace is a
+   fixed full-screen shell that scrolls internally, so the document itself
+   never needs a scrollbar: lock it away and neutralise the injected padding. */
+html.ws-active { overflow: hidden; }
+html.ws-active body {
+  overflow: hidden !important;
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
 /* Filters, search bars and other inputs in the workspace are flat
    (radius 0) for a consistent look. */
 .ws-flat input:not([type='checkbox']):not([type='radio']),
@@ -689,5 +702,18 @@ html.ws-active body::after { content: none !important; display: none !important;
    Targets Tailwind shadow utilities only, so focus rings are preserved. */
 .ws-flat [class*='shadow'] { box-shadow: none !important; }
 
-/* No shadows in the left navigation rail. */
-.minerva-nav, .minerva-nav * { box-shadow: none !important; }
+/* No shadows in the left navigation rail — box-shadow, drop-shadow filters
+   and pseudo-element shadows are all removed, including over the collapse
+   button when the rail is expanded. */
+.minerva-nav,
+.minerva-nav *,
+.minerva-nav *::before,
+.minerva-nav *::after {
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+/* Hide the scrollable rail's scrollbar so no scrollbar artifact appears near
+   the collapse button when the section names are shown. */
+.minerva-nav nav { scrollbar-width: none; -ms-overflow-style: none; }
+.minerva-nav nav::-webkit-scrollbar { display: none; }

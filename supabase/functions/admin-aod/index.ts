@@ -84,7 +84,8 @@ Deno.serve(async (req) => {
 
       if (action === 'signup') {
         if (!day.registration_open) return json({ error: 'Registration is closed for this day.' }, 403);
-        if (within48h) return json({ error: 'Registration closes 48 hours before the event.' }, 403);
+        // Senior roles can still register within 48h; everyone else cannot.
+        if (within48h && !isSenior) return json({ error: 'Registration closes 48 hours before the event.' }, 403);
         const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
         const primary = roles.find((r) => r.division && r.division !== 'none' && r.division !== 'board');
         const { error } = await supabase.from('aod_signups').insert({

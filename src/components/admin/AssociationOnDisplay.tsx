@@ -41,6 +41,11 @@ export default function AssociationOnDisplay() {
 
   const signupsFor = (dayId: string, slot: string) => signups.filter((s) => s.day_id === dayId && s.slot_time === slot);
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const upcomingDays = useMemo(() => days.filter((d) => d.event_date >= todayStr).sort((a, b) => a.event_date.localeCompare(b.event_date)), [days, todayStr]);
+  const pastDays = useMemo(() => days.filter((d) => d.event_date < todayStr).sort((a, b) => b.event_date.localeCompare(a.event_date)), [days, todayStr]);
+  const coverageCount = (dayId: string) => AOD_SLOTS.filter((s) => signups.some((su) => su.day_id === dayId && su.slot_time === s)).length;
+
   const handleSignup = async (dayId: string, slot: string) => {
     setBusySlot(`${dayId}-${slot}`);
     try { await aodSignup(session, dayId, slot); await load(); }
@@ -67,7 +72,9 @@ export default function AssociationOnDisplay() {
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No Association on Display day scheduled yet.</p></CardContent></Card>
       ) : (
         <div className="space-y-8">
-          {days.map((day) => (
+          {upcomingDays.length === 0 ? (
+            <Card><CardContent className="py-10 text-center"><p className="font-body text-muted-foreground">No upcoming Association on Display day.</p></CardContent></Card>
+          ) : upcomingDays.map((day) => (
             <DayBlock key={day.id} day={day} isSenior={isSenior} userId={user?.id ?? null}
               signupsFor={(slot) => signupsFor(day.id, slot)} busySlot={busySlot}
               onSignup={(slot) => handleSignup(day.id, slot)} onRemove={handleRemove}
@@ -75,6 +82,31 @@ export default function AssociationOnDisplay() {
               onDelete={async () => { if (confirm('Delete this day and all signups?')) { try { await deleteAodDay(session, day.id); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); } } }}
             />
           ))}
+
+          {/* Register of past sessions */}
+          {pastDays.length > 0 && (
+            <div>
+              <h3 className="font-serif text-lg text-accent mb-2">Past sessions</h3>
+              <div className="border border-separator">
+                <table className="w-full text-left font-body text-sm">
+                  <thead className="bg-muted/40 text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 font-normal">Date</th>
+                      <th className="px-3 py-2 font-normal">Slots covered</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pastDays.map((d) => (
+                      <tr key={d.id} className="border-t border-separator">
+                        <td className="px-3 py-2">{new Date(`${d.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                        <td className="px-3 py-2">{coverageCount(d.id)} / {AOD_SLOTS.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
