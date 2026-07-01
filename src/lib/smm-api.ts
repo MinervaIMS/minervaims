@@ -43,6 +43,7 @@ export interface AdEntry {
   amount: number | null;
   campaign_purpose: string | null;
   effectiveness_notes: string | null;
+  treasury_entry_id: string | null;
 }
 
 export interface AdInput {

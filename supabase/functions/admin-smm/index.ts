@@ -17,6 +17,11 @@ function json(body: unknown, status = 200) {
 }
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_media', 'media_analyst'];
 
+function academicSemester(d: Date): string {
+  const m = d.getMonth() + 1; const y = d.getFullYear();
+  return m >= 9 || m === 1 ? `Sep-Jan ${m === 1 ? y - 1 : y}` : `Feb-Aug ${y}`;
+}
+
 const EditorialSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1).max(200),
@@ -100,8 +105,29 @@ Deno.serve(async (req) => {
         content: a.content, platform: a.platform ?? null, ad_date: a.ad_date || null,
         amount: a.amount ?? null, campaign_purpose: a.campaign_purpose ?? null, effectiveness_notes: a.effectiveness_notes ?? null,
       };
-      if (a.id) { const { error } = await supabase.from('ads_spending').update(payload).eq('id', a.id); if (error) throw error; }
-      else { const { error } = await supabase.from('ads_spending').insert({ ...payload, created_by: user.id }); if (error) throw error; }
+      if (a.id) {
+        // Editing never re-posts to the Treasury (the register is append-only
+        // financially). Only the descriptive fields change.
+        const { error } = await supabase.from('ads_spending').update(payload).eq('id', a.id);
+        if (error) throw error;
+        return json({ success: true });
+      }
+
+      // New entry: post the spend to the Treasury once, on the date incurred.
+      let treasuryEntryId: string | null = null;
+      if (a.amount != null && a.amount > 0) {
+        const when = a.ad_date ? new Date(a.ad_date) : new Date();
+        const { data: entry, error: entryErr } = await supabase.from('treasury_entries').insert({
+          amount: a.amount, flow: 'out',
+          description: 'Advertising - social media communication',
+          source: 'ads_spending', execution_date: (a.ad_date || new Date().toISOString().slice(0, 10)),
+          academic_semester: academicSemester(when), is_auto: true, locked: true, created_by: user.id,
+        }).select('id').single();
+        if (entryErr) throw entryErr;
+        treasuryEntryId = entry.id;
+      }
+      const { error } = await supabase.from('ads_spending').insert({ ...payload, treasury_entry_id: treasuryEntryId, created_by: user.id });
+      if (error) throw error;
       return json({ success: true });
     }
 
