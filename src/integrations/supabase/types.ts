@@ -793,6 +793,45 @@ export type Database = {
         }
         Relationships: []
       }
+      fund_performance_years: {
+        Row: {
+          fund: string
+          id: string
+          itd: string
+          months: Json
+          sharpe: string
+          updated_at: string
+          updated_by: string | null
+          vol: string
+          year: number
+          ytd: string
+        }
+        Insert: {
+          fund: string
+          id?: string
+          itd?: string
+          months?: Json
+          sharpe?: string
+          updated_at?: string
+          updated_by?: string | null
+          vol?: string
+          year: number
+          ytd?: string
+        }
+        Update: {
+          fund?: string
+          id?: string
+          itd?: string
+          months?: Json
+          sharpe?: string
+          updated_at?: string
+          updated_by?: string | null
+          vol?: string
+          year?: number
+          ytd?: string
+        }
+        Relationships: []
+      }
       fund_performances: {
         Row: {
           created_at: string
