@@ -8,30 +8,47 @@ import type { OrgDivision } from '@/lib/roles';
 
 export type CallStatus = 'planned' | 'invited' | 'accepted' | 'completed' | 'declined';
 
+export interface CallParticipant {
+  id?: string;
+  alumni_id: string | null;
+  alumnus_name: string;
+  former_role?: string | null;
+}
+
 export interface AlumniCall {
   id: string;
-  alumnus_name: string;
-  former_role: string | null;
-  current_company: string | null;
-  current_position: string | null;
   division: OrgDivision | null;
-  responsible_person: string | null;
+  organiser_name: string | null;
   planned_date: string | null;
   status: CallStatus;
   notes: string | null;
+  participants: CallParticipant[];
 }
 
 export interface AlumniCallInput {
   id?: string;
-  alumnus_name: string;
-  former_role?: string | null;
-  current_company?: string | null;
-  current_position?: string | null;
   division?: OrgDivision | null;
-  responsible_person?: string | null;
   planned_date?: string | null;
   status?: CallStatus;
   notes?: string | null;
+  participants: CallParticipant[];
+}
+
+/** A single alumnus from the directory, for the participant picker. */
+export interface AlumniOption {
+  id: string;
+  name: string;
+  surname: string;
+  company: string | null;
+  graduation_year: number | null;
+}
+
+export async function listAlumniDirectory(): Promise<AlumniOption[]> {
+  const { data, error } = await supabase.from('alumni')
+    .select('id, name, surname, company, graduation_year')
+    .order('surname', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []) as AlumniOption[];
 }
 
 export const CALL_STATUS_LABELS: Record<CallStatus, string> = {
