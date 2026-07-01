@@ -61,8 +61,12 @@ Deno.serve(async (req) => {
       if (!label) return json({ error: 'A semester label is required' }, 400);
       const amount = Number(body.fee_amount) || 10;
       if (amount < 10) return json({ error: 'The minimum fee is €10 per semester.' }, 400);
+      const first_deadline = (body.first_deadline as string) || null;
+      const second_deadline = (body.second_deadline as string) || null;
+      if (!first_deadline) return json({ error: 'A first deadline is required.' }, 400);
+      if (second_deadline && second_deadline <= first_deadline) return json({ error: 'The second deadline must be after the first.' }, 400);
       const { data: period, error } = await supabase.from('fee_periods')
-        .insert({ semester_label: label, fee_amount: amount, created_by: user.id }).select().single();
+        .insert({ semester_label: label, fee_amount: amount, first_deadline, second_deadline, created_by: user.id }).select().single();
       if (error) {
         if ((error as any).code === '23505') return json({ error: 'A period with this label already exists.' }, 409);
         throw error;
