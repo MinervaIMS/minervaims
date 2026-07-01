@@ -4,13 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Loader2, Download, Search, Upload, User as UserIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Download, Search, Upload, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -21,9 +17,10 @@ import {
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import {
-  listMembers, saveMember, deleteMember, uploadMemberPhoto,
+  listMembers, saveMember, deleteMember, moveMemberToAlumni, uploadMemberPhoto,
   type MemberRow, type MemberInput,
 } from '@/lib/members-api';
 
@@ -36,11 +33,13 @@ const ROLE_OPTIONS: AppRole[] = [
 ];
 
 const MEMBERSHIP_OPTIONS = ['active', 'temporary_leave', 'alumni', 'expelled'] as const;
-const ACCOUNT_OPTIONS = ['approved', 'pending', 'to_redeem'] as const;
+
+// Board roles get the extra "keep as silent advisor" option when leaving.
+const BOARD_ROLES: AppRole[] = ['president', 'vice_president', 'head_of_asset_management', 'head_of_division', 'head_of_media', 'head_of_operations'];
 
 const EMPTY: MemberInput = {
   first_name: '', surname: '', email: '', phone: '', linkedin_url: '', photo_url: '',
-  division: 'none', role: 'analyst', membership_status: 'active', account_status: 'to_redeem',
+  division: 'none', role: 'analyst', membership_status: 'active', account_status: 'approved',
   fee_status: 'unpaid', is_public: true,
 };
 
@@ -58,17 +57,21 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [divisionFilter, setDivisionFilter] = useState<OrgDivision | 'all'>('all');
-  const [membershipFilter, setMembershipFilter] = useState<string>('all');
-  const [accountFilter, setAccountFilter] = useState<string>('all');
+  const [divFilter, setDivFilter] = useState<string[]>([]);
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
+  const [membershipFilter, setMembershipFilter] = useState<string[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<MemberInput>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<MemberRow | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Leave flow (move to alumni).
+  const [leaveTarget, setLeaveTarget] = useState<MemberRow | null>(null);
+  const [leaveForm, setLeaveForm] = useState({ graduation_year: String(new Date().getFullYear()), company: '', city: '' });
+  const [leaving, setLeaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -85,26 +88,42 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
 
   const isSilent = (m: MemberRow) => m.role === 'silent_advisor' || m.membership_status === 'silent_advisor';
 
+  // The base set for this view (before column filters), used to build filter options.
+  const base = useMemo(() => members
+    .filter((m) => m.role !== 'admin')
+    .filter((m) => (silentAdvisors ? isSilent(m) : !isSilent(m))), [members, silentAdvisors]);
+
+  const divisionOptions = useMemo(() => {
+    const present = new Set(base.map((m) => m.division));
+    return DIVISION_OPTIONS.filter((d) => present.has(d)).map((d) => ({ value: d, label: d === 'none' ? 'None' : divisionLabels[d] }));
+  }, [base]);
+  const roleOptions = useMemo(() => {
+    const present = [...new Set(base.map((m) => normalizeRole(m.role)))];
+    return present.sort((a, b) => memberRank(a) - memberRank(b)).map((r) => ({ value: r, label: composeRoleLabel(r) }));
+  }, [base]);
+  const membershipOptions = useMemo(() => {
+    const present = [...new Set(base.map((m) => m.membership_status))];
+    return present.map((s) => ({ value: s, label: s.replace('_', ' ') }));
+  }, [base]);
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return members
-      // The admin role is a user, not a member - never list it.
-      .filter((m) => m.role !== 'admin')
-      .filter((m) => (silentAdvisors ? isSilent(m) : !isSilent(m)))
-      .filter((m) => divisionFilter === 'all' || m.division === divisionFilter)
-      .filter((m) => membershipFilter === 'all' || m.membership_status === membershipFilter)
-      .filter((m) => accountFilter === 'all' || m.account_status === accountFilter)
+    return base
+      .filter((m) => divFilter.length === 0 || divFilter.includes(m.division))
+      .filter((m) => roleFilter.length === 0 || roleFilter.includes(normalizeRole(m.role)))
+      .filter((m) => membershipFilter.length === 0 || membershipFilter.includes(m.membership_status))
       .filter((m) => !q || `${m.first_name} ${m.surname} ${m.email ?? ''}`.toLowerCase().includes(q))
       .sort((a, b) => {
         const r = memberRank(a.role) - memberRank(b.role);
         if (r !== 0) return r;
         return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
       });
-  }, [members, search, divisionFilter, membershipFilter, accountFilter, silentAdvisors]);
+  }, [base, search, divFilter, roleFilter, membershipFilter]);
 
+  // Only silent advisors can be created manually; members register themselves.
   const openCreate = () => {
     setEditingId(null);
-    setForm(silentAdvisors ? { ...EMPTY, role: 'silent_advisor', membership_status: 'silent_advisor', is_public: false } : EMPTY);
+    setForm({ ...EMPTY, role: 'silent_advisor', membership_status: 'silent_advisor', account_status: 'approved', is_public: false });
     setDialogOpen(true);
   };
   const openEdit = (m: MemberRow) => {
@@ -143,7 +162,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         ? { ...form, role: 'silent_advisor', membership_status: 'silent_advisor', is_public: false }
         : form;
       await saveMember(session, payload);
-      toast({ title: editingId ? 'Member updated' : 'Member added' });
+      toast({ title: editingId ? 'Updated' : 'Advisor added' });
       setDialogOpen(false);
       await load();
     } catch (e) {
@@ -153,32 +172,50 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const openLeave = (m: MemberRow) => {
+    setLeaveTarget(m);
+    setLeaveForm({ graduation_year: String(new Date().getFullYear()), company: '', city: '' });
+  };
+
+  const doLeave = async (keepAsSilentAdvisor: boolean) => {
+    if (!leaveTarget) return;
+    if (!leaveForm.company.trim()) { toast({ title: 'Please add their current company', variant: 'destructive' }); return; }
+    const year = parseInt(leaveForm.graduation_year, 10);
+    if (!year) { toast({ title: 'Please add a graduation year', variant: 'destructive' }); return; }
+    setLeaving(true);
     try {
-      await deleteMember(session, deleteTarget.id);
-      toast({ title: 'Member removed' });
-      setDeleteTarget(null);
+      await moveMemberToAlumni(session, { id: leaveTarget.id, graduation_year: year, company: leaveForm.company.trim(), city: leaveForm.city.trim() || null, keep_as_silent_advisor: keepAsSilentAdvisor });
+      toast({ title: keepAsSilentAdvisor ? 'Moved to alumni and kept as silent advisor' : 'Moved to alumni' });
+      setLeaveTarget(null);
       await load();
-    } catch (e) {
-      toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    }
+    } catch (e) { toast({ title: 'Could not move to alumni', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setLeaving(false); }
+  };
+
+  const doJustRemove = async () => {
+    if (!leaveTarget) return;
+    setLeaving(true);
+    try {
+      await deleteMember(session, leaveTarget.id);
+      toast({ title: 'Removed' });
+      setLeaveTarget(null);
+      await load();
+    } catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setLeaving(false); }
   };
 
   const exportCsv = () => {
-    // Export reflects the current filters (what the table is showing).
     const flat = rows.map((m) => ({
       first_name: m.first_name, surname: m.surname,
       division: m.division !== 'none' ? divisionLabels[m.division] : '',
       role: composeRoleLabel(m.role, m.division), phone: m.phone ?? '', email: m.email ?? '',
-      linkedin_url: m.linkedin_url ?? '', membership_status: m.membership_status, account_status: m.account_status,
+      linkedin_url: m.linkedin_url ?? '', membership_status: m.membership_status,
     }));
     downloadCSV(flat, [
       { key: 'first_name', header: 'First name' }, { key: 'surname', header: 'Surname' },
       { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' },
       { key: 'phone', header: 'Phone' }, { key: 'email', header: 'Email' },
-      { key: 'linkedin_url', header: 'LinkedIn' },
-      { key: 'membership_status', header: 'Membership' }, { key: 'account_status', header: 'Account' },
+      { key: 'linkedin_url', header: 'LinkedIn' }, { key: 'membership_status', header: 'Membership' },
     ], silentAdvisors ? 'silent-advisors.csv' : 'members-register.csv');
     toast({ title: 'Download started' });
   };
@@ -186,7 +223,9 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const title = silentAdvisors ? 'Advisors' : 'Members';
   const description = silentAdvisors
     ? 'Silent Advisors - people with workspace access who are not shown on the public Members page.'
-    : 'The association members register. Photo and the public subset feed the website; phone, fee and membership status are internal.';
+    : 'The association members register. To join, a person registers with their university email; you cannot add members by hand. Removing a member offers to move them to the alumni section.';
+
+  const targetIsBoard = leaveTarget ? BOARD_ROLES.includes(normalizeRole(leaveTarget.role)) : false;
 
   return (
     <div>
@@ -195,65 +234,26 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
           <Button variant="outline" className="font-body" disabled={rows.length === 0} onClick={exportCsv}>
             <Download className="h-4 w-4 mr-2" />Download CSV
           </Button>
-          {canEdit && (
+          {canEdit && silentAdvisors && (
             <Button className="font-body" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-2" />{silentAdvisors ? 'Add advisor' : 'Add member'}
+              <Plus className="h-4 w-4 mr-2" />Add advisor
             </Button>
           )}
         </>
       } />
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        {!silentAdvisors && (
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Division</label>
-            <Select value={divisionFilter} onValueChange={(v) => setDivisionFilter(v as OrgDivision | 'all')}>
-              <SelectTrigger className="min-w-[160px] font-body"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All divisions</SelectItem>
-                {DIVISION_OPTIONS.filter((d) => d !== 'none').map((d) => (
-                  <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        {!silentAdvisors && (
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Membership</label>
-            <Select value={membershipFilter} onValueChange={setMembershipFilter}>
-              <SelectTrigger className="min-w-[150px] font-body"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {MEMBERSHIP_OPTIONS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        <div>
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Account</label>
-          <Select value={accountFilter} onValueChange={setAccountFilter}>
-            <SelectTrigger className="min-w-[150px] font-body"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {ACCOUNT_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s === 'to_redeem' ? 'To redeem' : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex-1">
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Search</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-10 font-body" placeholder="Name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+      {/* Search bar above the table; column filters live in the header row. */}
+      <div className="mb-4 max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-10 font-body" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
       {loading ? (
         <WorkspaceLoader />
       ) : rows.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No {silentAdvisors ? 'advisors' : 'members'} yet.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No {silentAdvisors ? 'advisors' : 'members'} match.</p></CardContent></Card>
       ) : (
         <div className="border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
@@ -261,12 +261,12 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
               <tr>
                 <th className="px-3 py-2 font-normal"> </th>
                 <th className="px-3 py-2 font-normal">Name</th>
-                <th className="px-3 py-2 font-normal">Division</th>
-                <th className="px-3 py-2 font-normal">Role</th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Division" options={divisionOptions} selected={divFilter} onChange={setDivFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Role" options={roleOptions} selected={roleFilter} onChange={setRoleFilter} /></th>
                 <th className="px-3 py-2 font-normal">Phone</th>
                 <th className="px-3 py-2 font-normal">Email</th>
                 <th className="px-3 py-2 font-normal text-center">In</th>
-                <th className="px-3 py-2 font-normal">Status</th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
               </tr>
             </thead>
@@ -274,7 +274,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
               {rows.map((m) => (
                 <tr key={m.id} className="border-t border-separator">
                   <td className="px-3 py-2">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                    <div className="w-9 h-9 overflow-hidden bg-muted flex items-center justify-center">
                       {m.photo_url ? <img src={m.photo_url} alt="" className="w-full h-full object-cover" /> : <UserIcon className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </td>
@@ -282,22 +282,20 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                   <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{m.phone || '-'}</td>
-                  <td className="px-3 py-2">{m.email || <span className="text-amber-700">to redeem</span>}</td>
+                  <td className="px-3 py-2">{m.email || '-'}</td>
                   <td className="px-3 py-2 text-center">
                     {m.linkedin_url ? (
                       <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
-                        <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 opacity-80 hover:opacity-100" />
+                        <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 opacity-80" />
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
-                  <td className="px-3 py-2">
-                    <span className="capitalize">{m.account_status === 'to_redeem' ? 'to redeem' : m.account_status}</span>
-                  </td>
+                  <td className="px-3 py-2 capitalize">{m.membership_status.replace('_', ' ')}</td>
                   {canEdit && (
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">
-                        <Button variant="outline" size="icon" onClick={() => openEdit(m)}><Edit className="h-4 w-4" /></Button>
-                        <Button variant="destructive" size="icon" onClick={() => setDeleteTarget(m)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="destructive" size="icon" onClick={() => (silentAdvisors ? setLeaveTarget(m) : openLeave(m))}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </td>
                   )}
@@ -308,17 +306,15 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         </div>
       )}
 
-      <p className="font-body text-xs text-muted-foreground mt-3">
-        Ordering is automatic by role seniority, then alphabetical.
-      </p>
+      <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical.</p>
 
-      {/* Create / edit dialog */}
+      {/* Create / edit dialog (advisors only for create) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">{editingId ? 'Edit' : 'Add'} {silentAdvisors ? 'advisor' : 'member'}</DialogTitle></DialogHeader>
           <div className="space-y-4 font-body">
             <div className="flex items-start gap-4">
-              <div className="w-20 h-24 border border-separator bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
+              <div className="w-24 aspect-square border border-separator bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
                 {form.photo_url ? <img src={form.photo_url} alt="" className="w-full h-full object-cover" /> : <UserIcon className="h-6 w-6 text-muted-foreground" />}
               </div>
               <div>
@@ -327,15 +323,16 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                 <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
                   {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><Upload className="h-4 w-4 mr-2" />Photo</>}
                 </Button>
+                <p className="text-xs text-muted-foreground mt-2">A square photo works best.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>First name *</Label><Input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Surname *</Label><Input value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Email</Label><Input value={form.email ?? ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="enables account redemption" /></div>
-              <div className="space-y-1"><Label>Phone</Label><Input value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-              <div className="space-y-1 col-span-2"><Label>LinkedIn URL</Label><Input value={form.linkedin_url ?? ''} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} /></div>
+              <div className="space-y-1"><Label>First name *</Label><Input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} placeholder="e.g. Marco" /></div>
+              <div className="space-y-1"><Label>Surname *</Label><Input value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} placeholder="e.g. Rossi" /></div>
+              <div className="space-y-1"><Label>Email</Label><Input value={form.email ?? ''} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="e.g. marco.rossi@studbocconi.it" /></div>
+              <div className="space-y-1"><Label>Phone</Label><Input value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="e.g. +39 333 000 0000" /></div>
+              <div className="space-y-1 col-span-2"><Label>LinkedIn URL</Label><Input value={form.linkedin_url ?? ''} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} placeholder="e.g. https://linkedin.com/in/marcorossi" /></div>
 
               {!silentAdvisors && (
                 <>
@@ -378,20 +375,51 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove {deleteTarget?.first_name} {deleteTarget?.surname}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the person from the roster and from the public Members page. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remove</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Leave / move-to-alumni dialog */}
+      <Dialog open={!!leaveTarget} onOpenChange={(o) => !o && setLeaveTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Remove {leaveTarget?.first_name} {leaveTarget?.surname}</DialogTitle>
+            <DialogDescription className="font-body">
+              {silentAdvisors
+                ? 'Remove this silent advisor from the workspace.'
+                : 'A member leaving usually becomes an alumnus. Add a few details to move them to the alumni directory - their phone and email are kept privately for the association only.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {silentAdvisors ? (
+            <div className="flex gap-3 font-body">
+              <Button variant="destructive" className="flex-1" disabled={leaving} onClick={doJustRemove}>{leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove'}</Button>
+              <Button variant="outline" onClick={() => setLeaveTarget(null)}>Cancel</Button>
+            </div>
+          ) : (
+            <div className="space-y-4 font-body">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label>Graduation year</Label><Input value={leaveForm.graduation_year} onChange={(e) => setLeaveForm({ ...leaveForm, graduation_year: e.target.value })} placeholder="e.g. 2026" /></div>
+                <div className="space-y-1"><Label>Current company</Label><Input value={leaveForm.company} onChange={(e) => setLeaveForm({ ...leaveForm, company: e.target.value })} placeholder="e.g. Goldman Sachs" /></div>
+                <div className="space-y-1 col-span-2"><Label>City (optional)</Label><Input value={leaveForm.city} onChange={(e) => setLeaveForm({ ...leaveForm, city: e.target.value })} placeholder="e.g. London" /></div>
+              </div>
+
+              <Button className="w-full" disabled={leaving} onClick={() => doLeave(false)}>
+                {leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Move to alumni'}
+              </Button>
+
+              {targetIsBoard && (
+                <div className="border border-separator p-3 space-y-2">
+                  <Button variant="outline" className="w-full" disabled={leaving} onClick={() => doLeave(true)}>Move to alumni and keep as silent advisor</Button>
+                  <p className="text-xs text-muted-foreground">
+                    A silent advisor is no longer an active member and is not shown in the public Members section, but keeps read-only access to the workspace: they can see what is happening without editing anything.
+                  </p>
+                </div>
+              )}
+
+              <button type="button" className="text-xs text-muted-foreground underline w-full text-center" disabled={leaving} onClick={doJustRemove}>
+                Remove without adding to alumni
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

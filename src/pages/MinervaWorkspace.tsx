@@ -24,6 +24,7 @@ import { EventsListNew } from '@/components/shared/EventsListNew';
 import FileManagement from '@/components/admin/FileManagement';
 import MembersManagement from '@/components/admin/MembersManagement';
 import MyProfile from '@/components/admin/MyProfile';
+import ContactPrompt from '@/components/admin/ContactPrompt';
 import CandidatesManagement from '@/components/admin/CandidatesManagement';
 import NewJoiners from '@/components/admin/NewJoiners';
 import FormSettings from '@/components/admin/FormSettings';
@@ -837,6 +838,7 @@ const MinervaWorkspace = () => {
       <title>Workspace | MIMS</title>
     </Helmet>
     <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden`}>
+      <ContactPrompt onGoToProfile={() => { setActiveSectionKey('my-role'); setActiveSubKey(null); }} />
       {/* Nav column */}
       <aside
         className="minerva-nav flex flex-col bg-accent text-accent-foreground transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 overflow-hidden"
