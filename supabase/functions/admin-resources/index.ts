@@ -79,6 +79,14 @@ function fileTypeAllowed(file: File): boolean {
   return ALLOWED_MIME.has((file.type || '').toLowerCase());
 }
 
+// The bucket is private: extract the object path from either a stored path or
+// a legacy public URL, so it can be turned into a short-lived signed URL.
+function objectPath(fileUrlOrPath: string): string {
+  const marker = '/workspace-resources/';
+  const i = fileUrlOrPath.indexOf(marker);
+  return i >= 0 ? fileUrlOrPath.slice(i + marker.length) : fileUrlOrPath;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
@@ -116,12 +124,22 @@ Deno.serve(async (req) => {
       const { data: up, error: upErr } = await supabase.storage.from('workspace-resources')
         .upload(path, await file.arrayBuffer(), { contentType: file.type || 'application/octet-stream', upsert: false });
       if (upErr) return json({ error: 'Upload failed' }, 500);
-      const { data: pub } = supabase.storage.from('workspace-resources').getPublicUrl(up.path);
-      return json({ success: true, file_url: pub.publicUrl });
+      // Store the object path (the bucket is private; files are opened via a
+      // signed URL from the 'sign' action).
+      return json({ success: true, file_url: up.path });
     }
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    // Return a short-lived signed URL for a stored file (private bucket).
+    if (action === 'sign') {
+      const p = objectPath(String(body.file_url || ''));
+      if (!p) return json({ error: 'No file' }, 400);
+      const { data, error } = await supabase.storage.from('workspace-resources').createSignedUrl(p, 60 * 60);
+      if (error || !data) return json({ error: 'Could not open the file.' }, 500);
+      return json({ url: data.signedUrl });
+    }
 
     const inScope = (division: string) => canAll || division === 'none' || scopedDivisions.includes(division);
 
