@@ -16,6 +16,21 @@ function json(body: unknown, status = 200) {
 }
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 
+// Allowlist of upload types (see admin-resources): reject HTML/SVG/scripts.
+const ALLOWED_MIME = new Set([
+  'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+  'application/pdf', 'text/plain', 'text/csv', 'application/zip',
+  'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+]);
+const BLOCKED_EXT = /\.(html?|xhtml|svg|js|mjs|php|sh|exe|bat|htm)$/i;
+function fileTypeAllowed(file: File): boolean {
+  if (BLOCKED_EXT.test(file.name)) return false;
+  return ALLOWED_MIME.has((file.type || '').toLowerCase());
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
@@ -88,6 +103,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {
     console.error('admin-auto-emails error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

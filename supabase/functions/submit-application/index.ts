@@ -126,6 +126,6 @@ Deno.serve(async (req) => {
     return json({ success: true, id: created.id });
   } catch (error) {
     console.error('submit-application error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

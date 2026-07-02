@@ -17,14 +17,12 @@ function json(body: unknown, status = 200) {
 }
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 
-const DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'operations'] as const;
 const EntrySchema = z.object({
   amount: z.number().positive('Amount must be greater than zero'),
   flow: z.enum(['in', 'out']),
   description: z.string().min(1).max(500),
   source: z.string().max(300).nullable().optional(),
   execution_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  division: z.enum(DIVISIONS).nullable().optional(),
 });
 
 function academicSemester(d: Date): string {
@@ -43,6 +41,9 @@ Deno.serve(async (req) => {
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
     const roles = (roleRows || []).map((r: any) => r.role);
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
+    // Treasury holds financial data: every action, including reading the list,
+    // requires management access - not just any signed-in user.
+    if (!canManage) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
@@ -62,7 +63,6 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase.from('treasury_entries').insert({
         amount: signed, flow: e.flow, description: e.description, source: e.source ?? null,
         execution_date: e.execution_date, academic_semester: academicSemester(new Date(e.execution_date)),
-        division: e.division ?? null,
         is_auto: false, locked: false, created_by: user.id,
       }).select().single();
       if (error) throw error;
@@ -72,6 +72,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {
     console.error('admin-treasury error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

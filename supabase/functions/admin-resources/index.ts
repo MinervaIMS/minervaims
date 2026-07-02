@@ -62,6 +62,23 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
+// Allowlist of upload types. HTML/SVG/scripts are rejected because they would
+// execute in the browser if the object URL were ever opened.
+const ALLOWED_MIME = new Set([
+  'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+  'application/pdf', 'text/plain', 'text/csv', 'application/zip',
+  'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+]);
+const BLOCKED_EXT = /\.(html?|xhtml|svg|js|mjs|php|sh|exe|bat|htm)$/i;
+function fileTypeAllowed(file: File): boolean {
+  if (BLOCKED_EXT.test(file.name)) return false;
+  // Empty type is allowed only for clearly-safe extensions handled above.
+  return ALLOWED_MIME.has((file.type || '').toLowerCase());
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
@@ -93,6 +110,7 @@ Deno.serve(async (req) => {
       const file = form.get('file') as File | null;
       if (!file) return json({ error: 'No file provided' }, 400);
       if (file.size > 25 * 1024 * 1024) return json({ error: 'File must be under 25 MB.' }, 400);
+      if (!fileTypeAllowed(file)) return json({ error: 'This file type is not allowed. Upload a document, spreadsheet, presentation, PDF, image, CSV or zip.' }, 400);
       const safe = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const path = `${Date.now()}-${safe}`;
       const { data: up, error: upErr } = await supabase.storage.from('workspace-resources')
@@ -169,6 +187,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {
     console.error('admin-resources error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });
