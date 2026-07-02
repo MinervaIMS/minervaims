@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import logoColor from "@/assets/logo-color.svg";
+import logoFullColor from "@/assets/logo-full-color.png";
 
 const NotFound = () => {
   return (

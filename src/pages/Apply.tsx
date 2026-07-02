@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
-import logoMark from '@/assets/logo-color.svg';
+import logoFullColor from '@/assets/logo-full-color.png';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
