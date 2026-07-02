@@ -29,7 +29,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
-            <img src={fullLogoAsset.url} alt="Minerva Investment Management Society" className="h-24 w-auto" />
+            <img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '138px', width: 'auto' }} />
           </div>
           {children}
         </div>
