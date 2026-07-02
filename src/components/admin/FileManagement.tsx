@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown } from 'lucide-react';
+import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown, Star } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-utils';
@@ -26,6 +26,7 @@ interface ArchiveFile {
   fund: string | null;
   status?: string;
   project?: string | null;
+  is_favourite?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -66,6 +67,26 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const { toast } = useToast();
   const { session } = useAuth();
   const access = useAccess();
+
+  const handleToggleFavourite = async (file: ArchiveFile) => {
+    const next = !file.is_favourite;
+    if (next && files.filter((f) => f.is_favourite).length >= 5) {
+      toast({ title: 'You can pin at most 5 favourites.', variant: 'destructive' });
+      return;
+    }
+    setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, is_favourite: next } : f)));
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-files', {
+        body: { action: 'favourite', file: { id: file.id, is_favourite: next } },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); fetchFiles(); }
+    } catch (e) {
+      toast({ title: 'Could not update favourite', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+      fetchFiles();
+    }
+  };
 
   const handleSetStatus = async (fileId: string, status: 'draft' | 'published' | 'blocked') => {
     try {
@@ -126,7 +147,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         if (!matchesTitle && !matchesDescription) return false;
       }
       return true;
-    });
+    })
+    // Favourites are pinned on top; otherwise keep the newest-first order.
+    .sort((a, b) => (a.is_favourite === b.is_favourite ? 0 : a.is_favourite ? -1 : 1));
   }, [files, divisionFilter, yearFilter, searchQuery, allowedDivisions]);
 
   const fileYears = useMemo(() => {
@@ -869,6 +892,14 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                         Unblock
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title={file.is_favourite ? 'Unpin favourite' : 'Pin as favourite'}
+                      onClick={() => handleToggleFavourite(file)}
+                    >
+                      <Star className={`h-4 w-4 ${file.is_favourite ? 'fill-accent text-accent' : ''}`} />
+                    </Button>
                     <Button
                       variant="outline"
                       size="icon"
