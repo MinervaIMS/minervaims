@@ -58,11 +58,13 @@ const DivisionScrollStack = () => {
               className="absolute inset-0 h-full w-full object-cover"
               loading="lazy"
             />
+            {/* Diagonal shade: darkest in the top-left corner, fading to clear
+                in the bottom-right corner, so the title stays legible. */}
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(to right, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.15) 80%, rgba(0,0,0,0) 100%)',
+                  'linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.72) 35%, rgba(0,0,0,0.4) 65%, rgba(0,0,0,0.12) 88%, rgba(0,0,0,0) 100%)',
               }}
             />
             <div className="relative z-10 flex h-full flex-col justify-between p-8 md:p-14">
