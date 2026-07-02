@@ -521,6 +521,7 @@ export type Database = {
           file_url: string
           fund: string | null
           id: string
+          is_favourite: boolean
           project: string | null
           status: string
           title: string
@@ -535,6 +536,7 @@ export type Database = {
           file_url: string
           fund?: string | null
           id?: string
+          is_favourite?: boolean
           project?: string | null
           status?: string
           title: string
@@ -549,6 +551,7 @@ export type Database = {
           file_url?: string
           fund?: string | null
           id?: string
+          is_favourite?: boolean
           project?: string | null
           status?: string
           title?: string
