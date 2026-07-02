@@ -15,7 +15,12 @@ export function Preloader({ onComplete }: PreloaderProps) {
 
     const overlay = overlayRef.current;
     const logo = logoRef.current;
-    if (!overlay || !logo) return;
+
+    if (!overlay || !logo) {
+      document.body.style.overflow = "";
+      onComplete();
+      return;
+    }
 
     gsap.set(overlay, {
       scaleX: 1,
@@ -83,38 +88,6 @@ export function Preloader({ onComplete }: PreloaderProps) {
           userSelect: "none",
           pointerEvents: "none",
           willChange: "opacity, transform",
-        }}
-      />
-    </div>
-  );
-}    };
-  }, []);
-
-  return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{
-        backgroundColor: "#1F0F4D",
-        willChange: "transform",
-        // Initial cover so the first paint (before useLayoutEffect runs) never
-        // reveals the page underneath.
-        transform: "scaleX(1)",
-        transformOrigin: "center center",
-      }}
-    >
-      <img
-        ref={logoRef}
-        src={logoWhite}
-        alt="Minerva IMS"
-        draggable={false}
-        style={{
-          width: "clamp(140px, 16vw, 240px)",
-          height: "auto",
-          userSelect: "none",
-          pointerEvents: "none",
-          willChange: "opacity, transform",
-          opacity: 0.9,
         }}
       />
     </div>
