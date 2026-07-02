@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import logoColor from "@/assets/logo-color.svg";
+import fullLogoAsset from "@/assets/mims-full-logo-color.png.asset.json";
 
 const NotFound = () => {
   return (
@@ -10,7 +10,7 @@ const NotFound = () => {
       </Helmet>
       <div className="text-center flex flex-col items-center px-6">
         <img
-          src={logoColor}
+          src={fullLogoAsset.url}
           alt="Minerva Investment Management Society"
           className="h-32 w-32 sm:h-40 sm:w-40 mb-8"
         />
