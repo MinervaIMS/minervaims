@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import logoColor from "@/assets/logo-color.svg";
+import logoFullColor from "@/assets/logo-full-color.png";
 
 const NotFound = () => {
   return (
@@ -10,9 +10,9 @@ const NotFound = () => {
       </Helmet>
       <div className="text-center flex flex-col items-center px-6">
         <img
-          src={logoColor}
+          src={logoFullColor}
           alt="Minerva Investment Management Society"
-          className="h-32 w-32 sm:h-40 sm:w-40 mb-8"
+          className="h-44 w-auto sm:h-52 mb-8"
         />
         <h1 className="font-serif text-hero text-accent mb-4">404</h1>
         <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-md">

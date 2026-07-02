@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { registerForEvent, EVENT_TYPE_LABELS, type EventRow } from '@/lib/events-api';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
-import logoMark from '@/assets/logo-color.svg';
+import logoFullColor from '@/assets/logo-full-color.png';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -78,7 +78,7 @@ export default function EventRegister() {
       <Helmet><title>Register | MIMS</title></Helmet>
       <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
-          <div className="flex justify-center mb-6"><img src={logoMark} alt="Minerva Investment Management Society" className="h-20 w-20" /></div>
+          <div className="flex justify-center mb-6"><img src={logoFullColor} alt="Minerva Investment Management Society" className="h-28 w-auto" /></div>
           {children}
         </div>
       </div>
