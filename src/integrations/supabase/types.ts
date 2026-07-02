@@ -1498,6 +1498,7 @@ export type Database = {
         Args: { _division: Database["public"]["Enums"]["org_division"] }
         Returns: Database["public"]["Enums"]["team_division"]
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
