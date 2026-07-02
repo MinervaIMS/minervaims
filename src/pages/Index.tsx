@@ -5,8 +5,8 @@ import logoWhite from "@/assets/footer-logo.svg";
 import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
+import { TeamSwarm } from "@/components/shared/TeamSwarm";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
-import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { PageLoader } from "@/components/shared";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
@@ -165,20 +165,11 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Team swarm */}
+      <TeamSwarm />
+
       {/* Alumni Ticker */}
       <AlumniTicker />
-
-      {/* Divisions Scroll Stack */}
-      <section className="bg-background pt-section-sm md:pt-section">
-        <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Our Divisions
-          </h2>
-        </div>
-        <DivisionScrollStack />
-      </section>
-
-
 
 
 
