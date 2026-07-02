@@ -207,7 +207,6 @@ Deno.serve(async (req) => {
     return json({ success: true, member: updated });
   } catch (error) {
     console.error('member-profile error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return json({ error: message }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

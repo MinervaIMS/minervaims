@@ -17,6 +17,12 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
+// Basic server-side email validation (format + length).
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(e: string | null | undefined): e is string {
+  return typeof e === 'string' && e.length >= 3 && e.length <= 255 && EMAIL_RE.test(e);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
@@ -56,6 +62,7 @@ Deno.serve(async (req) => {
     }
     if (!name && !isMember) return json({ error: 'Please provide your name.' }, 400);
     if (!email) return json({ error: 'An email is required to register.' }, 400);
+    if (!isValidEmail(email)) return json({ error: 'Please provide a valid email address.' }, 400);
 
     // Resolve a display name for members.
     let displayName = name;
@@ -89,6 +96,6 @@ Deno.serve(async (req) => {
     return json({ success: true });
   } catch (error) {
     console.error('register-event error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

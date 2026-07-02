@@ -41,8 +41,7 @@ Deno.serve(async (req) => {
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
         .eq('membership_status', 'active')
-        .not('role', 'in', '(candidate,pending,admin,alumni,silent_advisor)')
-        .neq('email', 'as.minerva@unibocconi.it')).data || [];
+        .not('role', 'in', '(candidate,pending,admin,alumni,silent_advisor)')).data || [];
 
     if (action === 'current') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -62,12 +61,14 @@ Deno.serve(async (req) => {
       if (!label) return json({ error: 'A semester label is required' }, 400);
       const amount = Number(body.fee_amount) || 10;
       if (amount < 10) return json({ error: 'The minimum fee is €10 per semester.' }, 400);
-      const first_deadline = (body.first_deadline as string) || null;
-      const second_deadline = (body.second_deadline as string) || null;
-      if (!first_deadline) return json({ error: 'A first deadline is required.' }, 400);
-      if (second_deadline && second_deadline <= first_deadline) return json({ error: 'The second deadline must be after the first.' }, 400);
+      const firstDeadline = (body.first_deadline as string)?.trim() || null;
+      const secondDeadline = (body.second_deadline as string)?.trim() || null;
+      if (!firstDeadline) return json({ error: 'A first deadline is required.' }, 400);
+      if (secondDeadline && secondDeadline <= firstDeadline) {
+        return json({ error: 'The second deadline must be after the first.' }, 400);
+      }
       const { data: period, error } = await supabase.from('fee_periods')
-        .insert({ semester_label: label, fee_amount: amount, first_deadline, second_deadline, created_by: user.id }).select().single();
+        .insert({ semester_label: label, fee_amount: amount, first_deadline: firstDeadline, second_deadline: secondDeadline, created_by: user.id }).select().single();
       if (error) {
         if ((error as any).code === '23505') return json({ error: 'A period with this label already exists.' }, 409);
         throw error;
@@ -90,54 +91,6 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return json({ success: true });
     }
-
-    if (action === 'update') {
-      const { data: period } = await supabase.from('fee_periods').select('*').eq('id', body.period_id).maybeSingle();
-      if (!period) return json({ error: 'Period not found' }, 404);
-      if (period.closed) return json({ error: 'Closed periods cannot be edited.' }, 403);
-      const patch: Record<string, unknown> = {};
-      if (typeof body.semester_label === 'string') {
-        const label = body.semester_label.trim();
-        if (!label) return json({ error: 'A semester label is required' }, 400);
-        patch.semester_label = label;
-      }
-      if (body.fee_amount != null) {
-        const amount = Number(body.fee_amount);
-        if (!Number.isFinite(amount) || amount < 10) return json({ error: 'The minimum fee is €10 per semester.' }, 400);
-        patch.fee_amount = amount;
-        // Re-price already-paid rows so totals stay consistent.
-        await supabase.from('membership_fees').update({ amount }).eq('period_id', period.id).eq('paid', true);
-      }
-      if (!Object.keys(patch).length) return json({ error: 'Nothing to update' }, 400);
-      const { data, error } = await supabase.from('fee_periods').update(patch).eq('id', period.id).select().single();
-      if (error) {
-        if ((error as any).code === '23505') return json({ error: 'A period with this label already exists.' }, 409);
-        throw error;
-      }
-      return json({ success: true, period: data });
-    }
-
-    if (action === 'breakdown') {
-      const { data: periods } = await supabase.from('fee_periods').select('*').order('created_at', { ascending: false });
-      const { data: allFees } = await supabase.from('membership_fees').select('period_id, member_id, paid, amount');
-      const { data: allMembers } = await supabase.from('members').select('id, division, first_name, surname');
-      const memberDiv = new Map<string, string>();
-      (allMembers || []).forEach((m: any) => memberDiv.set(m.id, m.division || 'none'));
-      const result = (periods || []).map((p: any) => {
-        const rows = (allFees || []).filter((f: any) => f.period_id === p.id);
-        const byDiv: Record<string, { total: number; paid: number; collected: number }> = {};
-        rows.forEach((r: any) => {
-          const d = memberDiv.get(r.member_id) || 'none';
-          if (!byDiv[d]) byDiv[d] = { total: 0, paid: 0, collected: 0 };
-          byDiv[d].total += 1;
-          if (r.paid) { byDiv[d].paid += 1; byDiv[d].collected += Number(r.amount || p.fee_amount); }
-        });
-        return { period: p, by_division: byDiv };
-      });
-      return json({ breakdown: result });
-    }
-
-
 
     if (action === 'close') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('id', body.period_id).maybeSingle();
@@ -164,6 +117,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {
     console.error('admin-fees error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

@@ -134,6 +134,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {
     console.error('admin-smm error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });

@@ -244,9 +244,8 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
+    console.error('admin-alumni error:', error);
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

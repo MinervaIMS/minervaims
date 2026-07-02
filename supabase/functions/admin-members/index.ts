@@ -282,8 +282,7 @@ Deno.serve(async (req) => {
 
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {
-    console.error('Error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return json({ error: message }, 500);
+    console.error('admin-members error:', error);
+    return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
 });
