@@ -29,8 +29,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
     const logo = logoRef.current;
     if (!overlay || !logo) return;
 
-    const isMobile =
-      typeof window !== "undefined" && window.innerWidth <= MOBILE_MAX;
+    const isMobile = typeof window !== "undefined" && window.innerWidth <= MOBILE_MAX;
 
     if (isMobile) {
       // Continue seamlessly from the HTML #initial-loader — no opening wipe.
@@ -70,13 +69,13 @@ export function Preloader({ onComplete }: PreloaderProps) {
       // Logo fades out
       .to(logo, {
         opacity: 0,
-        duration: 0.45,
+        duration: 0.65,
         ease: "power2.in",
       })
       // Panel contracts back to nothing, revealing the page
       .to(overlay, {
         scaleX: 0,
-        duration: 0.75,
+        duration: 0.95,
         ease: "power2.inOut",
       });
 
