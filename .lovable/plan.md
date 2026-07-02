@@ -1,32 +1,59 @@
-# Security Hardening — Bundle A
+## What's happening
 
-The uploaded zip contains a coordinated security-hardening patch: 1 SQL migration + updated code for 16 edge functions. No README is included, but the migration header documents the intent, and every edge function in the zip is a drop-in replacement for its current counterpart.
+The mobile/tablet intro is `src/components/shared/Preloader.tsx`, rendered from `src/App.tsx` on viewports `<1024px`, once per tab session (guarded by `sessionStorage["__mims_intro__"]`). The gating and mount logic still work — the animation itself has been shortened and half of it was removed, which is why it now reads as a flash.
 
-## What this changes
+## Why it feels like a flash
 
-### Database (single migration)
-`supabase/migrations/20260702120000_security_hardening.sql`
+Original spec (chat #1276): "~3.2 seconds… a deep-navy #1F0F4D panel expands from the centre of the screen to full-width (vertical wipe), the white logo fades in and settles, then after a short pause everything reverses — the logo fades out and the panel contracts back to nothing", all with `power2.inOut` easing.
 
-- **Fix privilege-escalation in `is_admin()`** — currently `is_admin()` grants admin to any user whose `profiles.email` equals `as.minerva@unibocconi.it`. Because the profiles UPDATE policy lets a user edit their own row (no column guard), anyone could set that email and become admin. New version relies **only** on `user_roles` (`admin` or `president`). The seed admin still gets the `president` role via `handle_new_user()`, so real admin access is unaffected.
-- **Lock `profiles.email` from client updates** — new `lock_profile_email()` BEFORE UPDATE trigger silently reverts any email change coming from a client. Email is set from the authenticated identity at signup and stays immutable.
-- **Restrict EXECUTE on SECURITY DEFINER functions**:
-  - RLS helpers (`is_admin`, `is_staff`, `is_candidate`, `is_full_access`, `has_role`, `user_divisions`): revoked from `anon`/`PUBLIC`, granted to `authenticated` only (RLS still needs them).
-  - Trigger / maintenance functions (`handle_new_user`, `project_member_to_team`, `cleanup_expired_candidates`): revoked from everyone — only the trigger runtime and `service_role` invoke them.
+Current `Preloader.tsx` timeline (total ≈ 2.46s):
+```text
+gsap.set(overlay, { scaleX: 1 })   // panel starts ALREADY full-width — opening wipe deleted
+logo fade in     0.48s   power1.out
+hold             0.88s
+logo fade out    0.38s   power1.in
+overlay 1 → 0    0.72s   power2.inOut   // only the closing wipe survives
+```
 
-### Edge functions (drop-in replacements, 16 files)
-All under `supabase/functions/`:
-`admin-alumni-calls`, `admin-alumni`, `admin-aod`, `admin-applications`, `admin-auto-emails`, `admin-event-reg`, `admin-fees`, `admin-funds`, `admin-members`, `admin-resources`, `admin-smm`, `admin-team`, `admin-treasury`, `member-profile`, `register-event`, `submit-application`.
+Two regressions vs. the original:
 
-These carry the matching server-side hardening (tightened auth checks, input validation, role checks that no longer rely on the email shortcut, etc.). Each file is replaced wholesale with the version from the zip.
+- **The opening vertical wipe is missing.** The panel is initialised at `scaleX: 1`, so it never expands from the centre. On mobile the inline `#initial-loader` in `index.html` (same #1F0F4D + logo) is already covering the screen when React mounts, so there's no visible transition between the HTML splash and the Preloader — the eye just sees "purple, purple, close-wipe".
+- **Overall duration was shortened** from ~3.2s to ~2.46s and the easings on the logo were changed from `power2.inOut` to `power1.*`, which makes the remaining motion feel abrupt.
 
-## Execution
+Net effect on mobile: the only motion actually perceived is the ~0.72s closing wipe → "flash".
 
-1. Overwrite each of the 16 `supabase/functions/*/index.ts` files with the zip version (identical paths).
-2. Create the migration file `supabase/migrations/20260702120000_security_hardening.sql` with the exact SQL from the zip and submit it via the migration tool for approval.
-3. No frontend / `src/` changes; no config or secret changes; no new tables (so no new GRANT block needed beyond what the migration already includes).
-4. Verify with `tsgo` (types) and the Supabase linter after migration approval.
+There is also a secondary stability bug: `Preloader`'s `useEffect` depends on `[onComplete]`, and `handlePreloaderComplete` in `App.tsx` is a new function reference on every App render. Any re-render of `App` while the intro is playing would run cleanup (`tl.kill()`) and restart the timeline — a subtle way to further shorten what the user sees. Not currently firing in a visible way, but worth fixing while we're in the file.
 
-## Risk notes
+## Fix
 
-- After the migration, the only path to admin is a row in `user_roles` with role `admin` or `president`. Confirmed safe: `handle_new_user()` still inserts `president` for `as.minerva@unibocconi.it`, so the seed admin keeps access.
-- `profiles.email` becomes effectively read-only from the client. If any UI currently tries to update it, the write will be silently ignored (no error). Worth flagging if such a UI exists — I'll grep during build.
+Rewrite the GSAP timeline in `src/components/shared/Preloader.tsx` to match the original ~3.2s spec, restoring the opening wipe and slower easings. Nothing else changes.
+
+New timeline in `Preloader.tsx`:
+```text
+gsap.set(overlay, { scaleX: 0, transformOrigin: "center center" })
+gsap.set(logo,    { opacity: 0, scale: 0.94 })
+
+overlay scaleX 0 → 1   duration 0.75  ease "power2.inOut"   // opening wipe
+logo    opacity/scale  duration 0.55  ease "power2.out"     // settle in
+hold                    duration 0.90
+logo    opacity 0.9→0  duration 0.45  ease "power2.in"      // fade out
+overlay scaleX 1 → 0   duration 0.75  ease "power2.inOut"   // closing wipe
+                       ≈ 3.4s total
+```
+
+Also capture `onComplete` in a ref inside `Preloader` and drop it from the `useEffect` dependency array, so a parent re-render can't kill and restart the timeline mid-play.
+
+## Out of scope
+
+- No changes to `index.html`'s `#initial-loader` (still mobile‑only, still instant).
+- No change to the `<1024px` gating or the `sessionStorage["__mims_intro__"]` once-per-session rule.
+- No visual/design changes beyond restoring the original motion (same #1F0F4D panel, same white logo, same clamp sizing).
+
+## Verification
+
+On a mobile viewport with `sessionStorage.removeItem("__mims_intro__")` and a hard reload:
+
+1. Inline `#initial-loader` paints immediately (dark purple + pulsing logo).
+2. GSAP Preloader mounts: opening wipe expands from centre (~0.75s), logo settles (~0.55s), holds (~0.9s), logo fades (~0.45s), closing wipe contracts (~0.75s), homepage revealed.
+3. Reload again in the same tab → no intro (sessionStorage guard).
+4. Desktop (≥1024px) → no intro at all.

@@ -9,6 +9,12 @@ interface PreloaderProps {
 export function Preloader({ onComplete }: PreloaderProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLImageElement>(null);
+  const onCompleteRef = useRef(onComplete);
+
+  // Keep the latest onComplete without retriggering the animation effect.
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -17,36 +23,43 @@ export function Preloader({ onComplete }: PreloaderProps) {
     const logo = logoRef.current;
     if (!overlay || !logo) return;
 
-    gsap.set(overlay, { scaleX: 1, transformOrigin: "center center" });
+    // Start with the panel closed (scaleX 0) so we get an opening vertical wipe.
+    gsap.set(overlay, { scaleX: 0, transformOrigin: "center center" });
     gsap.set(logo, { opacity: 0, scale: 0.94 });
 
     const tl = gsap.timeline({
       onComplete: () => {
         document.body.style.overflow = "";
-        onComplete();
+        onCompleteRef.current();
       },
     });
 
     tl
+      // Panel expands from centre to full width
+      .to(overlay, {
+        scaleX: 1,
+        duration: 0.75,
+        ease: "power2.inOut",
+      })
       // Logo settles in
       .to(logo, {
         opacity: 0.9,
         scale: 1,
-        duration: 0.48,
-        ease: "power1.out",
+        duration: 0.55,
+        ease: "power2.out",
       })
       // Hold
-      .to({}, { duration: 0.88 })
+      .to({}, { duration: 0.9 })
       // Logo fades out
       .to(logo, {
         opacity: 0,
-        duration: 0.38,
-        ease: "power1.in",
+        duration: 0.45,
+        ease: "power2.in",
       })
-      // Full screen contracts back to nothing
+      // Panel contracts back to nothing, revealing the page
       .to(overlay, {
         scaleX: 0,
-        duration: 0.72,
+        duration: 0.75,
         ease: "power2.inOut",
       });
 
@@ -54,7 +67,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
       tl.kill();
       document.body.style.overflow = "";
     };
-  }, [onComplete]);
+  }, []);
 
   return (
     <div
