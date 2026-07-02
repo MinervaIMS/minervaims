@@ -125,11 +125,11 @@ const Alumni = () => {
 
   // Fixed founders list - always show these 5 in alphabetical order with full details from alumni database
   const founders = [
-    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
-    { id: 'founder-2', name: 'Federico', surname: 'Fantauzzi', degree: 'MSc Accounting - AFM', graduation_year: 2020, job_area: 'Valuation & M&A', company: 'KPMG', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/federico-fantauzzi-a6a9b2160/' },
-    { id: 'founder-3', name: 'Francesca', surname: 'Rigante', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
-    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', degree: 'MSc Economics - ESS', graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
-    { id: 'founder-5', name: 'Stefano', surname: 'Serio', degree: 'MSc Finance', graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
+    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
+    { id: 'founder-2', name: 'Federico', surname: 'Fantauzzi', degree: "MSC ACCOUNTING - AFM\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Valuation & M&A', company: 'KPMG', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/federico-fantauzzi-a6a9b2160/' },
+    { id: 'founder-3', name: 'Francesca', surname: 'Rigante', degree: "MSC ECONOMICS - ESS\nCLASS OF 2020", graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
+    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', degree: "MSC ECONOMICS - ESS\nCLASS OF 2020", graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
+    { id: 'founder-5', name: 'Stefano', surname: 'Serio', degree: "MSC FINANCE\nCLASS OF 2020", graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
   ];
 
   if (isDataLoading || !imagesLoaded) {
@@ -179,8 +179,8 @@ const Alumni = () => {
                 <h3 className="font-serif text-[1.25rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
                   {founder.surname} {founder.name}
                 </h3>
-                <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
-                  {founder.degree} · Class of {founder.graduation_year}
+                <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1 whitespace-pre-line">
+                  {founder.degree}
                 </p>
                 <p className="font-body text-body font-medium text-foreground mt-3">
                   {founder.company}
