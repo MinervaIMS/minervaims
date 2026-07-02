@@ -53,12 +53,12 @@ export function Preloader({ onComplete }: PreloaderProps) {
       // Opening vertical wipe (tablet only)
       tl.to(overlay, {
         scaleX: 1,
-        duration: 0.75,
+        duration: 1.2,
         ease: "power2.inOut",
       }).to(logo, {
         opacity: 0.9,
         scale: 1,
-        duration: 0.55,
+        duration: 1,
         ease: "power2.out",
       });
     }
