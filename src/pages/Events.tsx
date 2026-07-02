@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].endsWith(".pdf");
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -290,11 +293,36 @@ const Events = () => {
               </div>
 
               {totalPages > 1 && (
-                <SquarePagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+                <Pagination className="mt-10 overflow-x-auto">
+                  <PaginationContent className="flex-wrap justify-center gap-1">
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {(() => {
+                      const pages: (number | 'ellipsis')[] = [];
+                      if (totalPages <= 5) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+                      else if (currentPage <= 3) pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
+                      else if (currentPage >= totalPages - 2) pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                      else pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+                      return pages.map((page, index) => (
+                        <PaginationItem key={index}>
+                          {page === 'ellipsis' ? <span className="px-3 py-2">...</span> : (
+                            <PaginationLink isActive={currentPage === page} onClick={() => handlePageChange(page)} className="cursor-pointer">{page}</PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ));
+                    })()}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               )}
             </>
           )}
@@ -617,78 +645,6 @@ function PosterLightbox({
         </button>
       )}
     </div>
-  );
-}
-
-/* ------------------------------ Pagination --------------------------------- */
-
-function SquarePagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-}) {
-  const getPages = (): (number | "ellipsis")[] => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    if (currentPage <= 3) return [1, 2, 3, 4, "ellipsis", totalPages];
-    if (currentPage >= totalPages - 2)
-      return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-    return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages];
-  };
-
-  const baseBtn =
-    "h-10 min-w-10 px-3 inline-flex items-center justify-center border border-separator font-serif text-sm tracking-wider uppercase bg-background text-foreground hover:border-accent hover:text-accent transition-colors";
-  const activeBtn =
-    "h-10 min-w-10 px-3 inline-flex items-center justify-center border border-accent font-serif text-sm tracking-wider uppercase bg-accent text-background";
-  const disabledBtn = "opacity-40 pointer-events-none";
-
-  return (
-    <nav
-      aria-label="Past events pagination"
-      className="mt-10 flex items-center justify-center gap-2 flex-wrap"
-    >
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage - 1)}
-        className={`${baseBtn} ${currentPage === 1 ? disabledBtn : ""}`}
-        aria-label="Previous page"
-      >
-        Prev
-      </button>
-
-      {getPages().map((p, i) =>
-        p === "ellipsis" ? (
-          <span
-            key={`e-${i}`}
-            className="h-10 min-w-10 inline-flex items-center justify-center font-body text-sm text-muted-foreground"
-          >
-            …
-          </span>
-        ) : (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            className={p === currentPage ? activeBtn : baseBtn}
-            aria-current={p === currentPage ? "page" : undefined}
-          >
-            {p}
-          </button>
-        ),
-      )}
-
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage + 1)}
-        className={`${baseBtn} ${currentPage === totalPages ? disabledBtn : ""}`}
-        aria-label="Next page"
-      >
-        Next
-      </button>
-    </nav>
   );
 }
 
