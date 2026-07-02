@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import dashboardRestrictedLogo from '@/assets/dashboard-restricted-logo.png';
+import logoColor from "@/assets/logo-color.svg";
 
 const NotFound = () => {
   return (
@@ -8,21 +8,17 @@ const NotFound = () => {
       <Helmet>
         <title>Page Not Found | MIMS</title>
       </Helmet>
-      <div className="text-center flex flex-col items-center">
-        <img 
-          src={dashboardRestrictedLogo} 
-          alt="Minerva Investment Management Society" 
-          className="h-48 w-48 mb-8"
+      <div className="text-center flex flex-col items-center px-6">
+        <img
+          src={logoColor}
+          alt="Minerva Investment Management Society"
+          className="h-32 w-32 sm:h-40 sm:w-40 mb-8"
         />
-        <h1 className="font-serif text-hero text-primary mb-4">404</h1>
-        <p className="font-body text-body-lg text-muted-foreground mb-8">
+        <h1 className="font-serif text-hero text-accent mb-4">404</h1>
+        <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-md">
           The page you are looking for does not exist.
         </p>
-        <Link 
-          to="/" 
-          className="inline-block bg-primary text-primary-foreground px-6 py-3 hover:opacity-90 transition-opacity uppercase"
-          style={{ fontFamily: '"Times New Roman", Times, serif', fontVariant: 'small-caps' }}
-        >
+        <Link to="/" className="cta-link">
           Return to Homepage
         </Link>
       </div>
