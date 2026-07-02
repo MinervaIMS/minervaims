@@ -36,7 +36,7 @@ const MemberSchema = z.object({
     .refine((v) => !v || v.startsWith('http://') || v.startsWith('https://'), 'LinkedIn URL must be a valid URL'),
   division: z.enum(DIVISIONS),
   role: z.enum(ASSIGNABLE_ROLES),
-  membership_status: z.enum(['active', 'temporary_leave', 'alumni', 'expelled', 'silent_advisor']).optional(),
+  membership_status: z.enum(['active', 'on_exchange', 'one_semester_pause', 'alumni', 'expelled', 'silent_advisor']).optional(),
   account_status: z.enum(['approved', 'pending', 'to_redeem']).optional(),
   fee_status: z.enum(['paid', 'unpaid', 'exempt']).optional(),
   is_public: z.boolean().optional(),
@@ -239,6 +239,7 @@ Deno.serve(async (req) => {
     const scopeError = denyIfOutOfScope(m.division, m.role);
     if (scopeError) return json({ error: scopeError }, 403);
 
+    const isExpelled = m.membership_status === 'expelled';
     const payload = {
       first_name: m.first_name,
       surname: m.surname,
@@ -251,7 +252,9 @@ Deno.serve(async (req) => {
       membership_status: m.membership_status || 'active',
       account_status: m.account_status || 'to_redeem',
       fee_status: m.fee_status || 'unpaid',
-      is_public: m.is_public ?? true,
+      is_public: isExpelled ? false : (m.is_public ?? true),
+      // Expulsion: schedule permanent deletion one month out.
+      deletion_scheduled_at: isExpelled ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
     };
 
     if (action === 'create') {
@@ -275,7 +278,14 @@ Deno.serve(async (req) => {
 
       const { data, error } = await supabase.from('members').update(payload).eq('id', m.id).select().single();
       if (error) throw error;
-      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'update',
+      // Expulsion revokes workspace access immediately by removing the user's
+      // roles (is_staff() then returns false, so they can no longer enter the
+      // workspace); the account is permanently deleted after one month by the
+      // cleanup_expelled_members() cron.
+      if (isExpelled && data.user_id) {
+        await supabase.from('user_roles').delete().eq('user_id', data.user_id);
+      }
+      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, isExpelled ? 'expel' : 'update',
         data.id, `${m.first_name} ${m.surname}`, { division: m.division, role: m.role });
       return json({ success: true, member: data });
     }

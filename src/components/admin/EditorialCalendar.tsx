@@ -60,7 +60,7 @@ export default function EditorialCalendar() {
     const earliest = ds.length ? new Date(ds[0]) : now;
     const latest = ds.length ? new Date(ds[ds.length - 1]) : now;
     const start = new Date(Math.min(new Date(earliest.getFullYear(), earliest.getMonth() - 1, 1).getTime(), new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()));
-    const end = new Date(Math.max(latest.getTime(), new Date(now.getFullYear(), now.getMonth() + 3, 1).getTime()));
+    const end = new Date(Math.max(latest.getTime(), new Date(now.getFullYear(), now.getMonth() + 6, 1).getTime()));
     const list: { year: number; month: number }[] = [];
     const cur = new Date(start.getFullYear(), start.getMonth(), 1);
     while (cur <= end) { list.push({ year: cur.getFullYear(), month: cur.getMonth() }); cur.setMonth(cur.getMonth() + 1); }

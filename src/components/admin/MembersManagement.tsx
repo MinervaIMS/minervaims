@@ -20,7 +20,12 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   listMembers, saveMember, deleteMember, moveMemberToAlumni, uploadMemberPhoto,
+  MEMBERSHIP_STATUS_LABELS,
   type MemberRow, type MemberInput,
 } from '@/lib/members-api';
 
@@ -32,7 +37,7 @@ const ROLE_OPTIONS: AppRole[] = [
   'head_of_operations', 'advisor', 'member',
 ];
 
-const MEMBERSHIP_OPTIONS = ['active', 'temporary_leave', 'alumni', 'expelled'] as const;
+const MEMBERSHIP_OPTIONS = ['active', 'on_exchange', 'one_semester_pause', 'expelled'] as const;
 
 // Board roles get the extra "keep as silent advisor" option when leaving.
 const BOARD_ROLES: AppRole[] = ['president', 'vice_president', 'head_of_asset_management', 'head_of_division', 'head_of_media', 'head_of_operations'];
@@ -65,6 +70,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<MemberInput>(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [expelConfirm, setExpelConfirm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -103,7 +109,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   }, [base]);
   const membershipOptions = useMemo(() => {
     const present = [...new Set(base.map((m) => m.membership_status))];
-    return present.map((s) => ({ value: s, label: s.replace('_', ' ') }));
+    return present.map((s) => ({ value: s, label: MEMBERSHIP_STATUS_LABELS[s] ?? s }));
   }, [base]);
 
   const rows = useMemo(() => {
@@ -151,11 +157,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     }
   };
 
-  const handleSave = async () => {
-    if (!form.first_name.trim() || !form.surname.trim()) {
-      toast({ title: 'Name required', description: 'First name and surname are required.', variant: 'destructive' });
-      return;
-    }
+  const doSave = async () => {
     setSaving(true);
     try {
       const payload: MemberInput = silentAdvisors
@@ -163,6 +165,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         : form;
       await saveMember(session, payload);
       toast({ title: editingId ? 'Updated' : 'Advisor added' });
+      setExpelConfirm(false);
       setDialogOpen(false);
       await load();
     } catch (e) {
@@ -170,6 +173,16 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSave = async () => {
+    if (!form.first_name.trim() || !form.surname.trim()) {
+      toast({ title: 'Name required', description: 'First name and surname are required.', variant: 'destructive' });
+      return;
+    }
+    // Expelling is destructive: confirm first.
+    if (!silentAdvisors && form.membership_status === 'expelled') { setExpelConfirm(true); return; }
+    await doSave();
   };
 
   const openLeave = (m: MemberRow) => {
@@ -290,7 +303,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
-                  <td className="px-3 py-2 capitalize">{m.membership_status.replace('_', ' ')}</td>
+                  <td className="px-3 py-2">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</td>
                   {canEdit && (
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">
@@ -354,7 +367,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                     <Label>Membership</Label>
                     <Select value={form.membership_status as string} onValueChange={(v) => setForm({ ...form, membership_status: v as MemberInput['membership_status'] })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{MEMBERSHIP_OPTIONS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>)}</SelectContent>
+                      <SelectContent>{MEMBERSHIP_OPTIONS.map((s) => <SelectItem key={s} value={s}>{MEMBERSHIP_STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center justify-between col-span-2 pt-1">
@@ -420,6 +433,22 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Expulsion confirmation */}
+      <AlertDialog open={expelConfirm} onOpenChange={setExpelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Expel {form.first_name} {form.surname}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The member loses access to the workspace immediately, and their account is permanently deleted after one month.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={doSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Expel member'}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
