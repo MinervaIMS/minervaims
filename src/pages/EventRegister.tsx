@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { registerForEvent, EVENT_TYPE_LABELS, type EventRow } from '@/lib/events-api';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
-import logoMark from '@/assets/logo-color.svg';
+import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
