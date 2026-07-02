@@ -23,9 +23,8 @@ export function Preloader({ onComplete }: PreloaderProps) {
     const logo = logoRef.current;
     if (!overlay || !logo) return;
 
-    // Start with the panel already covering the screen so there is no page
-    // flash between the inline #initial-loader unmounting and the wipe.
-    gsap.set(overlay, { scaleX: 1, transformOrigin: "center center" });
+    // Start with the panel closed (scaleX 0) so we get an opening vertical wipe.
+    gsap.set(overlay, { scaleX: 0, transformOrigin: "center center" });
     gsap.set(logo, { opacity: 0, scale: 0.94 });
 
     const tl = gsap.timeline({
@@ -36,25 +35,31 @@ export function Preloader({ onComplete }: PreloaderProps) {
     });
 
     tl
-      // Logo settles in (slow, deliberate)
-      .to(logo, {
-        opacity: 0.95,
-        scale: 1,
+      // Panel expands from centre to full width
+      .to(overlay, {
+        scaleX: 1,
         duration: 0.75,
+        ease: "power2.inOut",
+      })
+      // Logo settles in
+      .to(logo, {
+        opacity: 0.9,
+        scale: 1,
+        duration: 0.55,
         ease: "power2.out",
       })
-      // Hold so the mark reads
-      .to({}, { duration: 1.0 })
+      // Hold
+      .to({}, { duration: 0.9 })
       // Logo fades out
       .to(logo, {
         opacity: 0,
-        duration: 0.55,
+        duration: 0.45,
         ease: "power2.in",
       })
       // Panel contracts back to nothing, revealing the page
       .to(overlay, {
         scaleX: 0,
-        duration: 0.85,
+        duration: 0.75,
         ease: "power2.inOut",
       });
 
