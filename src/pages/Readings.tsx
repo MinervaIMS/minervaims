@@ -161,8 +161,7 @@ const Readings = () => {
                 placeholder="Search readings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 sm:py-2 pl-9 border border-accent/40 bg-transparent text-accent placeholder:text-accent/50 focus:border-accent focus:outline-none transition-all duration-200 text-sm sm:text-base"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                className="w-full px-4 py-2.5 sm:py-2 pl-9 rounded-none font-body border border-accent/40 bg-transparent text-accent placeholder:text-accent/50 focus:border-accent focus:outline-none transition-all duration-200 text-sm sm:text-base"
               />
             </div>
             

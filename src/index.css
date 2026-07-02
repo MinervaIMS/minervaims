@@ -717,3 +717,25 @@ html.ws-active body {
    the collapse button when the section names are shown. */
 .minerva-nav nav { scrollbar-width: none; -ms-overflow-style: none; }
 .minerva-nav nav::-webkit-scrollbar { display: none; }
+
+/* =====================================================================
+   Site-wide filter & search consistency (public pages + workspace):
+   filters (native <select> and shadcn dropdown triggers) are flat with the
+   secondary (body) font, so they never appear rounded or in the serif font.
+   ===================================================================== */
+select,
+[role='combobox'] {
+  border-radius: 0 !important;
+  font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif !important;
+}
+
+/* Page content fades in as one unit on each route change, so the elements of
+   a page do not visibly appear one after another. */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-page-in { animation: pageIn 0.35s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in { animation: none; }
+}

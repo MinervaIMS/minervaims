@@ -15,7 +15,11 @@ export function Layout() {
     <div className="min-h-screen flex flex-col overflow-x-clip bg-background">
       {!isChromeless && <Header />}
       <main className="flex-1">
-        <Outlet />
+        {/* Keyed by route so each page's content fades in together rather than
+            elements popping in one after another. */}
+        <div key={pathname} className={isChromeless ? undefined : 'animate-page-in'}>
+          <Outlet />
+        </div>
       </main>
       {!isChromeless && <Footer />}
     </div>
