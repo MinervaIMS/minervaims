@@ -1,43 +1,46 @@
-# Homepage Division ScrollStack
+### Goal
+Replace the current square mark (`logo-color.svg`) with the full Minerva emblem in its colored (deep purple) version on:
+1. 404 page (`src/pages/NotFound.tsx`)
+2. Application form — open and closed states (`src/pages/Apply.tsx`)
+3. Event registration form (`src/pages/EventRegister.tsx`)
 
-Add a window-scroll ScrollStack section to `src/pages/Index.tsx`, placed immediately after the "Our Alumni Stand at the Forefront of Global Markets and Academia" block (the `<AlumniTicker />`) and before `<TestimonialsSection />`. Five cards, one per division, each using its division-page background image with a left-to-right dark gradient, division name top-left, About-page description, and a CTA to the division page bottom-right.
+### Context
+- The login page currently uses `legal-hero-logo.svg` (white full emblem).
+- The site accent color is `#1F0F4D` (deep purple).
+- There is no existing colored full-logo asset; `logo-color.svg` is a different embed/resolution.
 
-## What gets built
+### Plan
 
-1. **Install dependency**
-   - `bun add lenis`
+1. **Generate colored full-logo asset**
+   - Create a deep purple (`#1F0F4D`) version of the full Minerva emblem matching the white `legal-hero-logo.svg` design.
+   - Save as `src/assets/logo-full-color.png` (transparent background).
+   - Size: 1024 × 1024 px, scaled appropriately for display.
 
-2. **New component `src/components/shared/ScrollStack.tsx`**
-   - Port the provided React Bits component to TSX with proper types.
-   - Square edges (no `border-radius`) to match site aesthetic — override the library's 40px.
-   - Cards rendered as `<article>` with `position: relative` so we can layer background image + gradient + content absolutely.
-   - Default props tuned for 5 cards: `useWindowScroll`, `itemDistance≈80`, `itemScale=0.03`, `itemStackDistance=40`, `baseScale=0.9`.
+2. **Update 404 page**
+   - Import `logoFullColor` from the new asset.
+   - Replace the current `logoColor` import and `<img>` tag.
+   - Adjust size: increase from `h-32 w-32` to a larger height (e.g., `h-40 w-auto` or `h-44 w-auto`) to show the full emblem detail.
+   - Keep responsive sizing (`sm:h-52 sm:w-auto`).
 
-3. **New component `src/components/shared/DivisionScrollStack.tsx`**
-   - Wraps `ScrollStack` with the 5 division cards.
-   - Each card layout:
-     - Full-bleed `<img>` background (the existing `MIMS_Equity_Research`, `MIMS_Investment_Research`, `MIMS_Macro_Research`, `MIMS_Portfolio_Management`, `MIMS_Quant_Research` webp assets already in `src/assets/`).
-     - Overlay: `bg-gradient-to-r from-black/75 via-black/45 to-transparent` (darker left → no shade right).
-     - Top-left: `<h3>` serif division name (Times New Roman, white, generous padding `p-10 md:p-14`).
-     - Below name: short description (reused from About `divisionData`) in white/85, max-width ~50%.
-     - Bottom-right: `cta-link`-style `<Link>` "Visit division →" pointing to `/divisions/{division}`.
-   - Card height ~70vh so background imagery reads on desktop; min-height for mobile.
+3. **Update Application form (`Apply.tsx`)**
+   - Import the new asset.
+   - Replace `logoMark` in the `Shell` component.
+   - Increase from `h-20 w-20` to `h-28 w-auto` (or similar) for the full emblem.
+   - Apply to both the open-form state and the closed-form state (the `Shell` wrapper is shared).
 
-4. **Edit `src/pages/Index.tsx`**
-   - Import `DivisionScrollStack`.
-   - Insert a new `<section className="bg-background">` between `<AlumniTicker />` and `<TestimonialsSection />` containing an h2 ("Our Divisions" with the standard heading styling — serif, `text-heading`, `mb-6 pb-3 border-b border-separator text-accent`) inside `container`, then the `<DivisionScrollStack />` rendered full-width below.
+4. **Update Event registration form (`EventRegister.tsx`)**
+   - Import the new asset.
+   - Replace `logoMark` in the `Shell` component.
+   - Increase from `h-20 w-20` to `h-28 w-auto`.
+   - Apply to all states: loading, not-found, registration-closed, success, and the active form.
 
-## Technical details
+5. **Verify**
+   - Confirm TypeScript compiles cleanly (`tsc --noEmit`).
+   - Spot-check the 404 page, Apply page, and an EventRegister page in the preview to confirm the emblem renders crisply and is centered.
 
-- Window-scroll mode: the ScrollStack uses `window.scrollY`; no inner fixed-height wrapper is needed. Cards naturally pin as the user scrolls past the section.
-- The component's CSS (`scroll-stack-inner { padding: 20vh 5rem 50rem }`) is what gives the pin its runway — we keep that but reduce horizontal padding on mobile via Tailwind responsive overrides.
-- Division → asset mapping reuses already-imported `MIMS_*` webp `.asset.json` files in `src/assets/` (same ones the division detail pages use), so no new images are added.
-- Descriptions are copied verbatim from `divisionData` in `src/pages/About.tsx` to keep wording consistent (and the user already approved them on About).
-- No animations elsewhere on the page change; this respects the project's "no animations except /join" rule only as a *targeted* exception — flagging here because the homepage currently has none. If you'd rather skip this exception, say so and I'll use a static stacked-cards layout instead.
-- Accessibility: each card is a single `<article>` with the CTA `<Link>` as the only interactive element; alt text on the background `<img>` describes the division.
+### Sizing rationale
+The current `h-20 w-20` (80 px) and `h-32 w-32` (128 px) sizes were chosen for the square mark. The full emblem is more detailed and looks best slightly larger. Proposed display heights:
+- 404 page: ~160–200 px (`h-40`–`h-48`)
+- Form shells: ~112 px (`h-28`)
 
-## Out of scope
-
-- No changes to division pages, About, or any data.
-- No new images generated — reusing existing assets.
-- No edits to `index.css` beyond the component's scoped CSS file.
+These keep the emblem prominent without dominating the card layout.
