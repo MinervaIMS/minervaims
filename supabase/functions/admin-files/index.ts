@@ -39,7 +39,7 @@ const FileMetadataSchema = z.object({
   project: z.string().max(200).nullable().optional()
 })
 
-const ActionSchema = z.enum(['create', 'update', 'delete', 'upload', 'set-status'])
+const ActionSchema = z.enum(['create', 'update', 'delete', 'upload', 'set-status', 'favourite'])
 
 const DeleteFileSchema = z.object({
   id: z.string().uuid('Invalid file ID')
@@ -475,6 +475,32 @@ Deno.serve(async (req) => {
           JSON.stringify({ success: true, file: data }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      }
+
+      case 'favourite': {
+        // Star / unstar a report to pin it on top. At most five favourites.
+        const favSchema = z.object({ id: z.string().uuid(), is_favourite: z.boolean() })
+        const parsed = favSchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(JSON.stringify({ error: 'Invalid request' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        if (parsed.data.is_favourite) {
+          const { count } = await supabase.from('archive_files')
+            .select('id', { count: 'exact', head: true }).eq('is_favourite', true).neq('id', parsed.data.id)
+          if ((count ?? 0) >= 5) {
+            return new Response(JSON.stringify({ error: 'You can pin at most 5 favourites.' }),
+              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+        }
+        const { error } = await supabase.from('archive_files')
+          .update({ is_favourite: parsed.data.is_favourite }).eq('id', parsed.data.id)
+        if (error) {
+          return new Response(JSON.stringify({ error: 'Failed to update favourite' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        return new Response(JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       case 'set-status': {
