@@ -10,7 +10,7 @@ const NotFound = () => {
       </Helmet>
       <div className="text-center flex flex-col items-center px-6">
         <img
-          src={logoColor}
+          src={fullLogoAsset.url}
           alt="Minerva Investment Management Society"
           className="h-32 w-32 sm:h-40 sm:w-40 mb-8"
         />
