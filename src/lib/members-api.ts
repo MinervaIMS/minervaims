@@ -12,7 +12,12 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import type { AppRole, OrgDivision } from '@/lib/roles';
 
-export type MembershipStatus = 'active' | 'temporary_leave' | 'alumni' | 'expelled' | 'silent_advisor';
+export type MembershipStatus = 'active' | 'on_exchange' | 'one_semester_pause' | 'alumni' | 'expelled' | 'silent_advisor';
+
+export const MEMBERSHIP_STATUS_LABELS: Record<MembershipStatus, string> = {
+  active: 'Active', on_exchange: 'On Exchange', one_semester_pause: '1-semester Pause',
+  alumni: 'Alumni', expelled: 'Expelled', silent_advisor: 'Silent Advisor',
+};
 export type AccountStatus = 'approved' | 'pending' | 'to_redeem';
 export type FeeStatus = 'paid' | 'unpaid' | 'exempt';
 
@@ -152,26 +157,4 @@ export async function uploadMyPhoto(session: Session | null, file: File): Promis
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data.photo_url as string;
-}
-
-export interface ClaimableMember {
-  id: string;
-  first_name: string;
-  surname: string;
-  role: import('@/lib/roles').AppRole;
-  division: import('@/lib/roles').OrgDivision;
-  photo_url?: string | null;
-}
-
-export async function redeemProfile(
-  session: Session | null,
-  choice: { memberId?: string; create?: boolean },
-): Promise<MemberRow> {
-  const { data, error } = await supabase.functions.invoke('member-profile', {
-    body: { action: 'redeem', ...choice },
-    headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data.member as MemberRow;
 }

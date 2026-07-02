@@ -981,6 +981,7 @@ export type Database = {
         Row: {
           account_status: string
           created_at: string
+          deletion_scheduled_at: string | null
           display_order: number
           division: Database["public"]["Enums"]["org_division"]
           email: string | null
@@ -1000,6 +1001,7 @@ export type Database = {
         Insert: {
           account_status?: string
           created_at?: string
+          deletion_scheduled_at?: string | null
           display_order?: number
           division?: Database["public"]["Enums"]["org_division"]
           email?: string | null
@@ -1019,6 +1021,7 @@ export type Database = {
         Update: {
           account_status?: string
           created_at?: string
+          deletion_scheduled_at?: string | null
           display_order?: number
           division?: Database["public"]["Enums"]["org_division"]
           email?: string | null
@@ -1489,6 +1492,7 @@ export type Database = {
         Args: { _first: string; _surname: string }
         Returns: string
       }
+      cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
