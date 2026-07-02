@@ -17,7 +17,7 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
-  listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite,
+  listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite, signResourceFile,
   RESOURCE_TYPE_LABELS, MAX_FAVOURITES, type ResourceRow, type ResourceInput, type ResourceType,
 } from '@/lib/resources-api';
 
@@ -109,6 +109,11 @@ export default function ResourceManager({ category, title, description, division
     catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
+  const openFile = async (fileUrl: string) => {
+    try { const url = await signResourceFile(session, fileUrl); window.open(url, '_blank', 'noopener'); }
+    catch (e) { toast({ title: 'Could not open the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
   const typeIcon = (t: ResourceType) =>
     t === 'text' ? <StickyNote className="h-4 w-4" />
       : t === 'code' ? <Code className="h-4 w-4" />
@@ -128,7 +133,7 @@ export default function ResourceManager({ category, title, description, division
           {r.body && <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">{r.body}</p>}
           <div className="flex gap-4 mt-2">
             {r.link_url && <a href={r.link_url} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline inline-flex items-center gap-1">Open link <ExternalLink className="h-3 w-3" /></a>}
-            {r.file_url && <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline inline-flex items-center gap-1">Open file <FileText className="h-3 w-3" /></a>}
+            {r.file_url && <button type="button" onClick={() => openFile(r.file_url!)} className="text-accent text-sm underline inline-flex items-center gap-1">Open file <FileText className="h-3 w-3" /></button>}
           </div>
           <div className="text-xs text-muted-foreground mt-2">
             {r.author_name || 'Unknown'}{r.author_role ? `, ${r.author_role}` : ''} · {new Date(r.created_at).toLocaleDateString()}

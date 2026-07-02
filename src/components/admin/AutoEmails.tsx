@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { getAutoEmails, saveAutoTemplate, createAutoTemplate, uploadAutoEmailFile, type AutoTemplate, type EmailLogRow } from '@/lib/ops-api';
+import { getAutoEmails, saveAutoTemplate, createAutoTemplate, uploadAutoEmailFile, signAutoEmailFile, type AutoTemplate, type EmailLogRow } from '@/lib/ops-api';
 
 export default function AutoEmails() {
   const { session } = useAuth();
@@ -55,6 +55,11 @@ export default function AutoEmails() {
     finally { setUploading(false); }
   };
 
+  const openFile = async (fileUrl: string) => {
+    try { const url = await signAutoEmailFile(session, fileUrl); window.open(url, '_blank', 'noopener'); }
+    catch (e) { toast({ title: 'Could not open the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
   const create = async () => {
     if (!newT.name.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
     setSaving(true);
@@ -84,7 +89,7 @@ export default function AutoEmails() {
                   {t.description && <div className="text-xs text-muted-foreground mt-1">{t.description}</div>}
                   <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
                     {t.subject ? `Subject: ${t.subject}` : <span className="text-amber-700">No subject set</span>}
-                    {t.file_url && <a href={t.file_url} target="_blank" rel="noopener noreferrer" className="text-accent underline inline-flex items-center gap-1">Layout file <FileText className="h-3 w-3" /></a>}
+                    {t.file_url && <button type="button" onClick={() => openFile(t.file_url!)} className="text-accent underline inline-flex items-center gap-1">Layout file <FileText className="h-3 w-3" /></button>}
                   </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setEditing(t)}><Pencil className="h-4 w-4 mr-2" />Edit</Button>
@@ -134,7 +139,7 @@ export default function AutoEmails() {
                 <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFor(f, 'edit'); e.target.value = ''; }} />
                 <div className="flex items-center gap-3">
                   <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><Upload className="h-4 w-4 mr-2" />Upload file</>}</Button>
-                  {editing.file_url && <a href={editing.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline">Current file</a>}
+                  {editing.file_url && <button type="button" onClick={() => openFile(editing.file_url!)} className="text-xs text-accent underline">Current file</button>}
                 </div>
               </div>
               <div className="flex gap-3 pt-1">

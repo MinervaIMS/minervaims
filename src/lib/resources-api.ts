@@ -71,6 +71,11 @@ export function deleteResource(session: Session | null, id: string) {
 export function setResourceFavourite(session: Session | null, id: string, is_favourite: boolean) {
   return invoke(session, { action: 'favourite', id, is_favourite });
 }
+/** Get a short-lived signed URL for a stored file (private bucket). */
+export async function signResourceFile(session: Session | null, file_url: string): Promise<string> {
+  const data = await invoke(session, { action: 'sign', file_url });
+  return data.url as string;
+}
 export async function uploadResourceFile(session: Session | null, file: File): Promise<string> {
   const fd = new FormData();
   fd.append('file', file);

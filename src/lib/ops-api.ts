@@ -72,3 +72,7 @@ export async function uploadAutoEmailFile(session: Session | null, file: File): 
   if (data?.error) throw new Error(data.error);
   return data.file_url as string;
 }
+export async function signAutoEmailFile(session: Session | null, file_url: string): Promise<string> {
+  const data = await invoke('admin-auto-emails', session, { action: 'sign', file_url });
+  return data.url as string;
+}
