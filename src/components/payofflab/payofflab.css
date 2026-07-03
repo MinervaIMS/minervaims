@@ -1,0 +1,206 @@
+/* PayoffLab — scoped design tokens.
+   Line-colour semantics (fixed per Greek, colour-blind-safe Okabe–Ito set)
+   with light/dark variants. Everything else consumes the site's global
+   tokens (hsl(var(--...))) — no hardcoded colours outside this block. */
+
+.payofflab {
+  /* reserved line styles */
+  --pl-payoff: #1f0f4d;   /* the deep-navy accent — payoff at expiry */
+  --pl-value: #6e5aa6;    /* violet — present value now */
+  --pl-compare: #8a8a8a;  /* neutral grey — comparison-model overlay */
+
+  /* one hue per Greek, everywhere in the app */
+  --pl-delta: #0072b2;
+  --pl-gamma: #e69f00;
+  --pl-theta: #cc79a7;
+  --pl-vega: #009e73;
+  --pl-rho: #56b4e9;
+
+  /* sign-region shading + semantic pos/neg accents */
+  --pl-pos: rgba(0, 158, 115, 0.09);
+  --pl-neg: rgba(213, 94, 0, 0.1);
+  --pl-pos-strong: #009e73;
+  --pl-neg-strong: #d55e00;
+
+  /* chart chrome (resolved on canvas; theme-driven) */
+  --pl-grid: hsl(var(--separator) / 0.55);
+  --pl-axis: hsl(var(--separator));
+  --pl-tick-text: hsl(var(--muted-foreground));
+  --pl-crosshair: hsl(var(--accent));
+}
+
+.dark .payofflab {
+  --pl-payoff: #a091d6;
+  --pl-value: #8d7cc2;
+  --pl-compare: #9a9a9a;
+  --pl-delta: #4da3d9;
+  --pl-gamma: #eab04d;
+  --pl-theta: #d795b9;
+  --pl-vega: #33b58f;
+  --pl-rho: #7cc4ec;
+  --pl-pos: rgba(0, 158, 115, 0.14);
+  --pl-neg: rgba(213, 94, 0, 0.16);
+  --pl-pos-strong: #33b58f;
+  --pl-neg-strong: #e0784a;
+}
+
+/* Tabular numerals for every numeric readout, so figures never jump. */
+.payofflab .pl-num {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Uppercase eyebrow labels used across the rail and chart headers. */
+.payofflab .pl-eye {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Circled ⓘ affordance. */
+.payofflab .pl-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid hsl(var(--muted-foreground) / 0.55);
+  border-radius: 50%;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 9px;
+  line-height: 1;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  flex: none;
+  user-select: none;
+  background: transparent;
+  padding: 0;
+}
+.payofflab .pl-info:hover,
+.payofflab .pl-info:focus-visible {
+  border-color: hsl(var(--accent));
+  color: hsl(var(--accent));
+  outline: none;
+}
+
+/* Rail section: hairline-separated blocks. */
+.payofflab .pl-section {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid hsl(var(--separator));
+}
+
+/* Segmented control (level switch, x-axis, call/put …). */
+.payofflab .pl-seg {
+  display: flex;
+  border: 1px solid hsl(var(--accent));
+}
+.payofflab .pl-seg > button {
+  flex: 1;
+  text-align: center;
+  padding: 0.42rem 0;
+  font-size: 0.78rem;
+  color: hsl(var(--accent));
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.payofflab .pl-seg > button[data-active="true"] {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-weight: 600;
+}
+.payofflab .pl-seg > button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: -2px;
+}
+
+/* Soft segmented (secondary) variant. */
+.payofflab .pl-seg--soft {
+  border-color: hsl(var(--border));
+}
+.payofflab .pl-seg--soft > button {
+  color: hsl(var(--muted-foreground));
+}
+.payofflab .pl-seg--soft > button[data-active="true"] {
+  background: hsl(var(--secondary));
+  color: hsl(var(--accent));
+}
+
+/* Overlay chips. */
+.payofflab .pl-chip {
+  padding: 0.22rem 0.55rem;
+  border: 1px solid hsl(var(--border));
+  font-size: 0.7rem;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.payofflab .pl-chip[data-active="true"] {
+  border-color: var(--pl-chip-color, hsl(var(--accent)));
+  background: var(--pl-chip-color, hsl(var(--accent)));
+  color: hsl(var(--background));
+}
+.payofflab .pl-chip:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
+}
+.payofflab .pl-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Inputs: flat, sharp, monospace numerals. */
+.payofflab input[type="number"],
+.payofflab input[type="text"] {
+  border-radius: 0;
+}
+
+/* Learn drawer formula blocks. */
+.payofflab .pl-formula {
+  background: hsl(var(--secondary));
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.6rem;
+  text-align: center;
+  overflow-x: auto;
+}
+.payofflab .pl-formula .katex {
+  font-size: 1.02rem;
+  color: hsl(var(--foreground));
+}
+.payofflab .pl-formula-caption {
+  font-size: 0.72rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.35rem;
+}
+
+/* Keyboard-focusable chart surface. */
+.payofflab .pl-plot:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: -2px;
+}
+
+/* Thin progress bar. */
+.payofflab .pl-progress {
+  position: relative;
+  height: 3px;
+  background: hsl(var(--separator));
+  overflow: hidden;
+}
+.payofflab .pl-progress > div {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: hsl(var(--accent));
+  transition: width 200ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payofflab * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
