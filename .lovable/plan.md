@@ -1,30 +1,36 @@
-## Finding is already addressed in the current code
+## Changes to `src/components/shared/TeamSwarm.tsx`
 
-`supabase/functions/admin-treasury/index.ts` already gates the entire function on `canManage` before dispatching any action:
+Refine the "Our Team" swarm on the homepage. No other files touched.
 
-```ts
-const canManage = user.email === 'as.minerva@unibocconi.it'
-  || roles.some((r) => MANAGE.includes(r));
-if (!canManage) return json({ error: 'Access denied' }, 403);
-```
+### 1. Fix stretched photos
+Currently images are drawn `r*2 × r*2` regardless of source aspect ratio. Compute a cover-fit crop from the loaded image's `naturalWidth/Height` and draw the largest centered square from the source into the circular clip so proportions are preserved (no stretch).
 
-This runs before the `action === 'list'` branch, so unauthorized authenticated users (candidates, members, analysts, etc.) already receive `403 Access denied` when calling `list`. The redundant `if (!canManage)` inside the `add` branch is harmless dead code.
+### 2. Remove the president as a fixed centrepiece
+- Drop tier 0 entirely. Treat the President as just another board member (same size ~30px, same ring, same styling — no thick accent ring).
+- The centre of the swarm becomes empty (no solid bubble).
+- Board members (including President) are placed on the inner ring; analysts/others on the outer rings.
 
-The scanner's report reflects an older version of the file.
+### 3. More random positioning
+- Board members: base angle evenly spaced, then jitter each angle by ±(π / boardCount) × 0.55 and jitter ring radius by ±15%.
+- Outer members: same idea with larger angular jitter and radius jitter across two rings.
+- Jitter values are seeded per page load (fresh on reload) so the layout is stable during the session but different next visit.
 
-## Proposed action
+### 4. More cross-connections
+Add extra edges beyond board→outer-nearest:
+- Each board node connects to its 2 nearest board neighbours (inner mesh).
+- Each outer node connects to its nearest board node AND its nearest outer neighbour (analyst↔analyst, senior↔analyst links).
+- Keep line opacity low (~0.10–0.18) so the mesh stays subtle.
 
-1. **Mark the finding as fixed** via `security--manage_security_finding` with an explanation that the global `canManage` gate at the top of the handler already covers the `list` action (defence verified by code inspection).
-2. **Optional tiny cleanup** (only if you want it): remove the now-redundant `if (!canManage) return json({ error: 'Access denied' }, 403);` line inside the `add` branch, since it's already enforced above. No behaviour change.
+### 5. No live rotation of members
+Remove the 5-second swap loop and the fade-in/out target-opacity easing tied to swaps. Members shown are chosen once at mount:
+- Shuffle `board` and `others` arrays with `Math.random()` on mount, then pick the first N for each tier.
+- Reloading the page re-shuffles (user's desired behaviour). During a session the same faces stay put.
+- Keep the slow global drift/rotation animation for visual life — only the identity swaps are removed.
 
-## What I will NOT do
+### Technical notes
+- Keep the canvas, ResizeObserver, reduced-motion handling, and visibility pause.
+- Drop `pool`, `lastSwap`, `targetOpacity` swap logic, and the tier-0 branch.
+- Keep `opacity` as a static 1 (or remove entirely) since no fades remain.
+- Image draw helper: `const ar = img.naturalWidth / img.naturalHeight; let sw, sh; if (ar > 1) { sh = img.naturalHeight; sw = sh; } else { sw = img.naturalWidth; sh = sw; }` then `drawImage(img, (img.naturalWidth-sw)/2, (img.naturalHeight-sh)/2, sw, sh, n.x-r, n.y-r, r*2, r*2)`.
 
-- No new authorization logic — it's already correct.
-- No changes to other files or other findings in the More panel (those are separate items you haven't asked about).
-
-## Verification
-
-- Re-read the file to confirm the top-level guard is intact.
-- After marking fixed, the scanner entry disappears from the security panel.
-
-Confirm and I'll (a) mark the finding as fixed, and (b) optionally drop the redundant inner check.
+No data/API/backend changes.
