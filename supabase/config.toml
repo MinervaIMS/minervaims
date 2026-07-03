@@ -45,3 +45,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.pricing-engine]
+    # PayoffLab: public teaching tool — no JWT for now; per-IP rate limiting
+    # runs inside the function. If paid tiers ship, flip this and verify
+    # entitlements server-side.
+    verify_jwt = false

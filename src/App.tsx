@@ -49,6 +49,7 @@ const EmailVerification = lazy(() => import("./pages/EmailVerification"));
 const SessionExpired = lazy(() => import("./pages/SessionExpired"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const MinervaWorkspace = lazy(() => import("./pages/MinervaWorkspace"));
+const PayoffLab = lazy(() => import("./pages/PayoffLab"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
@@ -114,6 +115,7 @@ const App = () => {
                 <Route path="/verify-email" element={<Suspense fallback={<PageLoader />}><EmailVerification /></Suspense>} />
                 <Route path="/session-expired" element={<Suspense fallback={<PageLoader />}><SessionExpired /></Suspense>} />
                 <Route path="/access-denied" element={<Suspense fallback={<PageLoader />}><AccessDenied /></Suspense>} />
+                <Route path="/lab" element={<Suspense fallback={<PageLoader />}><PayoffLab /></Suspense>} />
                 <Route path="/admin" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
                 <Route path="/pending-approval" element={<Suspense fallback={<PageLoader />}><PendingApproval /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
