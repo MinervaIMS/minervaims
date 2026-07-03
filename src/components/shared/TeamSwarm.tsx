@@ -142,7 +142,7 @@ function buildLinks(nodes: SwarmNode[]): Link[] {
     }
   };
 
-  const nearestCount = nodes.length < 18 ? 4 : 5;
+  const nearestCount = nodes.length < 18 ? 5 : 6;
   for (let i = 0; i < nodes.length; i++) {
     const nearest = nodes
       .map((node, index) => ({
@@ -155,11 +155,11 @@ function buildLinks(nodes: SwarmNode[]): Link[] {
       .slice(0, nearestCount);
 
     nearest.forEach(({ index }, rank) => {
-      addPair(i, index, rank < 3 ? 0.18 : 0.13);
+      addPair(i, index, rank < 3 ? 0.22 : 0.16);
     });
   }
 
-  const extraLinks = nodes.length < 18 ? 1 : 2;
+  const extraLinks = nodes.length < 18 ? 2 : 3;
   for (let i = 0; i < nodes.length; i++) {
     const byDistance = nodes
       .map((node, index) => ({
@@ -173,7 +173,7 @@ function buildLinks(nodes: SwarmNode[]): Link[] {
     const longRange = byDistance.slice(Math.max(0, Math.floor(byDistance.length * 0.45)));
     for (let n = 0; n < extraLinks && longRange.length > 0; n++) {
       const pick = Math.floor(seededNoise((i + 1) * 43 + n * 19) * longRange.length);
-      addPair(i, longRange[pick].index, 0.08);
+      addPair(i, longRange[pick].index, 0.10);
     }
   }
 
