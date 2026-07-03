@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 // =====================================================================
-// TeamSwarm — an animated "swarm" of team member photos on a canvas.
-// Board members drift near the centre (and through it), analysts and
-// others further out. A dense low-opacity mesh connects the group. The
-// roster is picked once per page load (shuffled, then frozen) — a reload
-// picks a new random cast. Only members with a photo appear.
+// TeamSwarm — a stable, connected constellation of team member photos.
+// All visible members are equal in size. Positions are packed once per
+// layout pass with a guaranteed gap; only a very slow, reserved drift is
+// added so the drawing never collapses into overlaps or glitchy motion.
+// The visible roster is selected once per page load; reloads reshuffle it.
 // =====================================================================
 
 interface TeamMember {
@@ -19,23 +19,34 @@ interface TeamMember {
 }
 
 interface SwarmNode {
-  tier: 1 | 2;           // 1 = board, 2 = others
-  ringR: number;         // ring radius as a fraction of the field radius
-  baseAngle: number;     // starting angle on the ring
-  dir: number;           // rotation direction
-  phase: number;         // drift phase
-  driftAmp: number;      // per-node drift amplitude
-  size: number;          // draw radius in px
+  anchorX: number;
+  anchorY: number;
+  phase: number;
+  driftAngle: number;
+  size: number;
   member: TeamMember;
   img: HTMLImageElement | null;
-  // Long-range random links (indices into nodes[]), seeded once at mount.
-  extraLinks: number[];
   x: number;
   y: number;
 }
 
+interface Slot {
+  x: number;
+  y: number;
+  score: number;
+}
+
+interface Link {
+  from: number;
+  to: number;
+  opacity: number;
+}
+
 const NAVY = '40, 24, 90';
-const NODE_PADDING = 8; // white space between any two circles
+const DESKTOP_COUNT = 28;
+const TABLET_COUNT = 22;
+const MOBILE_COUNT = 18;
+const SMALL_MOBILE_COUNT = 15;
 
 function initials(m: TeamMember | null): string {
   if (!m) return '';
@@ -59,6 +70,114 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function seededNoise(seed: number): number {
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function getDisplayCount(width: number): number {
+  if (width < 480) return SMALL_MOBILE_COUNT;
+  if (width < 768) return MOBILE_COUNT;
+  if (width < 1024) return TABLET_COUNT;
+  return DESKTOP_COUNT;
+}
+
+function getNodeRadius(width: number): number {
+  if (width < 480) return 18;
+  if (width < 768) return 21;
+  if (width < 1024) return 28;
+  return 38;
+}
+
+function buildPackedSlots(
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  radius: number,
+  minDistance: number,
+): Slot[] {
+  const safeRx = Math.max(rx - radius, radius * 2);
+  const safeRy = Math.max(ry - radius, radius * 2);
+  const stepX = minDistance;
+  const stepY = minDistance * Math.sqrt(3) / 2;
+  const slots: Slot[] = [];
+  let row = 0;
+
+  for (let y = -safeRy; y <= safeRy; y += stepY) {
+    const offset = row % 2 === 0 ? 0 : stepX / 2;
+    let col = 0;
+    for (let x = -safeRx; x <= safeRx; x += stepX) {
+      const px = x + offset;
+      const ellipse = (px / safeRx) ** 2 + (y / safeRy) ** 2;
+      if (ellipse <= 1) {
+        const radial = Math.sqrt(Math.max(ellipse, 0));
+        const noise = seededNoise(row * 97 + col * 31);
+        slots.push({
+          x: cx + px,
+          y: cy + y,
+          score: radial + noise * 0.24,
+        });
+      }
+      col++;
+    }
+    row++;
+  }
+
+  return slots.sort((a, b) => a.score - b.score);
+}
+
+function buildLinks(nodes: SwarmNode[]): Link[] {
+  const pairMap = new Map<string, Link>();
+  const addPair = (from: number, to: number, opacity: number) => {
+    if (from === to) return;
+    const a = Math.min(from, to);
+    const b = Math.max(from, to);
+    const key = `${a}:${b}`;
+    const existing = pairMap.get(key);
+    if (!existing || opacity > existing.opacity) {
+      pairMap.set(key, { from: a, to: b, opacity });
+    }
+  };
+
+  const nearestCount = nodes.length < 18 ? 5 : 6;
+  for (let i = 0; i < nodes.length; i++) {
+    const nearest = nodes
+      .map((node, index) => ({
+        index,
+        d: index === i
+          ? Number.POSITIVE_INFINITY
+          : (node.anchorX - nodes[i].anchorX) ** 2 + (node.anchorY - nodes[i].anchorY) ** 2,
+      }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, nearestCount);
+
+    nearest.forEach(({ index }, rank) => {
+      addPair(i, index, rank < 3 ? 0.22 : 0.16);
+    });
+  }
+
+  const extraLinks = nodes.length < 18 ? 2 : 3;
+  for (let i = 0; i < nodes.length; i++) {
+    const byDistance = nodes
+      .map((node, index) => ({
+        index,
+        d: index === i
+          ? -1
+          : (node.anchorX - nodes[i].anchorX) ** 2 + (node.anchorY - nodes[i].anchorY) ** 2,
+      }))
+      .filter(({ d }) => d > 0)
+      .sort((a, b) => a.d - b.d);
+    const longRange = byDistance.slice(Math.max(0, Math.floor(byDistance.length * 0.45)));
+    for (let n = 0; n < extraLinks && longRange.length > 0; n++) {
+      const pick = Math.floor(seededNoise((i + 1) * 43 + n * 19) * longRange.length);
+      addPair(i, longRange[pick].index, 0.10);
+    }
+  }
+
+  return Array.from(pairMap.values());
 }
 
 export function TeamSwarm() {
@@ -95,83 +214,64 @@ export function TeamSwarm() {
     const reduced = typeof window !== 'undefined'
       && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    const board = shuffle(photoPeople.filter((m) => m.is_board));
-    const others = shuffle(photoPeople.filter((m) => !m.is_board));
-    const boardSlots = Math.min(board.length, 8);
-    const otherSlots = Math.min(others.length, 20);
-    if (boardSlots === 0 && otherSlots === 0) return;
+    const roster = shuffle(photoPeople).slice(0, Math.min(photoPeople.length, DESKTOP_COUNT));
+    if (roster.length === 0) return;
 
-    // Placeholder sizes; recomputed on resize().
-    const nodes: SwarmNode[] = [];
-
-    for (let i = 0; i < boardSlots; i++) {
-      const step = (Math.PI * 2) / boardSlots;
-      const angleJitter = (Math.random() - 0.5) * step * 0.6;
-      const radiusJitter = 1 + (Math.random() - 0.5) * 0.8; // ±40%
-      nodes.push({
-        tier: 1,
-        ringR: 0.14 * radiusJitter,
-        baseAngle: i * step + angleJitter,
-        dir: Math.random() < 0.5 ? 1 : -1,
-        phase: Math.random() * Math.PI * 2,
-        driftAmp: 12,
-        size: 42,
-        member: board[i],
-        img: null,
-        extraLinks: [],
-        x: 0, y: 0,
-      });
-    }
-
-    for (let i = 0; i < otherSlots; i++) {
-      const step = (Math.PI * 2) / otherSlots;
-      const angleJitter = (Math.random() - 0.5) * step * 0.9;
-      const baseRing = i % 2 === 0 ? 0.62 : 0.82;
-      const radiusJitter = 1 + (Math.random() - 0.5) * 0.22;
-      nodes.push({
-        tier: 2,
-        ringR: baseRing * radiusJitter,
-        baseAngle: i * step + angleJitter,
-        dir: -1,
-        phase: Math.random() * Math.PI * 2,
-        driftAmp: 6,
-        size: 32,
-        member: others[i],
-        img: null,
-        extraLinks: [],
-        x: 0, y: 0,
-      });
-    }
-
-    // Seed a couple of long-range random links per board node (stable).
-    const boardIdx = nodes.map((n, i) => n.tier === 1 ? i : -1).filter((i) => i >= 0);
-    for (const bi of boardIdx) {
-      const candidates = boardIdx.filter((j) => j !== bi);
-      shuffle(candidates).slice(0, 1).forEach((j) => nodes[bi].extraLinks.push(j));
-    }
+    let nodes: SwarmNode[] = [];
+    let links: Link[] = [];
+    const imageByUrl = new Map<string, HTMLImageElement | null>();
 
     // Load images.
     let cancelled = false;
-    for (const n of nodes) {
-      if (n.member?.photo_url) loadImage(n.member.photo_url).then((img) => { if (!cancelled) n.img = img; });
+    for (const member of roster) {
+      if (member.photo_url) {
+        loadImage(member.photo_url).then((img) => {
+          if (cancelled) return;
+          imageByUrl.set(member.photo_url as string, img);
+          for (const n of nodes) {
+            if (n.member.photo_url === member.photo_url) n.img = img;
+          }
+        });
+      }
     }
 
-    let W = 0, H = 0, cx = 0, cy = 0, rx = 0, ry = 0, dpr = 1;
+    let W = 0, H = 0, cx = 0, cy = 0, rx = 0, ry = 0, dpr = 1, driftAmp = 0;
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = container.clientWidth;
       H = container.clientHeight;
+      if (W <= 0 || H <= 0) return;
       canvas.width = W * dpr; canvas.height = H * dpr;
       canvas.style.width = `${W}px`; canvas.style.height = `${H}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       cx = W / 2; cy = H / 2;
-      rx = Math.min(W * 0.46, 560); ry = Math.min(H * 0.44, 320);
-      // Responsive sizing.
-      const desktop = W >= 768;
-      for (const n of nodes) {
-        if (n.tier === 1) n.size = desktop ? 46 : 34;
-        else n.size = desktop ? 34 : 26;
-      }
+      const radius = getNodeRadius(W);
+      const gap = W < 768 ? 9 : 11;
+      driftAmp = reduced ? 0 : W < 768 ? 0.8 : 1.4;
+      rx = Math.min(W * 0.47, 590);
+      ry = Math.min(H * 0.45, 330);
+      const minDistance = radius * 2 + gap + driftAmp * 4;
+      const slots = buildPackedSlots(cx, cy, rx, ry, radius + driftAmp * 2, minDistance);
+      const count = Math.min(roster.length, getDisplayCount(W), slots.length);
+
+      nodes = roster.slice(0, count).map((member, index) => {
+        const slot = slots[index];
+        const phase = seededNoise((index + 1) * 17) * Math.PI * 2;
+        return {
+          anchorX: slot.x,
+          anchorY: slot.y,
+          phase,
+          driftAngle: seededNoise((index + 1) * 29) * Math.PI * 2,
+          size: radius,
+          member,
+          img: member.photo_url ? imageByUrl.get(member.photo_url) ?? null : null,
+          x: slot.x,
+          y: slot.y,
+        };
+      });
+      links = buildLinks(nodes);
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -212,97 +312,24 @@ export function TeamSwarm() {
 
     const frame = (now: number) => {
       const t = now / 1000;
-      const rot = reduced ? 0 : t * 0.05;
-      const wob = reduced ? 0 : 1;
 
-      // Target positions from parametric drift.
+      // Stable positions with a very slow reserved drift.
       for (const n of nodes) {
-        const a = n.baseAngle + rot * n.dir;
-        const drift = wob * Math.sin(t * 0.6 + n.phase) * n.driftAmp;
-        n.x = cx + Math.cos(a) * (rx * n.ringR + drift);
-        n.y = cy + Math.sin(a) * (ry * n.ringR + drift);
-      }
-
-      // Collision relaxation: keep NODE_PADDING between any two circles.
-      for (let iter = 0; iter < 2; iter++) {
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const a = nodes[i], b = nodes[j];
-            let dx = b.x - a.x, dy = b.y - a.y;
-            let d = Math.hypot(dx, dy);
-            const min = a.size + b.size + NODE_PADDING;
-            if (d < min) {
-              if (d < 0.0001) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d = Math.hypot(dx, dy) || 1; }
-              const push = (min - d) / 2;
-              const ux = dx / d, uy = dy / d;
-              a.x -= ux * push; a.y -= uy * push;
-              b.x += ux * push; b.y += uy * push;
-            }
-          }
-        }
-      }
-
-      // Clamp inside the drawing ellipse (with node radius margin).
-      for (const n of nodes) {
-        const ex = (n.x - cx) / Math.max(rx - n.size, 1);
-        const ey = (n.y - cy) / Math.max(ry - n.size, 1);
-        const m = ex * ex + ey * ey;
-        if (m > 1) {
-          const s = 1 / Math.sqrt(m);
-          n.x = cx + (n.x - cx) * s;
-          n.y = cy + (n.y - cy) * s;
-        }
+        const drift = driftAmp * Math.sin(t * 0.12 + n.phase);
+        const crossDrift = driftAmp * 0.45 * Math.cos(t * 0.09 + n.phase * 1.7);
+        n.x = n.anchorX + Math.cos(n.driftAngle) * drift + Math.cos(n.driftAngle + Math.PI / 2) * crossDrift;
+        n.y = n.anchorY + Math.sin(n.driftAngle) * drift + Math.sin(n.driftAngle + Math.PI / 2) * crossDrift;
       }
 
       ctx.clearRect(0, 0, W, H);
-
-      const boardNodes = nodes.filter((n) => n.tier === 1);
-      const outerNodes = nodes.filter((n) => n.tier === 2);
       ctx.lineWidth = 1;
 
-      // Board↔board: 3 nearest.
-      for (const b of boardNodes) {
-        const sorted = boardNodes
-          .filter((o) => o !== b)
-          .map((o) => ({ o, d: (o.x - b.x) ** 2 + (o.y - b.y) ** 2 }))
-          .sort((a, z) => a.d - z.d)
-          .slice(0, 3);
-        for (const { o } of sorted) {
-          ctx.strokeStyle = `rgba(${NAVY}, 0.18)`;
-          ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(o.x, o.y); ctx.stroke();
-        }
-      }
-
-      // Board long-range random links.
-      for (const b of boardNodes) {
-        for (const j of b.extraLinks) {
-          const o = nodes[j];
-          ctx.strokeStyle = `rgba(${NAVY}, 0.10)`;
-          ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(o.x, o.y); ctx.stroke();
-        }
-      }
-
-      // Outer nodes: 2 nearest board + 2 nearest outer.
-      for (const n of outerNodes) {
-        if (boardNodes.length) {
-          const nearestB = boardNodes
-            .map((b) => ({ b, d: (b.x - n.x) ** 2 + (b.y - n.y) ** 2 }))
-            .sort((a, z) => a.d - z.d)
-            .slice(0, 2);
-          for (const { b } of nearestB) {
-            ctx.strokeStyle = `rgba(${NAVY}, 0.13)`;
-            ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(n.x, n.y); ctx.stroke();
-          }
-        }
-        const nearestO = outerNodes
-          .filter((o) => o !== n)
-          .map((o) => ({ o, d: (o.x - n.x) ** 2 + (o.y - n.y) ** 2 }))
-          .sort((a, z) => a.d - z.d)
-          .slice(0, 2);
-        for (const { o } of nearestO) {
-          ctx.strokeStyle = `rgba(${NAVY}, 0.10)`;
-          ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(o.x, o.y); ctx.stroke();
-        }
+      for (const link of links) {
+        const a = nodes[link.from];
+        const b = nodes[link.to];
+        if (!a || !b) continue;
+        ctx.strokeStyle = `rgba(${NAVY}, ${link.opacity})`;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       }
 
       for (const n of nodes) drawNode(n);
