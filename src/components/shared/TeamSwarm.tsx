@@ -262,7 +262,7 @@ export function TeamSwarm() {
   return (
     <section className="py-section-sm md:py-section bg-background">
       <div className="container">
-        <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Team</h2>
+        <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">It's a People Business</h2>
         <p className="font-body text-body-lg text-muted-foreground max-w-3xl mb-8">
           A community of students working across research divisions and portfolio management. The people below are drawn from our current members.
         </p>
