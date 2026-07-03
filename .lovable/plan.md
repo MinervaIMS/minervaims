@@ -1,39 +1,36 @@
-## Diagnosis
+# Archive reports invisible — root cause & fix
 
-The glitch was introduced by the page-fade wrapper we just added to `src/components/layout/Layout.tsx`:
+## Issue
+Every request to `archive_files` from the public site returns:
 
-```tsx
-<div key={pathname} className={isChromeless ? undefined : 'animate-page-in'}>
-  <Outlet />
-</div>
+```
+401 { "code": "42501", "message": "permission denied for function is_staff" }
 ```
 
-with CSS in `src/index.css`:
+The SELECT policy on `public.archive_files` is:
 
-```css
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
-}
-.animate-page-in { animation: pageIn 0.35s ease-out both; }
+```
+(status = 'published') OR is_staff(auth.uid())
 ```
 
-On every route change the wrapper remounts (because of `key={pathname}`) and starts at `opacity: 0`. During those ~350ms:
-- The Suspense fallback (`PageLoader`, positioned `fixed inset-0`) is also inside that wrapper, so it too is invisible — the loading screen never appears.
-- `<main class="flex-1">` still fills the viewport, so `<Footer />` stays pinned to the bottom of the empty area and becomes the only visible chrome for a fraction of a second → "footer flashes before the page".
+Postgres evaluates the whole `USING` expression, so it needs `EXECUTE` on `public.is_staff(uuid)` for whichever role is calling — here `anon` (and `authenticated` non-staff users). That grant is missing, so PostgREST rejects the query before RLS filtering ever runs. Result: no reports load on `/archive`, homepage "Latest Reports", or division pages.
+
+Nothing changed in the frontend — this is a backend permission gap on the SECURITY DEFINER helper.
 
 ## Fix
+Run a migration that grants EXECUTE on the helper functions used inside RLS policies to the roles that hit those policies:
 
-Revert the two pieces we added for the page-fade:
+```sql
+GRANT EXECUTE ON FUNCTION public.is_staff(uuid)      TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin(uuid)      TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_full_access(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_candidate(uuid)   TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO anon, authenticated;
+```
 
-1. `src/components/layout/Layout.tsx` — drop the wrapper div, restore the plain `<Outlet />`.
-2. `src/index.css` — remove the `@keyframes pageIn` block and the `.animate-page-in` rule.
+These are all `SECURITY DEFINER STABLE` and only read `user_roles`, so exposing EXECUTE is safe — they already run with elevated privileges by design, and the anon path (`auth.uid()` is null) simply returns false.
 
-The global `select` / `[role='combobox']` flat-styling block we added in the same commit stays — it is unrelated to this glitch.
-
-No other files change. `PageLoader` will show again during Suspense as before, and the footer will only appear once the page content has actually rendered.
-
-## Out of scope
-
-- Preloader / GSAP intro
-- Alumni, Events, Readings content changes from the same upload
+## Verification
+- After the migration, re-load `/archive` — the `archive_files` GET should return 200 with the published rows.
+- Confirm homepage "Latest Reports" carousel populates again.
+- No frontend changes required.
