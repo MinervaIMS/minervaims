@@ -1142,6 +1142,21 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_rate_limits: {
+        Row: {
+          key: string
+          requested_at: string
+        }
+        Insert: {
+          key: string
+          requested_at?: string
+        }
+        Update: {
+          key?: string
+          requested_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1538,6 +1553,10 @@ export type Database = {
         Returns: number
       }
       normalize_email_part: { Args: { _s: string }; Returns: string }
+      pricing_rate_check: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
