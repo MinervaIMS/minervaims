@@ -1,36 +1,31 @@
-## Changes to `src/components/shared/TeamSwarm.tsx`
+## Refinements to `src/components/shared/TeamSwarm.tsx`
 
-Refine the "Our Team" swarm on the homepage. No other files touched.
+### 1. Bigger circles (esp. desktop)
+Make node sizes responsive to canvas width:
+- Board: 30 → ~42 on desktop (>=768px), ~34 on mobile.
+- Others: 22 → ~32 on desktop, ~26 on mobile.
+Recomputed on each `resize()` so it updates with viewport.
 
-### 1. Fix stretched photos
-Currently images are drawn `r*2 × r*2` regardless of source aspect ratio. Compute a cover-fit crop from the loaded image's `naturalWidth/Height` and draw the largest centered square from the source into the circular clip so proportions are preserved (no stretch).
+### 2. No overlap, with breathing room
+Add a post-position pass every frame: after computing target `x,y` for all nodes, run a simple relaxation step (1–2 iterations) that pushes any two nodes apart when `distance < n1.size + n2.size + PADDING` (PADDING ≈ 8px). Each overlapping pair is displaced along their axis by half the deficit. Guarantees visible white space between any two photos even when drift brings them close.
 
-### 2. Remove the president as a fixed centrepiece
-- Drop tier 0 entirely. Treat the President as just another board member (same size ~30px, same ring, same styling — no thick accent ring).
-- The centre of the swarm becomes empty (no solid bubble).
-- Board members (including President) are placed on the inner ring; analysts/others on the outer rings.
+### 3. Use the centre — no fixed centrepiece
+Shrink the inner ring so board members naturally pass through/near the middle:
+- Board `ringR` base 0.30 → 0.14, with ±40% radial jitter (some near centre, some further).
+- Give board nodes larger drift amplitude (12px instead of 6px) and slightly varied `dir` (mix of +1 / -1) so paths cross the middle over time.
+- No dedicated centre node — the movement fills the space.
 
-### 3. More random positioning
-- Board members: base angle evenly spaced, then jitter each angle by ±(π / boardCount) × 0.55 and jitter ring radius by ±15%.
-- Outer members: same idea with larger angular jitter and radius jitter across two rings.
-- Jitter values are seeded per page load (fresh on reload) so the layout is stable during the session but different next visit.
-
-### 4. More cross-connections
-Add extra edges beyond board→outer-nearest:
-- Each board node connects to its 2 nearest board neighbours (inner mesh).
-- Each outer node connects to its nearest board node AND its nearest outer neighbour (analyst↔analyst, senior↔analyst links).
-- Keep line opacity low (~0.10–0.18) so the mesh stays subtle.
-
-### 5. No live rotation of members
-Remove the 5-second swap loop and the fade-in/out target-opacity easing tied to swaps. Members shown are chosen once at mount:
-- Shuffle `board` and `others` arrays with `Math.random()` on mount, then pick the first N for each tier.
-- Reloading the page re-shuffles (user's desired behaviour). During a session the same faces stay put.
-- Keep the slow global drift/rotation animation for visual life — only the identity swaps are removed.
+### 4. Many more connections
+Denser mesh to convey "all connected":
+- Board↔board: connect each board node to its 3 nearest (was 2), plus a few random long-range links (each board node picks 1 random non-neighbour with 40% chance per frame-independent seed set at mount).
+- Outer↔board: each outer connects to its 2 nearest board nodes (was 1).
+- Outer↔outer: each outer connects to its 2 nearest outer nodes (was 1).
+- Keep line opacities subtle (0.10–0.18) so the mesh stays elegant rather than noisy.
+Random long-range picks are seeded once at mount so they don't flicker.
 
 ### Technical notes
-- Keep the canvas, ResizeObserver, reduced-motion handling, and visibility pause.
-- Drop `pool`, `lastSwap`, `targetOpacity` swap logic, and the tier-0 branch.
-- Keep `opacity` as a static 1 (or remove entirely) since no fades remain.
-- Image draw helper: `const ar = img.naturalWidth / img.naturalHeight; let sw, sh; if (ar > 1) { sh = img.naturalHeight; sw = sh; } else { sw = img.naturalWidth; sh = sw; }` then `drawImage(img, (img.naturalWidth-sw)/2, (img.naturalHeight-sh)/2, sw, sh, n.x-r, n.y-r, r*2, r*2)`.
+- Collision loop: O(n²) with n≈28 is fine.
+- Clamp positions inside the ellipse `rx,ry` after relaxation so nodes don't drift off canvas.
+- Everything else (shuffle-once roster, cover-fit photo crop, reduced-motion, visibility pause) stays as-is.
 
-No data/API/backend changes.
+No other files touched.
