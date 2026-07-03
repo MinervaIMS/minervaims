@@ -55,7 +55,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'add') {
-      if (!canManage) return json({ error: 'Access denied' }, 403);
       const parsed = EntrySchema.safeParse(body.entry);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
       const e = parsed.data;

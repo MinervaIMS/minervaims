@@ -1,36 +1,30 @@
-# Archive reports invisible — root cause & fix
+## Finding is already addressed in the current code
 
-## Issue
-Every request to `archive_files` from the public site returns:
+`supabase/functions/admin-treasury/index.ts` already gates the entire function on `canManage` before dispatching any action:
 
-```
-401 { "code": "42501", "message": "permission denied for function is_staff" }
-```
-
-The SELECT policy on `public.archive_files` is:
-
-```
-(status = 'published') OR is_staff(auth.uid())
+```ts
+const canManage = user.email === 'as.minerva@unibocconi.it'
+  || roles.some((r) => MANAGE.includes(r));
+if (!canManage) return json({ error: 'Access denied' }, 403);
 ```
 
-Postgres evaluates the whole `USING` expression, so it needs `EXECUTE` on `public.is_staff(uuid)` for whichever role is calling — here `anon` (and `authenticated` non-staff users). That grant is missing, so PostgREST rejects the query before RLS filtering ever runs. Result: no reports load on `/archive`, homepage "Latest Reports", or division pages.
+This runs before the `action === 'list'` branch, so unauthorized authenticated users (candidates, members, analysts, etc.) already receive `403 Access denied` when calling `list`. The redundant `if (!canManage)` inside the `add` branch is harmless dead code.
 
-Nothing changed in the frontend — this is a backend permission gap on the SECURITY DEFINER helper.
+The scanner's report reflects an older version of the file.
 
-## Fix
-Run a migration that grants EXECUTE on the helper functions used inside RLS policies to the roles that hit those policies:
+## Proposed action
 
-```sql
-GRANT EXECUTE ON FUNCTION public.is_staff(uuid)      TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.is_admin(uuid)      TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.is_full_access(uuid) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.is_candidate(uuid)   TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO anon, authenticated;
-```
+1. **Mark the finding as fixed** via `security--manage_security_finding` with an explanation that the global `canManage` gate at the top of the handler already covers the `list` action (defence verified by code inspection).
+2. **Optional tiny cleanup** (only if you want it): remove the now-redundant `if (!canManage) return json({ error: 'Access denied' }, 403);` line inside the `add` branch, since it's already enforced above. No behaviour change.
 
-These are all `SECURITY DEFINER STABLE` and only read `user_roles`, so exposing EXECUTE is safe — they already run with elevated privileges by design, and the anon path (`auth.uid()` is null) simply returns false.
+## What I will NOT do
+
+- No new authorization logic — it's already correct.
+- No changes to other files or other findings in the More panel (those are separate items you haven't asked about).
 
 ## Verification
-- After the migration, re-load `/archive` — the `archive_files` GET should return 200 with the published rows.
-- Confirm homepage "Latest Reports" carousel populates again.
-- No frontend changes required.
+
+- Re-read the file to confirm the top-level guard is intact.
+- After marking fixed, the scanner entry disappears from the security panel.
+
+Confirm and I'll (a) mark the finding as fixed, and (b) optionally drop the redundant inner check.
