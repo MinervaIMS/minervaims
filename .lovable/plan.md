@@ -1,37 +1,30 @@
-Plan to fix the homepage “Our Team” swarm once and for all:
+## Finding is already addressed in the current code
 
-1. **Make every visible member equal size**
-   - Remove board-vs-analyst size differences.
-   - Use one radius for all nodes on desktop.
-   - Use one slightly smaller radius for all nodes on mobile/tablet.
+`supabase/functions/admin-treasury/index.ts` already gates the entire function on `canManage` before dispatching any action:
 
-2. **Reduce visible member count on mobile**
-   - Desktop: keep a richer group, sized to fit safely in the available section.
-   - Mobile: cap the displayed people around 15–20, prioritizing no overlap and readable spacing.
-   - If the canvas is too narrow, automatically lower the count rather than forcing crowded circles.
+```ts
+const canManage = user.email === 'as.minerva@unibocconi.it'
+  || roles.some((r) => MANAGE.includes(r));
+if (!canManage) return json({ error: 'Access denied' }, 403);
+```
 
-3. **Replace the current orbit/collision behavior with a stable layout**
-   - Stop pushing circles around every frame, which is causing the glitchy movement.
-   - Compute a non-overlapping layout once on load/resize using fixed target positions.
-   - Add only very slow, subtle movement around those safe positions.
-   - Keep a hard minimum gap between every pair of image circles.
+This runs before the `action === 'list'` branch, so unauthorized authenticated users (candidates, members, analysts, etc.) already receive `403 Access denied` when calling `list`. The redundant `if (!canManage)` inside the `add` branch is harmless dead code.
 
-4. **Use the centre without creating a fixed hierarchy**
-   - Place some members near the middle, but not as a special larger or central figure.
-   - Distribute everyone as equal peers across centre, middle, and outer areas.
+The scanner's report reflects an older version of the file.
 
-5. **Add more connections**
-   - Draw a denser mesh: each member connects to several nearby members.
-   - Add a small number of stable longer-range links so the group feels connected.
-   - Keep the lines subtle and academic, aligned with the existing minimal site tone.
+## Proposed action
 
-6. **Preserve existing good behavior**
-   - Keep proportional photo cropping so faces are not stretched.
-   - Keep roster randomization only on page reload, not during viewing.
-   - Respect reduced-motion preferences.
+1. **Mark the finding as fixed** via `security--manage_security_finding` with an explanation that the global `canManage` gate at the top of the handler already covers the `list` action (defence verified by code inspection).
+2. **Optional tiny cleanup** (only if you want it): remove the now-redundant `if (!canManage) return json({ error: 'Access denied' }, 403);` line inside the `add` branch, since it's already enforced above. No behaviour change.
 
-Technical approach:
-- Update only `src/components/shared/TeamSwarm.tsx`.
-- Replace frame-by-frame collision relaxation with a deterministic packed layout generated at mount/resize.
-- Use a minimum distance formula: `radius * 2 + gap`, where `gap` is always positive.
-- Validate visually on desktop and mobile after implementation.
+## What I will NOT do
+
+- No new authorization logic — it's already correct.
+- No changes to other files or other findings in the More panel (those are separate items you haven't asked about).
+
+## Verification
+
+- Re-read the file to confirm the top-level guard is intact.
+- After marking fixed, the scanner entry disappears from the security panel.
+
+Confirm and I'll (a) mark the finding as fixed, and (b) optionally drop the redundant inner check.
