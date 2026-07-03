@@ -1,31 +1,37 @@
-## Refinements to `src/components/shared/TeamSwarm.tsx`
+Plan to fix the homepage “Our Team” swarm once and for all:
 
-### 1. Bigger circles (esp. desktop)
-Make node sizes responsive to canvas width:
-- Board: 30 → ~42 on desktop (>=768px), ~34 on mobile.
-- Others: 22 → ~32 on desktop, ~26 on mobile.
-Recomputed on each `resize()` so it updates with viewport.
+1. **Make every visible member equal size**
+   - Remove board-vs-analyst size differences.
+   - Use one radius for all nodes on desktop.
+   - Use one slightly smaller radius for all nodes on mobile/tablet.
 
-### 2. No overlap, with breathing room
-Add a post-position pass every frame: after computing target `x,y` for all nodes, run a simple relaxation step (1–2 iterations) that pushes any two nodes apart when `distance < n1.size + n2.size + PADDING` (PADDING ≈ 8px). Each overlapping pair is displaced along their axis by half the deficit. Guarantees visible white space between any two photos even when drift brings them close.
+2. **Reduce visible member count on mobile**
+   - Desktop: keep a richer group, sized to fit safely in the available section.
+   - Mobile: cap the displayed people around 15–20, prioritizing no overlap and readable spacing.
+   - If the canvas is too narrow, automatically lower the count rather than forcing crowded circles.
 
-### 3. Use the centre — no fixed centrepiece
-Shrink the inner ring so board members naturally pass through/near the middle:
-- Board `ringR` base 0.30 → 0.14, with ±40% radial jitter (some near centre, some further).
-- Give board nodes larger drift amplitude (12px instead of 6px) and slightly varied `dir` (mix of +1 / -1) so paths cross the middle over time.
-- No dedicated centre node — the movement fills the space.
+3. **Replace the current orbit/collision behavior with a stable layout**
+   - Stop pushing circles around every frame, which is causing the glitchy movement.
+   - Compute a non-overlapping layout once on load/resize using fixed target positions.
+   - Add only very slow, subtle movement around those safe positions.
+   - Keep a hard minimum gap between every pair of image circles.
 
-### 4. Many more connections
-Denser mesh to convey "all connected":
-- Board↔board: connect each board node to its 3 nearest (was 2), plus a few random long-range links (each board node picks 1 random non-neighbour with 40% chance per frame-independent seed set at mount).
-- Outer↔board: each outer connects to its 2 nearest board nodes (was 1).
-- Outer↔outer: each outer connects to its 2 nearest outer nodes (was 1).
-- Keep line opacities subtle (0.10–0.18) so the mesh stays elegant rather than noisy.
-Random long-range picks are seeded once at mount so they don't flicker.
+4. **Use the centre without creating a fixed hierarchy**
+   - Place some members near the middle, but not as a special larger or central figure.
+   - Distribute everyone as equal peers across centre, middle, and outer areas.
 
-### Technical notes
-- Collision loop: O(n²) with n≈28 is fine.
-- Clamp positions inside the ellipse `rx,ry` after relaxation so nodes don't drift off canvas.
-- Everything else (shuffle-once roster, cover-fit photo crop, reduced-motion, visibility pause) stays as-is.
+5. **Add more connections**
+   - Draw a denser mesh: each member connects to several nearby members.
+   - Add a small number of stable longer-range links so the group feels connected.
+   - Keep the lines subtle and academic, aligned with the existing minimal site tone.
 
-No other files touched.
+6. **Preserve existing good behavior**
+   - Keep proportional photo cropping so faces are not stretched.
+   - Keep roster randomization only on page reload, not during viewing.
+   - Respect reduced-motion preferences.
+
+Technical approach:
+- Update only `src/components/shared/TeamSwarm.tsx`.
+- Replace frame-by-frame collision relaxation with a deterministic packed layout generated at mount/resize.
+- Use a minimum distance formula: `radius * 2 + gap`, where `gap` is always positive.
+- Validate visually on desktop and mobile after implementation.
