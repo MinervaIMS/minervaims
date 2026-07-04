@@ -364,7 +364,7 @@ export const PlotSurface = forwardRef<PlotSurfaceHandle, PlotSurfaceProps>(funct
       ctx.fillStyle = tickC;
       ctx.font = "9px Carlito, Calibri, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("© Minerva Investment Management Society — educational use only · Minerva PayoffLab", PAD.left, h - 2);
+      ctx.fillText("© Minerva Investment Management Society · educational use only · Minerva PayoffLab", PAD.left, h - 2);
     }
   }, [domain, series, markers, signShadeId, labels, xLabel, formatX, formatY, chX, watermark]);
 

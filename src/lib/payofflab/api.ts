@@ -43,6 +43,15 @@ async function invoke<T>(body: Record<string, unknown>): Promise<T> {
           if (parsed?.error) msg = parsed.error;
         } catch { /* keep default message */ }
       }
+      // The generic supabase-js network failure tells the user nothing;
+      // translate it into something a maintainer can act on.
+      if (/failed to send a request/i.test(msg) || /failed to fetch/i.test(msg)) {
+        msg = "Could not reach the pricing engine. The Supabase Edge Function \"pricing-engine\" appears to be undeployed or unreachable from this origin.";
+      } else if (ctx && ctx.status === 404) {
+        msg = "The pricing engine responded with 404: the \"pricing-engine\" Edge Function is not deployed on this Supabase project yet.";
+      } else if (ctx && ctx.status === 429) {
+        msg = "Rate limit reached. PayoffLab is a shared teaching tool; please wait a few seconds and try again.";
+      }
       throw new Error(msg);
     }
     if (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) {

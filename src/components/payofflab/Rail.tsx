@@ -61,13 +61,13 @@ export function NumberField({
           if (e.key === "Enter") commit((e.target as HTMLInputElement).value);
         }}
       />
-      {(percent || unit) && <span className="text-[10px] text-muted-foreground">{percent ? "%" : unit}</span>}
+      {(percent || unit) && <span className="text-[11px] text-muted-foreground">{percent ? "%" : unit}</span>}
     </span>
   );
 }
 
 function Expander({
-  title, info, open, onToggle, children, badge,
+  title, info, open, onToggle, children, badge, tourId,
 }: {
   title: string;
   info?: string;
@@ -75,17 +75,18 @@ function Expander({
   onToggle: () => void;
   children: React.ReactNode;
   badge?: string;
+  tourId?: string;
 }) {
   return (
-    <div className="border-b border-separator">
+    <div className="border-b border-separator" data-tour={tourId}>
       <button
         type="button"
-        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-secondary/50"
         aria-expanded={open}
         onClick={onToggle}
       >
         {open ? <ChevronDown size={13} className="text-muted-foreground" /> : <ChevronRight size={13} className="text-muted-foreground" />}
-        <span className="pl-eye text-accent">{title}</span>
+        <span className="pl-section-title">{title}</span>
         {badge && <span className="pl-eye">{badge}</span>}
         <span className="ml-auto" onClick={(e) => e.stopPropagation()}>{info && <InfoDot id={info} />}</span>
       </button>
@@ -119,7 +120,7 @@ function ParamFields({
         <div key={ri} className="flex gap-2.5">
           {row.map((p) => (
             <div key={p.key} className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center justify-between text-[11px] text-foreground">
+              <div className="mb-1 flex items-center justify-between text-xs text-foreground">
                 <span className="truncate">{p.label}</span>
                 <InfoDot id={p.info} />
               </div>
@@ -315,14 +316,14 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
             {state.charts.length > 1 && (
               <button
                 type="button"
-                className="ml-auto text-[11px] text-muted-foreground underline underline-offset-2 hover:text-accent"
+                className="ml-auto text-xs text-muted-foreground underline underline-offset-2 hover:text-accent"
                 onClick={() => dispatch({ type: "remove-chart", index: state.activeChart })}
               >
                 remove
               </button>
             )}
           </div>
-          <div className="mt-2.5 flex items-center gap-3 text-[11px] text-foreground">
+          <div className="mt-2.5 flex items-center gap-3 text-xs text-foreground">
             <label className="flex cursor-pointer items-center gap-1.5">
               <input
                 type="checkbox"
@@ -357,7 +358,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
         </button>
         {addOpen && (
           <div className="mt-3">
-            <div className="mb-1 flex items-center justify-between text-[11px] text-foreground">
+            <div className="mb-1 flex items-center justify-between text-xs text-foreground">
               Instrument type <InfoDot id={pendingSpec?.info ?? "inst-euro"} />
             </div>
             <select
@@ -377,7 +378,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
                 </optgroup>
               ))}
             </select>
-            <div className="mb-1 text-[11px] text-foreground">Position</div>
+            <div className="mb-1 text-xs text-foreground">Position</div>
             <div className="pl-seg mb-3" role="group" aria-label="Position">
               <button type="button" data-active={pendingSide === 1} onClick={() => setPendingSide(1)}>Long</button>
               <button type="button" data-active={pendingSide === -1} onClick={() => setPendingSide(-1)}>Short</button>
@@ -393,7 +394,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
               </>
             )}
             {pendingSpec && (
-              <div className="mt-3 border-l-2 border-accent bg-secondary px-3 py-2 text-[11px] leading-snug text-muted-foreground">
+              <div className="mt-3 border-l-2 border-accent bg-secondary px-3 py-2 text-xs leading-snug text-muted-foreground">
                 {pendingSpec.note}{" "}
                 <button type="button" className="text-accent underline underline-offset-2" onClick={() => openLearn(pendingSpec.info)}>
                   Learn more
@@ -412,7 +413,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
         )}
         {/* strategy presets */}
         <div className="mt-3">
-          <div className="mb-1 flex items-center justify-between text-[11px] text-foreground">
+          <div className="mb-1 flex items-center justify-between text-xs text-foreground">
             Strategy template <InfoDot id="concept-bull-call-spread" />
           </div>
           <select
@@ -435,11 +436,11 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
       {/* Legs */}
       <div className="pl-section" data-tour="legs">
         <div className="mb-2 flex items-center justify-between">
-          <span className="pl-eye">Portfolio legs — chart {state.activeChart + 1}</span>
+          <span className="pl-eye">Portfolio legs · Chart {state.activeChart + 1}</span>
           <InfoDot id="payoff-vs-value" />
         </div>
         {chart.legs.length === 0 ? (
-          <div className="border border-dashed border-border px-3 py-4 text-center text-[11px] leading-relaxed text-muted-foreground">
+          <div className="border border-dashed border-border px-3 py-4 text-center text-xs leading-relaxed text-muted-foreground">
             No legs yet.<br />Add an asset or load a concept.
           </div>
         ) : (
@@ -495,7 +496,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
                             Short
                           </button>
                         </div>
-                        <span className="text-[11px] text-muted-foreground">Qty</span>
+                        <span className="text-xs text-muted-foreground">Qty</span>
                         <span className="w-16">
                           <NumberField
                             value={leg.qty}
@@ -534,7 +535,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
           <span className="pl-eye">Chart controls</span>
           <InfoDot id="x-axis" />
         </div>
-        <div className="mb-1 text-[11px] text-foreground">Independent variable (x-axis)</div>
+        <div className="mb-1 text-xs text-foreground">Independent variable (x-axis)</div>
         <div className="pl-seg pl-seg--soft mb-3" role="group" aria-label="X axis">
           {(["S", "t", "r"] as const).map((x) => {
             const supported = chart.legs.length === 0 || chart.legs.some((l) => INSTRUMENTS_BY_ID[l.instrument]?.axes.includes(x));
@@ -553,7 +554,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
             );
           })}
         </div>
-        <div className="mb-1 flex items-center justify-between text-[11px] text-foreground">
+        <div className="mb-1 flex items-center justify-between text-xs text-foreground">
           Overlays <InfoDot id="greek-delta" />
         </div>
         <div className="flex flex-wrap gap-1.5" data-tour="overlays">
@@ -589,8 +590,8 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
             </button>
           ))}
         </div>
-        <div className="mt-1 text-[10px] text-muted-foreground">Up to three Greek overlays; the first drives sign shading.</div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-foreground">
+        <div className="mt-1 text-[11px] text-muted-foreground">Up to three Greek overlays; the first drives sign shading.</div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-foreground">
           <label className="flex cursor-pointer items-center gap-1.5">
             <input type="checkbox" checked={chart.labels} onChange={(e) => update({ labels: e.target.checked })} /> Labels
           </label>
@@ -620,11 +621,11 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
                   const st = chart.styles[ln.id] ?? undefined;
                   const cur = st ?? { color: ln.id, dash: undefined, width: undefined };
                   return (
-                    <div key={ln.id} className="flex items-center gap-2 text-[11px] text-foreground">
+                    <div key={ln.id} className="flex items-center gap-2 text-xs text-foreground">
                       <LegendSwatch styleId={st?.color ?? ln.id} dash={st?.dash ?? "solid"} />
                       <span className="w-14 truncate">{ln.label}</span>
                       <select
-                        className="flex-1 border border-border bg-background px-1 py-0.5 text-[11px]"
+                        className="flex-1 border border-border bg-background px-1 py-0.5 text-xs"
                         aria-label={`${ln.label} colour`}
                         value={st?.color ?? ln.id}
                         onChange={(e) =>
@@ -637,7 +638,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
                         ))}
                       </select>
                       <select
-                        className="flex-1 border border-border bg-background px-1 py-0.5 text-[11px]"
+                        className="flex-1 border border-border bg-background px-1 py-0.5 text-xs"
                         aria-label={`${ln.label} pattern`}
                         value={st?.dash ?? "solid"}
                         onChange={(e) =>
@@ -649,7 +650,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
                         ))}
                       </select>
                       <select
-                        className="w-14 border border-border bg-background px-1 py-0.5 text-[11px]"
+                        className="w-14 border border-border bg-background px-1 py-0.5 text-xs"
                         aria-label={`${ln.label} width`}
                         value={st?.width ?? 2}
                         onChange={(e) =>
@@ -685,7 +686,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
             ]
           ).map((p) =>
             p.hidden ? null : (
-              <div key={p.key} className="flex items-center gap-2 text-[11px]">
+              <div key={p.key} className="flex items-center gap-2 text-xs">
                 <span className="flex w-16 flex-none items-center gap-1 text-muted-foreground">
                   {p.label} <InfoDot id={p.info} />
                 </span>
@@ -699,7 +700,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
                 />
                 <button
                   type="button"
-                  className="text-[10px] uppercase tracking-wider text-accent hover:underline"
+                  className="text-[11px] uppercase tracking-wider text-accent hover:underline"
                   title={`Animate ${p.label} and watch the curves move`}
                   onClick={() => sweepParam(p.key)}
                 >
@@ -714,7 +715,8 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
       {/* Advanced: models */}
       {LEVEL_ORDER[level] >= 1 && ent.modelSelection && (
         <Expander
-          title="Advanced — models & assumptions"
+          title="Models & assumptions"
+          badge="Advanced"
           info="model-bs"
           open={advancedOpen}
           onToggle={() => setAdvancedOpen((v) => !v)}
@@ -725,7 +727,7 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
 
       {/* Hedging */}
       {level === "pro" && ent.hedging && (
-        <Expander title="Hedging" info="hedging-intro" open={hedgingOpen} onToggle={() => setHedgingOpen((v) => !v)}>
+        <Expander title="Hedging" badge="Pro" info="hedging-intro" open={hedgingOpen} onToggle={() => setHedgingOpen((v) => !v)} tourId="hedging">
           <HedgingPanel chart={chart} chartIndex={state.activeChart} activeGrid={activeGrid} />
         </Expander>
       )}
@@ -737,8 +739,9 @@ export function Rail({ activeGrid, exportRef, onStartTour }: RailProps) {
         </div>
       )}
 
-      <div className="px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
-        {level !== "pro" && <>Second-order Greeks, sign shading and hedging appear in <b className="text-accent">Pro</b>. </>}
+      <div className="px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        {level === "basic" && <>The Advanced level adds exotic instruments and model selection; <b className="text-accent">Pro</b> adds second-order Greeks, sign shading and hedging. </>}
+        {level === "advanced" && <>Switch to <b className="text-accent">Pro</b> for second-order Greeks, sign shading and the hedging panel. </>}
         <button type="button" className="text-accent underline underline-offset-2" onClick={onStartTour}>
           Replay the tour
         </button>

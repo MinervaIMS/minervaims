@@ -53,10 +53,19 @@
 
 /* Uppercase eyebrow labels used across the rail and chart headers. */
 .payofflab .pl-eye {
-  font-size: 0.6875rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   color: hsl(var(--muted-foreground));
+}
+
+/* Section headers in the rail and the Learn drawer share one voice. */
+.payofflab .pl-section-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: hsl(var(--accent));
+  font-weight: 600;
 }
 
 /* Circled ⓘ affordance. */
@@ -182,6 +191,64 @@
 .payofflab .pl-plot:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: -2px;
+}
+
+/* Live status pill: classic connection indicator. A light transparent tint,
+   a pulsing dot and a short body-font label in capitals. */
+.payofflab .pl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.18rem 0.55rem;
+  font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.payofflab .pl-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+.payofflab .pl-pill--live {
+  background: rgba(0, 158, 115, 0.12);
+  color: var(--pl-pos-strong);
+}
+.payofflab .pl-pill--live .dot {
+  background: var(--pl-pos-strong);
+  animation: pl-pulse 1.6s ease-in-out infinite;
+}
+.payofflab .pl-pill--busy {
+  background: rgba(230, 159, 0, 0.14);
+  color: #9a6b00;
+}
+.dark .payofflab .pl-pill--busy { color: var(--pl-gamma); }
+.payofflab .pl-pill--busy .dot {
+  background: var(--pl-gamma);
+  animation: pl-pulse 0.8s ease-in-out infinite;
+}
+.payofflab .pl-pill--off {
+  background: rgba(213, 94, 0, 0.12);
+  color: var(--pl-neg-strong);
+}
+.payofflab .pl-pill--off .dot { background: var(--pl-neg-strong); }
+.payofflab .pl-pill--idle {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+.payofflab .pl-pill--idle .dot { background: hsl(var(--muted-foreground)); }
+
+@keyframes pl-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 158, 115, 0.45); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 4px rgba(0, 158, 115, 0); }
+}
+
+/* Reserved advertising slot in the top bar (empty until used). */
+.payofflab .pl-ad-slot:empty {
+  display: none;
 }
 
 /* Thin progress bar. */

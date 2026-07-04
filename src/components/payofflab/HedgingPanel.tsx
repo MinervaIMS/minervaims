@@ -64,9 +64,9 @@ export function HedgingPanel({
   const spotGreeks = activeGrid?.scalars.greeks;
 
   return (
-    <div className="flex flex-col gap-3 text-[11px]">
+    <div className="flex flex-col gap-3 text-xs">
       <p className="leading-snug text-muted-foreground">
-        Each action adds real, labelled legs so the aggregate curves show the hedge working — and it can be undone.
+        Each action adds real, labelled legs to the portfolio, so the aggregate curves show the hedge working. Every hedge can be undone.
         <button type="button" className="ml-1 text-accent underline underline-offset-2" onClick={() => openLearn("hedging-intro")}>
           How to use this
         </button>
@@ -122,7 +122,7 @@ export function HedgingPanel({
       >
         Open delta-hedging simulation →
       </button>
-      {hasMc && <div className="text-[10px] text-muted-foreground">The simulation supports closed-form portfolios only.</div>}
+      {hasMc && <div className="text-[11px] text-muted-foreground">The simulation supports closed-form portfolios only.</div>}
       <HedgeSimDialog chart={chart} open={simOpen} onClose={() => setSimOpen(false)} watermark={watermark} />
     </div>
   );
@@ -192,7 +192,7 @@ function HedgeSimDialog({
         <DialogHeader className="border-b border-separator px-6 py-4">
           <DialogTitle className="font-serif text-xl tracking-tight text-accent">Discrete delta-hedging simulation</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            One seeded path at the realised volatility, re-hedged at fixed intervals with model-vol deltas — plus a
+            One seeded path at the realised volatility, re-hedged at fixed intervals with model-vol deltas, plus a
             200-path ensemble for the dispersion statistics.
             <button type="button" className="ml-1.5 text-accent underline underline-offset-2" onClick={() => openLearn("hedge-sim")}>
               Why discrete hedging leaves risk
@@ -200,7 +200,7 @@ function HedgeSimDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-[240px_1fr] gap-0">
-          <div className="flex flex-col gap-3 border-r border-separator px-5 py-4 text-[11px]">
+          <div className="flex flex-col gap-3 border-r border-separator px-5 py-4 text-xs">
             <label className="flex flex-col gap-1">
               <span className="flex items-center gap-1 text-muted-foreground">Realised vol σ_real <InfoDot id="hedge-sim" /></span>
               <NumberField value={sigmaReal} percent min={0.01} max={2} step={0.01} ariaLabel="Realised volatility" onChange={setSigmaReal} />
@@ -263,7 +263,7 @@ function HedgeSimDialog({
                     formatX={(v) => v.toFixed(2)}
                   />
                 </div>
-                <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                <p className="mt-1 text-xs leading-snug text-muted-foreground">
                   {plainEnglish(result, sigmaReal, sigmaHedge, rehedges)}
                 </p>
               </>
@@ -286,7 +286,7 @@ function plainEnglish(r: HedgeSimResult, sReal: number, sHedge: number, n: numbe
   let msg = `Re-hedging ${freq} cut the P/L dispersion to ${(ratio * 100).toFixed(0)}% of the unhedged position's (±${Math.abs(s.stdHedged).toFixed(2)} vs ±${Math.abs(s.stdUnhedged).toFixed(2)}). `;
   msg += `On this path the hedged book finished at ${s.finalHedged >= 0 ? "+" : ""}${s.finalHedged.toFixed(2)}: the gap between the gamma term Σ½Γ(ΔS)² and the theta term ΣΘδt that continuous re-hedging would have closed exactly. `;
   if (Math.abs(sReal - sHedge) > 1e-9) {
-    msg += `You hedged at σ = ${(sHedge * 100).toFixed(0)}% while the world moved at ${(sReal * 100).toFixed(0)}% — that volatility gap leaks through the gamma term, biasing the hedged P/L ${sReal > sHedge ? "against a short-gamma book" : "in a short-gamma book's favour"}.`;
+    msg += `You hedged at σ = ${(sHedge * 100).toFixed(0)}% while the world moved at ${(sReal * 100).toFixed(0)}%. That volatility gap leaks through the gamma term, biasing the hedged P/L ${sReal > sHedge ? "against a short-gamma book" : "in a short-gamma book's favour"}.`;
   } else {
     msg += `Increase the re-hedge frequency and the residual shrinks like 1/√n; drop it to monthly and watch the gamma risk reappear.`;
   }
