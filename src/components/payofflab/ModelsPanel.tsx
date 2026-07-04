@@ -73,7 +73,7 @@ export function ModelsPanel({ chart, onChange }: { chart: ChartState; onChange: 
   const hasMcLeg = chart.legs.some((l) => INSTRUMENTS_BY_ID[l.instrument]?.usesMc);
 
   return (
-    <div className="flex flex-col gap-3 text-[11px]">
+    <div className="flex flex-col gap-3 text-xs">
       {/* pricing */}
       <div>
         <div className="mb-1 flex items-center justify-between text-foreground">
@@ -89,11 +89,11 @@ export function ModelsPanel({ chart, onChange }: { chart: ChartState; onChange: 
           {PRICING_MODELS.map((m) => (
             <option key={m.id} value={m.id} disabled={m.needsVanilla && !hasVanilla && chart.legs.length > 0}>
               {m.label}
-              {m.needsVanilla && !hasVanilla && chart.legs.length > 0 ? " — needs a vanilla leg" : ""}
+              {m.needsVanilla && !hasVanilla && chart.legs.length > 0 ? " (needs a vanilla leg)" : ""}
             </option>
           ))}
         </select>
-        <div className="mt-1 text-[10px] leading-snug text-muted-foreground">
+        <div className="mt-1 text-[11px] leading-snug text-muted-foreground">
           {ASSUMPTION_SUMMARY[model.pricing]}
           {!hasVanilla && chart.legs.length > 0 && model.pricing === "auto" && (
             <> · exotics keep their own closed forms; the selector applies to European/American legs.</>
@@ -170,7 +170,7 @@ export function ModelsPanel({ chart, onChange }: { chart: ChartState; onChange: 
             <option key={m.kind} value={m.kind}>{m.label}</option>
           ))}
         </select>
-        <div className="mt-1 text-[10px] leading-snug text-muted-foreground">{ASSUMPTION_SUMMARY[model.vol.kind]}</div>
+        <div className="mt-1 text-[11px] leading-snug text-muted-foreground">{ASSUMPTION_SUMMARY[model.vol.kind]}</div>
         {model.vol.kind === "garch" && (
           <div className="mt-2 flex gap-2">
             <Labelled label="σ long"><NumberField value={model.vol.sigmaLong} percent min={0.001} max={3} step={0.01} ariaLabel="Long-run vol" onChange={(v) => setModel({ vol: { kind: "garch", sigmaLong: v, persistence: (model.vol as { persistence: number }).persistence } })} /></Labelled>
@@ -216,7 +216,7 @@ export function ModelsPanel({ chart, onChange }: { chart: ChartState; onChange: 
           </div>
         )}
         {isMcVol && (
-          <div className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
+          <div className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
             Simulation model: European and arithmetic-Asian legs price by Monte Carlo; other exotics fall back to their
             closed forms at the effective vol.
           </div>
@@ -246,11 +246,11 @@ export function ModelsPanel({ chart, onChange }: { chart: ChartState; onChange: 
           {RATE_MODELS.map((m) => (
             <option key={m.kind} value={m.kind} disabled={m.kind !== "constant" && !hasRateLeg && chart.legs.length > 0}>
               {m.label}
-              {m.kind !== "constant" && !hasRateLeg && chart.legs.length > 0 ? " — needs a rate-sensitive leg" : ""}
+              {m.kind !== "constant" && !hasRateLeg && chart.legs.length > 0 ? " (needs a rate-sensitive leg)" : ""}
             </option>
           ))}
         </select>
-        <div className="mt-1 text-[10px] leading-snug text-muted-foreground">{ASSUMPTION_SUMMARY[`rate-${model.rates.kind}`]}</div>
+        <div className="mt-1 text-[11px] leading-snug text-muted-foreground">{ASSUMPTION_SUMMARY[`rate-${model.rates.kind}`]}</div>
         {model.rates.kind !== "constant" && (
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Labelled label="a"><NumberField value={model.rates.a} min={-0.5} max={5} step={0.05} ariaLabel="Rate model a" onChange={(v) => setModel({ rates: { ...(model.rates as Extract<RateModelState, { kind: "vasicek" }>), a: v } })} /></Labelled>
@@ -290,7 +290,7 @@ export function ModelsPanel({ chart, onChange }: { chart: ChartState; onChange: 
 function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex min-w-0 flex-1 items-center gap-1.5">
-      <span className="w-10 flex-none text-[10px] text-muted-foreground">{label}</span>
+      <span className="w-10 flex-none text-[11px] text-muted-foreground">{label}</span>
       {children}
     </label>
   );

@@ -17,7 +17,7 @@ const X_LABELS: Record<string, string> = {
 };
 
 export function fmtNum(v: number | null | undefined, digits = 2): string {
-  if (v === null || v === undefined || !isFinite(v)) return "—";
+  if (v === null || v === undefined || !isFinite(v)) return "–";
   const a = Math.abs(v);
   const d = a >= 100 ? Math.max(0, digits - 1) : a < 0.05 && a > 0 ? 4 : digits;
   return (v > 0 ? "+" : "") + v.toFixed(d);
@@ -150,13 +150,18 @@ export const LabChart = forwardRef<PlotSurfaceHandle, LabChartProps>(function La
 
   return (
     <div
-      className={`relative flex min-h-0 flex-col bg-background p-3 ${active ? "" : "opacity-95"}`}
+      className={`relative flex min-h-0 flex-col bg-background p-3 ${active && state.charts.length > 1 ? "ring-1 ring-inset ring-accent/35" : ""}`}
       onMouseDown={() => dispatch({ type: "set-active", index })}
     >
-      <div className="mb-1 flex items-baseline justify-between gap-3">
-        <span className="font-serif text-[15px] tracking-tight text-foreground">
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2.5 font-serif text-base tracking-tight text-foreground">
           {chart.title}
-          {active && state.charts.length > 1 && <span className="ml-2 text-[10px] uppercase tracking-widest text-accent">active</span>}
+          {active && state.charts.length > 1 && (
+            <span className="pl-pill pl-pill--live" role="status">
+              <span className="dot" aria-hidden="true" />
+              Active
+            </span>
+          )}
         </span>
         <span className="pl-eye flex items-center gap-1.5">
           {X_LABELS[chart.xVar]}
@@ -171,11 +176,29 @@ export const LabChart = forwardRef<PlotSurfaceHandle, LabChartProps>(function La
       <div className="relative min-h-0 flex-1">
         {chart.legs.length === 0 ? (
           <div className="flex h-full items-center justify-center border border-dashed border-border text-sm text-muted-foreground">
-            Chart {index + 1} — add an asset or load a concept
+            Chart {index + 1}: add an asset from the rail, or load a concept
           </div>
         ) : error ? (
-          <div className="flex h-full items-center justify-center px-8 text-center text-sm text-muted-foreground">
-            {error}
+          <div className="flex h-full items-center justify-center px-8">
+            <div className="max-w-md border border-border p-5 text-center">
+              <div className="pl-pill pl-pill--off mb-3">
+                <span className="dot" aria-hidden="true" />
+                Pricing engine unreachable
+              </div>
+              <p className="mb-2 text-sm leading-relaxed text-foreground">{error}</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                The charts are computed by the <b>pricing-engine</b> Supabase Edge Function. If this is a fresh
+                deployment, make sure that function is deployed and publicly invocable, then change any input (or press
+                the button below) to retry.
+              </p>
+              <button
+                type="button"
+                className="mt-3 border border-accent px-5 py-1.5 text-xs text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
+                onClick={() => dispatch({ type: "update-chart", index, patch: { model: { ...chart.model, seed: chart.model.seed + 1 } } })}
+              >
+                Retry now
+              </button>
+            </div>
           </div>
         ) : (
           <PlotSurface
@@ -202,22 +225,23 @@ export const LabChart = forwardRef<PlotSurfaceHandle, LabChartProps>(function La
         )}
       </div>
       {(pathNote || firstExpiryNote || chart.xVar === "t") && chart.legs.length > 0 && (
-        <div className="mt-1 flex items-center gap-1.5 text-[11px] leading-snug text-muted-foreground">
+        <div className="mt-1 flex items-center gap-1.5 text-xs leading-snug text-muted-foreground">
           {pathNote ? (
             <>
-              Path-dependent leg: terminal payoff undefined — mark-to-market value shown instead.
+              This payoff depends on the whole price path, so no terminal-payoff line can be drawn; the chart shows the
+              mark-to-market value instead.
               <InfoDot id="path-dependent-payoff" />
             </>
           ) : chart.xVar === "t" ? (
-            <>Value converges to intrinsic as t → T.<InfoDot id="concept-time-decay" /></>
+            <>The value line converges to intrinsic value as t reaches expiry.<InfoDot id="concept-time-decay" /></>
           ) : (
-            <>Payoff drawn at the first expiry; longer legs marked to model.<InfoDot id="payoff-vs-value" /></>
+            <>Payoff drawn at the first expiry; longer-dated legs are marked to model.<InfoDot id="payoff-vs-value" /></>
           )}
         </div>
       )}
       {/* legend-as-readout */}
       {grid && chart.legs.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-separator pt-1.5 text-[11px]">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-separator pt-1.5 text-xs">
           {series.map((s) => {
             const v = sample ? sample.values.find((q) => q.id === s.id)?.y : undefined;
             const restVal = v === undefined

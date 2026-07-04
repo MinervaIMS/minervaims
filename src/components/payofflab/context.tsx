@@ -64,6 +64,9 @@ interface LearnState {
   tab: "entry" | "glossary";
 }
 
+/** Reachability of the pricing engine, shown as a live status pill. */
+export type EngineStatus = "idle" | "live" | "computing" | "offline";
+
 interface LabContextValue {
   state: LabState;
   dispatch: React.Dispatch<LabAction>;
@@ -76,6 +79,11 @@ interface LabContextValue {
   setSharedX: (x: number | null) => void;
   watermark: HTMLImageElement | null;
   isDark: boolean;
+  /** "home" shows the welcome screen; "bench" the working dashboard. */
+  view: "home" | "bench";
+  setView: (v: "home" | "bench") => void;
+  engineStatus: EngineStatus;
+  setEngineStatus: (s: EngineStatus) => void;
 }
 
 const LabContext = createContext<LabContextValue | null>(null);
@@ -90,6 +98,10 @@ export function LabProvider({ children, initial }: { children: React.ReactNode; 
   const [state, dispatch] = useReducer(reducer, initial ?? initialLabState());
   const [learn, setLearn] = useState<LearnState>({ open: false, entryId: null, tab: "entry" });
   const [sharedX, setSharedX] = useState<number | null>(null);
+  const [view, setView] = useState<"home" | "bench">(() =>
+    (initial?.charts ?? []).some((c) => c.legs.length > 0) ? "bench" : "home",
+  );
+  const [engineStatus, setEngineStatus] = useState<EngineStatus>("idle");
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [watermark, setWatermark] = useState<HTMLImageElement | null>(null);
   const imagesRef = useRef<{ light: HTMLImageElement; dark: HTMLImageElement } | null>(null);
@@ -129,7 +141,11 @@ export function LabProvider({ children, initial }: { children: React.ReactNode; 
     setSharedX,
     watermark,
     isDark,
-  }), [state, learn, sharedX, watermark, isDark]);
+    view,
+    setView,
+    engineStatus,
+    setEngineStatus,
+  }), [state, learn, sharedX, watermark, isDark, view, engineStatus]);
 
   return <LabContext.Provider value={value}>{children}</LabContext.Provider>;
 }

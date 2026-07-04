@@ -4,6 +4,10 @@ import { Footer } from './Footer';
 
 const CHROMELESS_ROUTES = [
   '/admin',
+  // PayoffLab is an app-like, full-viewport tool: the site navbar and footer
+  // stay out of the way; it carries its own header with a link back to the
+  // society website.
+  '/lab',
 ];
 
 export function Layout() {

@@ -31,7 +31,7 @@ export function ExportPanel({
   const exportPng = async () => {
     const handle = exportRef.current;
     if (!handle) return;
-    const blob = await handle.exportPng(`${chart.title} — Minerva PayoffLab`);
+    const blob = await handle.exportPng(`${chart.title} · Minerva PayoffLab`);
     if (blob) download(blob, `payofflab-${chart.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`);
   };
 
@@ -46,7 +46,7 @@ export function ExportPanel({
     const present = cols.filter((c): c is [string, number[]] => Array.isArray(c[1]));
     const header = present.map((c) => c[0]).join(",");
     const lines = activeGrid.x.map((_, i) => present.map((c) => c[1][i]).join(","));
-    const csv = ["# Minerva PayoffLab — educational use only", header, ...lines].join("\n");
+    const csv = ["# Minerva PayoffLab, educational use only", header, ...lines].join("\n");
     download(new Blob([csv], { type: "text/csv" }), `payofflab-${chart.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.csv`);
   };
 
@@ -60,7 +60,7 @@ export function ExportPanel({
   return (
     <div>
       <div className="pl-eye mb-2">Export</div>
-      <div className="flex gap-1.5 text-[11px]">
+      <div className="flex gap-1.5 text-xs">
         <button type="button" className="flex-1 border border-border py-1.5 text-foreground hover:border-accent disabled:opacity-40" disabled={disabled} onClick={exportPng}>
           PNG
         </button>
@@ -71,7 +71,7 @@ export function ExportPanel({
           {copied ? "Copied ✓" : "Share link"}
         </button>
       </div>
-      <div className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
+      <div className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
         PNG carries the watermark and copyright; the share link encodes inputs only.
       </div>
     </div>

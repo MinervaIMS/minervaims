@@ -23,7 +23,7 @@ export interface ParamSpec {
 
 export type InstrumentCategory =
   | "Building blocks" | "Options" | "Digitals" | "FX & cross-asset"
-  | "Exotics — closed form" | "Exotics — Monte Carlo" | "Rates & volatility";
+  | "Exotics · closed form" | "Exotics · Monte Carlo" | "Rates & volatility";
 
 export interface InstrumentSpec {
   id: string;
@@ -65,7 +65,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
   {
     id: "stock", label: "Stock / underlying asset", category: "Building blocks", tier: "basic",
     params: [], axes: ["S", "t", "r"],
-    note: "One unit of the underlying. Its payoff diagram is the 45° line — the reference every option bends.",
+    note: "One unit of the underlying. Its payoff diagram is the 45° line, the reference shape that every option bends.",
     info: "inst-stock",
   },
   {
@@ -95,7 +95,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "divTime", label: "Dividend date", kind: "number", default: 0.5, min: 0.01, max: 50, step: 0.25, unit: "y", info: "discrete-dividend" },
     ],
     axes: ["S", "t", "r"], pricingSelectable: true,
-    note: "Exercisable at any time, priced on a lattice. Worth at least its European twin — never less.",
+    note: "Exercisable at any time, priced on a lattice. It is always worth at least its European twin, never less.",
     info: "inst-amer",
   },
   // --- digitals ---
@@ -103,7 +103,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
     id: "digital-cash", label: "Digital (cash-or-nothing)", category: "Digitals", tier: "advanced",
     params: [cp(), K(), T(), { key: "payout", label: "Cash payout", kind: "number", default: 10, min: 0.01, step: 1, info: "digital-payout" }],
     axes: ["S", "t", "r"],
-    note: "Pays a fixed amount if it finishes in the money — a pure bet on the event, with a discontinuous payoff step.",
+    note: "Pays a fixed amount if it finishes in the money: a pure bet on the event, with a discontinuous step in the payoff.",
     info: "inst-digital-cash",
   },
   {
@@ -151,13 +151,13 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "Xbar", label: "Fixed FX rate X̄", kind: "number", default: 1, min: 0.0001, step: 0.01, info: "fx-spot" },
     ],
     axes: ["S", "t", "r"],
-    note: "The FX rate is frozen at X̄, so currency risk is removed — at the price of a drift correction −ρσ_Sσ_X.",
+    note: "The FX rate is frozen at X̄, so currency risk is removed. The price of that convenience is a drift correction of −ρσ_Sσ_X.",
     info: "inst-quanto",
   },
   {
     id: "exchange", label: "Exchange option (Margrabe)", category: "FX & cross-asset", tier: "advanced",
     params: [S2(100), sigma2(), rho(), q2(), T()], axes: ["S", "t", "r"],
-    note: "The right to swap asset 2 for asset 1. No strike — the second asset IS the strike.",
+    note: "The right to swap asset 2 for asset 1. There is no cash strike, because the second asset itself plays the role of the strike.",
     info: "inst-exchange",
   },
   {
@@ -165,7 +165,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
     params: [S2(100), sigma2(), rho(), q2(), T(),
       { key: "Tpay", label: "Settlement date", kind: "number", default: 1.5, min: 0.01, max: 50, step: 0.25, unit: "y", info: "maturity" }],
     axes: ["S", "t", "r"],
-    note: "The exchange is decided at T but settled later — with deterministic rates, an extra discount factor.",
+    note: "The exchange is decided at T but settled later; with deterministic rates that adds one extra discount factor.",
     info: "inst-exchange",
   },
   {
@@ -180,7 +180,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
   },
   // --- exotics, closed form ---
   {
-    id: "barrier", label: "Barrier option", category: "Exotics — closed form", tier: "advanced",
+    id: "barrier", label: "Barrier option", category: "Exotics · closed form", tier: "advanced",
     params: [cp(),
       { key: "dir", label: "Barrier type", kind: "select", default: "up-out",
         options: [
@@ -196,19 +196,19 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
     info: "inst-barrier",
   },
   {
-    id: "lookback-float", label: "Lookback (floating strike)", category: "Exotics — closed form", tier: "advanced",
+    id: "lookback-float", label: "Lookback (floating strike)", category: "Exotics · closed form", tier: "advanced",
     params: [cp(), T()], axes: ["S", "t", "r"], pathDependent: true,
-    note: "Buy at the minimum, sell at the maximum — the strike is the best price the path ever offered.",
+    note: "Buy at the minimum, sell at the maximum: the strike is the best price the path ever offered.",
     info: "inst-lookback",
   },
   {
-    id: "lookback-fixed", label: "Lookback (fixed strike)", category: "Exotics — closed form", tier: "advanced",
+    id: "lookback-fixed", label: "Lookback (fixed strike)", category: "Exotics · closed form", tier: "advanced",
     params: [cp(), K(), T()], axes: ["S", "t", "r"], pathDependent: true,
     note: "A vanilla whose settlement uses the extreme of the path rather than the terminal price.",
     info: "inst-lookback",
   },
   {
-    id: "compound", label: "Compound option (Geske)", category: "Exotics — closed form", tier: "advanced",
+    id: "compound", label: "Compound option (Geske)", category: "Exotics · closed form", tier: "advanced",
     params: [
       { key: "kind", label: "Structure", kind: "select", default: "call-on-call",
         options: [
@@ -220,11 +220,11 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "K2", label: "Underlying strike K₂", kind: "number", default: 100, min: 0.0001, step: 1, info: "strike" },
       T(1)],
     axes: ["S", "t", "r"],
-    note: "An option on an option — priced with the bivariate normal because two exercise events must both go right.",
+    note: "An option on an option. It is priced with the bivariate normal, because two separate exercise decisions must both go right.",
     info: "inst-compound",
   },
   {
-    id: "chooser", label: "Chooser option", category: "Exotics — closed form", tier: "advanced",
+    id: "chooser", label: "Chooser option", category: "Exotics · closed form", tier: "advanced",
     params: [K(),
       { key: "tChoose", label: "Choice date", kind: "number", default: 0.25, min: 0.01, max: 50, step: 0.25, unit: "y", info: "maturity" },
       T()],
@@ -233,7 +233,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
     info: "inst-chooser",
   },
   {
-    id: "rainbow", label: "Option on max / min of two assets", category: "Exotics — closed form", tier: "advanced",
+    id: "rainbow", label: "Option on max / min of two assets", category: "Exotics · closed form", tier: "advanced",
     params: [
       { key: "kind", label: "Payoff", kind: "select", default: "call-max",
         options: [
@@ -246,39 +246,39 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
     info: "inst-rainbow",
   },
   {
-    id: "asian-geometric", label: "Asian (geometric average)", category: "Exotics — closed form", tier: "advanced",
+    id: "asian-geometric", label: "Asian (geometric average)", category: "Exotics · closed form", tier: "advanced",
     params: [cp(), K(), T()], axes: ["S", "t", "r"], pathDependent: true,
     note: "Averages tame volatility: the geometric average of lognormals stays lognormal, so a closed form survives.",
     info: "inst-asian",
   },
   {
-    id: "product-option", label: "Product option", category: "Exotics — closed form", tier: "advanced",
+    id: "product-option", label: "Product option", category: "Exotics · closed form", tier: "advanced",
     params: [cp(), K(),
       { key: "S2", label: "Asset 2 spot S₂", kind: "number", default: 1, min: 0.0001, step: 0.1, info: "second-asset" },
       sigma2(), rho(), q2(), T()],
     axes: ["S", "t", "r"],
-    note: "Pays on S₁·S₂ — a product of lognormals is lognormal, so Black's formula applies exactly.",
+    note: "Pays on the product S₁·S₂. A product of lognormals is still lognormal, so Black's formula applies exactly.",
     info: "inst-product",
   },
   // --- exotics, Monte Carlo ---
   {
-    id: "asian-arithmetic", label: "Asian (arithmetic average)", category: "Exotics — Monte Carlo", tier: "advanced",
+    id: "asian-arithmetic", label: "Asian (arithmetic average)", category: "Exotics · Monte Carlo", tier: "advanced",
     params: [cp(), K(), T()], axes: ["S", "t", "r"], pathDependent: true, usesMc: true,
     note: "The market-standard Asian. No closed form exists; priced by Monte Carlo with a geometric control variate.",
     info: "inst-asian",
   },
   {
-    id: "basket", label: "Basket option", category: "Exotics — Monte Carlo", tier: "advanced",
+    id: "basket", label: "Basket option", category: "Exotics · Monte Carlo", tier: "advanced",
     params: [cp(), K(), S2(100), sigma2(), rho(), q2(),
       { key: "w1", label: "Weight w₁", kind: "number", default: 0.5, min: 0, max: 1, step: 0.05, info: "basket-weights" },
       { key: "w2", label: "Weight w₂", kind: "number", default: 0.5, min: 0, max: 1, step: 0.05, info: "basket-weights" },
       T()],
     axes: ["S", "t", "r"], usesMc: true,
-    note: "An option on a weighted sum of assets. Sums of lognormals are not lognormal — hence Monte Carlo.",
+    note: "An option on a weighted sum of assets. A sum of lognormals has no closed-form distribution, which is why this one is priced by Monte Carlo.",
     info: "inst-basket",
   },
   {
-    id: "spread-option", label: "Spread option", category: "Exotics — Monte Carlo", tier: "advanced",
+    id: "spread-option", label: "Spread option", category: "Exotics · Monte Carlo", tier: "advanced",
     params: [cp(), { ...K(5), label: "Strike K", default: 5 },
       { key: "S2", label: "Asset 2 spot S₂", kind: "number", default: 95, min: 0.0001, step: 1, info: "second-asset" },
       sigma2(0.25), rho(), q2(),
@@ -297,7 +297,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "Kvol", label: "Strike (vol terms)", kind: "number", default: 0.2, min: 0.01, max: 2, step: 0.01, percent: true, info: "variance-strike" },
       T()],
     axes: ["t", "r"], pathDependent: true,
-    note: "Pure exposure to realised variance — the cleanest way to trade volatility itself. Pair with the vega overlay.",
+    note: "Pure exposure to realised variance, the cleanest way to trade volatility itself. Pair it with the vega overlay.",
     info: "inst-varswap",
   },
   {
@@ -306,7 +306,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "Kvol", label: "Strike K_vol", kind: "number", default: 0.2, min: 0.01, max: 2, step: 0.01, percent: true, info: "variance-strike" },
       T()],
     axes: ["t", "r"], pathDependent: true,
-    note: "Pays on realised vol, not variance — the square root brings a concavity (convexity) correction.",
+    note: "Pays on realised volatility rather than variance; the square root introduces a concavity correction.",
     info: "inst-varswap",
   },
   {
@@ -316,7 +316,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "T1", label: "Start T₁", kind: "number", default: 0.5, min: 0.01, max: 50, step: 0.25, unit: "y", info: "maturity" },
       { key: "T2", label: "End T₂", kind: "number", default: 1, min: 0.02, max: 50, step: 0.25, unit: "y", info: "maturity" }],
     axes: ["t", "r"],
-    note: "Lock a borrowing rate today for a future period. Value is linear in the forward rate — plot it against r.",
+    note: "Lock a borrowing rate today for a future period. Its value is linear in the forward rate, so plot it against r.",
     info: "inst-fra",
   },
   {
@@ -340,7 +340,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "freq", label: "Reset interval", kind: "number", default: 0.5, min: 0.25, max: 1, step: 0.25, unit: "y", info: "tenor" },
       { key: "sigmaBlack", label: "Black vol σ", kind: "number", default: 0.25, min: 0.01, max: 3, step: 0.01, percent: true, info: "black-vol" }],
     axes: ["t", "r"],
-    note: "A strip of options on future floating rates — insurance against rates rising (cap) or falling (floor).",
+    note: "A strip of options on future floating rates: insurance against rates rising (cap) or falling (floor).",
     info: "inst-capfloor",
   },
   {
@@ -355,7 +355,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "freq", label: "Payment interval", kind: "number", default: 0.5, min: 0.25, max: 1, step: 0.25, unit: "y", info: "tenor" },
       { key: "sigmaBlack", label: "Black vol σ", kind: "number", default: 0.25, min: 0.01, max: 3, step: 0.01, percent: true, info: "black-vol" }],
     axes: ["t", "r"],
-    note: "An option to enter a swap — Black's formula on the forward swap rate, weighted by the annuity.",
+    note: "An option to enter a swap. Priced with Black's formula on the forward swap rate, weighted by the annuity.",
     info: "inst-swaption",
   },
   {
@@ -366,7 +366,7 @@ export const INSTRUMENT_CATALOG: InstrumentSpec[] = [
       { key: "tenor", label: "Tenor", kind: "number", default: 1, min: 0.25, max: 30, step: 0.25, unit: "y", info: "tenor" },
       { key: "freq", label: "Payment interval", kind: "number", default: 0.5, min: 0.25, max: 1, step: 0.25, unit: "y", info: "tenor" }],
     axes: ["S", "t", "r"],
-    note: "Receive the equity's total return, pay a fixed rate — equity exposure without owning the shares.",
+    note: "Receive the equity's total return and pay a fixed rate: full equity exposure without owning the shares.",
     info: "inst-trs",
   },
 ];
@@ -409,17 +409,17 @@ const euro = (cpv: "call" | "put", side: 1 | -1, K: number, T = 1, qty = 1) => (
 });
 
 export const STRATEGY_PRESETS: StrategyPreset[] = [
-  { id: "bull-call-spread", label: "Bull call spread", tier: "basic", description: "Long call at K, short call above — capped upside for a lower premium.", build: (S) => [euro("call", 1, S), euro("call", -1, Math.round(S * 1.2))] },
-  { id: "bear-put-spread", label: "Bear put spread", tier: "basic", description: "Long put at K, short put below — a defined-risk bearish view.", build: (S) => [euro("put", 1, S), euro("put", -1, Math.round(S * 0.8))] },
-  { id: "straddle", label: "Long straddle", tier: "basic", description: "Call plus put at the same strike — long volatility, direction-agnostic.", build: (S) => [euro("call", 1, S), euro("put", 1, S)] },
-  { id: "strangle", label: "Long strangle", tier: "basic", description: "Out-of-the-money call and put — cheaper than the straddle, needs a bigger move.", build: (S) => [euro("call", 1, Math.round(S * 1.1)), euro("put", 1, Math.round(S * 0.9))] },
-  { id: "butterfly", label: "Butterfly", tier: "basic", description: "Long wings, short double body — a bet that S pins the middle strike.", build: (S) => [euro("call", 1, Math.round(S * 0.9)), euro("call", -1, S, 1, 2), euro("call", 1, Math.round(S * 1.1))] },
-  { id: "condor", label: "Iron-wing condor", tier: "basic", description: "A butterfly with the body split — profits across a range instead of a point.", build: (S) => [euro("call", 1, Math.round(S * 0.85)), euro("call", -1, Math.round(S * 0.95)), euro("call", -1, Math.round(S * 1.05)), euro("call", 1, Math.round(S * 1.15))] },
+  { id: "bull-call-spread", label: "Bull call spread", tier: "basic", description: "Long call at K, short call above it: capped upside in exchange for a lower premium.", build: (S) => [euro("call", 1, S), euro("call", -1, Math.round(S * 1.2))] },
+  { id: "bear-put-spread", label: "Bear put spread", tier: "basic", description: "Long put at K, short put below it: a bearish view with defined risk.", build: (S) => [euro("put", 1, S), euro("put", -1, Math.round(S * 0.8))] },
+  { id: "straddle", label: "Long straddle", tier: "basic", description: "Call plus put at the same strike: long volatility, indifferent to direction.", build: (S) => [euro("call", 1, S), euro("put", 1, S)] },
+  { id: "strangle", label: "Long strangle", tier: "basic", description: "Out-of-the-money call and put: cheaper than the straddle but needs a bigger move.", build: (S) => [euro("call", 1, Math.round(S * 1.1)), euro("put", 1, Math.round(S * 0.9))] },
+  { id: "butterfly", label: "Butterfly", tier: "basic", description: "Long wings, short double body: a bet that S finishes at the middle strike.", build: (S) => [euro("call", 1, Math.round(S * 0.9)), euro("call", -1, S, 1, 2), euro("call", 1, Math.round(S * 1.1))] },
+  { id: "condor", label: "Iron-wing condor", tier: "basic", description: "A butterfly with the body split apart, so it profits across a range instead of a single point.", build: (S) => [euro("call", 1, Math.round(S * 0.85)), euro("call", -1, Math.round(S * 0.95)), euro("call", -1, Math.round(S * 1.05)), euro("call", 1, Math.round(S * 1.15))] },
   { id: "collar", label: "Collar", tier: "basic", description: "Stock plus protective put, financed by a covered call.", build: (S) => [{ instrument: "stock", side: 1 as const, qty: 1, params: {} }, euro("put", 1, Math.round(S * 0.9)), euro("call", -1, Math.round(S * 1.1))] },
-  { id: "risk-reversal", label: "Risk reversal", tier: "basic", description: "Short put funds a long call — synthetic long exposure, skew in one picture.", build: (S) => [euro("call", 1, Math.round(S * 1.05)), euro("put", -1, Math.round(S * 0.95))] },
-  { id: "covered-call", label: "Covered call", tier: "basic", description: "Own the stock, sell the upside — income at the cost of the rally.", build: (S) => [{ instrument: "stock", side: 1 as const, qty: 1, params: {} }, euro("call", -1, Math.round(S * 1.1))] },
-  { id: "protective-put", label: "Protective put", tier: "basic", description: "Own the stock, own the floor — insurance priced in vega.", build: (S) => [{ instrument: "stock", side: 1 as const, qty: 1, params: {} }, euro("put", 1, S)] },
-  { id: "calendar", label: "Calendar spread", tier: "basic", description: "Short the near expiry, long the far one — trading the term structure of time value.", build: (S) => [euro("call", -1, S, 0.5), euro("call", 1, S, 1)] },
+  { id: "risk-reversal", label: "Risk reversal", tier: "basic", description: "A short put funds a long call: synthetic long exposure, and the volatility skew in one picture.", build: (S) => [euro("call", 1, Math.round(S * 1.05)), euro("put", -1, Math.round(S * 0.95))] },
+  { id: "covered-call", label: "Covered call", tier: "basic", description: "Own the stock and sell the upside: income today at the cost of the rally.", build: (S) => [{ instrument: "stock", side: 1 as const, qty: 1, params: {} }, euro("call", -1, Math.round(S * 1.1))] },
+  { id: "protective-put", label: "Protective put", tier: "basic", description: "Own the stock and own the floor beneath it: insurance, priced in vega.", build: (S) => [{ instrument: "stock", side: 1 as const, qty: 1, params: {} }, euro("put", 1, S)] },
+  { id: "calendar", label: "Calendar spread", tier: "basic", description: "Short the near expiry and long the far one: a trade on the term structure of time value.", build: (S) => [euro("call", -1, S, 0.5), euro("call", 1, S, 1)] },
 ];
 
 // ---------------------------------------------------------------------------

@@ -130,7 +130,7 @@ export function LearnDrawer() {
                   aria-expanded={appendixOpen}
                   onClick={() => setAppendixOpen((v) => !v)}
                 >
-                  <span className="font-serif text-[15px] text-accent">Mathematical appendix — {entry.appendix.title}</span>
+                  <span className="font-serif text-[15px] text-accent">Mathematical appendix · {entry.appendix.title}</span>
                   <span className="text-accent">{appendixOpen ? "▴" : "▾"}</span>
                 </button>
                 {appendixOpen && (
@@ -166,7 +166,7 @@ export function LearnDrawer() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Click any ⓘ in the tool to read the explanation here — intuition first, then the formulas, the assumptions,
+            Click any ⓘ in the tool to read the explanation here: intuition first, then the formulas, the assumptions,
             and, where it earns its keep, the full derivation.
           </p>
         )}

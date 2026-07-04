@@ -11,7 +11,7 @@ export function FloatingLabCta() {
   return (
     <Link
       to="/lab"
-      aria-label="Open Minerva PayoffLab — the derivatives payoff and pricing laboratory"
+      aria-label="Open Minerva PayoffLab, the derivatives payoff and pricing laboratory"
       title="Minerva PayoffLab"
       className="fixed bottom-6 right-6 z-50 block h-16 w-16 overflow-hidden rounded-full shadow-elevated transition-transform duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
     >
