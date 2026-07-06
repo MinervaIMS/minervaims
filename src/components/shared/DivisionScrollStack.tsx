@@ -48,7 +48,7 @@ const cards: DivisionCard[] = [
 
 const DivisionScrollStack = () => {
   return (
-    <ScrollStack>
+    <ScrollStack title="Our Divisions">
       {cards.map(({ division, background, description }) => (
         <ScrollStackItem key={division}>
           <article className="relative h-full w-full">
