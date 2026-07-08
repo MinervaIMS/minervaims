@@ -1,30 +1,26 @@
-## Finding is already addressed in the current code
+## Problem
 
-`supabase/functions/admin-treasury/index.ts` already gates the entire function on `canManage` before dispatching any action:
+In `src/components/shared/ScrollStack.tsx`, the "Our Divisions" heading and the stacked cards are siblings inside the same `.container`, both using `position: sticky`:
 
-```ts
-const canManage = user.email === 'as.minerva@unibocconi.it'
-  || roles.some((r) => MANAGE.includes(r));
-if (!canManage) return json({ error: 'Access denied' }, 403);
-```
+- Title: `top: 88px`
+- Last card: `top: calc(11.5rem + (N-1) * 0.9rem)` ≈ 19–20rem
 
-This runs before the `action === 'list'` branch, so unauthorized authenticated users (candidates, members, analysts, etc.) already receive `403 Access denied` when calling `list`. The redundant `if (!canManage)` inside the `add` branch is harmless dead code.
+A sticky element unsticks when its containing block's bottom reaches `viewport_top + top`. Because the last card has a much larger `top` value than the title, the container's bottom crosses the card's release point **first**, so the last card slides up while the title stays pinned. The title only lets go much later when the container bottom finally reaches 88px. That's the "locked in place, then jumps at the end" glitch.
 
-The scanner's report reflects an older version of the file.
+Same-parent geometry cannot fix this: any sticky child with a larger `top` will always release before one with a smaller `top`.
 
-## Proposed action
+## Fix
 
-1. **Mark the finding as fixed** via `security--manage_security_finding` with an explanation that the global `canManage` gate at the top of the handler already covers the `list` action (defence verified by code inspection).
-2. **Optional tiny cleanup** (only if you want it): remove the now-redundant `if (!canManage) return json({ error: 'Access denied' }, 403);` line inside the `add` branch, since it's already enforced above. No behaviour change.
+Remove the sticky behaviour from the title inside `ScrollStack.tsx`. Render "Our Divisions" as a normal heading above the cards. It will scroll away naturally when the user starts scrolling through the stack, and each card sticks near the top of the viewport as before.
 
-## What I will NOT do
+### Changes to `src/components/shared/ScrollStack.tsx`
 
-- No new authorization logic — it's already correct.
-- No changes to other files or other findings in the More panel (those are separate items you haven't asked about).
+1. Drop the `sticky top-[88px] z-10 bg-background` classes from the `<h2>` — keep it as a plain heading with the existing serif/border styling.
+2. Since the title no longer occupies the pinned space, use the smaller card offset (`cardBase = '5.5rem'`) in every case, so cards stick just under the fixed navbar (which is `z-50` and already sits above them).
+3. No changes to `DivisionScrollStack.tsx`, `About.tsx`, or the CSS file. The stacked-cards effect and section spacing stay identical; only the "Our Divisions" label stops pinning.
 
-## Verification
+### Result
 
-- Re-read the file to confirm the top-level guard is intact.
-- After marking fixed, the scanner entry disappears from the security panel.
-
-Confirm and I'll (a) mark the finding as fixed, and (b) optionally drop the redundant inner check.
+- The heading scrolls away with the first card, exactly like a normal section title.
+- Each card sticks under the navbar and the next slides over it, unchanged.
+- The last card and the section end together — no more delayed jump of the title.
