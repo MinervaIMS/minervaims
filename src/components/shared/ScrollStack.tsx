@@ -27,14 +27,16 @@ interface Props {
 export default function ScrollStack({ children, title, cardClassName }: Props) {
   const items = Children.toArray(children);
   const height = cardClassName ?? 'h-[62vh] max-h-[520px] min-h-[360px]';
-  // When a pinned title is present, cards stop lower so the title, its
-  // separator line and a gap remain visible above the first card.
-  const cardBase = title ? '11.5rem' : '5.5rem';
+  // Cards stick just under the fixed navbar. The title (if any) is a normal
+  // heading that scrolls away with the first card — pinning it caused a
+  // release-order glitch against the last card (which has a larger sticky
+  // `top` and therefore unstuck first).
+  const cardBase = '5.5rem';
 
   return (
     <div className="container">
       {title && (
-        <h2 className="font-serif text-heading pb-3 mb-4 border-b border-separator text-accent sticky top-[88px] z-10 bg-background">
+        <h2 className="font-serif text-heading pb-3 mb-6 border-b border-separator text-accent">
           {title}
         </h2>
       )}
