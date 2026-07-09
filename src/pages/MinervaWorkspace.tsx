@@ -30,6 +30,8 @@ import NewJoiners from '@/components/admin/NewJoiners';
 import FormSettings from '@/components/admin/FormSettings';
 import QuestionsManagement from '@/components/admin/QuestionsManagement';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
+import InterviewCalendar from '@/components/admin/InterviewCalendar';
+import InterviewCalendarCandidate from '@/components/admin/InterviewCalendarCandidate';
 import ReportUpload from '@/components/admin/ReportUpload';
 import ResourceManager from '@/components/admin/ResourceManager';
 import FundsPerformances from '@/components/admin/FundsPerformances';
@@ -149,6 +151,7 @@ const NAV: NavSection[] = [
       { key: 'applications-questions', label: 'Questions', allowed: (p) => p.can('applications-questions') },
       { key: 'applications-status', label: 'Status', allowed: (p) => p.can('applications-status') },
       { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.can('applications-screening') },
+      { key: 'applications-interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
       { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.can('applications-joiners') },
       { key: 'applications-form', label: 'Form settings', allowed: (p) => p.can('applications-form') },
     ],
@@ -210,7 +213,10 @@ const CANDIDATE_NAV: NavSection[] = [
   { key: 'my-role', label: 'My profile', Icon: UserIcon, subItems: [] },
   {
     key: 'applications', label: 'Applications', Icon: ClipboardList,
-    subItems: [{ key: 'applications-status', label: 'Status' }],
+    subItems: [
+      { key: 'applications-status', label: 'Status' },
+      { key: 'applications-interview-calendar', label: 'Interview Calendar' },
+    ],
   },
 ];
 
@@ -551,6 +557,7 @@ const MinervaWorkspace = () => {
     // Hard guard: a candidate can only ever render their profile or status.
     if (isCandidate) {
       if (activeSubKey === 'applications-status') return <ApplicationStatus />;
+      if (activeSubKey === 'applications-interview-calendar') return <InterviewCalendarCandidate />;
       return <MyProfile />;
     }
     if (activeSectionKey === 'my-role') return <MyProfile />;
@@ -607,6 +614,8 @@ const MinervaWorkspace = () => {
         return <FormSettings />;
       case 'applications-status':
         return <ApplicationStatus />;
+      case 'applications-interview-calendar':
+        return <InterviewCalendar />;
       case 'website-readings':
         return <ReadingsManagement />;
       case 'settings-users':
