@@ -5,7 +5,6 @@ import logoWhite from "@/assets/footer-logo.svg";
 import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
-import { TeamSwarm } from "@/components/shared/TeamSwarm";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
@@ -164,9 +163,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Team swarm */}
-      <TeamSwarm />
 
       {/* Alumni Ticker */}
       <AlumniTicker />
