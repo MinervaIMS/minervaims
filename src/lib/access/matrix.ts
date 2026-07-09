@@ -37,6 +37,7 @@ export const BASELINE_RESOURCES: ResourceKey[] = ['my-role', 'welcome', 'dashboa
 export const CANDIDATE_RESOURCES: Record<ResourceKey, AccessLevel> = {
   'my-role': 'edit',
   'applications-status': 'view',
+  'applications-interview-calendar': 'view',
 };
 
 type RoleGrants = Record<ResourceKey, AccessLevel>;
@@ -64,6 +65,7 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
     'applications-website': 'edit',
     'applications-questions': 'edit',
     'applications-form': 'edit',
+    'applications-interview-calendar': 'manage',
     'events-create': 'edit',
     'events-alumni-calls': 'edit',
     'events-archive': 'view',
@@ -81,6 +83,7 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
     'reports-archive': 'view',
     'reports-templates': 'edit',
     'applications-screening': 'view',
+    'applications-interview-calendar': 'view',
     'people-members': 'view',
   },
 

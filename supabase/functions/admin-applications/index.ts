@@ -135,7 +135,27 @@ Deno.serve(async (req) => {
       if (!STATUSES.includes(body.status)) return json({ error: 'Invalid status' }, 400);
       const { data: app } = await supabase.from('applications').select('first_choice, second_choice').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
-      const { error } = await supabase.from('applications').update({ status: body.status }).eq('id', body.id);
+
+      const updates: Record<string, unknown> = { status: body.status };
+      // Inviting to interview locks the candidate to one division's calendar.
+      // A scoped reviewer invites for their own division; a full-access role
+      // may pass an explicit division and otherwise defaults to first choice.
+      if (body.status === 'interview_invitation_sent') {
+        let interviewDivision: string | null = null;
+        if (canAll) {
+          const requested = typeof body.interview_division === 'string' ? body.interview_division : null;
+          interviewDivision = requested || app.first_choice;
+        } else if (reviewerDivisions.includes(app.first_choice)) {
+          interviewDivision = app.first_choice;
+        } else if (app.second_choice && reviewerDivisions.includes(app.second_choice)) {
+          interviewDivision = app.second_choice;
+        } else {
+          interviewDivision = reviewerDivisions[0] ?? app.first_choice;
+        }
+        updates.interview_division = interviewDivision;
+      }
+
+      const { error } = await supabase.from('applications').update(updates).eq('id', body.id);
       if (error) throw error;
       return json({ success: true });
     }

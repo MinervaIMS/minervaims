@@ -456,6 +456,7 @@ export type Database = {
           first_choice: Database["public"]["Enums"]["org_division"]
           first_name: string
           id: string
+          interview_division: Database["public"]["Enums"]["org_division"] | null
           linkedin_url: string | null
           phone: string
           second_choice: Database["public"]["Enums"]["org_division"] | null
@@ -478,6 +479,9 @@ export type Database = {
           first_choice: Database["public"]["Enums"]["org_division"]
           first_name: string
           id?: string
+          interview_division?:
+            | Database["public"]["Enums"]["org_division"]
+            | null
           linkedin_url?: string | null
           phone: string
           second_choice?: Database["public"]["Enums"]["org_division"] | null
@@ -500,6 +504,9 @@ export type Database = {
           first_choice?: Database["public"]["Enums"]["org_division"]
           first_name?: string
           id?: string
+          interview_division?:
+            | Database["public"]["Enums"]["org_division"]
+            | null
           linkedin_url?: string | null
           phone?: string
           second_choice?: Database["public"]["Enums"]["org_division"] | null
@@ -977,6 +984,102 @@ export type Database = {
           period_month?: string
           updated_at?: string
           ytd_return?: number | null
+        }
+        Relationships: []
+      }
+      interview_bookings: {
+        Row: {
+          application_id: string
+          candidate_email: string
+          candidate_name: string
+          candidate_user_id: string | null
+          created_at: string
+          division: Database["public"]["Enums"]["org_division"]
+          id: string
+          slot_id: string
+        }
+        Insert: {
+          application_id: string
+          candidate_email: string
+          candidate_name: string
+          candidate_user_id?: string | null
+          created_at?: string
+          division: Database["public"]["Enums"]["org_division"]
+          id?: string
+          slot_id: string
+        }
+        Update: {
+          application_id?: string
+          candidate_email?: string
+          candidate_name?: string
+          candidate_user_id?: string | null
+          created_at?: string
+          division?: Database["public"]["Enums"]["org_division"]
+          id?: string
+          slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_bookings_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: true
+            referencedRelation: "interview_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_slots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          division: Database["public"]["Enums"]["org_division"]
+          end_time: string
+          examiner_id: string | null
+          examiner_name: string | null
+          id: string
+          is_active: boolean
+          is_booked: boolean
+          meeting_link: string | null
+          slot_date: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          division: Database["public"]["Enums"]["org_division"]
+          end_time: string
+          examiner_id?: string | null
+          examiner_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_booked?: boolean
+          meeting_link?: string | null
+          slot_date: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          division?: Database["public"]["Enums"]["org_division"]
+          end_time?: string
+          examiner_id?: string | null
+          examiner_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_booked?: boolean
+          meeting_link?: string | null
+          slot_date?: string
+          start_time?: string
+          updated_at?: string
         }
         Relationships: []
       }
