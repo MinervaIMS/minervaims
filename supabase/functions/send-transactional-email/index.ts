@@ -278,6 +278,16 @@ Deno.serve(async (req) => {
     )
   }
 
+  // Inject unsubscribe URL so templates can render a visible opt-out link
+  // (required by Gmail/Yahoo bulk-sender guidance and reduces spam scoring).
+  // Points to the public unsubscribe page which validates the token and
+  // POSTs to handle-email-unsubscribe. Non-newsletter templates simply
+  // ignore this key.
+  templateData = {
+    ...templateData,
+    unsubscribe_url: `https://minervaims.org/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`,
+  }
+
   // 4. Render React Email template to HTML and plain text
   const html = await renderAsync(
     React.createElement(template.component, templateData)
@@ -286,6 +296,7 @@ Deno.serve(async (req) => {
     React.createElement(template.component, templateData),
     { plainText: true }
   )
+
 
   // Resolve subject — supports static string or dynamic function
   const resolvedSubject = normalizeEmailSubject(
