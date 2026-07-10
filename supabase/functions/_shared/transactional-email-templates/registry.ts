@@ -64,7 +64,7 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   detail_value_2: 'Sunday, 15 September 2026',
   division_name: 'Equity Research',
   division_or_team: 'Equity Research',
-  division_slug: 'equity-research',
+  division_slug: 'equity',
   due_date: 'Sunday, 15 September 2026',
   effective_date: 'Monday, 16 September 2026',
   event_date: 'Thursday, 12 September 2026',
