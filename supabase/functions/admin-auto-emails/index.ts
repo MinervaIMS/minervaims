@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
           key: template.key,
           name: template.name,
           subject: normalizeEmailSubject(template.subject),
-          body: normalizeEmailLinks(template.body),
+          body: withResponsiveShell(normalizeEmailLinks(template.body)),
           description: row?.description ?? null,
           file_url: row?.file_url ?? null,
           connected: row?.connected ?? !LEGACY_KEYS.has(template.key),
