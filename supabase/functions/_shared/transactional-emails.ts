@@ -756,7 +756,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   {
     key: "ws_role_assignment",
     name: "Workspace \u00b7 role assignment",
-    subject: "Your new role at Minerva IMS | Minerva IMS",
+    subject: "Your new role | Minerva IMS",
     body: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
