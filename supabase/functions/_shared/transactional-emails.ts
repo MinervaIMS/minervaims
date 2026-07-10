@@ -259,7 +259,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   {
     key: "offer_to_join",
     name: "Offer to join",
-    subject: "An offer to join Minerva IMS | Minerva IMS",
+    subject: "Your offer to join Minerva IMS | Minerva IMS",
     body: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
