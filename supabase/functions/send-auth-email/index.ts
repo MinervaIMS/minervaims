@@ -3,6 +3,7 @@ import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 import { Resend } from 'https://esm.sh/resend@4.0.0'
 import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.22'
 import { AuthEmail } from './_templates/auth-email.tsx'
+import { normalizeEmailSubject } from '../_shared/email-subjects.ts'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
@@ -73,7 +74,7 @@ Deno.serve(async (req) => {
     const { error } = await resend.emails.send({
       from: 'Minerva IMS <noreply@minervaims.com>',
       to: [user.email],
-      subject: getSubject(),
+      subject: normalizeEmailSubject(getSubject()),
       html,
     })
 

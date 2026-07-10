@@ -2,6 +2,7 @@ import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
 import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { AUTH_SUBJECTS, renderAuthEmail } from '../_shared/auth-emails.ts'
+import { normalizeEmailSubject } from '../_shared/email-subjects.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,7 +147,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       to: payload.data.email,
       from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN,
-      subject: AUTH_SUBJECTS[emailType] || rendered.subject,
+      subject: normalizeEmailSubject(AUTH_SUBJECTS[emailType] || rendered.subject),
       html: rendered.html,
       text: rendered.text,
       purpose: 'transactional',
