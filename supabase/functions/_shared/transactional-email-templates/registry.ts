@@ -32,7 +32,7 @@ function substitute(html: string, data: Record<string, any>): string {
 // dangerouslySetInnerHTML on the React Email <Body>.
 function makeComponent(rawHtml: string) {
   return function EmailTemplate(props: Record<string, any> = {}) {
-    const finalHtml = normalizeEmailLinks(substitute(rawHtml, props))
+    const finalHtml = withResponsiveShell(normalizeEmailLinks(substitute(rawHtml, props)))
     const bodyMatch = finalHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
     const inner = bodyMatch ? bodyMatch[1] : finalHtml
     return React.createElement(
