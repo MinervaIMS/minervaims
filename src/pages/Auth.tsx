@@ -95,7 +95,7 @@ const Auth = () => {
     name.trim().length > 0 &&
     surname.trim().length > 0 &&
     emailSchema.safeParse(suEmail).success &&
-    bocconiEmail.test(suEmail) &&
+    emailSchema.safeParse(suEmail).success &&
     passwordSchema.safeParse(suPassword).success &&
     suConfirm === suPassword &&
     suConfirm.length > 0 &&
