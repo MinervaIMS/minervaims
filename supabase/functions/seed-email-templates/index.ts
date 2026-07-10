@@ -21,11 +21,11 @@ Deno.serve(async (req) => {
     const results: Array<{ key: string; ok: boolean; error?: string }> = [];
     for (const t of TRANSACTIONAL_TEMPLATES) {
       const { error } = await supabase.from('auto_email_templates')
-        .upsert({ key: t.key, name: t.name, subject: t.subject, body: t.body, connected: true, updated_by: user.id }, { onConflict: 'key' });
+        .upsert({ key: t.key, name: t.name, subject: t.subject, body: t.body, connected: true }, { onConflict: 'key' });
       results.push({ key: t.key, ok: !error, error: error?.message });
     }
     for (const k of LEGACY_KEYS_TO_DISCONNECT) {
-      await supabase.from('auto_email_templates').update({ connected: false, updated_by: user.id }).eq('key', k);
+      await supabase.from('auto_email_templates').update({ connected: false }).eq('key', k);
     }
     const failed = results.filter(r => !r.ok);
     return json({ success: failed.length === 0, seeded: results.length, failed });
