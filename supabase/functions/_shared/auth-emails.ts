@@ -3,6 +3,7 @@
 
 import { normalizeEmailSubject } from './email-subjects.ts';
 import { normalizeEmailLinks } from './email-links.ts';
+import { withResponsiveShell } from './email-responsive.ts';
 
 export const AUTH_SUBJECTS: Record<string, string> = {
   signup: "Confirm your email | Minerva IMS",
