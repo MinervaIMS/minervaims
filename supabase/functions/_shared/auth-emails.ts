@@ -35,7 +35,7 @@ export const AUTH_HTML: Record<string, string> = {
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" width="68" height="54" alt="Minerva IMS" style="display:block;width:68px;height:54px;border:0;" /></td>
+                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" /></td>
                   <td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">
                     <div style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment<br />Management Society</div>
                     
@@ -93,7 +93,7 @@ export const AUTH_HTML: Record<string, string> = {
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" width="68" height="54" alt="Minerva IMS" style="display:block;width:68px;height:54px;border:0;" /></td>
+                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" /></td>
                   <td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">
                     <div style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment<br />Management Society</div>
                     
@@ -151,7 +151,7 @@ export const AUTH_HTML: Record<string, string> = {
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" width="68" height="54" alt="Minerva IMS" style="display:block;width:68px;height:54px;border:0;" /></td>
+                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" /></td>
                   <td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">
                     <div style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment<br />Management Society</div>
                     
@@ -207,7 +207,7 @@ export const AUTH_HTML: Record<string, string> = {
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" width="68" height="54" alt="Minerva IMS" style="display:block;width:68px;height:54px;border:0;" /></td>
+                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" /></td>
                   <td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">
                     <div style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment<br />Management Society</div>
                     
@@ -265,7 +265,7 @@ export const AUTH_HTML: Record<string, string> = {
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" width="68" height="54" alt="Minerva IMS" style="display:block;width:68px;height:54px;border:0;" /></td>
+                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" /></td>
                   <td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">
                     <div style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment<br />Management Society</div>
                     
@@ -323,7 +323,7 @@ export const AUTH_HTML: Record<string, string> = {
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" width="68" height="54" alt="Minerva IMS" style="display:block;width:68px;height:54px;border:0;" /></td>
+                  <td style="vertical-align:middle;padding-right:14px;"><img src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" /></td>
                   <td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">
                     <div style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment<br />Management Society</div>
                     

@@ -43,11 +43,23 @@ function makeComponent(rawHtml: string) {
   }
 }
 
+const SUBJECT_SUFFIX = '| Minerva IMS'
+
+function resolveSubject(rawSubject: string, data: Record<string, any>): string {
+  let s = substitute(rawSubject, data)
+  // Collapse whitespace introduced by empty placeholders
+  s = s.replace(/\s{2,}/g, ' ').replace(/\s+([:·,|-])/g, '$1').trim()
+  if (!s.endsWith(SUBJECT_SUFFIX)) {
+    s = s.length > 0 ? `${s} ${SUBJECT_SUFFIX}` : `Minerva IMS ${SUBJECT_SUFFIX}`
+  }
+  return s
+}
+
 const entries: Record<string, TemplateEntry> = {}
 for (const t of TRANSACTIONAL_TEMPLATES) {
   entries[t.key] = {
     component: makeComponent(t.body),
-    subject: t.subject,
+    subject: (data: Record<string, any> = {}) => resolveSubject(t.subject, data),
     displayName: t.name,
     previewData: {},
   }
