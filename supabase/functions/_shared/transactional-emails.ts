@@ -324,7 +324,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   {
     key: "acceptance_received",
     name: "Acceptance received",
-    subject: "Welcome to Minerva IMS | Minerva IMS",
+    subject: "Welcome! | Minerva IMS",
     body: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
