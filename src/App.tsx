@@ -48,6 +48,7 @@ const PasswordResetSuccess = lazy(() => import("./pages/PasswordResetSuccess"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification"));
 const SessionExpired = lazy(() => import("./pages/SessionExpired"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const MinervaWorkspace = lazy(() => import("./pages/MinervaWorkspace"));
 const PayoffLab = lazy(() => import("./pages/PayoffLab"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
@@ -107,6 +108,7 @@ const App = () => {
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><Contacts /></Suspense>} />
                 <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><Partnerships /></Suspense>} />
+                <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
                 <Route path="/check-email" element={<Suspense fallback={<PageLoader />}><CheckEmail /></Suspense>} />

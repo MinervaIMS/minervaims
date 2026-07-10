@@ -50,3 +50,11 @@ project_id = "asjudzdgsccacpjbzsue"
     # runs inside the function. If paid tiers ship, flip this and verify
     # entitlements server-side.
     verify_jwt = false
+  [functions.send-transactional-email]
+    verify_jwt = true
+  [functions.preview-transactional-email]
+    verify_jwt = false
+  [functions.handle-email-unsubscribe]
+    verify_jwt = false
+  [functions.handle-email-suppression]
+    verify_jwt = false

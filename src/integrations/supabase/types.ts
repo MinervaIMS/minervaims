@@ -575,7 +575,10 @@ export type Database = {
           id: string
           key: string
           name: string
+          recipient_description: string | null
+          schedule_description: string | null
           subject: string
+          trigger_description: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -587,7 +590,10 @@ export type Database = {
           id?: string
           key: string
           name: string
+          recipient_description?: string | null
+          schedule_description?: string | null
           subject?: string
+          trigger_description?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -599,7 +605,10 @@ export type Database = {
           id?: string
           key?: string
           name?: string
+          recipient_description?: string | null
+          schedule_description?: string | null
           subject?: string
+          trigger_description?: string | null
           updated_at?: string
           updated_by?: string | null
         }
