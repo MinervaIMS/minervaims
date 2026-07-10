@@ -3,6 +3,7 @@
 
 import { normalizeEmailSubject } from './email-subjects.ts';
 import { normalizeEmailLinks } from './email-links.ts';
+import { withResponsiveShell } from './email-responsive.ts';
 
 export const AUTH_SUBJECTS: Record<string, string> = {
   signup: "Confirm your email | Minerva IMS",
@@ -383,12 +384,12 @@ export function renderAuthEmail(
   const html = AUTH_HTML[action];
   const subject = normalizeEmailSubject(AUTH_SUBJECTS[action]);
   if (!html || !subject) return null;
-  const substituted = normalizeEmailLinks(substitute(html, {
+  const substituted = withResponsiveShell(normalizeEmailLinks(substitute(html, {
     confirmation_url: props.confirmationUrl ?? '',
     token: props.token ?? '',
     old_email: props.oldEmail ?? '',
     new_email: props.newEmail ?? '',
-  }));
+  })));
   // Simple plain-text fallback: strip tags & decode a few entities.
   const text = substituted
     .replace(/<style[\s\S]*?<\/style>/gi, '')

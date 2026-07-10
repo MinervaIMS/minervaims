@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { LEGACY_KEYS_TO_DISCONNECT, TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts';
 import { normalizeEmailSubject } from '../_shared/email-subjects.ts';
 import { normalizeEmailLinks } from '../_shared/email-links.ts';
+import { withResponsiveShell } from '../_shared/email-responsive.ts';
 
 // =====================================================================
 // admin-auto-emails — automatic-email templates + the register of emails
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
           key: template.key,
           name: template.name,
           subject: normalizeEmailSubject(template.subject),
-          body: normalizeEmailLinks(template.body),
+          body: withResponsiveShell(normalizeEmailLinks(template.body)),
           description: row?.description ?? null,
           file_url: row?.file_url ?? null,
           connected: row?.connected ?? !LEGACY_KEYS.has(template.key),
