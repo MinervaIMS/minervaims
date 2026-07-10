@@ -8,6 +8,7 @@ import * as React from 'npm:react@18.3.1'
 import { Body, Head, Html } from 'npm:@react-email/components@0.0.22'
 import { TRANSACTIONAL_TEMPLATES } from '../transactional-emails.ts'
 import { normalizeEmailSubject } from '../email-subjects.ts'
+import { normalizeEmailLinks } from '../email-links.ts'
 
 export interface TemplateEntry {
   component: React.ComponentType<Record<string, any>>
@@ -30,7 +31,7 @@ function substitute(html: string, data: Record<string, any>): string {
 // dangerouslySetInnerHTML on the React Email <Body>.
 function makeComponent(rawHtml: string) {
   return function EmailTemplate(props: Record<string, any> = {}) {
-    const finalHtml = substitute(rawHtml, props)
+    const finalHtml = normalizeEmailLinks(substitute(rawHtml, props))
     const bodyMatch = finalHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
     const inner = bodyMatch ? bodyMatch[1] : finalHtml
     return React.createElement(
