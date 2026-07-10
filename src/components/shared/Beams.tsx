@@ -310,7 +310,7 @@ const MergedPlanes = forwardRef<THREE.Mesh, MergedPlanesProps>(({ material, widt
       (mesh.current.material as THREE.ShaderMaterial).uniforms.time.value += 0.1 * delta;
     }
   });
-  return <mesh ref={mesh} geometry={geometry} material={material} />;
+  return <mesh ref={mesh as any} geometry={geometry as any} material={material as any} />;
 });
 MergedPlanes.displayName = 'MergedPlanes';
 
