@@ -1,7 +1,14 @@
 // AUTO-GENERATED from Minerva email template design pack.
 // One HTML string per Supabase auth action type. Tokens: {{confirmation_url}}, {{token}}, {{old_email}}, {{new_email}}.
 
-export const AUTH_SUBJECTS: Record<string, string> = {"signup": "Confirm your email | Minerva IMS", "recovery": "Reset your password | Minerva IMS", "invite": "You"ve been invited | Minerva IMS", "magiclink": "Your login link | Minerva IMS", "email_change": "Confirm your new email | Minerva IMS", "reauthentication": "Your verification code | Minerva IMS"};
+export const AUTH_SUBJECTS: Record<string, string> = {
+  signup: "Confirm your email | Minerva IMS",
+  recovery: "Reset your password | Minerva IMS",
+  invite: "You've been invited | Minerva IMS",
+  magiclink: "Your login link | Minerva IMS",
+  email_change: "Confirm your new email | Minerva IMS",
+  reauthentication: "Your verification code | Minerva IMS",
+};
 
 export const AUTH_HTML: Record<string, string> = {
   signup: `<!DOCTYPE html>
