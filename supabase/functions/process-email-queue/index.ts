@@ -1,6 +1,7 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { normalizeEmailSubject, isLikelyBrokenSubject } from '../_shared/email-subjects.ts'
+import { normalizeEmailLinks } from '../_shared/email-links.ts'
 import { TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts'
 
 const MAX_RETRIES = 5
@@ -284,8 +285,8 @@ Deno.serve(async (req) => {
             from: payload.from,
             sender_domain: payload.sender_domain,
             subject,
-            html: payload.html,
-            text: payload.text,
+            html: typeof payload.html === 'string' ? normalizeEmailLinks(payload.html) : payload.html,
+            text: typeof payload.text === 'string' ? normalizeEmailLinks(payload.text) : payload.text,
             purpose: payload.purpose,
             label: payload.label,
             idempotency_key: payload.idempotency_key,
