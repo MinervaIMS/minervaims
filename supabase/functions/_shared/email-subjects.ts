@@ -35,7 +35,7 @@ export function normalizeEmailSubject(
     .replace(/[:·,\-–—]\s*$/g, '')
     .trim()
 
-  if (!base) base = fallback
+  if (!base || /^[a-z0-9]+(?:_[a-z0-9]+)+$/.test(base)) base = fallback
   return `${base}${MINERVA_SUBJECT_SUFFIX}`
 }
 
