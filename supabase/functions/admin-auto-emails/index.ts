@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { LEGACY_KEYS_TO_DISCONNECT, TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts';
+import { normalizeEmailSubject } from '../_shared/email-subjects.ts';
 
 // =====================================================================
 // admin-auto-emails — automatic-email templates + the register of emails
@@ -15,6 +17,7 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
+const LEGACY_KEYS = new Set(LEGACY_KEYS_TO_DISCONNECT);
 
 // Allowlist of upload types (see admin-resources): reject HTML/SVG/scripts.
 const ALLOWED_MIME = new Set([
@@ -77,13 +80,34 @@ Deno.serve(async (req) => {
 
     if (action === 'list') {
       const { data: templates } = await supabase.from('auto_email_templates').select('*').order('name');
+      const rowsByKey = new Map((templates || []).map((template: any) => [template.key, template]));
+      const codeTemplates = TRANSACTIONAL_TEMPLATES.map((template) => {
+        const row = rowsByKey.get(template.key) as any | undefined;
+        rowsByKey.delete(template.key);
+        return {
+          ...(row || {}),
+          id: row?.id || `code-${template.key}`,
+          key: template.key,
+          name: template.name,
+          subject: normalizeEmailSubject(template.subject),
+          body: template.body,
+          description: row?.description ?? null,
+          file_url: row?.file_url ?? null,
+          connected: row?.connected ?? !LEGACY_KEYS.has(template.key),
+          updated_at: row?.updated_at ?? new Date(0).toISOString(),
+          trigger_description: row?.trigger_description ?? null,
+          recipient_description: row?.recipient_description ?? null,
+          schedule_description: row?.schedule_description ?? null,
+        };
+      });
+      const mergedTemplates = [...codeTemplates, ...rowsByKey.values()].sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
       let log: any[] = [];
       try {
         const { data } = await supabase.from('email_send_log')
           .select('id, template_name, recipient_email, status, created_at').order('created_at', { ascending: false }).limit(200);
         log = data || [];
       } catch { /* email_send_log optional */ }
-      return json({ templates: templates || [], log });
+      return json({ templates: mergedTemplates, log });
     }
 
     if (action === 'save-template') {

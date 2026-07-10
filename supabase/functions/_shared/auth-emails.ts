@@ -1,6 +1,8 @@
 // AUTO-GENERATED from Minerva email template design pack.
 // One HTML string per Supabase auth action type. Tokens: {{confirmation_url}}, {{token}}, {{old_email}}, {{new_email}}.
 
+import { normalizeEmailSubject } from './email-subjects.ts';
+
 export const AUTH_SUBJECTS: Record<string, string> = {
   signup: "Confirm your email | Minerva IMS",
   recovery: "Reset your password | Minerva IMS",
@@ -378,7 +380,7 @@ export function renderAuthEmail(
   props: { confirmationUrl?: string; token?: string; oldEmail?: string; newEmail?: string },
 ): { html: string; text: string; subject: string } | null {
   const html = AUTH_HTML[action];
-  const subject = AUTH_SUBJECTS[action];
+  const subject = normalizeEmailSubject(AUTH_SUBJECTS[action]);
   if (!html || !subject) return null;
   const substituted = substitute(html, {
     confirmation_url: props.confirmationUrl ?? '',

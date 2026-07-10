@@ -1,11 +1,37 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { normalizeEmailSubject, isLikelyBrokenSubject } from '../_shared/email-subjects.ts'
+import { TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts'
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
 const DEFAULT_SEND_DELAY_MS = 200
 const DEFAULT_AUTH_TTL_MINUTES = 15
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60
+
+const TRANSACTIONAL_SUBJECTS = new Map(
+  TRANSACTIONAL_TEMPLATES.map((template) => [template.key, template.subject]),
+)
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function resolveDeliverySubject(queue: string, payload: Record<string, unknown>): string {
+  const label = typeof payload.label === 'string' ? payload.label : undefined
+  const templateData = asRecord(payload.template_data)
+  const currentSubject = typeof payload.subject === 'string' ? payload.subject : ''
+  const templateSubject = queue === 'transactional_emails' && label
+    ? TRANSACTIONAL_SUBJECTS.get(label)
+    : undefined
+  const sourceSubject = isLikelyBrokenSubject(currentSubject, label) && templateSubject
+    ? templateSubject
+    : currentSubject
+
+  return normalizeEmailSubject(sourceSubject, templateData)
+}
 
 // Check if an error is a rate-limit (429) response.
 // Uses EmailAPIError.status when available (email-js >=0.x with structured errors),
@@ -249,13 +275,15 @@ Deno.serve(async (req) => {
       }
 
       try {
+        const subject = resolveDeliverySubject(queue, payload)
+
         await sendLovableEmail(
           {
             run_id: payload.run_id,
             to: payload.to,
             from: payload.from,
             sender_domain: payload.sender_domain,
-            subject: payload.subject,
+            subject,
             html: payload.html,
             text: payload.text,
             purpose: payload.purpose,
