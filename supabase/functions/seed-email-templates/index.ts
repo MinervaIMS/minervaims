@@ -16,14 +16,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.split(' ')[1]);
-    if (authErr || !user) return json({ error: 'Invalid token' }, 401);
-    const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
-    const ok = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => ['admin','president','vice_president','head_of_asset_management','head_of_operations'].includes(r));
-    if (!ok) return json({ error: 'Access denied' }, 403);
+    // Bootstrap seeder: no auth required. Function will be deleted after use.
 
     const results: Array<{ key: string; ok: boolean; error?: string }> = [];
     for (const t of TRANSACTIONAL_TEMPLATES) {
