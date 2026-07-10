@@ -337,7 +337,7 @@ const DirLight = ({ position, color }: DirLightProps) => {
     cam.far = 64;
     dir.current.shadow.bias = -0.004;
   }, []);
-  return <directionalLight ref={dir} color={color} position={position} intensity={1} />;
+  return <directionalLight ref={dir as any} color={color} position={position} intensity={1} />;
 };
 
 export default Beams;
