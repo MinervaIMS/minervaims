@@ -84,9 +84,9 @@ export const AuthEmail = ({
           {/* Header with Logo */}
           <Section style={headerSection}>
             <Img
-              src="https://asjudzdgsccacpjbzsue.supabase.co/storage/v1/object/public/archive-files/mims-logo.png"
-              width="72"
-              height="72"
+              src="https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png"
+              width="60"
+              height="60"
               alt="Minerva IMS"
               style={logo}
             />
@@ -189,6 +189,9 @@ const headerSection = {
 
 const logo = {
   margin: '0 auto 16px',
+  width: '60px',
+  height: '60px',
+  display: 'block',
 }
 
 const brandName = {
