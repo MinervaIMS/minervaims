@@ -76,7 +76,7 @@ export default function Unsubscribe() {
         <li>Occasional Society news, milestones, and alumni highlights.</li>
       </ul>
       <p style={{ marginTop: '14px', color: '#737373' }}>
-        We only email when there is something worth sharing — never more than a handful of times per term.
+        We only email when there is something worth sharing, never more than a handful of times per term.
       </p>
     </div>
   );
