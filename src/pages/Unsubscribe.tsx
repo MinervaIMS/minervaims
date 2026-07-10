@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import AuthLayout from '@/components/shared/AuthLayout';
+import { AuthButton } from '@/components/shared/AuthUI';
 
 type State = 'validating' | 'ready' | 'already' | 'invalid' | 'confirming' | 'success' | 'error';
 
@@ -63,52 +64,73 @@ export default function Unsubscribe() {
     }
   };
 
+  const missOutCopy = (
+    <div className="font-body text-left" style={{ fontSize: '14px', color: '#404040', lineHeight: 1.6 }}>
+      <p style={{ marginBottom: '12px', color: '#141414' }}>
+        Before you go, here is what you will no longer receive:
+      </p>
+      <ul style={{ paddingLeft: '18px', listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <li>Announcements when applications open, along with deadline reminders.</li>
+        <li>Invitations to public events, guest lectures, and panel discussions.</li>
+        <li>Updates on new research publications from our five divisions.</li>
+        <li>Occasional Society news, milestones, and alumni highlights.</li>
+      </ul>
+      <p style={{ marginTop: '14px', color: '#737373' }}>
+        We only email when there is something worth sharing — never more than a handful of times per term.
+      </p>
+    </div>
+  );
+
   return (
-    <main className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center space-y-6 border border-separator bg-white p-10">
-        <h1 className="font-serif text-3xl text-accent">Unsubscribe</h1>
+    <AuthLayout
+      title="Unsubscribe"
+      cardTitle="Unsubscribe from Minerva IMS"
+      cardSubtitle="Confirm below to stop receiving emails from the Society at this address."
+    >
+      {state === 'validating' && (
+        <div className="flex items-center justify-center gap-2 py-4 font-body" style={{ color: '#737373', fontSize: '14px' }}>
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking your link…
+        </div>
+      )}
 
-        {state === 'validating' && (
-          <div className="flex items-center justify-center gap-2 text-muted-foreground font-body">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking your link…
-          </div>
-        )}
+      {state === 'ready' && (
+        <div className="space-y-6">
+          {missOutCopy}
+          <AuthButton onClick={confirm} className="w-full">
+            Confirm unsubscribe
+          </AuthButton>
+        </div>
+      )}
 
-        {state === 'ready' && (
-          <>
-            <p className="font-body text-sm text-muted-foreground">
-              Confirm below to stop receiving emails from Minerva IMS at this address.
-            </p>
-            <Button onClick={confirm} className="w-full">Confirm unsubscribe</Button>
-          </>
-        )}
+      {state === 'confirming' && (
+        <div className="flex items-center justify-center gap-2 py-4 font-body" style={{ color: '#737373', fontSize: '14px' }}>
+          <Loader2 className="h-4 w-4 animate-spin" /> Processing…
+        </div>
+      )}
 
-        {state === 'confirming' && (
-          <div className="flex items-center justify-center gap-2 text-muted-foreground font-body">
-            <Loader2 className="h-4 w-4 animate-spin" /> Processing…
-          </div>
-        )}
+      {state === 'success' && (
+        <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#141414', lineHeight: 1.6 }}>
+          You have been unsubscribed. You will no longer receive emails from Minerva IMS at this address. If you change your mind, you can resubscribe from any future signup form on our website.
+        </p>
+      )}
 
-        {state === 'success' && (
-          <p className="font-body text-sm">
-            You have been unsubscribed. You will no longer receive emails from Minerva IMS at this address.
-          </p>
-        )}
+      {state === 'already' && (
+        <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#141414', lineHeight: 1.6 }}>
+          This address has already been unsubscribed. You will not receive further emails from Minerva IMS.
+        </p>
+      )}
 
-        {state === 'already' && (
-          <p className="font-body text-sm">This address has already been unsubscribed.</p>
-        )}
+      {state === 'invalid' && (
+        <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#b91c1c', lineHeight: 1.6 }}>
+          This unsubscribe link is invalid or has expired. If you continue to receive unwanted emails, please contact us at as.minerva@unibocconi.it.
+        </p>
+      )}
 
-        {state === 'invalid' && (
-          <p className="font-body text-sm text-destructive">
-            This unsubscribe link is invalid or has expired. If you continue to receive unwanted emails, please contact us.
-          </p>
-        )}
-
-        {state === 'error' && (
-          <p className="font-body text-sm text-destructive">{error || 'Something went wrong. Please try again.'}</p>
-        )}
-      </div>
-    </main>
+      {state === 'error' && (
+        <p className="font-body text-center" style={{ fontSize: '14.5px', color: '#b91c1c', lineHeight: 1.6 }}>
+          {error || 'Something went wrong. Please try again.'}
+        </p>
+      )}
+    </AuthLayout>
   );
 }
