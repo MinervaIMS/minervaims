@@ -9,6 +9,7 @@ import { Body, Head, Html } from 'npm:@react-email/components@0.0.22'
 import { TRANSACTIONAL_TEMPLATES } from '../transactional-emails.ts'
 import { normalizeEmailSubject } from '../email-subjects.ts'
 import { normalizeEmailLinks } from '../email-links.ts'
+import { withResponsiveShell } from '../email-responsive.ts'
 
 export interface TemplateEntry {
   component: React.ComponentType<Record<string, any>>
