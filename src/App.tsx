@@ -48,6 +48,7 @@ const PasswordResetSuccess = lazy(() => import("./pages/PasswordResetSuccess"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification"));
 const SessionExpired = lazy(() => import("./pages/SessionExpired"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const MinervaWorkspace = lazy(() => import("./pages/MinervaWorkspace"));
 const PayoffLab = lazy(() => import("./pages/PayoffLab"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
