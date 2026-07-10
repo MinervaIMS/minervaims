@@ -43,6 +43,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.seed-email-templates]
+    verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
   [functions.pricing-engine]
