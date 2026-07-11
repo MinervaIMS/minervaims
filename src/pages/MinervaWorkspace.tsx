@@ -293,6 +293,7 @@ const MinervaWorkspace = () => {
   }, [isSessionExpired, signOut, navigate, toast]);
 
   // Auth gate
+  const { refreshProfile } = useAuth();
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
@@ -307,10 +308,19 @@ const MinervaWorkspace = () => {
         // empty roles array for a moment, and must NOT be flung to the
         // approval-pending page (applicants never need approval).
         if (!rolesLoaded) return;
-        const isMemberOnly = roles.length > 0 && roles.every((r) => r.role === 'member');
+        const isMemberOnly = roles.length > 0 && roles.every((r) => r.role === 'member' || r.role === 'pending');
         const hasNoRoles = roles.length === 0;
         if (isMemberOnly || hasNoRoles) {
-          navigate('/pending-approval');
+          // Safety net: if this user actually has an application on file, they
+          // are a candidate whose role just hasn't synced client-side yet.
+          // Refresh roles and let the next render re-evaluate — do NOT trap
+          // them on /pending-approval.
+          (async () => {
+            const { data: app } = await supabase
+              .from('applications').select('id').eq('user_id', user.id).maybeSingle();
+            if (app) { await refreshProfile(); return; }
+            navigate('/pending-approval');
+          })();
           return;
         }
         toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
@@ -319,7 +329,7 @@ const MinervaWorkspace = () => {
       }
       if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate]);
+  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile]);
 
   const fetchEvents = async () => {
     try {
