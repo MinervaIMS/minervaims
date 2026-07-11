@@ -29,6 +29,14 @@ const PUBLIC_ROLES = new Set([
   'head_of_operations', 'advisor',
 ]);
 
+const DIV_LABELS: Record<string, string> = {
+  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
+  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
+  media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
+};
+const STATUS_URL = 'https://minervaims.org/admin';
+const INTERVIEW_STAGES = ['interview_invitation_sent', 'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed'];
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,30 +141,63 @@ Deno.serve(async (req) => {
     // ── update-status ────────────────────────────────────────────────────────
     if (action === 'update-status') {
       if (!STATUSES.includes(body.status)) return json({ error: 'Invalid status' }, 400);
-      const { data: app } = await supabase.from('applications').select('first_choice, second_choice').eq('id', body.id).maybeSingle();
+      const { data: app } = await supabase.from('applications')
+        .select('first_choice, second_choice, first_name, email, interview_division, status')
+        .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
 
+      const previousStatus = app.status as string;
       const updates: Record<string, unknown> = { status: body.status };
+      let invitedDivision: string | null = app.interview_division;
       // Inviting to interview locks the candidate to one division's calendar.
       // A scoped reviewer invites for their own division; a full-access role
       // may pass an explicit division and otherwise defaults to first choice.
       if (body.status === 'interview_invitation_sent') {
-        let interviewDivision: string | null = null;
-        if (canAll) {
-          const requested = typeof body.interview_division === 'string' ? body.interview_division : null;
-          interviewDivision = requested || app.first_choice;
+        // The examiner may explicitly choose one of the candidate's two
+        // preferred divisions; it must be a candidate choice and within the
+        // examiner's scope. Otherwise fall back to a sensible default.
+        const requested = typeof body.interview_division === 'string' ? body.interview_division : null;
+        const isCandidateChoice = !!requested && (requested === app.first_choice || requested === app.second_choice);
+        const withinScope = canAll || (requested ? reviewerDivisions.includes(requested) : false);
+        if (requested && isCandidateChoice && withinScope) {
+          invitedDivision = requested;
+        } else if (canAll) {
+          invitedDivision = app.first_choice;
         } else if (reviewerDivisions.includes(app.first_choice)) {
-          interviewDivision = app.first_choice;
+          invitedDivision = app.first_choice;
         } else if (app.second_choice && reviewerDivisions.includes(app.second_choice)) {
-          interviewDivision = app.second_choice;
+          invitedDivision = app.second_choice;
         } else {
-          interviewDivision = reviewerDivisions[0] ?? app.first_choice;
+          invitedDivision = reviewerDivisions[0] ?? app.first_choice;
         }
-        updates.interview_division = interviewDivision;
+        updates.interview_division = invitedDivision;
       }
 
       const { error } = await supabase.from('applications').update(updates).eq('id', body.id);
       if (error) throw error;
+
+      // Automatic emails (report item 18). The confirmation prompt is shown in
+      // the workspace UI before this action is called.
+      try {
+        if (body.status === 'interview_invitation_sent' && previousStatus !== 'interview_invitation_sent') {
+          await supabase.rpc('enqueue_app_email', {
+            p_key: 'interview_invitation', p_to: app.email,
+            p_vars: { first_name: app.first_name, division: DIV_LABELS[invitedDivision || ''] || '', status_url: STATUS_URL },
+          });
+        } else if (body.status === 'rejected' && previousStatus !== 'rejected') {
+          const afterInterview = INTERVIEW_STAGES.includes(previousStatus) || !!app.interview_division;
+          await supabase.rpc('enqueue_app_email', {
+            p_key: afterInterview ? 'rejection_after_interview' : 'rejection_no_interview',
+            p_to: app.email, p_vars: { first_name: app.first_name },
+          });
+        } else if (body.status === 'offer_accepted' && previousStatus !== 'offer_accepted') {
+          await supabase.rpc('enqueue_app_email', {
+            p_key: 'offer_accepted_confirmation', p_to: app.email,
+            p_vars: { first_name: app.first_name, status_url: STATUS_URL },
+          });
+        }
+      } catch (e) { console.error('status email enqueue failed', e); }
+
       return json({ success: true });
     }
 
@@ -215,6 +256,16 @@ Deno.serve(async (req) => {
         await supabase.from('user_roles').insert({ user_id: app.user_id, role, division });
       }
       await supabase.from('applications').update({ status: 'joined' }).eq('id', app.id);
+
+      // Welcome / "offer accepted" email: the candidate joins as an analyst and
+      // is prompted to complete their member profile (report item 18.6).
+      try {
+        await supabase.rpc('enqueue_app_email', {
+          p_key: 'offer_accepted_confirmation', p_to: app.email,
+          p_vars: { first_name: app.first_name, status_url: STATUS_URL },
+        });
+      } catch (e) { console.error('welcome email enqueue failed', e); }
+
       return json({ success: true });
     }
 
