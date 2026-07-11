@@ -8,12 +8,12 @@ import DotField from '@/components/shared/DotField';
  */
 export function ApplyBackground() {
   return (
-    <div className="absolute inset-0" style={{ background: '#120A26' }} aria-hidden="true">
+    <div className="absolute inset-0" style={{ background: '#000000' }} aria-hidden="true">
       <DotField
         dotRadius={1}
         dotSpacing={17}
         bulgeStrength={10}
-        glowRadius={50}
+        glowRadius={0}
         sparkle={false}
         waveAmplitude={0}
         cursorRadius={500}
@@ -21,7 +21,6 @@ export function ApplyBackground() {
         bulgeOnly
         gradientFrom="#7E5BC2"
         gradientTo="#B0A2DA"
-        glowColor="#2A1A5C"
       />
     </div>
   );
