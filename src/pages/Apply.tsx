@@ -66,10 +66,10 @@ function SuccessScreen() {
         <div className="relative w-full max-w-md overflow-hidden bg-white shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}
           <div className="absolute inset-0">
-            <PixelCard variant="navy" activeDuration={1400} fadeMs={1700} className="w-full h-full" />
+            <PixelCard variant="navy" speed={70} activeDuration={900} fadeMs={2800} className="w-full h-full" />
           </div>
           <div className="relative z-10 px-8 py-12 text-center">
-            <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+            <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
             <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
             <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
               Your application has been submitted successfully.
