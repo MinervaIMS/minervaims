@@ -265,7 +265,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear our own auth state FIRST, synchronously, so the UI logs the user
+    // out instantly regardless of network latency. The previous implementation
+    // awaited supabase.auth.signOut() with its default 'global' scope, which
+    // performs a server-side revocation round-trip BEFORE clearing local
+    // storage — that network wait is what made the Log Out button feel slow or
+    // unresponsive on poor connections.
     setUser(null);
     setSession(null);
     setProfile(null);
@@ -273,6 +278,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setRolesLoaded(false);
     setMemberPhotoUrl(null);
     setIsSessionExpired(false);
+
+    // Clear the persisted session locally. 'local' scope skips the network
+    // revocation, so it is fast, works offline, and cannot hang. Any failure is
+    // non-fatal because the in-memory state above is already cleared.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      console.error('Sign-out error (ignored — local session already cleared):', e);
+    }
   };
 
   return (

@@ -1,65 +1,72 @@
 import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listPublishedTestimonials, listAlumniLite, resolveAlumnus,
+  type Testimonial, type AlumniLite,
+} from "@/lib/testimonials-api";
 
-interface Testimonial {
-  quote: string;
-  name: string;
-  role: string;
-}
-
-const testimonials: Testimonial[] = [
-  {
-    quote:
-      "The perfect place to apply classroom knowledge in an industry-like setting while meeting inspiring students who share your passion.",
-    name: "Anna Maruccio",
-    role: "Former President",
-  },
-  {
-    quote:
-      "Joining Minerva was one of the best choices I made throughout my studies. Beyond everything I learned, it was the people I met and the moments we shared that made this experience so meaningful and unforgettable.",
-    name: "Luigi Savarese",
-    role: "Former President",
-  },
-  {
-    quote:
-      "Come for the finance, stay for the people. You will join expecting to contribute to interesting work, but what you might not expect is to build relationships that will last long after graduation while having lots of fun.",
-    name: "Matteo Consalvo",
-    role: "Former Head of Portfolio Management",
-  },
-  {
-    quote:
-      "A community of students, peers, and friends united by a passion for financial markets, creating bonds that last far beyond in life.",
-    name: "Michele Rinaldi",
-    role: "Former Vice-president",
-  },
-  {
-    quote:
-      "An awesome place to meet people passionate about markets, exchange ideas and support peers in a friendly environment.",
-    name: "Marco Neri",
-    role: "Former Vice-president",
-  },
+// Fallback used ONLY if the database has no published testimonials yet, so the
+// homepage never renders empty. Mirrors the original seed; the workspace
+// (Website → Testimonials) is the source of truth once populated.
+const FALLBACK: Testimonial[] = [
+  { id: "f1", quote: "The perfect place to apply classroom knowledge in an industry-like setting while meeting inspiring students who share your passion.", alumni_id: null, name: "Anna Maruccio", role_label: "Former President", display_order: 1, published: true, created_at: "" },
+  { id: "f2", quote: "Joining Minerva was one of the best choices I made throughout my studies. Beyond everything I learned, it was the people I met and the moments we shared that made this experience so meaningful and unforgettable.", alumni_id: null, name: "Luigi Savarese", role_label: "Former President", display_order: 2, published: true, created_at: "" },
+  { id: "f3", quote: "Come for the finance, stay for the people. You will join expecting to contribute to interesting work, but what you might not expect is to build relationships that will last long after graduation while having lots of fun.", alumni_id: null, name: "Matteo Consalvo", role_label: "Former Head of Portfolio Management", display_order: 3, published: true, created_at: "" },
+  { id: "f4", quote: "A community of students, peers, and friends united by a passion for financial markets, creating bonds that last far beyond in life.", alumni_id: null, name: "Michele Rinaldi", role_label: "Former Vice-president", display_order: 4, published: true, created_at: "" },
+  { id: "f5", quote: "An awesome place to meet people passionate about markets, exchange ideas and support peers in a friendly environment.", alumni_id: null, name: "Marco Neri", role_label: "Former Vice-president", display_order: 5, published: true, created_at: "" },
 ];
 
 const AUTO_ADVANCE_MS = 15680;
 
-const makeKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
-
 export function TestimonialsSection() {
-  const [index, setIndex] = useState(() =>
-    Math.floor(Math.random() * testimonials.length)
-  );
+  const [list, setList] = useState<Testimonial[]>(FALLBACK);
+  const [alumni, setAlumni] = useState<AlumniLite[]>([]);
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * FALLBACK.length));
   const [direction, setDirection] = useState<"left" | "right">("left");
   const [animKey, setAnimKey] = useState(0);
-  const [companies, setCompanies] = useState<Record<string, string>>({});
+
+  // Load testimonials + alumni from the database, and live-update on changes.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAll = async () => {
+      const [ts, al] = await Promise.all([
+        listPublishedTestimonials().catch(() => [] as Testimonial[]),
+        listAlumniLite().catch(() => [] as AlumniLite[]),
+      ]);
+      if (cancelled) return;
+      if (ts.length > 0) setList(ts); // keep FALLBACK only while the table is empty
+      setAlumni(al);
+    };
+
+    loadAll();
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel("testimonials-homepage-sync")
+        .on("postgres_changes", { event: "*", schema: "public", table: "testimonials" }, loadAll)
+        .on("postgres_changes", { event: "*", schema: "public", table: "alumni" }, loadAll)
+        .subscribe();
+    } catch {
+      // Realtime unavailable — the initial load still works.
+    }
+
+    return () => {
+      cancelled = true;
+      if (channel) { try { supabase.removeChannel(channel); } catch { /* noop */ } }
+    };
+  }, []);
+
+  const len = list.length;
 
   const go = useCallback((next: number, dir: "left" | "right") => {
-    const len = testimonials.length;
     const normalized = ((next % len) + len) % len;
     setDirection(dir);
     setIndex(normalized);
     setAnimKey((k) => k + 1);
-  }, []);
+  }, [len]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -68,73 +75,11 @@ export function TestimonialsSection() {
     return () => clearInterval(id);
   }, [index, go]);
 
-  // Fetch alumni company info + subscribe to live updates. Failures degrade silently.
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchCompanies = async () => {
-      try {
-        const surnames = testimonials.map((t) => t.name.split(" ").slice(-1)[0]);
-        const { data, error } = await supabase
-          .from("alumni")
-          .select("name, surname, company")
-          .in("surname", surnames);
-        if (error || !data || cancelled) return;
-
-        const map: Record<string, string> = {};
-        for (const t of testimonials) {
-          const parts = t.name.trim().split(/\s+/);
-          const firstName = parts[0];
-          const lastName = parts.slice(1).join(" ");
-          const match = data.find(
-            (a: { name: string; surname: string; company: string | null }) =>
-              a?.name?.trim().toLowerCase() === firstName.toLowerCase() &&
-              a?.surname?.trim().toLowerCase() === lastName.toLowerCase()
-          );
-          const company = match?.company?.trim();
-          if (company && company.length > 0) {
-            map[makeKey(t.name)] = company;
-          }
-        }
-        if (!cancelled) setCompanies(map);
-      } catch {
-        // Silently keep current state
-      }
-    };
-
-    fetchCompanies();
-
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    try {
-      channel = supabase
-        .channel("testimonials-alumni-sync")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "alumni" },
-          () => {
-            fetchCompanies();
-          }
-        )
-        .subscribe();
-    } catch {
-      // Realtime not available — static data still works
-    }
-
-    return () => {
-      cancelled = true;
-      if (channel) {
-        try {
-          supabase.removeChannel(channel);
-        } catch {
-          /* noop */
-        }
-      }
-    };
-  }, []);
-
-  const current = testimonials[index];
-  const company = companies[makeKey(current.name)];
-  const displayedRole = company ? `${current.role}, currently at ${company}` : current.role;
+  const safeIndex = Math.min(index, Math.max(0, len - 1));
+  const current = list[safeIndex] ?? FALLBACK[0];
+  const { alumnus } = resolveAlumnus(current, alumni);
+  const company = alumnus?.company?.trim();
+  const displayedRole = company ? `${current.role_label}, currently at ${company}` : current.role_label;
 
   return (
     <section className="relative bg-accent text-background py-section-sm md:py-section overflow-hidden">

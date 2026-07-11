@@ -21,6 +21,7 @@ export interface Permissions {
   canAccessSettings: boolean;
   canAccessReadings: boolean;
   canAccessActivity: boolean;
+  canManageTestimonials: boolean;
 
   // null = all divisions; array = specific core divisions only.
   allowedDivisions: Division[] | null;
@@ -52,6 +53,7 @@ export const usePermissions = (): Permissions => {
       canAccessTeam: access.canView('people-members'),
       canAccessReadings: isFullAccess || (coreDivisions !== null && coreDivisions.length > 0),
       canAccessActivity: isStaff,
+      canManageTestimonials: access.canManage('website-testimonials'),
       allowedDivisions: isFullAccess ? null : coreDivisions && coreDivisions.length > 0 ? coreDivisions : null,
       hasAnyAccess: isStaff,
       isFullAccess,

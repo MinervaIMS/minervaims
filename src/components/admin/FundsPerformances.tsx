@@ -11,7 +11,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listFundYears, upsertFundYear, deleteFundYear,
-  ACTIVE_FUND_LABELS, MONTH_LABELS, type ActiveFund, type FundYear,
+  ACTIVE_FUND_LABELS, MONTH_LABELS, formatFundValue, isValidFundValue, type ActiveFund, type FundYear,
 } from '@/lib/funds-api';
 
 const FUNDS: ActiveFund[] = ['long-short', 'multi-asset'];
@@ -65,11 +65,26 @@ export default function FundsPerformances() {
     if (!edit) return;
     const year = parseInt(edit.year, 10);
     if (!year || year < 2000 || year > 2100) { toast({ title: 'Enter a valid year', variant: 'destructive' }); return; }
+
+    // Guard: every non-empty cell must be a number. Reject anything that cannot
+    // be parsed (e.g. a stray letter) before it can reach the public table.
+    const invalid = [edit.itd, edit.ytd, edit.vol, edit.sharpe, ...edit.months].some((v) => !isValidFundValue(v));
+    if (invalid) {
+      toast({ title: 'Check the numbers', description: 'Some cells are not valid numbers. Use digits only, e.g. 1.2 or -0.4.', variant: 'destructive' });
+      return;
+    }
+
+    // Normalise every value to its canonical format before saving, so the data
+    // stored (and shown on the public fund page) is always consistent.
     setBusy(true);
     try {
       await upsertFundYear(session, {
-        fund: edit.fund, year, itd: edit.itd.trim(), months: edit.months.map((m) => m.trim()),
-        ytd: edit.ytd.trim(), vol: edit.vol.trim(), sharpe: edit.sharpe.trim(),
+        fund: edit.fund, year,
+        itd: formatFundValue(edit.itd, 'pct'),
+        months: edit.months.map((m) => formatFundValue(m, 'signed-pct')),
+        ytd: formatFundValue(edit.ytd, 'signed-pct'),
+        vol: formatFundValue(edit.vol, 'pct'),
+        sharpe: formatFundValue(edit.sharpe, 'ratio'),
       });
       toast({ title: 'Saved', description: 'The public fund table now shows this data.' });
       setEdit(null);
@@ -119,11 +134,11 @@ export default function FundsPerformances() {
                       {byFund[fund].map((r) => (
                         <tr key={r.id} className="border-t border-separator">
                           <td className="px-2 py-2 text-center text-accent">{r.year}</td>
-                          <td className="px-2 py-2 text-center">{r.itd || '-'}</td>
-                          {r.months.map((v, i) => <td key={i} className="px-2 py-2 text-center whitespace-nowrap">{v || ''}</td>)}
-                          <td className="px-2 py-2 text-center">{r.ytd || '-'}</td>
-                          <td className="px-2 py-2 text-center">{r.vol || '-'}</td>
-                          <td className="px-2 py-2 text-center">{r.sharpe || '-'}</td>
+                          <td className="px-2 py-2 text-center">{formatFundValue(r.itd, 'pct') || '-'}</td>
+                          {r.months.map((v, i) => <td key={i} className="px-2 py-2 text-center whitespace-nowrap">{formatFundValue(v, 'signed-pct') || ''}</td>)}
+                          <td className="px-2 py-2 text-center">{formatFundValue(r.ytd, 'signed-pct') || '-'}</td>
+                          <td className="px-2 py-2 text-center">{formatFundValue(r.vol, 'pct') || '-'}</td>
+                          <td className="px-2 py-2 text-center">{formatFundValue(r.sharpe, 'ratio') || '-'}</td>
                           <td className="px-2 py-2 text-right">
                             <div className="flex gap-2 justify-end">
                               <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
@@ -153,18 +168,18 @@ export default function FundsPerformances() {
             <div className="space-y-4 font-body">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1"><Label>Year</Label><Input value={edit.year} onChange={(e) => setEdit({ ...edit, year: e.target.value })} placeholder="e.g. 2026" disabled={!!edit.id} /></div>
-                <div className="space-y-1"><Label>ITD</Label><Input value={edit.itd} onChange={(e) => setEdit({ ...edit, itd: e.target.value })} placeholder="e.g. 52.8%" /></div>
-                <div className="space-y-1"><Label>YTD</Label><Input value={edit.ytd} onChange={(e) => setEdit({ ...edit, ytd: e.target.value })} placeholder="e.g. +8.0%" /></div>
-                <div className="space-y-1"><Label>Vol</Label><Input value={edit.vol} onChange={(e) => setEdit({ ...edit, vol: e.target.value })} placeholder="e.g. 5.5%" /></div>
+                <div className="space-y-1"><Label>ITD</Label><Input value={edit.itd} onChange={(e) => setEdit({ ...edit, itd: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, itd: formatFundValue(s.itd, 'pct') } : s))} placeholder="e.g. 52.8%" /></div>
+                <div className="space-y-1"><Label>YTD</Label><Input value={edit.ytd} onChange={(e) => setEdit({ ...edit, ytd: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, ytd: formatFundValue(s.ytd, 'signed-pct') } : s))} placeholder="e.g. +8.0%" /></div>
+                <div className="space-y-1"><Label>Vol</Label><Input value={edit.vol} onChange={(e) => setEdit({ ...edit, vol: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, vol: formatFundValue(s.vol, 'pct') } : s))} placeholder="e.g. 5.5%" /></div>
               </div>
-              <div className="space-y-1 max-w-[8rem]"><Label>Sharpe</Label><Input value={edit.sharpe} onChange={(e) => setEdit({ ...edit, sharpe: e.target.value })} placeholder="e.g. 1.20" /></div>
+              <div className="space-y-1 max-w-[8rem]"><Label>Sharpe</Label><Input value={edit.sharpe} onChange={(e) => setEdit({ ...edit, sharpe: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, sharpe: formatFundValue(s.sharpe, 'ratio') } : s))} placeholder="e.g. 1.20" /></div>
               <div>
                 <Label className="mb-2 block">Monthly returns</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {MONTH_LABELS.map((m, i) => (
                     <div key={m} className="space-y-1">
                       <span className="text-xs text-muted-foreground">{m}</span>
-                      <Input value={edit.months[i]} onChange={(e) => { const months = [...edit.months]; months[i] = e.target.value; setEdit({ ...edit, months }); }} placeholder="+0.0%" />
+                      <Input value={edit.months[i]} onChange={(e) => { const months = [...edit.months]; months[i] = e.target.value; setEdit({ ...edit, months }); }} onBlur={() => setEdit((s) => { if (!s) return s; const months = [...s.months]; months[i] = formatFundValue(months[i], 'signed-pct'); return { ...s, months }; })} placeholder="+0.0%" />
                     </div>
                   ))}
                 </div>

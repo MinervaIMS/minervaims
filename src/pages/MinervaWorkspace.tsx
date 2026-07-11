@@ -54,6 +54,7 @@ import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
 import NewsletterManagement from '@/components/admin/NewsletterManagement';
 import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
+import TestimonialsManagement from '@/components/admin/TestimonialsManagement';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -184,8 +185,7 @@ const NAV: NavSection[] = [
     subItems: [
       { key: 'website-pages', label: 'Pages', allowed: (p) => p.isFullAccess },
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
-      { key: 'website-testimonials', label: 'Testimonials' },
-      { key: 'website-alumni-companies', label: 'Alumni companies' },
+      { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.canManageTestimonials },
     ],
   },
 
@@ -195,7 +195,6 @@ const NAV: NavSection[] = [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
       { key: 'settings-roles', label: 'Roles permissions', allowed: (p) => p.canAccessUsers },
       { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.canAccessActivity },
-      { key: 'settings-edit-dashboard', label: 'Edit workspace', allowed: (p) => p.canAccessUsers },
     ],
   },
 ];
@@ -631,6 +630,8 @@ const MinervaWorkspace = () => {
         return <InterviewCalendar />;
       case 'website-readings':
         return <ReadingsManagement />;
+      case 'website-testimonials':
+        return <TestimonialsManagement />;
       case 'settings-users':
         return <UserManagement />;
       case 'settings-activity':
@@ -1013,8 +1014,9 @@ const MinervaWorkspace = () => {
               </nav>
             </div>
 
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
+            {/* Scrollable content. `relative` so the workspace loader can fill
+                and centre within exactly this pane (the portion that loads). */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 relative">
               {renderContent()}
             </div>
           </div>

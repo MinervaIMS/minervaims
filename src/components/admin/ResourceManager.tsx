@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Code, Loader2, Upload, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader2, Upload, Star, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
@@ -18,10 +18,8 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite, signResourceFile,
-  RESOURCE_TYPE_LABELS, MAX_FAVOURITES, type ResourceRow, type ResourceInput, type ResourceType,
+  MAX_FAVOURITES, MAX_SOURCES_PER_KIND, type ResourceRow, type ResourceSource,
 } from '@/lib/resources-api';
-
-const TYPES: ResourceType[] = ['text', 'file', 'link', 'code', 'other'];
 
 interface Props {
   /** Resource bucket, e.g. 'reports_templates', 'smm_instagram', 'external_relations'. */
@@ -33,6 +31,24 @@ interface Props {
 }
 
 const DEFAULT_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'none'];
+const MAX = MAX_SOURCES_PER_KIND;
+
+interface FileEntry { value: string; label: string }
+
+interface FormState {
+  id: string | null;
+  division: OrgDivision;
+  title: string;
+  description: string;
+  texts: string[];
+  links: string[];
+  files: FileEntry[];
+  is_favourite: boolean;
+}
+
+const emptyForm = (division: OrgDivision): FormState => ({
+  id: null, division, title: '', description: '', texts: [''], links: [], files: [], is_favourite: false,
+});
 
 export default function ResourceManager({ category, title, description, divisions = DEFAULT_DIVISIONS }: Props) {
   const { session } = useAuth();
@@ -43,13 +59,10 @@ export default function ResourceManager({ category, title, description, division
   const [loading, setLoading] = useState(true);
   const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ResourceRow | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const empty: ResourceInput = { category, division: divisions[0], type: 'text', title: '', description: '', file_url: '', link_url: '', body: '', is_favourite: false };
-  const [form, setForm] = useState<ResourceInput>(empty);
+  const [form, setForm] = useState<FormState>(emptyForm(divisions[0]));
 
   const showDivisions = divisions.filter((d) => d !== 'none');
 
@@ -70,25 +83,52 @@ export default function ResourceManager({ category, title, description, division
   const rest = useMemo(() => visible.filter((i) => !i.is_favourite), [visible]);
   const favouriteCount = items.filter((i) => i.is_favourite).length;
 
-  const openCreate = () => { setEditingId(null); setForm({ ...empty }); setDialogOpen(true); };
+  const openCreate = () => { setForm(emptyForm(divisions[0])); setDialogOpen(true); };
   const openEdit = (r: ResourceRow) => {
-    setEditingId(r.id);
-    setForm({ id: r.id, category, division: r.division, type: r.type, title: r.title, description: r.description ?? '', file_url: r.file_url ?? '', link_url: r.link_url ?? '', body: r.body ?? '', is_favourite: r.is_favourite });
+    setForm({
+      id: r.id, division: r.division, title: r.title, description: r.description ?? '',
+      texts: r.sources.filter((s) => s.kind === 'text').map((s) => s.value),
+      links: r.sources.filter((s) => s.kind === 'link').map((s) => s.value),
+      files: r.sources.filter((s) => s.kind === 'file').map((s) => ({ value: s.value, label: s.label || 'File' })),
+      is_favourite: r.is_favourite,
+    });
     setDialogOpen(true);
   };
 
   const handleUpload = async (file: File) => {
+    if (form.files.length >= MAX) { toast({ title: `At most ${MAX} files per item.`, variant: 'destructive' }); return; }
     setUploading(true);
-    try { const url = await uploadResourceFile(session, file); setForm((p) => ({ ...p, file_url: url })); toast({ title: 'File uploaded' }); }
-    catch (e) { toast({ title: 'Upload failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    try {
+      const url = await uploadResourceFile(session, file);
+      setForm((p) => ({ ...p, files: [...p.files, { value: url, label: file.name }] }));
+      toast({ title: 'File added' });
+    } catch (e) { toast({ title: 'Upload failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setUploading(false); }
   };
 
+  // Build the sources array from whichever fields the user filled — the kind of
+  // each source is inferred here, so there is no manual "type" selector.
+  const buildSources = (f: FormState): ResourceSource[] => [
+    ...f.texts.map((t) => t.trim()).filter(Boolean).map((t) => ({ kind: 'text' as const, value: t })),
+    ...f.links.map((l) => l.trim()).filter(Boolean).map((l) => ({ kind: 'link' as const, value: l })),
+    ...f.files.map((file) => ({ kind: 'file' as const, value: file.value, label: file.label })),
+  ];
+
   const save = async () => {
+    const sources = buildSources(form);
     if (!form.title.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
+    if (!form.description.trim()) { toast({ title: 'A description is required', variant: 'destructive' }); return; }
+    if (sources.length < 1) { toast({ title: 'Add at least one text, link or file', variant: 'destructive' }); return; }
     setSaving(true);
-    try { await saveResource(session, form); toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load(); }
-    catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    try {
+      await saveResource(session, {
+        id: form.id ?? undefined, category, division: form.division,
+        title: form.title.trim(), description: form.description.trim(), sources, is_favourite: form.is_favourite,
+      });
+      toast({ title: form.id ? 'Updated' : 'Added' });
+      setDialogOpen(false);
+      await load();
+    } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setSaving(false); }
   };
 
@@ -114,27 +154,53 @@ export default function ResourceManager({ category, title, description, division
     catch (e) { toast({ title: 'Could not open the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
-  const typeIcon = (t: ResourceType) =>
-    t === 'text' ? <StickyNote className="h-4 w-4" />
-      : t === 'code' ? <Code className="h-4 w-4" />
-      : t === 'link' ? <ExternalLink className="h-4 w-4" />
-      : <FileText className="h-4 w-4" />;
+  // ── Sub-editors for each source kind ──────────────────────────────────────
+  const setTexts = (texts: string[]) => setForm((p) => ({ ...p, texts }));
+  const setLinks = (links: string[]) => setForm((p) => ({ ...p, links }));
+
+  const summaryIcons = (r: ResourceRow) => {
+    const t = r.sources.filter((s) => s.kind === 'text').length;
+    const l = r.sources.filter((s) => s.kind === 'link').length;
+    const f = r.sources.filter((s) => s.kind === 'file').length;
+    return (
+      <span className="text-xs text-muted-foreground inline-flex items-center gap-2">
+        {t > 0 && <span className="inline-flex items-center gap-0.5"><StickyNote className="h-3.5 w-3.5" />{t}</span>}
+        {l > 0 && <span className="inline-flex items-center gap-0.5"><Link2 className="h-3.5 w-3.5" />{l}</span>}
+        {f > 0 && <span className="inline-flex items-center gap-0.5"><FileText className="h-3.5 w-3.5" />{f}</span>}
+      </span>
+    );
+  };
 
   const ItemCard = ({ r }: { r: ResourceRow }) => (
     <Card><CardContent className="py-4">
       <div className="flex items-start justify-between gap-4 font-body">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-foreground">
-            {typeIcon(r.type)}
-            <span className="truncate">{r.title}</span>
-            <span className="text-xs text-muted-foreground">· {RESOURCE_TYPE_LABELS[r.type]}{r.division !== 'none' ? ` · ${divisionLabels[r.division]}` : ''}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-foreground flex-wrap">
+            <span className="truncate font-medium">{r.title}</span>
+            {r.division !== 'none' && <span className="text-xs text-muted-foreground">· {divisionLabels[r.division]}</span>}
+            {summaryIcons(r)}
           </div>
           {r.description && <p className="text-sm text-muted-foreground mt-1">{r.description}</p>}
-          {r.body && <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">{r.body}</p>}
-          <div className="flex gap-4 mt-2">
-            {r.link_url && <a href={r.link_url} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline inline-flex items-center gap-1">Open link <ExternalLink className="h-3 w-3" /></a>}
-            {r.file_url && <button type="button" onClick={() => openFile(r.file_url!)} className="text-accent text-sm underline inline-flex items-center gap-1">Open file <FileText className="h-3 w-3" /></button>}
+
+          {/* Text sources */}
+          {r.sources.filter((s) => s.kind === 'text').map((s, i) => (
+            <p key={`t${i}`} className="text-sm text-foreground mt-2 whitespace-pre-wrap border-l-2 border-separator pl-3">{s.value}</p>
+          ))}
+
+          {/* Link + file sources */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+            {r.sources.filter((s) => s.kind === 'link').map((s, i) => (
+              <a key={`l${i}`} href={s.value} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline inline-flex items-center gap-1">
+                {s.label || 'Open link'} <ExternalLink className="h-3 w-3" />
+              </a>
+            ))}
+            {r.sources.filter((s) => s.kind === 'file').map((s, i) => (
+              <button key={`f${i}`} type="button" onClick={() => openFile(s.value)} className="text-accent text-sm underline inline-flex items-center gap-1">
+                {s.label || 'Open file'} <FileText className="h-3 w-3" />
+              </button>
+            ))}
           </div>
+
           <div className="text-xs text-muted-foreground mt-2">
             {r.author_name || 'Unknown'}{r.author_role ? `, ${r.author_role}` : ''} · {new Date(r.created_at).toLocaleDateString()}
           </div>
@@ -185,16 +251,9 @@ export default function ResourceManager({ category, title, description, division
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">{editingId ? 'Edit item' : 'Add item'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">{form.id ? 'Edit item' : 'Add item'}</DialogTitle></DialogHeader>
           <div className="space-y-4 font-body">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as ResourceType })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{TYPES.map((t) => <SelectItem key={t} value={t}>{RESOURCE_TYPE_LABELS[t]}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+            {divisions.length > 1 && (
               <div className="space-y-1">
                 <Label>Division</Label>
                 <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
@@ -202,29 +261,63 @@ export default function ResourceManager({ category, title, description, division
                   <SelectContent>{divisions.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? 'General' : divisionLabels[d]}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity DCF model template" /></div>
-            <div className="space-y-1"><Label>Description</Label><Textarea rows={2} value={form.description ?? ''} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Why is it useful? Explain what this is and when to use it." /></div>
-
-            {form.type === 'text' ? (
-              <div className="space-y-1"><Label>Text</Label><Textarea rows={4} value={form.body ?? ''} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Write the note or content here." /></div>
-            ) : form.type === 'link' ? (
-              <div className="space-y-1"><Label>Link</Label><Input value={form.link_url ?? ''} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="https://drive.google.com/..." /></div>
-            ) : form.type === 'code' ? (
-              <div className="space-y-1"><Label>Repository / code link</Label><Input value={form.link_url ?? ''} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="https://github.com/minerva/..." /></div>
-            ) : (
-              <div className="space-y-1">
-                <Label>{form.type === 'file' ? 'File' : 'File or link'}</Label>
-                <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-                <div className="flex items-center gap-3">
-                  <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                    {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><Upload className="h-4 w-4 mr-2" />Upload</>}
-                  </Button>
-                  {form.file_url && <span className="text-xs text-green-700">File attached</span>}
-                </div>
-                <Input className="mt-2" value={form.link_url ?? ''} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="...or paste an external link (https://...)" />
-              </div>
             )}
+            <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity DCF model template" /></div>
+            <div className="space-y-1"><Label>Description *</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is it and when to use it?" /></div>
+
+            <div className="rounded-md border border-separator p-3 space-y-4">
+              <p className="text-xs text-muted-foreground">Add any mix of texts, links and files (up to {MAX} of each, at least one in total). The type is detected from what you fill in.</p>
+
+              {/* Texts */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1.5"><StickyNote className="h-4 w-4" />Texts ({form.texts.filter((t) => t.trim()).length}/{MAX})</Label>
+                  {form.texts.length < MAX && <Button type="button" variant="ghost" size="sm" onClick={() => setTexts([...form.texts, ''])}><Plus className="h-3.5 w-3.5 mr-1" />Add text</Button>}
+                </div>
+                {form.texts.map((t, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Textarea rows={2} value={t} onChange={(e) => setTexts(form.texts.map((x, j) => (j === i ? e.target.value : x)))} placeholder="Write the note or content here." />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setTexts(form.texts.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Links */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" />Links / repos ({form.links.filter((l) => l.trim()).length}/{MAX})</Label>
+                  {form.links.length < MAX && <Button type="button" variant="ghost" size="sm" onClick={() => setLinks([...form.links, ''])}><Plus className="h-3.5 w-3.5 mr-1" />Add link</Button>}
+                </div>
+                {form.links.map((l, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input value={l} onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? e.target.value : x)))} placeholder="https://github.com/… or https://drive.google.com/…" />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setLinks(form.links.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Files */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Files ({form.files.length}/{MAX})</Label>
+                  <div>
+                    <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
+                    {form.files.length < MAX && (
+                      <Button type="button" variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                        {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Uploading</> : <><Upload className="h-3.5 w-3.5 mr-1" />Add file</>}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {form.files.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="truncate flex-1">{f.label}</span>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setForm((p) => ({ ...p, files: p.files.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="flex gap-3 pt-1">
               <Button className="flex-1" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>

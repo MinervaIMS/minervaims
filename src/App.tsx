@@ -11,7 +11,7 @@ import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { Preloader } from "@/components/shared/Preloader";
-import { PageVisibilityGate } from "@/components/shared/PageVisibilityGate";
+import { PageVisibilityGate, ParamVisibilityGate } from "@/components/shared/PageVisibilityGate";
 
 const PRELOADER_KEY = "__mims_intro__";
 
@@ -85,8 +85,8 @@ const App = () => {
               <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
                 <Route path="/about" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="about"><About /></PageVisibilityGate></Suspense>} />
-                <Route path="/divisions/:division" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="divisions"><DivisionDetail /></PageVisibilityGate></Suspense>} />
-                <Route path="/funds/:fund" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="funds"><FundDetail /></PageVisibilityGate></Suspense>} />
+                <Route path="/divisions/:division" element={<Suspense fallback={<PageLoader />}><ParamVisibilityGate prefix="division" param="division"><DivisionDetail /></ParamVisibilityGate></Suspense>} />
+                <Route path="/funds/:fund" element={<Suspense fallback={<PageLoader />}><ParamVisibilityGate prefix="fund" param="fund"><FundDetail /></ParamVisibilityGate></Suspense>} />
                 <Route path="/people" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="members-index"><MembersIndex /></PageVisibilityGate></Suspense>} />
                 <Route path="/people/members" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="team"><Team /></PageVisibilityGate></Suspense>} />
                 <Route path="/people/alumni" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="alumni"><Alumni /></PageVisibilityGate></Suspense>} />
@@ -106,8 +106,8 @@ const App = () => {
                 <Route path="/disclaimer" element={<Suspense fallback={<PageLoader />}><Disclaimer /></Suspense>} />
                 <Route path="/statute" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="statute"><Statute /></PageVisibilityGate></Suspense>} />
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
-                <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><Contacts /></Suspense>} />
-                <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><Partnerships /></Suspense>} />
+                <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="contacts"><Contacts /></PageVisibilityGate></Suspense>} />
+                <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partnerships"><Partnerships /></PageVisibilityGate></Suspense>} />
                 <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
@@ -117,7 +117,7 @@ const App = () => {
                 <Route path="/verify-email" element={<Suspense fallback={<PageLoader />}><EmailVerification /></Suspense>} />
                 <Route path="/session-expired" element={<Suspense fallback={<PageLoader />}><SessionExpired /></Suspense>} />
                 <Route path="/access-denied" element={<Suspense fallback={<PageLoader />}><AccessDenied /></Suspense>} />
-                <Route path="/lab" element={<Suspense fallback={<PageLoader />}><PayoffLab /></Suspense>} />
+                <Route path="/lab" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="lab"><PayoffLab /></PageVisibilityGate></Suspense>} />
                 <Route path="/admin" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
                 <Route path="/pending-approval" element={<Suspense fallback={<PageLoader />}><PendingApproval /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />

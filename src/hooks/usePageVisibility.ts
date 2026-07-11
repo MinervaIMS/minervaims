@@ -10,8 +10,33 @@ export interface PageVisibilityRow {
 
 type VisMap = Record<string, PageVisibilityRow>;
 
+const LS_KEY = 'mims_page_visibility_v1';
+
+// Seed the module cache synchronously from localStorage so that returning
+// visitors render the correct visibility on the very first paint — with no
+// flash of the blur/overlay on pages that are actually visible. A background
+// reconcile still runs on mount to catch any change made while they were away.
+const readLS = (): VisMap | null => {
+  try {
+    const raw = typeof localStorage !== 'undefined' && localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? (parsed as VisMap) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeLS = (map: VisMap) => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(map));
+  } catch {
+    /* storage unavailable — non-fatal */
+  }
+};
+
 const listeners = new Set<(m: VisMap) => void>();
-let cache: VisMap | null = null;
+let cache: VisMap | null = readLS();
 let inflight: Promise<VisMap> | null = null;
 let channelInit = false;
 
@@ -29,7 +54,7 @@ const fetchAll = async (): Promise<VisMap> => {
       .select('page_key,is_hidden,updated_at,updated_by');
     if (error) {
       console.error('page_visibility fetch error', error);
-      cache = {};
+      cache = cache ?? {};
       return cache;
     }
     const map: VisMap = {};
@@ -37,6 +62,7 @@ const fetchAll = async (): Promise<VisMap> => {
       map[r.page_key] = r as PageVisibilityRow;
     });
     cache = map;
+    writeLS(map);
     notify();
     return map;
   })();
@@ -74,8 +100,11 @@ export const usePageVisibility = () => {
     if (cache === null) {
       fetchAll().then(() => setLoading(false));
     } else {
+      // Seeded from localStorage: render immediately (no flash), then reconcile
+      // with the server in the background to pick up any change made meanwhile.
       setMap({ ...cache });
       setLoading(false);
+      fetchAll();
     }
     return () => {
       listeners.delete(cb);
