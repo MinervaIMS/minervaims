@@ -181,7 +181,7 @@ export default function Apply() {
       // 3. If email confirmation is disabled, a session already exists →
       //    straight to the success screen; otherwise ask them to confirm.
       if (signUpData.session) navigate('/apply?submitted=1', { replace: true });
-      else setStage('sent');
+      else navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
     } catch (err) {
       toast({ title: 'Could not submit your application', description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
     } finally { setSubmitting(false); }
