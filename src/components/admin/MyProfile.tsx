@@ -157,7 +157,7 @@ export default function MyProfile() {
   if (isCandidate) {
     return (
       <div>
-        <WorkspacePageHeader title="My profile" description="Your candidate account. These details come from your application and cannot be edited here." />
+        <WorkspacePageHeader title="My profile" description="Your applicant account. These details come from your application and cannot be edited here." />
         <div className="max-w-2xl font-body">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <Field label="First name" value={candidateApp?.first_name ?? ''} />
@@ -170,12 +170,12 @@ export default function MyProfile() {
                 ? <a href={candidateApp.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-accent underline break-all text-sm">{candidateApp.linkedin_url}</a>
                 : <div className="text-foreground text-sm">Not set</div>}
             </div>
-            <Field label="Role" value="Candidate" />
+            <Field label="Role" value="Applicant" />
           </div>
           <Card className="mt-6"><CardContent className="py-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">You are a candidate</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">You are an applicant</div>
             <p className="text-sm text-foreground leading-relaxed">
-              Follow your application in <strong>Applications → Status</strong>. If you are invited to interview, you will be able to book a slot in <strong>Applications → Interview Calendar</strong>. Once you join the association, this page becomes your full member profile.
+              Follow your application in <strong>Applications → Status</strong>. If you are invited to interview, you will be able to book a slot in <strong>Applications → Interview Calendar</strong>. Once you accept an offer to join, this page becomes your full member profile.
             </p>
           </CardContent></Card>
         </div>

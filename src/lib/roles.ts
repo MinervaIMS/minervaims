@@ -98,7 +98,7 @@ const roleBaseLabels: Record<AppRole, string> = {
   head_of_operations: 'Head of Operations',
   advisor: 'Advisor',
   silent_advisor: 'Silent Advisor',
-  candidate: 'Candidate',
+  candidate: 'Applicant',
   alumni: 'Alumni',
   member: 'Member',
   pending: 'Pending',

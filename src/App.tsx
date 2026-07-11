@@ -43,6 +43,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const CheckEmail = lazy(() => import("./pages/CheckEmail"));
+const ApplicationCheckEmail = lazy(() => import("./pages/ApplicationCheckEmail"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PasswordResetSuccess = lazy(() => import("./pages/PasswordResetSuccess"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification"));
@@ -112,6 +113,7 @@ const App = () => {
                 <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
                 <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
                 <Route path="/check-email" element={<Suspense fallback={<PageLoader />}><CheckEmail /></Suspense>} />
+                <Route path="/application-check-email" element={<Suspense fallback={<PageLoader />}><ApplicationCheckEmail /></Suspense>} />
                 <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
                 <Route path="/password-reset-success" element={<Suspense fallback={<PageLoader />}><PasswordResetSuccess /></Suspense>} />
                 <Route path="/verify-email" element={<Suspense fallback={<PageLoader />}><EmailVerification /></Suspense>} />
