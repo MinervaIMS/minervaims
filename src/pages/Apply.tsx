@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
-import { Loader2, MailCheck } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -18,6 +18,7 @@ import PixelCard from '@/components/shared/PixelCard';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
+import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
@@ -65,10 +66,10 @@ function SuccessScreen() {
         <div className="relative w-full max-w-md overflow-hidden bg-white shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}
           <div className="absolute inset-0">
-            <PixelCard variant="navy" activeDuration={1400} fadeMs={1700} className="w-full h-full" />
+            <PixelCard variant="navy" speed={70} activeDuration={900} fadeMs={2800} className="w-full h-full" />
           </div>
           <div className="relative z-10 px-8 py-12 text-center">
-            <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+            <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
             <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
             <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
               Your application has been submitted successfully.
@@ -100,7 +101,7 @@ export default function Apply() {
   const [checking, setChecking] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [stage, setStage] = useState<'form' | 'sent'>('form');
+  
 
   const [f, setF] = useState({
     first_name: '', surname: '', bocconi_id: '', email: '', phone: '', linkedin_url: '',
@@ -180,7 +181,7 @@ export default function Apply() {
       // 3. If email confirmation is disabled, a session already exists →
       //    straight to the success screen; otherwise ask them to confirm.
       if (signUpData.session) navigate('/apply?submitted=1', { replace: true });
-      else setStage('sent');
+      else navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
     } catch (err) {
       toast({ title: 'Could not submit your application', description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
     } finally { setSubmitting(false); }
@@ -191,20 +192,6 @@ export default function Apply() {
 
   if (isLoading || checking) return <Shell><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Shell>;
 
-  if (stage === 'sent') {
-    return <Shell>
-      <div className="text-center">
-        <MailCheck className="h-12 w-12 text-accent mx-auto mb-4" />
-        <h1 className="font-serif text-3xl text-accent mb-3">Confirm your email</h1>
-        <p className="font-body text-muted-foreground mb-2">
-          We have sent a confirmation link to <strong>{f.email}</strong>. Please open it to confirm your email address.
-        </p>
-        <p className="font-body text-sm text-muted-foreground">
-          After confirming, you will return here and see your application confirmation. It can take a minute to arrive — check your spam folder too.
-        </p>
-      </div>
-    </Shell>;
-  }
 
   // Applications closed — unless an authorised member is previewing the form.
   if (!settings.applicationsOpen && !(previewMode && isStaff)) {

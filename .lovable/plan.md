@@ -1,15 +1,28 @@
-## Goal
-Temporarily remove the Bocconi-domain restriction on the sign-up form so any valid email can register (needed to test the application flow).
+## Changes
 
-## Change
-- `src/pages/Auth.tsx`:
-  - In `validateSignup`, drop the `bocconiEmail.test(suEmail)` check (keep the generic email format check).
-  - In `signupValid`, remove the same `bocconiEmail.test(...)` condition.
-  - Update the email field `hint` from "Use your @studbocconi.it or @unibocconi.it address." to something neutral like "Temporarily open to any email while testing." (or remove the hint entirely — pick one).
-  - Leave the `bocconiEmail` regex constant in place (commented note) so it's trivial to re-enable later.
+**1. Redirect after "Create account and submit application" (`src/pages/Apply.tsx`)**
+
+In `submit()`, when sign-up succeeds without an immediate session (email confirmation required), currently we fall back to an inline `setStage('sent')` screen. Change it to navigate to the existing CheckEmail route:
+
+```
+navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
+```
+
+Remove the now-unused `stage === 'sent'` branch and the `stage` state (and the `MailCheck` import). The `submitted=1` return path (post email-confirmation) that renders `<SuccessScreen />` stays unchanged.
+
+**2. Success card logo (`src/pages/Apply.tsx`)**
+
+Replace the `fullLogo` import currently sourced from `@/assets/legal-hero-logo.svg` with `@/assets/full_logo_color.svg` in the `SuccessScreen` `<img>`. (The form `Shell` header keeps its current logo — only the success card image is swapped, per the request.)
+
+**3. Pixel animation timing (`src/pages/Apply.tsx` — the `<PixelCard>` used in `SuccessScreen`)**
+
+Tune the props so the fill-in is more intense/quicker and the fade-out is slower:
+- `variant="navy"` → keep
+- Add `speed={70}` (up from the navy default of 40) for a faster, more intense appear
+- `activeDuration={900}` (down from 1400) — shorter hold before reversing
+- `fadeMs={2800}` (up from 1700) — slower opacity fade-out
+
+No changes to `PixelCard.tsx` itself; all tuning is via props.
 
 ## Out of scope
-- No backend/DB/edge-function changes. Any server-side domain checks (if present) are not being touched — flag only if discovered during implementation.
-
-## How to revert
-Restore the two removed conditions and the original hint text.
+No backend, edge function, or CheckEmail page changes.
