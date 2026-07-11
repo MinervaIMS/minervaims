@@ -50,6 +50,23 @@ const NAV_LINKS: NavItem[] = [
 const HERO_ROUTES_EXACT = new Set(["/", "/about", "/join", "/events", "/archive", "/readings", "/contacts"]);
 const HERO_ROUTE_PREFIXES = ["/divisions/", "/funds/", "/people/"];
 
+// Pages that sit on the dark beams background with a centred card/box — the
+// site header should stay transparent so it floats over the background.
+const CARD_ROUTES_EXACT = new Set([
+  "/auth",
+  "/check-email",
+  "/email-verification",
+  "/forgot-password",
+  "/reset-password",
+  "/password-reset-success",
+  "/pending-approval",
+  "/session-expired",
+  "/unsubscribe",
+  "/access-denied",
+  "/apply",
+  "/application-check-email",
+]);
+
 const NAV_TRANSITION_MS = 200;
 const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const DROPDOWN_CLOSE_DELAY_MS = 220;
@@ -157,7 +174,8 @@ export function Header() {
   const hasHero =
     HERO_ROUTES_EXACT.has(pathname) ||
     HERO_ROUTE_PREFIXES.some((p) => pathname.startsWith(p));
-  const transparent = hasHero && !scrolled && !mobileOpen;
+  const isCardRoute = CARD_ROUTES_EXACT.has(pathname);
+  const transparent = ((hasHero && !scrolled) || isCardRoute) && !mobileOpen;
 
   const isActive = (to?: string) => {
     if (!to) return false;
@@ -208,7 +226,7 @@ export function Header() {
 
   return (
     <>
-      {!hasHero && (
+      {!(hasHero || isCardRoute) && (
         <div style={{ height: "calc(84px + env(safe-area-inset-top))" }} />
       )}
       <header
