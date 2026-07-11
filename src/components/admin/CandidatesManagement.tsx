@@ -15,7 +15,7 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import {
   listApplications, getApplication, signDocumentUrl, bulkDocumentUrls,
   updateApplicationStatus, addApplicationNote,
-  ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS,
+  ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
   type ApplicationRow, type ApplicationNote, type ApplicationStatus,
 } from '@/lib/applications-api';
 
@@ -47,6 +47,7 @@ export default function CandidatesManagement() {
   const [detail, setDetail] = useState<{ application: ApplicationRow; notes: ApplicationNote[] } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [answerPreviewUrl, setAnswerPreviewUrl] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
@@ -73,13 +74,15 @@ export default function CandidatesManagement() {
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
 
   const openDetail = async (id: string) => {
-    setOpenId(id); setDetail(null); setPreviewUrl(null); setDetailLoading(true);
+    setOpenId(id); setDetail(null); setPreviewUrl(null); setAnswerPreviewUrl(null); setDetailLoading(true);
     try {
       const d = await getApplication(session, id);
       setDetail(d);
-      // Preview the CV inline (this also advances the status on first view).
+      // Preview both documents inline (opening the CV also advances the status
+      // on first view). The answer preview is best-effort.
       const url = await signDocumentUrl(session, id, 'cv', 'preview');
       setPreviewUrl(url);
+      try { setAnswerPreviewUrl(await signDocumentUrl(session, id, 'answer', 'preview')); } catch { /* no answer */ }
       load(); // refresh list (status may have changed to cv_opened)
     } catch (e) {
       toast({ title: 'Could not open candidate', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -164,8 +167,10 @@ export default function CandidatesManagement() {
                 <th className="px-3 py-2 font-normal">Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="1st / 2nd choice" options={divOptions} selected={divFilter} onChange={setDivFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
+                <th className="px-3 py-2 font-normal">Programme</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
                 <th className="px-3 py-2 font-normal text-center">CV</th>
+                <th className="px-3 py-2 font-normal text-center">Work</th>
                 <th className="px-3 py-2 font-normal text-center"><MessageSquare className="h-3.5 w-3.5 inline" /></th>
                 <th className="px-3 py-2 font-normal text-right">Actions</th>
               </tr>
@@ -173,11 +178,27 @@ export default function CandidatesManagement() {
             <tbody>
               {rows.map((a) => (
                 <tr key={a.id} className="border-t border-separator">
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}<div className="text-xs text-muted-foreground">{a.email}</div></td>
+                  <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                    {a.first_name} {a.surname}
+                    {!a.cv_viewed_at && <span className="ml-2 align-middle inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">new</span>}
+                    <div className="text-xs text-muted-foreground">{a.email}</div>
+                  </td>
                   <td className="px-3 py-2 whitespace-nowrap">{divisionLabels[a.first_choice]}{a.second_choice ? ` / ${divisionLabels[a.second_choice]}` : ''}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year]}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{STATUS_LABELS[a.status]}</td>
-                  <td className="px-3 py-2 text-center">{a.cv_viewed_at ? <Eye className="h-4 w-4 inline text-muted-foreground" /> : <span className="text-amber-700 text-xs">new</span>}</td>
+                  <td className="px-3 py-2 whitespace-nowrap max-w-[14rem] truncate" title={a.degree_course}>{a.degree_course}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(a.status)}`}>{STATUS_LABELS[a.status]}</span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <button type="button" title="Preview CV" onClick={() => openDoc(a.id, 'cv')} className="text-muted-foreground hover:text-accent transition-colors">
+                      <Eye className="h-4 w-4 inline" />
+                    </button>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <button type="button" title="Preview submitted work" onClick={() => openDoc(a.id, 'answer')} className="text-muted-foreground hover:text-accent transition-colors">
+                      <Eye className="h-4 w-4 inline" />
+                    </button>
+                  </td>
                   <td className="px-3 py-2 text-center">{a.note_count || ''}</td>
                   <td className="px-3 py-2 text-right"><Button variant="outline" size="sm" onClick={() => openDetail(a.id)}>Open</Button></td>
                 </tr>
@@ -189,40 +210,62 @@ export default function CandidatesManagement() {
       <p className="font-body text-xs text-muted-foreground mt-3">Showing {rows.length} of {apps.length} application{apps.length !== 1 ? 's' : ''}.</p>
 
       {/* Candidate detail */}
-      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) { setOpenId(null); setDetail(null); setPreviewUrl(null); } }}>
-        <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">{detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}</DialogTitle></DialogHeader>
+      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) { setOpenId(null); setDetail(null); setPreviewUrl(null); setAnswerPreviewUrl(null); } }}>
+        <DialogContent className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">
+              {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
+            </DialogTitle>
+          </DialogHeader>
           {detailLoading || !detail ? <WorkspaceLoader /> : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-body">
-              {/* Left: details + status + notes */}
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 font-body">
+              {/* Left: details + prominent status + notes */}
+              <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <Info label="Email" value={detail.application.email} />
                   <Info label="Phone" value={detail.application.phone} />
                   <Info label="Bocconi ID" value={detail.application.bocconi_id} />
                   <Info label="Academic year" value={ACADEMIC_YEAR_LABELS[detail.application.academic_year]} />
-                  <Info label="Degree / course" value={detail.application.degree_course} />
+                  <Info label="Programme" value={detail.application.degree_course} />
                   <Info label="LinkedIn" value={detail.application.linkedin_url || '-'} link={detail.application.linkedin_url || undefined} />
                   <Info label="First choice" value={divisionLabels[detail.application.first_choice]} />
                   <Info label="Second choice" value={detail.application.second_choice ? divisionLabels[detail.application.second_choice] : '-'} />
+                  <Info label="Submitted" value={new Date(detail.application.created_at).toLocaleString()} />
+                  {detail.application.interview_division && (
+                    <Info label="Interview division" value={divisionLabels[detail.application.interview_division]} />
+                  )}
                 </div>
 
-                <div className="space-y-1">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Status</div>
+                {/* Prominent status control */}
+                <div className="border border-accent/30 bg-accent/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs uppercase tracking-wider text-accent font-semibold">Candidate status</div>
+                    <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
+                  </div>
                   <Select value={detail.application.status} onValueChange={(v) => changeStatus(detail.application.id, v as ApplicationStatus)}>
                     <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
                     <SelectContent>{STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Changing the status here changes the candidate’s real status and may trigger consequences — for example an automatic email, or unlocking the interview booking area (“Interview invitation sent”).
+                  </p>
+                  {detail.application.status === 'accepted' && (
+                    <p className="text-xs text-amber-700 border-t border-amber-200 pt-2">
+                      “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until a member gives final approval in <strong>New Joiners</strong>. Only then are they told they passed the selection.
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" onClick={() => openDoc(detail.application.id, 'answer')}><FileText className="h-4 w-4 mr-2" />Open answer</Button>
-                  <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'cv')}><Download className="h-4 w-4 mr-2" />CV</Button>
-                  <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'answer')}><Download className="h-4 w-4 mr-2" />Answer</Button>
+                  <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'cv')}><Download className="h-4 w-4 mr-2" />Download CV</Button>
+                  <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'answer')}><Download className="h-4 w-4 mr-2" />Download work</Button>
                 </div>
 
                 <div className="space-y-2">
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">Notes (shared with reviewers)</div>
+                  <p className="text-xs text-muted-foreground bg-muted/50 border border-separator p-2">
+                    Please remember these notes are visible to <strong>all members with access to this area</strong>. Write only technical, formal and relevant comments for evaluating the candidate. Do not include unpleasant or inappropriate remarks.
+                  </p>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {detail.notes.length === 0 && <p className="text-sm text-muted-foreground">No notes yet.</p>}
                     {detail.notes.map((n) => (
@@ -232,19 +275,33 @@ export default function CandidatesManagement() {
                       </div>
                     ))}
                   </div>
-                  <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a note…" rows={2} />
+                  <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a technical, formal note…" rows={2} />
                   <Button size="sm" onClick={addNote} disabled={savingNote || !noteText.trim()}>
                     {savingNote ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Add note
                   </Button>
                 </div>
               </div>
 
-              {/* Right: CV preview */}
+              {/* Centre: CV preview */}
               <div className="min-h-[400px]">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">CV preview</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">CV preview</div>
+                  <button type="button" onClick={() => openDoc(detail.application.id, 'cv')} className="text-xs text-accent hover:underline inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />Open</button>
+                </div>
                 {previewUrl
-                  ? <iframe title="CV" src={previewUrl} className="w-full h-[60vh] border border-separator" />
-                  : <div className="h-[60vh] border border-separator flex items-center justify-center text-muted-foreground text-sm">No CV uploaded</div>}
+                  ? <iframe title="CV" src={previewUrl} className="w-full h-[72vh] border border-separator" />
+                  : <div className="h-[72vh] border border-separator flex items-center justify-center text-muted-foreground text-sm">No CV uploaded</div>}
+              </div>
+
+              {/* Right: submitted work preview */}
+              <div className="min-h-[400px]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Submitted work preview</div>
+                  <button type="button" onClick={() => openDoc(detail.application.id, 'answer')} className="text-xs text-accent hover:underline inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />Open</button>
+                </div>
+                {answerPreviewUrl
+                  ? <iframe title="Submitted work" src={answerPreviewUrl} className="w-full h-[72vh] border border-separator" />
+                  : <div className="h-[72vh] border border-separator flex items-center justify-center text-muted-foreground text-sm">No document uploaded</div>}
               </div>
             </div>
           )}

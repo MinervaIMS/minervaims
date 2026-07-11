@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
-import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
+import logoMark from '@/assets/logo-color.svg';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
@@ -29,7 +29,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
-            <img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '138px', width: 'auto' }} />
+            <img src={logoMark} alt="Minerva Investment Management Society" className="h-20 w-20" />
           </div>
           {children}
         </div>
@@ -122,7 +122,7 @@ export default function Apply() {
 
   return (
     <Shell>
-      <h1 className="font-serif text-3xl text-accent text-center mb-2">Application Form — {settings.semesterLabel}</h1>
+      <h1 className="font-serif text-3xl text-accent text-center mb-2">Application Form ({settings.semesterLabel})</h1>
       <div className="font-body text-sm text-muted-foreground space-y-2 mb-8 max-w-xl mx-auto text-center">
         <p>Complete the form below. We hold interviews on a <strong>rolling basis</strong> until spots are filled, so we encourage you to apply as soon as you are ready.</p>
         <p>Questions about the process? Contact us at <a href="mailto:as.minerva@unibocconi.it" className="text-accent underline">as.minerva@unibocconi.it</a>.</p>
@@ -173,9 +173,9 @@ export default function Apply() {
         {/* Division question */}
         {f.first_choice ? (
           <div className="border border-accent/30 bg-accent/5 p-4 rounded">
-            <div className="text-xs uppercase tracking-wider text-accent mb-1">Written question — {divisionLabels[f.first_choice]}</div>
+            <div className="text-xs uppercase tracking-wider text-accent mb-1">Written question ({divisionLabels[f.first_choice]})</div>
             <p className="text-sm text-foreground">{questionFor || 'The question for this division will be published shortly.'}</p>
-            <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. You may also answer additional divisions — if you do, combine everything into the same PDF.</p>
+            <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. You may also answer additional divisions. If you do, combine everything into the same PDF.</p>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">Select your first-choice division to see its written question.</p>

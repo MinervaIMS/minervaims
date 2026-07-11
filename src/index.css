@@ -8,6 +8,11 @@
 /* Prevent layout shift when dialogs/dropdowns apply scroll-lock */
 html {
   scrollbar-gutter: stable;
+  /* Always render the vertical scrollbar track so opening a dropdown or dialog
+     (which locks scroll) can never make a scrollbar appear/disappear and shift
+     the page horizontally. Belt-and-braces with scrollbar-gutter for browsers
+     that don't fully support it. The workspace (html.ws-active) overrides this. */
+  overflow-y: scroll;
   /* Painted in the iOS safe-area bands and during rubber-band overscroll.
      Pure black so it matches the footer and the URL-bar backdrop. */
   background-color: #000000;
