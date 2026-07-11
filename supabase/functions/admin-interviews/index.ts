@@ -30,6 +30,25 @@ const CORE_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const BOOKABLE_STATUS = 'interview_invitation_sent';
 const BOOKED_STATUS = 'interview_confirmed';
 
+const DIV_LABELS: Record<string, string> = {
+  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
+  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
+  media: 'Media & Communication', operations: 'Operations', board: 'Board',
+};
+const STATUS_URL = 'https://minervaims.org/admin';
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function formatSlotDate(iso: string): string {
+  // slot_date is a plain YYYY-MM-DD string; format without TZ shifts.
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return `${WEEKDAYS[dt.getUTCDay()]}, ${d} ${MONTHS[m - 1]} ${y}`;
+}
+function formatSlotTime(t: string): string {
+  return (t || '').slice(0, 5); // "HH:MM:SS" -> "HH:MM"
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
