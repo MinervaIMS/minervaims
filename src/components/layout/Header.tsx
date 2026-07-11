@@ -226,7 +226,7 @@ export function Header() {
 
   return (
     <>
-      {!hasHero && (
+      {!(hasHero || isCardRoute) && (
         <div style={{ height: "calc(84px + env(safe-area-inset-top))" }} />
       )}
       <header
