@@ -8,19 +8,22 @@
 /* Prevent layout shift when dialogs/dropdowns apply scroll-lock */
 html {
   scrollbar-gutter: stable;
-  /* Always render the vertical scrollbar track so opening a dropdown or dialog
-     (which locks scroll) can never make a scrollbar appear/disappear and shift
-     the page horizontally. Belt-and-braces with scrollbar-gutter for browsers
-     that don't fully support it. The workspace (html.ws-active) overrides this. */
-  overflow-y: scroll;
   /* Painted in the iOS safe-area bands and during rubber-band overscroll.
      Pure black so it matches the footer and the URL-bar backdrop. */
   background-color: #000000;
   overscroll-behavior-y: none;
 }
 
-/* Override Radix scroll-lock to prevent layout shift */
-body[data-scroll-locked] {
+/* When a Radix overlay (Select, Dialog, …) opens it locks page scroll. On
+   browsers whose scrollbars take layout space, react-remove-scroll adds a
+   compensating padding-right equal to the scrollbar width so the page does
+   NOT shift — that compensation must be left alone on normal pages.
+   Only INSIDE the workspace, where <html> is already overflow:hidden
+   (html.ws-active) and there is therefore no page scrollbar to compensate
+   for, do we force it to zero. That is what removed the old workspace
+   "black bar" width jump; applying it everywhere was what made the public
+   application form shift when a dropdown opened. */
+html.ws-active body[data-scroll-locked] {
   margin-right: 0 !important;
   padding-right: 0 !important;
 }

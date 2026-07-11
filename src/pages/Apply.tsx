@@ -15,6 +15,7 @@ import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import PixelCard from '@/components/shared/PixelCard';
+import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import logoMark from '@/assets/logo-color.svg';
 import {
   listQuestions, getMyApplication, submitApplication,
@@ -225,8 +226,14 @@ export default function Apply() {
           <Field label="Surname *"><Input value={f.surname} onChange={(e) => setF({ ...f, surname: e.target.value })} placeholder="e.g. Rossi" /></Field>
           <Field label="Bocconi ID / matriculation *"><Input value={f.bocconi_id} onChange={(e) => setF({ ...f, bocconi_id: e.target.value })} placeholder="e.g. 3123456" /></Field>
           <Field label="Bocconi email *"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="name.surname@studbocconi.it" /></Field>
-          <Field label="Password *"><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" /></Field>
-          <Field label="Confirm password *"><Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-enter your password" autoComplete="new-password" /></Field>
+          <Field label="Password *">
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
+            {password.length > 0 && <div className="mt-2"><PasswordStrengthIndicator password={password} /></div>}
+          </Field>
+          <Field label="Confirm password *">
+            <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-enter your password" autoComplete="new-password" />
+            {confirm.length > 0 && confirm !== password && <p className="text-xs text-destructive mt-1">Passwords do not match.</p>}
+          </Field>
           <Field label="Phone *"><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="+39 333 000 0000" /></Field>
           <Field label="LinkedIn"><Input value={f.linkedin_url} onChange={(e) => setF({ ...f, linkedin_url: e.target.value })} placeholder="https://linkedin.com/in/…" /></Field>
           <Field label="Bocconi programme *">
