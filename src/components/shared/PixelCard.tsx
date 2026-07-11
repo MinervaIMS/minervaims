@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './PixelCard.css';
 
 // =====================================================================
@@ -121,14 +121,17 @@ interface PixelCardProps {
   autoPlay?: boolean;
   /** How long the card stays "active" before reversing (ms, default 3000). */
   activeDuration?: number;
+  /** Duration of the gradual opacity fade-out once the active period ends. */
+  fadeMs?: number;
   className?: string;
   children?: React.ReactNode;
 }
 
 export default function PixelCard({
   variant = 'default', gap, speed, colors,
-  autoPlay = true, activeDuration = 3000, className = '', children,
+  autoPlay = true, activeDuration = 3000, fadeMs = 1400, className = '', children,
 }: PixelCardProps) {
+  const [faded, setFaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixelsRef = useRef<Pixel[]>([]);
@@ -210,18 +213,23 @@ export default function PixelCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalGap, finalSpeed, finalColors]);
 
-  // Auto-play: fill up on mount, hold ~activeDuration, then reverse.
+  // Auto-play: fill up on mount, hold ~activeDuration, then reverse while the
+  // whole canvas fades out gradually.
   useEffect(() => {
     if (!autoPlay) return;
     const t1 = window.setTimeout(() => handleAnimation('appear'), 80);
-    const t2 = window.setTimeout(() => handleAnimation('disappear'), 80 + activeDuration);
+    const t2 = window.setTimeout(() => { handleAnimation('disappear'); setFaded(true); }, 80 + activeDuration);
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPlay, activeDuration]);
 
   return (
     <div ref={containerRef} className={`pixel-card ${className}`}>
-      <canvas className="pixel-canvas" ref={canvasRef} />
+      <canvas
+        className="pixel-canvas"
+        ref={canvasRef}
+        style={{ opacity: faded ? 0 : 1, transition: `opacity ${fadeMs}ms ease-out` }}
+      />
       {children}
     </div>
   );

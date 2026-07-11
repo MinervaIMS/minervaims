@@ -5,15 +5,20 @@ import AuthLayout from '@/components/shared/AuthLayout';
 import { AuthButton, AUTH_TOKENS } from '@/components/shared/AuthUI';
 
 const PendingApproval = () => {
-  const { user, profile, roles, signOut, isLoading } = useAuth();
+  const { user, profile, roles, rolesLoaded, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // Applicants never need approval, so this page is not for them. A logged-out
+  // visitor is sent to sign in; a candidate (or anyone with a real, non-member
+  // role) is sent straight to their workspace. Only a genuine member-only /
+  // no-role account actually waits here.
   useEffect(() => {
-    if (!isLoading && roles.length > 0) {
-      const hasNonMemberRole = roles.some((r) => r.role !== 'member');
-      if (hasNonMemberRole) navigate('/');
-    }
-  }, [roles, isLoading, navigate]);
+    if (isLoading) return;
+    if (!user) { navigate('/auth', { replace: true }); return; }
+    if (!rolesLoaded) return;
+    const hasNonMemberRole = roles.some((r) => r.role !== 'member');
+    if (hasNonMemberRole) navigate('/admin', { replace: true });
+  }, [user, roles, rolesLoaded, isLoading, navigate]);
 
   const handleLogout = async () => {
     await signOut();

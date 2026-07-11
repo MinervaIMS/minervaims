@@ -227,7 +227,7 @@ const CANDIDATE_NAV: NavSection[] = [
 const MinervaWorkspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles } = useAuth();
+  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles, rolesLoaded } = useAuth();
   const permissions = usePermissions();
   const access = useAccess();
   const isCandidate = access.isCandidate;
@@ -303,6 +303,10 @@ const MinervaWorkspace = () => {
       // Candidates are allowed into a heavily restricted view; everyone with no
       // workspace role (members / pending) is sent to the holding page.
       if (!isAdminEmail && !isCandidate && !permissions.hasAnyAccess) {
+        // Wait until roles are actually known: a just-confirmed candidate has an
+        // empty roles array for a moment, and must NOT be flung to the
+        // approval-pending page (applicants never need approval).
+        if (!rolesLoaded) return;
         const isMemberOnly = roles.length > 0 && roles.every((r) => r.role === 'member');
         const hasNoRoles = roles.length === 0;
         if (isMemberOnly || hasNoRoles) {
@@ -315,7 +319,7 @@ const MinervaWorkspace = () => {
       }
       if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, permissions.hasAnyAccess, isCandidate]);
+  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate]);
 
   const fetchEvents = async () => {
     try {

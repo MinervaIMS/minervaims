@@ -24,6 +24,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   roles: UserRole[];
+  /** True once the user's roles have been fetched at least once (prevents
+      redirecting a freshly-signed-in candidate before their role loads). */
+  rolesLoaded: boolean;
   memberPhotoUrl: string | null;
   isLoading: boolean;
   isAdmin: boolean;
@@ -54,6 +57,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
   const [memberPhotoUrl, setMemberPhotoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
@@ -80,6 +84,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // `division` is added by the Phase 0 migration; cast until the generated
     // Supabase types are regenerated to include it.
     setRoles((rolesData as unknown as UserRole[]) || []);
+    setRolesLoaded(true);
   };
 
   // The member's photo (used as the account avatar across the site). `members`
@@ -156,6 +161,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(null);
           setProfile(null);
           setRoles([]);
+          setRolesLoaded(false);
           setMemberPhotoUrl(null);
           setIsSessionExpired(false);
           return;
@@ -241,7 +247,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // Domain restriction temporarily disabled for testing.
+    // Validate email domain
+    const isAdminEmail = email === 'as.minerva@unibocconi.it';
+    const isStudentEmail = email.endsWith('@studbocconi.it');
+    
+    if (!isAdminEmail && !isStudentEmail) {
+      return { 
+        error: new Error('Registration requires a @studbocconi.it email address') 
+      };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -263,6 +278,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setSession(null);
     setProfile(null);
     setRoles([]);
+    setRolesLoaded(false);
     setMemberPhotoUrl(null);
     setIsSessionExpired(false);
   };
@@ -274,6 +290,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         session,
         profile,
         roles,
+        rolesLoaded,
         memberPhotoUrl,
         isLoading,
         isAdmin,
