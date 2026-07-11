@@ -152,15 +152,36 @@ export default function Apply() {
           data: { full_name: `${f.first_name.trim()} ${f.surname.trim()}` },
         },
       });
+      // Supabase returns an obfuscated user (no id / empty identities) when the
+      // email is already registered but unconfirmed — route those users to the
+      // check-email page instead of leaving them stuck on the form.
+      const identities = (signUpData?.user as { identities?: unknown[] } | null)?.identities;
+      const looksLikeExisting =
+        (signUpErr && /already|registered|exists/i.test(signUpErr.message || '')) ||
+        (!signUpErr && (!signUpData?.user?.id || (Array.isArray(identities) && identities.length === 0)));
+
+      if (looksLikeExisting) {
+        toast({
+          title: 'This email is already registered',
+          description: 'Please check your inbox for the confirmation link, or sign in to continue your application.',
+        });
+        navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
+        return;
+      }
       if (signUpErr) {
-        const msg = signUpErr.message?.toLowerCase().includes('already')
-          ? 'An account with this email already exists. Please sign in and open /apply to submit your application.'
-          : signUpErr.message;
-        toast({ title: 'Could not create your account', description: msg, variant: 'destructive' });
+        toast({ title: 'Could not create your account', description: signUpErr.message, variant: 'destructive' });
         return;
       }
       const userId = signUpData.user?.id;
-      if (!userId) { toast({ title: 'Sign-up did not complete', description: 'Please try again.', variant: 'destructive' }); return; }
+      if (!userId) {
+        toast({
+          title: 'Sign-up did not complete',
+          description: 'Please try signing in from the sign-in page, then return here to submit.',
+          variant: 'destructive',
+        });
+        navigate('/auth', { replace: true });
+        return;
+      }
 
       // 2. Submit the application linked to that account. This is made
       //    resilient: if the edge-function response is flaky, retry once, and
