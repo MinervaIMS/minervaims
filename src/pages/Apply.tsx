@@ -123,7 +123,7 @@ export default function Apply() {
     e.preventDefault();
     const required = ['first_name', 'surname', 'bocconi_id', 'email', 'phone', 'degree_course', 'academic_year', 'first_choice'] as const;
     for (const k of required) if (!f[k]) { toast({ title: 'Please complete all required fields', variant: 'destructive' }); return; }
-    if (!STUD_EMAIL.test(f.email)) { toast({ title: 'Use your @studbocconi.it email', description: 'Applications require a Bocconi student email address.', variant: 'destructive' }); return; }
+    // Domain check temporarily disabled for testing.
     if (password.length < 8) { toast({ title: 'Choose a password of at least 8 characters', variant: 'destructive' }); return; }
     if (password !== confirm) { toast({ title: 'The two passwords do not match', variant: 'destructive' }); return; }
     if (!cv) { toast({ title: 'Please attach your CV (PDF)', variant: 'destructive' }); return; }
