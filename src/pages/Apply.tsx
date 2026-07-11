@@ -70,7 +70,7 @@ function SuccessScreen() {
         <div className="relative w-full max-w-md overflow-hidden bg-white shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}
           <div className="absolute inset-0">
-            <PixelCard variant="navy" speed={70} activeDuration={900} fadeMs={2800} className="w-full h-full" />
+            <PixelCard variant="navy" gap={4} speed={45} activeDuration={1400} fadeMs={4200} className="w-full h-full" />
           </div>
           <div className="relative z-10 px-8 py-12 text-center">
             <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
