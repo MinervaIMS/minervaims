@@ -81,6 +81,22 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ── sign-own-doc ───────────────────────────────────────────────────────────
+    // Read-only: a short-lived signed URL for the CALLER'S OWN CV / written
+    // answer, so applicants can preview or download what they submitted. This
+    // never allows changing the documents — it only reads the stored file.
+    if (action === 'sign-own-doc') {
+      if (!app) return json({ error: 'No application found' }, 404);
+      const kind = body.kind === 'answer' ? 'answer' : 'cv';
+      const path = (kind === 'answer' ? app.answer_path : app.cv_path) as string | null;
+      if (!path) return json({ error: 'No document on file' }, 404);
+      const download = body.mode === 'download';
+      const { data, error } = await supabase.storage.from('applications')
+        .createSignedUrl(path, 60 * 10, download ? { download: true } : undefined);
+      if (error || !data) return json({ error: 'Could not open the document' }, 500);
+      return json({ url: data.signedUrl });
+    }
+
     // ── decline-offer ────────────────────────────────────────────────────────
     if (action === 'decline-offer') {
       if (!app) return json({ error: 'No application found' }, 404);

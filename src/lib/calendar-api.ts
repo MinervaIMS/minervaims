@@ -46,18 +46,27 @@ export async function listCalendarEntries(): Promise<CalendarEntry[]> {
   return (data || []) as CalendarEntry[];
 }
 
-async function invoke(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-calendar', {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+// Writes go directly to the table under RLS (only authorised managers can write
+// — see the can_manage_calendar policy), so no Edge Function deploy is needed.
+export async function saveCalendarEntry(session: Session | null, entry: CalendarEntryInput) {
+  const uid = session?.user?.id ?? null;
+  const payload = {
+    title: entry.title.trim(),
+    description: entry.description?.trim() || null,
+    entry_date: entry.entry_date,
+    entry_type: entry.entry_type,
+    location: entry.location?.trim() || null,
+  };
+  if (entry.id) {
+    const { error } = await sb.from('calendar_entries').update(payload).eq('id', entry.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await sb.from('calendar_entries').insert({ ...payload, created_by: uid });
+    if (error) throw new Error(error.message);
+  }
 }
 
-export function saveCalendarEntry(session: Session | null, entry: CalendarEntryInput) {
-  return invoke(session, { action: 'save', entry });
-}
-export function deleteCalendarEntry(session: Session | null, id: string) {
-  return invoke(session, { action: 'delete', id });
+export async function deleteCalendarEntry(_session: Session | null, id: string) {
+  const { error } = await sb.from('calendar_entries').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }

@@ -677,7 +677,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
       { key: 'position', header: 'Position' },
       { key: 'division', header: 'Division' },
       { key: 'fund', header: 'Fund' },
-      { key: 'is_board', header: 'Executive Board' },
+      { key: 'is_board', header: 'Board of Directors' },
       { key: 'linkedin_url', header: 'LinkedIn URL' },
       { key: 'photo_url', header: 'Photo URL' },
     ];
@@ -875,7 +875,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
                   checked={formData.is_board}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_board: checked })}
                 />
-                <Label htmlFor="is_board" className="font-body">Executive Board Member</Label>
+                <Label htmlFor="is_board" className="font-body">Board of Directors Member</Label>
               </div>
 
               {isSubmitting && (
@@ -926,11 +926,11 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
           {membersByDivision.boardMembers.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2 pb-2 border-b border-separator">
-                <h3 className="font-serif text-subheading text-accent">Executive Board</h3>
+                <h3 className="font-serif text-subheading text-accent">Board of Directors</h3>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => resetOrder(membersByDivision.boardMembers, 'Executive Board')}
+                  onClick={() => resetOrder(membersByDivision.boardMembers, 'Board of Directors')}
                   className="font-body text-xs text-muted-foreground hover:text-accent"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
@@ -1081,9 +1081,9 @@ function SortableMemberCard({
         <div className="absolute inset-0 bg-muted/30 border-2 border-dashed border-primary/40 rounded-lg" />
       )}
       <Card className={`relative transition-all duration-200 ${
-        isDragging 
-          ? 'opacity-0' 
-          : 'hover:shadow-md'
+        isDragging
+          ? 'opacity-0'
+          : ''
       }`}>
         <CardContent className="p-4">
           <div className="flex gap-4">

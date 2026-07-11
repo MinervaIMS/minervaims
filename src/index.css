@@ -240,12 +240,6 @@ html.ws-active body[data-scroll-locked] {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-
-  /* Center a flex child vertically when it fits; fall back to the
-     top-aligned minimum navbar spacing when the viewport is too short. */
-  .items-safe-center {
-    align-items: safe center;
-  }
 }
 
 /* ============================================================
@@ -518,9 +512,14 @@ html.ws-active body[data-scroll-locked] {
 }
 
 
-/* Page visibility gate — blurs page content when a page is hidden */
+/* Page visibility gate — blurs page content when a page is hidden.
+   `clip-path: inset(0)` clips each blurred element's filter output to its own
+   box, so the blur no longer bleeds ~20px outward and leaves the faint white
+   halo/shadow at the top and bottom of the blurred region. The blur itself is
+   unchanged. */
 .page-gate-blurred > *:not(:first-child) {
   filter: blur(20px) saturate(0.5) !important;
+  clip-path: inset(0) !important;
   user-select: none !important;
   -webkit-user-select: none !important;
   pointer-events: none !important;
@@ -529,6 +528,7 @@ html.ws-active body[data-scroll-locked] {
 .page-gate-blurred > :only-child > header.lp-hero ~ *,
 .page-gate-blurred > :only-child > [data-page-hero] ~ * {
   filter: blur(20px) saturate(0.5) !important;
+  clip-path: inset(0) !important;
   user-select: none !important;
   -webkit-user-select: none !important;
   pointer-events: none !important;
@@ -540,6 +540,7 @@ html.ws-active body[data-scroll-locked] {
 }
 .page-blur-block {
   filter: blur(20px) saturate(0.5) !important;
+  clip-path: inset(0) !important;
   user-select: none !important;
   -webkit-user-select: none !important;
   pointer-events: none !important;
@@ -715,6 +716,16 @@ html.ws-active body {
 /* No card/hover shadows inside the workspace (kept on the public site).
    Targets Tailwind shadow utilities only, so focus rings are preserved. */
 .ws-flat [class*='shadow'] { box-shadow: none !important; }
+
+/* Workspace communicates reliability: non-interactive panels/cards are STATIC.
+   Only buttons, links, table rows and form controls may react to hover — so we
+   strip any hover transform/scale/translate from everything else (hover shadows
+   are already removed above). */
+.ws-flat *:not(button):not(a):not(tr):not([role='button']):not([role='menuitem']):not([role='option']):not([role='combobox']):not([role='tab']):not(input):not(select):not(textarea):not(label):not(summary):hover {
+  transform: none !important;
+}
+/* Subtle, readable row highlight on long workspace tables. */
+.ws-flat table tbody tr:hover { background-color: hsl(var(--muted) / 0.4); }
 
 /* No shadows in the left navigation rail — box-shadow, drop-shadow filters
    and pseudo-element shadows are all removed, including over the collapse
