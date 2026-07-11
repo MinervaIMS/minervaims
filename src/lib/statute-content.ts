@@ -6,12 +6,20 @@
 // The Italian version is the legally binding one (Art. 28).
 // =====================================================================
 
+export interface StatuteTableBlock {
+  kind: 'table';
+  header: [string, string];
+  rows: [string, string][];
+}
+
+export type StatuteBlock = string | StatuteTableBlock;
+
 export interface StatuteArticle {
   n: number;
   titleIt: string;
   titleEn: string;
-  bodyIt: string[];
-  bodyEn: string[];
+  bodyIt: StatuteBlock[];
+  bodyEn: StatuteBlock[];
 }
 
 export const STATUTE_ARTICLES: StatuteArticle[] = [
