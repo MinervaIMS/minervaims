@@ -227,7 +227,7 @@ const CANDIDATE_NAV: NavSection[] = [
 const MinervaWorkspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles, rolesLoaded } = useAuth();
+  const { user, isLoading: authLoading, signOut, session, isSessionExpired, roles, rolesLoaded, refreshProfile } = useAuth();
   const permissions = usePermissions();
   const access = useAccess();
   const isCandidate = access.isCandidate;
