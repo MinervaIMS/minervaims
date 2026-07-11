@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { FileText, PartyPopper, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { getMyApplication, candidateStatus, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
+import { getMyApplication, candidateStatus, acceptOffer, declineOffer, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
 
 // Four candidate-facing stages, mirroring "The Application Journey" on /join.
 const STEPS = [
@@ -16,30 +22,35 @@ const STEPS = [
 ];
 
 export default function ApplicationStatus() {
+  const { session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [app, setApp] = useState<ApplicationRow | null>(null);
-  // How many steps are lit right now (animated up to the real progress).
   const [litCount, setLitCount] = useState(0);
+  const [busy, setBusy] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const load = async () => {
+    try { const a = await getMyApplication(); setApp(a); }
+    catch (e) { toast({ title: 'Could not load your application', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try { const a = await getMyApplication(); if (active) setApp(a); }
-      catch (e) { toast({ title: 'Could not load your application', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-      finally { if (active) setLoading(false); }
-    })();
-    return () => { active = false; };
-  }, [toast]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const cs = app ? candidateStatus(app.status) : null;
   const rejected = cs?.step === 5;
-  // Steps that should end up lit: rejected reaches the outcome (negative);
-  // otherwise light up to the candidate's current step (capped at 4).
-  const targetLit = cs ? (rejected ? 4 : Math.min(cs.step, 4)) : 0;
+  // A live offer the candidate can act on.
+  const offerLive = !!app && app.status === 'accepted' && !!app.offer_sent_at
+    && (!app.offer_deadline || new Date(app.offer_deadline) > new Date());
+  // An internal "accepted" (no offer sent yet) must NOT be revealed (report 14).
+  const internalAccepted = !!app && app.status === 'accepted' && !app.offer_sent_at;
+  // Journey progress: hide an internal acceptance at the interview stage.
+  const targetLit = cs ? (internalAccepted ? 3 : rejected ? 4 : Math.min(cs.step, 4)) : 0;
 
-  // Sequentially light the reached steps (same feel as the /join journey).
   useEffect(() => {
     if (!targetLit) return;
     const prefersReduced = typeof window !== 'undefined'
@@ -47,16 +58,26 @@ export default function ApplicationStatus() {
     if (prefersReduced) { setLitCount(targetLit); return; }
     setLitCount(0);
     const timers: number[] = [];
-    for (let i = 1; i <= targetLit; i++) {
-      timers.push(window.setTimeout(() => setLitCount(i), 250 + (i - 1) * 400));
-    }
+    for (let i = 1; i <= targetLit; i++) timers.push(window.setTimeout(() => setLitCount(i), 250 + (i - 1) * 400));
     return () => timers.forEach(clearTimeout);
   }, [targetLit]);
+
+  const doAccept = async () => {
+    setBusy(true);
+    try { await acceptOffer(session); toast({ title: 'Offer accepted', description: 'Welcome to Minerva! Complete your member profile in My Profile.' }); await load(); }
+    catch (e) { toast({ title: 'Could not accept the offer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setBusy(false); }
+  };
+  const doDecline = async () => {
+    setBusy(true);
+    try { await declineOffer(session); toast({ title: 'Offer declined' }); await load(); }
+    catch (e) { toast({ title: 'Could not decline the offer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setBusy(false); }
+  };
 
   if (loading) {
     return <div><WorkspacePageHeader title="Application status" description="The current status of your application." /><WorkspaceLoader /></div>;
   }
-
   if (!app || !cs) {
     return (
       <div>
@@ -66,6 +87,9 @@ export default function ApplicationStatus() {
     );
   }
 
+  const statusLabel = offerLive ? 'You have received an offer to join'
+    : internalAccepted ? 'Application under review' : cs.label;
+
   return (
     <div>
       <WorkspacePageHeader title="Application status" description={`Your application for ${app.semester_label}.`} />
@@ -73,11 +97,70 @@ export default function ApplicationStatus() {
       <div className="max-w-2xl space-y-8 font-body">
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Current status</div>
-          <div className={`text-2xl font-serif ${rejected ? 'text-muted-foreground' : 'text-accent'}`}>{cs.label}</div>
+          <div className={`text-2xl font-serif ${rejected ? 'text-muted-foreground' : 'text-accent'}`}>{statusLabel}</div>
         </div>
 
-        {/* Animated journey — same dot-and-line style as /join, but only the
-            steps the candidate has actually reached light up. */}
+        {/* Live offer to join */}
+        {offerLive && (
+          <Card className="border-accent/40 bg-accent/5">
+            <CardContent className="py-6">
+              <div className="flex items-center gap-2 text-accent mb-2">
+                <PartyPopper className="h-5 w-5" />
+                <span className="font-serif text-lg">Congratulations — you have an offer to join!</span>
+              </div>
+              <p className="text-sm text-foreground mb-1">
+                You have been offered a place{app.offer_division ? ` in ${divisionLabels[app.offer_division]}` : ''}.
+              </p>
+              {app.offer_deadline && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Please respond by <strong>{new Date(app.offer_deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. Accepting turns your account into a member and unlocks your full profile.
+                </p>
+              )}
+              <div className="flex gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Accept your offer to join?</AlertDialogTitle>
+                      <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Not yet</AlertDialogCancel>
+                      <AlertDialogAction onClick={doAccept}>Accept and join</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={busy}>Decline</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Decline the offer?</AlertDialogTitle>
+                      <AlertDialogDescription>You are declining your offer to join Minerva IMS. This cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep it</AlertDialogCancel>
+                      <AlertDialogAction onClick={doDecline}>Decline offer</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {app.status === 'joined' && (
+          <Card className="border-emerald-200 bg-emerald-50">
+            <CardContent className="py-5">
+              <p className="text-sm text-emerald-800">Welcome to Minerva IMS! Head to <strong>My Profile</strong> to add your photo and complete your member details.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Animated journey — only the reached steps light up. */}
         <div ref={rootRef} className="journey">
           {STEPS.map((s, i) => {
             const lit = i < litCount;
