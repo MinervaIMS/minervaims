@@ -1,26 +1,23 @@
-import DotField from '@/components/shared/DotField';
+import Beams from '@/components/shared/Beams';
 
 /**
- * Full-bleed Minerva DotField background used across the whole application flow:
+ * Full-bleed Minerva beams background used across the whole application flow:
  * the Apply form, the post-application "confirm your email" page, and the
- * "application submitted" success card. Deep-indigo field with a lavender dot
- * gradient that gently reacts to the cursor.
+ * "application submitted" success card. Mirrors the background used on the
+ * Workspace auth pages (/auth, /check-email, etc.).
  */
 export function ApplyBackground() {
   return (
-    <div className="absolute inset-0" style={{ background: '#000000' }} aria-hidden="true">
-      <DotField
-        dotRadius={1}
-        dotSpacing={17}
-        bulgeStrength={10}
-        glowRadius={0}
-        sparkle={false}
-        waveAmplitude={0}
-        cursorRadius={500}
-        cursorForce={0}
-        bulgeOnly
-        gradientFrom="#7E5BC2"
-        gradientTo="#B0A2DA"
+    <div className="absolute inset-0" style={{ backgroundColor: '#05030F' }} aria-hidden="true">
+      <Beams
+        beamWidth={8.4}
+        beamHeight={30}
+        beamNumber={38}
+        lightColor="#afa2d2"
+        speed={2}
+        noiseIntensity={0.6}
+        scale={0.2}
+        rotation={30}
       />
     </div>
   );
