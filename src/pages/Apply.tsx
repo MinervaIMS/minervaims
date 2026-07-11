@@ -192,20 +192,6 @@ export default function Apply() {
 
   if (isLoading || checking) return <Shell><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Shell>;
 
-  if (stage === 'sent') {
-    return <Shell>
-      <div className="text-center">
-        <MailCheck className="h-12 w-12 text-accent mx-auto mb-4" />
-        <h1 className="font-serif text-3xl text-accent mb-3">Confirm your email</h1>
-        <p className="font-body text-muted-foreground mb-2">
-          We have sent a confirmation link to <strong>{f.email}</strong>. Please open it to confirm your email address.
-        </p>
-        <p className="font-body text-sm text-muted-foreground">
-          After confirming, you will return here and see your application confirmation. It can take a minute to arrive — check your spam folder too.
-        </p>
-      </div>
-    </Shell>;
-  }
 
   // Applications closed — unless an authorised member is previewing the form.
   if (!settings.applicationsOpen && !(previewMode && isStaff)) {
