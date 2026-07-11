@@ -174,7 +174,8 @@ export function Header() {
   const hasHero =
     HERO_ROUTES_EXACT.has(pathname) ||
     HERO_ROUTE_PREFIXES.some((p) => pathname.startsWith(p));
-  const transparent = hasHero && !scrolled && !mobileOpen;
+  const isCardRoute = CARD_ROUTES_EXACT.has(pathname);
+  const transparent = ((hasHero && !scrolled) || isCardRoute) && !mobileOpen;
 
   const isActive = (to?: string) => {
     if (!to) return false;
