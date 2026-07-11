@@ -48,7 +48,7 @@ export default function ApplicationCheckEmail() {
   return (
     <>
       <Helmet><title>Confirm your email | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.6))] pb-12">
+      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
         <ApplyBackground />
         <div className="relative z-10 w-full max-w-md bg-white rounded-lg shadow-2xl border border-separator px-8 py-10 text-center">
           <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '84px', width: 'auto' }} className="mx-auto mb-6" />

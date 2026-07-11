@@ -31,7 +31,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Helmet><title>Apply | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.6))] pb-12">
+      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
         <ApplyBackground />
         <div className="relative z-10 w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
@@ -67,7 +67,7 @@ function SuccessScreen() {
   return (
     <>
       <Helmet><title>Application submitted | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.6))] pb-12">
+      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
         <ApplyBackground />
         <div className="relative z-10 w-full max-w-md bg-white rounded-lg shadow-2xl border border-separator px-8 py-12 text-center">
           <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
