@@ -52,11 +52,13 @@ export function useAccess(): Access {
     const isAdminEmail = user?.email === ADMIN_EMAIL;
     const roleValues = assignments.map((a) => a.role);
 
-    // Candidate isolation: a candidate that holds no other (non-pending) role
-    // can ONLY ever reach the candidate resources, regardless of anything else.
+    // Candidate isolation: a candidate that holds no *staff* role can ONLY
+    // ever reach the candidate resources, regardless of anything else.
+    // A stray 'member' row (e.g. inserted by the new-user trigger before the
+    // applicant flow finished) must NOT demote them out of candidate access.
     const isCandidate =
       roleValues.includes('candidate') &&
-      !roleValues.some((r) => r !== 'candidate' && r !== 'pending');
+      !roleValues.some((r) => !NON_STAFF_ROLES.includes(normalizeRole(r)));
 
     const isFullAccess = isAdminEmail || roleValues.some((r) => FULL_ACCESS_ROLES.includes(normalizeRole(r)));
     const isStaff =

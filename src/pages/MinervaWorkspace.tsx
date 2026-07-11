@@ -310,9 +310,9 @@ const MinervaWorkspace = () => {
         const hasNoRoles = roles.length === 0;
         if (isMemberOnly || hasNoRoles) {
           // Safety net: if this user actually has an application on file, they
-          // are a candidate whose role just hasn't synced client-side yet.
-          // Refresh roles and let the next render re-evaluate — do NOT trap
-          // them on /pending-approval.
+          // are a candidate whose role hasn't synced yet. The DB retro-fix
+          // migration promotes such rows to 'candidate'; refresh and let the
+          // next render re-evaluate — do NOT trap them on /pending-approval.
           (async () => {
             const { data: app } = await supabase
               .from('applications').select('id').eq('user_id', user.id).maybeSingle();

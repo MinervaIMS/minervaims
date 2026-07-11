@@ -149,25 +149,58 @@ export default function Apply() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/apply?submitted=1`,
-          data: { full_name: `${f.first_name.trim()} ${f.surname.trim()}` },
+          // `signup_source` tells the new-user DB trigger to tag this account
+          // as 'candidate' from the first insert — applicants are NEVER
+          // 'member', even if the follow-up submit-application call fails.
+          data: { full_name: `${f.first_name.trim()} ${f.surname.trim()}`, signup_source: 'apply' },
         },
       });
+
+      // Helper that runs the application submit once the user id is known.
+      const submitFor = async (userId: string) => {
+        const fd = new FormData();
+        fd.append('user_id', userId);
+        Object.entries(f).forEach(([k, v]) => fd.append(k, v));
+        fd.append('cv', cv); fd.append('answer', answer);
+        const attempt = async () => {
+          try { await submitApplication(fd); return true; }
+          catch (e) {
+            const m = e instanceof Error ? e.message.toLowerCase() : '';
+            if (m.includes('already')) return true;
+            throw e;
+          }
+        };
+        try { await attempt(); } catch { await attempt(); }
+      };
+
       // Supabase returns an obfuscated user (no id / empty identities) when the
-      // email is already registered but unconfirmed — route those users to the
-      // check-email page instead of leaving them stuck on the form.
+      // email is already registered but unconfirmed. Try to sign in with the
+      // password they just entered so we can still submit their application —
+      // otherwise they end up stuck as an un-tagged account.
       const identities = (signUpData?.user as { identities?: unknown[] } | null)?.identities;
       const looksLikeExisting =
         (signUpErr && /already|registered|exists/i.test(signUpErr.message || '')) ||
         (!signUpErr && (!signUpData?.user?.id || (Array.isArray(identities) && identities.length === 0)));
 
       if (looksLikeExisting) {
-        toast({
-          title: 'This email is already registered',
-          description: 'Please check your inbox for the confirmation link, or sign in to continue your application.',
-        });
-        navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
+        const { data: signInData, error: signInErr } =
+          await supabase.auth.signInWithPassword({ email: f.email, password });
+        if (signInErr || !signInData.user?.id) {
+          toast({
+            title: 'This email is already registered',
+            description: 'Please sign in with your existing password, then return here to submit your application.',
+          });
+          navigate('/auth', { replace: true });
+          return;
+        }
+        await submitFor(signInData.user.id);
+        // They signed in successfully, so a session exists → go straight to
+        // the success screen. Email verification (if still pending) will be
+        // requested by Supabase on the next sensitive action.
+        navigate('/apply?submitted=1', { replace: true });
         return;
       }
+
       if (signUpErr) {
         toast({ title: 'Could not create your account', description: signUpErr.message, variant: 'destructive' });
         return;
@@ -183,28 +216,10 @@ export default function Apply() {
         return;
       }
 
-      // 2. Submit the application linked to that account. This is made
-      //    resilient: if the edge-function response is flaky, retry once, and
-      //    treat an "already submitted" result as success (the row may have
-      //    been created on the first attempt).
-      const fd = new FormData();
-      fd.append('user_id', userId);
-      Object.entries(f).forEach(([k, v]) => fd.append(k, v));
-      fd.append('cv', cv); fd.append('answer', answer);
+      await submitFor(userId);
 
-      const attempt = async (): Promise<boolean> => {
-        try { await submitApplication(fd); return true; }
-        catch (e) {
-          const m = e instanceof Error ? e.message.toLowerCase() : '';
-          if (m.includes('already')) return true; // created on a previous attempt
-          throw e;
-        }
-      };
-      try { await attempt(); }
-      catch { await attempt(); } // one retry; if this throws, the outer catch handles it
-
-      // 3. If email confirmation is disabled, a session already exists →
-      //    straight to the success screen; otherwise ask them to confirm.
+      // If email confirmation is disabled, a session already exists →
+      // straight to the success screen; otherwise ask them to confirm.
       if (signUpData.session) navigate('/apply?submitted=1', { replace: true });
       else navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
     } catch (err) {
