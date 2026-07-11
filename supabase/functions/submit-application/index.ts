@@ -75,9 +75,8 @@ Deno.serve(async (req) => {
     }
 
     // ── Eligibility ──
-    if (!STUD_EMAIL.test(fields.email)) {
-      return json({ error: 'Applications require a @studbocconi.it email address.' }, 400);
-    }
+    // Domain check temporarily disabled for testing.
+
     // Existing members / staff cannot apply.
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', userId);
     const isStaffAlready = (roleRows || []).some(
