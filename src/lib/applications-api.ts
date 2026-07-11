@@ -197,7 +197,7 @@ export async function getMyApplication(): Promise<ApplicationRow | null> {
 
 // Public: the applicant creates their account (client-side auth.signUp) and
 // then submits this form with the returned user id. No prior session needed.
-export async function submitApplication(form: FormData): Promise<{ id: string }> {
+export async function submitApplication(form: FormData): Promise<{ id: string; verified?: boolean; already?: boolean }> {
   const { data, error } = await supabase.functions.invoke('submit-application', { body: form });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);

@@ -161,7 +161,7 @@ export const roleGuides: Partial<Record<AppRole, RoleGuide>> = {
     contact: 'Refer to the President.',
   },
   candidate: {
-    summary: 'As a candidate you can view your own profile and the status of your application.',
+    summary: 'As an applicant you can view your own profile and the status of your application.',
     responsibilities: ['Keep your contact details up to date.'],
     reportsTo: 'The Head of Division running your application, supported by Team Leaders.',
     rights: ['See your own profile and application status, and nothing else.'],

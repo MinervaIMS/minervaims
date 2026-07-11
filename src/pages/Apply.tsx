@@ -14,7 +14,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
-import PixelCard from '@/components/shared/PixelCard';
+import { ApplyBackground } from '@/components/shared/ApplyBackground';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
@@ -31,8 +31,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Helmet><title>Apply | MIMS</title></Helmet>
-      <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
+      <div className="min-h-screen w-full relative flex items-center justify-center px-4 py-12">
+        <ApplyBackground />
+        <div className="relative z-10 w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
             <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '100px', width: 'auto' }} />
           </div>
@@ -65,24 +66,19 @@ function SuccessScreen() {
   }, [refreshProfile]);
   return (
     <>
-      <Helmet><title>Apply | MIMS</title></Helmet>
-      <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
-        <div className="relative w-full max-w-md overflow-hidden bg-white shadow-2xl border border-separator">
-          {/* Animation fills the entire card, behind the content. */}
-          <div className="absolute inset-0">
-            <PixelCard variant="navy" gap={4} speed={45} activeDuration={1400} fadeMs={4200} className="w-full h-full" />
-          </div>
-          <div className="relative z-10 px-8 py-12 text-center">
-            <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
-            <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
-            <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
-              Your application has been submitted successfully.
-            </p>
-            <p className="font-body text-sm text-muted-foreground mb-7">
-              You are now a candidate. Follow your application and, once invited, book your interview from your workspace.
-            </p>
-            <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
-          </div>
+      <Helmet><title>Application submitted | MIMS</title></Helmet>
+      <div className="min-h-screen w-full relative flex items-center justify-center px-4 py-12">
+        <ApplyBackground />
+        <div className="relative z-10 w-full max-w-md bg-white rounded-lg shadow-2xl border border-separator px-8 py-12 text-center">
+          <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+          <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
+          <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
+            Your email is verified and your application has been submitted successfully.
+          </p>
+          <p className="font-body text-sm text-muted-foreground mb-7">
+            You are now an applicant. Follow your application and, once invited, book your interview from your workspace.
+          </p>
+          <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
         </div>
       </div>
     </>
@@ -143,85 +139,75 @@ export default function Apply() {
 
     setSubmitting(true);
     try {
-      // 1. Create the account (sends the confirmation email, returns the id).
+      // 1. Ensure the applicant's account exists and send the branded
+      //    confirmation email. supabase.auth.signUp both creates the (still
+      //    unconfirmed) account and fires the confirmation email via the auth
+      //    email hook. This is the applicant path — separate from /auth — and
+      //    the account only ever becomes an *applicant* once the email is
+      //    confirmed (a database trigger grants the role then). A retry with an
+      //    existing UNCONFIRMED account simply resends the email and continues,
+      //    because the server resolves the account by email — so applicants can
+      //    never get stuck on "email already registered".
+      let userId = '';
+      let hasSession = false;
       const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: f.email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/apply?submitted=1`,
-          // `signup_source` tells the new-user DB trigger to tag this account
-          // as 'candidate' from the first insert — applicants are NEVER
-          // 'member', even if the follow-up submit-application call fails.
-          data: { full_name: `${f.first_name.trim()} ${f.surname.trim()}`, signup_source: 'apply' },
+          data: { full_name: `${f.first_name.trim()} ${f.surname.trim()}` },
         },
       });
-
-      // Helper that runs the application submit once the user id is known.
-      const submitFor = async (userId: string) => {
-        const fd = new FormData();
-        fd.append('user_id', userId);
-        Object.entries(f).forEach(([k, v]) => fd.append(k, v));
-        fd.append('cv', cv); fd.append('answer', answer);
-        const attempt = async () => {
-          try { await submitApplication(fd); return true; }
-          catch (e) {
-            const m = e instanceof Error ? e.message.toLowerCase() : '';
-            if (m.includes('already')) return true;
-            throw e;
-          }
-        };
-        try { await attempt(); } catch { await attempt(); }
-      };
-
-      // Supabase returns an obfuscated user (no id / empty identities) when the
-      // email is already registered but unconfirmed. Try to sign in with the
-      // password they just entered so we can still submit their application —
-      // otherwise they end up stuck as an un-tagged account.
-      const identities = (signUpData?.user as { identities?: unknown[] } | null)?.identities;
-      const looksLikeExisting =
-        (signUpErr && /already|registered|exists/i.test(signUpErr.message || '')) ||
-        (!signUpErr && (!signUpData?.user?.id || (Array.isArray(identities) && identities.length === 0)));
-
-      if (looksLikeExisting) {
-        const { data: signInData, error: signInErr } =
-          await supabase.auth.signInWithPassword({ email: f.email, password });
-        if (signInErr || !signInData.user?.id) {
-          toast({
-            title: 'This email is already registered',
-            description: 'Please sign in with your existing password, then return here to submit your application.',
-          });
-          navigate('/auth', { replace: true });
+      if (signUpErr) {
+        const already = /already|registered|exists/i.test(signUpErr.message || '');
+        if (already) {
+          // Existing account: if it is unconfirmed, resend the confirmation. The
+          // server resolves it by email below, so we still proceed.
+          try { await supabase.auth.resend({ type: 'signup', email: f.email }); } catch { /* ignore */ }
+        } else {
+          toast({ title: 'Could not start your application', description: signUpErr.message, variant: 'destructive' });
           return;
         }
-        await submitFor(signInData.user.id);
-        // They signed in successfully, so a session exists → go straight to
-        // the success screen. Email verification (if still pending) will be
-        // requested by Supabase on the next sensitive action.
+      } else {
+        userId = signUpData.user?.id ?? '';
+        hasSession = !!signUpData.session;
+      }
+
+      // 2. Submit the application. The server resolves the account (by id or, on
+      //    a retry, by email), creates the row idempotently and reports whether
+      //    the email is already verified.
+      const fd = new FormData();
+      if (userId) fd.append('user_id', userId);
+      Object.entries(f).forEach(([k, v]) => fd.append(k, v));
+      fd.append('cv', cv); fd.append('answer', answer);
+
+      let verified = false;
+      const attempt = async (): Promise<void> => {
+        const res = await submitApplication(fd);
+        verified = !!res.verified;
+      };
+      try { await attempt(); }
+      catch (e) {
+        const m = e instanceof Error ? e.message.toLowerCase() : '';
+        if (m.includes('already exists') || m.includes('already submitted')) {
+          verified = hasSession; // an application already exists for this email
+        } else {
+          await attempt(); // one retry for a transient failure
+        }
+      }
+
+      // 3. Route to the right screen.
+      if (hasSession) {
+        // Email confirmation disabled → session already active → success.
         navigate('/apply?submitted=1', { replace: true });
-        return;
-      }
-
-      if (signUpErr) {
-        toast({ title: 'Could not create your account', description: signUpErr.message, variant: 'destructive' });
-        return;
-      }
-      const userId = signUpData.user?.id;
-      if (!userId) {
-        toast({
-          title: 'Sign-up did not complete',
-          description: 'Please try signing in from the sign-in page, then return here to submit.',
-          variant: 'destructive',
-        });
+      } else if (verified) {
+        // Confirmed account but not signed in → they just need to sign in.
+        toast({ title: 'Application received', description: 'This email is already verified — please sign in to view your application.' });
         navigate('/auth', { replace: true });
-        return;
+      } else {
+        // The normal path: confirm the email to finish the application.
+        navigate(`/application-check-email?email=${encodeURIComponent(f.email)}`, { replace: true });
       }
-
-      await submitFor(userId);
-
-      // If email confirmation is disabled, a session already exists →
-      // straight to the success screen; otherwise ask them to confirm.
-      if (signUpData.session) navigate('/apply?submitted=1', { replace: true });
-      else navigate(`/check-email?email=${encodeURIComponent(f.email)}&purpose=verify`, { replace: true });
     } catch (err) {
       toast({ title: 'Could not submit your application', description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
     } finally { setSubmitting(false); }

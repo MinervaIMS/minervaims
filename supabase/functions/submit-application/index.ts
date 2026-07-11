@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
     const form = await req.formData();
     const get = (k: string) => (form.get(k) as string | null)?.trim() ?? '';
-    const userId = get('user_id');
+    const providedUserId = get('user_id');
     const cv = form.get('cv') as File | null;
     const answer = form.get('answer') as File | null;
 
@@ -64,15 +64,29 @@ Deno.serve(async (req) => {
       degree_course: get('degree_course'), academic_year: get('academic_year'),
       first_choice: get('first_choice'), second_choice: get('second_choice'),
     };
+    if (!fields.email) return json({ error: 'Missing email.' }, 400);
 
-    // ── Account link: the client has just signed up; verify that account. ──
-    if (!userId) return json({ error: 'Missing account reference. Please retry the sign-up step.' }, 400);
+    // ── Resolve the account SERVER-SIDE ───────────────────────────────────────
+    // The client has just signed up (which sends the branded confirmation email
+    // and creates the auth user + profile). We resolve that account here — by the
+    // id it passed if valid, otherwise by looking the email up in profiles — so a
+    // retry after a hiccup still works (no dependency on the sign-up response).
+    let userId = '';
+    if (providedUserId) {
+      const { data: got } = await supabase.auth.admin.getUserById(providedUserId);
+      if (got?.user && (got.user.email || '').toLowerCase() === fields.email.toLowerCase()) {
+        userId = providedUserId;
+      }
+    }
+    if (!userId) {
+      const { data: prof } = await supabase.from('profiles').select('id').ilike('email', fields.email).maybeSingle();
+      if (prof?.id) userId = prof.id as string;
+    }
+    if (!userId) return json({ error: 'We could not find your new account yet. Please wait a moment and retry.' }, 400);
+
     const { data: got, error: userErr } = await supabase.auth.admin.getUserById(userId);
     const account = got?.user;
-    if (userErr || !account) return json({ error: 'We could not find your new account. Please retry.' }, 400);
-    if ((account.email || '').toLowerCase() !== fields.email.toLowerCase()) {
-      return json({ error: 'The email does not match your account. Please retry.' }, 400);
-    }
+    if (userErr || !account) return json({ error: 'We could not find your account. Please retry.' }, 400);
 
     // ── Eligibility ──
     // Domain check temporarily disabled for testing.
@@ -97,12 +111,19 @@ Deno.serve(async (req) => {
     if (now > end) return json({ error: 'Applications have closed.' }, 403);
     const semester = settings!.semester_label as string;
 
-    // One application per person per round (by account and by email).
+    // One application per person per round. A retry that finds the row already
+    // there is treated as SUCCESS (idempotent), so a flaky first attempt never
+    // leaves the applicant stuck — it just resumes at the confirm-email step.
     const { data: existingByUser } = await supabase.from('applications')
       .select('id').eq('user_id', userId).eq('semester_label', semester).maybeSingle();
-    if (existingByUser) return json({ error: 'You have already submitted an application for this round.' }, 409);
+    if (existingByUser) {
+      return json({ success: true, id: existingByUser.id, verified: !!account.email_confirmed_at, already: true });
+    }
     const { data: existingByEmail } = await supabase.from('applications')
-      .select('id').ilike('email', fields.email).eq('semester_label', semester).maybeSingle();
+      .select('id, user_id').ilike('email', fields.email).eq('semester_label', semester).maybeSingle();
+    if (existingByEmail && existingByEmail.user_id === userId) {
+      return json({ success: true, id: existingByEmail.id, verified: !!account.email_confirmed_at, already: true });
+    }
     if (existingByEmail) return json({ error: 'An application with this email already exists for this round.' }, 409);
 
     // ── Field validation ──
@@ -137,16 +158,30 @@ Deno.serve(async (req) => {
     }).select('id').single();
     if (insErr) throw insErr;
 
-    // Restrict the account to candidate access (report 10.3). No approval step.
-    await supabase.from('user_roles').delete().eq('user_id', userId);
-    await supabase.from('user_roles').insert({ user_id: userId, role: 'candidate', division: null });
+    // The applicant role is granted on EMAIL CONFIRMATION by the
+    // assign_applicant_role_on_confirm() trigger — completing the form is only
+    // half of the requirement. If this account is somehow ALREADY confirmed
+    // (e.g. a re-application from a verified account), grant it now so they are
+    // never left roleless; otherwise the trigger will grant it when they verify.
+    if (account.email_confirmed_at) {
+      const { data: elevated } = await supabase.from('user_roles')
+        .select('role').eq('user_id', userId);
+      const hasElevated = (elevated || []).some(
+        (r: { role: string }) => !['member', 'pending', 'candidate'].includes(r.role),
+      );
+      if (!hasElevated) {
+        await supabase.from('user_roles').delete().eq('user_id', userId).in('role', ['member', 'pending']);
+        const { data: hasCand } = await supabase.from('user_roles').select('id').eq('user_id', userId).eq('role', 'candidate').maybeSingle();
+        if (!hasCand) await supabase.from('user_roles').insert({ user_id: userId, role: 'candidate', division: null });
+      }
+    }
 
     // Keep the account's display name in sync with the application.
     await supabase.auth.admin.updateUserById(userId, {
       user_metadata: { ...(account.user_metadata || {}), full_name: `${fields.first_name} ${fields.surname}` },
     });
 
-    return json({ success: true, id: created.id });
+    return json({ success: true, id: created.id, verified: !!account.email_confirmed_at });
   } catch (error) {
     console.error('submit-application error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);

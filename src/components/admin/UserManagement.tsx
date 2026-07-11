@@ -131,6 +131,14 @@ const UserManagement = () => {
 
       if (rolesError) throw rolesError;
 
+      // Applicants are managed in Applications → Candidates, not here. Collect
+      // the user ids that have an application on file so we can keep them out of
+      // this list — whether they already hold the applicant role or are still an
+      // unverified, in-progress application with no role yet (which is exactly
+      // what used to show up here as a mysterious "roleless" account).
+      const { data: apps } = await supabase.from('applications').select('user_id');
+      const applicantIds = new Set((apps || []).map((a: { user_id: string }) => a.user_id));
+
       // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.id);
@@ -142,6 +150,14 @@ const UserManagement = () => {
           role: (userRole?.role as AppRole) || 'member',
           role_id: userRole?.id || '',
         };
+      }).filter(u => {
+        // Exclude applicants (role 'candidate') and in-progress applicants (an
+        // application on file while still only member/pending/no role). Compared
+        // as strings because the local role union is a narrower legacy set.
+        const roleStr = String(u.role);
+        const isApplicantRole = roleStr === 'candidate';
+        const isInProgressApplicant = applicantIds.has(u.id) && ['member', 'pending', 'candidate'].includes(roleStr);
+        return !isApplicantRole && !isInProgressApplicant;
       });
 
       setUsers(usersWithRoles);
