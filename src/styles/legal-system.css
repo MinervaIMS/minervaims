@@ -272,3 +272,17 @@
 /* progress block label */
 .legal-doc .lp-progress-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
   color: var(--mims-navy); font-weight: 700; margin-bottom: 10px; }
+
+/* preamble block (unnumbered intro above Article 1) */
+.legal-doc .lp-preamble { padding: 8px 0 30px; border-bottom: 1px solid var(--mims-line); }
+.legal-doc .lp-preamble p.lead { font-family: var(--font-body); font-size: 17px; line-height: 1.72;
+  color: var(--mims-ink); margin: 0 0 22px; text-wrap: pretty; }
+.legal-doc .lp-preamble .lp-notice { border-left: 2px solid var(--mims-light-purple);
+  background: rgba(31, 15, 77, 0.03); padding: 14px 18px; display: block; }
+.legal-doc .lp-preamble .lp-notice .label { display: block; font-family: var(--font-body); font-weight: 700;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mims-light-purple);
+  margin-bottom: 6px; }
+.legal-doc .lp-preamble .lp-notice p { font-family: var(--font-body); font-size: 15.5px; line-height: 1.66;
+  color: var(--mims-ink); margin: 0; font-style: normal; }
+.legal-doc .lp-preamble + .lp-section { border-top: none; padding-top: 26px; }
+
