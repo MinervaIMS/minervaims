@@ -49,6 +49,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 // one-off "application received" email (idempotent server-side).
 function SuccessScreen() {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   useEffect(() => {
     let active = true;
     (async () => {
@@ -56,9 +57,12 @@ function SuccessScreen() {
       if (!active || !session) return;
       try { await supabase.functions.invoke('applicant-notify', { headers: { Authorization: `Bearer ${session.access_token}` } }); }
       catch { /* non-blocking */ }
+      // Pull the freshly-inserted candidate role into client state before the
+      // user clicks through, so the workspace guard sees them as a candidate.
+      try { await refreshProfile(); } catch { /* non-blocking */ }
     })();
     return () => { active = false; };
-  }, []);
+  }, [refreshProfile]);
   return (
     <>
       <Helmet><title>Apply | MIMS</title></Helmet>
@@ -77,7 +81,7 @@ function SuccessScreen() {
             <p className="font-body text-sm text-muted-foreground mb-7">
               You are now a candidate. Follow your application and, once invited, book your interview from your workspace.
             </p>
-            <AuthButton onClick={() => navigate('/admin')}>Go to your workspace</AuthButton>
+            <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
           </div>
         </div>
       </div>

@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import AuthLayout from '@/components/shared/AuthLayout';
 import { AuthButton, AUTH_TOKENS } from '@/components/shared/AuthUI';
 
 const PendingApproval = () => {
-  const { user, profile, roles, rolesLoaded, signOut, isLoading } = useAuth();
+  const { user, profile, roles, rolesLoaded, signOut, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   // Applicants never need approval, so this page is not for them. A logged-out
@@ -16,9 +17,16 @@ const PendingApproval = () => {
     if (isLoading) return;
     if (!user) { navigate('/auth', { replace: true }); return; }
     if (!rolesLoaded) return;
-    const hasNonMemberRole = roles.some((r) => r.role !== 'member');
-    if (hasNonMemberRole) navigate('/admin', { replace: true });
-  }, [user, roles, rolesLoaded, isLoading, navigate]);
+    const hasNonMemberRole = roles.some((r) => r.role !== 'member' && r.role !== 'pending');
+    if (hasNonMemberRole) { navigate('/admin', { replace: true }); return; }
+    // Safety net: if this "member-only" user has an application row, they are
+    // actually a candidate whose role hasn't hydrated locally. Refresh and go.
+    (async () => {
+      const { data: app } = await supabase
+        .from('applications').select('id').eq('user_id', user.id).maybeSingle();
+      if (app) { await refreshProfile(); navigate('/admin', { replace: true }); }
+    })();
+  }, [user, roles, rolesLoaded, isLoading, navigate, refreshProfile]);
 
   const handleLogout = async () => {
     await signOut();
