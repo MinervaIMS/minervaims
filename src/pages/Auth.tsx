@@ -83,7 +83,8 @@ const Auth = () => {
     if (!name.trim()) errs.name = 'Required.';
     if (!surname.trim()) errs.surname = 'Required.';
     if (!emailSchema.safeParse(suEmail).success) errs.email = 'Please enter a valid email address.';
-
+    else if (!bocconiEmail.test(suEmail))
+      errs.email = 'Use your @studbocconi.it or @unibocconi.it address.';
     if (!passwordSchema.safeParse(suPassword).success) errs.password = 'Use at least 8 characters.';
     if (suConfirm !== suPassword) errs.confirm = 'Passwords do not match.';
     if (!terms) errs.terms = 'Please accept the terms to continue.';
@@ -95,7 +96,7 @@ const Auth = () => {
     name.trim().length > 0 &&
     surname.trim().length > 0 &&
     emailSchema.safeParse(suEmail).success &&
-
+    bocconiEmail.test(suEmail) &&
     passwordSchema.safeParse(suPassword).success &&
     suConfirm === suPassword &&
     suConfirm.length > 0 &&
