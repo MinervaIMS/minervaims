@@ -30,7 +30,7 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
       </Helmet>
       <div className="w-full flex flex-col bg-background" style={{ minHeight: '100vh' }}>
         {/* Form panel */}
-        <main className="relative flex-1 flex items-start justify-center px-6 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12 lg:pb-[7.5vh] overflow-hidden" style={{ backgroundColor: '#05030F' }}>
+        <main className="relative flex-1 flex items-safe-center justify-center px-6 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12 lg:pb-[7.5vh] overflow-hidden" style={{ backgroundColor: '#05030F' }}>
           <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
             <Beams
               beamWidth={8.4}

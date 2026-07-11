@@ -240,6 +240,12 @@ html.ws-active body[data-scroll-locked] {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Center a flex child vertically when it fits; fall back to the
+     top-aligned minimum navbar spacing when the viewport is too short. */
+  .items-safe-center {
+    align-items: safe center;
+  }
 }
 
 /* ============================================================
