@@ -10,6 +10,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { roleLabel as composeRoleLabel, divisionLabels } from '@/lib/roles';
 import { roleGuideFor, MEMBERSHIP_RULES } from '@/lib/statute-extracts';
 import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
+import { getMyApplication, type ApplicationRow } from '@/lib/applications-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
@@ -39,6 +40,7 @@ export default function MyProfile() {
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<MemberRow | null>(null);
+  const [candidateApp, setCandidateApp] = useState<ApplicationRow | null>(null);
   const [phone, setPhone] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -59,6 +61,11 @@ export default function MyProfile() {
         setMember(res.member);
         setPhone(res.member?.phone ?? '');
         setPhotoUrl(res.member?.photo_url ?? null);
+        // Candidates have no member record; load their application to complete
+        // the profile (name, LinkedIn, phone, etc.).
+        if (!res.member && isCandidate) {
+          try { const app = await getMyApplication(); if (active) setCandidateApp(app); } catch { /* ignore */ }
+        }
       } catch (e) {
         console.error(e);
         toast({ title: 'Could not load your profile', variant: 'destructive' });
@@ -67,7 +74,7 @@ export default function MyProfile() {
       }
     })();
     return () => { active = false; };
-  }, [session, toast]);
+  }, [session, toast, isCandidate]);
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast({ title: 'Please choose an image', variant: 'destructive' }); return; }
@@ -123,8 +130,38 @@ export default function MyProfile() {
     return <div><WorkspacePageHeader title="My profile" description="Your account details and current workspace role." /><WorkspaceLoader /></div>;
   }
 
-  // Candidates (and the admin user) have no member record: minimal view.
-  if (isCandidate || !member) {
+  // Candidate profile: no member record yet, populated from the application.
+  if (isCandidate) {
+    return (
+      <div>
+        <WorkspacePageHeader title="My profile" description="Your candidate account. These details come from your application and cannot be edited here." />
+        <div className="max-w-2xl font-body">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+            <Field label="First name" value={candidateApp?.first_name ?? ''} />
+            <Field label="Surname" value={candidateApp?.surname ?? ''} />
+            <Field label="Email" value={candidateApp?.email || email} />
+            <Field label="Phone number" value={candidateApp?.phone ?? ''} />
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">LinkedIn</div>
+              {candidateApp?.linkedin_url
+                ? <a href={candidateApp.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-accent underline break-all text-sm">{candidateApp.linkedin_url}</a>
+                : <div className="text-foreground text-sm">Not set</div>}
+            </div>
+            <Field label="Role" value="Candidate" />
+          </div>
+          <Card className="mt-6"><CardContent className="py-5">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">You are a candidate</div>
+            <p className="text-sm text-foreground leading-relaxed">
+              Follow your application in <strong>Applications → Status</strong>. If you are invited to interview, you will be able to book a slot in <strong>Applications → Interview Calendar</strong>. Once you join the association, this page becomes your full member profile.
+            </p>
+          </CardContent></Card>
+        </div>
+      </div>
+    );
+  }
+
+  // The admin user (no member record, not a candidate): minimal view.
+  if (!member) {
     return (
       <div>
         <WorkspacePageHeader title="My profile" description="Your account details and current workspace role." />

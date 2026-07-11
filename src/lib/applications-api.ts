@@ -142,8 +142,8 @@ export async function signDocumentUrl(session: Session | null, id: string, kind:
 export async function bulkDocumentUrls(session: Session | null, ids: string[], kind: 'cv' | 'answer'): Promise<{ name: string; url: string }[]> {
   return (await invoke(session, { action: 'bulk-urls', ids, kind })).files;
 }
-export async function updateApplicationStatus(session: Session | null, id: string, status: ApplicationStatus) {
-  return await invoke(session, { action: 'update-status', id, status });
+export async function updateApplicationStatus(session: Session | null, id: string, status: ApplicationStatus, interviewDivision?: OrgDivision | null) {
+  return await invoke(session, { action: 'update-status', id, status, interview_division: interviewDivision ?? undefined });
 }
 export async function addApplicationNote(session: Session | null, id: string, body: string) {
   return await invoke(session, { action: 'add-note', id, body });
@@ -169,10 +169,10 @@ export async function getMyApplication(): Promise<ApplicationRow | null> {
   return (data as ApplicationRow) ?? null;
 }
 
-export async function submitApplication(session: Session | null, form: FormData): Promise<{ id: string }> {
-  const { data, error } = await supabase.functions.invoke('submit-application', {
-    body: form, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+// Public: the applicant creates their account (client-side auth.signUp) and
+// then submits this form with the returned user id. No prior session needed.
+export async function submitApplication(form: FormData): Promise<{ id: string }> {
+  const { data, error } = await supabase.functions.invoke('submit-application', { body: form });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data;

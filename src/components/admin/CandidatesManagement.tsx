@@ -4,6 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, FileText, Search, MessageSquare, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +24,14 @@ import {
 } from '@/lib/applications-api';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+
+// Statuses whose selection sends an automatic email to the candidate — these
+// require an explicit confirmation before they are applied (report item 12).
+const EMAIL_ON_STATUS: Record<string, string> = {
+  interview_invitation_sent: 'The candidate will be invited to interview, will gain access to the Interview Calendar, and will receive an interview-invitation email.',
+  rejected: 'The candidate will be moved to “Rejected” and will receive a rejection email (before- or after-interview, chosen automatically).',
+  offer_accepted: 'The candidate will receive a welcome email and be prompted to complete their member profile.',
+};
 
 function triggerDownloads(files: { name: string; url: string }[]) {
   files.forEach((f, i) => {
@@ -50,6 +62,8 @@ export default function CandidatesManagement() {
   const [answerPreviewUrl, setAnswerPreviewUrl] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<{ id: string; status: ApplicationStatus } | null>(null);
+  const [inviteDivision, setInviteDivision] = useState<OrgDivision | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -101,13 +115,21 @@ export default function CandidatesManagement() {
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
-  const changeStatus = async (id: string, status: ApplicationStatus) => {
+  const changeStatus = async (id: string, status: ApplicationStatus, division?: OrgDivision | null) => {
     try {
-      await updateApplicationStatus(session, id, status);
-      setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-      if (detail?.application.id === id) setDetail({ ...detail, application: { ...detail.application, status } });
+      await updateApplicationStatus(session, id, status, division);
+      setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status, interview_division: division ?? a.interview_division } : a)));
+      if (detail?.application.id === id) setDetail({ ...detail, application: { ...detail.application, status, interview_division: division ?? detail.application.interview_division } });
       toast({ title: 'Status updated' });
     } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
+  // Status changes that send an email need explicit confirmation first.
+  const requestStatusChange = (id: string, status: ApplicationStatus) => {
+    if (EMAIL_ON_STATUS[status]) {
+      if (status === 'interview_invitation_sent' && detail) setInviteDivision(detail.application.first_choice);
+      setPendingStatus({ id, status });
+    } else changeStatus(id, status);
   };
 
   const addNote = async () => {
@@ -242,7 +264,7 @@ export default function CandidatesManagement() {
                     <div className="text-xs uppercase tracking-wider text-accent font-semibold">Candidate status</div>
                     <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
                   </div>
-                  <Select value={detail.application.status} onValueChange={(v) => changeStatus(detail.application.id, v as ApplicationStatus)}>
+                  <Select value={detail.application.status} onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}>
                     <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
                     <SelectContent>{STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
                   </Select>
@@ -307,6 +329,44 @@ export default function CandidatesManagement() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation before an email-triggering status change (report item 12). */}
+      <AlertDialog open={!!pendingStatus} onOpenChange={(o) => { if (!o) setPendingStatus(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send this update to the candidate?</AlertDialogTitle>
+            <AlertDialogDescription>
+              By changing this status to “{pendingStatus ? STATUS_LABELS[pendingStatus.status] : ''}”, the candidate moves to the next step and <strong>receives an automatic email</strong>.
+              {pendingStatus && EMAIL_ON_STATUS[pendingStatus.status] ? ` ${EMAIL_ON_STATUS[pendingStatus.status]}` : ''}
+              {' '}Please check the details are correct — this cannot be undone. Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {pendingStatus?.status === 'interview_invitation_sent' && detail && (
+            <div className="font-body">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Interview division</div>
+              <Select value={inviteDivision ?? detail.application.first_choice} onValueChange={(v) => setInviteDivision(v as OrgDivision)}>
+                <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={detail.application.first_choice}>{divisionLabels[detail.application.first_choice]} (first choice)</SelectItem>
+                  {detail.application.second_choice && (
+                    <SelectItem value={detail.application.second_choice}>{divisionLabels[detail.application.second_choice]} (second choice)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">The candidate will only be able to book an interview for this division.</p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingStatus) changeStatus(pendingStatus.id, pendingStatus.status, pendingStatus.status === 'interview_invitation_sent' ? (inviteDivision ?? undefined) : undefined);
+              setPendingStatus(null);
+            }}>
+              Yes, proceed
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
