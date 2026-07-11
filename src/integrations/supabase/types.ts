@@ -1761,6 +1761,7 @@ export type Database = {
         Args: { _first: string; _surname: string }
         Returns: string
       }
+      can_manage_calendar: { Args: { uid: string }; Returns: boolean }
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
