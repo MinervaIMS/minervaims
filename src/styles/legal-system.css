@@ -72,8 +72,8 @@
 .legal-doc .lp-toc .toc-h .toc-sub { color: var(--mims-muted); font-weight: 400; letter-spacing: .12em; }
 .legal-doc .lp-toc nav { display: flex; flex-direction: column; }
 .legal-doc .lp-toc a { position: relative; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: baseline;
-  font-size: 13.5px; line-height: 1.3; color: var(--mims-muted); text-decoration: none;
-  padding: 10px 0 10px 16px; border-left: 2px solid var(--mims-line); transition: color .15s, border-color .15s; }
+  font-size: 13px; line-height: 1.25; color: var(--mims-muted); text-decoration: none;
+  padding: 5px 0 5px 16px; border-left: 2px solid var(--mims-line); transition: color .15s, border-color .15s; }
 .legal-doc .lp-toc a .n { font-variant-numeric: tabular-nums; font-size: 11px; letter-spacing: .04em; color: var(--mims-muted);
   transition: color .15s; }
 .legal-doc .lp-toc a:hover { color: var(--mims-navy); border-left-color: var(--mims-light-purple); }

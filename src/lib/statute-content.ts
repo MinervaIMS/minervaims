@@ -6,12 +6,20 @@
 // The Italian version is the legally binding one (Art. 28).
 // =====================================================================
 
+export interface StatuteTableBlock {
+  kind: 'table';
+  header: [string, string];
+  rows: [string, string][];
+}
+
+export type StatuteBlock = string | StatuteTableBlock;
+
 export interface StatuteArticle {
   n: number;
   titleIt: string;
   titleEn: string;
-  bodyIt: string[];
-  bodyEn: string[];
+  bodyIt: StatuteBlock[];
+  bodyEn: StatuteBlock[];
 }
 
 export const STATUTE_ARTICLES: StatuteArticle[] = [
@@ -447,28 +455,22 @@ export const STATUTE_ARTICLES: StatuteArticle[] = [
     "bodyIt": [
       "Il Consiglio Direttivo è l'organo esecutivo dell'Associazione.",
       "Composizione: il Consiglio Direttivo è composto da dieci (10) membri, di cui otto (8) con diritto di voto e due (2) senza diritto di voto:",
-      "Carica",
-      "Diritto di voto",
-      "Presidente",
-      "Sì, con voto doppio in caso di parità",
-      "Vicepresidente",
-      "Sì",
-      "Head of Asset Management (se coperto)",
-      "Sì",
-      "Head of Equity Research",
-      "Sì",
-      "Head of Investment Research",
-      "Sì",
-      "Head of Macro Research",
-      "Sì",
-      "Head of Portfolio Management",
-      "Sì",
-      "Head of Quantitative Research",
-      "Sì",
-      "Head of Media & Communication",
-      "No",
-      "Head of Operations",
-      "No",
+      {
+        kind: 'table',
+        header: ['Carica', 'Diritto di voto'],
+        rows: [
+          ['Presidente', 'Sì, con voto doppio in caso di parità'],
+          ['Vicepresidente', 'Sì'],
+          ['Head of Asset Management (se coperto)', 'Sì'],
+          ['Head of Equity Research', 'Sì'],
+          ['Head of Investment Research', 'Sì'],
+          ['Head of Macro Research', 'Sì'],
+          ['Head of Portfolio Management', 'Sì'],
+          ['Head of Quantitative Research', 'Sì'],
+          ['Head of Media & Communication', 'No'],
+          ['Head of Operations', 'No'],
+        ],
+      },
       "In caso di vacanza dell'Head of Asset Management ai sensi dell'Art. 16 comma 1, i membri votanti sono sette (7) e la parità è strutturalmente impossibile.",
       "Maggioranze richieste:",
       "a) delibere ordinarie: maggioranza semplice dei membri votanti; in caso di parità prevale il voto del Presidente;",
@@ -490,28 +492,22 @@ export const STATUTE_ARTICLES: StatuteArticle[] = [
     "bodyEn": [
       "The Board of Directors is the executive body of the Association.",
       "Composition: the Board of Directors consists of ten (10) members, of which eight (8) with voting rights and two (2) without voting rights:",
-      "Office",
-      "Voting right",
-      "President",
-      "Yes, with double vote in case of tie",
-      "Vice-President",
-      "Yes",
-      "Head of Asset Management (where covered)",
-      "Yes",
-      "Head of Equity Research",
-      "Yes",
-      "Head of Investment Research",
-      "Yes",
-      "Head of Macro Research",
-      "Yes",
-      "Head of Portfolio Management",
-      "Yes",
-      "Head of Quantitative Research",
-      "Yes",
-      "Head of Media & Communication",
-      "No",
-      "Head of Operations",
-      "No",
+      {
+        kind: 'table',
+        header: ['Office', 'Voting right'],
+        rows: [
+          ['President', 'Yes, with double vote in case of tie'],
+          ['Vice-President', 'Yes'],
+          ['Head of Asset Management (where covered)', 'Yes'],
+          ['Head of Equity Research', 'Yes'],
+          ['Head of Investment Research', 'Yes'],
+          ['Head of Macro Research', 'Yes'],
+          ['Head of Portfolio Management', 'Yes'],
+          ['Head of Quantitative Research', 'Yes'],
+          ['Head of Media & Communication', 'No'],
+          ['Head of Operations', 'No'],
+        ],
+      },
       "In the event of vacancy of the Head of Asset Management pursuant to Art. 16, paragraph 1, the voting members shall be seven (7) and a tie shall be structurally impossible.",
       "Required majorities:",
       "a) ordinary resolutions: simple majority of voting members; in case of a tie, the vote of the President prevails;",
