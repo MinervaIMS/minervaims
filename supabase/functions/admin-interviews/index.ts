@@ -306,22 +306,20 @@ Deno.serve(async (req) => {
       }
       await supabase.from('applications').update({ status: BOOKED_STATUS }).eq('id', app.id);
 
-      // Automatic email: booking confirmation to the candidate (+ ops copy).
-      const bookingVars = {
-        first_name: app.first_name,
-        division_name: DIV_LABELS[slot.division] || slot.division,
-        division_slug: slot.division,
-        interview_date: formatSlotDate(slot.slot_date),
-        interview_time: `${formatSlotTime(slot.start_time)} - ${formatSlotTime(slot.end_time)}`,
-        examiner_name: slot.examiner_name || 'Admin',
-        status_url: STATUS_URL,
-      };
+      // Automatic email: booking confirmation to the candidate.
       try {
         await supabase.rpc('enqueue_app_email', {
-          p_key: 'interview_booking_confirmation', p_to: app.email, p_vars: bookingVars,
-        });
-        await supabase.rpc('enqueue_app_email', {
-          p_key: 'interview_booking_confirmation', p_to: 'criccardo480@gmail.com', p_vars: bookingVars,
+          p_key: 'interview_booking_confirmation',
+          p_to: app.email,
+          p_vars: {
+            first_name: app.first_name,
+            division_name: DIV_LABELS[slot.division] || slot.division,
+            division_slug: slot.division,
+            interview_date: formatSlotDate(slot.slot_date),
+            interview_time: `${formatSlotTime(slot.start_time)} - ${formatSlotTime(slot.end_time)}`,
+            examiner_name: slot.examiner_name || 'Admin',
+            status_url: STATUS_URL,
+          },
         });
       } catch (e) { console.error('booking confirmation email enqueue failed', e); }
 
