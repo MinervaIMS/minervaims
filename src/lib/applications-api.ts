@@ -38,6 +38,12 @@ export interface ApplicationRow {
   cv_viewed_at: string | null;
   created_at: string;
   note_count?: number;
+  // Offer to join (set when New Joiners sends an offer).
+  offer_sent_at?: string | null;
+  offer_deadline?: string | null;
+  offer_role?: string | null;
+  offer_division?: OrgDivision | null;
+  offer_fee_due?: boolean | null;
 }
 
 export interface ApplicationNote {
@@ -153,6 +159,26 @@ export async function setDivisionQuestion(session: Session | null, division: Org
 }
 export async function convertToMember(session: Session | null, id: string, role: string, division: OrgDivision, feeDue: boolean) {
   return await invoke(session, { action: 'convert-to-member', id, role, division, fee_due: feeDue });
+}
+/** New Joiners: extend an offer to join (3-day window, 2-day reminder). */
+export async function sendOffer(session: Session | null, id: string, role: string, division: OrgDivision, feeDue: boolean) {
+  return await invoke(session, { action: 'send-offer', id, role, division, fee_due: feeDue });
+}
+
+// ── Candidate offer actions (self-service via applicant-notify) ─────────────
+async function invokeNotify(session: Session | null, body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('applicant-notify', {
+    body, headers: { Authorization: `Bearer ${session?.access_token}` },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+export async function acceptOffer(session: Session | null) {
+  return await invokeNotify(session, { action: 'accept-offer' });
+}
+export async function declineOffer(session: Session | null) {
+  return await invokeNotify(session, { action: 'decline-offer' });
 }
 
 // ── Public / candidate ─────────────────────────────────────────────────

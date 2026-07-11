@@ -225,6 +225,39 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ── send-offer (New Joiners): extend an offer to join with a 3-day window ─
+    if (action === 'send-offer') {
+      if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
+      const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
+      if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      const role = body.role as string;
+      const division = body.division as string;
+      if (!role || !division) return json({ error: 'Role and division are required' }, 400);
+      if (!canAll && !reviewerDivisions.includes(division)) return json({ error: 'You can only offer your own division' }, 403);
+
+      const now = new Date();
+      const deadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const { error } = await supabase.from('applications').update({
+        status: 'accepted',
+        offer_sent_at: now.toISOString(),
+        offer_deadline: deadline.toISOString(),
+        offer_reminder_sent_at: null,
+        offer_role: role,
+        offer_division: division,
+        offer_fee_due: body.fee_due !== false,
+      }).eq('id', app.id);
+      if (error) throw error;
+
+      const deadlineLabel = deadline.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      try {
+        await supabase.rpc('enqueue_app_email', {
+          p_key: 'offer_to_join', p_to: app.email,
+          p_vars: { first_name: app.first_name, division: DIV_LABELS[division] || '', status_url: STATUS_URL, deadline: deadlineLabel },
+        });
+      } catch (e) { console.error('offer email enqueue failed', e); }
+      return json({ success: true });
+    }
+
     // ── convert-to-member (New Joiners, report 10.5) ─────────────────────────
     if (action === 'convert-to-member') {
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);

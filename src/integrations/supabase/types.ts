@@ -350,6 +350,32 @@ export type Database = {
           },
         ]
       }
+      application_email_map: {
+        Row: {
+          description: string | null
+          template_key: string
+          trigger_code: string
+        }
+        Insert: {
+          description?: string | null
+          template_key: string
+          trigger_code: string
+        }
+        Update: {
+          description?: string | null
+          template_key?: string
+          trigger_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_email_map_template_key_fkey"
+            columns: ["template_key"]
+            isOneToOne: false
+            referencedRelation: "auto_email_templates"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       application_notes: {
         Row: {
           application_id: string
@@ -458,7 +484,14 @@ export type Database = {
           id: string
           interview_division: Database["public"]["Enums"]["org_division"] | null
           linkedin_url: string | null
+          offer_deadline: string | null
+          offer_division: Database["public"]["Enums"]["org_division"] | null
+          offer_fee_due: boolean
+          offer_reminder_sent_at: string | null
+          offer_role: string | null
+          offer_sent_at: string | null
           phone: string
+          received_email_sent_at: string | null
           second_choice: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
           status: string
@@ -483,7 +516,14 @@ export type Database = {
             | Database["public"]["Enums"]["org_division"]
             | null
           linkedin_url?: string | null
+          offer_deadline?: string | null
+          offer_division?: Database["public"]["Enums"]["org_division"] | null
+          offer_fee_due?: boolean
+          offer_reminder_sent_at?: string | null
+          offer_role?: string | null
+          offer_sent_at?: string | null
           phone: string
+          received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
           status?: string
@@ -508,7 +548,14 @@ export type Database = {
             | Database["public"]["Enums"]["org_division"]
             | null
           linkedin_url?: string | null
+          offer_deadline?: string | null
+          offer_division?: Database["public"]["Enums"]["org_division"] | null
+          offer_fee_due?: boolean
+          offer_reminder_sent_at?: string | null
+          offer_role?: string | null
+          offer_sent_at?: string | null
           phone?: string
+          received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label?: string
           status?: string
@@ -1633,6 +1680,10 @@ export type Database = {
         Returns: Database["public"]["Enums"]["team_division"]
       }
       email_queue_dispatch: { Args: never; Returns: undefined }
+      enqueue_app_email: {
+        Args: { p_key: string; p_to: string; p_vars?: Json }
+        Returns: undefined
+      }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
@@ -1669,6 +1720,7 @@ export type Database = {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
       }
+      process_offer_deadlines: { Args: never; Returns: undefined }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

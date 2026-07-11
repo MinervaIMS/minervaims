@@ -5,16 +5,27 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, UserCheck } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, roleLabel as composeRoleLabel, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { listApplications, convertToMember, STATUS_LABELS, type ApplicationRow } from '@/lib/applications-api';
+import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applications-api';
 
 const JOIN_ROLES: AppRole[] = ['analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
+
+// Human-readable state of the offer for a candidate row.
+function offerState(a: ApplicationRow): { label: string; tone: string; canOffer: boolean; resend: boolean } {
+  if (a.status === 'joined') return { label: 'Joined', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', canOffer: false, resend: false };
+  if (a.status === 'offer_declined') return { label: 'Declined / expired', tone: 'bg-orange-50 text-orange-700 border-orange-200', canOffer: true, resend: true };
+  if (a.status === 'accepted' && a.offer_sent_at) {
+    const by = a.offer_deadline ? ` · by ${new Date(a.offer_deadline).toLocaleDateString()}` : '';
+    return { label: `Offer sent · awaiting reply${by}`, tone: 'bg-amber-50 text-amber-700 border-amber-200', canOffer: true, resend: true };
+  }
+  return { label: 'Ready to offer', tone: 'bg-muted text-muted-foreground border-separator', canOffer: true, resend: false };
+}
 
 export default function NewJoiners() {
   const { session } = useAuth();
@@ -36,26 +47,30 @@ export default function NewJoiners() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
-  // Accepted candidates who have not yet been converted.
+  // Accepted candidates (offer ready / sent), those who joined, and declined /
+  // expired offers (which can be re-sent).
   const joiners = useMemo(
-    () => apps.filter((a) => ['accepted', 'offer_accepted'].includes(a.status)),
+    () => apps.filter((a) => ['accepted', 'joined', 'offer_declined'].includes(a.status)),
     [apps],
   );
 
-  const openConvert = (a: ApplicationRow) => {
-    setTarget(a); setRole('analyst'); setDivision(a.first_choice); setFeeDue(true);
+  const openOffer = (a: ApplicationRow) => {
+    setTarget(a);
+    setRole((a.offer_role as AppRole) || 'analyst');
+    setDivision((a.offer_division as OrgDivision) || a.interview_division || a.first_choice);
+    setFeeDue(a.offer_fee_due !== false);
   };
 
   const confirm = async () => {
     if (!target) return;
     setBusy(true);
     try {
-      await convertToMember(session, target.id, role, division, feeDue);
-      toast({ title: 'Member created', description: `${target.first_name} ${target.surname} is now a member.` });
+      await sendOffer(session, target.id, role, division, feeDue);
+      toast({ title: 'Offer sent', description: `${target.first_name} ${target.surname} has 3 days to accept. They will receive an email.` });
       setTarget(null);
       await load();
     } catch (e) {
-      toast({ title: 'Could not convert', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+      toast({ title: 'Could not send the offer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
     } finally { setBusy(false); }
   };
 
@@ -63,11 +78,11 @@ export default function NewJoiners() {
     <div>
       <WorkspacePageHeader
         title="New joiners"
-        description="Accepted candidates who join Minerva. Approve, assign a specific role and division, and mark the membership fee as due - this converts the candidate account into a member."
+        description="Candidates who passed the selection. Send an offer to join with a specific role and division; the candidate has three days to accept from their workspace (a reminder is sent after two days). Accepting turns their account into a member automatically."
       />
 
       {loading ? <WorkspaceLoader /> : joiners.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No accepted candidates awaiting onboarding.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No candidates ready for an offer.</p></CardContent></Card>
       ) : (
         <div className="border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
@@ -76,22 +91,29 @@ export default function NewJoiners() {
                 <th className="px-3 py-2 font-normal">Name</th>
                 <th className="px-3 py-2 font-normal">Preference</th>
                 <th className="px-3 py-2 font-normal">Email</th>
-                <th className="px-3 py-2 font-normal">Status</th>
+                <th className="px-3 py-2 font-normal">Offer</th>
                 <th className="px-3 py-2 font-normal text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              {joiners.map((a) => (
-                <tr key={a.id} className="border-t border-separator">
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}</td>
-                  <td className="px-3 py-2">{divisionLabels[a.first_choice]}{a.second_choice ? ` / ${divisionLabels[a.second_choice]}` : ''}</td>
-                  <td className="px-3 py-2">{a.email}</td>
-                  <td className="px-3 py-2">{STATUS_LABELS[a.status]}</td>
-                  <td className="px-3 py-2 text-right">
-                    <Button size="sm" onClick={() => openConvert(a)}><UserCheck className="h-4 w-4 mr-2" />Approve as member</Button>
-                  </td>
-                </tr>
-              ))}
+              {joiners.map((a) => {
+                const st = offerState(a);
+                return (
+                  <tr key={a.id} className="border-t border-separator">
+                    <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}</td>
+                    <td className="px-3 py-2">{divisionLabels[a.first_choice]}{a.second_choice ? ` / ${divisionLabels[a.second_choice]}` : ''}</td>
+                    <td className="px-3 py-2">{a.email}</td>
+                    <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
+                    <td className="px-3 py-2 text-right">
+                      {st.canOffer && (
+                        <Button size="sm" onClick={() => openOffer(a)}>
+                          <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -100,9 +122,9 @@ export default function NewJoiners() {
       <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">Approve {target?.first_name} {target?.surname}</DialogTitle>
+            <DialogTitle className="font-serif">Send an offer to {target?.first_name} {target?.surname}</DialogTitle>
             <DialogDescription className="font-body">
-              Every member has a specific role. This converts the candidate account into a member and assigns it.
+              Choose the role and division for the offer. The candidate has three days to accept from their workspace; on acceptance their account becomes a member with this role. An email is sent now.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 font-body">
@@ -129,7 +151,7 @@ export default function NewJoiners() {
             </p>
             <div className="flex gap-3 pt-1">
               <Button className="flex-1" onClick={confirm} disabled={busy}>
-                {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Converting</> : 'Confirm'}
+                {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending</> : 'Send offer'}
               </Button>
               <Button variant="outline" onClick={() => setTarget(null)}>Cancel</Button>
             </div>
