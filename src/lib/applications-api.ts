@@ -174,6 +174,11 @@ async function invokeNotify(session: Session | null, body: Record<string, unknow
   if (data?.error) throw new Error(data.error);
   return data;
 }
+/** Read-only signed URL for the applicant's OWN CV / written answer. */
+export async function signMyDocument(session: Session | null, kind: 'cv' | 'answer', mode: 'preview' | 'download'): Promise<string> {
+  const data = await invokeNotify(session, { action: 'sign-own-doc', kind, mode });
+  return data.url as string;
+}
 export async function acceptOffer(session: Session | null) {
   return await invokeNotify(session, { action: 'accept-offer' });
 }

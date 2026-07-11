@@ -5,13 +5,14 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { FileText, PartyPopper, Loader2 } from 'lucide-react';
+import { FileText, PartyPopper, Loader2, Eye, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { getMyApplication, candidateStatus, acceptOffer, declineOffer, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
+import { getMyApplication, candidateStatus, acceptOffer, declineOffer, signMyDocument, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
+import type { Session } from '@supabase/supabase-js';
 
 // Four candidate-facing stages, mirroring "The Application Journey" on /join.
 const STEPS = [
@@ -64,7 +65,7 @@ export default function ApplicationStatus() {
 
   const doAccept = async () => {
     setBusy(true);
-    try { await acceptOffer(session); toast({ title: 'Offer accepted', description: 'Welcome to Minerva! Complete your member profile in My Profile.' }); await load(); }
+    try { await acceptOffer(session); toast({ title: 'Offer accepted', description: 'Welcome to Minerva! Your account is being upgraded — if your new role isn’t visible yet, please wait a few minutes and come back.' }); await load(); }
     catch (e) { toast({ title: 'Could not accept the offer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
@@ -124,7 +125,7 @@ export default function ApplicationStatus() {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Accept your offer to join?</AlertDialogTitle>
-                      <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone.</AlertDialogDescription>
+                      <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone. It can take a few minutes for your account to be upgraded and your new role to appear — if it hasn't updated straight away, please be patient and come back shortly.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Not yet</AlertDialogCancel>
@@ -156,6 +157,7 @@ export default function ApplicationStatus() {
           <Card className="border-emerald-200 bg-emerald-50">
             <CardContent className="py-5">
               <p className="text-sm text-emerald-800">Welcome to Minerva IMS! Head to <strong>My Profile</strong> to add your photo and complete your member details.</p>
+              <p className="text-xs text-emerald-700 mt-2">Your account is being upgraded to your new role. If the workspace still shows the applicant view, please be patient — it can take a few minutes. Refresh or come back shortly and your full member workspace will appear.</p>
             </CardContent>
           </Card>
         )}
@@ -181,19 +183,21 @@ export default function ApplicationStatus() {
           })}
         </div>
 
-        {/* Submitted documents */}
+        {/* Submitted documents — preview / download only (read-only). */}
         <div className="pt-2 border-t border-separator">
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Your submitted documents</div>
           <div className="space-y-2">
-            <DocRow label="Curriculum Vitae (CV)" present={!!app.cv_path} />
-            <DocRow label="Written answer" present={!!app.answer_path} />
+            <DocRow label="Curriculum Vitae (CV)" kind="cv" present={!!app.cv_path} session={session} />
+            <DocRow label="Written answer" kind="answer" present={!!app.answer_path} session={session} />
           </div>
+          <p className="text-xs text-muted-foreground mt-2">You can preview and download what you submitted, but these documents cannot be changed or replaced.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-separator">
+          <Field label="Programme" value={app.degree_course || '-'} />
+          <Field label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
           <Field label="First choice" value={divisionLabels[app.first_choice]} />
           <Field label="Second choice" value={app.second_choice ? divisionLabels[app.second_choice] : '-'} />
-          <Field label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
           <Field label="Submitted" value={new Date(app.created_at).toLocaleString()} />
         </div>
 
@@ -205,13 +209,41 @@ export default function ApplicationStatus() {
   );
 }
 
-function DocRow({ label, present }: { label: string; present: boolean }) {
+function DocRow({ label, kind, present, session }: { label: string; kind: 'cv' | 'answer'; present: boolean; session: Session | null }) {
+  const { toast } = useToast();
+  const [busy, setBusy] = useState<'preview' | 'download' | null>(null);
+
+  const open = async (mode: 'preview' | 'download') => {
+    setBusy(mode);
+    try {
+      const url = await signMyDocument(session, kind, mode);
+      if (mode === 'download') {
+        const a = document.createElement('a');
+        a.href = url; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
+      } else {
+        window.open(url, '_blank', 'noopener');
+      }
+    } catch (e) {
+      toast({ title: 'Could not open the document', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setBusy(null); }
+  };
+
   return (
-    <div className="flex items-center justify-between border border-separator px-3 py-2 text-sm">
-      <span className="flex items-center gap-2 text-foreground"><FileText className="h-4 w-4 text-accent" />{label}</span>
-      <span className={`text-xs px-2 py-0.5 border ${present ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-separator'}`}>
-        {present ? 'Attached' : 'Not provided'}
-      </span>
+    <div className="flex items-center justify-between border border-separator px-3 py-2 text-sm gap-3">
+      <span className="flex items-center gap-2 text-foreground min-w-0"><FileText className="h-4 w-4 text-accent shrink-0" /><span className="truncate">{label}</span></span>
+      {present ? (
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => open('preview')}>
+            {busy === 'preview' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Eye className="h-3.5 w-3.5 mr-1" />Preview</>}
+          </Button>
+          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => open('download')}>
+            {busy === 'download' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Download className="h-3.5 w-3.5 mr-1" />Download</>}
+          </Button>
+        </div>
+      ) : (
+        <span className="text-xs px-2 py-0.5 border bg-muted text-muted-foreground border-separator shrink-0">Not provided</span>
+      )}
     </div>
   );
 }

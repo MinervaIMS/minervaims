@@ -3,13 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CalendarClock, Loader2, Check, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listEvents, registerForEvent, myEventRegistrationIds, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
@@ -54,8 +54,13 @@ export default function WorkspaceCalendar() {
         for (const c of entries) out.push({ date: c.entry_date.slice(0, 10), label: c.title, kind: 'custom', entry: c });
         const { data: aod } = await sb.from('aod_days').select('event_date');
         for (const a of (aod || []) as { event_date: string }[]) out.push({ date: a.event_date, label: 'Association on Display', kind: 'aod' });
-        const { data: calls } = await sb.from('alumni_calls').select('planned_date, alumnus_name');
-        for (const c of (calls || []) as { planned_date: string | null; alumnus_name: string }[]) if (c.planned_date) out.push({ date: c.planned_date, label: `Alumni call: ${c.alumnus_name}`, kind: 'alumni' });
+        // Alumni calls are organised by a division, and can invite several
+        // alumni, so the calendar labels them by the ORGANISING DIVISION rather
+        // than a single alumnus name (which may be empty → "Alumni Call: null").
+        const { data: calls } = await sb.from('alumni_calls').select('planned_date, division');
+        for (const c of (calls || []) as { planned_date: string | null; division: OrgDivision | null }[]) {
+          if (c.planned_date) out.push({ date: c.planned_date, label: c.division ? `Alumni call — ${divisionLabels[c.division]}` : 'Alumni call', kind: 'alumni' });
+        }
         const { data: settings } = await sb.from('application_settings').select('start_date, end_date, semester_label').limit(1).maybeSingle();
         if (settings?.start_date) out.push({ date: settings.start_date.slice(0, 10), label: `Applications open (${settings.semester_label})`, kind: 'application' });
         if (settings?.end_date) out.push({ date: settings.end_date.slice(0, 10), label: `Applications close (${settings.semester_label})`, kind: 'application' });
@@ -262,16 +267,7 @@ export default function WorkspaceCalendar() {
           {entryForm && (
             <div className="space-y-3 font-body">
               <div className="space-y-1"><Label>Title *</Label><Input value={entryForm.title} onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })} placeholder="e.g. Board meeting" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1"><Label>Date *</Label><Input type="date" value={entryForm.entry_date} onChange={(e) => setEntryForm({ ...entryForm, entry_date: e.target.value })} /></div>
-                <div className="space-y-1">
-                  <Label>Type</Label>
-                  <Select value={entryForm.entry_type} onValueChange={(v) => setEntryForm({ ...entryForm, entry_type: v as CalendarEntryType })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{(Object.keys(CALENDAR_ENTRY_LABELS) as CalendarEntryType[]).map((t) => <SelectItem key={t} value={t}>{CALENDAR_ENTRY_LABELS[t]}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <div className="space-y-1"><Label>Date *</Label><Input type="date" value={entryForm.entry_date} onChange={(e) => setEntryForm({ ...entryForm, entry_date: e.target.value })} /></div>
               <div className="space-y-1"><Label>Location</Label><Input value={entryForm.location} onChange={(e) => setEntryForm({ ...entryForm, location: e.target.value })} placeholder="e.g. Room N01 / online" /></div>
               <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={entryForm.description} onChange={(e) => setEntryForm({ ...entryForm, description: e.target.value })} placeholder="Anything the team should know" /></div>
               <div className="flex gap-3 pt-1">

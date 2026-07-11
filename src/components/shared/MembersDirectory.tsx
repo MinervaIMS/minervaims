@@ -9,7 +9,7 @@ interface MembersDirectoryProps {
 type TabKey = 'executive' | Division | 'media-ops';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'executive', label: 'Executive Board' },
+  { key: 'executive', label: 'Board of Directors' },
   { key: 'equity', label: 'Equity Research' },
   { key: 'investment', label: 'Investment Research' },
   { key: 'macro', label: 'Macro Research' },
