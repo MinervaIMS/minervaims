@@ -31,7 +31,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Helmet><title>Apply | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.6))] pb-12">
         <ApplyBackground />
         <div className="relative z-10 w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
