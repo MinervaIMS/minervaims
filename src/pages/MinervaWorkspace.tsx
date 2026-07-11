@@ -293,7 +293,6 @@ const MinervaWorkspace = () => {
   }, [isSessionExpired, signOut, navigate, toast]);
 
   // Auth gate
-  const { refreshProfile } = useAuth();
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
