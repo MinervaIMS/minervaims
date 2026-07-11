@@ -13,20 +13,37 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+const SourceSchema = z.object({
+  kind: z.enum(['text', 'link', 'file']),
+  value: z.string().min(1).max(10000),
+  label: z.string().max(300).nullable().optional(),
+});
+
 const ResourceSchema = z.object({
   id: z.string().uuid().optional(),
   category: z.string().min(1).max(60),
   division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations', 'board', 'none']),
-  type: z.enum(['text', 'file', 'link', 'code', 'other']),
   title: z.string().min(1).max(200).trim(),
   description: z.string().max(2000).nullable().optional(),
-  file_url: z.string().max(1000).nullable().optional(),
-  link_url: z.string().max(1000).nullable().optional(),
-  body: z.string().max(10000).nullable().optional(),
+  sources: z.array(SourceSchema).min(1).max(15),
   is_favourite: z.boolean().optional(),
 });
 
 const MAX_FAVOURITES = 5;
+const MAX_PER_KIND = 5;
+
+// Derive the legacy single columns (kept for backward compatibility) and a
+// representative `type` from the multi-source array.
+function deriveLegacy(sources: { kind: string; value: string }[]) {
+  const first = (k: string) => sources.find((s) => s.kind === k)?.value ?? null;
+  const body = first('text');
+  const link_url = first('link');
+  const file_url = first('file');
+  const type = sources.length > 1 && new Set(sources.map((s) => s.kind)).size > 1
+    ? 'other'
+    : (sources[0]?.kind ?? 'text');
+  return { body, link_url, file_url, type };
+}
 
 // Roles that can manage resources across all divisions/categories.
 const MANAGE_ALL = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_media', 'head_of_operations'];
@@ -175,6 +192,15 @@ Deno.serve(async (req) => {
     const r = parsed.data;
     if (!inScope(r.division)) return json({ error: 'You can only manage resources in your division' }, 403);
 
+    // Enforce the per-kind caps and the minimum-one-source rule server-side.
+    const counts = { text: 0, link: 0, file: 0 } as Record<string, number>;
+    for (const s of r.sources) counts[s.kind] = (counts[s.kind] ?? 0) + 1;
+    if (r.sources.length < 1) return json({ error: 'Add at least one text, link or file.' }, 400);
+    for (const k of ['text', 'link', 'file']) {
+      if ((counts[k] ?? 0) > MAX_PER_KIND) return json({ error: `At most ${MAX_PER_KIND} ${k}s per item.` }, 400);
+    }
+    if (!r.description || !r.description.trim()) return json({ error: 'A description is required.' }, 400);
+
     // Enforce the five-favourite cap when creating/updating a starred item.
     if (r.is_favourite) {
       const { count } = await supabase.from('workspace_resources')
@@ -183,10 +209,12 @@ Deno.serve(async (req) => {
       if ((count ?? 0) >= MAX_FAVOURITES) return json({ error: `You can pin at most ${MAX_FAVOURITES} favourites in this section.` }, 409);
     }
 
+    const legacy = deriveLegacy(r.sources);
     const payload = {
-      category: r.category, division: r.division, type: r.type, title: r.title,
+      category: r.category, division: r.division, type: legacy.type, title: r.title,
       description: r.description ?? null,
-      file_url: r.file_url ?? null, link_url: r.link_url ?? null, body: r.body ?? null,
+      sources: r.sources,
+      file_url: legacy.file_url, link_url: legacy.link_url, body: legacy.body,
       is_favourite: r.is_favourite ?? false,
     };
 

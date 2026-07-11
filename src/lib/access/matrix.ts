@@ -95,6 +95,8 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   },
 
   head_of_operations: {
+    // Manages the shared workspace calendar (meetings, deadlines, reminders).
+    'calendar': 'manage',
     'people-members': 'manage',
     'people-advisors': 'manage',
     'people-alumni': 'view',
@@ -110,6 +112,8 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
     'ops-newsletter': 'manage',
     'ops-auto-emails': 'manage',
     'ops-docs': 'manage',
+    // The operations team is the control centre for the homepage testimonials.
+    'website-testimonials': 'manage',
   },
 
   head_of_media: {

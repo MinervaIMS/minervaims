@@ -5,12 +5,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, roleLabel as composeRoleLabel, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
 import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applications-api';
 
 const JOIN_ROLES: AppRole[] = ['analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
@@ -30,6 +31,7 @@ function offerState(a: ApplicationRow): { label: string; tone: string; canOffer:
 export default function NewJoiners() {
   const { session } = useAuth();
   const { toast } = useToast();
+  const { confirm: confirmEmail, dialog: emailDialog } = useEmailConfirm();
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [target, setTarget] = useState<ApplicationRow | null>(null);
@@ -63,6 +65,22 @@ export default function NewJoiners() {
 
   const confirm = async () => {
     if (!target) return;
+    // Explicit confirmation: sending an offer emails the candidate automatically.
+    const ok = await confirmEmail({
+      title: 'Send this offer by email?',
+      description: (
+        <>
+          <p>
+            <strong>{target.first_name} {target.surname}</strong> will receive an automatic email inviting them to join as{' '}
+            <strong>{composeRoleLabel(role, division)}</strong>. They have three days to accept from their workspace
+            (a reminder email is sent after two days).
+          </p>
+          <p>This action cannot be reversed. Have you checked the role and division are correct?</p>
+        </>
+      ),
+      confirmLabel: 'Yes, send the offer',
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await sendOffer(session, target.id, role, division, feeDue);
@@ -149,6 +167,10 @@ export default function NewJoiners() {
             <p className="text-xs text-muted-foreground">
               Only Bocconi students can become members, and payment of the membership fee is a condition of membership.
             </p>
+            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <Mail className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>Sending an offer emails the candidate automatically. You will be asked to confirm.</span>
+            </div>
             <div className="flex gap-3 pt-1">
               <Button className="flex-1" onClick={confirm} disabled={busy}>
                 {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending</> : 'Send offer'}
@@ -158,6 +180,7 @@ export default function NewJoiners() {
           </div>
         </DialogContent>
       </Dialog>
+      {emailDialog}
     </div>
   );
 }

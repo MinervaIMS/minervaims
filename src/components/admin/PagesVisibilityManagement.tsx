@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -103,11 +103,20 @@ const PagesVisibilityManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {HIDEABLE_PAGES.map((p) => {
+            {HIDEABLE_PAGES.map((p, idx) => {
               const row = getRow(p.key);
               const hidden = isHidden(p.key);
               const isPending = !!pending[p.key];
+              const showGroup = p.group && p.group !== HIDEABLE_PAGES[idx - 1]?.group;
               return (
+                <Fragment key={p.key}>
+                {showGroup && (
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableCell colSpan={5} className="font-body text-xs uppercase tracking-wider text-muted-foreground py-2">
+                      {p.group}
+                    </TableCell>
+                  </TableRow>
+                )}
                 <TableRow key={p.key}>
                   <TableCell className="font-serif text-foreground">
                     {p.label}
@@ -143,6 +152,7 @@ const PagesVisibilityManagement = () => {
                     </div>
                   </TableCell>
                 </TableRow>
+                </Fragment>
               );
             })}
           </TableBody>

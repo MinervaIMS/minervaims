@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { usePageVisibility } from '@/hooks/usePageVisibility';
 import { usePermissions } from '@/hooks/usePermissions';
+import { PageLoader } from '@/components/shared/PageLoader';
 
 interface Props {
   pageKey: string;
@@ -27,10 +29,17 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const hiddenByDb = !loading && isHidden(pageKey);
-  // Defensive: while still loading visibility on first paint, treat as hidden
-  // for non-admin visitors so we never paint readable content first.
-  const treatHidden = (loading || hiddenByDb) && !isFullAccess;
+  // Only blur once we DEFINITIVELY know the page is hidden. Previously the gate
+  // also treated the brief client-side loading window as hidden, which made
+  // visible pages (e.g. /about) flash the blur + "unavailable" card before
+  // revealing. We now render the normal site loader while the state is unknown
+  // (see `pending` below), so a visible page never flashes the overlay, and a
+  // hidden page never leaks readable content.
+  const treatHidden = hiddenByDb && !isFullAccess;
   const showAdminBanner = hiddenByDb && isFullAccess;
+  // Non-admins, first cold load only: visibility not yet known. Show the same
+  // pulsing-logo loader used everywhere else instead of guessing.
+  const pending = loading && !isFullAccess;
 
   const [heroBottom, setHeroBottom] = useState<number>(0);
   const [noticeTop, setNoticeTop] = useState<number | null>(null);
@@ -145,6 +154,11 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
     };
   }, [treatHidden, children]);
 
+  // While we genuinely don't know yet (cold first visit, non-admin), show the
+  // standard loader rather than the content or the blur overlay. All hooks
+  // above run unconditionally, so this early return is safe.
+  if (pending) return <PageLoader />;
+
   return (
     <>
       {showAdminBanner && (
@@ -186,6 +200,25 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
       )}
     </>
   );
+};
+
+/**
+ * Visibility gate for dynamic routes: derives the page key from a URL param, so
+ * each division/fund page can be toggled individually. e.g. on /divisions/equity
+ * with prefix="division" param="division" → key "division-equity".
+ */
+export const ParamVisibilityGate = ({
+  prefix,
+  param,
+  children,
+}: {
+  prefix: string;
+  param: string;
+  children: ReactNode;
+}) => {
+  const params = useParams();
+  const slug = params[param];
+  return <PageVisibilityGate pageKey={slug ? `${prefix}-${slug}` : prefix}>{children}</PageVisibilityGate>;
 };
 
 export default PageVisibilityGate;

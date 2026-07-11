@@ -5,6 +5,7 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
+import { formatFundValue } from '@/lib/funds-api';
 import { useImagePreload } from '@/hooks/useImagePreload';
 
 // Background images for funds
@@ -202,13 +203,13 @@ const FundDetail = () => {
                   {perfRows.map(row => (
                     <tr key={row.year} className="border-b border-separator/60">
                       <td className="py-3 pr-4 font-body text-accent text-center">{row.year}</td>
-                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{formatFundValue(row.itd, 'pct')}</td>
                       {row.months.map((v, i) => (
-                        <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
+                        <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{formatFundValue(v, 'signed-pct')}</td>
                       ))}
-                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.ytd}</td>
-                      <td className="py-3 px-2 text-center">{row.vol}</td>
-                      <td className="py-3 px-2 text-center">{row.sharpe}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{formatFundValue(row.ytd, 'signed-pct')}</td>
+                      <td className="py-3 px-2 text-center">{formatFundValue(row.vol, 'pct')}</td>
+                      <td className="py-3 px-2 text-center">{formatFundValue(row.sharpe, 'ratio')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -249,13 +250,13 @@ const FundDetail = () => {
                   {perfRows.map(row => (
                     <tr key={row.year} className="border-b border-separator/60">
                       <td className="py-3 pr-4 font-body text-accent text-center">{row.year}</td>
-                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.itd}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{formatFundValue(row.itd, 'pct')}</td>
                       {row.months.map((v, i) => (
-                        <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{v}</td>
+                        <td key={i} className="py-3 px-2 whitespace-nowrap text-center">{formatFundValue(v, 'signed-pct')}</td>
                       ))}
-                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{row.ytd}</td>
-                      <td className="py-3 px-2 text-center">{row.vol}</td>
-                      <td className="py-3 px-2 text-center">{row.sharpe}</td>
+                      <td className="py-3 px-3 font-semibold text-accent bg-muted text-center">{formatFundValue(row.ytd, 'signed-pct')}</td>
+                      <td className="py-3 px-2 text-center">{formatFundValue(row.vol, 'pct')}</td>
+                      <td className="py-3 px-2 text-center">{formatFundValue(row.sharpe, 'ratio')}</td>
                     </tr>
                   ))}
                 </tbody>

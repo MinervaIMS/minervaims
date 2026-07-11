@@ -239,7 +239,7 @@ export default function CandidatesManagement() {
               {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
             </DialogTitle>
           </DialogHeader>
-          {detailLoading || !detail ? <WorkspaceLoader /> : (
+          {detailLoading || !detail ? <WorkspaceLoader inline /> : (
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 font-body">
               {/* Left: details + prominent status + notes */}
               <div className="space-y-5">

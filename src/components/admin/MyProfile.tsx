@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle, ScrollText, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +31,28 @@ function Bullets({ items }: { items: string[] }) {
         <li key={i} className="text-sm text-foreground pl-4 relative leading-relaxed before:content-['•'] before:absolute before:left-0 before:text-accent">{t}</li>
       ))}
     </ul>
+  );
+}
+
+/** A prominent link from the profile to the full association statute page. */
+function StatuteLink() {
+  return (
+    <Card>
+      <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <ScrollText className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+          <div>
+            <div className="text-sm text-foreground font-medium">The association statute</div>
+            <p className="text-xs text-muted-foreground">Your role, rights and duties are drawn from it. Read the full, binding text any time.</p>
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm" className="shrink-0">
+          <Link to="/statute" target="_blank" rel="noopener noreferrer">
+            Open the statute <ExternalLink className="h-4 w-4 ml-2" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -174,6 +197,7 @@ export default function MyProfile() {
               <p className="text-sm text-foreground leading-relaxed">{guide.summary}</p>
             </CardContent></Card>
           )}
+          <div className="mt-6"><StatuteLink /></div>
         </div>
       </div>
     );
@@ -240,6 +264,11 @@ export default function MyProfile() {
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
           </Button>
         </div>
+      </div>
+
+      {/* Connection to the full statute — always available on the profile. */}
+      <div className="max-w-3xl mt-8">
+        <StatuteLink />
       </div>
 
       {/* Role guide */}

@@ -9,6 +9,16 @@ import type { OrgDivision } from '@/lib/roles';
 
 export type ResourceType = 'text' | 'file' | 'link' | 'code' | 'other';
 
+/** A single source inside an item. Its kind is inferred from the field used. */
+export type ResourceSourceKind = 'text' | 'link' | 'file';
+export interface ResourceSource {
+  kind: ResourceSourceKind;
+  /** Text body, URL, or stored file object-path. */
+  value: string;
+  /** Optional label — e.g. the original file name or a link title. */
+  label?: string | null;
+}
+
 export interface ResourceRow {
   id: string;
   category: string;
@@ -16,6 +26,9 @@ export interface ResourceRow {
   type: ResourceType;
   title: string;
   description: string | null;
+  /** New multi-source array (up to 5 texts + 5 links + 5 files). */
+  sources: ResourceSource[];
+  // Legacy single-source columns, still populated (first of each kind).
   file_url: string | null;
   link_url: string | null;
   body: string | null;
@@ -29,12 +42,9 @@ export interface ResourceInput {
   id?: string;
   category: string;
   division: OrgDivision;
-  type: ResourceType;
   title: string;
   description?: string | null;
-  file_url?: string | null;
-  link_url?: string | null;
-  body?: string | null;
+  sources: ResourceSource[];
   is_favourite?: boolean;
 }
 
@@ -42,7 +52,31 @@ export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
   text: 'Text', file: 'File', link: 'Link', code: 'Code', other: 'Other',
 };
 
+export const SOURCE_KIND_LABELS: Record<ResourceSourceKind, string> = {
+  text: 'Text', link: 'Link', file: 'File',
+};
+
 export const MAX_FAVOURITES = 5;
+/** Per-item cap for each source kind, and the overall minimum. */
+export const MAX_SOURCES_PER_KIND = 5;
+export const MIN_SOURCES_PER_ITEM = 1;
+
+/** Count sources of a given kind. */
+export const countKind = (sources: ResourceSource[], kind: ResourceSourceKind) =>
+  sources.filter((s) => s.kind === kind).length;
+
+/** Normalise a row coming back from the DB into a guaranteed sources array. */
+export function normalizeSources(row: Partial<ResourceRow>): ResourceSource[] {
+  if (Array.isArray(row.sources) && row.sources.length > 0) {
+    return row.sources.filter((s) => s && s.value && String(s.value).trim() !== '');
+  }
+  // Legacy row with only the single columns — fold them in.
+  const out: ResourceSource[] = [];
+  if (row.body && row.body.trim()) out.push({ kind: 'text', value: row.body });
+  if (row.link_url && row.link_url.trim()) out.push({ kind: 'link', value: row.link_url });
+  if (row.file_url && row.file_url.trim()) out.push({ kind: 'file', value: row.file_url });
+  return out;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -50,7 +84,7 @@ const sb = supabase as unknown as { from: (t: string) => any };
 export async function listResources(category: string): Promise<ResourceRow[]> {
   const { data, error } = await sb.from('workspace_resources').select('*').eq('category', category).order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data || []) as ResourceRow[];
+  return ((data || []) as ResourceRow[]).map((r) => ({ ...r, sources: normalizeSources(r) }));
 }
 
 async function invoke(session: Session | null, body: Record<string, unknown>) {
