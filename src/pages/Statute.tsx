@@ -14,7 +14,7 @@ const COPY: Record<Lang, {
   description: string;
   lastUpdated: string;
   bindingNote: string;
-  preambleHeading: string;
+  noticeLabel: string;
   preamble: string;
   langLabel: string;
 }> = {
@@ -25,7 +25,7 @@ const COPY: Record<Lang, {
     description: 'The official statute of the Minerva Investment Management Society (MIMS).',
     lastUpdated: '2026',
     bindingNote: 'This Statute is originally drafted and approved in Italian and translated into English for ease of reference. The Italian version is the definitive, legally binding one for any dispute or question of interpretation (Art. 28).',
-    preambleHeading: 'Statute of the Minerva Investment Management Society (MIMS)',
+    noticeLabel: 'Binding language',
     preamble: 'Bilingual version — Italian (binding) / English. The Association is a non-profit student association promoted and managed by students of Università Bocconi, with registered office in Via Roberto Sarfatti 26/6, 20136 Milan (MI).',
     langLabel: 'Language',
   },
@@ -36,7 +36,7 @@ const COPY: Record<Lang, {
     description: 'Statuto ufficiale della Minerva Investment Management Society (MIMS).',
     lastUpdated: '2026',
     bindingNote: 'Il presente Statuto è originariamente redatto e approvato in lingua italiana ed è tradotto in inglese per facilità di consultazione. La versione italiana è da considerarsi definitiva e giuridicamente vincolante per ogni controversia o questione interpretativa (Art. 28).',
-    preambleHeading: 'Statuto dell’Associazione Minerva Investment Management Society (MIMS)',
+    noticeLabel: 'Lingua vincolante',
     preamble: 'Versione bilingue — italiano (vincolante) / inglese. L’Associazione è un’associazione studentesca senza scopo di lucro promossa e gestita da studenti dell’Università Bocconi, con sede legale in Via Roberto Sarfatti 26/6, 20136 Milano (MI).',
     langLabel: 'Lingua',
   },

@@ -1,96 +1,45 @@
-## Root cause
+## Problem
 
-I checked `criccardo480@gmail.com` in the database. The account exists and its email is verified, but:
-- `user_roles` = `['member']` (only)
-- `applications` = 0 rows
+On `/statute`, above Article 1, there is a "preamble" block that renders:
 
-That single fact explains everything.
+1. An `<h2>` heading "Statute of the Minerva Investment Management Society (MIMS)" — this simply repeats the page H1 already shown in the hero ("Society Statute" + description).
+2. A paragraph "Bilingual version — Italian (binding) / English. The Association is a non‑profit student association…".
+3. An italic paragraph with the binding-language notice ("This Statute is originally drafted…" / Art. 28).
 
-**How a candidate ends up with `member` role and no application:**
+Two things make it look broken in both EN and IT:
 
-1. On any signup, the DB trigger `handle_new_user` unconditionally inserts `user_roles.role = 'member'`. So every fresh account starts as a member, even one going through /apply.
-2. The Apply page then calls the `submit-application` edge function, which is supposed to overwrite that row with `candidate` and insert the application record. If that call fails (edge function error, network blip, silent retry that treats a non-"already" error as "already", email verification arriving before the second retry, etc.), the account is left as **member only, no application row**.
-3. `MinervaWorkspace` guard (line 305-315) reads: "no full access, not a candidate, only a `member` role" → redirect to `/pending-approval`.
-4. `PendingApproval` (line 19) only bounces users who have a role other than `member`. A member-only user is exactly the case it was designed to hold — so the applicant is stuck.
-5. Even in the happy path, the client-side `roles` array in `AuthContext` is populated once on `SIGNED_IN`. If the role flipped from `member` to `candidate` server-side during the Apply submit (which happens before the session exists), the client can still see the stale `member` row after email verification because nothing forces a re-fetch — reproducing the same trap.
+- The block is rendered as a `.lp-section`, whose CSS grid reserves a 56px left column for the article number (`.lp-num`). The preamble has no number, so the heading sits shifted into the right column with an empty gutter on the left — visually misaligned versus the article list below.
+- The long heading "Statute of the Minerva Investment Management Society (MIMS)" wraps awkwardly inside that narrow right column, producing an orphan line ("of the Minerva Investment Management Society (MIMS)") right above the "Bilingual version…" paragraph. That is the exact fragment the user quoted.
+- The binding-language notice is rendered as a plain italic `<p>`, so it visually blends into the preamble paragraph instead of reading as a formal notice.
 
-Additional issues confirmed:
-- The "Go to your workspace" button on the success card is not title-cased.
-- There is no client-side safety net: if the role never becomes `candidate` on the client, the applicant has no way out.
+## Fix (frontend / presentation only)
 
-## Fix strategy
+Edit `src/pages/Statute.tsx`, replacing the current `<div className="lp-section" id="preamble">…</div>` block with a dedicated preamble block that:
 
-Two layers, so the loop can never trap an applicant again:
+- Does not use `.lp-section` (so no phantom 56px number gutter, no false article-style heading).
+- Removes the duplicated "Statute of the Minerva Investment Management Society (MIMS)" heading — the hero already shows the title and description.
+- Keeps the short intro sentence ("Bilingual version — Italian (binding) / English. The Association is…") as a lead paragraph.
+- Presents the binding-language notice as a distinct callout with a small uppercase label ("Binding language" / "Lingua vincolante") and the sentence beneath it, separated from the intro and from Article 1 by a rule.
 
-**A. Server side — make the role transition atomic and self-healing.**
-A single DB trigger on `applications` insert that reconciles `user_roles` for the applicant: delete `member`/`pending` rows for that user, insert `candidate` if missing. This runs inside the same transaction as the application insert, so as soon as an application row exists the role is guaranteed to be `candidate` — independent of whether the edge function's own `delete/insert` succeeded, and independent of any client refresh timing.
+Add matching styles in `src/styles/legal-system.css` under the existing `.legal-doc` scope:
 
-**B. Client side — guards defer to the application row, not just the role.**
-`MinervaWorkspace` and `PendingApproval` both stop treating "member-only" as "must wait for approval" without first checking whether the user has an `applications` row. If they do, they're a candidate whose role just hasn't hydrated locally — refresh roles once and route them into the workspace. If they still look like a member and have no application, then and only then send them to `/pending-approval`.
+- `.lp-preamble` — full-width block (no grid), sits above the first `.lp-section`, with bottom border acting as the separator to Article 1.
+- `.lp-preamble p.lead` — same body size as `.lp-content p`, no italic.
+- `.lp-preamble .lp-notice` — bordered/inset callout using existing tokens (`--mims-line`, `--mims-muted`, `--mims-light-purple`) with:
+  - a small uppercase `label` (Calibri, 12px, letter-spacing, muted purple),
+  - the notice text (Calibri, normal weight, not italic, `--mims-ink`).
+- Also add `.lp-preamble + .lp-section { border-top: none; padding-top: 6px; }` so Article 1 doesn't get a double top rule.
 
-Plus the small UI fix on the success card, and cleanup of the stuck test account.
+Copy strings to add to the `COPY` object in `Statute.tsx`:
 
-## Implementation
+- EN: `noticeLabel: 'Binding language'`
+- IT: `noticeLabel: 'Lingua vincolante'`
 
-### 1. DB migration — atomic role sync on application
+The existing `preambleHeading` field becomes unused and is removed from the `COPY` type and both language entries.
 
-New migration `sync_candidate_role_on_application.sql`:
+## Files touched
 
-```sql
-CREATE OR REPLACE FUNCTION public.sync_applicant_role()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  DELETE FROM public.user_roles
-   WHERE user_id = NEW.user_id AND role IN ('member','pending');
-  INSERT INTO public.user_roles (user_id, role, division)
-  VALUES (NEW.user_id, 'candidate', NULL)
-  ON CONFLICT (user_id, role) DO NOTHING;
-  RETURN NEW;
-END;
-$$;
+- `src/pages/Statute.tsx` — replace preamble JSX, drop `preambleHeading`, add `noticeLabel`.
+- `src/styles/legal-system.css` — add `.lp-preamble`, `.lp-preamble .lp-notice`, sibling-selector reset for the following `.lp-section`.
 
-DROP TRIGGER IF EXISTS applications_sync_role ON public.applications;
-CREATE TRIGGER applications_sync_role
-AFTER INSERT ON public.applications
-FOR EACH ROW EXECUTE FUNCTION public.sync_applicant_role();
-```
-
-Also do a one-off backfill inside the same migration: for every `auth.users` row that has an `applications` row but no `candidate` role, delete their `member`/`pending` rows and insert `candidate` (this heals any historical candidates who slipped through).
-
-Finally, in the same migration, delete the stuck test account so testing can resume cleanly:
-```sql
-DELETE FROM auth.users WHERE email = 'criccardo480@gmail.com';
-```
-
-### 2. `src/pages/MinervaWorkspace.tsx` — guard refinement
-
-In the auth-gate effect (lines 296-322): before the current `isMemberOnly || hasNoRoles → /pending-approval` branch, query `applications` for the current `user.id`. If a row exists:
-- call `refreshProfile()` (already exposed on the auth context) to re-pull roles,
-- do not navigate to `/pending-approval` in this render — return and let the next roles-loaded pass evaluate again.
-If no application row exists, keep the current behaviour (redirect to `/pending-approval`).
-
-This is a small addition (one query, one conditional) inside the existing effect. No changes to `CANDIDATE_NAV` or to the render logic.
-
-### 3. `src/pages/PendingApproval.tsx` — symmetric safety net
-
-Extend the effect (lines 15-21): after `rolesLoaded`, if the user has only `member`/`pending` roles, query `applications` for the user. If a row exists, call `refreshProfile()` and `navigate('/admin', { replace: true })`. Otherwise, current behaviour.
-
-### 4. `src/pages/Apply.tsx` — success card polish
-
-In `SuccessScreen`:
-- Change the button label from `Go to your workspace` to `Go To Your Workspace`.
-- On mount (after the `applicant-notify` invoke), also call `refreshProfile()` from `useAuth()` so the freshly-inserted `candidate` role is in the client state before the user clicks through to `/admin`. Removes any race even in the happy path.
-
-### 5. No other files touched
-
-- `AuthContext.tsx` already exposes `refreshProfile` and the correct auth listener; nothing to change.
-- `useAccess.ts` `isCandidate` logic is correct once roles reflect reality (after step 1 they always will).
-- `handle_new_user` trigger is left as-is — changing it would affect the non-apply signup path (Auth.tsx) which legitimately needs `member` as the initial state.
-
-## Result
-
-- New applicants: signUp inserts `member` (trigger), submit-application inserts the row, the new `applications` trigger swaps them to `candidate` atomically. Email confirmation lands them on the success card; button (correctly capitalised) sends them straight into their candidate workspace view.
-- Anyone whose client state lags behind the DB (or whose edge-function role write failed): the workspace/pending-approval guards see the `applications` row, refresh roles, and route them into `/admin` — they can never get stuck on `/pending-approval` again.
-- Direct visits to `/admin` while logged out still redirect to `/auth` (unchanged).
-- Historical candidates missing the `candidate` role are healed by the backfill.
-- `criccardo480@gmail.com` is cleared so you can re-test end-to-end.
+No changes to statute content, articles, TOC, routing, or business logic.
