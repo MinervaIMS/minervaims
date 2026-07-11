@@ -90,13 +90,13 @@ const Statute = () => {
           </>
         }
       >
-        {/* Preamble + binding-language note (not numbered as an article). */}
-        <div className="lp-section" id="preamble">
-          <div className="lp-h2-wrap">
-            <h2 className="lp-h2">{copy.preambleHeading}</h2>
-            <p>{copy.preamble}</p>
-            <p><em>{copy.bindingNote}</em></p>
-          </div>
+        {/* Preamble + binding-language notice (not numbered as an article). */}
+        <div className="lp-preamble" id="preamble">
+          <p className="lead">{copy.preamble}</p>
+          <aside className="lp-notice" aria-label={copy.noticeLabel}>
+            <span className="label">{copy.noticeLabel}</span>
+            <p>{copy.bindingNote}</p>
+          </aside>
         </div>
 
         {STATUTE_ARTICLES.map((a) => {
