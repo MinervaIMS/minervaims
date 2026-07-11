@@ -54,9 +54,33 @@ export interface ApplicationQuestion {
 }
 
 export const ACADEMIC_YEAR_LABELS: Record<AcademicYear, string> = {
-  bachelor_1: 'Bachelor — Year 1', bachelor_2: 'Bachelor — Year 2', bachelor_3: 'Bachelor — Year 3',
-  master_1: 'Master — Year 1', master_2: 'Master — Year 2', exchange: 'Exchange student',
+  bachelor_1: 'Bachelor, 1st year', bachelor_2: 'Bachelor, 2nd year', bachelor_3: 'Bachelor, 3rd year',
+  master_1: 'Master, 1st year', master_2: 'Master, 2nd year', exchange: 'Exchange student',
 };
+
+// Colour classes per status for the reviewer table / detail (report item 15).
+// Grouped: neutral (early), amber (interview in progress / caution), green
+// (positive outcomes), red (negative outcomes).
+export const STATUS_COLORS: Record<ApplicationStatus, string> = {
+  received: 'bg-muted text-muted-foreground border-separator',
+  cv_opened: 'bg-muted text-muted-foreground border-separator',
+  under_review: 'bg-sky-50 text-sky-700 border-sky-200',
+  to_be_contacted: 'bg-sky-50 text-sky-700 border-sky-200',
+  interview_invitation_sent: 'bg-amber-50 text-amber-700 border-amber-200',
+  waiting_interview_confirmation: 'bg-amber-50 text-amber-700 border-amber-200',
+  interview_confirmed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  interview_completed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  offer_accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  joined: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  rejected: 'bg-red-50 text-red-700 border-red-200',
+  offer_declined: 'bg-orange-50 text-orange-700 border-orange-200',
+};
+
+/** Small status pill used in the reviewer table and detail view. */
+export function statusBadgeClass(status: ApplicationStatus): string {
+  return STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground border-separator';
+}
 
 // Full internal status list (reviewer-facing), in workflow order.
 export const STATUS_FLOW: ApplicationStatus[] = [

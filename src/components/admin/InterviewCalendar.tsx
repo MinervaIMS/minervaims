@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { CalendarPlus, Sparkles, Trash2, Clock, Video, User, Loader2 } from 'lucide-react';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -74,10 +74,16 @@ export default function InterviewCalendar() {
   }, [division]);
 
   const datesWithSlots = useMemo(() => new Set(slots.map((s) => s.slot_date)), [slots]);
-  const daySlots = useMemo(
-    () => slots.filter((s) => selectedDate && isSameDay(parseISO(s.slot_date), selectedDate)),
-    [slots, selectedDate],
-  );
+  // All slots grouped by day (ascending) for the full scrollable overview.
+  const grouped = useMemo(() => {
+    const map = new Map<string, StaffSlot[]>();
+    for (const s of slots) {
+      const list = map.get(s.slot_date) ?? [];
+      list.push(s);
+      map.set(s.slot_date, list);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [slots]);
 
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,65 +209,81 @@ export default function InterviewCalendar() {
 
           <Card>
             <CardContent className="pt-6">
-              <h3 className="font-serif text-lg text-accent mb-4">
-                {selectedDate ? format(selectedDate, 'EEEE, d MMMM yyyy') : 'Select a date'}
-              </h3>
-              {daySlots.length === 0 ? (
-                <p className="font-body text-sm text-muted-foreground py-8 text-center">No slots opened for this date.</p>
+              <div className="flex items-baseline justify-between mb-4">
+                <h3 className="font-serif text-lg text-accent">All interview slots</h3>
+                <span className="font-body text-xs text-muted-foreground">{slots.length} slot{slots.length === 1 ? '' : 's'}</span>
+              </div>
+              {slots.length === 0 ? (
+                <p className="font-body text-sm text-muted-foreground py-8 text-center">No slots opened yet. Use “Open a slot” or “Smart planning” to add availability.</p>
               ) : (
-                <div className="space-y-3">
-                  {daySlots.map((s) => (
-                    <div key={s.id} className="flex items-start justify-between gap-3 border border-separator p-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 font-body font-medium text-foreground">
-                          <Clock className="h-4 w-4 text-accent shrink-0" />
-                          {hhmm(s.start_time)} – {hhmm(s.end_time)}
-                        </div>
-                        {s.examiner_name && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs font-body text-muted-foreground">
-                            <User className="h-3.5 w-3.5" /> Examiner: {s.examiner_name}
-                          </div>
-                        )}
-                        {s.meeting_link && (
-                          <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1.5 text-xs font-body text-accent hover:underline break-all">
-                            <Video className="h-3.5 w-3.5 shrink-0" /> Meeting link
-                          </a>
-                        )}
-                        {s.booking ? (
-                          <div className="mt-2 text-xs font-body">
-                            <span className="inline-block px-2 py-0.5 bg-accent/10 text-accent border border-accent/20">Booked</span>
-                            <span className="ml-2 text-foreground">{s.booking.candidate_name}</span>
-                            <span className="ml-1 text-muted-foreground">· {s.booking.candidate_email}</span>
-                          </div>
-                        ) : (
-                          <div className="mt-2 text-xs font-body">
-                            <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground border border-separator">Available</span>
-                          </div>
-                        )}
+                <div className="max-h-[64vh] overflow-y-auto pr-1 space-y-5">
+                  {grouped.map(([date, daySlots]) => (
+                    <div key={date}>
+                      {/* Date divider */}
+                      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-1.5 mb-2 border-b border-separator">
+                        <span className="font-body text-xs uppercase tracking-wider text-accent font-semibold">
+                          {format(parseISO(date), 'EEEE, d MMMM yyyy')}
+                        </span>
+                        <span className="font-body text-xs text-muted-foreground ml-2">
+                          {daySlots.filter((s) => s.booking).length}/{daySlots.length} booked
+                        </span>
                       </div>
-                      {canManage && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove this slot?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {s.booking
-                                  ? `${s.booking.candidate_name} has booked this slot. Removing it cancels their interview and lets them book again.`
-                                  : 'This interview slot will be removed.'}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
-                              <AlertDialogAction className="rounded-none bg-destructive hover:bg-destructive/90" onClick={() => removeSlot(s.id)}>Remove</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                      <div className="space-y-2">
+                        {daySlots.map((s) => (
+                          <div key={s.id} className="flex items-start justify-between gap-3 border border-separator p-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 font-body font-medium text-foreground">
+                                <Clock className="h-4 w-4 text-accent shrink-0" />
+                                {hhmm(s.start_time)} – {hhmm(s.end_time)}
+                              </div>
+                              {s.examiner_name && (
+                                <div className="mt-1 flex items-center gap-1.5 text-xs font-body text-muted-foreground">
+                                  <User className="h-3.5 w-3.5" /> Examiner: {s.examiner_name}
+                                </div>
+                              )}
+                              {s.meeting_link && (
+                                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1.5 text-xs font-body text-accent hover:underline break-all">
+                                  <Video className="h-3.5 w-3.5 shrink-0" /> Meeting link
+                                </a>
+                              )}
+                              {s.booking ? (
+                                <div className="mt-2 text-xs font-body">
+                                  <span className="inline-block px-2 py-0.5 bg-accent/10 text-accent border border-accent/20">Booked</span>
+                                  <span className="ml-2 text-foreground">{s.booking.candidate_name}</span>
+                                  <span className="ml-1 text-muted-foreground">· {s.booking.candidate_email}</span>
+                                </div>
+                              ) : (
+                                <div className="mt-2 text-xs font-body">
+                                  <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground border border-separator">Available</span>
+                                </div>
+                              )}
+                            </div>
+                            {canManage && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove this slot?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {s.booking
+                                        ? `${s.booking.candidate_name} has booked this slot. Removing it cancels their interview and lets them book again.`
+                                        : 'This interview slot will be removed.'}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction className="rounded-none bg-destructive hover:bg-destructive/90" onClick={() => removeSlot(s.id)}>Remove</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
