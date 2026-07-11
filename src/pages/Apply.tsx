@@ -16,7 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import PixelCard from '@/components/shared/PixelCard';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
-import logoMark from '@/assets/logo-color.svg';
+import { AuthButton } from '@/components/shared/AuthUI';
+import fullLogo from '@/assets/legal-hero-logo.svg';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
@@ -32,7 +33,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
-            <img src={logoMark} alt="Minerva Investment Management Society" className="h-20 w-20" />
+            <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '100px', width: 'auto' }} />
           </div>
           {children}
         </div>
@@ -41,10 +42,12 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-// The success screen shown after the applicant confirms their email: the card
-// fills up (PixelCard) and a success message appears. On mount it triggers the
+// The success screen shown after the applicant confirms their email. The pixel
+// animation fills the whole white card, then fades away gradually, with the
+// confirmation message and workspace button on top. On mount it triggers the
 // one-off "application received" email (idempotent server-side).
 function SuccessScreen() {
+  const navigate = useNavigate();
   useEffect(() => {
     let active = true;
     (async () => {
@@ -56,25 +59,28 @@ function SuccessScreen() {
     return () => { active = false; };
   }, []);
   return (
-    <Shell>
-      <div className="relative w-full h-72 mb-6 overflow-hidden rounded-lg border border-separator">
-        <PixelCard variant="navy" activeDuration={3000} className="w-full h-full">
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none">
-            <MailCheck className="h-12 w-12 text-accent mb-3" />
-            <h1 className="font-serif text-2xl text-accent">Application submitted</h1>
-            <p className="font-body text-sm text-muted-foreground mt-2 max-w-sm">
+    <>
+      <Helmet><title>Apply | MIMS</title></Helmet>
+      <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
+        <div className="relative w-full max-w-md overflow-hidden bg-white shadow-2xl border border-separator">
+          {/* Animation fills the entire card, behind the content. */}
+          <div className="absolute inset-0">
+            <PixelCard variant="navy" activeDuration={1400} fadeMs={1700} className="w-full h-full" />
+          </div>
+          <div className="relative z-10 px-8 py-12 text-center">
+            <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+            <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
+            <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
               Your application has been submitted successfully.
             </p>
+            <p className="font-body text-sm text-muted-foreground mb-7">
+              You are now a candidate. Follow your application and, once invited, book your interview from your workspace.
+            </p>
+            <AuthButton onClick={() => navigate('/admin')}>Go to your workspace</AuthButton>
           </div>
-        </PixelCard>
+        </div>
       </div>
-      <div className="text-center">
-        <p className="font-body text-sm text-muted-foreground mb-5">
-          You are now a candidate. You can follow your application and, once invited, book your interview from your workspace.
-        </p>
-        <Button asChild className="font-body"><Link to="/admin">Go to your workspace</Link></Button>
-      </div>
-    </Shell>
+    </>
   );
 }
 
@@ -123,7 +129,7 @@ export default function Apply() {
     e.preventDefault();
     const required = ['first_name', 'surname', 'bocconi_id', 'email', 'phone', 'degree_course', 'academic_year', 'first_choice'] as const;
     for (const k of required) if (!f[k]) { toast({ title: 'Please complete all required fields', variant: 'destructive' }); return; }
-    // Domain check temporarily disabled for testing.
+    if (!STUD_EMAIL.test(f.email)) { toast({ title: 'Use your @studbocconi.it email', description: 'Applications require a Bocconi student email address.', variant: 'destructive' }); return; }
     if (password.length < 8) { toast({ title: 'Choose a password of at least 8 characters', variant: 'destructive' }); return; }
     if (password !== confirm) { toast({ title: 'The two passwords do not match', variant: 'destructive' }); return; }
     if (!cv) { toast({ title: 'Please attach your CV (PDF)', variant: 'destructive' }); return; }
@@ -151,12 +157,25 @@ export default function Apply() {
       const userId = signUpData.user?.id;
       if (!userId) { toast({ title: 'Sign-up did not complete', description: 'Please try again.', variant: 'destructive' }); return; }
 
-      // 2. Submit the application linked to that account.
+      // 2. Submit the application linked to that account. This is made
+      //    resilient: if the edge-function response is flaky, retry once, and
+      //    treat an "already submitted" result as success (the row may have
+      //    been created on the first attempt).
       const fd = new FormData();
       fd.append('user_id', userId);
       Object.entries(f).forEach(([k, v]) => fd.append(k, v));
       fd.append('cv', cv); fd.append('answer', answer);
-      await submitApplication(fd);
+
+      const attempt = async (): Promise<boolean> => {
+        try { await submitApplication(fd); return true; }
+        catch (e) {
+          const m = e instanceof Error ? e.message.toLowerCase() : '';
+          if (m.includes('already')) return true; // created on a previous attempt
+          throw e;
+        }
+      };
+      try { await attempt(); }
+      catch { await attempt(); } // one retry; if this throws, the outer catch handles it
 
       // 3. If email confirmation is disabled, a session already exists →
       //    straight to the success screen; otherwise ask them to confirm.

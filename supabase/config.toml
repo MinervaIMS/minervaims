@@ -17,6 +17,10 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.submit-application]
     verify_jwt = false
+  [functions.applicant-notify]
+    verify_jwt = false
+  [functions.admin-interviews]
+    verify_jwt = false
   [functions.admin-resources]
     verify_jwt = false
   [functions.admin-funds]
@@ -35,6 +39,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.admin-auto-emails]
     verify_jwt = false
+  [functions.admin-smm]
+    verify_jwt = false
   [functions.admin-settings]
     verify_jwt = false
   [functions.admin-team]
@@ -45,16 +51,3 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
-  [functions.pricing-engine]
-    # PayoffLab: public teaching tool — no JWT for now; per-IP rate limiting
-    # runs inside the function. If paid tiers ship, flip this and verify
-    # entitlements server-side.
-    verify_jwt = false
-  [functions.send-transactional-email]
-    verify_jwt = true
-  [functions.preview-transactional-email]
-    verify_jwt = false
-  [functions.handle-email-unsubscribe]
-    verify_jwt = false
-  [functions.handle-email-suppression]
-    verify_jwt = false
