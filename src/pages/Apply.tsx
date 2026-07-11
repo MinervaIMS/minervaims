@@ -101,7 +101,7 @@ export default function Apply() {
   const [checking, setChecking] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [stage, setStage] = useState<'form' | 'sent'>('form');
+  
 
   const [f, setF] = useState({
     first_name: '', surname: '', bocconi_id: '', email: '', phone: '', linkedin_url: '',
