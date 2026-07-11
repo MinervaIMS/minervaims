@@ -168,7 +168,7 @@ const Auth = () => {
             value={suEmail}
             onChange={(e) => setSuEmail(e.target.value)}
             error={suErr.email}
-            hint="Use your @studbocconi.it or @unibocconi.it address."
+            hint="Temporarily open to any email address while testing."
             autoComplete="email"
             disabled={isSubmitting}
           />
