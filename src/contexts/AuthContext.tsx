@@ -247,15 +247,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // Validate email domain
-    const isAdminEmail = email === 'as.minerva@unibocconi.it';
-    const isStudentEmail = email.endsWith('@studbocconi.it');
-    
-    if (!isAdminEmail && !isStudentEmail) {
-      return { 
-        error: new Error('Registration requires a @studbocconi.it email address') 
-      };
-    }
+    // Domain check temporarily disabled for testing (any email accepted).
 
     const redirectUrl = `${window.location.origin}/`;
     
