@@ -68,25 +68,41 @@ Deno.serve(async (req) => {
     const { action, userId } = body;
     console.log('Action:', action, 'User ID:', userId);
 
-    // Roles an admin/president may assign through the Users page.
+    // Legacy division-baked head roles map to (head_of_division, division).
+    const LEGACY_HEADS: Record<string, string> = {
+      head_of_equity: 'equity', head_of_investment: 'investment', head_of_macro: 'macro',
+      head_of_portfolio: 'portfolio', head_of_quant: 'quant',
+    };
+    // Roles an admin/president may assign (canonical + tolerated legacy values).
     const ASSIGNABLE_ROLES = [
       'admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
       'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
       'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member', 'pending',
+      ...Object.keys(LEGACY_HEADS),
     ];
     const DIVISION_ROLES = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst'];
 
     if (action === 'set-role') {
-      const { role, division } = body as { role?: string; division?: string | null };
-      if (!userId || !role) {
+      const { role: rawRole, division: rawDivision } = body as { role?: string; division?: string | null };
+      if (!userId || !rawRole) {
         return new Response(JSON.stringify({ error: 'User ID and role are required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      if (!ASSIGNABLE_ROLES.includes(role)) {
-        return new Response(JSON.stringify({ error: 'Invalid role' }),
+      if (!ASSIGNABLE_ROLES.includes(rawRole)) {
+        return new Response(JSON.stringify({ error: `Invalid role: ${rawRole}` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      const div = DIVISION_ROLES.includes(role) ? (division || null) : null;
+      // Normalise legacy heads to (head_of_division, division).
+      let role = rawRole;
+      let division = rawDivision || null;
+      if (LEGACY_HEADS[rawRole]) { role = 'head_of_division'; division = division || LEGACY_HEADS[rawRole]; }
+      // Division only applies to division roles; Portfolio Manager is always Portfolio.
+      let div = DIVISION_ROLES.includes(role) ? division : null;
+      if (role === 'portfolio_manager') div = 'portfolio';
+      if (role === 'team_leader' && div === 'portfolio') {
+        return new Response(JSON.stringify({ error: "Portfolio Management's team leader is the Portfolio Manager role — pick that instead." }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
 
       // Guard: never allow the LAST President/Admin to be demoted away.
       const { data: leaders } = await supabaseAdmin
@@ -99,16 +115,24 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Upsert the (single) role row for this user.
-      const { data: existing } = await supabaseAdmin
-        .from('user_roles').select('id').eq('user_id', userId).maybeSingle();
+      // Keep exactly ONE role row per user. Update the existing one (delete any
+      // duplicates) or insert a fresh one — never relies on there being 0/1 rows.
       const payload = { role, division: div, assigned_by: requestingUser.id, assigned_at: new Date().toISOString() };
-      const { error: writeError } = existing?.id
-        ? await supabaseAdmin.from('user_roles').update(payload).eq('id', existing.id)
-        : await supabaseAdmin.from('user_roles').insert({ user_id: userId, ...payload });
+      const { data: existingRows } = await supabaseAdmin
+        .from('user_roles').select('id').eq('user_id', userId);
+      let writeError = null;
+      if (existingRows && existingRows.length > 0) {
+        const keep = existingRows[0].id;
+        ({ error: writeError } = await supabaseAdmin.from('user_roles').update(payload).eq('id', keep));
+        if (existingRows.length > 1) {
+          await supabaseAdmin.from('user_roles').delete().eq('user_id', userId).neq('id', keep);
+        }
+      } else {
+        ({ error: writeError } = await supabaseAdmin.from('user_roles').insert({ user_id: userId, ...payload }));
+      }
       if (writeError) {
         console.error('Error setting role:', writeError);
-        return new Response(JSON.stringify({ error: 'Failed to update role' }),
+        return new Response(JSON.stringify({ error: `Failed to update role: ${writeError.message}` }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
