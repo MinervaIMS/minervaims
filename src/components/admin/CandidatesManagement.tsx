@@ -11,6 +11,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
+import { Recommendation } from '@/components/admin/Recommendation';
 import { Download, FileText, Search, MessageSquare, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -252,6 +253,41 @@ export default function CandidatesManagement() {
       {viewingArchived && (
         <div className="mb-4 rounded-lg border border-separator bg-muted/30 px-4 py-2.5 font-body text-sm text-muted-foreground">
           You are viewing an <span className="text-foreground">archived semester</span>. These candidacies are preserved for consultation and accountability; statuses and notes can no longer be changed.
+        </div>
+      )}
+
+      {!viewingArchived && (
+        <div className="mb-4 space-y-2">
+          <Recommendation title="Think about long-term continuity when selecting">
+            <p>
+              Past experience shows that the association benefits when each intake also secures its own future.
+              Where candidates are otherwise comparable, it is advisable to keep continuity in mind: as a reference
+              point, aiming for roughly one Italian first- or second-year undergraduate student among every five new
+              members has historically helped, because Italian undergraduates are statistically more likely to stay
+              at Bocconi for their Master's degree and to carry the association forward across semesters.
+            </p>
+            <p>
+              Treat this purely as a continuity consideration, never as a quota, an exclusion criterion or a reason
+              to prefer a weaker application: merit always comes first, and every candidate is assessed on merit
+              individually.
+            </p>
+          </Recommendation>
+          <Recommendation title="Weigh commitments in other professional societies">
+            <p>
+              Candidates who are already active in several professional associations, or in another finance or
+              consulting society, have in the past tended to have less time for Minerva and to contribute less to
+              association activities. Direct-competitor societies also raise a concrete risk around our proprietary
+              assets: the alumni network, templates and code repositories are association property, and divided
+              loyalties can lead to their misuse or to membership being used only to extract benefits.
+            </p>
+            <p>
+              It is therefore advisable to explore these commitments during selection and to prefer candidates who
+              can give Minerva serious attention, either because Minerva is their main society or because they are
+              clearly ready to prioritise it, including by stepping back from other demanding societies once they
+              accept the offer. Purely recreational clubs (travel, comics and similar leisure associations) are not
+              a concern in the same way.
+            </p>
+          </Recommendation>
         </div>
       )}
 

@@ -1,21 +1,33 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 
+// =====================================================================
+// Privacy Policy (GDPR information notice under articles 13 and 14).
+// Drafted for an Italian unrecognised association (articles 36 to 38 of
+// the Italian Civil Code) operated by Bocconi University students.
+// Passages marked "For legal review" are the points a qualified
+// professional should confirm.
+// =====================================================================
+
 const sections: LegalSection[] = [
   { id: 'who-we-are', title: '1. Who We Are' },
   { id: 'controller', title: '2. Data Controller and Contact' },
-  { id: 'scope', title: '3. Scope' },
+  { id: 'scope', title: '3. Scope of This Notice' },
   { id: 'data-collected', title: '4. Personal Data We Collect' },
   { id: 'legal-bases', title: '5. Purposes and Legal Bases' },
-  { id: 'cookies', title: '6. Cookies and Similar Technologies' },
-  { id: 'sharing', title: '7. Sharing and Recipients' },
-  { id: 'transfers', title: '8. International Transfers' },
-  { id: 'retention', title: '9. Data Retention' },
-  { id: 'security', title: '10. Security' },
-  { id: 'rights', title: '11. Your Rights' },
-  { id: 'complaints', title: '12. Complaints' },
-  { id: 'children', title: '13. Children' },
-  { id: 'changes', title: '14. Changes to This Policy' },
+  { id: 'newsletter', title: '6. Newsletter and Emails' },
+  { id: 'applications', title: '7. Membership Applications' },
+  { id: 'members', title: '8. Members, Alumni, Workspace' },
+  { id: 'cookies', title: '9. Cookies' },
+  { id: 'sharing', title: '10. Recipients and Processors' },
+  { id: 'transfers', title: '11. International Transfers' },
+  { id: 'retention', title: '12. Data Retention' },
+  { id: 'security', title: '13. Security' },
+  { id: 'rights', title: '14. Your Rights' },
+  { id: 'complaints', title: '15. Complaints to the Garante' },
+  { id: 'children', title: '16. Minors' },
+  { id: 'sources', title: '17. Data Not Obtained from You' },
+  { id: 'changes', title: '18. Changes to This Notice' },
 ];
 
 const PrivacyPolicy = () => (
@@ -24,177 +36,298 @@ const PrivacyPolicy = () => (
       <title>Privacy Policy | MIMS</title>
       <meta
         name="description"
-        content="How Minerva Investment Management Society collects, uses and protects personal data, in line with GDPR."
+        content="How Minerva Investment Management Society collects, uses and protects personal data, in line with the GDPR and Italian data protection law."
       />
     </Helmet>
     <LegalLayout
       title="Privacy Policy"
-      description="How we collect, use and protect personal data, in line with the GDPR."
-      lastUpdated="January 1st, 2026"
+      description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
+      lastUpdated="July 12th, 2026"
       currentId="privacy"
       sections={sections}
     >
       <LegalSectionBlock id="who-we-are" number="01" title="Who We Are">
         <p>
-          Minerva Investment Management Society (MIMS) ("we", "us", "our") is a society promoted and run by students
-          of Bocconi University. This website is operated by MIMS and is independent from Bocconi University.
+          Minerva Investment Management Society ("MIMS", "we", "us", "our") is a student society organised as an
+          unrecognised association under articles 36 to 38 of the Italian Civil Code, formed and run by students of
+          Università Bocconi in Milan, Italy, and operating within the framework of the Bocconi student association
+          system. MIMS acts through its governing bodies as identified in its Statute, available on this website.
+        </p>
+        <p>
+          This website is operated by MIMS and is independent from Università Bocconi: the University does not
+          operate, review or approve this website and is not a controller of the personal data processed through it.
+          Where MIMS activities take place within University programmes or premises, the University may process
+          related data under its own policies, which are separate from this notice.
         </p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="controller" number="02" title="Data Controller and Contact">
-        <p>For the purposes of the General Data Protection Regulation ("GDPR"), the data controller is:</p>
-        <ul>
-          <li><strong>Controller:</strong> Minerva Investment Management Society (MIMS)</li>
-          <li><strong>Email:</strong> as.minerva@unibocconi.it</li>
-        </ul>
-        <p>If you have questions or want to exercise your rights, contact us at the email above.</p>
+        <p>
+          The data controller is Minerva Investment Management Society, an unrecognised association based in Milan,
+          Italy, at Università Bocconi. For every matter concerning personal data you can write to{' '}
+          <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a>. This mailbox is monitored by the
+          association's board, which acts on behalf of the association in data protection matters.
+        </p>
+        <p>
+          MIMS has not appointed a data protection officer, as it is not required to under article 37 GDPR given the
+          nature and scale of its processing. For legal review: reassess if processing grows materially in scale or
+          sensitivity.
+        </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="scope" number="03" title="Scope">
-        <p>This Policy applies to personal data processed through:</p>
-        <ul>
-          <li>Our public website (including logs and security data),</li>
-          <li>Contact channels (email and forms),</li>
-          <li>Newsletter subscription,</li>
-          <li>Event registrations,</li>
-          <li>"Join Us" / recruiting applications (including CVs and supporting documents),</li>
-          <li>Embedded third-party content and links (e.g., Instagram, LinkedIn) where applicable.</li>
-        </ul>
+      <LegalSectionBlock id="scope" number="03" title="Scope of This Notice">
+        <p>
+          This notice covers personal data processed through the public website (including the application form, the
+          newsletter and event registration forms), through the reserved area of the website (the "Workspace") used
+          by members, advisors, alumni and applicants, and through direct correspondence with the association. It
+          does not cover processing carried out by Università Bocconi, by social networks on which the association
+          has profiles, or by external websites we link to.
+        </p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="data-collected" number="04" title="Personal Data We Collect">
-        <p>Depending on how you interact with us, we may collect:</p>
-        <h3>4.1 Website Usage and Device Data</h3>
+        <p>We collect only the data needed for each activity:</p>
+        <ul>
+          <li>
+            <strong>Newsletter subscription:</strong> email address, subscription date and unsubscribe status.
+          </li>
+          <li>
+            <strong>Membership applications:</strong> name and surname, email address, telephone number, Bocconi
+            student identifier, academic year and study programme, LinkedIn profile where provided, curriculum
+            vitae, written answers, division preferences, interview bookings and outcomes, shared evaluation notes,
+            and the status of the application through the selection process.
+          </li>
+          <li>
+            <strong>Event registrations:</strong> name, email address and, where relevant, whether you are a Bocconi
+            student and your programme, together with attendance records.
+          </li>
+          <li>
+            <strong>Members and alumni:</strong> identification and contact details, division and role, photograph
+            where provided, LinkedIn profile, membership status and fee records and, for alumni, employer, role and
+            city, used for the alumni directory and alumni initiatives.
+          </li>
+          <li>
+            <strong>Workspace accounts:</strong> authentication data (handled by our infrastructure provider; we
+            never see or store passwords in readable form), role assignments and an activity log of actions
+            performed in the Workspace (who did what, where and when), kept for security and accountability.
+          </li>
+          <li>
+            <strong>Technical data:</strong> data generated by visiting the website, such as IP address, browser
+            type and requested pages, processed in server logs by our hosting providers for security and delivery,
+            plus the cookies and local storage items described in the <a href="/cookie-policy">Cookie Policy</a>.
+          </li>
+          <li>
+            <strong>Correspondence:</strong> anything you choose to send to our email addresses.
+          </li>
+        </ul>
         <p>
-          IP address, approximate location derived from IP (country/city), device and browser identifiers,
-          referral URL, pages viewed, date/time, and similar technical data. This data may be collected via
-          server logs and (only if enabled with consent) analytics cookies.
-        </p>
-        <h3>4.2 Contact and Communications Data</h3>
-        <p>Name, email address, message content, and any information you provide when you contact us.</p>
-        <h3>4.3 Newsletter Data</h3>
-        <p>
-          Email address and subscription metadata (e.g., timestamp, consent record). If double opt-in is used,
-          confirmation logs.
-        </p>
-        <h3>4.4 Events and Applications ("Join Us")</h3>
-        <p>
-          Identification and contact data (name, email, phone if provided), academic information
-          (course/programme, year), CV/resume, motivation letter, LinkedIn profile URL, and any other
-          information you choose to provide.
-        </p>
-        <p className="italic">
-          Important: Please do not include special category data (e.g., health data) or excessive personal data
-          in applications unless strictly necessary.
-        </p>
-        <h3>4.5 Social Media Interactions</h3>
-        <p>
-          If you interact with our social pages (LinkedIn/Instagram) or load embedded social content, those
-          platforms may collect data under their own policies.
+          We do not request special categories of personal data (article 9 GDPR). Please do not include such data in
+          CVs, written answers or messages; if it is nonetheless received, we do not use it in the selection process
+          and we delete it where feasible.
         </p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="legal-bases" number="05" title="Purposes and Legal Bases">
-        <p>We process personal data only where lawful. Typical purposes and legal bases include:</p>
-        <h3>5.1 Operating, Securing, and Improving the Website</h3>
-        <p><strong>Purpose:</strong> Deliver the website, prevent abuse, maintain security, and debug issues.</p>
-        <p><strong>Legal basis:</strong> Legitimate interests (security and service operation); and/or necessity for the service explicitly requested.</p>
-        <h3>5.2 Responding to Enquiries</h3>
-        <p><strong>Purpose:</strong> Answer messages and provide requested information.</p>
-        <p><strong>Legal basis:</strong> Legitimate interests; and where applicable, steps at your request prior to entering a relationship (e.g., participation requests).</p>
-        <h3>5.3 Newsletter</h3>
-        <p><strong>Purpose:</strong> Send updates you requested.</p>
-        <p><strong>Legal basis:</strong> Consent (you can withdraw at any time via unsubscribe or by contacting us).</p>
-        <h3>5.4 Events Management</h3>
-        <p><strong>Purpose:</strong> Register attendance, manage logistics, communicate updates.</p>
-        <p><strong>Legal basis:</strong> Legitimate interests and/or steps at your request.</p>
-        <h3>5.5 Recruiting / Membership Applications ("Join Us")</h3>
-        <p><strong>Purpose:</strong> Evaluate applications, run interviews/tests, communicate outcomes, and maintain selection records.</p>
-        <p><strong>Legal basis:</strong> Steps at your request prior to entering a membership relationship and legitimate interests (fair selection process, fraud prevention, recordkeeping).</p>
-        <h3>5.6 Legal/Compliance</h3>
-        <p><strong>Purpose:</strong> Comply with applicable law, respond to lawful requests, enforce policies.</p>
-        <p><strong>Legal basis:</strong> Legal obligation and legitimate interests.</p>
-      </LegalSectionBlock>
-
-      <LegalSectionBlock id="cookies" number="06" title="Cookies and Similar Technologies">
-        <p>
-          We use cookies and similar technologies as described in our <a href="/cookie-policy">Cookie Policy</a>.
-          Non-essential cookies are used only with your consent. You can change your choices at any time via
-          "Cookie Settings" in the footer.
-        </p>
-      </LegalSectionBlock>
-
-      <LegalSectionBlock id="sharing" number="07" title="Sharing and Recipients">
-        <p>We may share personal data only as needed, for example with:</p>
         <ul>
-          <li>Website hosting, security, and IT service providers (as processors),</li>
-          <li>Newsletter provider (e.g., Mailchimp) if used,</li>
-          <li>Form/communications providers (e.g., Google Forms) if used,</li>
-          <li>Event tooling or room booking systems where relevant.</li>
+          <li>
+            <strong>Running the selection process</strong> (receiving applications, screening, interviews, offers):
+            pre-contractual measures taken at your request, article 6(1)(b) GDPR.
+          </li>
+          <li>
+            <strong>Managing membership</strong> (member records, roles, fee collection, semester member registers,
+            governance): performance of the association relationship under the Statute, article 6(1)(b); for
+            accounting entries, legitimate interest in orderly administration and, where applicable, legal
+            obligations, article 6(1)(c).
+          </li>
+          <li>
+            <strong>Newsletter and updates:</strong> consent, article 6(1)(a), given when you subscribe and
+            withdrawable at any time.
+          </li>
+          <li>
+            <strong>Event management:</strong> measures you request when registering, article 6(1)(b), and
+            legitimate interest in organising events safely.
+          </li>
+          <li>
+            <strong>Alumni relations:</strong> legitimate interest, article 6(1)(f), balanced by your right to
+            object at any time.
+          </li>
+          <li>
+            <strong>Security and accountability</strong> (server logs, Workspace activity log, access control):
+            legitimate interest in protecting the website, the Workspace, association assets and members.
+          </li>
+          <li>
+            <strong>Non-essential cookies:</strong> consent collected through the cookie banner.
+          </li>
+          <li>
+            <strong>Establishment, exercise or defence of legal claims:</strong> legitimate interest.
+          </li>
         </ul>
-        <p><strong>We do not sell personal data.</strong></p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="transfers" number="08" title="International Transfers">
+      <LegalSectionBlock id="newsletter" number="06" title="Newsletter and Email Communications">
         <p>
-          Some providers may process data outside the EEA/UK (e.g., the United States). Where this occurs, we will
-          implement appropriate safeguards (such as the EU Standard Contractual Clauses and additional measures
-          where required) and ensure a lawful transfer mechanism.
+          Subscribing to the newsletter is voluntary and requires only an email address. By subscribing you consent
+          to receive periodic updates about the association's publications, events and initiatives. Every message
+          contains an unsubscribe link; unsubscribing is immediate and free of charge. We keep a suppression record
+          of unsubscribed addresses solely to make sure we do not contact them again.
+        </p>
+        <p>
+          We do not use the newsletter list for third-party advertising, we do not sell or rent it, and we do not
+          combine it with tracking profiles. Transactional emails (application confirmations, interview invitations,
+          offer notifications, account emails) are sent because they are necessary for the process you are taking
+          part in and do not depend on newsletter consent.
+        </p>
+        <p>
+          For legal review: subscription is currently effective on submission (single opt-in). A confirmation email
+          (double opt-in) is recommended as stronger proof of consent.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="retention" number="09" title="Data Retention">
-        <p>We keep personal data only as long as necessary:</p>
+      <LegalSectionBlock id="applications" number="07" title="Membership Applications">
+        <p>
+          Application data is visible only to the association members involved in the selection process, under
+          role-based access controls enforced in the Workspace. Reviewers may record shared evaluation notes. If
+          your application is not successful, we retain the application file for a limited period (see Data
+          Retention) to document that the process was run correctly, to handle any repeat application and to defend
+          against possible claims; you may request earlier deletion at any time.
+        </p>
+        <p>
+          The selection process does not involve automated decision-making producing legal or similarly significant
+          effects (article 22 GDPR): every decision on an application is taken by people.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="members" number="08" title="Members, Alumni and the Workspace">
+        <p>
+          When you become a member, your data is processed to run the association: directories, role assignments,
+          division work, membership fee administration and governance. At the close of each semester's fee
+          collection the association freezes a register of that semester's members, kept as the historical record of
+          the association's composition for the life of the association.
+        </p>
+        <p>
+          Some member information is published on the public website only where the member holds an active public
+          role (for example name, role and photograph on the team page). Members can ask for their public profile to
+          be limited. Alumni are listed in an internal directory and may be contacted for alumni initiatives; they
+          may object at any time.
+        </p>
+        <p>
+          Actions performed inside the Workspace are recorded in an activity log (author, role held at the time,
+          action, affected item, timestamp) used for accountability and security. Users are informed of this inside
+          the Workspace; the log is visible only to roles with the corresponding permission.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="cookies" number="09" title="Cookies and Similar Technologies">
+        <p>
+          The website uses strictly necessary technical cookies and similar local storage items, and non-essential
+          categories (preferences, analytics, external media) only with your prior consent collected through the
+          cookie banner, in line with the Garante's Guidelines on cookies of 10 June 2021 and article 122 of the
+          Italian Privacy Code (Legislative Decree 196/2003, as amended). Full details, including how to change your
+          choices at any time, are in the <a href="/cookie-policy">Cookie Policy</a>.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="sharing" number="10" title="Recipients and Processors">
+        <p>Personal data is shared only with:</p>
         <ul>
-          <li><strong>Server/security logs:</strong> Typically up to 90–180 days unless needed to investigate incidents.</li>
-          <li><strong>Enquiries:</strong> Up to 24 months after last contact (or sooner if resolved and deletion is requested).</li>
-          <li><strong>Newsletter:</strong> Until you unsubscribe; then suppression record may be kept to ensure you are not re-added unintentionally.</li>
-          <li><strong>Event data:</strong> Up to 24 months after the event (or longer where required for compliance).</li>
-          <li><strong>Recruiting applications:</strong> Up to 12 months after the end of the selection cycle, unless you become a member (then during membership + up to 24 months for audit/continuity).</li>
+          <li>
+            <strong>Infrastructure providers acting as processors</strong> under article 28 GDPR terms: the website
+            building and hosting platform (Lovable), the backend, database, authentication and file storage provider
+            (Supabase) and the transactional email provider (Resend).
+          </li>
+          <li>
+            <strong>Association members with a need to know,</strong> under role-based access controls (for example,
+            only members involved in recruiting can access applications).
+          </li>
+          <li>
+            <strong>Università Bocconi and its student association bodies,</strong> only where required by the
+            University regulations governing recognised student associations (for example lists connected to the use
+            of University spaces or benefits).
+          </li>
+          <li>
+            <strong>Authorities,</strong> where disclosure is required by law.
+          </li>
         </ul>
-        <p>Retention may be extended where required for legal claims or compliance.</p>
+        <p>We do not sell personal data and we do not share it with advertisers.</p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="security" number="10" title="Security">
+      <LegalSectionBlock id="transfers" number="11" title="International Transfers">
         <p>
-          We apply appropriate technical and organisational measures to protect personal data (access controls,
-          least privilege, secure hosting, and confidentiality procedures). No system is completely secure; we
-          cannot guarantee absolute security.
+          Our providers may process data on servers outside the European Economic Area, in particular in the United
+          States. Where that happens, transfers rely on a European Commission adequacy decision (including the EU-US
+          Data Privacy Framework where the provider is certified) or on Standard Contractual Clauses with
+          supplementary measures. You can request information on the applicable safeguards by contacting us. For
+          legal review: re-verify periodically the transfer mechanisms declared by Lovable, Supabase and Resend.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="rights" number="11" title="Your Rights">
-        <p>Subject to applicable law, you may have the right to:</p>
+      <LegalSectionBlock id="retention" number="12" title="Data Retention">
         <ul>
-          <li>Access your data,</li>
-          <li>Rectify inaccurate data,</li>
-          <li>Erase data,</li>
-          <li>Restrict processing,</li>
-          <li>Object to processing based on legitimate interests,</li>
-          <li>Portability (where processing is based on consent/contract and carried out by automated means),</li>
-          <li>Withdraw consent at any time (without affecting prior processing).</li>
+          <li><strong>Newsletter data:</strong> until you unsubscribe, plus a permanent suppression record to honour the unsubscribe.</li>
+          <li><strong>Unsuccessful applications:</strong> up to twenty-four months from the end of the selection round, then deleted or anonymised; earlier deletion on request.</li>
+          <li><strong>Member records:</strong> for the duration of membership and afterwards for institutional memory (semester registers and governance records) and defence of claims; records with accounting relevance generally not beyond ten years.</li>
+          <li><strong>Accounting and treasury records:</strong> ten years, consistent with article 2220 of the Italian Civil Code applied by analogy.</li>
+          <li><strong>Event registrations:</strong> up to twelve months after the event, unless connected to accounting records.</li>
+          <li><strong>Workspace activity logs:</strong> up to twenty-four months, unless needed longer for a specific security investigation or legal claim.</li>
+          <li><strong>Provider server and security logs:</strong> per the providers' standard, typically short, retention.</li>
         </ul>
-        <p>To exercise rights, contact us at as.minerva@unibocconi.it. We may need to verify your identity.</p>
+        <p>For legal review: confirm these default periods against the association's actual operating needs.</p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="complaints" number="12" title="Complaints">
+      <LegalSectionBlock id="security" number="13" title="Security">
         <p>
-          You may lodge a complaint with the Italian supervisory authority (Garante per la Protezione dei Dati
-          Personali) or your local EEA authority. We encourage you to contact us first so we can address concerns.
+          We apply appropriate technical and organisational measures: encrypted connections (HTTPS), authenticated
+          access to the Workspace, role-based permissions enforced at the interface and at the database level,
+          activity logging, separation between the public website and the reserved area, and providers with
+          established security programmes. No system is perfectly secure; if a breach likely to result in a risk to
+          your rights occurs, we will notify the competent authority and, where required, the persons concerned, in
+          line with articles 33 and 34 GDPR.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="children" number="13" title="Children">
+      <LegalSectionBlock id="rights" number="14" title="Your Rights">
         <p>
-          This website is not intended for children. If you believe a child has provided us personal data, contact
-          us and we will take appropriate steps.
+          Under articles 15 to 22 GDPR you have the right to access your data, obtain rectification or erasure,
+          restrict processing, receive your data in a portable format where processing is based on consent or
+          contract, object to processing based on legitimate interest, and withdraw consent at any time without
+          affecting prior processing. To exercise any right, write to{' '}
+          <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a>. We respond within one month,
+          extendable by two further months for complex requests, as allowed by article 12 GDPR.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="changes" number="14" title="Changes to This Policy">
+      <LegalSectionBlock id="complaints" number="15" title="Complaints to the Garante">
         <p>
-          We may update this Policy from time to time. The "Last updated" date will be revised, and material changes
-          may be highlighted on the website.
+          If you believe your data is processed in breach of the law, you may lodge a complaint with the Italian
+          supervisory authority, the Garante per la protezione dei dati personali, Piazza Venezia 11, 00187 Rome,{' '}
+          <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer">www.garanteprivacy.it</a>,
+          or bring proceedings before the competent court. We would appreciate the chance to address your concern
+          first, but you are not required to contact us before complaining.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="children" number="16" title="Minors">
+        <p>
+          The website and the association's activities are directed at university students and adults. We do not
+          knowingly collect data of children under sixteen. If you believe a minor's data has been provided to us,
+          contact us and we will delete it.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="sources" number="17" title="Data Not Obtained from You">
+        <p>
+          Limited alumni information (for example a change of employer) may be recorded from publicly available
+          professional sources such as LinkedIn, in the legitimate interest of keeping the alumni directory
+          accurate. Alumni may object at any time, in which case the record is limited to name and membership
+          history.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="changes" number="18" title="Changes to This Notice">
+        <p>
+          We may update this notice as the association's activities or the law evolve. The date at the top reflects
+          the latest revision; material changes will be highlighted on the website. This notice is provided in
+          English for accessibility and is governed by Italian law.
         </p>
       </LegalSectionBlock>
     </LegalLayout>

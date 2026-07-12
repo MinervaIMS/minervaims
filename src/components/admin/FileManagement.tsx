@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { supabase } from '@/integrations/supabase/client';
 import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown, Star } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
@@ -495,7 +496,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   };
 
   if (isLoading) {
-    return <p className="font-body text-muted-foreground">Loading files...</p>;
+    return <WorkspaceLoader />;
   }
 
   const handleDownloadAll = async () => {

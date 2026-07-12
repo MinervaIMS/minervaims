@@ -17,6 +17,7 @@ import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { Recommendation } from '@/components/admin/Recommendation';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listSlots, createSlot, bulkCreateSlots, deleteSlot, clearDivisionSlots,
@@ -130,6 +131,22 @@ export default function InterviewCalendar() {
     return (
       <div>
         <WorkspacePageHeader title="Interview Calendar" description="Open and manage interview slots for your division." />
+
+      <div className="mb-5">
+        <Recommendation title="Create the Teams meeting link before opening slots">
+          <p>
+            When you open interview slots, it is advisable to create and attach a Microsoft Teams meeting link
+            immediately. The practical setup that has worked best: create one single Teams meeting for the whole
+            interview session and configure it so that everyone with the link waits in the lobby and only the host
+            admits people (both options are in the Teams meeting settings).
+          </p>
+          <p>
+            With one link for all interviews, examiners admit one candidate at a time, only when the previous
+            interview has finished. This keeps the flow orderly, avoids candidates crossing each other, and spares
+            you creating a separate link for every slot.
+          </p>
+        </Recommendation>
+      </div>
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No division is associated with your role.</p></CardContent></Card>
       </div>
     );

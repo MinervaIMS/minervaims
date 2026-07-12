@@ -12,6 +12,7 @@ import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import {
   saveEvent, uploadEventPoster, EVENT_TYPE_LABELS, AUDIENCE_LABELS,
   DIVISION_REQUIRED_TYPES, ARCHIVED_TYPES,
@@ -78,7 +79,7 @@ export default function EventCreate() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>Type</Label>
+            <span className="inline-flex items-center gap-1.5"><Label>Type</Label><HelpDot page="events-create" topic="types" /></span>
             <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v as EventType, division: DIVISION_REQUIRED_TYPES.includes(v as EventType) ? form.division : '' })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>)}</SelectContent>

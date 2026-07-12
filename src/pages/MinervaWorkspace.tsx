@@ -62,6 +62,7 @@ import NewsletterManagement from '@/components/admin/NewsletterManagement';
 import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
 import TestimonialsManagement from '@/components/admin/TestimonialsManagement';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
@@ -119,15 +120,11 @@ type NavSection = {
 // functionality (the shared calendar; members/advisors/alumni management).
 const NAV: NavSection[] = [
   {
-    key: 'my-role', label: 'My profile', Icon: UserIcon,
-    subItems: [],
-  },
-  {
     key: 'dashboard', label: 'Dashboard', Icon: BarChart3,
     subItems: [],
   },
   {
-    key: 'welcome', label: 'How to use', Icon: HelpCircle,
+    key: 'my-role', label: 'My profile', Icon: UserIcon,
     subItems: [],
   },
   {
@@ -211,6 +208,10 @@ const NAV: NavSection[] = [
       { key: 'settings-roles', label: 'Role permissions', allowed: (p) => p.can('settings-roles') },
       { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.can('settings-activity') },
     ],
+  },
+  {
+    key: 'welcome', label: 'How to use', Icon: HelpCircle,
+    subItems: [],
   },
 ];
 
@@ -907,7 +908,7 @@ const MinervaWorkspace = () => {
       </p>
 
       {isEventsLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <WorkspaceLoader />
       ) : events.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Click "Add Event" to create one.</p></CardContent></Card>
       ) : filteredEvents.length === 0 ? (
@@ -924,12 +925,12 @@ const MinervaWorkspace = () => {
                   {/* Compact poster thumbnail */}
                   {event.poster_url ? (
                     isPdf ? (
-                      <div className="w-12 h-16 shrink-0 border border-separator bg-muted flex items-center justify-center"><span className="font-serif text-[10px]">PDF</span></div>
+                      <div className="w-24 h-32 shrink-0 border border-separator bg-muted flex items-center justify-center"><span className="font-serif text-xs">PDF</span></div>
                     ) : (
-                      <img src={event.poster_url} alt="" className="w-12 h-16 shrink-0 object-cover border border-separator" />
+                      <img src={event.poster_url} alt="" className="w-24 h-32 shrink-0 object-cover border border-separator" />
                     )
                   ) : (
-                    <div className="w-12 h-16 shrink-0 border border-separator bg-muted/40 flex items-center justify-center"><ImageIcon className="h-4 w-4 text-muted-foreground" /></div>
+                    <div className="w-24 h-32 shrink-0 border border-separator bg-muted/40 flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>
                   )}
                   {/* Details */}
                   <div className="flex-1 min-w-0 font-body">

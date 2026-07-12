@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
 interface Subscriber {
   id: string;
@@ -119,7 +120,7 @@ export default function NewsletterManagement() {
       </div>
 
       {loading ? (
-        <div className="py-16 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        <WorkspaceLoader />
       ) : filtered.length === 0 ? (
         <p className="font-body text-muted-foreground py-12 text-center">
           {subscribers.length === 0 ? 'No subscribers yet.' : 'No subscribers match your search.'}
