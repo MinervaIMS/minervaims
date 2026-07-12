@@ -6,7 +6,7 @@ type Phase = "appear" | "fade";
 const CONFIG = {
   gap: 3,
   speed: 110,
-  intensity: 0.85,
+  intensity: 0.95,
   delaySpread: 0.2,
   fpsCap: 120,
   minPixelSize: 0.5,
@@ -15,7 +15,7 @@ const CONFIG = {
   shrinkSpeed: 0.65,
   canvasOpacity: 1,
   activeDuration: 200,
-  fadeMs: 900,
+  fadeMs: 1300,
   colors: ["#e5e0f0", "#b9addb", "#28185a"],
 };
 
