@@ -17,6 +17,7 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { ApplyBackground } from '@/components/shared/ApplyBackground';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { AuthButton } from '@/components/shared/AuthUI';
+import PixelCard from '@/components/shared/PixelCard';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import {
