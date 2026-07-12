@@ -11,6 +11,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { Loader2, Clock, ChevronDown, ChevronRight, Trash2, Search, ShieldCheck, Save } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -40,14 +41,13 @@ const DIVISION_ROLES: AppRole[] = ['head_of_division', 'portfolio_manager', 'tea
 // A user with one of these (or no role row) is "pending" — not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];
 
-const USERS_PER_PAGE = 10;
-
 const UserManagement = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
+  const [divFilter, setDivFilter] = useState<string[]>([]);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, { role: AppRole; division: OrgDivision | null }>>({});
   const [confirmChange, setConfirmChange] = useState<UserRow | null>(null);
@@ -152,61 +152,74 @@ const UserManagement = () => {
   const pendingUsers = useMemo(() => users.filter((u) => PENDING_ROLES.includes(normalizeRole(u.role))), [users]);
   const approvedUsers = useMemo(() => users.filter((u) => !PENDING_ROLES.includes(normalizeRole(u.role))), [users]);
 
+  // Filter options derived from approved users only.
+  const roleOptions = useMemo(() => {
+    const present = [...new Set(approvedUsers.map((u) => normalizeRole(u.role)))];
+    return present.map((r) => ({ value: r, label: roleLabel(r, null) }));
+  }, [approvedUsers]);
+  const divisionOptions = useMemo(() => {
+    const present = [...new Set(approvedUsers.map((u) => u.division).filter(Boolean) as OrgDivision[])];
+    return present.map((d) => ({ value: d, label: divisionLabels[d] ?? d }));
+  }, [approvedUsers]);
+
   const filteredApproved = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return approvedUsers.filter((u) =>
-      u.email.toLowerCase().includes(q) ||
-      (u.full_name?.toLowerCase().includes(q) ?? false) ||
-      roleLabel(u.role, u.division).toLowerCase().includes(q));
-  }, [approvedUsers, searchQuery]);
-
-  const totalPages = Math.ceil(filteredApproved.length / USERS_PER_PAGE);
-  const paginated = filteredApproved.slice((currentPage - 1) * USERS_PER_PAGE, currentPage * USERS_PER_PAGE);
+    return approvedUsers
+      .filter((u) => roleFilter.length === 0 || roleFilter.includes(normalizeRole(u.role)))
+      .filter((u) => divFilter.length === 0 || (u.division && divFilter.includes(u.division)))
+      .filter((u) =>
+        u.email.toLowerCase().includes(q) ||
+        (u.full_name?.toLowerCase().includes(q) ?? false) ||
+        roleLabel(u.role, u.division).toLowerCase().includes(q));
+  }, [approvedUsers, searchQuery, roleFilter, divFilter]);
 
   if (isLoading) {
     return <div><WorkspacePageHeader title="Users" description="Assign workspace roles and manage access." /><WorkspaceLoader /></div>;
   }
 
-  // One editable user row.
-  const renderRow = (u: UserRow, pending: boolean) => {
+  // Editable controls (role + division selects, save + delete buttons).
+  const renderEditControls = (u: UserRow, pending: boolean) => {
     const d = drafts[u.id] ?? { role: u.role, division: u.division };
     const isSelf = u.id === currentUser?.id;
     const isAdminAccount = u.email === ADMIN_EMAIL;
+    return (
+      <div className="flex flex-wrap items-center gap-2 justify-end">
+        <Select value={d.role} onValueChange={(v) => setDraftRole(u.id, v as AppRole)} disabled={busyUserId === u.id}>
+          <SelectTrigger className="w-[190px] h-9 font-body"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {ASSIGNABLE_ROLES.map((r) => <SelectItem key={r} value={r}>{roleLabel(r, null)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {DIVISION_ROLES.includes(d.role) && (
+          <Select value={d.division ?? ''} onValueChange={(v) => setDraftDivision(u.id, v as OrgDivision)} disabled={busyUserId === u.id}>
+            <SelectTrigger className={`w-[140px] h-9 font-body ${!d.division ? 'border-amber-400' : ''}`}><SelectValue placeholder="Division…" /></SelectTrigger>
+            <SelectContent>
+              {CORE_DIVISIONS.map((dv) => <SelectItem key={dv} value={dv}>{divisionLabels[dv]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+        <Button size="sm" className="h-9" disabled={!isDirty(u) || !draftValid(u) || busyUserId === u.id}
+          onClick={() => setConfirmChange(u)}>
+          {busyUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-1.5" />{pending ? 'Approve' : 'Save'}</>}
+        </Button>
+        {!isAdminAccount && !isSelf && (
+          <Button variant="outline" size="icon" className="h-9 w-9 text-destructive border-destructive/40 hover:bg-destructive/10"
+            disabled={busyUserId === u.id} onClick={() => setConfirmDelete(u)}><Trash2 className="h-4 w-4" /></Button>
+        )}
+      </div>
+    );
+  };
+
+  // Pending list row (kept compact inside the accordion).
+  const renderPendingRow = (u: UserRow) => {
+    const isSelf = u.id === currentUser?.id;
     return (
       <div key={u.id} className="flex flex-col lg:flex-row lg:items-center gap-3 px-4 py-3 border-b border-separator last:border-b-0 font-body">
         <div className="min-w-0 flex-1">
           <div className="text-foreground truncate">{u.full_name || '—'} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}</div>
           <div className="text-xs text-muted-foreground truncate">{u.email}</div>
         </div>
-
-        {!canEdit ? (
-          <Badge variant="secondary" className="shrink-0">{roleLabel(u.role, u.division)}</Badge>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <Select value={d.role} onValueChange={(v) => setDraftRole(u.id, v as AppRole)} disabled={busyUserId === u.id}>
-              <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ASSIGNABLE_ROLES.map((r) => <SelectItem key={r} value={r}>{roleLabel(r, null)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {DIVISION_ROLES.includes(d.role) && (
-              <Select value={d.division ?? ''} onValueChange={(v) => setDraftDivision(u.id, v as OrgDivision)} disabled={busyUserId === u.id}>
-                <SelectTrigger className={`w-[150px] h-9 ${!d.division ? 'border-amber-400' : ''}`}><SelectValue placeholder="Division…" /></SelectTrigger>
-                <SelectContent>
-                  {CORE_DIVISIONS.map((dv) => <SelectItem key={dv} value={dv}>{divisionLabels[dv]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-            <Button size="sm" className="h-9" disabled={!isDirty(u) || !draftValid(u) || busyUserId === u.id}
-              onClick={() => setConfirmChange(u)}>
-              {busyUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-1.5" />{pending ? 'Approve' : 'Save'}</>}
-            </Button>
-            {!isAdminAccount && !isSelf && (
-              <Button variant="outline" size="icon" className="h-9 w-9 text-destructive border-destructive/40 hover:bg-destructive/10"
-                disabled={busyUserId === u.id} onClick={() => setConfirmDelete(u)}><Trash2 className="h-4 w-4" /></Button>
-            )}
-          </div>
-        )}
+        {canEdit ? renderEditControls(u, true) : <Badge variant="secondary" className="shrink-0">{roleLabel(u.role, u.division)}</Badge>}
       </div>
     );
   };
@@ -240,44 +253,64 @@ const UserManagement = () => {
           <div className="border-t border-separator">
             {pendingUsers.length === 0
               ? <p className="px-4 py-6 text-center text-sm text-muted-foreground font-body">No accounts are waiting for a role.</p>
-              : pendingUsers.map((u) => renderRow(u, true))}
+              : pendingUsers.map(renderPendingRow)}
           </div>
         )}
       </div>
 
       {/* Approved users — primary. */}
       <div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-          <h3 className="font-serif text-heading text-accent">
-            Approved users <span className="text-muted-foreground text-base">({filteredApproved.length}{searchQuery && ` of ${approvedUsers.length}`})</span>
-          </h3>
-          <div className="relative w-full sm:w-72">
+        <div className="mb-4 max-w-md">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              placeholder="Search name, email or role…" className="pl-9" />
+            <Input className="pl-10 font-body" placeholder="Search by name, email or role"
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
         </div>
 
         {approvedUsers.length === 0 ? (
           <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No users with a role yet.</p></CardContent></Card>
         ) : filteredApproved.length === 0 ? (
-          <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No users match “{searchQuery}”.</p></CardContent></Card>
+          <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No users match the current filters.</p></CardContent></Card>
         ) : (
-          <>
-            <div className="border border-separator rounded-lg">{paginated.map((u) => renderRow(u, false))}</div>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 font-body text-sm">
-                <span className="text-muted-foreground">
-                  {((currentPage - 1) * USERS_PER_PAGE) + 1}–{Math.min(currentPage * USERS_PER_PAGE, filteredApproved.length)} of {filteredApproved.length}
-                </span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Previous</Button>
-                  <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>Next</Button>
-                </div>
-              </div>
-            )}
-          </>
+          <div className="border border-separator overflow-x-auto">
+            <table className="w-full text-left font-body text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-normal">Name</th>
+                  <th className="px-3 py-2 font-normal">Email</th>
+                  <th className="px-3 py-2 font-normal"><ColumnFilter label="Role" options={roleOptions} selected={roleFilter} onChange={setRoleFilter} /></th>
+                  <th className="px-3 py-2 font-normal"><ColumnFilter label="Division" options={divisionOptions} selected={divFilter} onChange={setDivFilter} /></th>
+                  <th className="px-3 py-2 font-normal text-right">{canEdit ? 'Actions' : ' '}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredApproved.map((u) => {
+                  const isSelf = u.id === currentUser?.id;
+                  return (
+                    <tr key={u.id} className="border-t border-separator align-middle">
+                      <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                        {u.full_name || '—'} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{roleLabel(u.role, u.division)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{u.division ? (divisionLabels[u.division] ?? u.division) : '-'}</td>
+                      <td className="px-3 py-2">
+                        {canEdit
+                          ? renderEditControls(u, false)
+                          : <div className="flex justify-end"><Badge variant="secondary">{roleLabel(u.role, u.division)}</Badge></div>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
+
+        <p className="font-body text-xs text-muted-foreground mt-3">
+          Showing {filteredApproved.length}{searchQuery || roleFilter.length || divFilter.length ? ` of ${approvedUsers.length}` : ''} approved users.
+        </p>
       </div>
 
       {/* Confirm role change */}
