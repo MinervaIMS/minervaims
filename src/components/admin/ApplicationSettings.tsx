@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 import { Save, Loader2 } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -31,6 +33,7 @@ function windowState(startLocal: string, endLocal: string): { label: string; ton
 
 const ApplicationSettings = () => {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -74,6 +77,7 @@ const ApplicationSettings = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      logActivity(session, primaryRole, { action: 'update', section: 'Recruiting', subsection: 'Application page', entityType: 'application_settings', entityName: form.semester_label || 'Application window' });
       toast({ title: 'Schedule saved' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -150,7 +154,7 @@ const ApplicationSettings = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Homepage hero mock */}
           <div className="border border-separator rounded-lg overflow-hidden">
-            <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Homepage — hero</div>
+            <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Homepage hero</div>
             <div className="p-6 text-center" style={{ backgroundColor: '#0b0720' }}>
               <img src={logoWhite} alt="" className="h-9 mx-auto opacity-95" />
               {previewOpen ? (
@@ -162,13 +166,13 @@ const ApplicationSettings = () => {
             <p className="px-3 py-2 text-xs text-muted-foreground">
               {previewOpen
                 ? <>An <span className="text-foreground font-medium">APPLY NOW</span> button appears under the logo, linking to the Join page.</>
-                : <>No button — the hero shows the logo only.</>}
+                : <>No button; the hero shows the logo only.</>}
             </p>
           </div>
 
           {/* Join page hero mock */}
           <div className="border border-separator rounded-lg overflow-hidden">
-            <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Join page (/join) — hero band</div>
+            <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Join page (/join) hero band</div>
             <div className="p-5" style={{ backgroundColor: '#0b0720' }}>
               {previewOpen ? (
                 <>
@@ -186,7 +190,7 @@ const ApplicationSettings = () => {
             <p className="px-3 py-2 text-xs text-muted-foreground">
               {previewOpen
                 ? <>The band invites applications and links to the <span className="text-foreground font-medium">/apply</span> form.</>
-                : <>The band explains applications are closed and points to the preparation roadmap — no apply button.</>}
+                : <>The band explains applications are closed and points to the preparation roadmap, without an apply button.</>}
             </p>
           </div>
         </div>

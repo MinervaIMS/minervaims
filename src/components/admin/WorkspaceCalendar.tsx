@@ -8,6 +8,7 @@ import { CalendarClock, Loader2, Check, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -33,6 +34,7 @@ const monthKey = (y: number, m: number) => `m-${y}-${m}`;
 
 export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (section: string, sub: string) => void } = {}) {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const { canManage } = useAccess();
   const canEdit = canManage('calendar');
@@ -59,7 +61,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         // than a single alumnus name (which may be empty → "Alumni Call: null").
         const { data: calls } = await sb.from('alumni_calls').select('planned_date, division');
         for (const c of (calls || []) as { planned_date: string | null; division: OrgDivision | null }[]) {
-          if (c.planned_date) out.push({ date: c.planned_date, label: c.division ? `Alumni call — ${divisionLabels[c.division]}` : 'Alumni call', kind: 'alumni' });
+          if (c.planned_date) out.push({ date: c.planned_date, label: c.division ? `Alumni call: ${divisionLabels[c.division]}` : 'Alumni call', kind: 'alumni' });
         }
         const { data: settings } = await sb.from('application_settings').select('start_date, end_date, semester_label').limit(1).maybeSingle();
         if (settings?.start_date) out.push({ date: settings.start_date.slice(0, 10), label: `Applications open (${settings.semester_label})`, kind: 'application' });
@@ -81,7 +83,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                 unpaid = !!myFee && !myFee.paid;
               }
             }
-            if (unpaid) out.push({ date: fee.second_deadline.slice(0, 10), label: `Membership fee — final deadline (${fee.semester_label})`, kind: 'fee' });
+            if (unpaid) out.push({ date: fee.second_deadline.slice(0, 10), label: `Membership fee final deadline (${fee.semester_label})`, kind: 'fee' });
           }
         }
         setItems(out);
@@ -101,6 +103,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         id: entryForm.id ?? undefined, title: entryForm.title.trim(), description: entryForm.description.trim() || null,
         entry_date: entryForm.entry_date, entry_type: entryForm.entry_type, location: entryForm.location.trim() || null,
       });
+      logActivity(session, primaryRole, { action: entryForm.id ? 'update' : 'create', section: 'General', subsection: 'Calendar', entityType: 'calendar_entry', entityName: entryForm.title.trim() });
       toast({ title: entryForm.id ? 'Entry updated' : 'Entry added' });
       setEntryForm(null);
       await load();
@@ -110,7 +113,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
 
   const removeEntry = async () => {
     if (!entryForm?.id) return;
-    try { await deleteCalendarEntry(session, entryForm.id); toast({ title: 'Entry removed' }); setEntryForm(null); await load(); }
+    try { await deleteCalendarEntry(session, entryForm.id); logActivity(session, primaryRole, { action: 'delete', section: 'General', subsection: 'Calendar', entityType: 'calendar_entry', entityName: entryForm.title }); toast({ title: 'Entry removed' }); setEntryForm(null); await load(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -170,6 +173,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     try {
       await registerForEvent(session, { event_id: regEvent.id });
       setRegistered((p) => new Set(p).add(regEvent.id));
+      logActivity(session, primaryRole, { action: 'registration', section: 'General', subsection: 'Calendar', entityType: 'event_registration', entityId: regEvent.id, entityName: regEvent.title });
       toast({ title: 'Registered' });
       setRegEvent(null);
     } catch (e) { toast({ title: 'Could not register', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }

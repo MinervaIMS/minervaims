@@ -58,7 +58,7 @@ export default function AutoEmails() {
       <div>
         <WorkspacePageHeader
           title="Automatic emails"
-          description="Reference catalogue of every automated email the system can send. For each one you can see the layout, the subject line, when it is fired and who receives it. This section is read-only — templates are maintained in code."
+          description="Reference catalogue of every automated email the system can send. For each one you can see the layout, the subject line, when it is fired and who receives it. This section is read-only; templates are maintained in code."
         />
 
         <div className="mb-4 max-w-sm">
@@ -89,7 +89,7 @@ export default function AutoEmails() {
                     </div>
 
                     <div className="mt-2 text-sm text-muted-foreground">
-                      <span className="text-foreground">Subject:</span> {t.subject || <em>—</em>}
+                      <span className="text-foreground">Subject:</span> {t.subject || <em>-</em>}
                     </div>
 
                     <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-1 text-sm">
@@ -175,7 +175,7 @@ export default function AutoEmails() {
             <div className="space-y-3 font-body flex-1 overflow-hidden flex flex-col">
               <div className="text-sm">
                 <div><span className="text-muted-foreground">Key:</span> {preview.key}</div>
-                <div><span className="text-muted-foreground">Subject:</span> {preview.subject || '—'}</div>
+                <div><span className="text-muted-foreground">Subject:</span> {preview.subject || '-'}</div>
               </div>
               <div className="flex-1 min-h-[60vh] border border-separator bg-white">
                 <iframe

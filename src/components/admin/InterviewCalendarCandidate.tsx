@@ -164,10 +164,10 @@ export default function InterviewCalendarCandidate() {
     <div>
       <WorkspacePageHeader
         title="Interview Calendar"
-        description={`You have been invited to interview with ${divisionName}. Choose an available slot below — your booking confirms your interview.`}
+        description={`You have been invited to interview with ${divisionName}. Choose an available slot below; your booking confirms your interview.`}
       />
       {available.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No interview slots are open yet. Please check back shortly — {divisionName} will publish availability soon.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No interview slots are open yet. Please check back shortly. {divisionName} will publish availability soon.</p></CardContent></Card>
       ) : (
         <Card className="max-w-2xl">
           <CardContent className="pt-6">

@@ -15,7 +15,7 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation, BarChart3, LayoutTemplate, Info,
+  Presentation, BarChart3, LayoutTemplate, Info, HelpCircle,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -54,6 +54,7 @@ import RolePermissionsTable from '@/components/admin/RolePermissionsTable';
 import HowToUse from '@/components/admin/HowToUse';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
@@ -126,7 +127,7 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'welcome', label: 'How to use', Icon: Info,
+    key: 'welcome', label: 'How to use', Icon: HelpCircle,
     subItems: [],
   },
   {
@@ -741,7 +742,7 @@ const MinervaWorkspace = () => {
     <div>
       <WorkspacePageHeader
         title="Events archive"
-        description="Every event of every type — meetings, calls, division and guest events. Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it."
+        description="Every event of every type: meetings, calls, division and guest events. Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it."
         actions={<>
 
           <AlertDialog>
@@ -952,7 +953,7 @@ const MinervaWorkspace = () => {
                   </div>
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5 mr-1" title="Show on the public website">
+                    <div className="flex items-center gap-1.5 mr-1" title="Show on the public website"><HelpDot page="events-archive" topic="website-toggle" />
                       {togglingWebsite === event.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
                       <Switch checked={onWeb} disabled={togglingWebsite === event.id} onCheckedChange={(v) => toggleWebsite(event, v)} />
                     </div>

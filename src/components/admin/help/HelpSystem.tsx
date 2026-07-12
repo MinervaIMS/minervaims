@@ -54,19 +54,24 @@ export function HelpDot({ page, topic, className = '' }: { page: string; topic?:
   );
 }
 
-/** Floating page-level help button (bottom-right of the content area). */
+/**
+ * Floating page-level help button (bottom-right of the content area).
+ * Uses the association's circular accent treatment with a distinctive ring
+ * border, stays visible while the panel is open, and toggles it.
+ */
 export function PageHelpButton({ page }: { page: string }) {
-  const { openHelp } = useHelp();
+  const { openHelp, closeHelp, state } = useHelp();
   if (!guideFor(page)) return null;
+  const isOpen = !!state;
   return (
     <button
       type="button"
-      onClick={() => openHelp(page)}
-      title="Help for this page"
-      aria-label="Open help for this page"
-      className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center justify-center hover:opacity-90"
+      onClick={() => (isOpen ? closeHelp() : openHelp(page))}
+      title={isOpen ? 'Close help' : 'Help for this page'}
+      aria-label={isOpen ? 'Close help' : 'Open help for this page'}
+      className="fixed bottom-8 right-8 z-[70] w-14 h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center ring-2 ring-accent ring-offset-4 ring-offset-background shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-transform duration-150 hover:scale-105"
     >
-      <HelpCircle className="h-5 w-5" />
+      {isOpen ? <X className="h-6 w-6" /> : <HelpCircle className="h-7 w-7" />}
     </button>
   );
 }
@@ -98,10 +103,12 @@ function HelpPanel() {
 
   return (
     <>
-      {/* click-away backdrop (transparent, so the page stays readable) */}
-      {state && <div className="fixed inset-0 z-40" onClick={closeHelp} aria-hidden />}
+      {/* Click-away backdrop below the top strip, so Return to Website and
+          Log Out always stay visible and clickable. The floating help button
+          sits above this layer, so it always receives its clicks. */}
+      {state && <div className="fixed left-0 right-0 top-20 bottom-0 z-[55]" onClick={closeHelp} aria-hidden />}
       <aside
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-[380px] bg-background border-l border-separator shadow-xl transition-transform duration-200 ease-out ${state ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-20 right-0 z-[60] h-[calc(100%-5rem)] w-full max-w-[380px] bg-background border-l border-t border-separator shadow-xl transition-transform duration-200 ease-out ${state ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}
         aria-hidden={!state}
       >
         {g && (

@@ -6,12 +6,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Copy, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listEvents, saveEvent, AUDIENCE_LABELS, type EventRow, type RegistrationAudience } from '@/lib/events-api';
 
 export default function EventForms() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +41,7 @@ export default function EventForms() {
         registration_enabled: patch.registration_enabled ?? ev.registration_enabled,
         registration_audience: patch.registration_audience ?? ev.registration_audience,
       });
+      logActivity(session, primaryRole, { action: 'update', section: 'Events', subsection: 'Registration forms', entityType: 'event', entityId: ev.id, entityName: ev.title, details: patch as Record<string, unknown> });
       setEvents((prev) => prev.map((e) => (e.id === ev.id ? { ...e, ...patch } : e)));
     } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
@@ -65,7 +70,7 @@ export default function EventForms() {
                   <div className="text-xs text-muted-foreground">{new Date(ev.start_at || ev.date).toLocaleString()}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground">Registration</span>
+                  <span className="text-sm text-muted-foreground inline-flex items-center gap-1.5">Registration <HelpDot page="events-forms" topic="audience" /></span>
                   <Switch checked={ev.registration_enabled} onCheckedChange={(v) => update(ev, { registration_enabled: v })} />
                 </div>
                 {ev.registration_enabled && (

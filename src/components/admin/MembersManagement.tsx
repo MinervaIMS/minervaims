@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Pencil, Trash2, Loader2, Download, Search, Upload, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import {
   divisionLabels, roleLabel as composeRoleLabel, memberRank, normalizeRole,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { supabase } from '@/integrations/supabase/client';
@@ -192,6 +194,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         ? { ...form, role: 'silent_advisor', membership_status: 'silent_advisor', is_public: false }
         : form;
       await saveMember(session, payload);
+      logActivity(session, access.primaryRole, { action: form.id ? 'update' : 'create', section: 'People', subsection: silentAdvisors ? 'Advisors' : 'Members', entityType: 'member', entityName: `${form.first_name} ${form.surname}` });
       toast({ title: editingId ? 'Updated' : 'Advisor added' });
       setExpelConfirm(false);
       setDialogOpen(false);
@@ -225,6 +228,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     if (!year) { toast({ title: 'Please add a graduation year', variant: 'destructive' }); return; }
     setLeaving(true);
     try {
+      logActivity(session, access.primaryRole, { action: 'update', section: 'People', subsection: 'Members', entityType: 'member', entityId: leaveTarget.id, entityName: `${leaveTarget.first_name} ${leaveTarget.surname}`, details: { moved_to: 'alumni' } });
       await moveMemberToAlumni(session, { id: leaveTarget.id, graduation_year: year, company: leaveForm.company.trim(), city: leaveForm.city.trim() || null, keep_as_silent_advisor: keepAsSilentAdvisor });
       toast({ title: keepAsSilentAdvisor ? 'Moved to alumni and kept as silent advisor' : 'Moved to alumni' });
       setLeaveTarget(null);
@@ -238,6 +242,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     setLeaving(true);
     try {
       await deleteMember(session, leaveTarget.id);
+      logActivity(session, access.primaryRole, { action: 'delete', section: 'People', subsection: 'Members', entityType: 'member', entityId: leaveTarget.id, entityName: `${leaveTarget.first_name} ${leaveTarget.surname}` });
       toast({ title: 'Removed' });
       setLeaveTarget(null);
       await load();
@@ -353,7 +358,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
           snapshotted automatically when its fee collection closed. */}
       {!silentAdvisors && registers.length > 0 && (
         <div className="mt-10">
-          <h3 className="font-serif text-lg text-accent mb-1">Semester registers</h3>
+          <h3 className="font-serif text-lg text-accent mb-1 inline-flex items-center gap-2">Semester registers <HelpDot page="people-members" topic="registers" /></h3>
           <p className="font-body text-sm text-muted-foreground mb-3">
             Who officially belonged to the association, semester by semester. Each register is frozen when that semester's membership-fee collection closes and can no longer change.
           </p>
@@ -375,8 +380,8 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                         {g.rows.map((r, i) => (
                           <tr key={i} className="border-t border-separator">
                             <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
-                            <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '—'}</td>
-                            <td className="px-3 py-1.5">{r.division && r.division !== 'none' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '—'}</td>
+                            <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
+                            <td className="px-3 py-1.5">{r.division && r.division !== 'none' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
                           </tr>
                         ))}
                       </tbody>

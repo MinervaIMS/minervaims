@@ -1,35 +1,76 @@
 // =====================================================================
-// Dashboard — a motivational performance overview of the association.
-// Compares the CURRENT semester with the PREVIOUS one, automatically:
-// reports per division (count AND pages, so substance counts too),
-// association totals, members & alumni per semester (from the semester
-// snapshots), and fund performance. Identical for every member, by
-// design: transparency creates healthy competitiveness.
+// Dashboard. An executive control panel, not a regular subsection: it
+// fills one screen, opens with data instead of a page title, and is
+// identical for every member. It compares the current semester with the
+// previous one automatically and celebrates the association's work.
+// Historical member/alumni series read from semester_snapshots, so
+// figures loaded later populate the charts with no structural change.
+// Editorial rules: no em dashes, no emojis.
 // =====================================================================
-import { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { FileBarChart2, Users, GraduationCap, TrendingUp, CalendarDays, Sparkles, ArrowUpRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+  AreaChart, Area, Legend,
+} from 'recharts';
+import { FileBarChart2, Users, GraduationCap, TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { currentSemester, previousSemester, semesterOf } from '@/lib/semester';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { fundLabels, activeFunds, type Fund } from '@/lib/types';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+const SHORT_DIV: Record<string, string> = { equity: 'Equity', investment: 'Investment', macro: 'Macro', portfolio: 'Portfolio', quant: 'Quant' };
 
-interface ReportRow { division: string; date: string; page_count: number | null; status: string; title: string; created_at: string }
+interface ReportRow { division: string; date: string; page_count: number | null; status: string; title: string }
 interface SnapshotRow { semester_key: string; semester_label: string; members_count: number; alumni_count: number }
 interface FundYearRow { fund: string; year: number; ytd: number | null; itd: number | null }
 
-// Positive-tone delta chip: growth is celebrated, a dip is framed as room to grow.
-function Delta({ now, before, unit }: { now: number; before: number; unit?: string }) {
-  if (before === 0 && now === 0) return <span className="text-xs text-muted-foreground">—</span>;
+// Animated count-up for the KPI numbers.
+function useCountUp(target: number, duration = 900): number {
+  const [value, setValue] = useState(0);
+  const raf = useRef<number>();
+  useEffect(() => {
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [target, duration]);
+  return value;
+}
+
+function DeltaChip({ now, before }: { now: number; before: number }) {
   const diff = now - before;
-  if (diff > 0) return <span className="text-xs text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded whitespace-nowrap">▲ +{diff}{unit ?? ''} vs last semester</span>;
-  if (diff === 0) return <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded whitespace-nowrap">= same as last semester</span>;
-  return <span className="text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded whitespace-nowrap">{before - now}{unit ?? ''} to match last semester 💪</span>;
+  if (before === 0 && now === 0) return <span className="text-[11px] text-muted-foreground">no data yet</span>;
+  if (diff > 0) return <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 whitespace-nowrap">+{diff} vs last semester</span>;
+  if (diff === 0) return <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground whitespace-nowrap">level with last semester</span>;
+  return <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 whitespace-nowrap">{-diff} to match last semester</span>;
+}
+
+function Kpi({ icon, label, value, before, accent }: { icon: React.ReactNode; label: string; value: number; before: number | null; accent?: boolean }) {
+  const shown = useCountUp(value);
+  const pct = before && before > 0 ? Math.min(100, Math.round((value / before) * 100)) : value > 0 ? 100 : 0;
+  return (
+    <div className={`rounded-xl border p-4 flex flex-col justify-between min-h-[112px] ${accent ? 'bg-accent text-accent-foreground border-accent' : 'bg-background border-separator'}`}>
+      <div className={`flex items-center gap-2 text-[11px] uppercase tracking-wider ${accent ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>{icon}{label}</div>
+      <div className={`font-serif text-4xl leading-none mt-1 ${accent ? '' : 'text-accent'}`}>{shown}</div>
+      <div className="mt-2 space-y-1">
+        {before !== null && (
+          <>
+            <div className={`h-1 rounded-full overflow-hidden ${accent ? 'bg-accent-foreground/20' : 'bg-muted'}`}>
+              <div className={`h-full rounded-full transition-all duration-1000 ${accent ? 'bg-accent-foreground' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+            </div>
+            {!accent && <DeltaChip now={value} before={before} />}
+            {accent && <span className="text-[11px] text-accent-foreground/70">{before > 0 ? `${pct}% of last semester's total` : 'first tracked semester'}</span>}
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (section: string, sub: string | null) => void }) {
@@ -48,17 +89,17 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
       try {
         const today = new Date().toISOString().slice(0, 10);
         const [rep, snap, mem, alu, fy, aod, ev] = await Promise.all([
-          supabase.from('archive_files').select('division, date, page_count, status, title, created_at').eq('status', 'published'),
+          supabase.from('archive_files').select('division, date, page_count, status, title').eq('status', 'published'),
           supabase.from('semester_snapshots').select('semester_key, semester_label, members_count, alumni_count').order('semester_key'),
           supabase.from('members').select('id', { count: 'exact', head: true }),
           supabase.from('alumni').select('id', { count: 'exact', head: true }),
           supabase.from('fund_performance_years').select('fund, year, ytd, itd').order('year', { ascending: false }),
           supabase.from('aod_days').select('event_date').gte('event_date', today).order('event_date').limit(1),
-          supabase.from('events').select('title, date, start_at, registration_enabled').eq('registration_enabled', true).gte('date', today).order('date').limit(1),
+          supabase.from('events').select('title, date, registration_enabled').eq('registration_enabled', true).gte('date', today).order('date').limit(1),
         ]);
-        const reportRows = (rep.data || []) as ReportRow[];
-        setReports(reportRows);
-        setLatestReport([...reportRows].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0] ?? null);
+        const rows = (rep.data || []) as ReportRow[];
+        setReports(rows);
+        setLatestReport([...rows].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0] ?? null);
         setSnapshots((snap.data || []) as SnapshotRow[]);
         setLiveMembers(mem.count ?? 0);
         setLiveAlumni(alu.count ?? 0);
@@ -76,190 +117,184 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
   const cur = currentSemester();
   const prev = previousSemester();
 
-  // Per-division report output: count and total pages, current vs previous.
-  const divisionStats = useMemo(() => CORE.map((d) => {
-    const of = (semKey: string) => reports.filter((r) => r.division === d && r.date && semesterOf(r.date).key === semKey);
+  const divisionData = useMemo(() => CORE.map((d) => {
+    const of = (k: string) => reports.filter((r) => r.division === d && r.date && semesterOf(r.date).key === k);
+    const pages = (rs: ReportRow[]) => rs.reduce((s, r) => s + (r.page_count ?? 0), 0);
     const nowRows = of(cur.key); const prevRows = of(prev.key);
-    const pages = (rows: ReportRow[]) => rows.reduce((s, r) => s + (r.page_count ?? 0), 0);
-    return { division: d, nowCount: nowRows.length, prevCount: prevRows.length, nowPages: pages(nowRows), prevPages: pages(prevRows) };
+    return {
+      name: SHORT_DIV[d] ?? d,
+      current: nowRows.length, previous: prevRows.length,
+      currentPages: pages(nowRows), previousPages: pages(prevRows),
+    };
   }), [reports, cur.key, prev.key]);
 
-  const totalNow = divisionStats.reduce((s, d) => s + d.nowCount, 0);
-  const totalPrev = divisionStats.reduce((s, d) => s + d.prevCount, 0);
-  const pagesNow = divisionStats.reduce((s, d) => s + d.nowPages, 0);
-  const pagesPrev = divisionStats.reduce((s, d) => s + d.prevPages, 0);
+  const totalNow = divisionData.reduce((s, d) => s + d.current, 0);
+  const totalPrev = divisionData.reduce((s, d) => s + d.previous, 0);
+  const pagesNow = divisionData.reduce((s, d) => s + d.currentPages, 0);
+  const pagesPrev = divisionData.reduce((s, d) => s + d.previousPages, 0);
 
-  // Latest yearly stats per active fund.
+  // People history: snapshots plus today's live point, ready to absorb the
+  // historical figures loaded later without any structural change.
+  const peopleSeries = useMemo(() => {
+    const rows = snapshots.map((s) => ({ name: s.semester_label, members: s.members_count, alumni: s.alumni_count }));
+    rows.push({ name: 'Today', members: liveMembers, alumni: liveAlumni });
+    return rows;
+  }, [snapshots, liveMembers, liveAlumni]);
+
+  const prevMembers = snapshots.length ? snapshots[snapshots.length - 1].members_count : null;
+  const prevAlumni = snapshots.length ? snapshots[snapshots.length - 1].alumni_count : null;
+
   const funds = useMemo(() => activeFunds.map((f: Fund) => {
     const row = fundYears.find((r) => r.fund === f);
-    return row ? { fund: f, year: row.year, ytd: row.ytd, itd: row.itd } : null;
-  }).filter(Boolean) as { fund: Fund; year: number; ytd: number | null; itd: number | null }[], [fundYears]);
+    return { fund: f, year: row?.year ?? null, ytd: row?.ytd ?? null, itd: row?.itd ?? null };
+  }), [fundYears]);
 
-  const pct = (v: number | null) => v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const pct = (v: number | null) => v === null ? 'n/a' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
 
-  if (loading) return <div><WorkspacePageHeader title="Dashboard" description="How the association is progressing, semester after semester." /><WorkspaceLoader /></div>;
+  // Exactly ONE call to action at a time, by priority.
+  const cta = useMemo(() => {
+    if (nextAod) return {
+      k: 'aod', kicker: 'Association on Display is coming up',
+      title: new Date(`${nextAod}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }),
+      action: 'Register for a slot', go: () => onNavigate?.('events', 'events-on-display'),
+    };
+    if (nextEvent) return {
+      k: 'event', kicker: 'Next event, registration open',
+      title: nextEvent.title,
+      action: 'Register from the calendar', go: () => onNavigate?.('calendar', null),
+    };
+    if (latestReport) return {
+      k: 'report', kicker: 'Discover the latest report',
+      title: latestReport.title,
+      action: 'Open the archive', go: () => onNavigate?.('reports', 'reports-archive'),
+    };
+    return null;
+  }, [nextAod, nextEvent, latestReport, onNavigate]);
+
+  if (loading) return <div className="h-full"><WorkspaceLoader /></div>;
+
+  const axisColor = 'hsl(215.4 16.3% 56.9%)';
 
   return (
-    <div>
-      <WorkspacePageHeader
-        title="Dashboard"
-        description={`How the association is progressing — ${cur.label} compared with ${prev.label}, updated automatically. The same view for every member: see what other divisions are building, celebrate it, and push your own further.`}
-      />
+    <div className="h-full min-h-0 flex flex-col gap-3 font-body">
+      {/* Strip: semester + the single call to action */}
+      <div className="shrink-0 flex flex-col md:flex-row md:items-center gap-3">
+        <div className="shrink-0">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Minerva Investment Management Society</div>
+          <h1 className="font-serif text-2xl text-accent leading-tight">{cur.label}, at a glance</h1>
+        </div>
+        {cta && (
+          <button type="button" onClick={cta.go}
+            className="md:ml-auto text-left flex items-center gap-4 rounded-xl border border-accent bg-accent/5 px-4 py-2.5 hover:bg-accent/10 transition-colors group max-w-full">
+            <Sparkles className="h-5 w-5 text-accent shrink-0" />
+            <span className="min-w-0">
+              <span className="block text-[11px] uppercase tracking-wider text-accent">{cta.kicker}</span>
+              <span className="block font-serif text-foreground truncate max-w-[420px]">{cta.title}</span>
+            </span>
+            <span className="shrink-0 inline-flex items-center gap-1 text-sm text-accent">{cta.action}<ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
+          </button>
+        )}
+      </div>
 
-      <div className="space-y-8 font-body">
-        {/* Promotional cards — internal marketing of the association's work */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {latestReport && (
-            <button type="button" onClick={() => onNavigate?.('reports', 'reports-archive')}
-              className="text-left border border-separator rounded-lg p-4 hover:border-accent transition-colors group">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-accent mb-2"><Sparkles className="h-3.5 w-3.5" />Discover the latest report</div>
-              <div className="font-serif text-foreground leading-snug line-clamp-2">{latestReport.title}</div>
-              <div className="text-xs text-muted-foreground mt-1.5">
-                {divisionLabels[latestReport.division as OrgDivision] ?? latestReport.division} · {new Date(latestReport.date).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}
-                {latestReport.page_count ? ` · ${latestReport.page_count} pages` : ''}
-              </div>
-              <div className="text-xs text-accent mt-2 inline-flex items-center gap-1">Open the archive <ArrowUpRight className="h-3 w-3" /></div>
-            </button>
-          )}
-          {nextAod && (
-            <button type="button" onClick={() => onNavigate?.('events', 'events-on-display')}
-              className="text-left border border-separator rounded-lg p-4 hover:border-accent transition-colors">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-accent mb-2"><CalendarDays className="h-3.5 w-3.5" />Association on Display coming up</div>
-              <div className="font-serif text-foreground">{new Date(`${nextAod}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-              <div className="text-xs text-muted-foreground mt-1.5">Take a 30-minute slot and represent your division at the stand.</div>
-              <div className="text-xs text-accent mt-2 inline-flex items-center gap-1">Register for a slot <ArrowUpRight className="h-3 w-3" /></div>
-            </button>
-          )}
-          {nextEvent && (
-            <button type="button" onClick={() => onNavigate?.('calendar', null)}
-              className="text-left border border-separator rounded-lg p-4 hover:border-accent transition-colors">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-accent mb-2"><CalendarDays className="h-3.5 w-3.5" />Next event — registration open</div>
-              <div className="font-serif text-foreground leading-snug line-clamp-2">{nextEvent.title}</div>
-              <div className="text-xs text-muted-foreground mt-1.5">{new Date(nextEvent.date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-              <div className="text-xs text-accent mt-2 inline-flex items-center gap-1">Register from the calendar <ArrowUpRight className="h-3 w-3" /></div>
-            </button>
-          )}
+      {/* KPI row */}
+      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <Kpi icon={<FileBarChart2 className="h-3.5 w-3.5" />} label={`Reports, ${cur.label}`} value={totalNow} before={totalPrev} accent />
+        <Kpi icon={<FileBarChart2 className="h-3.5 w-3.5" />} label="Pages of research" value={pagesNow} before={pagesPrev} />
+        <Kpi icon={<Users className="h-3.5 w-3.5" />} label="Members today" value={liveMembers} before={prevMembers} />
+        <Kpi icon={<GraduationCap className="h-3.5 w-3.5" />} label="Alumni network" value={liveAlumni} before={prevAlumni} />
+      </div>
+
+      {/* Charts row */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-3">
+        {/* Research output by division */}
+        <div className="xl:col-span-5 rounded-xl border border-separator p-4 flex flex-col min-h-[240px]">
+          <div className="flex items-baseline justify-between mb-1">
+            <h2 className="font-serif text-lg text-accent">Research by division</h2>
+            <span className="text-[11px] text-muted-foreground">{cur.label} vs {prev.label}</span>
+          </div>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={divisionData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }} barCategoryGap="28%">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214.3 31.8% 91.4%)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'hsl(210 40% 96.1%)' }} contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  formatter={(v: number, n: string) => [v, n === 'current' ? `Reports, ${cur.label}` : `Reports, ${prev.label}`]} />
+                <Legend formatter={(v) => <span style={{ fontSize: 11, color: axisColor }}>{v === 'current' ? cur.label : prev.label}</span>} iconSize={9} />
+                <Bar dataKey="previous" fill="hsl(214.3 31.8% 85%)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="current" fill="hsl(var(--accent))" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">Pages this semester: {pagesNow || 'tracked from the next upload'}. Length counts as much as quantity, so depth is rewarded too.</p>
         </div>
 
-        {/* Association-wide report output */}
-        <section>
-          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Research output — {cur.label}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 max-w-2xl">
-            <Card><CardContent className="py-4">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-1"><FileBarChart2 className="h-3.5 w-3.5" />Reports published</div>
-              <div className="font-serif text-3xl text-accent">{totalNow}</div>
-              <div className="mt-1"><Delta now={totalNow} before={totalPrev} /></div>
-            </CardContent></Card>
-            <Card><CardContent className="py-4">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-1"><FileBarChart2 className="h-3.5 w-3.5" />Pages of research</div>
-              <div className="font-serif text-3xl text-accent">{pagesNow}</div>
-              <div className="mt-1"><Delta now={pagesNow} before={pagesPrev} unit=" pages" /></div>
-            </CardContent></Card>
+        {/* Association growth */}
+        <div className="xl:col-span-3 rounded-xl border border-separator p-4 flex flex-col min-h-[240px]">
+          <div className="flex items-baseline justify-between mb-1">
+            <h2 className="font-serif text-lg text-accent">Growth</h2>
+            <span className="text-[11px] text-muted-foreground">per semester</span>
           </div>
-
-          <div className="border border-separator overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-muted/40 text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-normal">Division</th>
-                  <th className="px-3 py-2 font-normal text-right">Reports · {cur.label}</th>
-                  <th className="px-3 py-2 font-normal text-right">Pages · {cur.label}</th>
-                  <th className="px-3 py-2 font-normal text-right">Reports · {prev.label}</th>
-                  <th className="px-3 py-2 font-normal text-right">Pages · {prev.label}</th>
-                  <th className="px-3 py-2 font-normal">Momentum</th>
-                </tr>
-              </thead>
-              <tbody>
-                {divisionStats.map((d) => (
-                  <tr key={d.division} className="border-t border-separator">
-                    <td className="px-3 py-2 text-foreground whitespace-nowrap">{divisionLabels[d.division]}</td>
-                    <td className="px-3 py-2 text-right">{d.nowCount}</td>
-                    <td className="px-3 py-2 text-right">{d.nowPages || '—'}</td>
-                    <td className="px-3 py-2 text-right text-muted-foreground">{d.prevCount}</td>
-                    <td className="px-3 py-2 text-right text-muted-foreground">{d.prevPages || '—'}</td>
-                    <td className="px-3 py-2"><Delta now={d.nowPages || d.nowCount} before={d.prevPages || d.prevCount} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Pages measure substance as well as quantity, so shorter-but-more or longer-but-fewer reports both get a fair reading. Older reports without a recorded page count contribute to the report count only.
-          </p>
-        </section>
-
-        {/* People: members & alumni per semester */}
-        <section>
-          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">The association, semester by semester</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card><CardContent className="py-4">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-2"><Users className="h-3.5 w-3.5" />Members</div>
-              <div className="flex items-end gap-3 mb-3">
-                <div className="font-serif text-3xl text-accent">{liveMembers}</div>
-                <div className="text-xs text-muted-foreground pb-1">in the directory today</div>
+          <div className="flex-1 min-h-0">
+            {peopleSeries.length >= 2 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={peopleSeries} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gMembers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214.3 31.8% 91.4%)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: axisColor }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: axisColor }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                  <Area type="monotone" dataKey="members" name="Members" stroke="hsl(var(--accent))" strokeWidth={2} fill="url(#gMembers)" />
+                  <Area type="monotone" dataKey="alumni" name="Alumni" stroke="hsl(160 60% 35%)" strokeWidth={2} fill="transparent" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-center px-4">
+                <p className="text-xs text-muted-foreground">The growth chart fills in as semester figures are recorded. Today the association counts {liveMembers} members and {liveAlumni} alumni.</p>
               </div>
-              {snapshots.length > 0 ? (
-                <ul className="space-y-1 text-sm">
-                  {[...snapshots].reverse().map((s) => (
-                    <li key={s.semester_key} className="flex justify-between border-t border-separator pt-1">
-                      <span className="text-muted-foreground">{s.semester_label}</span><span className="text-foreground">{s.members_count} members</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">The official register per semester appears here once a membership-fee collection is closed.</p>
-              )}
-            </CardContent></Card>
-            <Card><CardContent className="py-4">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-2"><GraduationCap className="h-3.5 w-3.5" />Alumni network</div>
-              <div className="flex items-end gap-3 mb-3">
-                <div className="font-serif text-3xl text-accent">{liveAlumni}</div>
-                <div className="text-xs text-muted-foreground pb-1">alumni recorded today</div>
-              </div>
-              {snapshots.length > 0 ? (
-                <ul className="space-y-1 text-sm">
-                  {[...snapshots].reverse().map((s) => (
-                    <li key={s.semester_key} className="flex justify-between border-t border-separator pt-1">
-                      <span className="text-muted-foreground">{s.semester_label}</span><span className="text-foreground">{s.alumni_count} alumni</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">Semester-by-semester alumni counts appear here from the first semester snapshot onwards.</p>
-              )}
-            </CardContent></Card>
+            )}
           </div>
-        </section>
+        </div>
 
-        {/* Funds */}
-        {funds.length > 0 && (
-          <section>
-            <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Fund performance</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
-              {funds.map((f) => (
-                <Card key={f.fund}><CardContent className="py-4">
-                  <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-1"><TrendingUp className="h-3.5 w-3.5" />{fundLabels[f.fund]}</div>
-                  <div className="flex items-end gap-4">
-                    <div>
-                      <div className={`font-serif text-2xl ${(f.ytd ?? 0) >= 0 ? 'text-emerald-700' : 'text-foreground'}`}>{pct(f.ytd)}</div>
-                      <div className="text-xs text-muted-foreground">YTD {f.year}</div>
-                    </div>
-                    <div>
-                      <div className="font-serif text-2xl text-foreground">{pct(f.itd)}</div>
-                      <div className="text-xs text-muted-foreground">since inception</div>
-                    </div>
-                  </div>
-                </CardContent></Card>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">From the performance data maintained in Reports › Fund performances.</p>
-          </section>
-        )}
-
-        <p className="text-xs text-muted-foreground border-t border-separator pt-3">
-          Every metric updates automatically — no reporting work needed from anyone. Workspace actions are logged for accountability and security.
-        </p>
+        {/* Fund performance, the association's flagship achievement */}
+        <div className="xl:col-span-4 rounded-xl border border-accent bg-accent text-accent-foreground p-4 flex flex-col min-h-[240px]">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4" />
+            <h2 className="font-serif text-lg">Our funds</h2>
+          </div>
+          <div className="flex-1 grid grid-cols-1 gap-3">
+            {funds.map((f) => (
+              <div key={f.fund} className="rounded-lg bg-accent-foreground/10 p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-accent-foreground/70 truncate">{fundLabels[f.fund]}</div>
+                  <div className="font-serif text-3xl leading-tight">{pct(f.ytd)}</div>
+                  <div className="text-[11px] text-accent-foreground/70">YTD {f.year ?? ''}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="font-serif text-xl">{pct(f.itd)}</div>
+                  <div className="text-[11px] text-accent-foreground/70">since inception</div>
+                </div>
+              </div>
+            ))}
+            {funds.every((f) => f.ytd === null && f.itd === null) && (
+              <p className="text-xs text-accent-foreground/80">Fund figures appear here as soon as they are recorded in Reports, Fund performances.</p>
+            )}
+          </div>
+          <button type="button" onClick={() => onNavigate?.('reports', 'reports-funds')}
+            className="mt-2 self-start inline-flex items-center gap-1 text-xs text-accent-foreground/90 hover:text-accent-foreground">
+            Managed by our members. See the full track record <ArrowUpRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
+
+      <p className="shrink-0 text-[11px] text-muted-foreground">
+        Every figure updates automatically and is the same for every member. Workspace actions are logged for accountability and security.
+      </p>
     </div>
   );
 }

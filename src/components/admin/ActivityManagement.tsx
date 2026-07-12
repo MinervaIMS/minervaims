@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -308,8 +310,12 @@ export default function ActivityManagement() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div>
+        <WorkspacePageHeader
+          title="Activity log"
+          description="Every meaningful action in the workspace is recorded here for accountability and security."
+        />
+        <WorkspaceLoader />
       </div>
     );
   }
@@ -318,7 +324,7 @@ export default function ActivityManagement() {
     <div id="activity-section" className="space-y-6">
       <WorkspacePageHeader
         title="Activity log"
-        description="Every meaningful action in the workspace is recorded here for accountability and security: who did what, where, to which item, when — and with the role they held at that exact moment. Entries never change retroactively."
+        description="Every meaningful action in the workspace is recorded here for accountability and security: who did what, where, to which item, and when, with the role they held at that exact moment. Entries never change retroactively."
         actions={
 
         <AlertDialog>
@@ -352,8 +358,8 @@ export default function ActivityManagement() {
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Action filter */}
           <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Action
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              Action <HelpDot page="settings-activity" topic="filters" />
             </label>
             <select
               value={actionFilter}
@@ -494,10 +500,7 @@ export default function ActivityManagement() {
         <div className="divide-y divide-separator">
           {paginatedActivities.map((activity) => (
             <div key={activity.id} className="py-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </div>
+              <div className="flex items-start">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span
@@ -508,7 +511,7 @@ export default function ActivityManagement() {
                     </span>
                     <span
                       className="text-sm text-muted-foreground italic"
-                      title="Role held at the moment of the action — it never changes retroactively"
+                      title="Role held at the moment of the action. It never changes retroactively"
                       style={{ fontFamily: '"Times New Roman", Times, serif' }}
                     >
                       ({roleLabels[activity.user_role] || composeRoleLabel(activity.user_role as never, null)})

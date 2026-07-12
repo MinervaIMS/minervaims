@@ -36,11 +36,11 @@ export default function HowToUse() {
 
   const buildMarkdown = () => {
     const lines: string[] = [];
-    lines.push(`# Minerva workspace — user manual for ${roleName}`);
+    lines.push(`# Minerva workspace user manual for ${roleName}`);
     lines.push('');
     lines.push(`Generated for your role${divisionName ? ` (${divisionName})` : ''} on ${new Date().toLocaleDateString()}. It covers exactly the pages you can access and what you can do on each.`);
     lines.push('');
-    lines.push('> Tip: paste this manual into an AI assistant and ask it to explain any part in the way you prefer — step by step, as a checklist, or with examples.');
+    lines.push('> Tip: paste this manual into an AI assistant and ask it to explain any part in the way you prefer: step by step, as a checklist, or with examples.');
     lines.push('');
     for (const sec of manual) {
       lines.push(`## ${sec.section}`);
@@ -77,29 +77,30 @@ export default function HowToUse() {
         actions={<Button className="font-body" onClick={download}><Download className="h-4 w-4 mr-2" />Download my manual</Button>}
       />
 
-      <div className="max-w-3xl space-y-6 font-body">
+      <div className="space-y-8 font-body">
         {/* Intro cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr,2fr,1.5fr] gap-3">
           <div className="border border-separator rounded-lg p-4 flex gap-3">
             <BookOpen className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">Everything below is generated from the workspace's live access rules — it always matches what you can actually do. You don't need to learn it all: use it as a reference, and look for the <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-separator text-[10px] align-middle">?</span> icons around the workspace for help in context.</p>
+            <p className="text-sm text-muted-foreground">Everything below is generated from the workspace's live access rules since it always matches what you can actually do. You do not need to learn it all: use it as a reference, and look for the <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-separator text-[10px] align-middle">?</span> icons around the workspace for help in context.</p>
           </div>
           <div className="border border-separator rounded-lg p-4 flex gap-3">
             <Sparkles className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">Prefer learning with AI? <span className="text-foreground">Download your manual</span> and paste or upload it into an AI assistant — ask for a summary, a checklist for a specific task, or a step-by-step walkthrough in your own words.</p>
+            <p className="text-sm text-muted-foreground">Prefer learning with AI? <span className="text-foreground">Download your manual</span> and paste or upload it into an AI assistant. Ask for a summary, a checklist for a specific task, or a step-by-step walkthrough in your own words.</p>
+          </div>
+          <div className="border border-separator rounded-lg p-4 flex gap-3">
+            <ShieldCheck className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+            <p className="text-sm text-muted-foreground">Actions you perform in the workspace are logged for accountability and security. The full record lives in Settings, Activity log.</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground border border-separator rounded-lg px-4 py-2.5">
-          <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
-          Actions you perform in the workspace are logged for accountability and security (see Settings › Activity log).
-        </div>
+
 
         {/* The manual itself */}
         {manual.map((sec) => (
           <section key={sec.section}>
             <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">{sec.section}</h2>
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
               {sec.entries.map((e) => (
                 <article key={e.key} className="border border-separator rounded-lg p-4">
                   <div className="flex items-center justify-between gap-3 mb-1.5">
