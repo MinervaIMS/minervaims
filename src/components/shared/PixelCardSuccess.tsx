@@ -5,17 +5,17 @@ type Phase = "appear" | "fade";
 
 const CONFIG = {
   gap: 3,
-  speed: 90,
+  speed: 100,
   intensity: 0.65,
-  delaySpread: 0.25,
+  delaySpread: 0.2,
   fpsCap: 120,
   minPixelSize: 0.5,
   maxPixelSize: 1.6,
   growthRandomness: 0.35,
   shrinkSpeed: 0.65,
   canvasOpacity: 1,
-  activeDuration: 600,
-  fadeMs: 2000,
+  activeDuration: 400,
+  fadeMs: 1500,
   colors: ["#e5e0f0", "#b9addb", "#28185a"],
 };
 
