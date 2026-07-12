@@ -20,7 +20,8 @@ import {
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
-import { EventsListNew } from '@/components/shared/EventsListNew';
+import { Switch } from '@/components/ui/switch';
+import { EVENT_TYPE_LABELS, type EventType } from '@/lib/events-api';
 import FileManagement from '@/components/admin/FileManagement';
 import MembersManagement from '@/components/admin/MembersManagement';
 import MyProfile from '@/components/admin/MyProfile';
@@ -75,12 +76,18 @@ interface DbEvent {
   description?: string | null;
   poster_url?: string | null;
   event_type?: string | null;
+  // Extended columns preserved when editing from the archive (so an edit
+  // never silently resets an event's type, schedule or registration).
+  division?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  online?: boolean | null;
+  registration_enabled?: boolean | null;
+  registration_audience?: string | null;
+  show_on_website?: boolean | null;
   created_at: string;
   updated_at: string;
 }
-
-// Only alumni calls and guest events are recorded in the Events archive.
-const ARCHIVED_EVENT_TYPES = ['alumni_call', 'guest'];
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Navigation model
@@ -278,12 +285,15 @@ const MinervaWorkspace = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
   const [formData, setFormData] = useState({
-    title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '',
+    title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '', show_on_website: true,
   });
   const [isUploadingPoster, setIsUploadingPoster] = useState(false);
   const [eventsCurrentPage, setEventsCurrentPage] = useState(1);
   const [eventsYearFilter, setEventsYearFilter] = useState<number | 'all'>('all');
   const [eventsSearchQuery, setEventsSearchQuery] = useState('');
+  const [eventsTypeFilter, setEventsTypeFilter] = useState<EventType | 'all'>('all');
+  const [eventsWebsiteFilter, setEventsWebsiteFilter] = useState<'all' | 'on' | 'off'>('all');
+  const [togglingWebsite, setTogglingWebsite] = useState<string | null>(null);
   const EVENTS_PER_PAGE = 15;
 
   // Session expiry
@@ -347,8 +357,10 @@ const MinervaWorkspace = () => {
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
-      // The archive only records alumni calls and guest events.
-      if (!ARCHIVED_EVENT_TYPES.includes(event.event_type ?? '')) return false;
+      // The archive records every event type. Filter only by the controls below.
+      if (eventsTypeFilter !== 'all' && (event.event_type ?? 'other') !== eventsTypeFilter) return false;
+      if (eventsWebsiteFilter === 'on' && event.show_on_website === false) return false;
+      if (eventsWebsiteFilter === 'off' && event.show_on_website !== false) return false;
       if (eventsYearFilter !== 'all') {
         const eventYear = new Date(event.date).getFullYear();
         if (eventYear !== eventsYearFilter) return false;
@@ -365,7 +377,7 @@ const MinervaWorkspace = () => {
       }
       return true;
     });
-  }, [events, eventsYearFilter, eventsSearchQuery]);
+  }, [events, eventsYearFilter, eventsSearchQuery, eventsTypeFilter, eventsWebsiteFilter]);
 
   const eventsYears = useMemo(() => {
     const years = [...new Set(events.map((e) => new Date(e.date).getFullYear()))];
@@ -379,7 +391,7 @@ const MinervaWorkspace = () => {
     [filteredEvents, eventsStartIndex]
   );
 
-  useEffect(() => { setEventsCurrentPage(1); }, [eventsYearFilter, eventsSearchQuery]);
+  useEffect(() => { setEventsCurrentPage(1); }, [eventsYearFilter, eventsSearchQuery, eventsTypeFilter, eventsWebsiteFilter]);
 
   const getEventsPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = [];
@@ -396,7 +408,7 @@ const MinervaWorkspace = () => {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '' });
+    setFormData({ title: '', date: '', place: '', moderator: '', guests: [''], description: '', poster_url: '', show_on_website: true });
     setEditingEvent(null);
   };
   const openEditDialog = (event: DbEvent) => {
@@ -407,8 +419,39 @@ const MinervaWorkspace = () => {
       guests: event.guest && event.guest.length > 0 ? event.guest : [''],
       description: event.description || '',
       poster_url: event.poster_url || '',
+      show_on_website: event.show_on_website !== false,
     });
     setIsDialogOpen(true);
+  };
+
+  // Flip an event's website visibility straight from the archive list.
+  const toggleWebsite = async (event: DbEvent, value: boolean) => {
+    setTogglingWebsite(event.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-events', {
+        body: {
+          action: 'update',
+          event: {
+            id: event.id, title: event.title, date: event.date, place: event.place,
+            moderator: event.moderator ?? null, guest: event.guest ?? null,
+            description: event.description ?? null, poster_url: event.poster_url ?? null,
+            event_type: event.event_type ?? 'other', division: event.division ?? null,
+            start_at: event.start_at ?? null, end_at: event.end_at ?? null, online: event.online ?? false,
+            registration_enabled: event.registration_enabled ?? false,
+            registration_audience: event.registration_audience ?? 'members',
+            show_on_website: value,
+          },
+        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, show_on_website: value } : e)));
+    } catch (err) {
+      toast({ title: 'Could not update', description: err instanceof Error ? err.message : undefined, variant: 'destructive' });
+    } finally {
+      setTogglingWebsite(null);
+    }
   };
 
   const handlePosterUpload = async (file: File) => {
@@ -465,7 +508,20 @@ const MinervaWorkspace = () => {
         guest: filteredGuests.length > 0 ? filteredGuests : null,
         description: formData.description || null,
         poster_url: formData.poster_url || null,
-        ...(editingEvent && { id: editingEvent.id }),
+        show_on_website: formData.show_on_website,
+        // Preserve the event's type, schedule and registration settings on
+        // edit — the archive dialog does not expose them, so without this an
+        // update would reset them (event_type would fall back to "other").
+        ...(editingEvent && {
+          id: editingEvent.id,
+          event_type: editingEvent.event_type ?? 'other',
+          division: editingEvent.division ?? null,
+          start_at: editingEvent.start_at ?? null,
+          end_at: editingEvent.end_at ?? null,
+          online: editingEvent.online ?? false,
+          registration_enabled: editingEvent.registration_enabled ?? false,
+          registration_audience: editingEvent.registration_audience ?? 'members',
+        }),
       };
       const { data, error } = await supabase.functions.invoke('admin-events', {
         body: { action, event: eventData },
@@ -583,7 +639,7 @@ const MinervaWorkspace = () => {
       return renderPlaceholder('Dashboard', 'Role-aware overview of workspace activity.');
     }
     if (activeSectionKey === 'calendar' && !activeSubKey) {
-      return <WorkspaceCalendar />;
+      return <WorkspaceCalendar onNavigate={(section, sub) => { setActiveSectionKey(section); setActiveSubKey(sub); }} />;
     }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
@@ -676,7 +732,7 @@ const MinervaWorkspace = () => {
     <div>
       <WorkspacePageHeader
         title="Events archive"
-        description="Past and upcoming events with posters, moderators and guests."
+        description="Every event of every type — meetings, calls, division and guest events. Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it."
         actions={<>
 
           <AlertDialog>
@@ -699,6 +755,8 @@ const MinervaWorkspace = () => {
                     { key: 'title', header: 'Title' },
                     { key: 'date', header: 'Date' },
                     { key: 'place', header: 'Place' },
+                    { key: 'event_type', header: 'Type' },
+                    { key: 'show_on_website', header: 'On website' },
                     { key: 'moderator', header: 'Moderator' },
                     { key: 'guest', header: 'Guests' },
                     { key: 'description', header: 'Description' },
@@ -738,6 +796,13 @@ const MinervaWorkspace = () => {
                 </div>
                 <div className="space-y-2"><Label htmlFor="description" className="font-body">Description (optional)</Label>
                   <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Event description" rows={3} /></div>
+                <div className="flex items-center justify-between gap-4 rounded-lg border border-separator p-3">
+                  <div>
+                    <Label className="font-body">Show on the public website</Label>
+                    <p className="text-xs text-muted-foreground font-body">When on, this event appears on the public Events page. Turn off for internal events (meetings, calls).</p>
+                  </div>
+                  <Switch checked={formData.show_on_website} onCheckedChange={(v) => setFormData({ ...formData, show_on_website: v })} />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="poster" className="font-body">Poster (optional)</Label>
                   {formData.poster_url && (
@@ -792,9 +857,26 @@ const MinervaWorkspace = () => {
           <div>
             <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Year</label>
             <select value={eventsYearFilter} onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="bg-background border border-separator px-3 h-10 min-w-[150px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              className="bg-background border border-separator px-3 h-10 min-w-[130px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
               <option value="all">All Years</option>
               {eventsYears.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Type</label>
+            <select value={eventsTypeFilter} onChange={(e) => setEventsTypeFilter(e.target.value as EventType | 'all')}
+              className="bg-background border border-separator px-3 h-10 min-w-[150px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              <option value="all">All types</option>
+              {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Website</label>
+            <select value={eventsWebsiteFilter} onChange={(e) => setEventsWebsiteFilter(e.target.value as 'all' | 'on' | 'off')}
+              className="bg-background border border-separator px-3 h-10 min-w-[140px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+              <option value="all">All events</option>
+              <option value="on">On the website</option>
+              <option value="off">Not on the website</option>
             </select>
           </div>
           <div className="flex-1">
@@ -818,20 +900,59 @@ const MinervaWorkspace = () => {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : events.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Click "Add Event" to create one.</p></CardContent></Card>
+      ) : filteredEvents.length === 0 ? (
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events match the current filters.</p></CardContent></Card>
       ) : (
         <>
           <div className="space-y-0">
-            {paginatedEvents.map((event, index) => (
-              <div key={event.id} className={`py-0 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1"><EventsListNew events={[event]} /></div>
-                  <div className="flex gap-2 pt-0">
+            {paginatedEvents.map((event, index) => {
+              const onWeb = event.show_on_website !== false;
+              const isPdf = (event.poster_url || '').toLowerCase().endsWith('.pdf');
+              const typeLabel = EVENT_TYPE_LABELS[(event.event_type as EventType) ?? 'other'] ?? 'Other';
+              return (
+                <div key={event.id} className={`flex items-start gap-3 py-3 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}>
+                  {/* Compact poster thumbnail */}
+                  {event.poster_url ? (
+                    isPdf ? (
+                      <div className="w-12 h-16 shrink-0 border border-separator bg-muted flex items-center justify-center"><span className="font-serif text-[10px]">PDF</span></div>
+                    ) : (
+                      <img src={event.poster_url} alt="" className="w-12 h-16 shrink-0 object-cover border border-separator" />
+                    )
+                  ) : (
+                    <div className="w-12 h-16 shrink-0 border border-separator bg-muted/40 flex items-center justify-center"><ImageIcon className="h-4 w-4 text-muted-foreground" /></div>
+                  )}
+                  {/* Details */}
+                  <div className="flex-1 min-w-0 font-body">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">{typeLabel}</span>
+                      <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded ${onWeb ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                        <Globe className="h-3 w-3" />{onWeb ? 'On website' : 'Not on website'}
+                      </span>
+                    </div>
+                    <h3 className="font-serif text-lg text-foreground truncate">{event.title}</h3>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })} · {event.place}
+                    </div>
+                    {(event.moderator || (event.guest && event.guest.length > 0)) && (
+                      <div className="text-xs text-muted-foreground mt-1 truncate">
+                        {event.moderator && <>Moderator: {event.moderator}</>}
+                        {event.moderator && event.guest && event.guest.length > 0 && ' · '}
+                        {event.guest && event.guest.length > 0 && <>Guest{event.guest.length > 1 ? 's' : ''}: {event.guest.join(', ')}</>}
+                      </div>
+                    )}
+                  </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 mr-1" title="Show on the public website">
+                      {togglingWebsite === event.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                      <Switch checked={onWeb} disabled={togglingWebsite === event.id} onCheckedChange={(v) => toggleWebsite(event, v)} />
+                    </div>
                     <Button variant="outline" size="icon" onClick={() => openEditDialog(event)}><Edit className="h-4 w-4" /></Button>
                     <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {eventsTotalPages > 1 && (
             <nav className="flex justify-center mt-8" aria-label="Events Pagination">

@@ -922,6 +922,7 @@ export type Database = {
           poster_url: string | null
           registration_audience: string
           registration_enabled: boolean
+          show_on_website: boolean
           start_at: string | null
           title: string
           updated_at: string
@@ -942,6 +943,7 @@ export type Database = {
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
+          show_on_website?: boolean
           start_at?: string | null
           title: string
           updated_at?: string
@@ -962,6 +964,7 @@ export type Database = {
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
+          show_on_website?: boolean
           start_at?: string | null
           title?: string
           updated_at?: string

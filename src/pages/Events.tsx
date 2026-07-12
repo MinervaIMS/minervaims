@@ -79,6 +79,7 @@ const Events = () => {
         const { data, error } = await supabase
           .from("events")
           .select("*")
+          .eq("show_on_website", true)
           .order("date", { ascending: false });
         if (error) {
           console.error("Error fetching events:", error);
