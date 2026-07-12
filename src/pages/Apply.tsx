@@ -19,7 +19,7 @@ import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthI
 import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
-import PixelCard from '@/components/shared/PixelCard';
+import PixelCardSuccess from '@/components/shared/PixelCardSuccess';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
@@ -73,7 +73,7 @@ function SuccessScreen() {
         <div className="relative z-10 w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}
           <div className="absolute inset-0">
-            <PixelCard variant="navy" gap={4} speed={45} activeDuration={1400} fadeMs={4200} className="w-full h-full" />
+            <PixelCardSuccess />
           </div>
           <div className="relative z-10 px-8 py-12 text-center">
             <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
