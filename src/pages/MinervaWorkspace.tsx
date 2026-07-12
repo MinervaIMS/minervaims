@@ -100,17 +100,22 @@ type NavSection = {
   subItems: SubItem[];
 };
 
+// Workspace navigation. Internal `key`s are intentionally unchanged (they drive
+// routing, permissions and render cases); only labels, grouping and order are
+// reorganised. NOTE: "Calendar" and "People" are kept even though they were not
+// in the requested 10-section list, because removing them would remove real
+// functionality (the shared calendar; members/advisors/alumni management).
 const NAV: NavSection[] = [
   {
     key: 'my-role', label: 'My profile', Icon: UserIcon,
     subItems: [],
   },
   {
-    key: 'welcome', label: 'Welcome', Icon: Info,
+    key: 'dashboard', label: 'Dashboard', Icon: BarChart3,
     subItems: [],
   },
   {
-    key: 'dashboard', label: 'Dashboard', Icon: BarChart3,
+    key: 'welcome', label: 'How to use', Icon: Info,
     subItems: [],
   },
   {
@@ -120,10 +125,31 @@ const NAV: NavSection[] = [
   {
     key: 'reports', label: 'Reports', Icon: FileBarChart2,
     subItems: [
-      { key: 'reports-upload', label: 'Upload', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-archive', label: 'Archive', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-templates', label: 'Templates & code repos', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-funds', label: "Funds' performances", allowed: (p) => p.can('reports-funds') },
+      { key: 'reports-upload', label: 'Upload report', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-archive', label: 'Report archive', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-templates', label: 'Templates & repositories', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-funds', label: 'Fund performances', allowed: (p) => p.can('reports-funds') },
+    ],
+  },
+  {
+    key: 'applications', label: 'Recruiting', Icon: ClipboardList,
+    subItems: [
+      { key: 'applications-website', label: 'Application page', allowed: (p) => p.can('applications-website') },
+      { key: 'applications-screening', label: 'Candidates screening', allowed: (p) => p.can('applications-screening') },
+      { key: 'applications-interview-calendar', label: 'Interview calendar', allowed: (p) => p.can('applications-interview-calendar') },
+      { key: 'applications-joiners', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
+      { key: 'applications-form', label: 'Form & settings', allowed: (p) => p.can('applications-form') },
+    ],
+  },
+  {
+    key: 'events', label: 'Events', Icon: Presentation,
+    subItems: [
+      { key: 'events-create', label: 'Create event', allowed: (p) => p.canAccessEvents },
+      { key: 'events-forms', label: 'Registration forms', allowed: (p) => p.canAccessEvents },
+      { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
+      { key: 'events-archive', label: 'Event archive', allowed: (p) => p.canAccessEvents },
+      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.canAccessEvents },
+      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.canAccessEvents },
     ],
   },
   {
@@ -135,47 +161,22 @@ const NAV: NavSection[] = [
     ],
   },
   {
-    key: 'events', label: 'Events', Icon: Presentation,
-    subItems: [
-      { key: 'events-create', label: 'Create', allowed: (p) => p.canAccessEvents },
-      { key: 'events-forms', label: 'Forms', allowed: (p) => p.canAccessEvents },
-      { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
-      { key: 'events-archive', label: 'Archive', allowed: (p) => p.canAccessEvents },
-      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.canAccessEvents },
-      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.canAccessEvents },
-    ],
-  },
-  {
-    key: 'applications', label: 'Applications', Icon: ClipboardList,
-    subItems: [
-      { key: 'applications-website', label: 'Website Page', allowed: (p) => p.can('applications-website') },
-      { key: 'applications-questions', label: 'Questions', allowed: (p) => p.can('applications-questions') },
-      { key: 'applications-status', label: 'Status', allowed: (p) => p.can('applications-status') },
-      { key: 'applications-screening', label: 'Candidates', allowed: (p) => p.can('applications-screening') },
-      { key: 'applications-interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
-      { key: 'applications-joiners', label: 'New joiners', allowed: (p) => p.can('applications-joiners') },
-      { key: 'applications-form', label: 'Form settings', allowed: (p) => p.can('applications-form') },
-    ],
-  },
-  {
-    key: 'smm', label: 'SMM & graphics', Icon: ImageIcon,
+    key: 'smm', label: 'Media & Communication', Icon: ImageIcon,
     subItems: [
       { key: 'smm-editorial', label: 'Editorial calendar', allowed: (p) => p.can('smm-editorial') },
-      { key: 'smm-ads', label: 'Ads & spending', allowed: (p) => p.can('smm-ads') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
       { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
       { key: 'smm-other', label: 'Other templates', allowed: (p) => p.can('smm-other') },
-      { key: 'smm-brand', label: 'Design, brand & logo', allowed: (p) => p.can('smm-brand') },
+      { key: 'smm-brand', label: 'Brand & design', allowed: (p) => p.can('smm-brand') },
+      { key: 'smm-ads', label: 'Ads & spending', allowed: (p) => p.can('smm-ads') },
     ],
   },
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-fee', label: 'Membership fee', allowed: (p) => p.can('ops-fee') },
+      { key: 'ops-fee', label: 'Membership fees', allowed: (p) => p.can('ops-fee') },
       { key: 'ops-treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
       { key: 'ops-external', label: 'External relations', allowed: (p) => p.can('ops-external') },
-      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
-      { key: 'ops-auto-emails', label: 'Auto emails', allowed: (p) => p.can('ops-auto-emails') },
       { key: 'ops-docs', label: 'Statute & documents', allowed: (p) => p.can('ops-docs') },
     ],
   },
@@ -186,6 +187,8 @@ const NAV: NavSection[] = [
       { key: 'website-pages', label: 'Pages', allowed: (p) => p.isFullAccess },
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
       { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.canManageTestimonials },
+      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
+      { key: 'ops-auto-emails', label: 'Automatic emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
   },
 
@@ -193,7 +196,7 @@ const NAV: NavSection[] = [
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-roles', label: 'Roles permissions', allowed: (p) => p.canAccessUsers },
+      { key: 'settings-roles', label: 'Role permissions', allowed: (p) => p.canAccessUsers },
       { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.canAccessActivity },
     ],
   },
@@ -211,10 +214,10 @@ function filterNav(permissions: Permissions): NavSection[] {
 const CANDIDATE_NAV: NavSection[] = [
   { key: 'my-role', label: 'My profile', Icon: UserIcon, subItems: [] },
   {
-    key: 'applications', label: 'Applications', Icon: ClipboardList,
+    key: 'applications', label: 'My application', Icon: ClipboardList,
     subItems: [
       { key: 'applications-status', label: 'Status' },
-      { key: 'applications-interview-calendar', label: 'Interview Calendar' },
+      { key: 'applications-interview-calendar', label: 'Interview calendar' },
     ],
   },
 ];
@@ -310,9 +313,9 @@ const MinervaWorkspace = () => {
         const hasNoRoles = roles.length === 0;
         if (isMemberOnly || hasNoRoles) {
           // Safety net: if this user actually has an application on file, they
-          // are a candidate whose role hasn't synced yet. The DB retro-fix
-          // migration promotes such rows to 'candidate'; refresh and let the
-          // next render re-evaluate — do NOT trap them on /pending-approval.
+          // are a candidate whose role just hasn't synced client-side yet.
+          // Refresh roles and let the next render re-evaluate — do NOT trap
+          // them on /pending-approval.
           (async () => {
             const { data: app } = await supabase
               .from('applications').select('id').eq('user_id', user.id).maybeSingle();
@@ -574,7 +577,7 @@ const MinervaWorkspace = () => {
     }
     if (activeSectionKey === 'my-role') return <MyProfile />;
     if (activeSectionKey === 'welcome') {
-      return renderPlaceholder('Welcome', 'Your entry point to the Minerva workspace.');
+      return renderPlaceholder('How to use', 'A detailed guide to using the workspace — coming soon.');
     }
     if (activeSectionKey === 'dashboard') {
       return renderPlaceholder('Dashboard', 'Role-aware overview of workspace activity.');
@@ -591,7 +594,7 @@ const MinervaWorkspace = () => {
       case 'reports-templates':
         return <ResourceManager
           category="reports_templates"
-          title="Templates & code repos"
+          title="Templates & repositories"
           description="Useful division material: text, files, links and code repositories. Star up to five favourites to pin them on top; each item shows who added it and when."
         />;
       case 'reports-funds':
@@ -616,14 +619,13 @@ const MinervaWorkspace = () => {
         return renderEventsManagement();
       case 'applications-website':
         return <ApplicationSettings />;
-      case 'applications-questions':
-        return <QuestionsManagement />;
       case 'applications-screening':
         return <CandidatesManagement />;
       case 'applications-joiners':
         return <NewJoiners />;
       case 'applications-form':
-        return <FormSettings />;
+        // "Form & settings" now also holds the division application Questions.
+        return <div className="space-y-12"><FormSettings /><QuestionsManagement /></div>;
       case 'applications-status':
         return <ApplicationStatus />;
       case 'applications-interview-calendar':
@@ -647,7 +649,7 @@ const MinervaWorkspace = () => {
       case 'smm-other':
         return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
-        return <ResourceManager category="smm_brand" title="Design, brand & logo" description="The association's visual identity: fonts, colours, logo usage, visual style, tone and design rules. Star the key references to pin them on top (up to five)." divisions={['none']} />;
+        return <ResourceManager category="smm_brand" title="Brand & design" description="The association's visual identity: fonts, colours, logo usage, visual style, tone and design rules. Star the key references to pin them on top (up to five)." divisions={['none']} />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':

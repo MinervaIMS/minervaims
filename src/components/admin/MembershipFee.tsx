@@ -112,11 +112,11 @@ export default function MembershipFee() {
       [{ key: 'name', header: 'Name' }, { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' }, { key: 'phone', header: 'Phone' }, { key: 'paid', header: 'Fee' }], 'membership-fees.csv');
   };
 
-  if (loading) return <div><WorkspacePageHeader title="Membership fee" description="Collect the semester membership fee." /><WorkspaceLoader /></div>;
+  if (loading) return <div><WorkspacePageHeader title="Membership fees" description="Collect the semester membership fee." /><WorkspaceLoader /></div>;
 
   return (
     <div>
-      <WorkspacePageHeader title="Membership fee" description="Track who has paid the semester fee (minimum €10). Closing a collection locks it and automatically records the total in Treasury." />
+      <WorkspacePageHeader title="Membership fees" description="Track who has paid the semester fee (minimum €10). Closing a collection locks it and automatically records the total in Treasury." />
 
       {!period ? (
         <Card><CardContent className="py-8">

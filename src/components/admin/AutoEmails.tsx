@@ -48,7 +48,7 @@ export default function AutoEmails() {
   if (loading)
     return (
       <div>
-        <WorkspacePageHeader title="Auto emails" description="Catalogue of automated emails sent by the system." />
+        <WorkspacePageHeader title="Automatic emails" description="Catalogue of automated emails sent by the system." />
         <WorkspaceLoader />
       </div>
     );
@@ -57,7 +57,7 @@ export default function AutoEmails() {
     <div className="space-y-10">
       <div>
         <WorkspacePageHeader
-          title="Auto emails"
+          title="Automatic emails"
           description="Reference catalogue of every automated email the system can send. For each one you can see the layout, the subject line, when it is fired and who receives it. This section is read-only — templates are maintained in code."
         />
 

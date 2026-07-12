@@ -20,8 +20,10 @@ import {
   listApplications, getApplication, signDocumentUrl, bulkDocumentUrls,
   updateApplicationStatus, addApplicationNote,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
+  MANUAL_STATUSES, isLockedStatus,
   type ApplicationRow, type ApplicationNote, type ApplicationStatus,
 } from '@/lib/applications-api';
+import { listSlots } from '@/lib/interviews-api';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
@@ -132,6 +134,38 @@ export default function CandidatesManagement() {
     } else changeStatus(id, status);
   };
 
+  // Confirm the pending status change. For "Invited to interview" this enforces
+  // that the chosen division has at least one OPEN interview slot before the
+  // invitation (and its email) can be sent.
+  const [confirming, setConfirming] = useState(false);
+  const confirmPendingStatus = async () => {
+    if (!pendingStatus) return;
+    if (pendingStatus.status === 'interview_invitation_sent') {
+      const division = (inviteDivision ?? detail?.application.first_choice) as OrgDivision | undefined;
+      if (!division) { toast({ title: 'Choose an interview division first', variant: 'destructive' }); return; }
+      setConfirming(true);
+      try {
+        const res = await listSlots(session, division);
+        const open = res.slots.filter((s) => s.is_active && !s.is_booked).length;
+        if (open === 0) {
+          toast({
+            title: 'No open interview slots',
+            description: `Open at least one slot for ${divisionLabels[division]} in Applications → Interview Calendar before inviting this candidate.`,
+            variant: 'destructive',
+          });
+          return;
+        }
+      } catch (e) {
+        toast({ title: 'Could not verify interview slots', description: e instanceof Error ? e.message : 'Please try again.', variant: 'destructive' });
+        return;
+      } finally { setConfirming(false); }
+      changeStatus(pendingStatus.id, pendingStatus.status, division);
+    } else {
+      changeStatus(pendingStatus.id, pendingStatus.status);
+    }
+    setPendingStatus(null);
+  };
+
   const addNote = async () => {
     if (!openId || !noteText.trim()) return;
     setSavingNote(true);
@@ -158,7 +192,7 @@ export default function CandidatesManagement() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Candidates"
+        title="Candidates screening"
         description="Review applications: open profiles, preview and download CVs and written answers, track status and share notes. Downloads follow the active filters."
         actions={
           <>
@@ -264,13 +298,30 @@ export default function CandidatesManagement() {
                     <div className="text-xs uppercase tracking-wider text-accent font-semibold">Candidate status</div>
                     <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
                   </div>
-                  <Select value={detail.application.status} onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}>
-                    <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                    <SelectContent>{STATUS_FLOW.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Changing the status here changes the candidate’s real status and may trigger consequences — for example an automatic email, or unlocking the interview booking area (“Interview invitation sent”).
-                  </p>
+                  {isLockedStatus(detail.application.status) ? (
+                    <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                      This is an offer outcome, managed automatically by the offer process (New Joiners) and the applicant’s response. It cannot be changed here.
+                    </p>
+                  ) : (
+                    <>
+                      <Select
+                        value={MANUAL_STATUSES.some((o) => o.value === detail.application.status) ? detail.application.status : undefined}
+                        onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}
+                      >
+                        <SelectTrigger className="font-body"><SelectValue placeholder="Change status…" /></SelectTrigger>
+                        <SelectContent>
+                          {MANUAL_STATUSES.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}{o.effect === 'action' ? '  ·  sends an email / action' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking); the others simply update what the applicant sees. Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
+                      </p>
+                    </>
+                  )}
                   {detail.application.status === 'accepted' && (
                     <p className="text-xs text-amber-700 border-t border-amber-200 pt-2">
                       “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until a member gives final approval in <strong>New Joiners</strong>. Only then are they told they passed the selection.
@@ -358,11 +409,8 @@ export default function CandidatesManagement() {
           )}
           <AlertDialogFooter>
             <AlertDialogCancel>No, cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (pendingStatus) changeStatus(pendingStatus.id, pendingStatus.status, pendingStatus.status === 'interview_invitation_sent' ? (inviteDivision ?? undefined) : undefined);
-              setPendingStatus(null);
-            }}>
-              Yes, proceed
+            <AlertDialogAction disabled={confirming} onClick={(e) => { e.preventDefault(); confirmPendingStatus(); }}>
+              {confirming ? 'Checking…' : 'Yes, proceed'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
