@@ -111,6 +111,51 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from('fee_periods')
         .update({ closed: true, closed_at: now.toISOString(), treasury_entry_id: entry.id }).eq('id', period.id);
       if (error) throw error;
+
+      // Semester member register: closing the collection is the moment the
+      // member list becomes definitive, so snapshot who belongs to the
+      // association this semester (fee payers + fee-exempt active members).
+      try {
+        const m = now.getMonth() + 1; const y = now.getFullYear();
+        const fallYear = m === 1 ? y - 1 : y;
+        const isFall = m >= 9 || m === 1;
+        const semKey = isFall ? `${fallYear}-fall` : `${y}-spring`;
+        const semLabel = isFall ? `Fall ${fallYear}` : `Spring ${y}`;
+        const { data: fees } = await supabase.from('membership_fees').select('member_id, paid').eq('period_id', period.id);
+        const paidIds = new Set((fees || []).filter((f: any) => f.paid).map((f: any) => f.member_id));
+        const { data: allMembers } = await supabase.from('members')
+          .select('id, first_name, surname, email, division, role, fee_status, membership_status');
+        const registerRows = (allMembers || []).filter((mm: any) =>
+          paidIds.has(mm.id) || (mm.membership_status === 'active' && mm.fee_status === 'exempt'));
+        // Idempotent: re-closing/re-running replaces that semester's register.
+        await supabase.from('semester_members').delete().eq('semester_key', semKey);
+        if (registerRows.length > 0) {
+          await supabase.from('semester_members').insert(registerRows.map((mm: any) => ({
+            semester_key: semKey, semester_label: semLabel, member_id: mm.id,
+            first_name: mm.first_name, surname: mm.surname, email: mm.email,
+            division: mm.division, role: mm.role, fee_paid: paidIds.has(mm.id),
+            fee_period_id: period.id,
+          })));
+        }
+        const { count: alumniCount } = await supabase.from('alumni').select('id', { count: 'exact', head: true });
+        await supabase.from('semester_snapshots').upsert({
+          semester_key: semKey, semester_label: semLabel,
+          members_count: registerRows.length, alumni_count: alumniCount ?? 0,
+          fee_period_id: period.id,
+        }, { onConflict: 'semester_key' });
+      } catch (snapErr) {
+        console.error('Semester snapshot failed (collection still closed):', snapErr);
+      }
+
+      // Audit trail — records the closer's role AT THIS MOMENT.
+      try {
+        await supabase.from('activity_logs').insert({
+          user_id: user.id, user_email: user.email ?? '', user_role: roles[0] ?? 'admin',
+          action: 'close', entity_type: 'fee_period', entity_id: period.id, entity_name: period.semester_label,
+          section: 'Operations', subsection: 'Membership fees', details: { total, members_registered: undefined },
+        });
+      } catch (logErr) { console.error('Failed to log fee close:', logErr); }
+
       return json({ success: true, total });
     }
 

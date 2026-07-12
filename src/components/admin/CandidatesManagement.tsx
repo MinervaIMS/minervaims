@@ -9,6 +9,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { Download, FileText, Search, MessageSquare, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,11 +53,15 @@ export default function CandidatesManagement() {
   const { canManage, hasSpecial } = useAccess();
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
-  const canChangeStatus = canManage('applications-screening');
-  const canAddNotes = canChangeStatus || hasSpecial('applications-screening', 'candidates_notes_only');
   const { toast } = useToast();
 
   const [apps, setApps] = useState<ApplicationRow[]>([]);
+  // Semester scope: the active workflow only shows THIS semester's
+  // applications; older semesters stay archived and read-only.
+  const [semKey, setSemKey] = useState(currentSemester().key);
+  const viewingArchived = semKey !== currentSemester().key;
+  const canChangeStatus = canManage('applications-screening') && !viewingArchived;
+  const canAddNotes = (canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only')) && !viewingArchived;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [divFilter, setDivFilter] = useState<string[]>([]);
@@ -82,14 +88,22 @@ export default function CandidatesManagement() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
+  // Semesters that actually contain applications (always offering the current one).
+  const semesterOptions = useMemo(() => {
+    const list = semestersInData(apps.map((a) => a.created_at));
+    if (!list.some((s) => s.key === currentSemester().key)) list.unshift(currentSemester());
+    return list;
+  }, [apps]);
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return apps
+      .filter((a) => semesterOf(a.created_at).key === semKey)
       .filter((a) => divFilter.length === 0 || divFilter.includes(a.first_choice) || (a.second_choice ? divFilter.includes(a.second_choice) : false))
       .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, divFilter, statusFilter, yearFilter]);
+  }, [apps, search, divFilter, statusFilter, yearFilter, semKey]);
 
   const divOptions = CORE.map((d) => ({ value: d, label: divisionLabels[d] }));
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
@@ -212,12 +226,30 @@ export default function CandidatesManagement() {
         }
       />
 
-      <div className="mb-4 max-w-md">
-        <div className="relative">
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        {/* Semester scope — the working area renews itself every semester. */}
+        <div className="flex items-center gap-2">
+        <Select value={semKey} onValueChange={setSemKey}>
+          <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {semesterOptions.map((s) => (
+              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' — archive'}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <HelpDot page="applications-screening" topic="semester" />
+        </div>
       </div>
+
+      {viewingArchived && (
+        <div className="mb-4 rounded-lg border border-separator bg-muted/30 px-4 py-2.5 font-body text-sm text-muted-foreground">
+          You are viewing an <span className="text-foreground">archived semester</span>. These candidacies are preserved for consultation and accountability; statuses and notes can no longer be changed.
+        </div>
+      )}
 
       {loading ? <WorkspaceLoader /> : rows.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No applications match the current filters.</p></CardContent></Card>
@@ -301,7 +333,7 @@ export default function CandidatesManagement() {
                 {/* Prominent status control */}
                 <div className="border border-accent/30 bg-accent/5 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-wider text-accent font-semibold">Candidate status</div>
+                    <div className="text-xs uppercase tracking-wider text-accent font-semibold inline-flex items-center gap-1.5">Candidate status <HelpDot page="applications-screening" topic="status" /></div>
                     <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
                   </div>
                   {!canChangeStatus ? (

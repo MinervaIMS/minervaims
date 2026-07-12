@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,11 +15,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listTreasury, addTreasuryEntry, type TreasuryEntry } from '@/lib/ops-api';
+import { semesterOf, currentSemester } from '@/lib/semester';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Treasury() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [entries, setEntries] = useState<TreasuryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,19 @@ export default function Treasury() {
 
   const balance = useMemo(() => entries.reduce((s, e) => s + Number(e.amount), 0), [entries]);
 
+  // Group entries by semester (each semester may have a different leadership
+  // team, so the register reads semester by semester), newest first.
+  const semesterGroups = useMemo(() => {
+    const map = new Map<string, { label: string; sort: number; rows: TreasuryEntry[]; net: number }>();
+    for (const e of entries) {
+      const s = semesterOf(e.execution_date);
+      const g = map.get(s.key) ?? { label: s.label, sort: s.sort, rows: [], net: 0 };
+      g.rows.push(e); g.net += Number(e.amount);
+      map.set(s.key, g);
+    }
+    return [...map.values()].sort((a, b) => b.sort - a.sort);
+  }, [entries]);
+
   const submit = async () => {
     const amt = Number(form.amount);
     if (!amt || amt <= 0) { toast({ title: 'Enter a positive amount', variant: 'destructive' }); return; }
@@ -46,6 +63,7 @@ export default function Treasury() {
     setBusy(true);
     try {
       await addTreasuryEntry(session, { amount: amt, flow: form.flow, description: form.description.trim(), source: form.source || null, execution_date: form.execution_date });
+      logActivity(session, primaryRole, { action: 'create', section: 'Operations', subsection: 'Treasury', entityType: 'treasury_entry', entityName: form.description.trim(), details: { amount: amt, flow: form.flow } });
       toast({ title: 'Entry recorded' });
       setConfirmOpen(false); setDialogOpen(false);
       setForm({ amount: '', flow: 'in', description: '', source: '', execution_date: new Date().toISOString().slice(0, 10) });
@@ -79,14 +97,25 @@ export default function Treasury() {
               </tr>
             </thead>
             <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} className="border-t border-separator">
-                  <td className="px-3 py-2 whitespace-nowrap">{new Date(e.execution_date).toLocaleDateString()}</td>
-                  <td className="px-3 py-2 text-foreground">{e.description}{e.is_auto && <span className="ml-2 text-xs text-muted-foreground inline-flex items-center"><Lock className="h-3 w-3 mr-1" />auto</span>}</td>
-                  <td className="px-3 py-2">{e.source || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{e.academic_semester || '-'}</td>
-                  <td className={`px-3 py-2 text-right whitespace-nowrap ${Number(e.amount) < 0 ? 'text-destructive' : 'text-green-700'}`}>{eur(Number(e.amount))}</td>
-                </tr>
+              {semesterGroups.map((g) => (
+                <Fragment key={g.label}>
+                  {/* Semester divider: one leadership team per semester. */}
+                  <tr className="border-t border-separator bg-accent/5">
+                    <td colSpan={4} className="px-3 py-1.5 font-serif text-accent uppercase tracking-wider text-xs">
+                      {g.label}{g.label === currentSemester().label ? ' · current semester' : ''}
+                    </td>
+                    <td className={`px-3 py-1.5 text-right text-xs whitespace-nowrap ${g.net < 0 ? 'text-destructive' : 'text-green-700'}`}>net {eur(g.net)}</td>
+                  </tr>
+                  {g.rows.map((e) => (
+                    <tr key={e.id} className="border-t border-separator">
+                      <td className="px-3 py-2 whitespace-nowrap">{new Date(e.execution_date).toLocaleDateString()}</td>
+                      <td className="px-3 py-2 text-foreground">{e.description}{e.is_auto && <span className="ml-2 text-xs text-muted-foreground inline-flex items-center"><Lock className="h-3 w-3 mr-1" />auto</span>}</td>
+                      <td className="px-3 py-2">{e.source || '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{e.academic_semester || '-'}</td>
+                      <td className={`px-3 py-2 text-right whitespace-nowrap ${Number(e.amount) < 0 ? 'text-destructive' : 'text-green-700'}`}>{eur(Number(e.amount))}</td>
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

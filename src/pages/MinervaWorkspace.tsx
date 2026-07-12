@@ -51,6 +51,9 @@ import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import RolePermissionsTable from '@/components/admin/RolePermissionsTable';
+import HowToUse from '@/components/admin/HowToUse';
+import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
+import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
@@ -634,10 +637,10 @@ const MinervaWorkspace = () => {
     }
     if (activeSectionKey === 'my-role') return <MyProfile />;
     if (activeSectionKey === 'welcome') {
-      return renderPlaceholder('How to use', 'A detailed guide to using the workspace — coming soon.');
+      return <HowToUse />;
     }
     if (activeSectionKey === 'dashboard') {
-      return renderPlaceholder('Dashboard', 'Role-aware overview of workspace activity.');
+      return <WorkspaceDashboard onNavigate={(section, sub) => { setActiveSectionKey(section); setActiveSubKey(sub); }} />;
     }
     if (activeSectionKey === 'calendar' && !activeSubKey) {
       return <WorkspaceCalendar onNavigate={(section, sub) => { setActiveSectionKey(section); setActiveSubKey(sub); }} />;
@@ -1146,7 +1149,11 @@ const MinervaWorkspace = () => {
             {/* Scrollable content. `relative` so the workspace loader can fill
                 and centre within exactly this pane (the portion that loads). */}
             <div className="flex-1 overflow-y-auto px-6 py-6 relative">
-              {renderContent()}
+              <HelpProvider>
+                {renderContent()}
+                {/* Contextual help entry point for the page being viewed. */}
+                {!isCandidate && <PageHelpButton page={activeSubKey ?? activeSectionKey ?? ''} />}
+              </HelpProvider>
             </div>
           </div>
         </div>

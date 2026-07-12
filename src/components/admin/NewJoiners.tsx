@@ -15,6 +15,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
 import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applications-api';
+import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 
 const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
@@ -55,11 +56,24 @@ export default function NewJoiners() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
+  // Semester scope: offers are an active workflow for THIS semester only;
+  // previous semesters remain consultable as a read-only archive.
+  const [semKey, setSemKey] = useState(currentSemester().key);
+  const viewingArchived = semKey !== currentSemester().key;
+
+  const semesterOptions = useMemo(() => {
+    const withOffers = apps.filter((a) => ['accepted', 'joined', 'offer_declined'].includes(a.status));
+    const list = semestersInData(withOffers.map((a) => a.created_at));
+    if (!list.some((s) => s.key === currentSemester().key)) list.unshift(currentSemester());
+    return list;
+  }, [apps]);
+
   // Accepted candidates (offer ready / sent), those who joined, and declined /
   // expired offers (which can be re-sent).
   const joiners = useMemo(
-    () => apps.filter((a) => ['accepted', 'joined', 'offer_declined'].includes(a.status)),
-    [apps],
+    () => apps.filter((a) => ['accepted', 'joined', 'offer_declined'].includes(a.status))
+      .filter((a) => semesterOf(a.created_at).key === semKey),
+    [apps, semKey],
   );
 
   const openOffer = (a: ApplicationRow) => {
@@ -112,8 +126,22 @@ export default function NewJoiners() {
         </div>
       )}
 
+      <div className="mb-4 flex items-center gap-3">
+        <Select value={semKey} onValueChange={setSemKey}>
+          <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {semesterOptions.map((s) => (
+              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' — archive'}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {viewingArchived && (
+          <span className="font-body text-sm text-muted-foreground">Archived semester — read-only record of past offers.</span>
+        )}
+      </div>
+
       {loading ? <WorkspaceLoader /> : joiners.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No candidates ready for an offer.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{viewingArchived ? 'No offers were recorded in this semester.' : 'No candidates ready for an offer.'}</p></CardContent></Card>
       ) : (
         <div className="border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
@@ -136,7 +164,7 @@ export default function NewJoiners() {
                     <td className="px-3 py-2">{a.email}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">
-                      {st.canOffer && canSendOffers && (
+                      {st.canOffer && canSendOffers && !viewingArchived && (
                         <Button size="sm" onClick={() => openOffer(a)}>
                           <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
                         </Button>

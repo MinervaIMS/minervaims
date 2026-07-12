@@ -36,6 +36,7 @@ const FileMetadataSchema = z.object({
     .nullable()
     .optional(),
   status: z.enum(['draft', 'published', 'blocked']).optional(),
+  page_count: z.number().int().positive().max(5000).nullable().optional(),
   project: z.string().max(200).nullable().optional()
 })
 
@@ -362,6 +363,7 @@ Deno.serve(async (req) => {
             // Heads can publish directly; others default to draft for review.
             status: validatedFile.status || (isHead || hasFullAccess ? 'published' : 'draft'),
             project: validatedFile.project || null,
+            page_count: validatedFile.page_count ?? null,
             created_by: user.id,
           })
           .select()

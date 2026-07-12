@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,10 @@ import {
   listAod, createAodDay, deleteAodDay, setAodOpen, aodSignup, aodRemoveSignup,
   AOD_SLOTS, type AodDay, type AodSignup,
 } from '@/lib/alumni-aod-api';
+import { semesterOf, semestersInData } from '@/lib/semester';
+import { logActivity } from '@/lib/activity-log';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
+import { useAccess } from '@/hooks/useAccess';
 
 // A slot counts as "covered" once at least this many people are registered.
 const MIN_COVER = 3;
@@ -22,6 +26,7 @@ const divisionsInSlot = (people: AodSignup[]) =>
 
 export default function AssociationOnDisplay() {
   const { session, user } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [days, setDays] = useState<AodDay[]>([]);
   const [signups, setSignups] = useState<AodSignup[]>([]);
@@ -54,7 +59,11 @@ export default function AssociationOnDisplay() {
 
   const handleSignup = async (dayId: string, slot: string) => {
     setBusySlot(`${dayId}-${slot}`);
-    try { await aodSignup(session, dayId, slot); await load(); }
+    try {
+      await aodSignup(session, dayId, slot);
+      logActivity(session, primaryRole, { action: 'registration', section: 'Events', subsection: 'Association on Display', entityType: 'aod_signup', entityName: `Slot ${slot}`, details: { day_id: dayId } });
+      await load();
+    }
     catch (e) { toast({ title: 'Could not sign up', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusySlot(null); }
   };
@@ -102,11 +111,19 @@ export default function AssociationOnDisplay() {
                     </tr>
                   </thead>
                   <tbody>
-                    {pastDays.map((d) => (
-                      <tr key={d.id} className="border-t border-separator">
-                        <td className="px-3 py-2">{new Date(`${d.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</td>
-                        <td className="px-3 py-2">{coverageCount(d.id)} / {AOD_SLOTS.length}</td>
-                      </tr>
+                    {semestersInData(pastDays.map((d) => d.event_date)).map((sem) => (
+                      <Fragment key={sem.key}>
+                        {/* Semester divider — past sessions stay archived per semester. */}
+                        <tr className="border-t border-separator bg-accent/5">
+                          <td colSpan={2} className="px-3 py-1.5 font-serif text-accent uppercase tracking-wider text-xs">{sem.label}</td>
+                        </tr>
+                        {pastDays.filter((d) => semesterOf(d.event_date).key === sem.key).map((d) => (
+                          <tr key={d.id} className="border-t border-separator">
+                            <td className="px-3 py-2">{new Date(`${d.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                            <td className="px-3 py-2">{coverageCount(d.id)} / {AOD_SLOTS.length}</td>
+                          </tr>
+                        ))}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -131,7 +148,7 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
       <div className="flex items-center justify-between px-4 py-3 bg-muted/40 font-body">
         <div>
           <div className="font-serif text-lg text-accent">{new Date(`${day.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (a slot needs {MIN_COVER} people) · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
+          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (a slot needs {MIN_COVER} people) <HelpDot page="events-on-display" topic="coverage" /> · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
         </div>
         {isSenior && (
           <div className="flex items-center gap-3">
