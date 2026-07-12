@@ -13,8 +13,8 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
-  listAlumniCalls, saveAlumniCall, deleteAlumniCall, listAlumniDirectory, CALL_STATUS_LABELS,
-  type AlumniCall, type AlumniCallInput, type CallStatus, type CallParticipant, type AlumniOption,
+  listAlumniCalls, saveAlumniCall, deleteAlumniCall, listAlumniDirectory,
+  type AlumniCall, type AlumniCallInput, type CallParticipant, type AlumniOption,
 } from '@/lib/alumni-aod-api';
 
 const DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
@@ -29,7 +29,7 @@ export default function AlumniCalls() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<AlumniCallInput>(EMPTY);
-  const [pick, setPick] = useState('');
+  const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -45,12 +45,20 @@ export default function AlumniCalls() {
 
   const alumniById = useMemo(() => { const m: Record<string, AlumniOption> = {}; for (const a of alumni) m[a.id] = a; return m; }, [alumni]);
   const available = useMemo(() => alumni.filter((a) => !form.participants.some((p) => p.alumni_id === a.id)), [alumni, form.participants]);
+  // Search alumni by name or company for the invite typeahead.
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [] as AlumniOption[];
+    return available
+      .filter((a) => `${a.name} ${a.surname} ${a.company ?? ''}`.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [available, search]);
 
-  const openCreate = () => { setEditingId(null); setForm(EMPTY); setPick(''); setDialogOpen(true); };
+  const openCreate = () => { setEditingId(null); setForm(EMPTY); setSearch(''); setDialogOpen(true); };
   const openEdit = (c: AlumniCall) => {
     setEditingId(c.id);
     setForm({ id: c.id, division: c.division, planned_date: c.planned_date ?? '', status: c.status, notes: c.notes ?? '', participants: c.participants.map((p) => ({ alumni_id: p.alumni_id, alumnus_name: p.alumnus_name, former_role: p.former_role })) });
-    setPick('');
+    setSearch('');
     setDialogOpen(true);
   };
 
@@ -60,7 +68,7 @@ export default function AlumniCalls() {
     if (form.participants.length >= 5) { toast({ title: 'A call can have at most 5 alumni', variant: 'destructive' }); return; }
     const participant: CallParticipant = { alumni_id: a.id, alumnus_name: `${a.name} ${a.surname}`, former_role: a.company };
     setForm((f) => ({ ...f, participants: [...f.participants, participant] }));
-    setPick('');
+    setSearch('');
   };
   const removeParticipant = (idx: number) => setForm((f) => ({ ...f, participants: f.participants.filter((_, i) => i !== idx) }));
 
@@ -92,12 +100,11 @@ export default function AlumniCalls() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
                     <span className="text-foreground">{c.planned_date ? new Date(c.planned_date).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : 'Date to be set'}</span>
-                    <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground">{CALL_STATUS_LABELS[c.status]}</span>
                     {c.division && c.division !== 'none' && <span className="text-xs text-muted-foreground">{divisionLabels[c.division]}</span>}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {c.participants.map((p, i) => (
-                      <span key={i} className="text-xs bg-accent/10 text-accent px-2 py-0.5">{p.alumnus_name}</span>
+                      <span key={i} className="text-xs bg-accent/10 text-accent px-2 py-0.5">{p.alumnus_name}{p.former_role ? ` · ${p.former_role}` : ''}</span>
                     ))}
                   </div>
                   {c.notes && <p className="text-sm text-muted-foreground mt-2">{c.notes}</p>}
@@ -126,31 +133,46 @@ export default function AlumniCalls() {
                 </Select>
               </div>
               <div className="space-y-1"><Label>Date</Label><Input type="date" value={form.planned_date ?? ''} onChange={(e) => setForm({ ...form, planned_date: e.target.value })} /></div>
-              <div className="space-y-1">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as CallStatus })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{(Object.keys(CALL_STATUS_LABELS) as CallStatus[]).map((s) => <SelectItem key={s} value={s}>{CALL_STATUS_LABELS[s]}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
             </div>
 
             <div className="space-y-2">
               <Label>Alumni (2 to 5) *</Label>
+              {/* Invited alumni — each chip shows the alumnus and their company. */}
               <div className="flex flex-wrap gap-1.5">
                 {form.participants.map((p, i) => (
                   <span key={i} className="inline-flex items-center gap-1 text-sm bg-accent/10 text-accent px-2 py-1">
-                    {p.alumnus_name}
+                    {p.alumnus_name}{p.former_role ? ` · ${p.former_role}` : ''}
                     <button type="button" onClick={() => removeParticipant(i)}><X className="h-3 w-3" /></button>
                   </span>
                 ))}
               </div>
-              <Select value={pick} onValueChange={addParticipant}>
-                <SelectTrigger><SelectValue placeholder={available.length ? 'Add an alumnus from the directory' : 'No more alumni to add'} /></SelectTrigger>
-                <SelectContent>
-                  {available.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} {a.surname}{a.company ? ` - ${a.company}` : ''}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {/* Searchable typeahead over the alumni directory. */}
+              {form.participants.length < 5 && (
+                <div className="relative">
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search alumni to invite by name or company…"
+                  />
+                  {search.trim() && (
+                    <div className="mt-1 border border-separator rounded-md divide-y divide-separator max-h-56 overflow-y-auto">
+                      {searchResults.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching alumni in the directory.</div>
+                      ) : searchResults.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => addParticipant(a.id)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between gap-3"
+                        >
+                          <span className="text-foreground">{a.name} {a.surname}</span>
+                          {a.company && <span className="text-xs text-muted-foreground shrink-0">{a.company}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">Alumni must exist in the alumni directory. If someone is missing, add them in the Alumni section first.</p>
             </div>
 

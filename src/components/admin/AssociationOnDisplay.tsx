@@ -14,6 +14,12 @@ import {
   AOD_SLOTS, type AodDay, type AodSignup,
 } from '@/lib/alumni-aod-api';
 
+// A slot counts as "covered" once at least this many people are registered.
+const MIN_COVER = 3;
+// Distinct divisions represented in a slot (members with no division don't count).
+const divisionsInSlot = (people: AodSignup[]) =>
+  new Set(people.map((p) => p.division).filter((d) => d && d !== 'none')).size;
+
 export default function AssociationOnDisplay() {
   const { session, user } = useAuth();
   const { toast } = useToast();
@@ -44,7 +50,7 @@ export default function AssociationOnDisplay() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const upcomingDays = useMemo(() => days.filter((d) => d.event_date >= todayStr).sort((a, b) => a.event_date.localeCompare(b.event_date)), [days, todayStr]);
   const pastDays = useMemo(() => days.filter((d) => d.event_date < todayStr).sort((a, b) => b.event_date.localeCompare(a.event_date)), [days, todayStr]);
-  const coverageCount = (dayId: string) => AOD_SLOTS.filter((s) => signups.some((su) => su.day_id === dayId && su.slot_time === s)).length;
+  const coverageCount = (dayId: string) => AOD_SLOTS.filter((s) => signups.filter((su) => su.day_id === dayId && su.slot_time === s).length >= MIN_COVER).length;
 
   const handleSignup = async (dayId: string, slot: string) => {
     setBusySlot(`${dayId}-${slot}`);
@@ -119,13 +125,13 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
   onSignup: (slot: string) => void; onRemove: (id: string) => void;
   onToggleOpen: (open: boolean) => void; onDelete: () => void;
 }) {
-  const coverage = useMemo(() => AOD_SLOTS.filter((s) => signupsFor(s).length > 0).length, [signupsFor]);
+  const coverage = useMemo(() => AOD_SLOTS.filter((s) => signupsFor(s).length >= MIN_COVER).length, [signupsFor]);
   return (
     <div className="border border-separator">
       <div className="flex items-center justify-between px-4 py-3 bg-muted/40 font-body">
         <div>
           <div className="font-serif text-lg text-accent">{new Date(`${day.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
+          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (a slot needs {MIN_COVER} people) · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
         </div>
         {isSenior && (
           <div className="flex items-center gap-3">
@@ -139,19 +145,36 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
         {AOD_SLOTS.map((slot) => {
           const people = signupsFor(slot);
           const mine = people.find((p) => p.user_id === userId);
-          const uncovered = people.length === 0;
+          const covered = people.length >= MIN_COVER;
+          const divCount = divisionsInSlot(people);
           return (
-            <div key={slot} className={`bg-background p-3 font-body ${uncovered ? 'border-l-2 border-amber-500' : ''}`}>
-              <div className="flex items-center justify-between">
+            <div key={slot} className={`bg-background p-3 font-body border-l-2 ${covered ? 'border-emerald-500' : 'border-amber-500'}`}>
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-foreground">{slot}</span>
-                {mine
-                  ? <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => onRemove(mine.id)}>Leave</Button>
-                  : <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
-                      {busySlot === `${day.id}-${slot}` ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Join'}
-                    </Button>}
+                <span className={`text-[11px] px-1.5 py-0.5 rounded ${covered ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {covered ? 'Covered' : `${people.length}/${MIN_COVER}`}
+                </span>
               </div>
-              <div className="mt-1 space-y-0.5">
-                {people.length === 0 ? <span className="text-xs text-amber-600">Uncovered</span> : people.map((p) => (
+              {/* Registration button — clear, full-width, for everyone. */}
+              <div className="mt-2">
+                {mine ? (
+                  <Button variant="outline" size="sm" className="w-full text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => onRemove(mine.id)}>
+                    Cancel my registration
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="w-full" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
+                    {busySlot === `${day.id}-${slot}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : day.registration_open ? 'Register for this slot' : 'Registration closed'}
+                  </Button>
+                )}
+              </div>
+              {/* Registered people + how many divisions are represented. */}
+              <div className="mt-2 space-y-0.5">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {people.length} registered · {divCount} division{divCount === 1 ? '' : 's'} covered
+                </div>
+                {people.length === 0 ? (
+                  <span className="text-xs text-amber-600">No one yet</span>
+                ) : people.map((p) => (
                   <div key={p.id} className="text-xs text-muted-foreground truncate">{p.member_name}{p.division && p.division !== 'none' ? ` · ${divisionLabels[p.division]}` : ''}</div>
                 ))}
               </div>

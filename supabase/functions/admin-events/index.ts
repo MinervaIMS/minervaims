@@ -53,7 +53,8 @@ const EventSchema = z.object({
   end_at: z.string().nullable().optional(),
   online: z.boolean().optional(),
   registration_enabled: z.boolean().optional(),
-  registration_audience: z.enum(['members','members_external','guests','public']).optional()
+  registration_audience: z.enum(['members','members_external','guests','public']).optional(),
+  show_on_website: z.boolean().optional()
 })
 
 // Extra event columns shared by create and update.
@@ -66,6 +67,7 @@ function extraEventCols(v: Record<string, unknown>) {
     online: v.online ?? false,
     registration_enabled: v.registration_enabled ?? false,
     registration_audience: v.registration_audience ?? 'members',
+    show_on_website: v.show_on_website ?? true,
   }
 }
 

@@ -661,48 +661,6 @@ export type Database = {
         }
         Relationships: []
       }
-      calendar_entries: {
-        Row: {
-          author_name: string | null
-          author_role: string | null
-          created_at: string
-          created_by: string | null
-          description: string | null
-          entry_date: string
-          entry_type: string
-          id: string
-          location: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          author_name?: string | null
-          author_role?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          entry_date: string
-          entry_type?: string
-          id?: string
-          location?: string | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          author_name?: string | null
-          author_role?: string | null
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          entry_date?: string
-          entry_type?: string
-          id?: string
-          location?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       editorial_items: {
         Row: {
           created_at: string
@@ -922,6 +880,7 @@ export type Database = {
           poster_url: string | null
           registration_audience: string
           registration_enabled: boolean
+          show_on_website: boolean
           start_at: string | null
           title: string
           updated_at: string
@@ -942,6 +901,7 @@ export type Database = {
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
+          show_on_website?: boolean
           start_at?: string | null
           title: string
           updated_at?: string
@@ -962,6 +922,7 @@ export type Database = {
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
+          show_on_website?: boolean
           start_at?: string | null
           title?: string
           updated_at?: string
@@ -1567,53 +1528,6 @@ export type Database = {
           },
         ]
       }
-      testimonials: {
-        Row: {
-          alumni_id: string | null
-          created_at: string
-          created_by: string | null
-          display_order: number
-          id: string
-          name: string
-          published: boolean
-          quote: string
-          role_label: string
-          updated_at: string
-        }
-        Insert: {
-          alumni_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          display_order?: number
-          id?: string
-          name: string
-          published?: boolean
-          quote: string
-          role_label: string
-          updated_at?: string
-        }
-        Update: {
-          alumni_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          display_order?: number
-          id?: string
-          name?: string
-          published?: boolean
-          quote?: string
-          role_label?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "testimonials_alumni_id_fkey"
-            columns: ["alumni_id"]
-            isOneToOne: false
-            referencedRelation: "alumni"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       treasury_entries: {
         Row: {
           academic_semester: string | null
@@ -1705,7 +1619,6 @@ export type Database = {
           is_primary: boolean
           link_url: string | null
           reason: string | null
-          sources: Json
           title: string
           type: string
           updated_at: string
@@ -1725,7 +1638,6 @@ export type Database = {
           is_primary?: boolean
           link_url?: string | null
           reason?: string | null
-          sources?: Json
           title: string
           type?: string
           updated_at?: string
@@ -1745,7 +1657,6 @@ export type Database = {
           is_primary?: boolean
           link_url?: string | null
           reason?: string | null
-          sources?: Json
           title?: string
           type?: string
           updated_at?: string
@@ -1761,7 +1672,6 @@ export type Database = {
         Args: { _first: string; _surname: string }
         Returns: string
       }
-      can_manage_calendar: { Args: { uid: string }; Returns: boolean }
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {

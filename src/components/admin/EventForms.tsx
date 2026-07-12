@@ -51,7 +51,7 @@ export default function EventForms() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Forms" description="Manage event registration. Turn registration on for an event, choose who can register, preview the public form, and share the registration link." />
+      <WorkspacePageHeader title="Registration forms" description="Any event of any type can have a registration form. Turn registration on, choose who can register, preview the public form, and share the link. Registrations feed straight into Attendance." />
 
       {loading ? <WorkspaceLoader /> : ordered.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Create one in Events → Create.</p></CardContent></Card>

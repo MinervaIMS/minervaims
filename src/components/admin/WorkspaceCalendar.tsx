@@ -31,7 +31,7 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const monthKey = (y: number, m: number) => `m-${y}-${m}`;
 
-export default function WorkspaceCalendar() {
+export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (section: string, sub: string) => void } = {}) {
   const { session } = useAuth();
   const { toast } = useToast();
   const { canManage } = useAccess();
@@ -196,7 +196,7 @@ export default function WorkspaceCalendar() {
     <div>
       <WorkspacePageHeader
         title="Calendar"
-        description={`Association events, Association on Display, alumni calls, application periods and the membership fee deadline. Scroll to move through the months. Click an event with open registration to sign up or check your status.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
+        description={`Association events, Association on Display, alumni calls, application periods and the membership fee deadline. Scroll to move through the months. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
         actions={canEdit ? <Button className="font-body" onClick={() => setEntryForm(emptyEntry(ymd(new Date())))}><Plus className="h-4 w-4 mr-2" />Add entry</Button> : undefined}
       />
 
@@ -233,15 +233,17 @@ export default function WorkspaceCalendar() {
                       {(itemsByDate[date] || []).map((it, j) => {
                         const isEvent = it.kind === 'event' && !!it.event;
                         const isCustom = it.kind === 'custom' && !!it.entry;
-                        const clickable = (isEvent && it.event!.registration_enabled) || (isCustom && canEdit);
+                        const isAod = it.kind === 'aod' && !!onNavigate;
+                        const clickable = (isEvent && it.event!.registration_enabled) || (isCustom && canEdit) || isAod;
                         const isReg = isEvent && registered.has(it.event!.id);
                         const onClick = () => {
                           if (isEvent && it.event!.registration_enabled) setRegEvent(it.event!);
                           else if (isCustom && canEdit) openEntryEdit(it.entry!);
+                          else if (isAod) onNavigate!('events', 'events-on-display');
                         };
                         return (
                           <button key={j} disabled={!clickable} onClick={onClick}
-                            title={isCustom ? `${CALENDAR_ENTRY_LABELS[it.entry!.entry_type]}: ${it.label}` : isEvent ? EVENT_TYPE_LABELS[it.event!.event_type] : it.label}
+                            title={isCustom ? `${CALENDAR_ENTRY_LABELS[it.entry!.entry_type]}: ${it.label}` : isEvent ? EVENT_TYPE_LABELS[it.event!.event_type] : isAod ? 'Open the Association on Display registration page' : it.label}
                             className={`flex items-center gap-1 w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${kindColor(it.kind)} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
                             {isReg && <Check className="h-3 w-3 shrink-0" />}
                             <span className="truncate">{it.label}</span>

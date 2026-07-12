@@ -30,6 +30,7 @@ export interface EventRow {
   online: boolean;
   registration_enabled: boolean;
   registration_audience: RegistrationAudience;
+  show_on_website: boolean;
   created_at: string;
 }
 
@@ -49,6 +50,7 @@ export interface EventInput {
   online?: boolean;
   registration_enabled?: boolean;
   registration_audience?: RegistrationAudience;
+  show_on_website?: boolean;
 }
 
 export interface EventRegistration {
