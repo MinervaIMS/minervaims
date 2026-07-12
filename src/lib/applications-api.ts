@@ -103,6 +103,26 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   offer_accepted: 'Offer accepted', offer_declined: 'Offer declined', joined: 'Joined',
 };
 
+/** Statuses locked from manual change — driven by the offer flow / applicant response. */
+export const LOCKED_STATUSES: ApplicationStatus[] = ['offer_accepted', 'offer_declined', 'joined'];
+export function isLockedStatus(s: ApplicationStatus): boolean {
+  return LOCKED_STATUSES.includes(s);
+}
+
+/** Statuses a reviewer can set by hand. `effect: 'action'` = triggers an email or unlocks a step. */
+export const MANUAL_STATUSES: { value: ApplicationStatus; label: string; effect: 'passive' | 'action' }[] = [
+  { value: 'received', label: STATUS_LABELS.received, effect: 'passive' },
+  { value: 'cv_opened', label: STATUS_LABELS.cv_opened, effect: 'passive' },
+  { value: 'under_review', label: STATUS_LABELS.under_review, effect: 'passive' },
+  { value: 'to_be_contacted', label: STATUS_LABELS.to_be_contacted, effect: 'passive' },
+  { value: 'interview_invitation_sent', label: STATUS_LABELS.interview_invitation_sent, effect: 'action' },
+  { value: 'waiting_interview_confirmation', label: STATUS_LABELS.waiting_interview_confirmation, effect: 'passive' },
+  { value: 'interview_confirmed', label: STATUS_LABELS.interview_confirmed, effect: 'passive' },
+  { value: 'interview_completed', label: STATUS_LABELS.interview_completed, effect: 'passive' },
+  { value: 'accepted', label: STATUS_LABELS.accepted, effect: 'passive' },
+  { value: 'rejected', label: STATUS_LABELS.rejected, effect: 'action' },
+];
+
 // Simplified candidate-facing status (report 10.3).
 export function candidateStatus(s: ApplicationStatus): { label: string; step: number } {
   switch (s) {
