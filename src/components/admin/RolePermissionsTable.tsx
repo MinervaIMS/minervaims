@@ -97,8 +97,8 @@ export default function RolePermissionsTable() {
             <tr>
               <th className="sticky left-0 z-20 bg-muted text-left px-3 py-2 font-serif text-sm border-b border-r border-separator min-w-[210px]">Subsection</th>
               {ROLES.map((r) => (
-                <th key={r.key} className="bg-muted px-2 py-2 border-b border-separator align-bottom">
-                  <div className="whitespace-nowrap text-[11px] font-normal text-muted-foreground [writing-mode:vertical-rl] rotate-180 h-28 mx-auto">{r.label}</div>
+                <th key={r.key} className="bg-muted px-2 py-2 border-b border-separator align-bottom min-w-[84px] max-w-[110px]">
+                  <div className="text-[11px] font-normal text-muted-foreground text-center leading-tight">{r.label}</div>
                 </th>
               ))}
             </tr>
