@@ -19,6 +19,7 @@ import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthI
 import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
+import PixelCard from '@/components/shared/PixelCard';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,

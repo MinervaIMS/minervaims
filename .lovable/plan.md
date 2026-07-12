@@ -1,30 +1,33 @@
-## Root cause
+Re-introduce the PixelCard animation on the `/apply?submitted=1` success screen in `src/pages/Apply.tsx` (the `SuccessScreen` component).
 
-`src/components/shared/AuthLayout.tsx` (line 33) and `src/pages/Apply.tsx` (lines 34 and 70) use the class `items-safe-center`. That utility only exists in Tailwind v4; this project is on Tailwind 3.4.17, so the class is dropped and the flex container falls back to `align-items: stretch`. The `max-w-md` white card is therefore stretched to full viewport height, producing the large empty white area visible on `/auth` (and the same bug is present on every page that uses `AuthLayout`, plus `/apply`).
+## Changes
 
-## Change
+In `src/pages/Apply.tsx`:
 
-Replace `items-safe-center` with `items-center` in the three occurrences:
+1. Add import at top:
+   ```ts
+   import PixelCard from '@/components/shared/PixelCard';
+   ```
 
-1. `src/components/shared/AuthLayout.tsx` line 33.
-2. `src/pages/Apply.tsx` line 34.
-3. `src/pages/Apply.tsx` line 70.
+2. Replace the current success card (lines 72–82) so the white card wraps the PixelCard animation behind the content:
+   ```tsx
+   <div className="relative z-10 w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
+     {/* Animation fills the entire card, behind the content. */}
+     <div className="absolute inset-0">
+       <PixelCard variant="navy" gap={4} speed={45} activeDuration={1400} fadeMs={4200} className="w-full h-full" />
+     </div>
+     <div className="relative z-10 px-8 py-12 text-center">
+       <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+       <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
+       <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
+         Your email is verified and your application has been submitted successfully.
+       </p>
+       <p className="font-body text-sm text-muted-foreground mb-7">
+         You are now an applicant. Follow your application and, once invited, book your interview from your workspace.
+       </p>
+       <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
+     </div>
+   </div>
+   ```
 
-No other edits. Nothing else changes — no removal of the purple background, no restyle, no new components. The white card will now size to its content and sit vertically centred in the dark panel.
-
-## Pages fixed by this single change
-
-- `/auth`
-- `/forgot-password`
-- `/reset-password`
-- `/check-email`
-- `/application-check-email`
-- `/email-verification`
-- `/pending-approval`
-- `/session-expired`
-- `/password-reset-success`
-- `/apply` (both its states)
-
-## Verification
-
-After the edit, reload `/auth` and `/check-email`; the card should hug its content with no white block extending down the page. No functional or copy changes to any auth page.
+No other files touched. Kept `rounded-lg` for consistency with the other Apply card; the existing `overflow-hidden` clips the canvas to the rounded corners.
