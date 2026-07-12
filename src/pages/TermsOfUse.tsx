@@ -1,20 +1,30 @@
 import { Helmet } from 'react-helmet-async';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 
+// =====================================================================
+// Terms of Use for the public website and the reserved Workspace.
+// Drafted for an Italian unrecognised association (articles 36 to 38 of
+// the Italian Civil Code). Passages marked "For legal review" should be
+// confirmed by a qualified professional.
+// =====================================================================
+
 const sections: LegalSection[] = [
   { id: 'about', title: '1. About MIMS' },
-  { id: 'acceptance', title: '2. Acceptance of Terms' },
-  { id: 'educational', title: '3. Educational Purpose' },
-  { id: 'no-reliance', title: '4. No Reliance; Risk' },
-  { id: 'liability', title: '5. Limitation of Liability' },
+  { id: 'acceptance', title: '2. Acceptance of These Terms' },
+  { id: 'educational', title: '3. Educational Purpose Only' },
+  { id: 'no-advice', title: '4. No Investment Advice or Solicitation' },
+  { id: 'no-reliance', title: '5. No Reliance and Risk' },
   { id: 'ip', title: '6. Intellectual Property' },
-  { id: 'conduct', title: '7. User Conduct' },
-  { id: 'third-party', title: '8. Third-Party Links' },
-  { id: 'join', title: '9. Events and Applications' },
-  { id: 'non-profit', title: '10. Non-Profit and Fundraising' },
-  { id: 'changes', title: '11. Changes' },
-  { id: 'law', title: '12. Governing Law' },
-  { id: 'contact', title: '13. Contact' },
+  { id: 'conduct', title: '7. Acceptable Use' },
+  { id: 'forms', title: '8. Forms and Submitted Content' },
+  { id: 'workspace', title: '9. The Reserved Workspace' },
+  { id: 'bocconi', title: '10. Relationship with Bocconi' },
+  { id: 'third-party', title: '11. Third-Party Links and Content' },
+  { id: 'availability', title: '12. Availability and Changes' },
+  { id: 'liability', title: '13. Limitation of Liability' },
+  { id: 'indemnity', title: '14. Your Responsibility' },
+  { id: 'law', title: '15. Governing Law and Jurisdiction' },
+  { id: 'misc', title: '16. Final Provisions' },
 ];
 
 const TermsOfUse = () => (
@@ -23,143 +33,186 @@ const TermsOfUse = () => (
       <title>Terms of Use | MIMS</title>
       <meta
         name="description"
-        content="Terms governing the use of the Minerva Investment Management Society website."
+        content="The terms governing the use of the Minerva Investment Management Society website and reserved Workspace."
       />
     </Helmet>
     <LegalLayout
       title="Terms of Use"
-      description="The rules that govern your use of this website and its content."
-      lastUpdated="January 1st, 2026"
+      description="The rules that govern your use of this website and of the reserved Workspace."
+      lastUpdated="July 12th, 2026"
       currentId="terms"
       sections={sections}
     >
-      <LegalSectionBlock id="about" number="01" title="About MIMS and Independence from the University">
+      <LegalSectionBlock id="about" number="01" title="About MIMS">
         <p>
-          Minerva Investment Management Society (MIMS) is an Associazione promossa e gestita da studenti
-          dell'Università Bocconi. MIMS is independent from Università Bocconi. Any statements and opinions
-          published are solely those of MIMS and/or the individual authors.
+          This website is operated by Minerva Investment Management Society ("MIMS", "we", "us"), a student society
+          organised as an unrecognised association under articles 36 to 38 of the Italian Civil Code, formed by
+          students of Università Bocconi, Milan, Italy. As an unrecognised association, MIMS acts through the
+          persons who represent it under its Statute; obligations undertaken in the association's name are governed
+          by article 38 of the Italian Civil Code. Contact:{' '}
+          <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a>.
         </p>
-        <p><strong>
-          Bocconi University does not review, approve, endorse, or monitor the contents of this website,
-          and Bocconi University is not responsible for any content, activities, or outcomes connected to it.
-        </strong></p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="acceptance" number="02" title="Acceptance of These Terms">
         <p>
-          By using this website you confirm that you have read and accepted these Terms. If you do not agree,
-          do not use the website.
+          By accessing or using this website you accept these Terms of Use, the{' '}
+          <a href="/privacy-policy">Privacy Policy</a>, the <a href="/cookie-policy">Cookie Policy</a> and the{' '}
+          <a href="/disclaimer">Disclaimer</a>, which together form the legal framework of the website. If you do
+          not agree, please do not use the website. Additional rules accepted during specific processes (for example
+          when applying for membership or registering for an event) supplement these Terms for that process.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="educational" number="03" title="Educational Purpose — No Investment Advice">
+      <LegalSectionBlock id="educational" number="03" title="Educational Purpose Only">
         <p>
-          All content (including reports, "fund" pages, research notes, presentations, events material,
-          and any linked documents) is provided strictly for educational and academic purposes.
+          MIMS is a non-profit student initiative with exclusively educational and cultural purposes. Everything
+          published on this website, including research reports, articles, market commentary, fund figures and any
+          other material, is produced by students for learning purposes. Nothing on this website constitutes
+          professional activity, a financial service, or an offer of services regulated under Italian or European
+          financial legislation.
         </p>
-        <p>Nothing on this website constitutes:</p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="no-advice" number="04" title="No Investment Advice or Solicitation">
+        <p>
+          No content on this website constitutes investment advice, investment research within the meaning of the
+          applicable regulatory framework, legal, tax or accounting advice, a personal recommendation, or a
+          solicitation, invitation or offer to buy or sell any financial instrument or to adopt any investment
+          strategy. The "funds" referred to on this website are internal educational portfolios managed by students
+          for learning purposes: they are not collective investment undertakings, they are not offered to the
+          public, and no third-party money is ever accepted or managed.
+        </p>
+        <p>
+          MIMS and its members are not authorised or supervised by CONSOB, the Bank of Italy or any other
+          supervisory authority, and do not provide investment services or activities under the Italian Consolidated
+          Law on Finance (Legislative Decree 58/1998).
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="no-reliance" number="05" title="No Reliance and Risk">
+        <p>
+          Content is provided "as is", may contain errors and may become outdated without notice. Opinions are those
+          of the student authors at the time of writing. You must not rely on any content for actual investment or
+          financial decisions; obtain advice from a qualified professional instead. Past, simulated or back-tested
+          performance is not indicative of future results. Investing involves risk, including loss of capital.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="ip" number="06" title="Intellectual Property">
+        <p>
+          The website, its design, the association's name and logo, and all published materials, including reports
+          and templates, are property of MIMS or of their respective authors, who license them to MIMS for
+          publication, and are protected by Italian Law 633/1941 on copyright and applicable EU law. You may read,
+          download and print materials for personal, non-commercial, educational use, keeping every notice intact
+          and citing MIMS as the source. Any other use, including reproduction, redistribution, commercial use,
+          systematic scraping, or text and data mining for machine learning purposes, requires our prior written
+          consent. MIMS reserves its rights under article 4 of Directive (EU) 2019/790 with respect to text and data
+          mining.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="conduct" number="07" title="Acceptable Use">
+        <p>When using the website you must not:</p>
         <ul>
-          <li>investment advice,</li>
-          <li>investment research,</li>
-          <li>a personal recommendation,</li>
-          <li>an offer or solicitation to buy or sell securities or adopt any investment strategy,</li>
-          <li>or any regulated investment service.</li>
+          <li>attempt to gain unauthorised access to the Workspace, other accounts, or the underlying infrastructure;</li>
+          <li>interfere with the operation of the website, introduce malicious code, or perform denial of service, scraping or bulk-harvesting activity;</li>
+          <li>submit false, misleading or unlawful content through forms, applications or registrations, or impersonate another person;</li>
+          <li>use contact details published on the website to send unsolicited commercial communications;</li>
+          <li>use the website in any way that breaches applicable law or the rights of third parties.</li>
         </ul>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="forms" number="08" title="Forms and Submitted Content">
         <p>
-          MIMS does not provide personalised financial advice or act as an investment firm, broker, or advisor.
-          No client relationship is created by your use of this website.
+          Where the website allows you to submit information (membership applications, event registrations, the
+          newsletter form, correspondence), you warrant that what you submit is accurate, that it is yours to
+          submit, and that it does not infringe third-party rights. Documents submitted with applications (for
+          example a CV) are used only for the selection process as described in the{' '}
+          <a href="/privacy-policy">Privacy Policy</a>. We may refuse, remove or disregard submissions that breach
+          these Terms.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="no-reliance" number="04" title="No Reliance; Risk and Accuracy">
+      <LegalSectionBlock id="workspace" number="09" title="The Reserved Workspace">
         <p>
-          You are solely responsible for how you use the content. The information may be incomplete, outdated,
-          or contain errors. We do not guarantee accuracy, completeness, or timeliness. You must independently
-          verify information before acting on it.
+          The Workspace is a reserved area for members, advisors, alumni and applicants of MIMS. Access is personal:
+          credentials must not be shared and each account may be used only by its holder. Access levels follow the
+          role assigned under the association's internal rules and may be changed or revoked by the association at
+          any time in line with its Statute. Actions performed in the Workspace are logged for security and
+          accountability, as described in the Privacy Policy and inside the Workspace itself.
         </p>
         <p>
-          Any opinions may change without notice. Past performance and simulated/virtual portfolio results are
-          not indicative of future results. Investing involves risk, including possible loss of capital.
-        </p>
-      </LegalSectionBlock>
-
-      <LegalSectionBlock id="liability" number="05" title="Limitation of Liability">
-        <p>
-          To the maximum extent permitted by law, MIMS and its members, authors, and contributors disclaim all
-          liability for any loss or damage (direct or indirect) arising from your access to, use of, or reliance
-          on this website or any content linked to it.
+          Materials available in the Workspace, including templates, code repositories, research in progress, the
+          alumni directory and internal documents, are confidential association assets. They may be used only for
+          association purposes and may not be copied, disclosed or exploited outside the association, during or
+          after membership. Removing or misusing such assets may give rise to liability towards the association and
+          its members.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="ip" number="06" title="Intellectual Property and Permitted Use">
+      <LegalSectionBlock id="bocconi" number="10" title="Relationship with Università Bocconi">
         <p>
-          Unless stated otherwise, MIMS owns or licenses the content on this website, including text, documents,
-          branding, and design.
-        </p>
-        <p>
-          You may view and download materials for personal, non-commercial use only, provided you keep all
-          copyright and attribution notices.
-        </p>
-        <p>
-          You must not reproduce, redistribute, publish, sell, or create derivative works from the content
-          (in whole or in part) without prior written permission from MIMS.
+          MIMS is a student association recognised within the Bocconi student association framework and, as such, it
+          complies with the University's rules applicable to student associations, including the regulations on
+          student associations and the University's Honor Code and student conduct rules, which bind its student
+          members. Università Bocconi does not operate, endorse or supervise this website and assumes no
+          responsibility for its content. The association's activities on campus are separately governed by the
+          applicable University regulations.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="conduct" number="07" title="User Conduct">
-        <p>You must not:</p>
-        <ul>
-          <li>misuse the website (including security testing, scraping, or interfering with availability),</li>
-          <li>upload malware or unlawful material,</li>
-          <li>use the website in a way that infringes rights, harms others, or breaches applicable law.</li>
-        </ul>
-        <p>We may restrict or block access where necessary for security or compliance.</p>
-      </LegalSectionBlock>
-
-      <LegalSectionBlock id="third-party" number="08" title="Third-Party Links and Social Platforms">
+      <LegalSectionBlock id="third-party" number="11" title="Third-Party Links and Content">
         <p>
-          This website may link to third-party websites and social platforms (e.g., LinkedIn, Instagram) that
-          we do not control. Their terms and privacy policies apply. We are not responsible for third-party content.
+          The website may link to external websites and embed third-party content (for example LinkedIn, Instagram
+          or maps). Those services are governed by their own terms and privacy policies; we do not control them and
+          accept no responsibility for their content or practices. Embedded third-party media loads only with your
+          consent, as described in the <a href="/cookie-policy">Cookie Policy</a>.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="join" number="09" title='Events and Applications ("Join Us")'>
-        <p>If you register for events or apply to join MIMS, you agree that:</p>
-        <ul>
-          <li>you will provide accurate information,</li>
-          <li>selection processes are competitive and discretionary,</li>
-          <li>submission does not guarantee acceptance,</li>
-          <li>we may contact you using the details provided for selection and logistics.</li>
-        </ul>
-        <p>Personal data handling is described in the <a href="/privacy-policy">Privacy Policy</a>.</p>
-      </LegalSectionBlock>
-
-      <LegalSectionBlock id="non-profit" number="10" title="Non-Profit and Fundraising">
+      <LegalSectionBlock id="availability" number="12" title="Availability and Changes">
         <p>
-          MIMS is a non-profit student association and does not distribute profits. The website does not solicit
-          on-campus fundraising. Any sponsorships or partnerships are handled in accordance with applicable
-          University rules and approvals where required.
+          The website is provided free of charge as a voluntary student initiative. We may change, suspend or
+          discontinue any part of it at any time, and we do not warrant uninterrupted or error-free availability.
+          We may update these Terms; the date at the top identifies the version in force, and continued use after a
+          change constitutes acceptance of the updated Terms.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="changes" number="11" title="Changes to the Website and Terms">
+      <LegalSectionBlock id="liability" number="13" title="Limitation of Liability">
         <p>
-          We may modify the website or these Terms at any time. The "Last updated" date indicates the current
-          version. Continued use after changes constitutes acceptance.
+          To the maximum extent permitted by Italian law, MIMS, its governing bodies, members and volunteers accept
+          no liability for damages arising from use of the website or reliance on its content, including indirect or
+          consequential damages, loss of profits or loss of data. Nothing in these Terms excludes or limits
+          liability for wilful misconduct or gross negligence (article 1229 of the Italian Civil Code) or any other
+          liability that cannot be excluded by law. Mandatory consumer protections, where applicable, remain
+          unaffected.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="law" number="12" title="Governing Law and Jurisdiction">
+      <LegalSectionBlock id="indemnity" number="14" title="Your Responsibility">
         <p>
-          These Terms are governed by Italian law. Any disputes shall be subject to the jurisdiction of the
-          courts of Milan, Italy, unless mandatory consumer law provides otherwise.
+          You are responsible for your use of the website and for any content you submit. If your breach of these
+          Terms causes claims or losses to MIMS or its members, you may be required to compensate them under the
+          general rules of Italian law.
         </p>
       </LegalSectionBlock>
 
-      <LegalSectionBlock id="contact" number="13" title="Contact">
+      <LegalSectionBlock id="law" number="15" title="Governing Law and Jurisdiction">
         <p>
-          For legal or policy enquiries contact:{' '}
-          <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a>
+          These Terms are governed by Italian law. For any dispute connected with the website, the courts of Milan
+          have jurisdiction, without prejudice to any mandatory consumer forum provided by law for users acting as
+          consumers resident in Italy or in the European Union.
+        </p>
+      </LegalSectionBlock>
+
+      <LegalSectionBlock id="misc" number="16" title="Final Provisions">
+        <p>
+          If any provision of these Terms is held invalid, the remaining provisions stay effective. A failure to
+          enforce a provision is not a waiver. These Terms are drafted in English for accessibility; legal concepts
+          refer to Italian law. For legal review: confirm the interplay between these Terms, the association's
+          Statute and the applicable University regulations whenever any of them changes.
         </p>
       </LegalSectionBlock>
     </LegalLayout>

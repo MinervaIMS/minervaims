@@ -144,6 +144,7 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['A candidate can only be invited to interview if their division has at least one open slot.'],
     topics: [
       { id: 'slots', title: 'How slots work', body: 'Each slot belongs to a division and holds one candidate. Candidates see only the open slots of the division they were invited for, and book directly from their own restricted workspace.' },
+      { id: 'bulk', title: 'Opening several slots at once', body: 'The bulk tool creates a run of slots between a start and an end time on one day, all carrying the same meeting link. Ideal for a full interview afternoon.', requires: 'manage' },
     ],
   },
   {
@@ -163,6 +164,9 @@ export const GUIDE: GuideEntry[] = [
     view: ['Read the current questions and settings.'],
     manage: ['Edit form settings and each division\'s written question.'],
     warnings: ['Changing questions in the middle of an application window means candidates answer different questions in the same round.'],
+    topics: [
+      { id: 'questions', title: 'Division questions', body: 'Each division can define its own written question. Candidates answer the question of their first-choice division; keep questions stable during an open window so every candidate faces the same test.' },
+    ]
   },
   {
     key: 'events-create', section: 'Events', label: 'Create event',
@@ -171,6 +175,7 @@ export const GUIDE: GuideEntry[] = [
     manage: ['Create events; they appear on the Calendar, in the archive and, if enabled, on the public website.'],
     topics: [
       { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, alumni call, association-wide gathering). Internal types default to staying off the public website; you can change that per event in the Event archive.' },
+      { id: 'poster', title: 'Posters', body: 'A poster makes the event stand out in the archive and on the website. JPG, PNG or PDF up to 10 MB; any aspect ratio is accepted.' },
     ],
   },
   {
@@ -238,6 +243,9 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'The advisors and silent advisors directory. Silent advisors are identical to advisors but are not displayed on the public website.',
     view: ['Browse advisors.'],
     manage: ['Add and edit advisors.'],
+    topics: [
+      { id: 'silent', title: 'Silent advisors', body: 'A silent advisor has exactly the same standing as an advisor; the only difference is that silent advisors are not displayed on the public website.' },
+    ]
   },
   {
     key: 'people-alumni', section: 'People', label: 'Alumni',
@@ -252,6 +260,9 @@ export const GUIDE: GuideEntry[] = [
     key: 'smm-editorial', section: 'Media & Communication', label: 'Editorial calendar',
     purpose: 'Plan social content: what is published, where and when.',
     view: ['Consult the plan.'], manage: ['Create, move and complete editorial items.'],
+    topics: [
+      { id: 'planning', title: 'Planning items', body: 'Each item represents one piece of content with its channel and date. Move items as plans change; completing an item records that the content went out.' },
+    ]
   },
   { key: 'smm-ig', section: 'Media & Communication', label: 'Instagram', purpose: 'Reusable Instagram material: texts, files and links.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'] },
   { key: 'smm-li', section: 'Media & Communication', label: 'LinkedIn', purpose: 'Reusable LinkedIn material.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'] },
@@ -290,17 +301,24 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   { key: 'ops-external', section: 'Operations', label: 'External relations', purpose: 'Repository of external relationships: contacts, agreements, files and links.', view: ['Consult the material.'], manage: ['Maintain the material.'] },
-  { key: 'ops-docs', section: 'Operations', label: 'Statute & documents', purpose: 'Official documents: the statute, drafts and approval documents.', view: ['Read and download documents.'], manage: ['Maintain the document repository.'] },
+  { key: 'ops-docs', section: 'Operations', label: 'Statute & documents', purpose: 'Official documents: the statute, drafts and approval documents.', view: ['Read and download documents.'], manage: ['Maintain the document repository.'],
+    topics: [{ id: 'official', title: 'Official documents', body: 'This repository holds the statute and the association\'s formal documents. Keep the latest approved versions pinned as favourites so members always find the current text first.' }] },
   {
     key: 'website-pages', section: 'Website', label: 'Pages',
     purpose: 'Show or hide individual public website pages.',
     view: ['See which pages are visible.'],
     manage: ['Toggle page visibility. Changes take effect immediately for the public.'],
     warnings: ['Hiding a page shows visitors a "Page under update" notice instantly.'],
+    topics: [
+      { id: 'hide-effect', title: 'What hiding does', body: 'A hidden page stays reachable at its address but visitors see a Page under update notice over a blurred body. The homepage and the legal pages can never be hidden.' },
+    ],
   },
-  { key: 'website-readings', section: 'Website', label: 'Readings', purpose: 'The public readings list.', view: ['Consult it.'], manage: ['Add, edit and remove readings.'] },
-  { key: 'website-testimonials', section: 'Website', label: 'Testimonials', purpose: 'The homepage testimonials.', view: ['Read them.'], manage: ['Manage which testimonials appear publicly.'] },
-  { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends.'] },
+  { key: 'website-readings', section: 'Website', label: 'Readings', purpose: 'The public readings list.', view: ['Consult it.'], manage: ['Add, edit and remove readings.'],
+    topics: [{ id: 'visibility', title: 'What visitors see', body: 'Readings appear on the public website in the order shown here. Add a reading only when the reference is complete and correctly attributed.' }] },
+  { key: 'website-testimonials', section: 'Website', label: 'Testimonials', purpose: 'The homepage testimonials.', view: ['Read them.'], manage: ['Manage which testimonials appear publicly.'],
+    topics: [{ id: 'linking', title: 'Linking to alumni records', body: 'Each testimonial should be linked to its alumni record so the homepage can show the current company automatically. A warning appears when the link or the company is missing.' }] },
+  { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends.'],
+    topics: [{ id: 'consent', title: 'Subscriber consent', body: 'Subscribers joined through the website form and consented to updates. Every message must keep the unsubscribe link intact, and unsubscribed addresses are never contacted again.' }] },
   {
     key: 'ops-auto-emails', section: 'Website', label: 'Automatic emails',
     purpose: 'The automatic email templates the system sends (confirmations, invitations, reminders) and their send log.',

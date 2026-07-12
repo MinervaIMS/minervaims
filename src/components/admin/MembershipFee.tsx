@@ -16,6 +16,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, roleLabel as composeRoleLabel, memberRank } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { Recommendation } from '@/components/admin/Recommendation';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
@@ -117,7 +118,18 @@ export default function MembershipFee() {
       [{ key: 'name', header: 'Name' }, { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' }, { key: 'phone', header: 'Phone' }, { key: 'paid', header: 'Fee' }], 'membership-fees.csv');
   };
 
-  if (loading) return <div><WorkspacePageHeader title="Membership fees" description="Collect the semester membership fee." /><WorkspaceLoader /></div>;
+  if (loading) return <div><WorkspacePageHeader title="Membership fees" description="Collect the semester membership fee." />
+
+      <div className="mb-5">
+        <Recommendation title="Collect fees as soon as offers are accepted">
+          <p>
+            Past semesters show that the collection works best when it starts immediately after the new candidates
+            accept their offers. Collecting early means the association knows exactly who its members are for the
+            semester as soon as possible: the official member register can be frozen, teams can be organised with
+            certainty, and the semester starts in an orderly way instead of chasing payments for weeks.
+          </p>
+        </Recommendation>
+      </div><WorkspaceLoader /></div>;
 
   return (
     <div>

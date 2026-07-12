@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Cof
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   DndContext,
   closestCenter,
@@ -442,11 +443,7 @@ const ReadingsManagement = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <WorkspaceLoader />;
   }
 
   const handleDownloadCSV = () => {
