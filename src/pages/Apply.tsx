@@ -15,6 +15,7 @@ import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { ApplyBackground } from '@/components/shared/ApplyBackground';
+import PixelCard from '@/components/shared/PixelCard';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';

@@ -1,30 +1,17 @@
-## Root cause
+## Restore the pixel animation on the "Application submitted" card
 
-`src/components/shared/AuthLayout.tsx` (line 33) and `src/pages/Apply.tsx` (lines 34 and 70) use the class `items-safe-center`. That utility only exists in Tailwind v4; this project is on Tailwind 3.4.17, so the class is dropped and the flex container falls back to `align-items: stretch`. The `max-w-md` white card is therefore stretched to full viewport height, producing the large empty white area visible on `/auth` (and the same bug is present on every page that uses `AuthLayout`, plus `/apply`).
+**Problem:** The `SuccessScreen` in `src/pages/Apply.tsx` has a comment describing a "pixel animation [that] fills the whole white card, then fades away gradually, with the confirmation message and workspace button on top" — but the JSX no longer renders it. The `PixelCard` component still exists at `src/components/shared/PixelCard.tsx` (with auto-play appear → hold → disappear + opacity fade), it just isn't imported anywhere.
 
-## Change
+**Fix (single file — `src/pages/Apply.tsx`):**
 
-Replace `items-safe-center` with `items-center` in the three occurrences:
+1. Import `PixelCard` from `@/components/shared/PixelCard`.
+2. In `SuccessScreen`, wrap the inner content of the white card with `<PixelCard>` so the canvas fills the card behind the logo / heading / paragraphs / button.
+   - `variant="default"` (matches the deep-purple accent palette already used elsewhere), `activeDuration={3000}`, `fadeMs={1400}` — the component defaults.
+   - Give it `className="absolute inset-0"` and set the card wrapper to `relative overflow-hidden` so the canvas covers the full card without pushing layout.
+   - Keep the existing content in a sibling `<div className="relative z-10">` so it stays on top and remains readable throughout the fade.
+3. No changes to `Apply` form, no changes to other pages, no changes to `PixelCard` itself.
 
-1. `src/components/shared/AuthLayout.tsx` line 33.
-2. `src/pages/Apply.tsx` line 34.
-3. `src/pages/Apply.tsx` line 70.
-
-No other edits. Nothing else changes — no removal of the purple background, no restyle, no new components. The white card will now size to its content and sit vertically centred in the dark panel.
-
-## Pages fixed by this single change
-
-- `/auth`
-- `/forgot-password`
-- `/reset-password`
-- `/check-email`
-- `/application-check-email`
-- `/email-verification`
-- `/pending-approval`
-- `/session-expired`
-- `/password-reset-success`
-- `/apply` (both its states)
-
-## Verification
-
-After the edit, reload `/auth` and `/check-email`; the card should hug its content with no white block extending down the page. No functional or copy changes to any auth page.
+### Technical notes
+- `PixelCard` auto-plays on mount, so no extra state wiring is needed.
+- The card already has `shadow-2xl border border-separator rounded-lg`; adding `relative overflow-hidden` preserves those while clipping the canvas to the rounded corners.
+- Text remains black on white (canvas fades out to transparent), respecting the "no animations except /join" rule's existing exception for this specific success card.
