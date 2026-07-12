@@ -11,6 +11,8 @@ import {
 import { Download, Lock, Loader2, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, roleLabel as composeRoleLabel, memberRank } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -23,6 +25,7 @@ import {
 
 export default function MembershipFee() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<FeePeriod | null>(null);
@@ -83,6 +86,7 @@ export default function MembershipFee() {
     setBusy(true);
     try {
       await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null);
+      logActivity(session, primaryRole, { action: 'open', section: 'Operations', subsection: 'Membership fees', entityType: 'fee_period', entityName: newLabel.trim() });
       setNewLabel(''); setFirstDeadline(''); setSecondDeadline(''); await load(); toast({ title: 'Collection opened' });
     }
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -96,7 +100,7 @@ export default function MembershipFee() {
       const ex = prev.find((f) => f.member_id === memberId);
       return ex ? prev.map((f) => (f.member_id === memberId ? { ...f, paid: next } : f)) : [...prev, { id: memberId, period_id: period.id, member_id: memberId, paid: next }];
     });
-    try { await setFeePaid(session, period.id, memberId, next); }
+    try { await setFeePaid(session, period.id, memberId, next); logActivity(session, primaryRole, { action: 'update', section: 'Operations', subsection: 'Membership fees', entityType: 'membership_fee', entityId: memberId, details: { paid: next } }); }
     catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); load(); }
   };
 

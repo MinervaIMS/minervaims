@@ -107,7 +107,7 @@ export default function ApplicationStatus() {
             <CardContent className="py-6">
               <div className="flex items-center gap-2 text-accent mb-2">
                 <PartyPopper className="h-5 w-5" />
-                <span className="font-serif text-lg">Congratulations — you have an offer to join!</span>
+                <span className="font-serif text-lg">Congratulations, you have an offer to join!</span>
               </div>
               <p className="text-sm text-foreground mb-1">
                 You have been offered a place{app.offer_division ? ` in ${divisionLabels[app.offer_division]}` : ''}.
@@ -125,7 +125,7 @@ export default function ApplicationStatus() {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Accept your offer to join?</AlertDialogTitle>
-                      <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone. It can take a few minutes for your account to be upgraded and your new role to appear — if it hasn't updated straight away, please be patient and come back shortly.</AlertDialogDescription>
+                      <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone. It can take a few minutes for your account to be upgraded and your new role to appear. If it has not updated straight away, please be patient and come back shortly.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Not yet</AlertDialogCancel>
@@ -157,7 +157,7 @@ export default function ApplicationStatus() {
           <Card className="border-emerald-200 bg-emerald-50">
             <CardContent className="py-5">
               <p className="text-sm text-emerald-800">Welcome to Minerva IMS! Head to <strong>My Profile</strong> to add your photo and complete your member details.</p>
-              <p className="text-xs text-emerald-700 mt-2">Your account is being upgraded to your new role. If the workspace still shows the applicant view, please be patient — it can take a few minutes. Refresh or come back shortly and your full member workspace will appear.</p>
+              <p className="text-xs text-emerald-700 mt-2">Your account is being upgraded to your new role. If the workspace still shows the applicant view, please be patient; it can take a few minutes. Refresh or come back shortly and your full member workspace will appear.</p>
             </CardContent>
           </Card>
         )}

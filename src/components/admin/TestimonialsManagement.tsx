@@ -114,7 +114,7 @@ export default function TestimonialsManagement() {
         <div className="space-y-4">
           <Card><CardContent className="py-3 font-body text-sm text-muted-foreground flex items-start gap-2">
             <Link2 className="h-4 w-4 mt-0.5 shrink-0 text-accent" />
-            <span>Every testimonial comes from an alumnus/alumna. Link each one to its alumni record so the homepage can show “…, currently at &lt;Company&gt;”. A warning below means the person or their company could not be found — fix it in <strong>People → Alumni</strong> or by re-linking here.</span>
+            <span>Every testimonial comes from an alumnus/alumna. Link each one to its alumni record so the homepage can show “…, currently at &lt;Company&gt;”. A warning below means the person or their company could not be found; fix it in <strong>People → Alumni</strong> or by re-linking here.</span>
           </CardContent></Card>
 
           {items.length === 0 ? (
@@ -213,7 +213,7 @@ export default function TestimonialsManagement() {
                 {form.alumni_id && (
                   selectedAlumnusCompany
                     ? <p className="text-xs text-emerald-700">Homepage will show: “{form.role_label || 'role'}, currently at {selectedAlumnusCompany}”.</p>
-                    : <p className="text-xs text-amber-700">This alumnus has no company on file — add it in People → Alumni so it shows on the homepage.</p>
+                    : <p className="text-xs text-amber-700">This alumnus has no company on file; add it in People → Alumni so it shows on the homepage.</p>
                 )}
               </div>
 

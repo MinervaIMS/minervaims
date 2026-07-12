@@ -13,6 +13,7 @@ import { Plus, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listTreasury, addTreasuryEntry, type TreasuryEntry } from '@/lib/ops-api';
 import { semesterOf, currentSemester } from '@/lib/semester';
@@ -78,7 +79,7 @@ export default function Treasury() {
         actions={<Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Current balance</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">Current balance <HelpDot page="ops-treasury" topic="immutability" /></div>
         <div className={`font-serif text-2xl ${balance < 0 ? 'text-destructive' : 'text-accent'}`}>{eur(balance)}</div>
       </CardContent></Card>
 

@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Send, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { Lock } from 'lucide-react';
 import { divisionLabels, roleLabel as composeRoleLabel, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
 import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applications-api';
@@ -33,6 +35,7 @@ function offerState(a: ApplicationRow): { label: string; tone: string; canOffer:
 
 export default function NewJoiners() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const { canManage } = useAccess();
   // Some roles may open this page only to understand the offer flow; every
@@ -104,6 +107,7 @@ export default function NewJoiners() {
     setBusy(true);
     try {
       await sendOffer(session, target.id, role, division, feeDue);
+      logActivity(session, primaryRole, { action: 'approval', section: 'Recruiting', subsection: 'Offers', entityType: 'application', entityId: target.id, entityName: `${target.first_name} ${target.surname}`, details: { role, division } });
       toast({ title: 'Offer sent', description: `${target.first_name} ${target.surname} has 3 days to accept. They will receive an email.` });
       setTarget(null);
       await load();
@@ -131,12 +135,12 @@ export default function NewJoiners() {
           <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
           <SelectContent>
             {semesterOptions.map((s) => (
-              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' — archive'}</SelectItem>
+              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' (archive)'}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         {viewingArchived && (
-          <span className="font-body text-sm text-muted-foreground">Archived semester — read-only record of past offers.</span>
+          <span className="font-body text-sm text-muted-foreground">Archived semester: a read-only record of past offers.</span>
         )}
       </div>
 
@@ -150,7 +154,7 @@ export default function NewJoiners() {
                 <th className="px-3 py-2 font-normal">Name</th>
                 <th className="px-3 py-2 font-normal">Preference</th>
                 <th className="px-3 py-2 font-normal">Email</th>
-                <th className="px-3 py-2 font-normal">Offer</th>
+                <th className="px-3 py-2 font-normal"><span className="inline-flex items-center gap-1.5">Offer <HelpDot page="applications-joiners" topic="offer-flow" /></span></th>
                 <th className="px-3 py-2 font-normal text-right">Action</th>
               </tr>
             </thead>
@@ -169,7 +173,7 @@ export default function NewJoiners() {
                           <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
                         </Button>
                       )}
-                      {st.canOffer && !canSendOffers && <span className="text-xs text-muted-foreground">—</span>}
+                      {st.canOffer && !canSendOffers && <span className="text-xs text-muted-foreground">-</span>}
                     </td>
                   </tr>
                 );

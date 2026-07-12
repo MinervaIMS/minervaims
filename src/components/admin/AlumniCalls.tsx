@@ -9,8 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listAlumniCalls, saveAlumniCall, deleteAlumniCall, listAlumniDirectory,
@@ -22,6 +25,7 @@ const EMPTY: AlumniCallInput = { division: null, planned_date: '', status: 'plan
 
 export default function AlumniCalls() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [calls, setCalls] = useState<AlumniCall[]>([]);
   const [alumni, setAlumni] = useState<AlumniOption[]>([]);
@@ -75,14 +79,14 @@ export default function AlumniCalls() {
   const save = async () => {
     if (form.participants.length < 2) { toast({ title: 'Add at least 2 alumni', description: 'A call is a group of 2 to 5 alumni.', variant: 'destructive' }); return; }
     setSaving(true);
-    try { await saveAlumniCall(session, form); toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load(); }
+    try { await saveAlumniCall(session, form); logActivity(session, primaryRole, { action: editingId ? 'update' : 'create', section: 'Events', subsection: 'Alumni calls', entityType: 'alumni_call', entityName: form.planned_date || 'Alumni call' }); toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load(); }
     catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setSaving(false); }
   };
 
   const remove = async (c: AlumniCall) => {
     if (!confirm('Delete this alumni call?')) return;
-    try { await deleteAlumniCall(session, c.id); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    try { await deleteAlumniCall(session, c.id); logActivity(session, primaryRole, { action: 'delete', section: 'Events', subsection: 'Alumni calls', entityType: 'alumni_call', entityId: c.id, entityName: c.planned_date || 'Alumni call' }); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   return (
@@ -136,7 +140,7 @@ export default function AlumniCalls() {
             </div>
 
             <div className="space-y-2">
-              <Label>Alumni (2 to 5) *</Label>
+              <Label className="inline-flex items-center gap-1.5">Alumni (2 to 5) * <HelpDot page="events-alumni-calls" topic="search" /></Label>
               {/* Invited alumni — each chip shows the alumnus and their company. */}
               <div className="flex flex-wrap gap-1.5">
                 {form.participants.map((p, i) => (

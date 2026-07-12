@@ -13,6 +13,7 @@ import { CalendarPlus, Sparkles, Trash2, Clock, Video, User, Loader2 } from 'luc
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -32,6 +33,7 @@ const plus30 = (t: string) => {
 
 export default function InterviewCalendar() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const access = useAccess();
 
@@ -91,6 +93,7 @@ export default function InterviewCalendar() {
     setBusy(true);
     try {
       await createSlot(session, { division, ...form });
+      logActivity(session, primaryRole, { action: 'create', section: 'Recruiting', subsection: 'Interview calendar', entityType: 'interview_slot', entityName: `${division} slot` });
       toast({ title: 'Slot opened' });
       setCreateOpen(false); setForm({ slot_date: '', start_time: '', end_time: '', meeting_link: '' });
       await load(division);
@@ -113,7 +116,7 @@ export default function InterviewCalendar() {
 
   const removeSlot = async (id: string) => {
     if (!division) return;
-    try { await deleteSlot(session, id); toast({ title: 'Slot removed' }); await load(division); }
+    try { await deleteSlot(session, id); logActivity(session, primaryRole, { action: 'delete', section: 'Recruiting', subsection: 'Interview calendar', entityType: 'interview_slot', entityId: id }); toast({ title: 'Slot removed' }); await load(division); }
     catch (e) { toast({ title: 'Could not remove the slot', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 

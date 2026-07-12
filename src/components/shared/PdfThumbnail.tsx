@@ -11,6 +11,7 @@ interface PdfThumbnailProps {
 
 // PDF.js types (minimal subset we need)
 interface PDFDocumentProxy {
+  numPages: number;
   getPage(pageNumber: number): Promise<PDFPageProxy>;
 }
 
@@ -25,7 +26,7 @@ interface PDFPageViewport {
 }
 
 interface PDFJSLib {
-  getDocument(params: { url: string; disableRange?: boolean; disableStream?: boolean }): { promise: Promise<PDFDocumentProxy> };
+  getDocument(params: { url?: string; data?: ArrayBuffer; disableRange?: boolean; disableStream?: boolean }): { promise: Promise<PDFDocumentProxy> };
   GlobalWorkerOptions: { workerSrc: string };
 }
 
@@ -78,6 +79,30 @@ const loadPdfJs = (): Promise<PDFJSLib> => {
 
   return loadingPromise;
 };
+
+/**
+ * Count the pages of a PDF file using the same PDF.js loader as the
+ * thumbnails. Falls back to a structural estimate if PDF.js cannot load,
+ * so a count is always produced without any user input.
+ */
+export async function countPdfPages(file: File): Promise<number | null> {
+  const buf = await file.arrayBuffer();
+  try {
+    const pdfjs = await loadPdfJs();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    if (doc.numPages > 0) return doc.numPages;
+  } catch { /* fall through to the structural estimate */ }
+  try {
+    const bytes = new Uint8Array(buf);
+    let text = '';
+    for (let i = 0; i < bytes.length; i += 8192) text += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)));
+    const counts = [...text.matchAll(/\/Count\s+(\d+)/g)].map((m) => parseInt(m[1], 10));
+    const byCount = counts.length ? Math.max(...counts) : 0;
+    const byType = (text.match(/\/Type\s*\/Page[^s]/g) || []).length;
+    const n = Math.max(byCount, byType);
+    return n > 0 && n < 5000 ? n : null;
+  } catch { return null; }
+}
 
 export function PdfThumbnail({ url, className = '', alt = 'PDF Preview', renderWidth = 200 }: PdfThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

@@ -12,6 +12,8 @@ import {
 import { Plus, Pencil, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listAds, saveAd, type AdEntry, type AdInput } from '@/lib/smm-api';
@@ -27,6 +29,7 @@ function semesterOf(dateStr: string | null): { label: string; sort: number } {
 
 export default function AdsRegister() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [ads, setAds] = useState<AdEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +86,7 @@ export default function AdsRegister() {
         campaign_purpose: form.campaign_purpose || null, effectiveness_notes: form.effectiveness_notes || null,
       };
       await saveAd(session, payload);
+      logActivity(session, primaryRole, { action: editingId ? 'update' : 'create', section: 'Media & Communication', subsection: 'Ads & spending', entityType: 'ad', entityName: form.content.slice(0, 80), details: { amount: form.amount || null, platform: form.platform || null } });
       toast({ title: editingId ? 'Updated' : 'Entry added', description: editingId ? undefined : 'The amount was posted to the Treasury.' });
       setConfirmOpen(false); setDialogOpen(false); await load();
     } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }

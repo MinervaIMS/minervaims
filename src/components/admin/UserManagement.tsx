@@ -234,7 +234,7 @@ const UserManagement = () => {
     <div className="space-y-6">
       <WorkspacePageHeader
         title="Users"
-        description="Assign workspace roles — this controls who can manage the website, applications, events, membership and everything else. Role changes are confirmed, logged, and restricted to the President and Admin."
+        description="Assign workspace roles. This controls who can manage the website, applications, events, membership and everything else. Role changes are confirmed, logged, and restricted to the President and Admin."
       />
 
       {!canEdit && (
@@ -262,7 +262,7 @@ const UserManagement = () => {
               : pendingUsers.map((u) => (
                 <div key={u.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border-b border-separator last:border-b-0 font-body">
                   <div className="min-w-0 flex-1">
-                    <div className="text-foreground truncate">{u.full_name || '—'}</div>
+                    <div className="text-foreground truncate">{u.full_name || '-'}</div>
                     <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                   </div>
                   {canEdit
@@ -306,11 +306,11 @@ const UserManagement = () => {
                   return (
                     <tr key={u.id} className="border-t border-separator align-middle">
                       <td className="px-3 py-2 text-foreground whitespace-nowrap">
-                        {u.full_name || '—'} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
+                        {u.full_name || '-'} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-foreground">{roleLabel(u.role, u.division)}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{u.division ? (divisionLabels[u.division] ?? u.division) : '—'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{u.division ? (divisionLabels[u.division] ?? u.division) : '-'}</td>
                       <td className="px-3 py-2 text-right">{rowActions(u)}</td>
                     </tr>
                   );

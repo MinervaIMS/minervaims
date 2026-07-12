@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, X, Loader2, Upload, Archive, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activity-log';
+import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import {
@@ -22,6 +24,7 @@ const DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 
 
 export default function EventCreate() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -58,6 +61,7 @@ export default function EventCreate() {
         start_at: new Date(form.start_local).toISOString(), end_at: form.end_local ? new Date(form.end_local).toISOString() : null,
         online: form.online, registration_enabled: form.registration_enabled, registration_audience: form.registration_audience,
       });
+      logActivity(session, primaryRole, { action: 'create', section: 'Events', subsection: 'Create event', entityType: 'event', entityName: form.title });
       toast({ title: 'Event created', description: 'Find it in the Calendar.' });
       setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members' });
       setGuests(['']);

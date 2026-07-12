@@ -1,6 +1,7 @@
 import { Fragment, useMemo } from 'react';
 import { Info } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import {
   resolveLevel, specialRulesFor, SPECIAL_RULES, DIVISION_SCOPED_RESOURCES, CANDIDATE_RESOURCES,
   type AccessLevel, type ResourceKey,
@@ -53,7 +54,7 @@ function cellLevel(role: AppRole, resource: ResourceKey): AccessLevel {
 }
 
 const LEVEL_STYLE: Record<AccessLevel, { text: string; cls: string }> = {
-  none: { text: '—', cls: 'text-muted-foreground/50' },
+  none: { text: '-', cls: 'text-muted-foreground/50' },
   view: { text: 'View', cls: 'bg-amber-50 text-amber-700' },
   edit: { text: 'Edit', cls: 'bg-sky-50 text-sky-700' },
   manage: { text: 'Full', cls: 'bg-emerald-50 text-emerald-700' },
@@ -84,11 +85,12 @@ export default function RolePermissionsTable() {
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 mb-4 font-body text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-100 inline-block" /> Full — interact + create/edit/remove</span>
-        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-100 inline-block" /> View — open + light actions (register, preview…)</span>
-        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-muted inline-block" /> — Hidden</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-100 inline-block" /> Full: interact plus create, edit and remove</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-100 inline-block" /> View: open plus light actions (register, preview)</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-muted inline-block" /> - Hidden</span>
         <span className="inline-flex items-center gap-1.5"><span className="text-accent">✦</span> special rule (see below)</span>
         <span className="inline-flex items-center gap-1.5"><span className="text-accent">÷</span> own-division data only</span>
+        <HelpDot page="settings-roles" topic="levels" />
       </div>
 
       <div className="overflow-x-auto border border-separator">
@@ -140,7 +142,7 @@ export default function RolePermissionsTable() {
           {SPECIAL_RULES.map((s, i) => (
             <li key={i} className="flex gap-2">
               <span className="text-accent mt-0.5">✦</span>
-              <span><span className="text-foreground">{s.roles.map((r) => ROLES.find((x) => x.key === r)?.label ?? r).join(', ')}</span> — {s.label}</span>
+              <span><span className="text-foreground">{s.roles.map((r) => ROLES.find((x) => x.key === r)?.label ?? r).join(', ')}</span>: {s.label}</span>
             </li>
           ))}
           <li className="flex gap-2">

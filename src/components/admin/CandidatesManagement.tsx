@@ -15,6 +15,7 @@ import { Download, FileText, Search, MessageSquare, Eye, Loader2 } from 'lucide-
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { logActivity } from '@/lib/activity-log';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -50,7 +51,7 @@ function triggerDownloads(files: { name: string; url: string }[]) {
 
 export default function CandidatesManagement() {
   const { session } = useAuth();
-  const { canManage, hasSpecial } = useAccess();
+  const { canManage, hasSpecial, primaryRole } = useAccess();
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
   const { toast } = useToast();
@@ -140,6 +141,8 @@ export default function CandidatesManagement() {
   const changeStatus = async (id: string, status: ApplicationStatus, division?: OrgDivision | null) => {
     try {
       await updateApplicationStatus(session, id, status, division);
+      const who = apps.find((x) => x.id === id);
+      logActivity(session, primaryRole, { action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application', entityId: id, entityName: who ? `${who.first_name} ${who.surname}` : id, details: { status } });
       setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status, interview_division: division ?? a.interview_division } : a)));
       if (detail?.application.id === id) setDetail({ ...detail, application: { ...detail.application, status, interview_division: division ?? detail.application.interview_division } });
       toast({ title: 'Status updated' });
@@ -191,6 +194,7 @@ export default function CandidatesManagement() {
     setSavingNote(true);
     try {
       await addApplicationNote(session, openId, noteText.trim());
+      logActivity(session, primaryRole, { action: 'create', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application_note', entityId: openId, entityName: detail ? `${detail.application.first_name} ${detail.application.surname}` : openId });
       setNoteText('');
       setDetail(await getApplication(session, openId));
       load();
@@ -237,7 +241,7 @@ export default function CandidatesManagement() {
           <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
           <SelectContent>
             {semesterOptions.map((s) => (
-              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' — archive'}</SelectItem>
+              <SelectItem key={s.key} value={s.key}>{s.label}{s.key === currentSemester().key ? ' (current)' : ' (archive)'}</SelectItem>
             ))}
           </SelectContent>
         </Select>

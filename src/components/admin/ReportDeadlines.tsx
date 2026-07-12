@@ -100,7 +100,7 @@ export default function ReportDeadlines() {
                 <td className="px-3 py-2 whitespace-nowrap">{new Date(r.due_date).toLocaleDateString()}</td>
                 <td className="px-3 py-2">{r.title}</td>
                 <td className="px-3 py-2">{r.division ? DIVISION_LABELS[r.division] : 'All divisions'}</td>
-                <td className="px-3 py-2 text-muted-foreground">{r.notes || '—'}</td>
+                <td className="px-3 py-2 text-muted-foreground">{r.notes || '-'}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
                   <Button variant="ghost" size="sm" onClick={() => remove(r)}><Trash2 className="h-4 w-4" /></Button>

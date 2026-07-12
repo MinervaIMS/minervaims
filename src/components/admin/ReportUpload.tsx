@@ -15,8 +15,7 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { activeFunds, fundLabels, type Fund } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { logActivity } from '@/lib/activity-log';
-import { HelpDot } from '@/components/admin/help/HelpSystem';
-import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
+import { PdfThumbnail, countPdfPages } from '@/components/shared/PdfThumbnail';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
@@ -49,21 +48,6 @@ export default function ReportUpload() {
 
   const isFundReport = form.division === 'portfolio' && !!form.fund;
 
-  // Best-effort page count read from the PDF structure. Used to pre-fill the
-  // "Pages" field (which stays editable); feeds the Dashboard length metric.
-  const estimatePdfPages = async (file: File): Promise<number | null> => {
-    try {
-      const buf = new Uint8Array(await file.arrayBuffer());
-      let text = '';
-      for (let i = 0; i < buf.length; i += 8192) text += String.fromCharCode(...buf.subarray(i, Math.min(i + 8192, buf.length)));
-      const counts = [...text.matchAll(/\/Count\s+(\d+)/g)].map((m) => parseInt(m[1], 10));
-      const byCount = counts.length ? Math.max(...counts) : 0;
-      const byType = (text.match(/\/Type\s*\/Page[^s]/g) || []).length;
-      const n = Math.max(byCount, byType);
-      return n > 0 && n < 2000 ? n : null;
-    } catch { return null; }
-  };
-
   const handleUpload = async (file: File) => {
     if (file.type !== 'application/pdf') { toast({ title: 'Only PDF files are allowed', variant: 'destructive' }); return; }
     if (file.size > 10 * 1024 * 1024) { toast({ title: 'File must be under 10 MB', variant: 'destructive' }); return; }
@@ -78,8 +62,8 @@ export default function ReportUpload() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setFileUrl(data.file_url); setFileName(file.name);
-      const pages = await estimatePdfPages(file);
-      if (pages) setPageCount(String(pages));
+      // Page count is detected automatically from the PDF. No user input.
+      countPdfPages(file).then((pages) => setPageCount(pages ? String(pages) : '')).catch(() => setPageCount(''));
       toast({ title: 'File uploaded' });
     } catch (e) {
       toast({ title: 'Upload failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -134,11 +118,6 @@ export default function ReportUpload() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5"><Label>Pages</Label><HelpDot page="reports-upload" topic="pages" /></div>
-              <Input type="number" min={1} value={pageCount} onChange={(e) => setPageCount(e.target.value)} placeholder="auto-filled from the PDF" />
-              <p className="text-xs text-muted-foreground">Counted automatically when you attach the PDF — correct it if needed. It feeds the Dashboard's report-length metric.</p>
-            </div>
             <div className="space-y-1">
               <Label>Division *</Label>
               <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision, fund: '' })}>

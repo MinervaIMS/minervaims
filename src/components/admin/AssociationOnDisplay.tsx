@@ -46,7 +46,7 @@ export default function AssociationOnDisplay() {
 
   const addDay = async () => {
     if (!newDate) { toast({ title: 'Pick a date', variant: 'destructive' }); return; }
-    try { await createAodDay(session, newDate); setNewDate(''); await load(); }
+    try { await createAodDay(session, newDate); logActivity(session, primaryRole, { action: 'create', section: 'Events', subsection: 'Association on Display', entityType: 'aod_day', entityName: newDate }); setNewDate(''); await load(); }
     catch (e) { toast({ title: 'Could not create', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -68,7 +68,7 @@ export default function AssociationOnDisplay() {
     finally { setBusySlot(null); }
   };
   const handleRemove = async (id: string) => {
-    try { await aodRemoveSignup(session, id); await load(); }
+    try { await aodRemoveSignup(session, id); logActivity(session, primaryRole, { action: 'delete', section: 'Events', subsection: 'Association on Display', entityType: 'aod_signup', entityId: id, entityName: 'Slot registration cancelled' }); await load(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
