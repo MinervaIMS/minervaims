@@ -102,7 +102,7 @@ export default function FundsPerformances() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Funds' performances"
+        title="Fund performances"
         description="Update the monthly performance of the active simulated funds. Both fund tables are shown together and mirror the tables on the public fund pages: any change here appears there immediately. Enter each value exactly as it should read on the site (for example +1.2% or -0.4%)."
       />
 

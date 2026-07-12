@@ -95,7 +95,7 @@ export default function NewJoiners() {
   return (
     <div>
       <WorkspacePageHeader
-        title="New joiners"
+        title="Offers"
         description="Candidates who passed the selection. Send an offer to join with a specific role and division; the candidate has three days to accept from their workspace (a reminder is sent after two days). Accepting turns their account into a member automatically."
       />
 
