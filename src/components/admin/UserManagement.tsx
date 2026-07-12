@@ -4,19 +4,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
-import { Loader2, Clock, ChevronDown, ChevronRight, Trash2, Search, ShieldCheck, Save } from 'lucide-react';
+import { Loader2, Clock, ChevronDown, ChevronRight, Trash2, Search, ShieldCheck, Pencil, Save } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type AppRole, type OrgDivision, roleLabel, divisionLabels, normalizeRole, CORE_DIVISIONS } from '@/lib/roles';
+import {
+  type AppRole, type OrgDivision, roleLabel, divisionLabels, normalizeRole, assignmentDivision, CORE_DIVISIONS,
+} from '@/lib/roles';
 
 const ADMIN_EMAIL = 'as.minerva@unibocconi.it';
 
@@ -25,7 +31,7 @@ interface UserRow {
   email: string;
   full_name: string | null;
   created_at: string;
-  role: AppRole;
+  role: AppRole;              // normalised (canonical) role
   division: OrgDivision | null;
   role_id: string;
 }
@@ -36,10 +42,20 @@ const ASSIGNABLE_ROLES: AppRole[] = [
   'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
   'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member',
 ];
-// Roles that need a division to be meaningful.
-const DIVISION_ROLES: AppRole[] = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst'];
 // A user with one of these (or no role row) is "pending" — not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];
+
+// Which divisions a role may be paired with. Portfolio Management's "team
+// leader" IS the Portfolio Manager role, so: Portfolio Manager ⇒ Portfolio
+// only; Team Leader ⇒ every research division EXCEPT Portfolio; Head of
+// Division / Senior Analyst / Analyst ⇒ any of the five research divisions.
+function divisionsForRole(role: AppRole): OrgDivision[] {
+  if (role === 'portfolio_manager') return ['portfolio'];
+  if (role === 'team_leader') return CORE_DIVISIONS.filter((d) => d !== 'portfolio');
+  if (role === 'head_of_division' || role === 'senior_analyst' || role === 'analyst') return [...CORE_DIVISIONS];
+  return [];
+}
+const roleNeedsDivision = (role: AppRole) => divisionsForRole(role).length > 0;
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -49,8 +65,8 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
   const [divFilter, setDivFilter] = useState<string[]>([]);
   const [pendingOpen, setPendingOpen] = useState(false);
-  const [drafts, setDrafts] = useState<Record<string, { role: AppRole; division: OrgDivision | null }>>({});
-  const [confirmChange, setConfirmChange] = useState<UserRow | null>(null);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [editForm, setEditForm] = useState<{ role: AppRole; division: OrgDivision | null }>({ role: 'analyst', division: null });
   const [confirmDelete, setConfirmDelete] = useState<UserRow | null>(null);
   const { toast } = useToast();
   const { user: currentUser, session } = useAuth();
@@ -69,10 +85,14 @@ const UserManagement = () => {
 
       const rows: UserRow[] = (profiles || []).map((profile) => {
         const ur = roles?.find((r) => r.user_id === profile.id);
+        const rawRole = (ur?.role as AppRole) || 'pending';
+        const rawDiv = (ur?.division as OrgDivision | null) ?? null;
         return {
           id: profile.id, email: profile.email, full_name: profile.full_name, created_at: profile.created_at,
-          role: (ur?.role as AppRole) || 'pending',
-          division: (ur?.division as OrgDivision | null) ?? null,
+          // Normalise legacy roles (head_of_quant → head_of_division, ...) so the
+          // selectors always show a valid option and never send a stale value.
+          role: normalizeRole(rawRole),
+          division: assignmentDivision({ role: rawRole, division: rawDiv }),
           role_id: ur?.id || '',
         };
       }).filter((u) => {
@@ -82,7 +102,6 @@ const UserManagement = () => {
         return true;
       });
       setUsers(rows);
-      setDrafts(Object.fromEntries(rows.map((u) => [u.id, { role: u.role, division: u.division }])));
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({ title: 'Error', description: 'Failed to fetch users', variant: 'destructive' });
@@ -93,40 +112,56 @@ const UserManagement = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchUsers(); }, []);
 
-  const setDraftRole = (id: string, role: AppRole) =>
-    setDrafts((d) => ({ ...d, [id]: { role, division: DIVISION_ROLES.includes(role) ? (d[id]?.division ?? null) : null } }));
-  const setDraftDivision = (id: string, division: OrgDivision) =>
-    setDrafts((d) => ({ ...d, [id]: { role: d[id]?.role ?? 'pending', division } }));
-
-  const isDirty = (u: UserRow) => {
-    const d = drafts[u.id];
-    return !!d && (d.role !== u.role || (d.division ?? null) !== (u.division ?? null));
-  };
-  const draftValid = (u: UserRow) => {
-    const d = drafts[u.id];
-    if (!d) return false;
-    if (DIVISION_ROLES.includes(d.role) && !d.division) return false;
-    return true;
+  const openEdit = (u: UserRow) => {
+    setEditing(u);
+    setEditForm({ role: u.role, division: u.division });
   };
 
-  const applyRole = async (u: UserRow) => {
-    const d = drafts[u.id];
-    if (!d) return;
-    setBusyUserId(u.id);
+  // Changing the role re-scopes the division to what that role allows.
+  const changeEditRole = (role: AppRole) => {
+    setEditForm((f) => {
+      if (!roleNeedsDivision(role)) return { role, division: null };
+      if (role === 'portfolio_manager') return { role, division: 'portfolio' };
+      const opts = divisionsForRole(role);
+      return { role, division: f.division && opts.includes(f.division) ? f.division : null };
+    });
+  };
+
+  const editValid = useMemo(() => {
+    if (!editing) return false;
+    if (roleNeedsDivision(editForm.role)) {
+      if (!editForm.division || !divisionsForRole(editForm.role).includes(editForm.division)) return false;
+    }
+    const changed = editForm.role !== editing.role || (editForm.division ?? null) !== (editing.division ?? null);
+    return changed;
+  }, [editing, editForm]);
+
+  const applyRole = async () => {
+    if (!editing) return;
+    setBusyUserId(editing.id);
     try {
       const { data, error } = await supabase.functions.invoke('admin-users', {
-        body: { action: 'set-role', userId: u.id, role: d.role, division: d.division },
+        body: { action: 'set-role', userId: editing.id, role: editForm.role, division: editForm.division },
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
-      if (error) throw error;
+      // Surface the function's real message (invoke reports non-2xx as `error`).
+      if (error) {
+        let msg = error.message || 'Failed to update role';
+        try {
+          const ctx = (error as unknown as { context?: Response }).context;
+          if (ctx && typeof ctx.json === 'function') { const b = await ctx.json(); if (b?.error) msg = b.error; }
+        } catch { /* keep default */ }
+        toast({ title: 'Could not update', description: msg, variant: 'destructive' });
+        return;
+      }
       if (data?.error) { toast({ title: 'Could not update', description: data.error, variant: 'destructive' }); return; }
-      toast({ title: 'Role updated', description: `${u.full_name || u.email} is now ${roleLabel(d.role, d.division)}.` });
+      toast({ title: 'Role updated', description: `${editing.full_name || editing.email} is now ${roleLabel(editForm.role, editForm.division)}.` });
+      setEditing(null);
       await fetchUsers();
     } catch (e) {
       toast({ title: 'Error', description: e instanceof Error ? e.message : 'Failed to update role', variant: 'destructive' });
     } finally {
       setBusyUserId(null);
-      setConfirmChange(null);
     }
   };
 
@@ -149,12 +184,11 @@ const UserManagement = () => {
     }
   };
 
-  const pendingUsers = useMemo(() => users.filter((u) => PENDING_ROLES.includes(normalizeRole(u.role))), [users]);
-  const approvedUsers = useMemo(() => users.filter((u) => !PENDING_ROLES.includes(normalizeRole(u.role))), [users]);
+  const pendingUsers = useMemo(() => users.filter((u) => PENDING_ROLES.includes(u.role)), [users]);
+  const approvedUsers = useMemo(() => users.filter((u) => !PENDING_ROLES.includes(u.role)), [users]);
 
-  // Filter options derived from approved users only.
   const roleOptions = useMemo(() => {
-    const present = [...new Set(approvedUsers.map((u) => normalizeRole(u.role)))];
+    const present = [...new Set(approvedUsers.map((u) => u.role))];
     return present.map((r) => ({ value: r, label: roleLabel(r, null) }));
   }, [approvedUsers]);
   const divisionOptions = useMemo(() => {
@@ -165,7 +199,7 @@ const UserManagement = () => {
   const filteredApproved = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return approvedUsers
-      .filter((u) => roleFilter.length === 0 || roleFilter.includes(normalizeRole(u.role)))
+      .filter((u) => roleFilter.length === 0 || roleFilter.includes(u.role))
       .filter((u) => divFilter.length === 0 || (u.division && divFilter.includes(u.division)))
       .filter((u) =>
         u.email.toLowerCase().includes(q) ||
@@ -177,49 +211,20 @@ const UserManagement = () => {
     return <div><WorkspacePageHeader title="Users" description="Assign workspace roles and manage access." /><WorkspaceLoader /></div>;
   }
 
-  // Editable controls (role + division selects, save + delete buttons).
-  const renderEditControls = (u: UserRow, pending: boolean) => {
-    const d = drafts[u.id] ?? { role: u.role, division: u.division };
+  // Row action buttons (edit + delete), shown only to those who may manage users.
+  const rowActions = (u: UserRow) => {
     const isSelf = u.id === currentUser?.id;
     const isAdminAccount = u.email === ADMIN_EMAIL;
+    if (!canEdit) return <Badge variant="secondary">{roleLabel(u.role, u.division)}</Badge>;
     return (
-      <div className="flex flex-wrap items-center gap-2 justify-end">
-        <Select value={d.role} onValueChange={(v) => setDraftRole(u.id, v as AppRole)} disabled={busyUserId === u.id}>
-          <SelectTrigger className="w-[190px] h-9 font-body"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {ASSIGNABLE_ROLES.map((r) => <SelectItem key={r} value={r}>{roleLabel(r, null)}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {DIVISION_ROLES.includes(d.role) && (
-          <Select value={d.division ?? ''} onValueChange={(v) => setDraftDivision(u.id, v as OrgDivision)} disabled={busyUserId === u.id}>
-            <SelectTrigger className={`w-[140px] h-9 font-body ${!d.division ? 'border-amber-400' : ''}`}><SelectValue placeholder="Division…" /></SelectTrigger>
-            <SelectContent>
-              {CORE_DIVISIONS.map((dv) => <SelectItem key={dv} value={dv}>{divisionLabels[dv]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-        <Button size="sm" className="h-9" disabled={!isDirty(u) || !draftValid(u) || busyUserId === u.id}
-          onClick={() => setConfirmChange(u)}>
-          {busyUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-1.5" />{pending ? 'Approve' : 'Save'}</>}
+      <div className="flex items-center gap-2 justify-end">
+        <Button variant="outline" size="sm" className="h-8" disabled={busyUserId === u.id} onClick={() => openEdit(u)}>
+          <Pencil className="h-3.5 w-3.5 mr-1.5" />Change role
         </Button>
         {!isAdminAccount && !isSelf && (
-          <Button variant="outline" size="icon" className="h-9 w-9 text-destructive border-destructive/40 hover:bg-destructive/10"
+          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive/40 hover:bg-destructive/10"
             disabled={busyUserId === u.id} onClick={() => setConfirmDelete(u)}><Trash2 className="h-4 w-4" /></Button>
         )}
-      </div>
-    );
-  };
-
-  // Pending list row (kept compact inside the accordion).
-  const renderPendingRow = (u: UserRow) => {
-    const isSelf = u.id === currentUser?.id;
-    return (
-      <div key={u.id} className="flex flex-col lg:flex-row lg:items-center gap-3 px-4 py-3 border-b border-separator last:border-b-0 font-body">
-        <div className="min-w-0 flex-1">
-          <div className="text-foreground truncate">{u.full_name || '—'} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}</div>
-          <div className="text-xs text-muted-foreground truncate">{u.email}</div>
-        </div>
-        {canEdit ? renderEditControls(u, true) : <Badge variant="secondary" className="shrink-0">{roleLabel(u.role, u.division)}</Badge>}
       </div>
     );
   };
@@ -253,7 +258,17 @@ const UserManagement = () => {
           <div className="border-t border-separator">
             {pendingUsers.length === 0
               ? <p className="px-4 py-6 text-center text-sm text-muted-foreground font-body">No accounts are waiting for a role.</p>
-              : pendingUsers.map(renderPendingRow)}
+              : pendingUsers.map((u) => (
+                <div key={u.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border-b border-separator last:border-b-0 font-body">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-foreground truncate">{u.full_name || '—'}</div>
+                    <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                  </div>
+                  {canEdit
+                    ? <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => openEdit(u)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Assign role</Button>
+                    : <Badge variant="secondary" className="shrink-0">{roleLabel(u.role, u.division)}</Badge>}
+                </div>
+              ))}
           </div>
         )}
       </div>
@@ -293,13 +308,9 @@ const UserManagement = () => {
                         {u.full_name || '—'} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{roleLabel(u.role, u.division)}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{u.division ? (divisionLabels[u.division] ?? u.division) : '-'}</td>
-                      <td className="px-3 py-2">
-                        {canEdit
-                          ? renderEditControls(u, false)
-                          : <div className="flex justify-end"><Badge variant="secondary">{roleLabel(u.role, u.division)}</Badge></div>}
-                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-foreground">{roleLabel(u.role, u.division)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{u.division ? (divisionLabels[u.division] ?? u.division) : '—'}</td>
+                      <td className="px-3 py-2 text-right">{rowActions(u)}</td>
                     </tr>
                   );
                 })}
@@ -313,26 +324,49 @@ const UserManagement = () => {
         </p>
       </div>
 
-      {/* Confirm role change */}
-      <AlertDialog open={!!confirmChange} onOpenChange={(o) => !o && setConfirmChange(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Change this user's role?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmChange && (() => {
-                const d = drafts[confirmChange.id];
-                return <>You are about to set <span className="text-foreground font-medium">{confirmChange.full_name || confirmChange.email}</span> from{' '}
-                  <span className="text-foreground">{roleLabel(confirmChange.role, confirmChange.division)}</span> to{' '}
-                  <span className="text-foreground">{d && roleLabel(d.role, d.division)}</span>. This immediately changes what they can access, and is recorded in the activity log.</>;
-              })()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => confirmChange && applyRole(confirmChange)}>Confirm change</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Change-role dialog (also used to assign a pending account). */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Change role</DialogTitle>
+            <DialogDescription className="font-body">
+              {editing && <><span className="text-foreground">{editing.full_name || editing.email}</span> is currently <span className="text-foreground">{roleLabel(editing.role, editing.division)}</span>. Changes take effect immediately and are recorded in the activity log.</>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 font-body">
+            <div className="space-y-1">
+              <Label>Role</Label>
+              <Select value={editForm.role} onValueChange={(v) => changeEditRole(v as AppRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ASSIGNABLE_ROLES.map((r) => <SelectItem key={r} value={r}>{roleLabel(r, null)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {roleNeedsDivision(editForm.role) && (
+              <div className="space-y-1">
+                <Label>Division</Label>
+                <Select value={editForm.division ?? ''} onValueChange={(v) => setEditForm((f) => ({ ...f, division: v as OrgDivision }))}
+                  disabled={editForm.role === 'portfolio_manager'}>
+                  <SelectTrigger className={!editForm.division ? 'border-amber-400' : ''}><SelectValue placeholder="Select a division…" /></SelectTrigger>
+                  <SelectContent>
+                    {divisionsForRole(editForm.role).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {editForm.role === 'portfolio_manager' && (
+                  <p className="text-xs text-muted-foreground">Portfolio Manager is Portfolio Management's team leader, so it is always the Portfolio division.</p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={applyRole} disabled={!editValid || busyUserId === editing?.id}>
+              {busyUserId === editing?.id ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save role</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm delete */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
