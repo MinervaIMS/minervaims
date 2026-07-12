@@ -1869,6 +1869,7 @@ export type Database = {
         | "candidate"
         | "alumni"
         | "pending"
+        | "senior_analyst"
       org_division:
         | "equity"
         | "investment"
@@ -2065,6 +2066,7 @@ export const Constants = {
         "candidate",
         "alumni",
         "pending",
+        "senior_analyst",
       ],
       org_division: [
         "equity",

@@ -11,13 +11,20 @@ import {
 import {
   type AccessLevel,
   type ResourceKey,
+  type SpecialRule,
   resolveLevel,
   atLeast,
+  specialRulesFor,
+  CROSS_DIVISION_VIEW_ROLES,
+  DIVISION_SCOPED_RESOURCES,
   CANDIDATE_RESOURCES,
 } from '@/lib/access/matrix';
 
 const ADMIN_EMAIL = 'as.minerva@unibocconi.it';
-const FULL_ACCESS_ROLES: AppRole[] = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
+// Association-wide full access. Every other leadership role (Vice President,
+// Head of Asset Management, ...) now has explicit, granular grants in the
+// matrix rather than a blanket '*'.
+const FULL_ACCESS_ROLES: AppRole[] = ['admin', 'president'];
 const NON_STAFF_ROLES: AppRole[] = ['member', 'pending', 'candidate'];
 
 export interface Access {
@@ -29,10 +36,19 @@ export interface Access {
   canEdit: (resource: ResourceKey) => boolean;
   canManage: (resource: ResourceKey) => boolean;
 
+  /** Active special rules for the current user on a resource. */
+  special: (resource: ResourceKey) => SpecialRule[];
+  hasSpecial: (resource: ResourceKey, rule: SpecialRule) => boolean;
+
   isCandidate: boolean;
   isStaff: boolean;
   isFullAccess: boolean;
   hasAnyAccess: boolean;
+
+  /** May this user look beyond their own division on division-scoped areas? */
+  canViewOtherDivisions: boolean;
+  /** Is this resource limited to the viewer's own division data? */
+  isDivisionScoped: (resource: ResourceKey) => boolean;
 
   primaryRole: AppRole | null;
   primaryDivision: OrgDivision | null;
@@ -52,13 +68,11 @@ export function useAccess(): Access {
     const isAdminEmail = user?.email === ADMIN_EMAIL;
     const roleValues = assignments.map((a) => a.role);
 
-    // Candidate isolation: a candidate that holds no *staff* role can ONLY
-    // ever reach the candidate resources, regardless of anything else.
-    // A stray 'member' row (e.g. inserted by the new-user trigger before the
-    // applicant flow finished) must NOT demote them out of candidate access.
+    // Candidate isolation: a candidate that holds no other (non-pending) role
+    // can ONLY ever reach the candidate resources, regardless of anything else.
     const isCandidate =
       roleValues.includes('candidate') &&
-      !roleValues.some((r) => !NON_STAFF_ROLES.includes(normalizeRole(r)));
+      !roleValues.some((r) => r !== 'candidate' && r !== 'pending');
 
     const isFullAccess = isAdminEmail || roleValues.some((r) => FULL_ACCESS_ROLES.includes(normalizeRole(r)));
     const isStaff =
@@ -87,16 +101,28 @@ export function useAccess(): Access {
 
     const can = (resource: ResourceKey, required: AccessLevel = 'view') => atLeast(level(resource), required);
 
+    // Full-access users and cross-division roles are never treated as
+    // candidates here (candidate isolation already returns above).
+    const special = (resource: ResourceKey): SpecialRule[] =>
+      isFullAccess ? [] : specialRulesFor(roleValues, resource);
+
+    const canViewOtherDivisions =
+      isFullAccess || roleValues.some((r) => CROSS_DIVISION_VIEW_ROLES.includes(normalizeRole(r)));
+
     return {
       level,
       can,
       canView: (r) => can(r, 'view'),
       canEdit: (r) => can(r, 'edit'),
       canManage: (r) => can(r, 'manage'),
+      special,
+      hasSpecial: (r, rule) => special(r).includes(rule),
       isCandidate,
       isStaff,
       isFullAccess,
       hasAnyAccess: isCandidate || isStaff,
+      canViewOtherDivisions,
+      isDivisionScoped: (r) => !isFullAccess && DIVISION_SCOPED_RESOURCES.includes(r),
       primaryRole,
       primaryDivision,
       allowedDivisions: allowedDivisions && allowedDivisions.length === 0 ? null : allowedDivisions,

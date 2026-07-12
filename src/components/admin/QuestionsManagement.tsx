@@ -23,8 +23,8 @@ export default function QuestionsManagement() {
   const [savingQ, setSavingQ] = useState<string | null>(null);
 
   const editableDivisions = useMemo<OrgDivision[]>(() => {
-    if (access.isFullAccess) return CORE;
-    return (access.allowedDivisions || []).filter((d) => (CORE as string[]).includes(d)) as OrgDivision[];
+    if (access.isFullAccess || !access.allowedDivisions?.length) return CORE;
+    return access.allowedDivisions.filter((d) => (CORE as string[]).includes(d)) as OrgDivision[];
   }, [access]);
 
   useEffect(() => {

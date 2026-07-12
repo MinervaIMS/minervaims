@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Download, FileText, Search, MessageSquare, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -47,6 +48,11 @@ function triggerDownloads(files: { name: string; url: string }[]) {
 
 export default function CandidatesManagement() {
   const { session } = useAuth();
+  const { canManage, hasSpecial } = useAccess();
+  // Team leaders and portfolio managers may review candidates and add notes,
+  // but only roles with full access may change a candidate's status.
+  const canChangeStatus = canManage('applications-screening');
+  const canAddNotes = canChangeStatus || hasSpecial('applications-screening', 'candidates_notes_only');
   const { toast } = useToast();
 
   const [apps, setApps] = useState<ApplicationRow[]>([]);
@@ -298,7 +304,11 @@ export default function CandidatesManagement() {
                     <div className="text-xs uppercase tracking-wider text-accent font-semibold">Candidate status</div>
                     <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
                   </div>
-                  {isLockedStatus(detail.application.status) ? (
+                  {!canChangeStatus ? (
+                    <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                      You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
+                    </p>
+                  ) : isLockedStatus(detail.application.status) ? (
                     <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
                       This is an offer outcome, managed automatically by the offer process (New Joiners) and the applicant’s response. It cannot be changed here.
                     </p>
@@ -348,10 +358,12 @@ export default function CandidatesManagement() {
                       </div>
                     ))}
                   </div>
-                  <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a technical, formal note…" rows={2} />
-                  <Button size="sm" onClick={addNote} disabled={savingNote || !noteText.trim()}>
-                    {savingNote ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Add note
-                  </Button>
+                  {canAddNotes && <>
+                    <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a technical, formal note…" rows={2} />
+                    <Button size="sm" onClick={addNote} disabled={savingNote || !noteText.trim()}>
+                      {savingNote ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Add note
+                    </Button>
+                  </>}
                 </div>
               </div>
 

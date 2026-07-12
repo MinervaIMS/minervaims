@@ -50,6 +50,7 @@ import AdsRegister from '@/components/admin/AdsRegister';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
+import RolePermissionsTable from '@/components/admin/RolePermissionsTable';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
@@ -132,9 +133,9 @@ const NAV: NavSection[] = [
   {
     key: 'reports', label: 'Reports', Icon: FileBarChart2,
     subItems: [
-      { key: 'reports-upload', label: 'Upload report', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-archive', label: 'Report archive', allowed: (p) => p.canAccessFiles },
-      { key: 'reports-templates', label: 'Templates & repositories', allowed: (p) => p.canAccessFiles },
+      { key: 'reports-upload', label: 'Upload report', allowed: (p) => p.can('reports-upload') },
+      { key: 'reports-archive', label: 'Report archive', allowed: (p) => p.can('reports-archive') },
+      { key: 'reports-templates', label: 'Templates & repositories', allowed: (p) => p.can('reports-templates') },
       { key: 'reports-funds', label: 'Fund performances', allowed: (p) => p.can('reports-funds') },
     ],
   },
@@ -151,24 +152,24 @@ const NAV: NavSection[] = [
   {
     key: 'events', label: 'Events', Icon: Presentation,
     subItems: [
-      { key: 'events-create', label: 'Create event', allowed: (p) => p.canAccessEvents },
-      { key: 'events-forms', label: 'Registration forms', allowed: (p) => p.canAccessEvents },
-      { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.canAccessEvents },
-      { key: 'events-archive', label: 'Event archive', allowed: (p) => p.canAccessEvents },
-      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.canAccessEvents },
-      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.canAccessEvents },
+      { key: 'events-create', label: 'Create event', allowed: (p) => p.can('events-create') },
+      { key: 'events-forms', label: 'Registration forms', allowed: (p) => p.can('events-forms') },
+      { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.can('events-attendance') },
+      { key: 'events-archive', label: 'Event archive', allowed: (p) => p.can('events-archive') },
+      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.can('events-alumni-calls') },
+      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.can('events-on-display') },
     ],
   },
   {
     key: 'people', label: 'People', Icon: UsersIcon,
     subItems: [
-      { key: 'people-members', label: 'Members', allowed: (p) => p.canAccessTeam },
-      { key: 'people-advisors', label: 'Advisors', allowed: (p) => p.canAccessTeam },
-      { key: 'people-alumni', label: 'Alumni', allowed: (p) => p.canAccessAlumni },
+      { key: 'people-members', label: 'Members', allowed: (p) => p.can('people-members') },
+      { key: 'people-advisors', label: 'Advisors', allowed: (p) => p.can('people-advisors') },
+      { key: 'people-alumni', label: 'Alumni', allowed: (p) => p.can('people-alumni') },
     ],
   },
   {
-    key: 'smm', label: 'Social Media', Icon: ImageIcon,
+    key: 'smm', label: 'Media & Communication', Icon: ImageIcon,
     subItems: [
       { key: 'smm-editorial', label: 'Editorial calendar', allowed: (p) => p.can('smm-editorial') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
@@ -191,9 +192,9 @@ const NAV: NavSection[] = [
   {
     key: 'website', label: 'Website', Icon: LayoutTemplate,
     subItems: [
-      { key: 'website-pages', label: 'Pages', allowed: (p) => p.isFullAccess },
-      { key: 'website-readings', label: 'Readings', allowed: (p) => p.canAccessReadings },
-      { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.canManageTestimonials },
+      { key: 'website-pages', label: 'Pages', allowed: (p) => p.can('website-pages') },
+      { key: 'website-readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
+      { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
       { key: 'ops-auto-emails', label: 'Automatic emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
@@ -202,9 +203,9 @@ const NAV: NavSection[] = [
   {
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
-      { key: 'settings-users', label: 'Users', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-roles', label: 'Role permissions', allowed: (p) => p.canAccessUsers },
-      { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.canAccessActivity },
+      { key: 'settings-users', label: 'Users', allowed: (p) => p.can('settings-users') },
+      { key: 'settings-roles', label: 'Role permissions', allowed: (p) => p.can('settings-roles') },
+      { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.can('settings-activity') },
     ],
   },
 ];
@@ -652,6 +653,9 @@ const MinervaWorkspace = () => {
           category="reports_templates"
           title="Templates & repositories"
           description="Useful division material: text, files, links and code repositories. Star up to five favourites to pin them on top; each item shows who added it and when."
+          restrictDivisions={access.allowedDivisions}
+          canViewOtherDivisions={access.canViewOtherDivisions}
+          canManage={access.canManage('reports-templates')}
         />;
       case 'reports-funds':
         return <FundsPerformances />;
@@ -692,6 +696,8 @@ const MinervaWorkspace = () => {
         return <TestimonialsManagement />;
       case 'settings-users':
         return <UserManagement />;
+      case 'settings-roles':
+        return <RolePermissionsTable />;
       case 'settings-activity':
         return <ActivityManagement />;
       case 'smm-editorial':

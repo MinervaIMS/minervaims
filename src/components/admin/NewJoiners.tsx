@@ -8,13 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Send, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
+import { Lock } from 'lucide-react';
 import { divisionLabels, roleLabel as composeRoleLabel, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
 import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applications-api';
 
-const JOIN_ROLES: AppRole[] = ['analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
+const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
 
 // Human-readable state of the offer for a candidate row.
@@ -31,6 +33,10 @@ function offerState(a: ApplicationRow): { label: string; tone: string; canOffer:
 export default function NewJoiners() {
   const { session } = useAuth();
   const { toast } = useToast();
+  const { canManage } = useAccess();
+  // Some roles may open this page only to understand the offer flow; every
+  // action is disabled for them (see the role permissions matrix).
+  const canSendOffers = canManage('applications-joiners');
   const { confirm: confirmEmail, dialog: emailDialog } = useEmailConfirm();
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +105,13 @@ export default function NewJoiners() {
         description="Candidates who passed the selection. Send an offer to join with a specific role and division; the candidate has three days to accept from their workspace (a reminder is sent after two days). Accepting turns their account into a member automatically."
       />
 
+      {!canSendOffers && (
+        <div className="flex items-start gap-2 mb-6 rounded-lg border border-separator bg-muted/30 px-4 py-3 font-body text-sm">
+          <Lock className="h-4 w-4 mt-0.5 text-accent shrink-0" />
+          <span className="text-muted-foreground">This page is <span className="text-foreground">view-only</span> for your role. You can see the offer process to understand how it works, but sending, resending and editing offers is reserved for the President and Admin.</span>
+        </div>
+      )}
+
       {loading ? <WorkspaceLoader /> : joiners.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No candidates ready for an offer.</p></CardContent></Card>
       ) : (
@@ -123,11 +136,12 @@ export default function NewJoiners() {
                     <td className="px-3 py-2">{a.email}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">
-                      {st.canOffer && (
+                      {st.canOffer && canSendOffers && (
                         <Button size="sm" onClick={() => openOffer(a)}>
                           <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
                         </Button>
                       )}
+                      {st.canOffer && !canSendOffers && <span className="text-xs text-muted-foreground">—</span>}
                     </td>
                   </tr>
                 );
