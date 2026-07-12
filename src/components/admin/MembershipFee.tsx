@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels, roleLabel as composeRoleLabel, memberRank } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   getCurrentFees, openFeePeriod, setFeePaid, closeFeePeriod,
@@ -145,7 +146,7 @@ export default function MembershipFee() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />CSV</Button>
               <AlertDialog>
-                <AlertDialogTrigger asChild><Button disabled={busy}><Lock className="h-4 w-4 mr-2" />Close collection</Button></AlertDialogTrigger>
+                <span className="inline-flex items-center gap-1.5"><AlertDialogTrigger asChild><Button disabled={busy}><Lock className="h-4 w-4 mr-2" />Close collection</Button></AlertDialogTrigger><HelpDot page="ops-fee" topic="close" /></span>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Close the {period.semester_label} collection?</AlertDialogTitle>

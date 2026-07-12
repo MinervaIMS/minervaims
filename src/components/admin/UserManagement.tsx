@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { Loader2, Clock, ChevronDown, ChevronRight, Trash2, Search, ShieldCheck, Pencil, Save } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import {
@@ -328,7 +329,7 @@ const UserManagement = () => {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">Change role</DialogTitle>
+            <DialogTitle className="font-serif inline-flex items-center gap-2">Change role <HelpDot page="settings-users" topic="change-role" /></DialogTitle>
             <DialogDescription className="font-body">
               {editing && <><span className="text-foreground">{editing.full_name || editing.email}</span> is currently <span className="text-foreground">{roleLabel(editing.role, editing.division)}</span>. Changes take effect immediately and are recorded in the activity log.</>}
             </DialogDescription>

@@ -23,6 +23,8 @@ export type Database = {
           entity_name: string | null
           entity_type: string
           id: string
+          section: string | null
+          subsection: string | null
           user_email: string
           user_id: string
           user_role: string
@@ -35,6 +37,8 @@ export type Database = {
           entity_name?: string | null
           entity_type: string
           id?: string
+          section?: string | null
+          subsection?: string | null
           user_email: string
           user_id: string
           user_role: string
@@ -47,6 +51,8 @@ export type Database = {
           entity_name?: string | null
           entity_type?: string
           id?: string
+          section?: string | null
+          subsection?: string | null
           user_email?: string
           user_id?: string
           user_role?: string
@@ -576,6 +582,7 @@ export type Database = {
           fund: string | null
           id: string
           is_favourite: boolean
+          page_count: number | null
           project: string | null
           status: string
           title: string
@@ -591,6 +598,7 @@ export type Database = {
           fund?: string | null
           id?: string
           is_favourite?: boolean
+          page_count?: number | null
           project?: string | null
           status?: string
           title: string
@@ -606,6 +614,7 @@ export type Database = {
           fund?: string | null
           id?: string
           is_favourite?: boolean
+          page_count?: number | null
           project?: string | null
           status?: string
           title?: string
@@ -1487,6 +1496,81 @@ export type Database = {
           resource?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      semester_members: {
+        Row: {
+          division: string | null
+          email: string | null
+          fee_paid: boolean
+          fee_period_id: string | null
+          first_name: string
+          id: string
+          member_id: string | null
+          role: string | null
+          semester_key: string
+          semester_label: string
+          snapshotted_at: string
+          surname: string
+        }
+        Insert: {
+          division?: string | null
+          email?: string | null
+          fee_paid?: boolean
+          fee_period_id?: string | null
+          first_name: string
+          id?: string
+          member_id?: string | null
+          role?: string | null
+          semester_key: string
+          semester_label: string
+          snapshotted_at?: string
+          surname: string
+        }
+        Update: {
+          division?: string | null
+          email?: string | null
+          fee_paid?: boolean
+          fee_period_id?: string | null
+          first_name?: string
+          id?: string
+          member_id?: string | null
+          role?: string | null
+          semester_key?: string
+          semester_label?: string
+          snapshotted_at?: string
+          surname?: string
+        }
+        Relationships: []
+      }
+      semester_snapshots: {
+        Row: {
+          alumni_count: number
+          created_at: string
+          fee_period_id: string | null
+          id: string
+          members_count: number
+          semester_key: string
+          semester_label: string
+        }
+        Insert: {
+          alumni_count?: number
+          created_at?: string
+          fee_period_id?: string | null
+          id?: string
+          members_count?: number
+          semester_key: string
+          semester_label: string
+        }
+        Update: {
+          alumni_count?: number
+          created_at?: string
+          fee_period_id?: string | null
+          id?: string
+          members_count?: number
+          semester_key?: string
+          semester_label?: string
         }
         Relationships: []
       }

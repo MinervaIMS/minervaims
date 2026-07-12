@@ -18,7 +18,14 @@ import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { supabase } from '@/integrations/supabase/client';
 import linkedinIcon from '@/assets/linkedin-icon.png';
+
+interface SemesterMemberRow {
+  semester_key: string; semester_label: string;
+  first_name: string; surname: string;
+  division: string | null; role: string | null; fee_paid: boolean;
+}
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -79,6 +86,12 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const [leaveForm, setLeaveForm] = useState({ graduation_year: String(new Date().getFullYear()), company: '', city: '' });
   const [leaving, setLeaving] = useState(false);
 
+  // Semester member register — the official snapshot of who belonged to the
+  // association each semester, taken when that semester's fee collection
+  // closed. Read-only, kept forever.
+  const [registers, setRegisters] = useState<{ semester_key: string; semester_label: string; rows: SemesterMemberRow[] }[]>([]);
+  const [openRegister, setOpenRegister] = useState<string | null>(null);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -91,6 +104,21 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (silentAdvisors) return;
+    (async () => {
+      const { data } = await supabase.from('semester_members')
+        .select('semester_key, semester_label, first_name, surname, division, role, fee_paid')
+        .order('semester_key', { ascending: false }).order('surname');
+      const map = new Map<string, { semester_key: string; semester_label: string; rows: SemesterMemberRow[] }>();
+      for (const r of (data || []) as SemesterMemberRow[]) {
+        const g = map.get(r.semester_key) ?? { semester_key: r.semester_key, semester_label: r.semester_label, rows: [] };
+        g.rows.push(r); map.set(r.semester_key, g);
+      }
+      setRegisters([...map.values()]);
+    })();
+  }, [silentAdvisors]);
 
   const isSilent = (m: MemberRow) => m.role === 'silent_advisor' || m.membership_status === 'silent_advisor';
 
@@ -320,6 +348,46 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
       )}
 
       <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical.</p>
+
+      {/* Semester registers — the official member list of each past semester,
+          snapshotted automatically when its fee collection closed. */}
+      {!silentAdvisors && registers.length > 0 && (
+        <div className="mt-10">
+          <h3 className="font-serif text-lg text-accent mb-1">Semester registers</h3>
+          <p className="font-body text-sm text-muted-foreground mb-3">
+            Who officially belonged to the association, semester by semester. Each register is frozen when that semester's membership-fee collection closes and can no longer change.
+          </p>
+          <div className="space-y-2">
+            {registers.map((g) => (
+              <div key={g.semester_key} className="border border-separator rounded-lg">
+                <button type="button" className="w-full flex items-center justify-between px-4 py-2.5 font-body text-sm"
+                  onClick={() => setOpenRegister(openRegister === g.semester_key ? null : g.semester_key)}>
+                  <span className="text-foreground font-serif">{g.semester_label}</span>
+                  <span className="text-muted-foreground text-xs">{g.rows.length} members {openRegister === g.semester_key ? '▾' : '▸'}</span>
+                </button>
+                {openRegister === g.semester_key && (
+                  <div className="border-t border-separator overflow-x-auto">
+                    <table className="w-full text-left font-body text-sm">
+                      <thead className="bg-muted/40 text-muted-foreground">
+                        <tr><th className="px-3 py-1.5 font-normal">Name</th><th className="px-3 py-1.5 font-normal">Role</th><th className="px-3 py-1.5 font-normal">Division</th></tr>
+                      </thead>
+                      <tbody>
+                        {g.rows.map((r, i) => (
+                          <tr key={i} className="border-t border-separator">
+                            <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
+                            <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '—'}</td>
+                            <td className="px-3 py-1.5">{r.division && r.division !== 'none' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Create / edit dialog (advisors only for create) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { downloadCSV } from '@/lib/download-utils';
 import { cn } from '@/lib/utils';
+import { roleLabel as composeRoleLabel } from '@/lib/roles';
 
 interface ActivityLog {
   id: string;
@@ -44,9 +45,28 @@ interface ActivityLog {
   entity_type: string;
   entity_id: string | null;
   entity_name: string | null;
+  section: string | null;
+  subsection: string | null;
   details: unknown;
   created_at: string;
 }
+
+// Where an entry happened: new entries carry section/subsection explicitly;
+// older entries fall back to a mapping from their entity type.
+const legacyPlace: Record<string, { section: string; subsection: string }> = {
+  event: { section: 'Events', subsection: 'Event archive' },
+  alumnus: { section: 'People', subsection: 'Alumni' },
+  file: { section: 'Reports', subsection: 'Report archive' },
+  team_member: { section: 'People', subsection: 'Members' },
+  reading: { section: 'Website', subsection: 'Readings' },
+  page_visibility: { section: 'Website', subsection: 'Pages' },
+  user_role: { section: 'Settings', subsection: 'Users' },
+  fee_period: { section: 'Operations', subsection: 'Membership fees' },
+};
+const placeOf = (a: ActivityLog): { section: string; subsection: string } =>
+  a.section
+    ? { section: a.section, subsection: a.subsection ?? '' }
+    : legacyPlace[a.entity_type] ?? { section: 'Workspace', subsection: a.entity_type };
 
 const ACTIVITIES_PER_PAGE = 25;
 
@@ -169,8 +189,8 @@ export default function ActivityManagement() {
       if (actionFilter !== 'all' && activity.action !== actionFilter) {
         return false;
       }
-      // Section filter
-      if (sectionFilter !== 'all' && activity.entity_type !== sectionFilter) {
+      // Section filter (new section column, with legacy entity-type fallback)
+      if (sectionFilter !== 'all' && placeOf(activity).section !== sectionFilter) {
         return false;
       }
       // User filter
@@ -210,13 +230,17 @@ export default function ActivityManagement() {
   const handleDownloadCSV = () => {
     const csvColumns: { key: keyof ActivityLog; header: string }[] = [
       { key: 'user_email', header: 'User Email' },
-      { key: 'user_role', header: 'User Role' },
+      { key: 'user_role', header: 'Role at the time' },
       { key: 'action', header: 'Action' },
-      { key: 'entity_type', header: 'Section' },
+      { key: 'section', header: 'Section' },
+      { key: 'subsection', header: 'Subsection' },
+      { key: 'entity_type', header: 'Entity Type' },
       { key: 'entity_name', header: 'Entity Name' },
       { key: 'created_at', header: 'Date' },
     ];
-    downloadCSV(filteredActivities, csvColumns, `activity-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    // Export with the legacy fallback applied, so old rows also carry a place.
+    const exportRows = filteredActivities.map((a) => ({ ...a, section: placeOf(a).section, subsection: placeOf(a).subsection }));
+    downloadCSV(exportRows, csvColumns, `activity-logs-${new Date().toISOString().split('T')[0]}.csv`);
     toast({
       title: 'Success',
       description: `Downloaded ${filteredActivities.length} activity logs`,
@@ -294,7 +318,7 @@ export default function ActivityManagement() {
     <div id="activity-section" className="space-y-6">
       <WorkspacePageHeader
         title="Activity log"
-        description="Audit recent create, update and delete actions across the workspace."
+        description="Every meaningful action in the workspace is recorded here for accountability and security: who did what, where, to which item, when — and with the role they held at that exact moment. Entries never change retroactively."
         actions={
 
         <AlertDialog>
@@ -338,10 +362,9 @@ export default function ActivityManagement() {
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <option value="all">All Actions</option>
-              <option value="create">Create</option>
-              <option value="update">Update</option>
-              <option value="delete">Delete</option>
-              <option value="reorder">Reorder</option>
+              {[...new Set(activities.map((a) => a.action))].sort().map((a) => (
+                <option key={a} value={a}>{actionLabels[a] || a.replace(/_/g, ' ')}</option>
+              ))}
             </select>
           </div>
 
@@ -375,8 +398,8 @@ export default function ActivityManagement() {
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <option value="all">All Sections</option>
-              {Object.entries(sectionLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+              {[...new Set(activities.map((a) => placeOf(a).section))].sort().map((s) => (
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
@@ -485,9 +508,13 @@ export default function ActivityManagement() {
                     </span>
                     <span
                       className="text-sm text-muted-foreground italic"
+                      title="Role held at the moment of the action — it never changes retroactively"
                       style={{ fontFamily: '"Times New Roman", Times, serif' }}
                     >
-                      ({roleLabels[activity.user_role] || activity.user_role})
+                      ({roleLabels[activity.user_role] || composeRoleLabel(activity.user_role as never, null)})
+                    </span>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent whitespace-nowrap">
+                      {placeOf(activity).section}{placeOf(activity).subsection ? ` › ${placeOf(activity).subsection}` : ''}
                     </span>
                   </div>
                   <p
