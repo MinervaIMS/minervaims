@@ -17,6 +17,7 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { ApplyBackground } from '@/components/shared/ApplyBackground';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { AuthButton } from '@/components/shared/AuthUI';
+import PixelCard from '@/components/shared/PixelCard';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import {
@@ -69,16 +70,24 @@ function SuccessScreen() {
       <Helmet><title>Application submitted | MIMS</title></Helmet>
       <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
         <ApplyBackground />
-        <div className="relative z-10 w-full max-w-md bg-white rounded-lg shadow-2xl border border-separator px-8 py-12 text-center">
-          <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
-          <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
-          <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
-            Your email is verified and your application has been submitted successfully.
-          </p>
-          <p className="font-body text-sm text-muted-foreground mb-7">
-            You are now an applicant. Follow your application and, once invited, book your interview from your workspace.
-          </p>
-          <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
+        <div className="relative z-10 w-full max-w-md bg-white rounded-lg shadow-2xl border border-separator overflow-hidden">
+          <PixelCard
+            variant="navy"
+            activeDuration={3000}
+            fadeMs={1400}
+            className="absolute inset-0 pointer-events-none z-10"
+          />
+          <div className="relative z-20 px-8 py-12 text-center">
+            <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+            <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
+            <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
+              Your email is verified and your application has been submitted successfully.
+            </p>
+            <p className="font-body text-sm text-muted-foreground mb-7">
+              You are now an applicant. Follow your application and, once invited, book your interview from your workspace.
+            </p>
+            <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
+          </div>
         </div>
       </div>
     </>
