@@ -28,6 +28,12 @@ interface Props {
   description: string;
   /** Divisions selectable for items; defaults to the five core divisions + none. */
   divisions?: OrgDivision[];
+  /** If set, limit this instance to these divisions (per-division material). */
+  restrictDivisions?: OrgDivision[] | null;
+  /** May the viewer look at divisions other than their own? (Heads can.) */
+  canViewOtherDivisions?: boolean;
+  /** May the viewer create / edit / delete items here? (false = read-only.) */
+  canManage?: boolean;
 }
 
 const DEFAULT_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'none'];
@@ -50,21 +56,35 @@ const emptyForm = (division: OrgDivision): FormState => ({
   id: null, division, title: '', description: '', texts: [''], links: [], files: [], is_favourite: false,
 });
 
-export default function ResourceManager({ category, title, description, divisions = DEFAULT_DIVISIONS }: Props) {
+export default function ResourceManager({
+  category, title, description, divisions = DEFAULT_DIVISIONS,
+  restrictDivisions = null, canViewOtherDivisions = true, canManage = true,
+}: Props) {
   const { session } = useAuth();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Division scoping. When `restrictDivisions` is set this instance holds
+  // per-division material: users who cannot view other divisions only ever
+  // see their own division's items (plus shared "General" items), and can
+  // only create in their own division.
+  const scoped = !!restrictDivisions && restrictDivisions.length > 0;
+  const lockedToOwn = scoped && !canViewOtherDivisions;
+  const homeDivision = restrictDivisions?.[0];
+  const viewable: OrgDivision[] = scoped ? [...(restrictDivisions as OrgDivision[]), 'none'] : divisions;
+  const createDivisions = scoped ? divisions.filter((d) => viewable.includes(d)) : divisions;
+  const createDefault: OrgDivision = (scoped ? homeDivision : undefined) ?? divisions[0];
+
   const [items, setItems] = useState<ResourceRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>('all');
+  const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>(scoped && canViewOtherDivisions && homeDivision ? homeDivision : 'all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ResourceRow | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<FormState>(emptyForm(divisions[0]));
+  const [form, setForm] = useState<FormState>(emptyForm(createDefault));
 
-  const showDivisions = divisions.filter((d) => d !== 'none');
+  const showDivisions = (lockedToOwn ? viewable : divisions).filter((d) => d !== 'none');
 
   const load = async () => {
     setLoading(true);
@@ -76,14 +96,18 @@ export default function ResourceManager({ category, title, description, division
   useEffect(() => { load(); }, [category]);
 
   const visible = useMemo(
-    () => items.filter((i) => divFilter === 'all' || i.division === divFilter),
-    [items, divFilter],
+    () => items.filter((i) => {
+      // Juniors never see other divisions' material.
+      if (lockedToOwn && !viewable.includes(i.division)) return false;
+      return divFilter === 'all' || i.division === divFilter;
+    }),
+    [items, divFilter, lockedToOwn, viewable],
   );
   const favourites = useMemo(() => visible.filter((i) => i.is_favourite), [visible]);
   const rest = useMemo(() => visible.filter((i) => !i.is_favourite), [visible]);
   const favouriteCount = items.filter((i) => i.is_favourite).length;
 
-  const openCreate = () => { setForm(emptyForm(divisions[0])); setDialogOpen(true); };
+  const openCreate = () => { setForm(emptyForm(createDefault)); setDialogOpen(true); };
   const openEdit = (r: ResourceRow) => {
     setForm({
       id: r.id, division: r.division, title: r.title, description: r.description ?? '',
@@ -205,13 +229,15 @@ export default function ResourceManager({ category, title, description, division
             {r.author_name || 'Unknown'}{r.author_role ? `, ${r.author_role}` : ''} · {new Date(r.created_at).toLocaleDateString()}
           </div>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="icon" title={r.is_favourite ? 'Unpin favourite' : 'Pin as favourite'} onClick={() => toggleFavourite(r)}>
-            <Star className={`h-4 w-4 ${r.is_favourite ? 'fill-accent text-accent' : ''}`} />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
-          <Button variant="destructive" size="icon" onClick={() => setDeleteTarget(r)}><Trash2 className="h-4 w-4" /></Button>
-        </div>
+        {canManage && (
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" size="icon" title={r.is_favourite ? 'Unpin favourite' : 'Pin as favourite'} onClick={() => toggleFavourite(r)}>
+              <Star className={`h-4 w-4 ${r.is_favourite ? 'fill-accent text-accent' : ''}`} />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
+            <Button variant="destructive" size="icon" onClick={() => setDeleteTarget(r)}><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        )}
       </div>
     </CardContent></Card>
   );
@@ -219,7 +245,7 @@ export default function ResourceManager({ category, title, description, division
   return (
     <div>
       <WorkspacePageHeader title={title} description={description} actions={
-        <Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add item</Button>
+        canManage ? <Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add item</Button> : undefined
       } />
 
       {showDivisions.length > 1 && (
@@ -253,12 +279,12 @@ export default function ResourceManager({ category, title, description, division
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">{form.id ? 'Edit item' : 'Add item'}</DialogTitle></DialogHeader>
           <div className="space-y-4 font-body">
-            {divisions.length > 1 && (
+            {createDivisions.length > 1 && (
               <div className="space-y-1">
                 <Label>Division</Label>
                 <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{divisions.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? 'General' : divisionLabels[d]}</SelectItem>)}</SelectContent>
+                  <SelectContent>{createDivisions.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? 'General' : divisionLabels[d]}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             )}

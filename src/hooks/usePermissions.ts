@@ -45,14 +45,19 @@ export const usePermissions = (): Permissions => {
       : null;
 
     return {
-      canAccessUsers: isFullAccess,
-      canAccessSettings: isFullAccess,
+      // All access booleans are matrix-driven so the single source of truth
+      // in matrix.ts governs the workspace (nav visibility, guards, ...).
+      canAccessUsers: access.canView('settings-users'),
+      canAccessSettings: access.canView('settings-users') || access.canView('settings-roles') || access.canView('settings-activity'),
       canAccessAlumni: access.canView('people-alumni'),
-      canAccessEvents: access.canView('events-archive') || access.canView('events-create'),
+      canAccessEvents:
+        access.canView('events-archive') || access.canView('events-create') ||
+        access.canView('events-forms') || access.canView('events-attendance') ||
+        access.canView('events-alumni-calls') || access.canView('events-on-display'),
       canAccessFiles: access.canView('reports-archive') || access.canView('reports-upload'),
       canAccessTeam: access.canView('people-members'),
-      canAccessReadings: isFullAccess || (coreDivisions !== null && coreDivisions.length > 0),
-      canAccessActivity: isStaff,
+      canAccessReadings: access.canView('website-readings'),
+      canAccessActivity: access.canView('settings-activity'),
       canManageTestimonials: access.canManage('website-testimonials'),
       allowedDivisions: isFullAccess ? null : coreDivisions && coreDivisions.length > 0 ? coreDivisions : null,
       hasAnyAccess: isStaff,

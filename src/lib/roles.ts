@@ -15,6 +15,7 @@ export type AppRole =
   | 'head_of_asset_management'
   | 'head_of_division'
   | 'team_leader'
+  | 'senior_analyst'
   | 'portfolio_manager'
   | 'analyst'
   | 'head_of_media'
@@ -90,7 +91,8 @@ const roleBaseLabels: Record<AppRole, string> = {
   vice_president: 'Vice President',
   head_of_asset_management: 'Head of Asset Management',
   head_of_division: 'Head of Division',
-  team_leader: 'Team Leader / Senior Analyst',
+  team_leader: 'Team Leader',
+  senior_analyst: 'Senior Analyst',
   portfolio_manager: 'Portfolio Manager',
   analyst: 'Analyst',
   head_of_media: 'Head of Media & Communication',
@@ -121,8 +123,8 @@ export function roleLabel(role: AppRole, division?: OrgDivision | null): string 
   if (norm === 'head_of_division' && div && div in divisionLabels && div !== 'none' && div !== 'board') {
     return `Head of ${divisionLabels[div]}`;
   }
-  if ((norm === 'analyst' || norm === 'team_leader' || norm === 'portfolio_manager') && div && div !== 'none' && div !== 'board') {
-    const suffix = norm === 'analyst' ? 'Analyst' : norm === 'team_leader' ? 'Team Leader' : 'Portfolio Manager';
+  if ((norm === 'analyst' || norm === 'team_leader' || norm === 'senior_analyst' || norm === 'portfolio_manager') && div && div !== 'none' && div !== 'board') {
+    const suffix = norm === 'analyst' ? 'Analyst' : norm === 'team_leader' ? 'Team Leader' : norm === 'senior_analyst' ? 'Senior Analyst' : 'Portfolio Manager';
     return `${divisionLabels[div]} ${suffix}`;
   }
   return roleBaseLabels[norm] ?? norm;
@@ -144,10 +146,11 @@ const roleRank: Record<AppRole, number> = {
   head_of_operations: 6,
   portfolio_manager: 7,
   team_leader: 8,
-  analyst: 9,
-  media_analyst: 10,
-  advisor: 11,
-  silent_advisor: 12,
+  senior_analyst: 9,
+  analyst: 10,
+  media_analyst: 11,
+  advisor: 12,
+  silent_advisor: 13,
   alumni: 90,
   member: 95,
   candidate: 98,

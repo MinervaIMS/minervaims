@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { HIDEABLE_PAGES } from '@/lib/hideable-pages';
 import { usePageVisibility } from '@/hooks/usePageVisibility';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useAccess } from '@/hooks/useAccess';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,17 +26,18 @@ const formatDate = (iso: string | null | undefined) => {
 };
 
 const PagesVisibilityManagement = () => {
-  const { isFullAccess } = usePermissions();
+  const { canView, canManage } = useAccess();
   const { user, roles } = useAuth();
   const { getRow, isHidden, setHidden, loading } = usePageVisibility();
   const [pending, setPending] = useState<Record<string, boolean>>({});
+  const canEdit = canManage('website-pages');
 
-  if (!isFullAccess) {
+  if (!canView('website-pages')) {
     return (
       <div className="py-16 text-center">
         <h2 className="font-serif text-heading text-accent mb-3">No access</h2>
         <p className="font-body text-muted-foreground">
-          You do not have permission to manage page visibility.
+          You do not have permission to view page visibility.
         </p>
       </div>
     );
@@ -90,6 +91,11 @@ const PagesVisibilityManagement = () => {
         description={`Toggle individual public pages on or off. When a page is hidden, the URL remains reachable but visitors see a "Page Under Update" notice over a blurred body. Homepage and legal pages cannot be hidden.`}
       />
 
+      {!canEdit && (
+        <p className="mb-4 text-sm text-muted-foreground font-body border border-separator rounded-lg px-4 py-2">
+          View-only: you can see which pages are visible or hidden. Changing page visibility is reserved for the President and Admin.
+        </p>
+      )}
 
       <div className="border border-separator">
         <Table>
@@ -145,7 +151,7 @@ const PagesVisibilityManagement = () => {
                       )}
                       <Switch
                         checked={!hidden}
-                        disabled={isPending || loading}
+                        disabled={isPending || loading || !canEdit}
                         onCheckedChange={() => handleToggle(p.key, p.label, hidden)}
                         aria-label={`Toggle visibility for ${p.label}`}
                       />

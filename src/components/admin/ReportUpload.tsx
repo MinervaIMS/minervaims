@@ -24,10 +24,12 @@ export default function ReportUpload() {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const canPublishDirectly = access.isFullAccess || access.primaryRole === 'head_of_division';
+  const canPublishDirectly = access.canManage('reports-upload') || access.primaryRole === 'head_of_division';
   const allowedDivisions = useMemo<OrgDivision[]>(() => {
-    if (access.isFullAccess) return CORE;
-    return (access.allowedDivisions || []).filter((d) => (CORE as string[]).includes(d)) as OrgDivision[];
+    // Full access and division-less leadership (VP, Head of AM) may upload for
+    // any division; division-scoped roles only for their own.
+    if (access.isFullAccess || !access.allowedDivisions?.length) return CORE;
+    return access.allowedDivisions.filter((d) => (CORE as string[]).includes(d)) as OrgDivision[];
   }, [access]);
 
   const [form, setForm] = useState({

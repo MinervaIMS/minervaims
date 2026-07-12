@@ -64,8 +64,67 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, userId } = await req.json();
+    const body = await req.json();
+    const { action, userId } = body;
     console.log('Action:', action, 'User ID:', userId);
+
+    // Roles an admin/president may assign through the Users page.
+    const ASSIGNABLE_ROLES = [
+      'admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
+      'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
+      'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member', 'pending',
+    ];
+    const DIVISION_ROLES = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst'];
+
+    if (action === 'set-role') {
+      const { role, division } = body as { role?: string; division?: string | null };
+      if (!userId || !role) {
+        return new Response(JSON.stringify({ error: 'User ID and role are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!ASSIGNABLE_ROLES.includes(role)) {
+        return new Response(JSON.stringify({ error: 'Invalid role' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const div = DIVISION_ROLES.includes(role) ? (division || null) : null;
+
+      // Guard: never allow the LAST President/Admin to be demoted away.
+      const { data: leaders } = await supabaseAdmin
+        .from('user_roles').select('user_id, role').in('role', ['admin', 'president']);
+      const leaderIds = new Set((leaders || []).map((r: { user_id: string }) => r.user_id));
+      const targetIsLeader = leaderIds.has(userId);
+      const demotingLeader = targetIsLeader && role !== 'admin' && role !== 'president';
+      if (demotingLeader && leaderIds.size <= 1) {
+        return new Response(JSON.stringify({ error: 'Cannot remove the last President/Admin. Assign another one first.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Upsert the (single) role row for this user.
+      const { data: existing } = await supabaseAdmin
+        .from('user_roles').select('id').eq('user_id', userId).maybeSingle();
+      const payload = { role, division: div, assigned_by: requestingUser.id, assigned_at: new Date().toISOString() };
+      const { error: writeError } = existing?.id
+        ? await supabaseAdmin.from('user_roles').update(payload).eq('id', existing.id)
+        : await supabaseAdmin.from('user_roles').insert({ user_id: userId, ...payload });
+      if (writeError) {
+        console.error('Error setting role:', writeError);
+        return new Response(JSON.stringify({ error: 'Failed to update role' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Audit trail.
+      try {
+        const { data: target } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
+        await supabaseAdmin.from('activity_logs').insert({
+          user_id: requestingUser.id, user_email: requestingUser.email, user_role: 'admin',
+          action: 'update', entity_type: 'user_role', entity_id: userId, entity_name: target?.email || userId,
+          details: { role, division: div },
+        });
+      } catch (logErr) { console.error('Failed to log role change:', logErr); }
+
+      return new Response(JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     if (action === 'delete') {
       if (!userId) {
