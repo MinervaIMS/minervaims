@@ -168,7 +168,7 @@ const NAV: NavSection[] = [
     ],
   },
   {
-    key: 'smm', label: 'Media & Communication', Icon: ImageIcon,
+    key: 'smm', label: 'Social Media', Icon: ImageIcon,
     subItems: [
       { key: 'smm-editorial', label: 'Editorial calendar', allowed: (p) => p.can('smm-editorial') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
