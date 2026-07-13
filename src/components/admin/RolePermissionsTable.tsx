@@ -133,12 +133,12 @@ export default function RolePermissionsTable() {
       </div>
 
       {/* Special rules */}
-      <div className="mt-6 max-w-3xl font-body">
+      <div className="mt-6 font-body">
         <div className="flex items-center gap-2 mb-2">
           <Info className="h-4 w-4 text-accent" />
           <span className="font-serif text-heading text-accent">Special rules</span>
         </div>
-        <ul className="space-y-2 text-sm text-muted-foreground">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-2 text-sm text-muted-foreground">
           {SPECIAL_RULES.map((s, i) => (
             <li key={i} className="flex gap-2">
               <span className="text-accent mt-0.5">✦</span>

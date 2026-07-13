@@ -4,8 +4,7 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // =====================================================================
 // Terms of Use for the public website and the reserved Workspace.
 // Drafted for an Italian unrecognised association (articles 36 to 38 of
-// the Italian Civil Code). Passages marked "For legal review" should be
-// confirmed by a qualified professional.
+// the Italian Civil Code).
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -211,8 +210,9 @@ const TermsOfUse = () => (
         <p>
           If any provision of these Terms is held invalid, the remaining provisions stay effective. A failure to
           enforce a provision is not a waiver. These Terms are drafted in English for accessibility; legal concepts
-          refer to Italian law. For legal review: confirm the interplay between these Terms, the association's
-          Statute and the applicable University regulations whenever any of them changes.
+          refer to Italian law. In case of conflict, the association's Statute prevails in internal association
+          matters and the applicable University regulations prevail in the matters they govern; these Terms govern
+          the use of the website and of the Workspace.
         </p>
       </LegalSectionBlock>
     </LegalLayout>

@@ -95,13 +95,14 @@ const ApplicationSettings = () => {
   const isOpenNow = !Number.isNaN(s) && !Number.isNaN(e) && e > s && now >= s && now <= e;
 
   return (
-    <div className="space-y-8">
+    <div>
       <WorkspacePageHeader
         title="Application page"
         description="Applications open and close automatically by schedule. Set the recruitment window and the semester label; the public Join page and the application form follow this schedule."
       />
 
-      <div className="space-y-6 max-w-2xl font-body">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-10 items-start">
+      <div className="space-y-6 font-body">
         <div className={`p-4 border border-separator rounded-lg ${state.tone}`}>
           <p className="font-medium">Recruitment status</p>
           <p className="text-sm">{state.label}</p>
@@ -136,7 +137,7 @@ const ApplicationSettings = () => {
       </div>
 
       {/* Preview of the public-facing changes when applications open */}
-      <div className="max-w-3xl space-y-4 font-body border-t border-separator pt-8">
+      <div className="space-y-4 font-body xl:border-l xl:border-separator xl:pl-12 border-t xl:border-t-0 border-separator pt-8 xl:pt-0">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h3 className="font-serif text-lg text-accent">What changes on the website</h3>
@@ -196,8 +197,9 @@ const ApplicationSettings = () => {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          These states switch automatically at the scheduled open and close times — no manual publishing needed. The <span className="text-foreground">/apply</span> form itself only accepts submissions while the window is open.
+          These states switch automatically at the scheduled open and close times, with no manual publishing needed. The <span className="text-foreground">/apply</span> form itself only accepts submissions while the window is open.
         </p>
+      </div>
       </div>
     </div>
   );
