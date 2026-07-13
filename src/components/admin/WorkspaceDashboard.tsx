@@ -310,7 +310,7 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
             )}
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[11px] text-accent-foreground/80">Run entirely by our members. That is the achievement.</span>
+            <span className="text-[11px] text-accent-foreground/80">Run entirely by our members.</span>
             <div className="flex gap-3">
               {activeFunds.map((f) => (
                 <Link key={f} to={`/funds/${f}`} className="inline-flex items-center gap-1 text-[11px] text-accent-foreground/90 hover:text-accent-foreground underline underline-offset-2">
