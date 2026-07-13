@@ -158,7 +158,7 @@ export default function MyProfile() {
     return (
       <div>
         <WorkspacePageHeader title="My profile" description="Your applicant account. These details come from your application and cannot be edited here." />
-        <div className="max-w-2xl font-body">
+        <div className="max-w-4xl font-body">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <Field label="First name" value={candidateApp?.first_name ?? ''} />
             <Field label="Surname" value={candidateApp?.surname ?? ''} />
@@ -188,7 +188,7 @@ export default function MyProfile() {
     return (
       <div>
         <WorkspacePageHeader title="My profile" description="Your account details and current workspace role." />
-        <div className="max-w-2xl space-y-4 font-body">
+        <div className="max-w-4xl space-y-4 font-body">
           <Field label="Email" value={email} />
           <Field label="Role" value={roleText} />
           {guide && (
@@ -215,7 +215,7 @@ export default function MyProfile() {
       />
 
       {(missingPhone || missingEmail) && (
-        <div className="max-w-3xl mb-6 flex items-start gap-2 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="max-w-4xl mb-6 flex items-start gap-2 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>
             {missingPhone && missingEmail ? 'Please add your phone number and email address to continue.'
@@ -225,7 +225,7 @@ export default function MyProfile() {
         </div>
       )}
 
-      <div className="max-w-3xl flex flex-col sm:flex-row gap-8">
+      <div className="max-w-4xl flex flex-col sm:flex-row gap-8">
         {/* Square photo */}
         <div className="shrink-0">
           <div className="w-44 aspect-square border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
@@ -267,13 +267,13 @@ export default function MyProfile() {
       </div>
 
       {/* Connection to the full statute — always available on the profile. */}
-      <div className="max-w-3xl mt-8">
+      <div className="max-w-4xl mt-8">
         <StatuteLink />
       </div>
 
       {/* Role guide */}
       {guide && (
-        <div className="max-w-3xl mt-10 space-y-6">
+        <div className="max-w-4xl mt-10 space-y-6">
           <div>
             <h2 className="font-serif text-xl text-accent mb-1">Your role</h2>
             <p className="text-sm text-foreground leading-relaxed">{guide.summary}</p>

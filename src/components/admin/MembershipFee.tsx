@@ -118,7 +118,11 @@ export default function MembershipFee() {
       [{ key: 'name', header: 'Name' }, { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' }, { key: 'phone', header: 'Phone' }, { key: 'paid', header: 'Fee' }], 'membership-fees.csv');
   };
 
-  if (loading) return <div><WorkspacePageHeader title="Membership fees" description="Collect the semester membership fee." />
+  if (loading) return <div><WorkspacePageHeader title="Membership fees" description="Collect the semester membership fee." /><WorkspaceLoader /></div>;
+
+  return (
+    <div>
+      <WorkspacePageHeader title="Membership fees" description="Track who has paid the semester fee (minimum €10). Closing a collection locks it and automatically records the total in Treasury." />
 
       <div className="mb-5">
         <Recommendation title="Collect fees as soon as offers are accepted">
@@ -129,16 +133,12 @@ export default function MembershipFee() {
             certainty, and the semester starts in an orderly way instead of chasing payments for weeks.
           </p>
         </Recommendation>
-      </div><WorkspaceLoader /></div>;
-
-  return (
-    <div>
-      <WorkspacePageHeader title="Membership fees" description="Track who has paid the semester fee (minimum €10). Closing a collection locks it and automatically records the total in Treasury." />
+      </div>
 
       {!period ? (
         <Card><CardContent className="py-8">
           <p className="font-body text-muted-foreground mb-4">No open collection. Open one for the current semester. The first deadline is shown to everyone on the Calendar as an association deadline; the second deadline stays hidden until the first has passed and is then shown only to members who have not paid.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-body max-w-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-body">
             <div className="space-y-1"><Label>Semester label</Label><Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Autumn 2026" /></div>
             <div className="space-y-1"><Label>Fee (€)</Label><Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="e.g. 10" /></div>
             <div className="space-y-1"><Label>First deadline</Label><Input type="date" value={firstDeadline} onChange={(e) => setFirstDeadline(e.target.value)} /></div>

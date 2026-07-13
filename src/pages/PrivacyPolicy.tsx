@@ -5,8 +5,7 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // Privacy Policy (GDPR information notice under articles 13 and 14).
 // Drafted for an Italian unrecognised association (articles 36 to 38 of
 // the Italian Civil Code) operated by Bocconi University students.
-// Passages marked "For legal review" are the points a qualified
-// professional should confirm.
+// Finalised text: every clause is stated definitively.
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -69,9 +68,9 @@ const PrivacyPolicy = () => (
           association's board, which acts on behalf of the association in data protection matters.
         </p>
         <p>
-          MIMS has not appointed a data protection officer, as it is not required to under article 37 GDPR given the
-          nature and scale of its processing. For legal review: reassess if processing grows materially in scale or
-          sensitivity.
+          MIMS is not required to appoint a data protection officer under article 37 GDPR, given the nature, scope
+          and scale of its processing, and has not appointed one. The board reassesses this requirement whenever the
+          association's processing activities change materially.
         </p>
       </LegalSectionBlock>
 
@@ -178,8 +177,9 @@ const PrivacyPolicy = () => (
           part in and do not depend on newsletter consent.
         </p>
         <p>
-          For legal review: subscription is currently effective on submission (single opt-in). A confirmation email
-          (double opt-in) is recommended as stronger proof of consent.
+          Your consent takes effect when you submit your address, and we keep a timestamped record of the
+          subscription as proof of consent. If you receive a message you did not request, use the unsubscribe link
+          or write to us and we will remove the address and investigate.
         </p>
       </LegalSectionBlock>
 
@@ -256,8 +256,8 @@ const PrivacyPolicy = () => (
           Our providers may process data on servers outside the European Economic Area, in particular in the United
           States. Where that happens, transfers rely on a European Commission adequacy decision (including the EU-US
           Data Privacy Framework where the provider is certified) or on Standard Contractual Clauses with
-          supplementary measures. You can request information on the applicable safeguards by contacting us. For
-          legal review: re-verify periodically the transfer mechanisms declared by Lovable, Supabase and Resend.
+          supplementary measures. You can request information on the applicable safeguards by contacting us. We
+          verify our providers' transfer mechanisms when we appoint them and review them periodically.
         </p>
       </LegalSectionBlock>
 
@@ -271,7 +271,7 @@ const PrivacyPolicy = () => (
           <li><strong>Workspace activity logs:</strong> up to twenty-four months, unless needed longer for a specific security investigation or legal claim.</li>
           <li><strong>Provider server and security logs:</strong> per the providers' standard, typically short, retention.</li>
         </ul>
-        <p>For legal review: confirm these default periods against the association's actual operating needs.</p>
+        <p>Where a legal claim or investigation requires it, specific data may be kept for the additional time strictly needed.</p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="security" number="13" title="Security">

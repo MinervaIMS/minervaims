@@ -74,10 +74,10 @@ export default function EventCreate() {
     <div>
       <WorkspacePageHeader title="Create" description="Create a new event: internal meetings, aperitivi, division events, online calls, guest events, alumni calls or association-wide events. Enable registration to collect attendees." />
 
-      <div className="max-w-3xl space-y-5 font-body">
+      <div className="max-w-5xl space-y-5 font-body">
         <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest talk: Markets outlook 2026" /></div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1">
             <span className="inline-flex items-center gap-1.5"><Label>Type</Label><HelpDot page="events-create" topic="types" /></span>
             <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v as EventType, division: DIVISION_REQUIRED_TYPES.includes(v as EventType) ? form.division : '' })}>

@@ -690,7 +690,7 @@ const MinervaWorkspace = () => {
         return <NewJoiners />;
       case 'applications-form':
         // "Form & settings" now also holds the division application Questions.
-        return <div className="space-y-12"><FormSettings /><QuestionsManagement /></div>;
+        return <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-14 gap-y-12 items-start"><FormSettings /><QuestionsManagement /></div>;
       case 'applications-status':
         return <ApplicationStatus />;
       case 'applications-interview-calendar':

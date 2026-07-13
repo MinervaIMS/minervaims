@@ -110,7 +110,7 @@ export default function ReportUpload() {
         description="Add a new report: complete the details, attach the PDF, then publish it to the Archive or save it as a draft for review."
       />
 
-      <div className="max-w-4xl grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-8 font-body">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr),360px] gap-10 font-body">
         {/* Details */}
         <div className="space-y-5 min-w-0">
           <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity Research - Q1 2026 sector outlook" /></div>
