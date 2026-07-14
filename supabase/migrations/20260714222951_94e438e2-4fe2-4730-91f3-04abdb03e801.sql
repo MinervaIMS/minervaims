@@ -1,0 +1,2 @@
+UPDATE members SET photo_url = NULL WHERE first_name ILIKE 'Aleksandar' AND surname ILIKE 'Georgiev';
+UPDATE team_members SET photo_url = NULL WHERE name ILIKE 'Aleksandar' AND surname ILIKE 'Georgiev';
