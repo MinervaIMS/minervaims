@@ -255,8 +255,23 @@ const MinervaWorkspace = () => {
     return () => document.documentElement.classList.remove('ws-active');
   }, []);
 
-  // Shell state
-  const [navExpanded, setNavExpanded] = useState(true);
+  // Shell state. On the first landing of a browser session we intentionally
+  // show the fully expanded rail (with section names) so the user sees the
+  // navigation surface once; the flag persists in sessionStorage so any later
+  // navigation within the same session behaves as usual.
+  const firstVisitRef = useRef(false);
+  const [navExpanded, setNavExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const seen = sessionStorage.getItem('mims:ws:nav-first-seen');
+      if (!seen) {
+        sessionStorage.setItem('mims:ws:nav-first-seen', '1');
+        firstVisitRef.current = true;
+        return true;
+      }
+    } catch { /* sessionStorage unavailable */ }
+    return true;
+  });
   const [submenuOpen, setSubmenuOpen] = useState(true);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [activeSubKey, setActiveSubKey] = useState<string | null>(null);
@@ -276,8 +291,11 @@ const MinervaWorkspace = () => {
     }
   }, [visibleNav, activeSectionKey]);
 
-  // Auto-collapse main nav rail when a submenu panel is shown
+  // Auto-collapse main nav rail when a submenu panel is shown, except on the
+  // very first visit of the session — where the expanded rail stays visible
+  // until the user interacts with it.
   useEffect(() => {
+    if (firstVisitRef.current) { firstVisitRef.current = false; return; }
     const section = visibleNav.find((s) => s.key === activeSectionKey);
     if (submenuOpen && section && section.subItems.length > 0) {
       setNavExpanded(false);
