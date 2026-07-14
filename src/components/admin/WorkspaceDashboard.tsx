@@ -40,8 +40,7 @@ const C = {
 
 interface ReportRow { division: string; date: string; page_count: number | null; status: string; title: string }
 interface SnapshotRow { semester_key: string; semester_label: string; members_count: number; alumni_count: number }
-interface FundYearRow { fund: string; year: number; ytd: number | null; itd: number | null }
-interface FundMonthRow { fund: string; period_month: string; nav: number | null; monthly_return: number | null }
+interface FundYearRow { fund: string; year: number; ytd: string; itd: string; months: string[] }
 
 function useCountUp(target: number, duration = 1100): number {
   const [value, setValue] = useState(0);
