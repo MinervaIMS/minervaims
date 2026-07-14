@@ -18,6 +18,9 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { currentSemester, previousSemester, semesterOf, type Semester } from '@/lib/semester';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { fundLabels, activeFunds, type Fund } from '@/lib/types';
+import { parseFundNumber } from '@/lib/funds-api';
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const SHORT_DIV: Record<string, string> = { equity: 'Equity', investment: 'Investment', macro: 'Macro', portfolio: 'Portfolio', quant: 'Quant' };
