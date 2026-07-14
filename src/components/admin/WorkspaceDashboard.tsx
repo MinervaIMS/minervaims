@@ -170,26 +170,47 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
   const prevMembers = snapshots.length ? snapshots[snapshots.length - 1].members_count : null;
   const prevAlumni = snapshots.length ? snapshots[snapshots.length - 1].alumni_count : null;
 
-  // Fund series: NAV where present, otherwise an index compounded from
-  // monthly returns (base 100), one series per active fund.
+  // Fund series: compound the monthly returns stored on fund_performance_years
+  // (base 100) into one NAV point per calendar month, per active fund. Empty
+  // months just carry the previous NAV forward — the chart never dips to zero
+  // on a missing entry.
   const fundChart = useMemo(() => {
     const byMonth = new Map<string, Record<string, number | string>>();
     for (const f of activeFunds) {
-      const rows = fundMonths.filter((r) => r.fund === f);
-      let index = 100;
-      for (const r of rows) {
-        const point = byMonth.get(r.period_month) ?? { month: r.period_month.slice(0, 7) };
-        if (r.nav !== null) point[f] = Number(r.nav.toFixed(2));
-        else if (r.monthly_return !== null) { index = index * (1 + r.monthly_return / 100); point[f] = Number(index.toFixed(2)); }
-        byMonth.set(r.period_month, point);
+      const rows = fundYears.filter((r) => r.fund === f).sort((a, b) => a.year - b.year);
+      let nav = 100;
+      let started = false;
+      for (const row of rows) {
+        for (let i = 0; i < 12; i++) {
+          const raw = row.months[i] ?? '';
+          const key = `${row.year}-${String(i + 1).padStart(2, '0')}`;
+          const label = `${MONTH_ABBR[i]} ${String(row.year).slice(-2)}`;
+          const parsed = parseFundNumber(raw);
+          if (parsed !== null) {
+            nav = nav * (1 + parsed / 100);
+            started = true;
+          } else if (!started) {
+            continue;
+          }
+          const point = byMonth.get(key) ?? { month: label };
+          point[f] = Number(nav.toFixed(2));
+          byMonth.set(key, point);
+        }
       }
     }
     return [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
-  }, [fundMonths]);
+  }, [fundYears]);
 
   const funds = useMemo(() => activeFunds.map((f: Fund) => {
-    const row = fundYears.find((r) => r.fund === f);
-    return { fund: f, year: row?.year ?? null, ytd: row?.ytd ?? null, itd: row?.itd ?? null };
+    // Pick the most recent year that has a YTD value for this fund.
+    const rows = fundYears.filter((r) => r.fund === f).sort((a, b) => b.year - a.year);
+    const withYtd = rows.find((r) => parseFundNumber(r.ytd) !== null) ?? rows[0];
+    return {
+      fund: f,
+      year: withYtd?.year ?? null,
+      ytd: withYtd ? parseFundNumber(withYtd.ytd) : null,
+      itd: withYtd ? parseFundNumber(withYtd.itd) : null,
+    };
   }), [fundYears]);
 
   const pct = (v: number | null) => v === null ? 'n/a' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
