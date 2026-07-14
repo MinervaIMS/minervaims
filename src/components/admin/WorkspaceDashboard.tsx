@@ -101,32 +101,31 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
   const [liveMembers, setLiveMembers] = useState(0);
   const [liveAlumni, setLiveAlumni] = useState(0);
   const [fundYears, setFundYears] = useState<FundYearRow[]>([]);
-  const [fundMonths, setFundMonths] = useState<FundMonthRow[]>([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const [rep, snap, mem, alu, fy, fm] = await Promise.all([
+        const [rep, snap, mem, alu, fy] = await Promise.all([
           supabase.from('archive_files').select('division, date, page_count, status, title').eq('status', 'published'),
           supabase.from('semester_snapshots').select('semester_key, semester_label, members_count, alumni_count').order('semester_key'),
           supabase.from('members').select('id', { count: 'exact', head: true }),
           supabase.from('alumni').select('id', { count: 'exact', head: true }),
-          supabase.from('fund_performance_years').select('fund, year, ytd, itd').order('year', { ascending: false }),
-          supabase.from('fund_performances').select('fund, period_month, nav, monthly_return').order('period_month'),
+          supabase.from('fund_performance_years').select('fund, year, ytd, itd, months').order('year', { ascending: true }),
         ]);
         setReports((rep.data || []) as ReportRow[]);
         setSnapshots((snap.data || []) as SnapshotRow[]);
         setLiveMembers(mem.count ?? 0);
         setLiveAlumni(alu.count ?? 0);
-        setFundYears((fy.data || []).map((r) => ({
-          fund: String(r.fund), year: Number(r.year),
-          ytd: r.ytd === null ? null : Number(r.ytd), itd: r.itd === null ? null : Number(r.itd),
-        })));
-        setFundMonths((fm.data || []).map((r) => ({
-          fund: String(r.fund), period_month: String(r.period_month),
-          nav: r.nav === null ? null : Number(r.nav),
-          monthly_return: r.monthly_return === null ? null : Number(r.monthly_return),
-        })));
+        setFundYears((fy.data || []).map((r) => {
+          const raw = Array.isArray(r.months) ? r.months : [];
+          const months = Array.from({ length: 12 }, (_, i) => (raw[i] == null ? '' : String(raw[i])));
+          return {
+            fund: String(r.fund), year: Number(r.year),
+            ytd: r.ytd == null ? '' : String(r.ytd),
+            itd: r.itd == null ? '' : String(r.itd),
+            months,
+          };
+        }));
       } finally { setLoading(false); }
     })();
   }, []);
