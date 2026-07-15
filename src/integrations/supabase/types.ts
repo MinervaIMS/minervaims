@@ -130,7 +130,7 @@ export type Database = {
       alumni: {
         Row: {
           city: string | null
-          company: string | null
+          company: string
           created_at: string
           graduation_year: number
           id: string
@@ -142,7 +142,7 @@ export type Database = {
         }
         Insert: {
           city?: string | null
-          company?: string | null
+          company: string
           created_at?: string
           graduation_year: number
           id?: string
@@ -154,7 +154,7 @@ export type Database = {
         }
         Update: {
           city?: string | null
-          company?: string | null
+          company?: string
           created_at?: string
           graduation_year?: number
           id?: string
@@ -977,33 +977,6 @@ export type Database = {
           start_at?: string | null
           title?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      exam_sessions: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          end_date: string
-          id: string
-          label: string
-          start_date: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          end_date: string
-          id?: string
-          label: string
-          start_date: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          end_date?: string
-          id?: string
-          label?: string
-          start_date?: string
         }
         Relationships: []
       }
@@ -1876,21 +1849,6 @@ export type Database = {
         Returns: string
       }
       can_manage_calendar: { Args: { uid: string }; Returns: boolean }
-      claim_member_account: { Args: never; Returns: Json }
-      exam_break_on: { Args: { _d: string }; Returns: string | null }
-      is_board_member: { Args: { _user_id: string }; Returns: boolean }
-      log_activity: {
-        Args: {
-          p_action: string
-          p_entity_type: string
-          p_entity_name?: string | null
-          p_section?: string | null
-          p_subsection?: string | null
-          p_entity_id?: string | null
-          p_details?: Json | null
-        }
-        Returns: undefined
-      }
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
