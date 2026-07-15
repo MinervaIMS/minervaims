@@ -1959,6 +1959,13 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["team_position"]
       }
+      roster_access_pair: {
+        Args: {
+          p_division: Database["public"]["Enums"]["org_division"]
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Record<string, unknown>
+      }
       user_divisions: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["org_division"][]
