@@ -232,26 +232,17 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'people-members', section: 'People', label: 'Members',
-    purpose: 'The live member directory, plus the semester registers: frozen snapshots of who officially belonged to the association each semester, taken when that semester\'s fee collection closed.',
+    purpose: 'The association register: members and advisors, each with THE one role that drives their workspace permissions everywhere. Also holds the semester registers: frozen snapshots of who officially belonged to the association each semester.',
     view: ['Browse the directory and consult past semester registers.'],
     manage: ['Add, edit, move to alumni or expel members.'],
     warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.'],
     topics: [
       { id: 'registers', title: 'Semester registers', body: 'Each register lists who officially belonged to the association in a given semester. It is created automatically the moment that semester\'s membership fee collection is closed, and preserved unchanged from then on.' },
-      { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Board members can additionally stay in the workspace as advisors or silent advisors.', requires: 'manage' },
+      { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Board members can additionally stay in the workspace as advisors (hidden from the website by default).', requires: 'manage' },
       { id: 'redeem', title: 'How existing members claim their account', body: 'When a person on this register creates a website account with the email stored on their profile, the system links the profile to the account automatically as soon as the email is verified, and applies the role and permissions stored here. No duplicate is created; the link is recorded in the activity log.' },
-      { id: 'role-division', title: 'Roles and divisions', body: 'President, Vice President, Head of Asset Management and advisors carry no division (the board is not a division). Heads of division always belong to the board AND to their division. Portfolio Manager is Portfolio Management\'s team leader. Role changes here update workspace access for linked accounts, and Settings > Users reflects them.', requires: 'manage' },
+      { id: 'role-division', title: 'One role for everything', body: 'The role on the member profile is the person\'s ONLY role: workspace permissions mirror it automatically, and Settings > Users edits this same record. President, Vice President, Head of Asset Management and advisors carry no division (the board is not a division); heads of division belong to the board AND to their division; Portfolio Manager is Portfolio Management\'s team leader.', requires: 'manage' },
+      { id: 'advisors', title: 'Advisors', body: 'Advisors are appointed alumni who assist the board and keep consulting access to the workspace. They live in this register; the "Show on public Members page" switch on their profile decides whether they appear on the public website (rows marked "hidden" do not). Advisors never enter fee collections or the semester registers.', requires: 'manage' },
     ],
-  },
-  {
-    key: 'people-advisors', section: 'People', label: 'Advisors',
-    purpose: 'Every advisor of the association, public and silent. An advisor is a role assignment on a registered alumnus: advisors appear on the public Members page, silent advisors (marked with an icon) do not appear anywhere on the public website.',
-    view: ['Browse advisors and silent advisors.'],
-    manage: ['Add and edit advisors.'],
-    topics: [
-      { id: 'silent', title: 'Silent advisors', body: 'A silent advisor has exactly the same standing as an advisor; the only difference is that silent advisors are not displayed on the public website. Rows marked with the eye-off icon are silent.' },
-      { id: 'alumnus', title: 'Advisors are alumni', body: 'Appointing an advisor always registers the person as an alumnus first (from People > Members, this happens automatically when the advisor role is applied). For a silent advisor the current company may be left empty and completed later.' },
-    ]
   },
   {
     key: 'people-alumni', section: 'People', label: 'Alumni',

@@ -147,17 +147,10 @@ export const roleGuides: Partial<Record<AppRole, RoleGuide>> = {
     contact: 'Refer to the Vice President; the President holds ultimate responsibility for the Treasury.',
   },
   advisor: {
-    summary: 'An Advisor supports the association with guidance and experience and appears on the public Members page.',
+    summary: 'An Advisor supports the association with guidance and experience. Advisors are appointed alumni; whether they appear on the public Members page is decided on their member profile.',
     responsibilities: ['Advise the association where useful.'],
     reportsTo: 'The President.',
     rights: ['Stay informed about the association’s activity.'],
-    contact: 'Refer to the President.',
-  },
-  silent_advisor: {
-    summary: 'A Silent Advisor keeps workspace access mainly to stay informed.',
-    responsibilities: ['Stay informed about the association’s activity (read-only).'],
-    reportsTo: 'The President.',
-    rights: ['View workspace activity without operating the association.', 'Are not shown on the public Members page.'],
     contact: 'Refer to the President.',
   },
   candidate: {

@@ -12,11 +12,11 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import type { AppRole, OrgDivision } from '@/lib/roles';
 
-export type MembershipStatus = 'active' | 'on_exchange' | 'one_semester_pause' | 'alumni' | 'expelled' | 'silent_advisor';
+export type MembershipStatus = 'active' | 'on_exchange' | 'one_semester_pause' | 'alumni' | 'expelled';
 
 export const MEMBERSHIP_STATUS_LABELS: Record<MembershipStatus, string> = {
   active: 'Active', on_exchange: 'On Exchange', one_semester_pause: '1-semester Pause',
-  alumni: 'Alumni', expelled: 'Expelled', silent_advisor: 'Silent Advisor',
+  alumni: 'Alumni', expelled: 'Expelled',
 };
 export type AccountStatus = 'approved' | 'pending' | 'to_redeem';
 export type FeeStatus = 'paid' | 'unpaid' | 'exempt';
@@ -92,16 +92,16 @@ export function deleteMember(session: Session | null, id: string) {
 export interface MoveToAlumniInput {
   id: string;
   graduation_year: number;
-  /** Optional only when keeping the person as a SILENT advisor. */
+  /** Optional only when keeping the person as an advisor. */
   company?: string | null;
   city?: string | null;
   job_area?: string | null;
   /**
    * Keep the person in the workspace as an advisor. Every advisor is a role
-   * assignment on a registered alumnus: 'advisor' stays publicly visible,
-   * 'silent_advisor' is hidden from the public website.
+   * assignment on a registered alumnus; new advisors start hidden from the
+   * public website (the profile switch shows them).
    */
-  keep_role?: 'silent_advisor' | 'advisor';
+  keep_role?: 'advisor';
 }
 
 /** Move a member to the alumni directory, retaining phone/email privately. */

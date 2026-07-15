@@ -57,13 +57,13 @@ const ROLE_BASE: Record<string, string> = {
   president: 'President', vice_president: 'Vice President', head_of_asset_management: 'Head of Asset Management',
   head_of_media: 'Head of Media & Communication', head_of_operations: 'Head of Operations',
   portfolio_manager: 'Portfolio Manager', team_leader: 'Team Leader / Senior Analyst', analyst: 'Analyst',
-  media_analyst: 'Media & Communication Analyst', advisor: 'Advisor', silent_advisor: 'Silent Advisor',
+  media_analyst: 'Media & Communication Analyst', advisor: 'Advisor',
   member: 'Member', admin: 'Admin',
 };
 const ROLE_RANK: Record<string, number> = {
   president: 1, vice_president: 2, admin: 2, head_of_asset_management: 3, head_of_division: 4,
   head_of_media: 5, head_of_operations: 6, portfolio_manager: 7, team_leader: 8, analyst: 9,
-  media_analyst: 10, advisor: 11, silent_advisor: 12, member: 95,
+  media_analyst: 10, advisor: 11, member: 95,
 };
 function roleLabel(role: string, division: string | null): string {
   const div = division && division !== 'none' && division !== 'board' ? division : null;

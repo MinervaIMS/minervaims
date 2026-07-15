@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
         .eq('membership_status', 'active')
-        .not('role', 'in', '(candidate,pending,admin,alumni,silent_advisor)')).data || [];
+        .not('role', 'in', '(candidate,pending,admin,alumni,advisor,silent_advisor)')).data || [];
 
     if (action === 'current') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -125,8 +125,11 @@ Deno.serve(async (req) => {
         const paidIds = new Set((fees || []).filter((f: any) => f.paid).map((f: any) => f.member_id));
         const { data: allMembers } = await supabase.from('members')
           .select('id, first_name, surname, email, division, role, fee_status, membership_status');
+        // Advisors are appointed alumni, not dues-paying members: they never
+        // enter the register.
         const registerRows = (allMembers || []).filter((mm: any) =>
-          paidIds.has(mm.id) || (mm.membership_status === 'active' && mm.fee_status === 'exempt'));
+          !['advisor', 'silent_advisor'].includes(mm.role) &&
+          (paidIds.has(mm.id) || (mm.membership_status === 'active' && mm.fee_status === 'exempt')));
         // Idempotent: re-closing/re-running replaces that semester's register.
         await supabase.from('semester_members').delete().eq('semester_key', semKey);
         if (registerRows.length > 0) {

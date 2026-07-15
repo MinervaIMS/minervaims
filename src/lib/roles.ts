@@ -63,6 +63,9 @@ const LEGACY_HEAD_DIVISION: Partial<Record<AppRole, OrgDivision>> = {
 /** Normalise a stored role to its canonical role value. */
 export function normalizeRole(role: AppRole): AppRole {
   if (role in LEGACY_HEAD_DIVISION) return 'head_of_division';
+  // The silent advisor ROLE no longer exists: silent advisors are advisors
+  // whose "show on public website" flag is off. Legacy rows normalise here.
+  if (role === 'silent_advisor') return 'advisor';
   return role;
 }
 
@@ -99,7 +102,7 @@ const roleBaseLabels: Record<AppRole, string> = {
   media_analyst: 'Media & Communication Analyst',
   head_of_operations: 'Head of Operations',
   advisor: 'Advisor',
-  silent_advisor: 'Silent Advisor',
+  silent_advisor: 'Advisor',
   candidate: 'Applicant',
   alumni: 'Alumni',
   member: 'Member',
@@ -152,7 +155,7 @@ const roleRank: Record<AppRole, number> = {
   analyst: 10,
   media_analyst: 11,
   advisor: 12,
-  silent_advisor: 13,
+  silent_advisor: 12,
   alumni: 90,
   member: 95,
   candidate: 98,
@@ -198,7 +201,7 @@ export function divisionsForRole(role: AppRole): OrgDivision[] {
   if (norm === 'team_leader') return CORE_DIVISIONS.filter((d) => d !== 'portfolio');
   if (norm === 'head_of_division' || norm === 'senior_analyst' || norm === 'analyst') return [...CORE_DIVISIONS];
   // president, vice_president, head_of_asset_management, advisor,
-  // silent_advisor, alumni, member, admin: no division.
+  // alumni, member, admin: no division.
   return [];
 }
 

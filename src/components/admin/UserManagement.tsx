@@ -38,11 +38,15 @@ interface UserRow {
   role_id: string;
 }
 
-// Roles that can be granted from this page (canonical set).
+// Roles that can be granted from this page. Assigning here writes the
+// person's MEMBER PROFILE (People > Members): one email, one user, one role.
+// 'admin' is reserved for the association account and cannot be granted;
+// advisors are appointed from People > Members (the flow registers them as
+// alumni first); 'alumni' is reached only through the leave flow.
 const ASSIGNABLE_ROLES: AppRole[] = [
-  'admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
+  'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member',
+  'media_analyst', 'head_of_operations', 'member',
 ];
 // A user with one of these (or no role row) is "pending" — not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];
@@ -210,6 +214,7 @@ const UserManagement = () => {
     const isSelf = u.id === currentUser?.id;
     const isAdminAccount = u.email === ADMIN_EMAIL;
     if (!canEdit) return <Badge variant="secondary">{roleLabel(u.role, u.division)}</Badge>;
+    if (isAdminAccount) return <Badge variant="secondary">Association account</Badge>;
     return (
       <div className="flex items-center gap-2 justify-end">
         <Button variant="outline" size="sm" className="h-8" disabled={busyUserId === u.id} onClick={() => openEdit(u)}>
@@ -227,7 +232,7 @@ const UserManagement = () => {
     <div className="space-y-6">
       <WorkspacePageHeader
         title="Users"
-        description="Assign workspace roles. This controls who can manage the website, applications, events, membership and everything else. Role changes are confirmed, logged, and restricted to the President and Admin."
+        description="The accounts connected to the workspace. Each person has ONE role, stored on their member profile: assigning a role here writes that same profile (People > Members shows it identically), and permissions follow it everywhere. Role changes are confirmed, logged, and restricted to the President and Admin."
       />
 
       {!canEdit && (
@@ -324,7 +329,7 @@ const UserManagement = () => {
           <DialogHeader>
             <DialogTitle className="font-serif inline-flex items-center gap-2">Change role <HelpDot page="settings-users" topic="change-role" /></DialogTitle>
             <DialogDescription className="font-body">
-              {editing && <><span className="text-foreground">{editing.full_name || editing.email}</span> is currently <span className="text-foreground">{roleLabel(editing.role, editing.division)}</span>. Changes take effect immediately and are recorded in the activity log.</>}
+              {editing && <><span className="text-foreground">{editing.full_name || editing.email}</span> is currently <span className="text-foreground">{roleLabel(editing.role, editing.division)}</span>. This writes the person's member profile (the single record behind People &gt; Members and this page); permissions follow immediately and the change is recorded in the activity log. Advisors are appointed from People &gt; Members instead.</>}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 font-body">
