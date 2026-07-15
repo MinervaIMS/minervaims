@@ -125,7 +125,7 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'my-role', label: 'My profile', Icon: UserIcon,
+    key: 'my-role', label: 'My Profile', Icon: UserIcon,
     subItems: [],
   },
   {
@@ -135,18 +135,18 @@ const NAV: NavSection[] = [
   {
     key: 'reports', label: 'Reports', Icon: FileBarChart2,
     subItems: [
-      { key: 'reports-upload', label: 'Upload report', allowed: (p) => p.can('reports-upload') },
-      { key: 'reports-archive', label: 'Report archive', allowed: (p) => p.can('reports-archive') },
-      { key: 'reports-templates', label: 'Templates & repositories', allowed: (p) => p.can('reports-templates') },
-      { key: 'reports-funds', label: 'Fund performances', allowed: (p) => p.can('reports-funds') },
+      { key: 'reports-upload', label: 'Upload Report', allowed: (p) => p.can('reports-upload') },
+      { key: 'reports-archive', label: 'Report Archive', allowed: (p) => p.can('reports-archive') },
+      { key: 'reports-templates', label: 'Templates & Repositories', allowed: (p) => p.can('reports-templates') },
+      { key: 'reports-funds', label: 'Fund Performances', allowed: (p) => p.can('reports-funds') },
     ],
   },
   {
     key: 'applications', label: 'Recruiting', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', label: 'Application page', allowed: (p) => p.can('applications-website') },
-      { key: 'applications-screening', label: 'Candidates screening', allowed: (p) => p.can('applications-screening') },
-      { key: 'applications-interview-calendar', label: 'Interview calendar', allowed: (p) => p.can('applications-interview-calendar') },
+      { key: 'applications-website', label: 'Application Page', allowed: (p) => p.can('applications-website') },
+      { key: 'applications-screening', label: 'Candidates Screening', allowed: (p) => p.can('applications-screening') },
+      { key: 'applications-interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
       { key: 'applications-joiners', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
       { key: 'applications-form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
     ],
@@ -154,12 +154,12 @@ const NAV: NavSection[] = [
   {
     key: 'events', label: 'Events', Icon: Presentation,
     subItems: [
-      { key: 'events-create', label: 'Create event', allowed: (p) => p.can('events-create') },
-      { key: 'events-forms', label: 'Registration forms', allowed: (p) => p.can('events-forms') },
+      { key: 'events-create', label: 'Create Event', allowed: (p) => p.can('events-create') },
+      { key: 'events-forms', label: 'Registration Forms', allowed: (p) => p.can('events-forms') },
       { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.can('events-attendance') },
-      { key: 'events-archive', label: 'Event archive', allowed: (p) => p.can('events-archive') },
-      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.can('events-alumni-calls') },
-      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.can('events-on-display') },
+      { key: 'events-archive', label: 'Event Archive', allowed: (p) => p.can('events-archive') },
+      { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.can('events-alumni-calls') },
+      { key: 'events-on-display', label: 'Association On Display', allowed: (p) => p.can('events-on-display') },
     ],
   },
   {
@@ -173,21 +173,21 @@ const NAV: NavSection[] = [
   {
     key: 'smm', label: 'Social Media', Icon: ImageIcon,
     subItems: [
-      { key: 'smm-editorial', label: 'Editorial calendar', allowed: (p) => p.can('smm-editorial') },
+      { key: 'smm-editorial', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
       { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
-      { key: 'smm-other', label: 'Other templates', allowed: (p) => p.can('smm-other') },
-      { key: 'smm-brand', label: 'Brand & design', allowed: (p) => p.can('smm-brand') },
-      { key: 'smm-ads', label: 'Ads & spending', allowed: (p) => p.can('smm-ads') },
+      { key: 'smm-other', label: 'Other Templates', allowed: (p) => p.can('smm-other') },
+      { key: 'smm-brand', label: 'Brand & Design', allowed: (p) => p.can('smm-brand') },
+      { key: 'smm-ads', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
     ],
   },
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-fee', label: 'Membership fees', allowed: (p) => p.can('ops-fee') },
+      { key: 'ops-fee', label: 'Membership Fees', allowed: (p) => p.can('ops-fee') },
       { key: 'ops-treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
-      { key: 'ops-external', label: 'External relations', allowed: (p) => p.can('ops-external') },
-      { key: 'ops-docs', label: 'Statute & documents', allowed: (p) => p.can('ops-docs') },
+      { key: 'ops-external', label: 'External Relations', allowed: (p) => p.can('ops-external') },
+      { key: 'ops-docs', label: 'Statute & Documents', allowed: (p) => p.can('ops-docs') },
     ],
   },
 
@@ -198,7 +198,7 @@ const NAV: NavSection[] = [
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
       { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
-      { key: 'ops-auto-emails', label: 'Automatic emails', allowed: (p) => p.can('ops-auto-emails') },
+      { key: 'ops-auto-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
   },
 
@@ -206,12 +206,12 @@ const NAV: NavSection[] = [
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.can('settings-users') },
-      { key: 'settings-roles', label: 'Role permissions', allowed: (p) => p.can('settings-roles') },
-      { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.can('settings-activity') },
+      { key: 'settings-roles', label: 'Role Permissions', allowed: (p) => p.can('settings-roles') },
+      { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
     ],
   },
   {
-    key: 'welcome', label: 'How to use', Icon: HelpCircle,
+    key: 'welcome', label: 'How To Use', Icon: HelpCircle,
     subItems: [],
   },
 ];
@@ -226,12 +226,12 @@ function filterNav(permissions: Permissions): NavSection[] {
 // their application status. This is enforced here, plus by the render guard
 // below, plus by row-level security in the database (defence in depth).
 const CANDIDATE_NAV: NavSection[] = [
-  { key: 'my-role', label: 'My profile', Icon: UserIcon, subItems: [] },
+  { key: 'my-role', label: 'My Profile', Icon: UserIcon, subItems: [] },
   {
-    key: 'applications', label: 'My application', Icon: ClipboardList,
+    key: 'applications', label: 'My Application', Icon: ClipboardList,
     subItems: [
       { key: 'applications-status', label: 'Status' },
-      { key: 'applications-interview-calendar', label: 'Interview calendar' },
+      { key: 'applications-interview-calendar', label: 'Interview Calendar' },
     ],
   },
 ];
