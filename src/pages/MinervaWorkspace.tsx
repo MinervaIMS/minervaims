@@ -176,7 +176,7 @@ const NAV: NavSection[] = [
       { key: 'smm-editorial', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
       { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
-      { key: 'smm-other', label: 'Other Templates', allowed: (p) => p.can('smm-other') },
+      { key: 'smm-other', label: 'Other Resources', allowed: (p) => p.can('smm-other') },
       { key: 'smm-brand', label: 'Brand & Design', allowed: (p) => p.can('smm-brand') },
       { key: 'smm-ads', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
     ],
@@ -733,7 +733,7 @@ const MinervaWorkspace = () => {
       case 'smm-li':
         return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other Templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
+        return <ResourceManager category="smm_other" title="Other Resources" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
         return <BrandDesignSystem />;
       case 'ops-fee':
