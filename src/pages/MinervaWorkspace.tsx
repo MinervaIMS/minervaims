@@ -733,7 +733,7 @@ const MinervaWorkspace = () => {
       case 'smm-li':
         return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
+        return <ResourceManager category="smm_other" title="Other Templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
         return <BrandDesignSystem />;
       case 'ops-fee':
@@ -741,11 +741,11 @@ const MinervaWorkspace = () => {
       case 'ops-treasury':
         return <Treasury />;
       case 'ops-external':
-        return <ResourceManager category="external_relations" title="External relations" description="A flexible repository for external relationships: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="external_relations" title="External Relations" description="A flexible repository for external relationships: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-auto-emails':
         return <AutoEmails />;
       case 'ops-docs':
-        return <ResourceManager category="operations_statuto" title="Statute and important documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="operations_statuto" title="Statute And Important Documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
       case 'website-pages':
@@ -761,7 +761,7 @@ const MinervaWorkspace = () => {
   const renderEventsManagement = () => (
     <div>
       <WorkspacePageHeader
-        title="Events archive"
+        title="Events Archive"
         description="Every event of every type: meetings, calls, division and guest events. Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it."
         actions={<>
 
