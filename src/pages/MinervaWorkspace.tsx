@@ -46,6 +46,7 @@ import MembershipFee from '@/components/admin/MembershipFee';
 import Treasury from '@/components/admin/Treasury';
 import AutoEmails from '@/components/admin/AutoEmails';
 import EditorialCalendar from '@/components/admin/EditorialCalendar';
+import BrandDesignSystem from '@/components/admin/BrandDesignSystem';
 import AdsRegister from '@/components/admin/AdsRegister';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
@@ -734,7 +735,7 @@ const MinervaWorkspace = () => {
       case 'smm-other':
         return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
-        return <ResourceManager category="smm_brand" title="Brand & design" description="The association's visual identity: fonts, colours, logo usage, visual style, tone and design rules. Star the key references to pin them on top (up to five)." divisions={['none']} />;
+        return <BrandDesignSystem />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':
