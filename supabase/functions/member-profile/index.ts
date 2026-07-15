@@ -32,14 +32,14 @@ const RedeemSchema = z.object({
 
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
-  'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
-  'head_of_operations', 'advisor',
+  'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
+  'media_analyst', 'head_of_operations', 'advisor',
 ]);
 
 const ROLE_RANK: Record<string, number> = {
   president: 1, vice_president: 2, head_of_asset_management: 3, head_of_division: 4,
   head_of_media: 5, head_of_operations: 6, portfolio_manager: 7, team_leader: 8,
-  analyst: 9, media_analyst: 10, advisor: 11, silent_advisor: 12,
+  senior_analyst: 9, analyst: 10, media_analyst: 11, advisor: 12, silent_advisor: 13,
   alumni: 90, member: 95, candidate: 98, pending: 99, admin: 99,
 };
 
@@ -116,10 +116,18 @@ Deno.serve(async (req) => {
     const primaryAssignment = (): { role: string; division: string | null } | undefined =>
       [...roleList].sort((a, b) => (ROLE_RANK[a.role] ?? 99) - (ROLE_RANK[b.role] ?? 99))[0];
 
+    // Does this user hold a real staff role (beyond member/pending/candidate)?
+    const hasStaffRole = roleList.some((r) => !['member', 'pending', 'candidate', 'admin'].includes(r.role));
+
     // ── GET ──────────────────────────────────────────────────────────────
-    // A member row is provisioned silently for any staff user: their login is
-    // their identity, so there is no separate "redeem" step. We still link an
-    // existing placeholder by email when one happens to match.
+    // Linking order: (1) the member row already linked to this account;
+    // (2) the account-redeem path — link_member_account() claims the roster
+    //     profile carrying this user's CONFIRMED email and applies its stored
+    //     role and division to workspace access, all server-side;
+    // (3) only for users who already hold a staff role (assigned in
+    //     Settings → Users), a fresh roster row is provisioned. Accounts
+    //     without a role never silently create members: that would produce
+    //     duplicate/ghost roster rows.
     if (action === 'get') {
       const linked = await findLinked();
       if (linked) {
@@ -132,15 +140,18 @@ Deno.serve(async (req) => {
         return json({ member: linked });
       }
 
-      if (user.email) {
-        const { data: byEmail } = await supabase.from('members').select('*')
-          .is('user_id', null).ilike('email', user.email).limit(1).maybeSingle();
-        if (byEmail) {
-          const { data: claimed } = await supabase.from('members')
-            .update({ user_id: user.id, account_status: 'approved' })
-            .eq('id', byEmail.id).select().single();
-          return json({ member: claimed });
-        }
+      // Account redeem: secure server-side linking by confirmed email.
+      const { data: linkResult } = await supabase.rpc('link_member_account', { p_user_id: user.id });
+      const linkStatus = (linkResult as { status?: string } | null)?.status ?? 'no_match';
+      if (linkStatus === 'linked' || linkStatus === 'already_linked') {
+        const claimed = await findLinked();
+        if (claimed) return json({ member: claimed, redeemed: linkStatus === 'linked' });
+      }
+
+      if (!hasStaffRole) {
+        // No linked profile, no claimable profile, no assigned role: surface
+        // the redeem outcome instead of creating a ghost member row.
+        return json({ member: null, redeemStatus: linkStatus });
       }
 
       // Create a fresh member from the user's profile + role.
@@ -169,12 +180,22 @@ Deno.serve(async (req) => {
         const { data: target } = await supabase.from('members').select('*')
           .eq('id', parsed.data.memberId).maybeSingle();
         if (!target || target.user_id) return json({ error: 'This profile cannot be claimed' }, 409);
-        const { data: claimed, error } = await supabase.from('members')
-          .update({ user_id: user.id, account_status: 'approved', email: target.email ?? user.email ?? null })
-          .eq('id', target.id).is('user_id', null).select().single();
-        if (error) throw error;
-        return json({ member: claimed });
+        // Explicit redemption is only allowed for the profile carrying the
+        // caller's own (verified) login email — claiming someone else's
+        // profile by id is rejected.
+        if (!target.email || !user.email || target.email.toLowerCase() !== user.email.toLowerCase()) {
+          return json({ error: 'This profile is registered to a different email address. Contact as.minerva@unibocconi.it.' }, 403);
+        }
+        const { data: linkResult } = await supabase.rpc('link_member_account', { p_user_id: user.id });
+        const linkStatus = (linkResult as { status?: string } | null)?.status;
+        if (linkStatus === 'linked' || linkStatus === 'already_linked') {
+          const claimed = await findLinked();
+          if (claimed) return json({ member: claimed });
+        }
+        return json({ error: 'This profile cannot be claimed', redeemStatus: linkStatus }, 409);
       }
+
+      if (!hasStaffRole) return json({ error: 'No role assigned yet. Contact as.minerva@unibocconi.it.' }, 403);
 
       // Create a fresh approved member from the user's profile + role.
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();

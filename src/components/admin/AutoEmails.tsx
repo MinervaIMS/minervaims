@@ -166,26 +166,28 @@ export default function AutoEmails() {
         )}
       </div>
 
+      {/* Full-height preview: the email renders at its natural width inside a
+          tall scrollable frame, so it reads exactly as recipients see it. */}
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl w-[min(96vw,56rem)] h-[92vh] flex flex-col gap-3 p-5">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-serif">{preview?.name}</DialogTitle>
           </DialogHeader>
           {preview && (
-            <div className="space-y-3 font-body flex-1 overflow-hidden flex flex-col">
-              <div className="text-sm">
+            <>
+              <div className="shrink-0 font-body text-sm flex flex-wrap gap-x-8 gap-y-1 border-b border-separator pb-2">
                 <div><span className="text-muted-foreground">Key:</span> {preview.key}</div>
-                <div><span className="text-muted-foreground">Subject:</span> {preview.subject || '-'}</div>
+                <div><span className="text-muted-foreground">Subject:</span> <span className="text-foreground">{preview.subject || '-'}</span></div>
               </div>
-              <div className="flex-1 min-h-[60vh] border border-separator bg-white">
+              <div className="flex-1 min-h-0 border border-separator bg-white">
                 <iframe
                   title={`preview-${preview.key}`}
                   sandbox=""
                   srcDoc={preview.body || '<em>No layout stored</em>'}
-                  className="w-full h-full"
+                  className="w-full h-full block"
                 />
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

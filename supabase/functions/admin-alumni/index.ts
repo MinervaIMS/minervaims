@@ -12,7 +12,12 @@ const AlumniSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
   surname: z.string().min(1, 'Surname is required').max(100, 'Surname too long').trim(),
   graduation_year: z.number().int().min(1950, 'Graduation year too early').max(2100, 'Graduation year too far in future'),
-  company: z.string().min(1, 'Company is required').max(200, 'Company name too long').trim(),
+  // Optional: an alumnus (e.g. a fresh silent advisor) may not have a
+  // current company on file yet.
+  company: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined) ? null : val,
+    z.string().max(200, 'Company name too long').trim().nullable()
+  ),
   city: z.preprocess(
     (val) => (val === '' || val === null || val === undefined) ? null : val,
     z.string().max(100, 'City name too long').trim().nullable()

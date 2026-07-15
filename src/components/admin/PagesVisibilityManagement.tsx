@@ -61,8 +61,12 @@ const PagesVisibilityManagement = () => {
           user_role: roles[0]?.role ?? 'admin',
           action: 'update',
           entity_type: 'page_visibility',
-          entity_id: pageKey,
+          // entity_id is a uuid column; the page key is not one, so it
+          // travels in details instead (a bad id would reject the insert).
+          entity_id: null,
           entity_name: label,
+          section: 'Website',
+          subsection: 'Pages',
           details: { is_hidden: next, page_key: pageKey },
         } as never);
       } catch (e) {

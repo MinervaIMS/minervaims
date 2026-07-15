@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { Lock } from 'lucide-react';
-import { divisionLabels, roleLabel as composeRoleLabel, type OrgDivision, type AppRole } from '@/lib/roles';
+import { divisionLabels, roleLabel as composeRoleLabel, divisionsForRole, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -20,7 +20,6 @@ import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applicat
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 
 const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
-const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
 
 // Human-readable state of the offer for a candidate row.
 function offerState(a: ApplicationRow): { label: string; tone: string; canOffer: boolean; resend: boolean } {
@@ -193,18 +192,27 @@ export default function NewJoiners() {
           </DialogHeader>
           <div className="space-y-4 font-body">
             <div className="space-y-1">
-              <Label>Division</Label>
-              <Select value={division} onValueChange={(v) => setDivision(v as OrgDivision)}>
+              <Label>Role</Label>
+              <Select value={role} onValueChange={(v) => {
+                const next = v as AppRole;
+                setRole(next);
+                const opts = divisionsForRole(next);
+                if (opts.length === 1) setDivision(opts[0]);
+                else if (!opts.includes(division)) setDivision(opts[0] ?? 'equity');
+              }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CORE.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
+                <SelectContent>{JOIN_ROLES.map((r) => <SelectItem key={r} value={r}>{composeRoleLabel(r, null)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+              <Label>Division</Label>
+              <Select value={division} onValueChange={(v) => setDivision(v as OrgDivision)} disabled={divisionsForRole(role).length === 1}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{JOIN_ROLES.map((r) => <SelectItem key={r} value={r}>{composeRoleLabel(r, division)}</SelectItem>)}</SelectContent>
+                <SelectContent>{divisionsForRole(role).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
               </Select>
+              {divisionsForRole(role).length === 1 && (
+                <p className="text-xs text-muted-foreground">{composeRoleLabel(role, null)} always belongs to {divisionLabels[divisionsForRole(role)[0]]}.</p>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="feeDue">Membership fee due</Label>

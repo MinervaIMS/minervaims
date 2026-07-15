@@ -20,9 +20,33 @@ const DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media
 // pending are deliberately excluded (managed elsewhere).
 const ASSIGNABLE_ROLES = [
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
-  'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
-  'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member',
+  'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
+  'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member',
 ] as const;
+
+// ── Role ⇄ division pairing rules (mirror of src/lib/roles.ts) ─────────
+// Board and advisor roles carry NO division; department roles are pinned;
+// core-division roles must name one of the five research divisions.
+const CORE_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+const FIXED_DIVISION: Record<string, string> = {
+  portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations',
+};
+function divisionOptionsFor(role: string): string[] {
+  if (FIXED_DIVISION[role]) return [FIXED_DIVISION[role]];
+  if (role === 'team_leader') return CORE_DIVISIONS.filter((d) => d !== 'portfolio');
+  if (role === 'head_of_division' || role === 'senior_analyst' || role === 'analyst') return [...CORE_DIVISIONS];
+  return []; // president, vice_president, head_of_asset_management, advisor, silent_advisor, alumni, member
+}
+/** Returns the division to store for (role, requested), or an error string. */
+function resolveRoleDivision(role: string, requested: string | null | undefined): { division: string; error?: string } {
+  const options = divisionOptionsFor(role);
+  if (options.length === 0) return { division: 'none' };
+  if (options.length === 1) return { division: options[0] };
+  if (!requested || !options.includes(requested)) {
+    return { division: 'none', error: `The role "${role}" requires one of these divisions: ${options.join(', ')}.` };
+  }
+  return { division: requested };
+}
 
 const MemberSchema = z.object({
   id: z.string().uuid().optional(),
@@ -46,14 +70,19 @@ const DeleteSchema = z.object({ id: z.string().uuid('Valid member ID is required
 const MoveToAlumniSchema = z.object({
   id: z.string().uuid('Valid member ID is required'),
   graduation_year: z.number().int().min(1990).max(2100),
-  company: z.string().min(1, 'Company is required').max(200).trim(),
+  // Optional so a board member can become a silent advisor before their
+  // current company is known; required for a plain move to the directory.
+  company: z.string().max(200).trim().nullable().optional(),
   city: z.string().max(120).nullable().optional(),
+  job_area: z.string().max(200).nullable().optional(),
   keep_as_silent_advisor: z.boolean().optional(),
+  /** Keep the person in the workspace as this advisor kind. */
+  keep_role: z.enum(['silent_advisor', 'advisor']).optional(),
 });
 const ActionSchema = z.enum(['create', 'update', 'delete', 'move-to-alumni', 'upload-photo']);
 
 // Roles a division head may assign within their own division.
-const DIVISION_HEAD_ALLOWED_ROLES = ['analyst', 'team_leader', 'portfolio_manager'];
+const DIVISION_HEAD_ALLOWED_ROLES = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager'];
 
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
 function checkRateLimit(ip: string): boolean {
@@ -77,10 +106,32 @@ async function logActivity(
     await supabase.from('activity_logs').insert({
       user_id: userId, user_email: userEmail, user_role: userRole,
       action, entity_type: 'member', entity_id: entityId, entity_name: entityName,
+      section: 'People', subsection: 'Members',
       details: details || null,
     });
   } catch (err) {
     console.error('Failed to log activity:', err);
+  }
+}
+
+// Mirror a roster role change onto workspace access (user_roles) when the
+// member is linked to an account. Admin accounts are never touched, and this
+// path can never grant 'admin'.
+async function syncUserRole(
+  supabase: any, actorId: string, targetUserId: string | null, role: string, division: string,
+) {
+  if (!targetUserId) return;
+  if (!ASSIGNABLE_ROLES.includes(role as (typeof ASSIGNABLE_ROLES)[number])) return;
+  const div = division === 'none' || division === 'board' ? null : division;
+  try {
+    const { data: ur } = await supabase.from('user_roles').select('id, role, division').eq('user_id', targetUserId).limit(1).maybeSingle();
+    if (ur?.role === 'admin') return;
+    if (ur && ur.role === role && (ur.division ?? null) === div) return;
+    const payload = { role, division: div, assigned_by: actorId, assigned_at: new Date().toISOString() };
+    if (ur) await supabase.from('user_roles').update(payload).eq('id', ur.id);
+    else await supabase.from('user_roles').insert({ user_id: targetUserId, ...payload });
+  } catch (err) {
+    console.error('Failed to sync user role:', err);
   }
 }
 
@@ -193,21 +244,30 @@ Deno.serve(async (req) => {
 
     // ── Move a member into the alumni directory ─────────────────────────
     // The public alumni row carries no contact data; phone/email are kept in
-    // the staff-only alumni_contacts table. Board members can optionally stay
-    // in the workspace as a silent advisor instead of being removed.
+    // the staff-only alumni_contacts table. The person can optionally stay in
+    // the workspace as an advisor (public) or silent advisor instead of being
+    // removed: every advisor is, by definition, a registered alumnus.
     if (action === 'move-to-alumni') {
       const parsed = MoveToAlumniSchema.safeParse(body);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
+      const keepRole = parsed.data.keep_role ?? (parsed.data.keep_as_silent_advisor ? 'silent_advisor' : null);
+      const company = parsed.data.company?.trim() || null;
+      // A silent advisor can be registered before their company is known;
+      // every other path still requires the current company.
+      if (!company && keepRole !== 'silent_advisor') {
+        return json({ error: 'Current company is required (it may be left empty only when keeping the person as a silent advisor).' }, 400);
+      }
       const { data: member } = await supabase.from('members')
-        .select('first_name, surname, division, role, phone, email, linkedin_url').eq('id', parsed.data.id).single();
+        .select('user_id, first_name, surname, division, role, phone, email, linkedin_url').eq('id', parsed.data.id).single();
       if (!member) return json({ error: 'Member not found' }, 404);
       const scopeError = denyIfOutOfScope(member.division, member.role);
       if (scopeError) return json({ error: scopeError }, 403);
 
       const { data: alum, error: alumErr } = await supabase.from('alumni').insert({
         name: member.first_name, surname: member.surname,
-        graduation_year: parsed.data.graduation_year, company: parsed.data.company,
-        city: parsed.data.city || null, linkedin_url: member.linkedin_url || null,
+        graduation_year: parsed.data.graduation_year, company,
+        city: parsed.data.city || null, job_area: parsed.data.job_area || null,
+        linkedin_url: member.linkedin_url || null,
       }).select('id').single();
       if (alumErr) throw alumErr;
 
@@ -216,9 +276,14 @@ Deno.serve(async (req) => {
         await supabase.from('alumni_contacts').insert({ alumni_id: alum.id, phone: member.phone || null, email: member.email || null });
       }
 
-      if (parsed.data.keep_as_silent_advisor) {
+      if (keepRole === 'silent_advisor') {
         const { error } = await supabase.from('members')
-          .update({ role: 'silent_advisor', membership_status: 'silent_advisor', is_public: false })
+          .update({ role: 'silent_advisor', membership_status: 'silent_advisor', division: 'none', is_public: false })
+          .eq('id', parsed.data.id);
+        if (error) throw error;
+      } else if (keepRole === 'advisor') {
+        const { error } = await supabase.from('members')
+          .update({ role: 'advisor', membership_status: 'active', division: 'none', is_public: true })
           .eq('id', parsed.data.id);
         if (error) throw error;
       } else {
@@ -226,9 +291,22 @@ Deno.serve(async (req) => {
         if (error) throw error;
       }
 
+      // Keep workspace access aligned: an advisor keeps advisor-level access,
+      // a plain leaver keeps the minimal alumni access. Admin accounts are
+      // never touched from here.
+      if (member.user_id) {
+        const { data: ur } = await supabase.from('user_roles').select('id, role').eq('user_id', member.user_id).limit(1).maybeSingle();
+        if (!ur || ur.role !== 'admin') {
+          const nextRole = keepRole ?? 'alumni';
+          const payload = { role: nextRole, division: null, assigned_by: user.id, assigned_at: new Date().toISOString() };
+          if (ur) await supabase.from('user_roles').update(payload).eq('id', ur.id);
+          else await supabase.from('user_roles').insert({ user_id: member.user_id, ...payload });
+        }
+      }
+
       await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'move-to-alumni',
         parsed.data.id, `${member.first_name} ${member.surname}`,
-        { keep_as_silent_advisor: !!parsed.data.keep_as_silent_advisor });
+        { kept_as: keepRole ?? 'removed_from_roster', company: company ?? undefined });
       return json({ success: true, alumni_id: alum.id });
     }
 
@@ -236,7 +314,14 @@ Deno.serve(async (req) => {
     if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     const m = parsed.data;
 
-    const scopeError = denyIfOutOfScope(m.division, m.role);
+    // Enforce the role ⇄ division pairing (the same rules as Settings → Users):
+    // board and advisor roles carry no division, department roles are pinned,
+    // core-division roles must name a research division.
+    const resolved = resolveRoleDivision(m.role, m.division);
+    if (resolved.error) return json({ error: resolved.error }, 400);
+    const division = resolved.division;
+
+    const scopeError = denyIfOutOfScope(division, m.role);
     if (scopeError) return json({ error: scopeError }, 403);
 
     const isExpelled = m.membership_status === 'expelled';
@@ -247,7 +332,7 @@ Deno.serve(async (req) => {
       phone: m.phone || null,
       photo_url: m.photo_url || null,
       linkedin_url: m.linkedin_url || null,
-      division: m.division,
+      division,
       role: m.role,
       membership_status: m.membership_status || 'active',
       account_status: m.account_status || 'to_redeem',
@@ -261,7 +346,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase.from('members').insert(payload).select().single();
       if (error) throw error;
       await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'create',
-        data.id, `${m.first_name} ${m.surname}`, { division: m.division, role: m.role });
+        data.id, `${m.first_name} ${m.surname}`, { division, role: m.role });
       return json({ success: true, member: data });
     }
 
@@ -284,9 +369,13 @@ Deno.serve(async (req) => {
       // cleanup_expelled_members() cron.
       if (isExpelled && data.user_id) {
         await supabase.from('user_roles').delete().eq('user_id', data.user_id);
+      } else {
+        // People → Members and Settings → Users assign the same thing: keep
+        // workspace access aligned with the roster role for linked accounts.
+        await syncUserRole(supabase, user.id, data.user_id, m.role, division);
       }
       await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, isExpelled ? 'expel' : 'update',
-        data.id, `${m.first_name} ${m.surname}`, { division: m.division, role: m.role });
+        data.id, `${m.first_name} ${m.surname}`, { division, role: m.role });
       return json({ success: true, member: data });
     }
 

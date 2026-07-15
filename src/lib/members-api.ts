@@ -92,10 +92,16 @@ export function deleteMember(session: Session | null, id: string) {
 export interface MoveToAlumniInput {
   id: string;
   graduation_year: number;
-  company: string;
+  /** Optional only when keeping the person as a SILENT advisor. */
+  company?: string | null;
   city?: string | null;
-  /** Board members can additionally stay in the workspace as a silent advisor. */
-  keep_as_silent_advisor?: boolean;
+  job_area?: string | null;
+  /**
+   * Keep the person in the workspace as an advisor. Every advisor is a role
+   * assignment on a registered alumnus: 'advisor' stays publicly visible,
+   * 'silent_advisor' is hidden from the public website.
+   */
+  keep_role?: 'silent_advisor' | 'advisor';
 }
 
 /** Move a member to the alumni directory, retaining phone/email privately. */
@@ -122,6 +128,8 @@ export interface MyProfileResult {
   member: MemberRow | null;
   isCandidate?: boolean;
   isAdmin?: boolean;
+  /** Outcome of the account-redeem attempt when no member could be linked. */
+  redeemStatus?: 'no_match' | 'email_in_use' | 'email_unconfirmed' | string;
 }
 
 export async function getMyMember(session: Session | null): Promise<MyProfileResult> {

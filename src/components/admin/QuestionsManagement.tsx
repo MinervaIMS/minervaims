@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { logActivity } from '@/lib/activity-log';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -42,6 +43,7 @@ export default function QuestionsManagement() {
     setSavingQ(division);
     try {
       await setDivisionQuestion(session, division, questions[division] ?? '');
+      logActivity(session, access.primaryRole, { action: 'update', section: 'Recruiting', subsection: 'Form & Questions', entityType: 'application_question', entityName: divisionLabels[division] });
       toast({ title: `${divisionLabels[division]} question saved`, description: 'It now appears on the public Join page and in the application form.' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });

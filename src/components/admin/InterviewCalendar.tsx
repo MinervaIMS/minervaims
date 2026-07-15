@@ -23,6 +23,7 @@ import {
   listSlots, createSlot, bulkCreateSlots, deleteSlot, clearDivisionSlots,
   type StaffSlot,
 } from '@/lib/interviews-api';
+import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const hhmm = (t: string) => t.slice(0, 5);
@@ -60,6 +61,12 @@ export default function InterviewCalendar() {
     if (!division && divisionOptions.length > 0) setDivision(divisionOptions[0]);
   }, [divisionOptions, division]);
 
+  // Exam session breaks: no slot can be opened inside one (enforced by the
+  // database as well; this keeps the UI honest and the error friendly).
+  const [examSessions, setExamSessions] = useState<ExamSession[]>([]);
+  useEffect(() => { listExamSessions().then(setExamSessions).catch(() => {}); }, []);
+  const examBreakFor = (date: string) => examSessionOn(examSessions, date);
+
   const load = async (div: OrgDivision) => {
     setLoading(true);
     try {
@@ -91,6 +98,8 @@ export default function InterviewCalendar() {
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!division) return;
+    const brk = examBreakFor(form.slot_date);
+    if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: no interviews can be scheduled between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
     setBusy(true);
     try {
       await createSlot(session, { division, ...form });
@@ -105,6 +114,8 @@ export default function InterviewCalendar() {
   const submitBulk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!division) return;
+    const brk = examBreakFor(bulk.slot_date);
+    if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: no interviews can be scheduled between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
     setBusy(true);
     try {
       const res = await bulkCreateSlots(session, { division, ...bulk });
@@ -148,23 +159,7 @@ export default function InterviewCalendar() {
         actions={canManage ? (
           <>
             <Button variant="outline" className="rounded-none font-body" onClick={() => setCreateOpen(true)}>
-              <CalendarPlus className="h-4 w-4 mr-2" />
-
-      <div className="mb-5">
-        <Recommendation title="Create the Teams meeting link before opening slots">
-          <p>
-            When you open interview slots, it is advisable to create and attach a Microsoft Teams meeting link
-            immediately. The practical setup that has worked best: create one single Teams meeting for the whole
-            interview session and configure it so that everyone with the link waits in the lobby and only the host
-            admits people (both options are in the Teams meeting settings).
-          </p>
-          <p>
-            With one link for all interviews, examiners admit one candidate at a time, only when the previous
-            interview has finished. This keeps the flow orderly, avoids candidates crossing each other, and spares
-            you creating a separate link for every slot.
-          </p>
-        </Recommendation>
-      </div> Open a slot
+              <CalendarPlus className="h-4 w-4 mr-2" />Open a slot
             </Button>
             <Button variant="outline" className="rounded-none font-body" onClick={() => setBulkOpen(true)}>
               <Sparkles className="h-4 w-4 mr-2" /> Smart planning
@@ -192,6 +187,24 @@ export default function InterviewCalendar() {
         ) : undefined}
       />
 
+      {canManage && (
+        <div className="mb-5">
+          <Recommendation title="Create the Teams meeting link before opening slots">
+            <p>
+              When you open interview slots, it is advisable to create and attach a Microsoft Teams meeting link
+              immediately. The practical setup that has worked best: create one single Teams meeting for the whole
+              interview session and configure it so that everyone with the link waits in the lobby and only the host
+              admits people (both options are in the Teams meeting settings).
+            </p>
+            <p>
+              With one link for all interviews, examiners admit one candidate at a time, only when the previous
+              interview has finished. This keeps the flow orderly, avoids candidates crossing each other, and spares
+              you creating a separate link for every slot.
+            </p>
+          </Recommendation>
+        </div>
+      )}
+
       {/* Division selector (only when the user can see more than one) */}
       {divisionOptions.length > 1 && (
         <div className="flex flex-wrap gap-2 mb-6">
@@ -217,12 +230,21 @@ export default function InterviewCalendar() {
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                modifiers={{ hasSlots: (date) => datesWithSlots.has(format(date, 'yyyy-MM-dd')) }}
-                modifiersClassNames={{ hasSlots: 'font-semibold text-accent underline underline-offset-4' }}
+                modifiers={{
+                  hasSlots: (date) => datesWithSlots.has(format(date, 'yyyy-MM-dd')),
+                  examBreak: (date) => !!examSessionOn(examSessions, format(date, 'yyyy-MM-dd')),
+                }}
+                modifiersClassNames={{
+                  hasSlots: 'font-semibold text-accent underline underline-offset-4',
+                  examBreak: 'bg-muted text-muted-foreground/50 line-through',
+                }}
                 className="rounded-none border border-separator"
               />
-              <div className="mt-4 flex items-center gap-2 text-xs font-body text-muted-foreground">
-                <span className="underline underline-offset-4 text-accent font-semibold">Underlined</span> = days with open slots
+              <div className="mt-4 space-y-1 text-xs font-body text-muted-foreground">
+                <div><span className="underline underline-offset-4 text-accent font-semibold">Underlined</span> = days with open slots</div>
+                {examSessions.length > 0 && (
+                  <div><span className="line-through">Struck</span> = exam session break: the calendar does not accept interviews on those days</div>
+                )}
               </div>
             </CardContent>
           </Card>

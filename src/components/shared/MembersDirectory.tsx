@@ -75,7 +75,10 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
   }, [initialDivisionFilter]);
 
   const grouped = useMemo(() => {
-    const executive = members.filter((m) => m.isBoard).sort(sortMembers);
+    // Advisors are appointed alumni who assist the board: they are shown in
+    // the Board of Directors tab (POSITION_ORDER places them after the Head
+    // of Asset Management) without being board members themselves.
+    const executive = members.filter((m) => m.isBoard || m.position === 'Advisor').sort(sortMembers);
     const byDivision: Record<Division, TeamMember[]> = {
       equity: [], investment: [], macro: [], portfolio: [], quant: [],
     };

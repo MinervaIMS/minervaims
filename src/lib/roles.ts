@@ -115,6 +115,8 @@ const roleBaseLabels: Record<AppRole, string> = {
  * Human-readable label combining role and division.
  * e.g. (head_of_division, equity) -> "Head of Equity Research";
  *      (analyst, quant)           -> "Quantitative Research Analyst".
+ * Portfolio Manager is never prefixed: it is a single role that always
+ * belongs to Portfolio Management, so the plain label reads best.
  */
 export function roleLabel(role: AppRole, division?: OrgDivision | null): string {
   const norm = normalizeRole(role);
@@ -123,8 +125,8 @@ export function roleLabel(role: AppRole, division?: OrgDivision | null): string 
   if (norm === 'head_of_division' && div && div in divisionLabels && div !== 'none' && div !== 'board') {
     return `Head of ${divisionLabels[div]}`;
   }
-  if ((norm === 'analyst' || norm === 'team_leader' || norm === 'senior_analyst' || norm === 'portfolio_manager') && div && div !== 'none' && div !== 'board') {
-    const suffix = norm === 'analyst' ? 'Analyst' : norm === 'team_leader' ? 'Team Leader' : norm === 'senior_analyst' ? 'Senior Analyst' : 'Portfolio Manager';
+  if ((norm === 'analyst' || norm === 'team_leader' || norm === 'senior_analyst') && div && div !== 'none' && div !== 'board' && div !== 'media' && div !== 'operations') {
+    const suffix = norm === 'analyst' ? 'Analyst' : norm === 'team_leader' ? 'Team Leader' : 'Senior Analyst';
     return `${divisionLabels[div]} ${suffix}`;
   }
   return roleBaseLabels[norm] ?? norm;
@@ -168,3 +170,56 @@ export function primaryAssignment(assignments: RoleAssignment[]): RoleAssignment
 }
 
 export const CORE_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+
+// =====================================================================
+// Role ⇄ division pairing rules — the ONE place that says which division
+// a role may carry. Used by Settings → Users, People → Members and the
+// edge functions, so the two role-assignment surfaces can never drift.
+//   - Board & advisor roles carry NO division (the board is not a division).
+//   - Heads of core divisions pick one of the five research divisions.
+//   - Media / Operations roles are pinned to their department.
+//   - Portfolio Manager IS Portfolio Management's team leader: always
+//     Portfolio; the plain Team Leader role exists in the other four.
+// =====================================================================
+
+/** Roles whose division is fixed and never selectable. */
+export const FIXED_DIVISION_ROLES: Partial<Record<AppRole, OrgDivision>> = {
+  portfolio_manager: 'portfolio',
+  head_of_media: 'media',
+  media_analyst: 'media',
+  head_of_operations: 'operations',
+};
+
+/** Divisions a role may be paired with (empty = the role carries no division). */
+export function divisionsForRole(role: AppRole): OrgDivision[] {
+  const norm = normalizeRole(role);
+  const fixed = FIXED_DIVISION_ROLES[norm];
+  if (fixed) return [fixed];
+  if (norm === 'team_leader') return CORE_DIVISIONS.filter((d) => d !== 'portfolio');
+  if (norm === 'head_of_division' || norm === 'senior_analyst' || norm === 'analyst') return [...CORE_DIVISIONS];
+  // president, vice_president, head_of_asset_management, advisor,
+  // silent_advisor, alumni, member, admin: no division.
+  return [];
+}
+
+export const roleNeedsDivision = (role: AppRole): boolean => divisionsForRole(role).length > 0;
+
+/** Resolve the division that must be stored for a (role, requested division) pair, or an error. */
+export function resolveRoleDivision(role: AppRole, requested: OrgDivision | null | undefined):
+  { division: OrgDivision | null; error?: string } {
+  const norm = normalizeRole(role);
+  const options = divisionsForRole(norm);
+  if (options.length === 0) return { division: null };
+  if (options.length === 1) return { division: options[0] };
+  if (!requested || !options.includes(requested)) {
+    return { division: null, error: `${roleLabel(norm)} requires one of: ${options.map((d) => divisionLabels[d]).join(', ')}.` };
+  }
+  return { division: requested };
+}
+
+/** Board of directors: the roles that govern the association. */
+export const BOARD_ROLES: AppRole[] = [
+  'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
+  'head_of_media', 'head_of_operations',
+];
+export const isBoardRole = (role: AppRole): boolean => BOARD_ROLES.includes(normalizeRole(role));

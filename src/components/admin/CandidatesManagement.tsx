@@ -23,9 +23,9 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import {
   listApplications, getApplication, signDocumentUrl, bulkDocumentUrls,
-  updateApplicationStatus, addApplicationNote,
+  updateApplicationStatus, addApplicationNote, transferApplicationDivision,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
-  MANUAL_STATUSES, isLockedStatus,
+  isLockedStatus, allowedNextStatuses,
   type ApplicationRow, type ApplicationNote, type ApplicationStatus,
 } from '@/lib/applications-api';
 import { listSlots } from '@/lib/interviews-api';
@@ -80,6 +80,12 @@ export default function CandidatesManagement() {
   const [savingNote, setSavingNote] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<{ id: string; status: ApplicationStatus } | null>(null);
   const [inviteDivision, setInviteDivision] = useState<OrgDivision | null>(null);
+
+  // Post-interview division transfer: the one sanctioned way to redo the
+  // interview stage, in a different division.
+  const [transferTarget, setTransferTarget] = useState<OrgDivision | ''>('');
+  const [transferConfirm, setTransferConfirm] = useState(false);
+  const [transferring, setTransferring] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -188,6 +194,21 @@ export default function CandidatesManagement() {
       changeStatus(pendingStatus.id, pendingStatus.status);
     }
     setPendingStatus(null);
+  };
+
+  const doTransfer = async () => {
+    if (!detail || !transferTarget) return;
+    setTransferring(true);
+    try {
+      await transferApplicationDivision(session, detail.application.id, transferTarget);
+      logActivity(session, primaryRole, { action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application', entityId: detail.application.id, entityName: `${detail.application.first_name} ${detail.application.surname}`, details: { division_transfer_to: transferTarget } });
+      toast({ title: 'Division transfer started', description: `${detail.application.first_name} has been re-invited to interview with ${divisionLabels[transferTarget]}.` });
+      setTransferConfirm(false); setTransferTarget('');
+      setDetail(await getApplication(session, detail.application.id));
+      load();
+    } catch (e) {
+      toast({ title: 'Could not transfer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setTransferring(false); }
   };
 
   const addNote = async () => {
@@ -387,12 +408,13 @@ export default function CandidatesManagement() {
                   ) : (
                     <>
                       <Select
-                        value={MANUAL_STATUSES.some((o) => o.value === detail.application.status) ? detail.application.status : undefined}
+                        key={detail.application.status}
+                        value={undefined}
                         onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}
                       >
-                        <SelectTrigger className="font-body"><SelectValue placeholder="Change status…" /></SelectTrigger>
+                        <SelectTrigger className="font-body"><SelectValue placeholder="Advance to…" /></SelectTrigger>
                         <SelectContent>
-                          {MANUAL_STATUSES.map((o) => (
+                          {allowedNextStatuses(detail.application.status).map((o) => (
                             <SelectItem key={o.value} value={o.value}>
                               {o.label}{o.effect === 'action' ? '  ·  sends an email / action' : ''}
                             </SelectItem>
@@ -400,7 +422,7 @@ export default function CandidatesManagement() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking); the others simply update what the applicant sees. Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
+                        A candidacy only moves <strong>forward</strong>: once a stage is reached it cannot be taken back, so only later stages are offered here. Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking). Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
                       </p>
                     </>
                   )}
@@ -410,6 +432,32 @@ export default function CandidatesManagement() {
                     </p>
                   )}
                 </div>
+
+                {/* Division transfer: the one sanctioned exception to forward-only
+                    progress, available once the interview has been completed. */}
+                {canChangeStatus && ['interview_completed', 'accepted'].includes(detail.application.status) && (
+                  <div className="border border-separator p-3 space-y-2">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Consider for another division</div>
+                    <p className="text-xs text-muted-foreground">
+                      If the interview showed this candidate fits a different division better, transfer them:
+                      they are re-invited to interview with the new division (email plus booking access), and the
+                      move is recorded. Their progress so far is never lowered in any other way.
+                    </p>
+                    <div className="flex gap-2">
+                      <Select value={transferTarget || undefined} onValueChange={(v) => setTransferTarget(v as OrgDivision)}>
+                        <SelectTrigger className="font-body flex-1"><SelectValue placeholder="New division…" /></SelectTrigger>
+                        <SelectContent>
+                          {CORE.filter((d) => d !== (detail.application.interview_division || detail.application.first_choice)).map((d) => (
+                            <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="sm" className="h-10" disabled={!transferTarget || transferring} onClick={() => setTransferConfirm(true)}>
+                        Transfer
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'cv')}><Download className="h-4 w-4 mr-2" />Download CV</Button>
@@ -473,7 +521,7 @@ export default function CandidatesManagement() {
             <AlertDialogDescription>
               By changing this status to “{pendingStatus ? STATUS_LABELS[pendingStatus.status] : ''}”, the candidate moves to the next step and <strong>receives an automatic email</strong>.
               {pendingStatus && EMAIL_ON_STATUS[pendingStatus.status] ? ` ${EMAIL_ON_STATUS[pendingStatus.status]}` : ''}
-              {' '}Please check the details are correct — this cannot be undone. Are you sure you want to proceed?
+              {' '}Please check the details are correct; this cannot be undone. Are you sure you want to proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           {pendingStatus?.status === 'interview_invitation_sent' && detail && (
@@ -495,6 +543,33 @@ export default function CandidatesManagement() {
             <AlertDialogCancel>No, cancel</AlertDialogCancel>
             <AlertDialogAction disabled={confirming} onClick={(e) => { e.preventDefault(); confirmPendingStatus(); }}>
               {confirming ? 'Checking…' : 'Yes, proceed'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Division-transfer confirmation. */}
+      <AlertDialog open={transferConfirm} onOpenChange={(o) => { if (!o) setTransferConfirm(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer this candidate to {transferTarget ? divisionLabels[transferTarget] : 'another division'}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {detail && transferTarget && (
+                <>
+                  {detail.application.first_name} {detail.application.surname} moves from{' '}
+                  {divisionLabels[detail.application.interview_division || detail.application.first_choice]} to{' '}
+                  {divisionLabels[transferTarget]}. Their status returns to “Interview invitation sent” for the new
+                  division only, they <strong>receive an automatic email</strong> inviting them to book a new
+                  interview slot there, and the transfer is recorded in the activity log. This is the only way a
+                  candidacy ever revisits an earlier stage. Are you sure?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={transferring}>No, cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={transferring} onClick={(e) => { e.preventDefault(); doTransfer(); }}>
+              {transferring ? 'Transferring…' : 'Yes, transfer'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

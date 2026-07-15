@@ -96,12 +96,27 @@ Deno.serve(async (req) => {
       let role = rawRole;
       let division = rawDivision || null;
       if (LEGACY_HEADS[rawRole]) { role = 'head_of_division'; division = division || LEGACY_HEADS[rawRole]; }
-      // Division only applies to division roles; Portfolio Manager is always Portfolio.
-      let div = DIVISION_ROLES.includes(role) ? division : null;
-      if (role === 'portfolio_manager') div = 'portfolio';
-      if (role === 'team_leader' && div === 'portfolio') {
-        return new Response(JSON.stringify({ error: "Portfolio Management's team leader is the Portfolio Manager role — pick that instead." }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      // Role ⇄ division pairing rules (mirror of src/lib/roles.ts): board and
+      // advisor roles carry no division, department roles are pinned, and
+      // core-division roles must name one of the five research divisions.
+      const CORE = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+      const FIXED: Record<string, string> = {
+        portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations',
+      };
+      let div: string | null = null;
+      if (FIXED[role]) {
+        div = FIXED[role];
+      } else if (DIVISION_ROLES.includes(role)) {
+        const options = role === 'team_leader' ? CORE.filter((d) => d !== 'portfolio') : CORE;
+        if (role === 'team_leader' && division === 'portfolio') {
+          return new Response(JSON.stringify({ error: "Portfolio Management's team leader is the Portfolio Manager role — pick that instead." }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!division || !options.includes(division)) {
+          return new Response(JSON.stringify({ error: `The role "${role}" requires one of these divisions: ${options.join(', ')}.` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        div = division;
       }
 
       // Guard: never allow the LAST President/Admin to be demoted away.
@@ -136,12 +151,34 @@ Deno.serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
+      // Keep the roster (People → Members) aligned with the new assignment:
+      // both surfaces assign the same role, so a linked member row follows.
+      // 'admin' and 'pending' are access-only states and never touch the roster.
+      const ROSTER_ROLES = [
+        'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
+        'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
+        'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member',
+      ];
+      if (ROSTER_ROLES.includes(role)) {
+        try {
+          const { data: memberRow } = await supabaseAdmin
+            .from('members').select('id, membership_status, is_public').eq('user_id', userId).maybeSingle();
+          if (memberRow) {
+            const memberPatch: Record<string, unknown> = { role, division: div ?? 'none' };
+            if (role === 'silent_advisor') { memberPatch.membership_status = 'silent_advisor'; memberPatch.is_public = false; }
+            else if (memberRow.membership_status === 'silent_advisor') { memberPatch.membership_status = 'active'; }
+            await supabaseAdmin.from('members').update(memberPatch).eq('id', memberRow.id);
+          }
+        } catch (syncErr) { console.error('Failed to sync member roster row:', syncErr); }
+      }
+
       // Audit trail.
       try {
         const { data: target } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
         await supabaseAdmin.from('activity_logs').insert({
           user_id: requestingUser.id, user_email: requestingUser.email, user_role: 'admin',
           action: 'update', entity_type: 'user_role', entity_id: userId, entity_name: target?.email || userId,
+          section: 'Settings', subsection: 'Users',
           details: { role, division: div },
         });
       } catch (logErr) { console.error('Failed to log role change:', logErr); }

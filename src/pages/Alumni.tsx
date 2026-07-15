@@ -22,7 +22,7 @@ interface AlumniRecord {
   name: string;
   surname: string;
   graduation_year: number;
-  company: string;
+  company: string | null;
   city: string | null;
   linkedin_url: string | null;
   job_area: string | null;
@@ -63,7 +63,7 @@ const Alumni = () => {
 
   // Get unique companies and cities for filters
   const uniqueCompanies = useMemo(() => {
-    const companies = [...new Set(alumni.map(a => a.company))].sort();
+    const companies = [...new Set(alumni.map(a => a.company).filter(Boolean))].sort() as string[];
     return companies;
   }, [alumni]);
 
@@ -82,7 +82,7 @@ const Alumni = () => {
     return alumni.filter(alumnus => {
       const matchesSearch = searchQuery === '' || 
         `${alumnus.name} ${alumnus.surname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        alumnus.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (alumnus.company?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
         (alumnus.city?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
         (alumnus.job_area?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
       
@@ -330,7 +330,7 @@ const Alumni = () => {
                             ) : null}
                           </div>
                           <p className="font-body text-small text-muted-foreground">
-                            {alumnus.company}{alumnus.city ? ` • ${alumnus.city}` : ''}
+                            {alumnus.company || '-'}{alumnus.city ? ` • ${alumnus.city}` : ''}
                           </p>
                           {alumnus.job_area && (
                             <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
@@ -361,7 +361,7 @@ const Alumni = () => {
                             {alumnus.job_area || '—'}
                           </span>
                           <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
-                            {alumnus.company}
+                            {alumnus.company || '-'}
                           </span>
                           <span className="font-body text-body text-muted-foreground w-[20%] truncate text-left">
                             {alumnus.city || '—'}

@@ -109,6 +109,21 @@ export function isLockedStatus(s: ApplicationStatus): boolean {
   return LOCKED_STATUSES.includes(s);
 }
 
+/** Position of a status in the forward-only workflow. */
+export function statusRank(s: ApplicationStatus): number {
+  return STATUS_FLOW.indexOf(s);
+}
+
+/**
+ * A candidacy only ever moves FORWARD: once a stage is reached it can never
+ * be taken back (enforced again server-side). The only sanctioned exception
+ * is the post-interview division transfer, which is its own explicit process.
+ */
+export function allowedNextStatuses(current: ApplicationStatus): typeof MANUAL_STATUSES {
+  const rank = statusRank(current);
+  return MANUAL_STATUSES.filter((o) => statusRank(o.value) > rank);
+}
+
 /** Statuses a reviewer can set by hand. `effect: 'action'` = triggers an email or unlocks a step. */
 export const MANUAL_STATUSES: { value: ApplicationStatus; label: string; effect: 'passive' | 'action' }[] = [
   { value: 'received', label: STATUS_LABELS.received, effect: 'passive' },
@@ -173,6 +188,13 @@ export async function updateApplicationStatus(session: Session | null, id: strin
 }
 export async function addApplicationNote(session: Session | null, id: string, body: string) {
   return await invoke(session, { action: 'add-note', id, body });
+}
+/**
+ * Post-interview division transfer: re-opens the interview stage in the
+ * target division (the candidate is re-invited and books a new slot there).
+ */
+export async function transferApplicationDivision(session: Session | null, id: string, division: OrgDivision) {
+  return await invoke(session, { action: 'transfer-division', id, division });
 }
 export async function setDivisionQuestion(session: Session | null, division: OrgDivision, question: string) {
   return await invoke(session, { action: 'set-question', division, question });

@@ -64,11 +64,13 @@ export const GUIDE: GuideEntry[] = [
     key: 'calendar', section: 'General', label: 'Calendar',
     purpose: 'The shared association calendar: events, Association on Display days, alumni calls, application windows and fee deadlines, month by month.',
     view: ['Browse all months.', 'Click an event with open registration to register.', 'Click an Association on Display day to open its slot registration page.'],
-    manage: ['Add, edit and remove custom entries (meetings, deadlines, reminders) visible to the whole team.'],
-    warnings: ['Custom entries are visible to every workspace user. Keep them professional.'],
+    manage: ['Add, edit and remove custom entries (meetings, deadlines, reminders) visible to the whole team.', 'Define exam session breaks and add CASA Committee meetings.'],
+    warnings: ['Custom entries are visible to every workspace user. Keep them professional.', 'During an exam session break, no event can be scheduled anywhere in the workspace.'],
     topics: [
       { id: 'colors', title: 'What the colours mean', body: 'Each colour marks a type of item: association events, Association on Display days, alumni calls, application windows, fee deadlines and custom entries. The legend above the calendar lists them all.' },
       { id: 'register', title: 'Registering from the calendar', body: 'Events with open registration are clickable. A dialog shows the details and a registration button; once registered you will see a confirmation mark next to the event.' },
+      { id: 'exam-breaks', title: 'Exam session breaks', body: 'An exam session break is a protected date range: while it lasts, no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace, so events land when the student community can actually attend. Deadlines and reminders remain possible. Breaks are shaded on the calendar and enforced by the database itself.', requires: 'manage' },
+      { id: 'casa', title: 'CASA Committee meetings', body: 'A special entry type visible ONLY to the members of the board of directors and the admin account; other members never see it. Use it for the association\'s CASA committee appointments. The restriction is enforced at database level, not just visually.', requires: 'manage' },
     ],
   },
   {
@@ -130,7 +132,8 @@ export const GUIDE: GuideEntry[] = [
     manage: ['Change candidate statuses (some statuses email the candidate automatically) and add notes.'],
     warnings: ['Statuses marked "sends an email / action" notify the candidate immediately and cannot be undone.', 'Notes are visible to all reviewers. Keep them technical and appropriate.', 'Archived semesters are read-only: statuses and notes can no longer change.'],
     topics: [
-      { id: 'status', title: 'Candidate status dropdown', body: 'Changing a status updates what the candidate sees; statuses marked "sends an email / action" also email them, for example an interview invitation. A confirmation dialog always appears first. Offer outcomes are managed in Offers, not here.', requires: 'manage' },
+      { id: 'status', title: 'Candidate status dropdown', body: 'A candidacy only moves FORWARD: the dropdown offers only stages later than the current one, and the server refuses any attempt to move a candidate back. Statuses marked "sends an email / action" also email the candidate, for example an interview invitation. A confirmation dialog always appears first. Offer outcomes are managed in Offers, not here.', requires: 'manage' },
+      { id: 'transfer', title: 'Considering a candidate for another division', body: 'The one sanctioned exception to forward-only progress: after the interview, the examiners may conclude the candidate fits a different division better. The transfer control re-invites them to interview with the new division (email plus booking access) and records the move in the activity log.', requires: 'manage' },
       { id: 'semester', title: 'Semester selector', body: 'The list shows only the current semester\'s candidates. Pick a past semester to consult its archived candidacies; they are preserved for accountability and cannot be modified.' },
       { id: 'notes', title: 'Shared notes', body: 'Notes are visible to every reviewer with access to this page and are attributed to their author. Write only technical, relevant observations that help evaluate the candidate.' },
       { id: 'documents', title: 'CV and written answer', body: 'Both documents open in the preview panes and can be downloaded. Opening a CV for the first time automatically advances the candidate\'s status to show the application has been seen.' },
@@ -159,7 +162,7 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
-    key: 'applications-form', section: 'Recruiting', label: 'Form & settings',
+    key: 'applications-form', section: 'Recruiting', label: 'Form & Questions',
     purpose: 'The application form configuration and the division-specific written questions.',
     view: ['Read the current questions and settings.'],
     manage: ['Edit form settings and each division\'s written question.'],
@@ -235,16 +238,19 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.'],
     topics: [
       { id: 'registers', title: 'Semester registers', body: 'Each register lists who officially belonged to the association in a given semester. It is created automatically the moment that semester\'s membership fee collection is closed, and preserved unchanged from then on.' },
-      { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory.', requires: 'manage' },
+      { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Board members can additionally stay in the workspace as advisors or silent advisors.', requires: 'manage' },
+      { id: 'redeem', title: 'How existing members claim their account', body: 'When a person on this register creates a website account with the email stored on their profile, the system links the profile to the account automatically as soon as the email is verified, and applies the role and permissions stored here. No duplicate is created; the link is recorded in the activity log.' },
+      { id: 'role-division', title: 'Roles and divisions', body: 'President, Vice President, Head of Asset Management and advisors carry no division (the board is not a division). Heads of division always belong to the board AND to their division. Portfolio Manager is Portfolio Management\'s team leader. Role changes here update workspace access for linked accounts, and Settings > Users reflects them.', requires: 'manage' },
     ],
   },
   {
     key: 'people-advisors', section: 'People', label: 'Advisors',
-    purpose: 'The advisors and silent advisors directory. Silent advisors are identical to advisors but are not displayed on the public website.',
-    view: ['Browse advisors.'],
+    purpose: 'Every advisor of the association, public and silent. An advisor is a role assignment on a registered alumnus: advisors appear on the public Members page, silent advisors (marked with an icon) do not appear anywhere on the public website.',
+    view: ['Browse advisors and silent advisors.'],
     manage: ['Add and edit advisors.'],
     topics: [
-      { id: 'silent', title: 'Silent advisors', body: 'A silent advisor has exactly the same standing as an advisor; the only difference is that silent advisors are not displayed on the public website.' },
+      { id: 'silent', title: 'Silent advisors', body: 'A silent advisor has exactly the same standing as an advisor; the only difference is that silent advisors are not displayed on the public website. Rows marked with the eye-off icon are silent.' },
+      { id: 'alumnus', title: 'Advisors are alumni', body: 'Appointing an advisor always registers the person as an alumnus first (from People > Members, this happens automatically when the advisor role is applied). For a silent advisor the current company may be left empty and completed later.' },
     ]
   },
   {
@@ -287,6 +293,7 @@ export const GUIDE: GuideEntry[] = [
     topics: [
       { id: 'close', title: 'Close and record', body: 'Closing ends the semester\'s collection. The total is written to the Treasury as a locked entry and the definitive member register for the semester is frozen at that moment. It cannot be reopened, so close only when every payment is ticked.', requires: 'manage' },
       { id: 'deadlines', title: 'The two deadlines', body: 'The first deadline is the standard payment date shown to everyone. The second deadline is a final grace period, shown only to members who have not paid once the first deadline has passed.' },
+      { id: 'past', title: 'Past collections', body: 'Below the current collection, every closed semester shows who contributed and who did not, frozen at the moment the collection closed. This record stays consultable even while no collection is open.' },
     ],
   },
   {

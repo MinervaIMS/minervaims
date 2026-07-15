@@ -22,7 +22,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  type AppRole, type OrgDivision, roleLabel, divisionLabels, normalizeRole, assignmentDivision, CORE_DIVISIONS,
+  type AppRole, type OrgDivision, roleLabel, divisionLabels, normalizeRole, assignmentDivision,
+  divisionsForRole, roleNeedsDivision,
 } from '@/lib/roles';
 
 const ADMIN_EMAIL = 'as.minerva@unibocconi.it';
@@ -46,17 +47,9 @@ const ASSIGNABLE_ROLES: AppRole[] = [
 // A user with one of these (or no role row) is "pending" — not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];
 
-// Which divisions a role may be paired with. Portfolio Management's "team
-// leader" IS the Portfolio Manager role, so: Portfolio Manager ⇒ Portfolio
-// only; Team Leader ⇒ every research division EXCEPT Portfolio; Head of
-// Division / Senior Analyst / Analyst ⇒ any of the five research divisions.
-function divisionsForRole(role: AppRole): OrgDivision[] {
-  if (role === 'portfolio_manager') return ['portfolio'];
-  if (role === 'team_leader') return CORE_DIVISIONS.filter((d) => d !== 'portfolio');
-  if (role === 'head_of_division' || role === 'senior_analyst' || role === 'analyst') return [...CORE_DIVISIONS];
-  return [];
-}
-const roleNeedsDivision = (role: AppRole) => divisionsForRole(role).length > 0;
+// Role ⇄ division pairing comes from the shared rules in src/lib/roles.ts —
+// the SAME rules used by People → Members and enforced by the edge
+// functions, so the two role-assignment surfaces can never drift apart.
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -121,9 +114,9 @@ const UserManagement = () => {
   // Changing the role re-scopes the division to what that role allows.
   const changeEditRole = (role: AppRole) => {
     setEditForm((f) => {
-      if (!roleNeedsDivision(role)) return { role, division: null };
-      if (role === 'portfolio_manager') return { role, division: 'portfolio' };
       const opts = divisionsForRole(role);
+      if (opts.length === 0) return { role, division: null };
+      if (opts.length === 1) return { role, division: opts[0] };
       return { role, division: f.division && opts.includes(f.division) ? f.division : null };
     });
   };
@@ -348,16 +341,19 @@ const UserManagement = () => {
               <div className="space-y-1">
                 <Label>Division</Label>
                 <Select value={editForm.division ?? ''} onValueChange={(v) => setEditForm((f) => ({ ...f, division: v as OrgDivision }))}
-                  disabled={editForm.role === 'portfolio_manager'}>
+                  disabled={divisionsForRole(editForm.role).length === 1}>
                   <SelectTrigger className={!editForm.division ? 'border-amber-400' : ''}><SelectValue placeholder="Select a division…" /></SelectTrigger>
                   <SelectContent>
                     {divisionsForRole(editForm.role).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {editForm.role === 'portfolio_manager' && (
-                  <p className="text-xs text-muted-foreground">Portfolio Manager is Portfolio Management's team leader, so it is always the Portfolio division.</p>
+                {divisionsForRole(editForm.role).length === 1 && (
+                  <p className="text-xs text-muted-foreground">{roleLabel(editForm.role, null)} always belongs to {divisionLabels[divisionsForRole(editForm.role)[0]]}.</p>
                 )}
               </div>
+            )}
+            {!roleNeedsDivision(editForm.role) && (
+              <p className="text-xs text-muted-foreground">This role carries no division: the board is not a division.</p>
             )}
           </div>
           <DialogFooter>
