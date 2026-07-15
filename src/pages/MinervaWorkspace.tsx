@@ -46,7 +46,6 @@ import MembershipFee from '@/components/admin/MembershipFee';
 import Treasury from '@/components/admin/Treasury';
 import AutoEmails from '@/components/admin/AutoEmails';
 import EditorialCalendar from '@/components/admin/EditorialCalendar';
-import BrandDesignSystem from '@/components/admin/BrandDesignSystem';
 import AdsRegister from '@/components/admin/AdsRegister';
 import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
@@ -125,7 +124,7 @@ const NAV: NavSection[] = [
     subItems: [],
   },
   {
-    key: 'my-role', label: 'My Profile', Icon: UserIcon,
+    key: 'my-role', label: 'My profile', Icon: UserIcon,
     subItems: [],
   },
   {
@@ -135,18 +134,18 @@ const NAV: NavSection[] = [
   {
     key: 'reports', label: 'Reports', Icon: FileBarChart2,
     subItems: [
-      { key: 'reports-upload', label: 'Upload Report', allowed: (p) => p.can('reports-upload') },
-      { key: 'reports-archive', label: 'Report Archive', allowed: (p) => p.can('reports-archive') },
-      { key: 'reports-templates', label: 'Templates & Repositories', allowed: (p) => p.can('reports-templates') },
-      { key: 'reports-funds', label: 'Fund Performances', allowed: (p) => p.can('reports-funds') },
+      { key: 'reports-upload', label: 'Upload report', allowed: (p) => p.can('reports-upload') },
+      { key: 'reports-archive', label: 'Report archive', allowed: (p) => p.can('reports-archive') },
+      { key: 'reports-templates', label: 'Templates & repositories', allowed: (p) => p.can('reports-templates') },
+      { key: 'reports-funds', label: 'Fund performances', allowed: (p) => p.can('reports-funds') },
     ],
   },
   {
     key: 'applications', label: 'Recruiting', Icon: ClipboardList,
     subItems: [
-      { key: 'applications-website', label: 'Application Page', allowed: (p) => p.can('applications-website') },
-      { key: 'applications-screening', label: 'Candidates Screening', allowed: (p) => p.can('applications-screening') },
-      { key: 'applications-interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
+      { key: 'applications-website', label: 'Application page', allowed: (p) => p.can('applications-website') },
+      { key: 'applications-screening', label: 'Candidates screening', allowed: (p) => p.can('applications-screening') },
+      { key: 'applications-interview-calendar', label: 'Interview calendar', allowed: (p) => p.can('applications-interview-calendar') },
       { key: 'applications-joiners', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
       { key: 'applications-form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
     ],
@@ -154,40 +153,39 @@ const NAV: NavSection[] = [
   {
     key: 'events', label: 'Events', Icon: Presentation,
     subItems: [
-      { key: 'events-create', label: 'Create Event', allowed: (p) => p.can('events-create') },
-      { key: 'events-forms', label: 'Registration Forms', allowed: (p) => p.can('events-forms') },
+      { key: 'events-create', label: 'Create event', allowed: (p) => p.can('events-create') },
+      { key: 'events-forms', label: 'Registration forms', allowed: (p) => p.can('events-forms') },
       { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.can('events-attendance') },
-      { key: 'events-archive', label: 'Event Archive', allowed: (p) => p.can('events-archive') },
-      { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.can('events-alumni-calls') },
-      { key: 'events-on-display', label: 'Association On Display', allowed: (p) => p.can('events-on-display') },
+      { key: 'events-archive', label: 'Event archive', allowed: (p) => p.can('events-archive') },
+      { key: 'events-alumni-calls', label: 'Alumni calls', allowed: (p) => p.can('events-alumni-calls') },
+      { key: 'events-on-display', label: 'Association on Display', allowed: (p) => p.can('events-on-display') },
     ],
   },
   {
     key: 'people', label: 'People', Icon: UsersIcon,
     subItems: [
       { key: 'people-members', label: 'Members', allowed: (p) => p.can('people-members') },
-      { key: 'people-advisors', label: 'Advisors', allowed: (p) => p.can('people-advisors') },
       { key: 'people-alumni', label: 'Alumni', allowed: (p) => p.can('people-alumni') },
     ],
   },
   {
     key: 'smm', label: 'Social Media', Icon: ImageIcon,
     subItems: [
-      { key: 'smm-editorial', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
+      { key: 'smm-editorial', label: 'Editorial calendar', allowed: (p) => p.can('smm-editorial') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
       { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
-      { key: 'smm-other', label: 'Other Resources', allowed: (p) => p.can('smm-other') },
-      { key: 'smm-brand', label: 'Brand & Design', allowed: (p) => p.can('smm-brand') },
-      { key: 'smm-ads', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
+      { key: 'smm-other', label: 'Other templates', allowed: (p) => p.can('smm-other') },
+      { key: 'smm-brand', label: 'Brand & design', allowed: (p) => p.can('smm-brand') },
+      { key: 'smm-ads', label: 'Ads & spending', allowed: (p) => p.can('smm-ads') },
     ],
   },
   {
     key: 'operations', label: 'Operations', Icon: Globe,
     subItems: [
-      { key: 'ops-fee', label: 'Membership Fees', allowed: (p) => p.can('ops-fee') },
+      { key: 'ops-fee', label: 'Membership fees', allowed: (p) => p.can('ops-fee') },
       { key: 'ops-treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
-      { key: 'ops-external', label: 'External Relations', allowed: (p) => p.can('ops-external') },
-      { key: 'ops-docs', label: 'Statute & Documents', allowed: (p) => p.can('ops-docs') },
+      { key: 'ops-external', label: 'External relations', allowed: (p) => p.can('ops-external') },
+      { key: 'ops-docs', label: 'Statute & documents', allowed: (p) => p.can('ops-docs') },
     ],
   },
 
@@ -198,7 +196,7 @@ const NAV: NavSection[] = [
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
       { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
-      { key: 'ops-auto-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
+      { key: 'ops-auto-emails', label: 'Automatic emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
   },
 
@@ -206,12 +204,12 @@ const NAV: NavSection[] = [
     key: 'settings', label: 'Settings', Icon: SettingsIcon,
     subItems: [
       { key: 'settings-users', label: 'Users', allowed: (p) => p.can('settings-users') },
-      { key: 'settings-roles', label: 'Role Permissions', allowed: (p) => p.can('settings-roles') },
-      { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
+      { key: 'settings-roles', label: 'Role permissions', allowed: (p) => p.can('settings-roles') },
+      { key: 'settings-activity', label: 'Activity log', allowed: (p) => p.can('settings-activity') },
     ],
   },
   {
-    key: 'welcome', label: 'How To Use', Icon: HelpCircle,
+    key: 'welcome', label: 'How to use', Icon: HelpCircle,
     subItems: [],
   },
 ];
@@ -226,12 +224,12 @@ function filterNav(permissions: Permissions): NavSection[] {
 // their application status. This is enforced here, plus by the render guard
 // below, plus by row-level security in the database (defence in depth).
 const CANDIDATE_NAV: NavSection[] = [
-  { key: 'my-role', label: 'My Profile', Icon: UserIcon, subItems: [] },
+  { key: 'my-role', label: 'My profile', Icon: UserIcon, subItems: [] },
   {
-    key: 'applications', label: 'My Application', Icon: ClipboardList,
+    key: 'applications', label: 'My application', Icon: ClipboardList,
     subItems: [
       { key: 'applications-status', label: 'Status' },
-      { key: 'applications-interview-calendar', label: 'Interview Calendar' },
+      { key: 'applications-interview-calendar', label: 'Interview calendar' },
     ],
   },
 ];
@@ -685,8 +683,6 @@ const MinervaWorkspace = () => {
         return <FundsPerformances />;
       case 'people-members':
         return <MembersManagement />;
-      case 'people-advisors':
-        return <MembersManagement silentAdvisors />;
       case 'people-alumni':
         return <AlumniManagement />;
       case 'events-create':
@@ -733,19 +729,19 @@ const MinervaWorkspace = () => {
       case 'smm-li':
         return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other Resources" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
+        return <ResourceManager category="smm_other" title="Other templates" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
-        return <BrandDesignSystem />;
+        return <ResourceManager category="smm_brand" title="Brand & design" description="The association's visual identity: fonts, colours, logo usage, visual style, tone and design rules. Star the key references to pin them on top (up to five)." divisions={['none']} />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':
         return <Treasury />;
       case 'ops-external':
-        return <ResourceManager category="external_relations" title="External Relations" description="A flexible repository for external relationships: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="external_relations" title="External relations" description="A flexible repository for external relationships: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-auto-emails':
         return <AutoEmails />;
       case 'ops-docs':
-        return <ResourceManager category="operations_statuto" title="Statute And Important Documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="operations_statuto" title="Statute and important documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
       case 'website-pages':
@@ -761,7 +757,7 @@ const MinervaWorkspace = () => {
   const renderEventsManagement = () => (
     <div>
       <WorkspacePageHeader
-        title="Events Archive"
+        title="Events archive"
         description="Every event of every type: meetings, calls, division and guest events. Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it."
         actions={<>
 

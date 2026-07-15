@@ -73,14 +73,23 @@ Deno.serve(async (req) => {
       head_of_equity: 'equity', head_of_investment: 'investment', head_of_macro: 'macro',
       head_of_portfolio: 'portfolio', head_of_quant: 'quant',
     };
-    // Roles an admin/president may assign (canonical + tolerated legacy values).
+    // ONE identity system: assigning a role here writes the person's MEMBER
+    // PROFILE (the single source of truth); workspace access mirrors it via a
+    // database trigger. 'admin' is reserved for the association account;
+    // advisors are appointed from People > Members (alumni registration
+    // first); 'alumni' is reached only through the leave flow.
     const ASSIGNABLE_ROLES = [
-      'admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
+      'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
       'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-      'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member', 'pending',
+      'media_analyst', 'head_of_operations', 'member',
       ...Object.keys(LEGACY_HEADS),
     ];
     const DIVISION_ROLES = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst'];
+    const PUBLIC_ROLES = new Set([
+      'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
+      'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
+      'media_analyst', 'head_of_operations',
+    ]);
 
     if (action === 'set-role') {
       const { role: rawRole, division: rawDivision } = body as { role?: string; division?: string | null };
@@ -88,9 +97,26 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'User ID and role are required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      if (rawRole === 'admin') {
+        return new Response(JSON.stringify({ error: 'The admin role belongs to the association account only and cannot be granted.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (rawRole === 'advisor' || rawRole === 'silent_advisor') {
+        return new Response(JSON.stringify({ error: 'Advisors are appointed from People > Members: the flow registers the person as an alumnus first.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       if (!ASSIGNABLE_ROLES.includes(rawRole)) {
         return new Response(JSON.stringify({ error: `Invalid role: ${rawRole}` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      // The association account keeps its account-level admin role; its role
+      // is never edited from here.
+      {
+        const { data: targetProfile } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
+        if (targetProfile?.email === 'as.minerva@unibocconi.it') {
+          return new Response(JSON.stringify({ error: 'The association account cannot be assigned a roster role.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
       }
       // Normalise legacy heads to (head_of_division, division).
       let role = rawRole;
@@ -130,46 +156,38 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Keep exactly ONE role row per user. Update the existing one (delete any
-      // duplicates) or insert a fresh one — never relies on there being 0/1 rows.
-      const payload = { role, division: div, assigned_by: requestingUser.id, assigned_at: new Date().toISOString() };
-      const { data: existingRows } = await supabaseAdmin
-        .from('user_roles').select('id').eq('user_id', userId);
+      // Write THE record: the member profile. Workspace access (user_roles)
+      // is mirrored from it by the sync_member_access database trigger, so
+      // this one write updates People > Members, this page and the person's
+      // permissions in a single, drift-proof step.
+      const { data: memberRow } = await supabaseAdmin
+        .from('members').select('id, membership_status').eq('user_id', userId).maybeSingle();
       let writeError = null;
-      if (existingRows && existingRows.length > 0) {
-        const keep = existingRows[0].id;
-        ({ error: writeError } = await supabaseAdmin.from('user_roles').update(payload).eq('id', keep));
-        if (existingRows.length > 1) {
-          await supabaseAdmin.from('user_roles').delete().eq('user_id', userId).neq('id', keep);
-        }
+      if (memberRow) {
+        ({ error: writeError } = await supabaseAdmin.from('members')
+          .update({ role, division: div ?? 'none' })
+          .eq('id', memberRow.id));
       } else {
-        ({ error: writeError } = await supabaseAdmin.from('user_roles').insert({ user_id: userId, ...payload }));
+        // First assignment to an account that has no member profile yet:
+        // create it from the account's own data.
+        const { data: targetProfile } = await supabaseAdmin
+          .from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
+        const fullName = (targetProfile?.full_name || '').trim();
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        const firstName = parts[0] || (targetProfile?.email?.split('@')[0] ?? 'Member');
+        const surname = parts.slice(1).join(' ');
+        ({ error: writeError } = await supabaseAdmin.from('members').insert({
+          user_id: userId, first_name: firstName, surname,
+          email: targetProfile?.email ?? null,
+          role, division: div ?? 'none',
+          account_status: 'approved', membership_status: 'active',
+          fee_status: 'unpaid', is_public: PUBLIC_ROLES.has(role),
+        }));
       }
       if (writeError) {
         console.error('Error setting role:', writeError);
         return new Response(JSON.stringify({ error: `Failed to update role: ${writeError.message}` }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-
-      // Keep the roster (People → Members) aligned with the new assignment:
-      // both surfaces assign the same role, so a linked member row follows.
-      // 'admin' and 'pending' are access-only states and never touch the roster.
-      const ROSTER_ROLES = [
-        'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
-        'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
-        'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'alumni', 'member',
-      ];
-      if (ROSTER_ROLES.includes(role)) {
-        try {
-          const { data: memberRow } = await supabaseAdmin
-            .from('members').select('id, membership_status, is_public').eq('user_id', userId).maybeSingle();
-          if (memberRow) {
-            const memberPatch: Record<string, unknown> = { role, division: div ?? 'none' };
-            if (role === 'silent_advisor') { memberPatch.membership_status = 'silent_advisor'; memberPatch.is_public = false; }
-            else if (memberRow.membership_status === 'silent_advisor') { memberPatch.membership_status = 'active'; }
-            await supabaseAdmin.from('members').update(memberPatch).eq('id', memberRow.id);
-          }
-        } catch (syncErr) { console.error('Failed to sync member roster row:', syncErr); }
       }
 
       // Audit trail.

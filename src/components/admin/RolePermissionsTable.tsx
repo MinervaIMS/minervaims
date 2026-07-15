@@ -25,7 +25,7 @@ const SECTIONS: { section: string; items: { key: ResourceKey; label: string }[] 
     { key: 'events-attendance', label: 'Attendance' }, { key: 'events-archive', label: 'Event archive' },
     { key: 'events-alumni-calls', label: 'Alumni calls' }, { key: 'events-on-display', label: 'Association on Display' } ] },
   { section: 'People', items: [
-    { key: 'people-members', label: 'Members' }, { key: 'people-advisors', label: 'Advisors' }, { key: 'people-alumni', label: 'Alumni' } ] },
+    { key: 'people-members', label: 'Members' }, { key: 'people-alumni', label: 'Alumni' } ] },
   { section: 'Media & Communication', items: [
     { key: 'smm-editorial', label: 'Editorial calendar' }, { key: 'smm-ig', label: 'Instagram' }, { key: 'smm-li', label: 'LinkedIn' },
     { key: 'smm-other', label: 'Other templates' }, { key: 'smm-brand', label: 'Brand & design' }, { key: 'smm-ads', label: 'Ads & spending' } ] },
@@ -44,7 +44,7 @@ const ROLES: { key: AppRole; label: string }[] = [
   { key: 'head_of_asset_management', label: 'Head of Asset Management' }, { key: 'head_of_division', label: 'Head of Division' },
   { key: 'portfolio_manager', label: 'Portfolio Manager' }, { key: 'team_leader', label: 'Team Leader' }, { key: 'senior_analyst', label: 'Senior Analyst' },
   { key: 'analyst', label: 'Analyst' }, { key: 'head_of_media', label: 'Head of Media & Communication' }, { key: 'media_analyst', label: 'Media & Comm. Analyst' },
-  { key: 'head_of_operations', label: 'Head of Operations' }, { key: 'advisor', label: 'Advisor' }, { key: 'silent_advisor', label: 'Silent Advisor' },
+  { key: 'head_of_operations', label: 'Head of Operations' }, { key: 'advisor', label: 'Advisor' },
   { key: 'alumni', label: 'Alumni' }, { key: 'member', label: 'Member' }, { key: 'candidate', label: 'Applicant' }, { key: 'pending', label: 'Pending' },
 ];
 
