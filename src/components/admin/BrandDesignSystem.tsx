@@ -45,7 +45,7 @@ export default function BrandDesignSystem() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Brand & design"
+        title="Brand & Design"
         description="The association's visual identity: fonts, colours, logo usage, spacing, motion, iconography and tone-of-voice rules. This page mirrors the Minerva IMS Design System bundle — treat it as the source of truth for on-brand output."
       />
 
