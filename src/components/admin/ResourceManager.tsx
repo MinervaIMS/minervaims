@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
+import { useIsDesktop } from '@/hooks/use-desktop';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -64,6 +65,9 @@ export default function ResourceManager({
 }: Props) {
   const { session } = useAuth();
   const { primaryRole } = useAccess();
+  // Repositories are consultable but read-only in the mobile shell.
+  const isDesktop = useIsDesktop();
+  canManage = canManage && isDesktop;
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 

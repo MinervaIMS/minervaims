@@ -69,7 +69,7 @@ export function PageHelpButton({ page }: { page: string }) {
       onClick={() => (isOpen ? closeHelp() : openHelp(page))}
       title={isOpen ? 'Close help' : 'Help for this page'}
       aria-label={isOpen ? 'Close help' : 'Open help for this page'}
-      className="fixed bottom-8 right-8 z-[70] w-14 h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center ring-2 ring-accent ring-offset-4 ring-offset-background shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-transform duration-150 hover:scale-105"
+      className="fixed bottom-5 right-4 lg:bottom-8 lg:right-8 z-[70] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center ring-2 ring-accent ring-offset-4 ring-offset-background shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-transform duration-150 hover:scale-105"
     >
       {isOpen ? <X className="h-6 w-6" /> : <HelpCircle className="h-7 w-7" />}
     </button>
@@ -106,12 +106,12 @@ function HelpPanel() {
       {/* Click-away backdrop below the top strip, so Return to Website and
           Log Out always stay visible and clickable. The floating help button
           sits above this layer, so it always receives its clicks. */}
-      {state && <div className="fixed left-0 right-0 top-20 bottom-0 z-[55]" onClick={closeHelp} aria-hidden />}
+      {state && <div className="fixed left-0 right-0 top-0 lg:top-20 bottom-0 z-[55]" onClick={closeHelp} aria-hidden />}
       {/* top-20 matches the h-20 top strip exactly; the panel deliberately has
           NO top border of its own (the strip's bottom hairline already draws
           that line), so its edge sits flush with the breadcrumb/content area. */}
       <aside
-        className={`fixed top-20 right-0 z-[60] h-[calc(100%-5rem)] w-full max-w-[380px] bg-background border-l border-separator shadow-xl transition-transform duration-200 ease-out ${state ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}
+        className={`fixed top-0 lg:top-20 right-0 z-[60] h-full lg:h-[calc(100%-5rem)] w-full max-w-full lg:max-w-[380px] bg-background border-l border-separator shadow-xl transition-transform duration-200 ease-out ${state ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}
         aria-hidden={!state}
       >
         {g && (
