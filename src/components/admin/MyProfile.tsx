@@ -13,6 +13,7 @@ import { roleGuideFor, MEMBERSHIP_RULES } from '@/lib/statute-extracts';
 import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
 import { getMyApplication, type ApplicationRow } from '@/lib/applications-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { useIsDesktop } from '@/hooks/use-desktop';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -73,6 +74,8 @@ export default function MyProfile() {
   const roleText = primaryRole ? composeRoleLabel(primaryRole, primaryDivision) : isCandidate ? 'Candidate' : 'No role';
   const divisionText = primaryDivision && primaryDivision !== 'none' ? divisionLabels[primaryDivision] : 'Board';
   const guide = primaryRole ? roleGuideFor(primaryRole) : null;
+  // My profile is read-only in the mobile shell: no photo or phone editing.
+  const isDesktop = useIsDesktop();
   const email = member?.email || user?.email || '';
 
   useEffect(() => {
@@ -233,13 +236,15 @@ export default function MyProfile() {
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-          <div className="mt-3 flex flex-wrap gap-2 w-44">
-            <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            </Button>
-            <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto}><Download className="h-4 w-4" /></Button>
-            <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto}><Trash2 className="h-4 w-4" /></Button>
-          </div>
+          {isDesktop && (
+            <div className="mt-3 flex flex-wrap gap-2 w-44">
+              <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              </Button>
+              <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto}><Download className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+          )}
         </div>
 
         {/* Details, grouped: name+surname, email+phone, role+division */}
@@ -250,19 +255,27 @@ export default function MyProfile() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <Field label="Email" value={email} />
-            <div>
-              <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
-              <Input id="phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
-            </div>
+            {isDesktop ? (
+              <div>
+                <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
+                <Input id="phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
+              </div>
+            ) : (
+              <Field label="Phone number" value={phone || '-'} />
+            )}
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1">
             <Field label="Role" value={roleText} />
             <Field label="Division" value={divisionText} />
           </div>
 
-          <Button onClick={handleSave} disabled={saving || !dirty}>
-            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
-          </Button>
+          {isDesktop ? (
+            <Button onClick={handleSave} disabled={saving || !dirty}>
+              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground">Editing your phone number and photo is available on desktop.</p>
+          )}
         </div>
       </div>
 

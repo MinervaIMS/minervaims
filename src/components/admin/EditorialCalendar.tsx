@@ -11,6 +11,7 @@ import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { useIsDesktop } from '@/hooks/use-desktop';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -31,6 +32,8 @@ const platformColor = (p: EditorialPlatform) =>
 export default function EditorialCalendar() {
   const { session } = useAuth();
   const { primaryRole } = useAccess();
+  // The editorial calendar is read-only in the mobile shell.
+  const isDesktop = useIsDesktop();
   const { toast } = useToast();
   const [items, setItems] = useState<EditorialItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +122,7 @@ export default function EditorialCalendar() {
   return (
     <div>
       <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
-        actions={<Button className="font-body" onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" />Add item</Button>} />
+        actions={isDesktop ? <Button className="font-body" onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" />Add item</Button> : undefined} />
 
       {loading ? <WorkspaceLoader /> : (
         <>
@@ -140,7 +143,11 @@ export default function EditorialCalendar() {
                   {monthCells(year, month).map((date, i) => (
                     <div key={i} className={`bg-background min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}>
                       {date && <>
-                        <button className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'} hover:text-accent`} onClick={() => openCreate(date)} title="Add on this day">{parseInt(date.slice(-2), 10)}</button>
+                        {isDesktop ? (
+                          <button className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'} hover:text-accent`} onClick={() => openCreate(date)} title="Add on this day">{parseInt(date.slice(-2), 10)}</button>
+                        ) : (
+                          <div className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
+                        )}
                         <div className="space-y-1">
                           {(itemsByDate[date] || []).map((it) => (
                             <button key={it.id} onClick={() => openEdit(it)} title={`${FORMAT_LABELS[it.format]} · ${ED_STATUS_LABELS[it.status]}`}
@@ -203,9 +210,18 @@ export default function EditorialCalendar() {
             </div>
             <div className="space-y-1"><Label>Notes</Label><Textarea rows={2} value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Anything the team should know" /></div>
             <div className="flex gap-3 pt-1">
-              <Button className="flex-1" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
-              {editingId && <Button variant="destructive" size="icon" onClick={() => { const it = items.find((x) => x.id === editingId); if (it) remove(it); }}><Trash2 className="h-4 w-4" /></Button>}
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              {isDesktop ? (
+                <>
+                  <Button className="flex-1" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
+                  {editingId && <Button variant="destructive" size="icon" onClick={() => { const it = items.find((x) => x.id === editingId); if (it) remove(it); }}><Trash2 className="h-4 w-4" /></Button>}
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                </>
+              ) : (
+                <>
+                  <p className="flex-1 self-center text-xs text-muted-foreground">Read-only on mobile: editing is available on desktop.</p>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
+                </>
+              )}
             </div>
           </div>
         </DialogContent>

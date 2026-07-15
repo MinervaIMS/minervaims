@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsDesktop } from '@/hooks/use-desktop';
+import { mobilePolicyFor } from '@/lib/mobile-policy';
 import {
   type AppRole,
   type OrgDivision,
@@ -58,6 +60,11 @@ export interface Access {
 
 export function useAccess(): Access {
   const { user, roles } = useAuth();
+  // Below the desktop breakpoint the workspace runs in its mobile shell:
+  // subsections marked 'view' in the mobile policy are READ-ONLY for
+  // everyone, regardless of role. On desktop (>= 1024px) this cap never
+  // engages, so desktop behaviour is untouched.
+  const isDesktop = useIsDesktop();
 
   return useMemo<Access>(() => {
     const assignments: RoleAssignment[] = (roles || []).map((r) => ({
@@ -94,9 +101,16 @@ export function useAccess(): Access {
         );
 
     const level = (resource: ResourceKey): AccessLevel => {
-      if (isCandidate) return CANDIDATE_RESOURCES[resource] ?? 'none';
-      if (isFullAccess) return 'manage';
-      return resolveLevel(roleValues, resource);
+      const base = isCandidate
+        ? (CANDIDATE_RESOURCES[resource] ?? 'none')
+        : isFullAccess
+          ? 'manage'
+          : resolveLevel(roleValues, resource);
+      // Mobile read-only cap: only 'full' subsections keep write levels.
+      if (!isDesktop && atLeast(base, 'edit') && mobilePolicyFor(resource) !== 'full') {
+        return 'view';
+      }
+      return base;
     };
 
     const can = (resource: ResourceKey, required: AccessLevel = 'view') => atLeast(level(resource), required);
@@ -127,5 +141,5 @@ export function useAccess(): Access {
       primaryDivision,
       allowedDivisions: allowedDivisions && allowedDivisions.length === 0 ? null : allowedDivisions,
     };
-  }, [user, roles]);
+  }, [user, roles, isDesktop]);
 }
