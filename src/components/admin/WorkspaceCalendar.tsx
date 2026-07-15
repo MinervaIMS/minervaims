@@ -16,8 +16,10 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listEvents, registerForEvent, myEventRegistrationIds, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
 import {
   listCalendarEntries, saveCalendarEntry, deleteCalendarEntry, CALENDAR_ENTRY_LABELS,
-  type CalendarEntry, type CalendarEntryType,
+  listExamSessions, saveExamSession, deleteExamSession, examSessionOn,
+  type CalendarEntry, type CalendarEntryType, type ExamSession,
 } from '@/lib/calendar-api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Kind = 'event' | 'aod' | 'alumni' | 'application' | 'fee' | 'custom';
 type Item = { date: string; label: string; kind: Kind; event?: EventRow; entry?: CalendarEntry };
@@ -47,10 +49,20 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const [savingEntry, setSavingEntry] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Exam session breaks: ranges during which the calendars accept no events.
+  const [examSessions, setExamSessions] = useState<ExamSession[]>([]);
+  const [examDialogOpen, setExamDialogOpen] = useState(false);
+  const [examForm, setExamForm] = useState({ label: '', start_date: '', end_date: '' });
+  const [savingExam, setSavingExam] = useState(false);
+
   const load = async () => {
       try {
-        const [events, regIds, entries] = await Promise.all([listEvents(), myEventRegistrationIds(), listCalendarEntries().catch(() => [])]);
+        const [events, regIds, entries, exams] = await Promise.all([
+          listEvents(), myEventRegistrationIds(), listCalendarEntries().catch(() => []),
+          listExamSessions().catch(() => [] as ExamSession[]),
+        ]);
         setRegistered(regIds);
+        setExamSessions(exams);
         const out: Item[] = [];
         for (const e of events) { const d = (e.start_at || e.date)?.slice(0, 10); if (d) out.push({ date: d, label: e.title, kind: 'event', event: e }); }
         for (const c of entries) out.push({ date: c.entry_date.slice(0, 10), label: c.title, kind: 'custom', entry: c });
@@ -97,6 +109,13 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     if (!entryForm) return;
     if (!entryForm.title.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
     if (!entryForm.entry_date) { toast({ title: 'A date is required', variant: 'destructive' }); return; }
+    // Meetings and socials cannot land inside an exam session break (the
+    // database enforces this too; deadlines, reminders and CASA Committee
+    // meetings remain possible).
+    if (['meeting', 'social'].includes(entryForm.entry_type)) {
+      const brk = examSessionOn(examSessions, entryForm.entry_date);
+      if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: the calendar does not accept events between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
+    }
     setSavingEntry(true);
     try {
       await saveCalendarEntry(session, {
@@ -121,6 +140,31 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     id: c.id, title: c.title, description: c.description ?? '', entry_date: c.entry_date.slice(0, 10),
     entry_type: c.entry_type, location: c.location ?? '',
   });
+
+  const saveExam = async () => {
+    if (!examForm.label.trim()) { toast({ title: 'A label is required', description: 'e.g. Winter exam session', variant: 'destructive' }); return; }
+    if (!examForm.start_date || !examForm.end_date || examForm.end_date < examForm.start_date) {
+      toast({ title: 'Choose a valid date range', variant: 'destructive' }); return;
+    }
+    setSavingExam(true);
+    try {
+      await saveExamSession(session, { label: examForm.label.trim(), start_date: examForm.start_date, end_date: examForm.end_date });
+      logActivity(session, primaryRole, { action: 'create', section: 'General', subsection: 'Calendar', entityType: 'exam_session', entityName: examForm.label.trim(), details: { start: examForm.start_date, end: examForm.end_date } });
+      toast({ title: 'Exam session added', description: 'No events can be scheduled on those days, on any workspace calendar.' });
+      setExamForm({ label: '', start_date: '', end_date: '' });
+      await load();
+    } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setSavingExam(false); }
+  };
+
+  const removeExam = async (ex: ExamSession) => {
+    try {
+      await deleteExamSession(ex.id);
+      logActivity(session, primaryRole, { action: 'delete', section: 'General', subsection: 'Calendar', entityType: 'exam_session', entityId: ex.id, entityName: ex.label });
+      toast({ title: 'Exam session removed' });
+      await load();
+    } catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
 
   const itemsByDate = useMemo(() => {
     const map: Record<string, Item[]> = {};
@@ -159,12 +203,12 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     document.getElementById(monthKey(now.getFullYear(), now.getMonth()))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const kindColor = (k: Kind) =>
+  const kindColor = (k: Kind, entry?: CalendarEntry) =>
     k === 'event' ? 'bg-accent/10 text-accent'
       : k === 'aod' ? 'bg-amber-100 text-amber-800'
       : k === 'alumni' ? 'bg-emerald-100 text-emerald-800'
       : k === 'fee' ? 'bg-rose-100 text-rose-800'
-      : k === 'custom' ? 'bg-violet-100 text-violet-800'
+      : k === 'custom' ? (entry?.entry_type === 'casa_committee' ? 'bg-indigo-100 text-indigo-800' : 'bg-violet-100 text-violet-800')
       : 'bg-blue-100 text-blue-800';
 
   const doRegister = async () => {
@@ -201,7 +245,14 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
       <WorkspacePageHeader
         title="Calendar"
         description={`Association events, Association on Display, alumni calls, application periods and the membership fee deadline. Scroll to move through the months. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
-        actions={canEdit ? <Button className="font-body" onClick={() => setEntryForm(emptyEntry(ymd(new Date())))}><Plus className="h-4 w-4 mr-2" />Add entry</Button> : undefined}
+        actions={canEdit ? (
+          <>
+            <Button variant="outline" className="font-body" onClick={() => setExamDialogOpen(true)}>
+              <CalendarClock className="h-4 w-4 mr-2" />Exam sessions
+            </Button>
+            <Button className="font-body" onClick={() => setEntryForm(emptyEntry(ymd(new Date())))}><Plus className="h-4 w-4 mr-2" />Add entry</Button>
+          </>
+        ) : undefined}
       />
 
       <div className="flex items-center justify-end mb-3">
@@ -215,6 +266,8 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         <span><span className="inline-block w-3 h-3 rounded-sm bg-blue-200 mr-1 align-middle" />Applications</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-rose-200 mr-1 align-middle" />Membership fee</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-violet-200 mr-1 align-middle" />Custom entry</span>
+        <span><span className="inline-block w-3 h-3 rounded-sm bg-indigo-200 mr-1 align-middle" />CASA Committee (board only)</span>
+        <span><span className="inline-block w-3 h-3 rounded-sm bg-muted border border-separator mr-1 align-middle" />Exam session break: no events accepted</span>
       </div>
 
       <div ref={scrollRef} className="max-h-[72vh] overflow-y-auto border border-separator">
@@ -225,8 +278,12 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
             </div>
             <div className="grid grid-cols-7 gap-px bg-separator font-body">
               {WEEKDAYS.map((d) => <div key={d} className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider px-2 py-1 text-center">{d}</div>)}
-              {monthCells(year, month).map((date, i) => (
-                <div key={i} className={`bg-background min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}>
+              {monthCells(year, month).map((date, i) => {
+                const brk = date ? examSessionOn(examSessions, date) : undefined;
+                return (
+                <div key={i}
+                  className={`${brk ? 'bg-muted/70' : 'bg-background'} min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
+                  title={brk ? `${brk.label}: exam session break, the calendar does not accept events on this day` : undefined}>
                   {date && <>
                     {dayIsClickable ? (
                       <button type="button" className={`text-sm mb-1 hover:text-accent ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`} onClick={() => setEntryForm(emptyEntry(date))} title="Add an entry on this day">{parseInt(date.slice(-2), 10)}</button>
@@ -248,16 +305,20 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                         return (
                           <button key={j} disabled={!clickable} onClick={onClick}
                             title={isCustom ? `${CALENDAR_ENTRY_LABELS[it.entry!.entry_type]}: ${it.label}` : isEvent ? EVENT_TYPE_LABELS[it.event!.event_type] : isAod ? 'Open the Association on Display registration page' : it.label}
-                            className={`flex items-center gap-1 w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${kindColor(it.kind)} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
+                            className={`flex items-center gap-1 w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${kindColor(it.kind, it.entry)} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
                             {isReg && <Check className="h-3 w-3 shrink-0" />}
                             <span className="truncate">{it.label}</span>
                           </button>
                         );
                       })}
                     </div>
+                    {brk && (itemsByDate[date]?.length ?? 0) === 0 && (
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 mt-1">Exam break</div>
+                    )}
                   </>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         ))}
@@ -273,7 +334,26 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
           {entryForm && (
             <div className="space-y-3 font-body">
               <div className="space-y-1"><Label>Title *</Label><Input value={entryForm.title} onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })} placeholder="e.g. Board meeting" /></div>
-              <div className="space-y-1"><Label>Date *</Label><Input type="date" value={entryForm.entry_date} onChange={(e) => setEntryForm({ ...entryForm, entry_date: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label>Date *</Label><Input type="date" value={entryForm.entry_date} onChange={(e) => setEntryForm({ ...entryForm, entry_date: e.target.value })} /></div>
+                <div className="space-y-1">
+                  <Label>Type</Label>
+                  <Select value={entryForm.entry_type} onValueChange={(v) => setEntryForm({ ...entryForm, entry_type: v as CalendarEntryType })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(['meeting', 'deadline', 'reminder', 'social', 'other', 'casa_committee'] as CalendarEntryType[]).map((t) => (
+                        <SelectItem key={t} value={t}>{CALENDAR_ENTRY_LABELS[t]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {entryForm.entry_type === 'casa_committee' && (
+                <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                  CASA Committee meetings are visible ONLY to the members of the board of directors (and the admin
+                  account). Other members never see this entry on the calendar.
+                </p>
+              )}
               <div className="space-y-1"><Label>Location</Label><Input value={entryForm.location} onChange={(e) => setEntryForm({ ...entryForm, location: e.target.value })} placeholder="e.g. Room N01 / online" /></div>
               <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={entryForm.description} onChange={(e) => setEntryForm({ ...entryForm, description: e.target.value })} placeholder="Anything the team should know" /></div>
               <div className="flex gap-3 pt-1">
@@ -283,6 +363,47 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Exam session breaks manager (authorised users only). */}
+      <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Exam session breaks</DialogTitle>
+            <DialogDescription className="font-body">
+              During an exam session break, NO event can be scheduled anywhere in the workspace: events,
+              interview slots, Association on Display days, alumni calls, meetings and socials are all refused on
+              those days. This protects the time when the student community needs to study, so events land when
+              people can actually attend. Deadlines and reminders remain possible.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 font-body">
+            {examSessions.length > 0 && (
+              <div className="border border-separator divide-y divide-separator">
+                {examSessions.map((ex) => (
+                  <div key={ex.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                    <div>
+                      <div className="text-foreground">{ex.label}</div>
+                      <div className="text-xs text-muted-foreground">{ex.start_date} to {ex.end_date}</div>
+                    </div>
+                    <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive/40" onClick={() => removeExam(ex)} title="Remove this break">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1 col-span-2"><Label>Label *</Label><Input value={examForm.label} onChange={(e) => setExamForm({ ...examForm, label: e.target.value })} placeholder="e.g. Winter exam session" /></div>
+              <div className="space-y-1"><Label>From *</Label><Input type="date" value={examForm.start_date} onChange={(e) => setExamForm({ ...examForm, start_date: e.target.value })} /></div>
+              <div className="space-y-1"><Label>To *</Label><Input type="date" value={examForm.end_date} onChange={(e) => setExamForm({ ...examForm, end_date: e.target.value })} /></div>
+            </div>
+            <div className="flex gap-3">
+              <Button className="flex-1" onClick={saveExam} disabled={savingExam}>{savingExam ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Add exam session'}</Button>
+              <Button variant="outline" onClick={() => setExamDialogOpen(false)}>Close</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

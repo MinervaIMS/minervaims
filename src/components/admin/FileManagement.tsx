@@ -17,6 +17,7 @@ import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-util
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { logActivity } from '@/lib/activity-log';
 interface ArchiveFile {
   id: string;
   title: string;
@@ -98,6 +99,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
       setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status } : f)));
+      const target = files.find((f) => f.id === fileId);
+      logActivity(session, access.primaryRole, { action: 'status_change', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: fileId, entityName: target?.title ?? null, details: { status } });
       toast({ title: `Report ${status === 'published' ? 'published' : status === 'blocked' ? 'blocked' : 'set to draft'}` });
     } catch (e) {
       toast({ title: 'Could not update status', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -478,6 +481,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         return;
       }
 
+      const target = previousFiles.find((f) => f.id === fileId);
+      logActivity(session, access.primaryRole, { action: 'delete', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: fileId, entityName: target?.title ?? null });
       toast({ title: "Success", description: "File deleted successfully" });
     } catch (error) {
       console.error('Delete error:', error);

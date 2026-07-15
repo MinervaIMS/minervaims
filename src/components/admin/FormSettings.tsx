@@ -26,7 +26,7 @@ export default function FormSettings() {
   return (
     <div className="space-y-8">
       <WorkspacePageHeader
-        title="Form & settings"
+        title="Form & Questions"
         description="The internal application form is part of the website. Applicants can only submit it while applications are open, but authorised members can preview it at any time. Its structure is fixed for consistency; the division-specific questions are managed in the Questions subsection."
         actions={<Button variant="outline" className="font-body" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
       />

@@ -19,7 +19,7 @@ const SECTIONS: { section: string; items: { key: ResourceKey; label: string }[] 
   { section: 'Recruiting', items: [
     { key: 'applications-website', label: 'Application page' }, { key: 'applications-screening', label: 'Candidates screening' },
     { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-joiners', label: 'Offers' },
-    { key: 'applications-form', label: 'Form & settings' } ] },
+    { key: 'applications-form', label: 'Form & Questions' } ] },
   { section: 'Events', items: [
     { key: 'events-create', label: 'Create event' }, { key: 'events-forms', label: 'Registration forms' },
     { key: 'events-attendance', label: 'Attendance' }, { key: 'events-archive', label: 'Event archive' },

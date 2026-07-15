@@ -25,8 +25,8 @@ const STATUSES = [
 ];
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
-  'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
-  'head_of_operations', 'advisor',
+  'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
+  'media_analyst', 'head_of_operations', 'advisor',
 ]);
 
 const DIV_LABELS: Record<string, string> = {
@@ -35,6 +35,17 @@ const DIV_LABELS: Record<string, string> = {
   media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
 };
 const STATUS_URL = 'https://minervaims.org/admin';
+// Roles a new joiner may be given. Hard whitelist: the offer flow can never
+// hand out leadership or admin access.
+const JOIN_ROLES = new Set(['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst']);
+function joinRoleDivisionError(role: string, division: string): string | null {
+  if (!JOIN_ROLES.has(role)) return 'Invalid role for a new joiner.';
+  if (role === 'media_analyst') return division === 'media' ? null : 'Media & Communication analysts always belong to the Media division.';
+  if (role === 'portfolio_manager') return division === 'portfolio' ? null : 'Portfolio Manager always belongs to Portfolio Management.';
+  const core = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+  if (role === 'team_leader' && division === 'portfolio') return "Portfolio Management's team leader is the Portfolio Manager role.";
+  return core.includes(division) ? null : 'Choose one of the five research divisions.';
+}
 const INTERVIEW_STAGES = ['interview_invitation_sent', 'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed'];
 
 function json(body: unknown, status = 200) {
@@ -147,6 +158,14 @@ Deno.serve(async (req) => {
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
 
       const previousStatus = app.status as string;
+      // A candidacy only ever moves FORWARD. Once a stage is reached it can
+      // never be taken back; the only sanctioned way to redo the interview
+      // stage is the explicit division-transfer process below.
+      if (STATUSES.indexOf(body.status) <= STATUSES.indexOf(previousStatus)) {
+        return json({
+          error: 'A candidate\'s progress cannot be moved back to an earlier stage. If, after the interview, the candidate fits another division better, use "Consider for another division" instead.',
+        }, 400);
+      }
       const updates: Record<string, unknown> = { status: body.status };
       let invitedDivision: string | null = app.interview_division;
       // Inviting to interview locks the candidate to one division's calendar.
@@ -201,6 +220,60 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ── transfer-division ────────────────────────────────────────────────────
+    // The one sanctioned exception to forward-only progress: after the
+    // interview, the examiners may conclude the candidate fits a DIFFERENT
+    // division better. The transfer re-opens the interview stage in the target
+    // division: the candidate is re-invited (email + booking access) for the
+    // new division, and the move is recorded in the activity log.
+    if (action === 'transfer-division') {
+      if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
+      const target = typeof body.division === 'string' ? body.division : null;
+      if (!target || !['equity', 'investment', 'macro', 'portfolio', 'quant'].includes(target)) {
+        return json({ error: 'Choose a valid target division' }, 400);
+      }
+      const { data: app } = await supabase.from('applications')
+        .select('id, first_choice, second_choice, first_name, surname, email, interview_division, status')
+        .eq('id', body.id).maybeSingle();
+      if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      if (!['interview_completed', 'accepted'].includes(app.status)) {
+        return json({ error: 'A division transfer is only possible after the interview has been completed.' }, 400);
+      }
+      const current = app.interview_division || app.first_choice;
+      if (target === current) return json({ error: 'The candidate is already in this division.' }, 400);
+      // The target division must have at least one open slot so the candidate
+      // can actually book the new interview.
+      const { data: slots } = await supabase.from('interview_slots')
+        .select('id').eq('division', target).eq('is_active', true).eq('is_booked', false).limit(1);
+      if (!slots || slots.length === 0) {
+        return json({ error: `Open at least one interview slot for ${DIV_LABELS[target]} before transferring this candidate.` }, 400);
+      }
+
+      const { error } = await supabase.from('applications')
+        .update({ status: 'interview_invitation_sent', interview_division: target })
+        .eq('id', app.id);
+      if (error) throw error;
+
+      try {
+        await supabase.rpc('enqueue_app_email', {
+          p_key: 'interview_invitation', p_to: app.email,
+          p_vars: { first_name: app.first_name, division: DIV_LABELS[target] || '', status_url: STATUS_URL },
+        });
+      } catch (e) { console.error('transfer email enqueue failed', e); }
+
+      try {
+        await supabase.from('activity_logs').insert({
+          user_id: user.id, user_email: user.email || 'unknown', user_role: primaryRole,
+          action: 'status_change', entity_type: 'application', entity_id: app.id,
+          entity_name: `${app.first_name} ${app.surname}`,
+          section: 'Recruiting', subsection: 'Candidates screening',
+          details: { event: 'division_transfer', from: current, to: target, previous_status: app.status },
+        });
+      } catch (e) { console.error('transfer log failed', e); }
+
+      return json({ success: true });
+    }
+
     // ── add-note ───────────────────────────────────────────────────────────
     if (action === 'add-note') {
       if (!body.body?.trim()) return json({ error: 'Empty note' }, 400);
@@ -233,6 +306,8 @@ Deno.serve(async (req) => {
       const role = body.role as string;
       const division = body.division as string;
       if (!role || !division) return json({ error: 'Role and division are required' }, 400);
+      const pairError = joinRoleDivisionError(role, division);
+      if (pairError) return json({ error: pairError }, 400);
       if (!canAll && !reviewerDivisions.includes(division)) return json({ error: 'You can only offer your own division' }, 403);
 
       const now = new Date();
@@ -266,6 +341,8 @@ Deno.serve(async (req) => {
       const role = body.role as string;
       const division = body.division as string;
       if (!role || !division) return json({ error: 'Role and division are required' }, 400);
+      const pairError = joinRoleDivisionError(role, division);
+      if (pairError) return json({ error: pairError }, 400);
       if (!canAll && !reviewerDivisions.includes(division)) return json({ error: 'You can only assign your own division' }, 403);
 
       // Create / update the member record linked to the applicant's account.

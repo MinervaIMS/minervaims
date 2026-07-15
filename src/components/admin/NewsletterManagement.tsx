@@ -8,6 +8,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Download, Trash2, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
+import { logActivity } from '@/lib/activity-log';
 import { useToast } from '@/hooks/use-toast';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -24,6 +27,8 @@ const PAGE_SIZE = 25;
 
 export default function NewsletterManagement() {
   const { toast } = useToast();
+  const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -61,12 +66,14 @@ export default function NewsletterManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    const target = subscribers.find((s) => s.id === id);
     const { error } = await supabase.from('newsletter_subscribers').delete().eq('id', id);
     if (error) {
       toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
       return;
     }
     setSubscribers((prev) => prev.filter((s) => s.id !== id));
+    logActivity(session, primaryRole, { action: 'delete', section: 'Website', subsection: 'Newsletter', entityType: 'newsletter_subscriber', entityId: id, entityName: target?.email ?? null });
     toast({ title: 'Subscriber removed' });
   };
 

@@ -35,7 +35,7 @@ const EntrySchema = z.object({
   title: z.string().min(1).max(200).trim(),
   description: z.string().max(2000).nullable().optional(),
   entry_date: z.string().min(4),
-  entry_type: z.enum(['meeting', 'deadline', 'reminder', 'social', 'other']),
+  entry_type: z.enum(['meeting', 'deadline', 'reminder', 'social', 'other', 'casa_committee']),
   location: z.string().max(300).nullable().optional(),
 });
 

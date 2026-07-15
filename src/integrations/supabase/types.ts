@@ -130,7 +130,7 @@ export type Database = {
       alumni: {
         Row: {
           city: string | null
-          company: string
+          company: string | null
           created_at: string
           graduation_year: number
           id: string
@@ -142,7 +142,7 @@ export type Database = {
         }
         Insert: {
           city?: string | null
-          company: string
+          company?: string | null
           created_at?: string
           graduation_year: number
           id?: string
@@ -154,7 +154,7 @@ export type Database = {
         }
         Update: {
           city?: string | null
-          company?: string
+          company?: string | null
           created_at?: string
           graduation_year?: number
           id?: string
@@ -977,6 +977,33 @@ export type Database = {
           start_at?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      exam_sessions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          label: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          label: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          label?: string
+          start_date?: string
         }
         Relationships: []
       }
@@ -1849,6 +1876,7 @@ export type Database = {
         Returns: string
       }
       can_manage_calendar: { Args: { uid: string }; Returns: boolean }
+      claim_member_account: { Args: never; Returns: Json }
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
       delete_email: {
@@ -1868,6 +1896,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      exam_break_on: { Args: { _d: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1876,9 +1905,23 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_board_member: { Args: { _user_id: string }; Returns: boolean }
       is_candidate: { Args: { _user_id: string }; Returns: boolean }
       is_full_access: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      link_member_account: { Args: { p_user_id: string }; Returns: Json }
+      log_activity: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_entity_id?: string
+          p_entity_name?: string
+          p_entity_type: string
+          p_section?: string
+          p_subsection?: string
+        }
+        Returns: undefined
+      }
       member_rank: {
         Args: {
           _division: Database["public"]["Enums"]["org_division"]

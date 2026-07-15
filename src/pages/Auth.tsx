@@ -109,7 +109,7 @@ const Auth = () => {
       const { error } = await signUp(suEmail, suPassword, `${name.trim()} ${surname.trim()}`);
       if (error) {
         if (error.message?.toLowerCase().includes('already')) {
-          setSuErr({ email: 'An account with this email already exists.' });
+          setSuErr({ email: 'An account with this email already exists. Sign in instead, or contact as.minerva@unibocconi.it if you cannot access it.' });
         } else {
           toast({ title: 'Registration failed', description: error.message, variant: 'destructive' });
         }

@@ -19,6 +19,7 @@ import { currentSemester, previousSemester, semesterOf, type Semester } from '@/
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { fundLabels, activeFunds, type Fund } from '@/lib/types';
 import { parseFundNumber } from '@/lib/funds-api';
+import { MiniAlumniGlobe } from '@/components/AlumniGlobe';
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -60,35 +61,38 @@ function useCountUp(target: number, duration = 1100): number {
 
 function DeltaChip({ now, before }: { now: number; before: number }) {
   const diff = now - before;
-  if (before === 0 && now === 0) return <span className="text-[11px] text-muted-foreground">history starts now</span>;
-  if (diff > 0) return <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 whitespace-nowrap">on the rise, +{diff}</span>;
-  if (diff === 0) return <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground whitespace-nowrap">level with last semester</span>;
-  return <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 whitespace-nowrap">{-diff} behind last semester</span>;
+  if (before === 0 && now === 0) return <span className="text-xs text-muted-foreground">history starts now</span>;
+  if (diff > 0) return <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 whitespace-nowrap">on the rise, +{diff}</span>;
+  if (diff === 0) return <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground whitespace-nowrap">level with last semester</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-600 whitespace-nowrap">{-diff} behind last semester</span>;
 }
 
-function Kpi({ icon, label, value, before, accent, delay }: {
+function Kpi({ icon, label, value, before, accent, delay, decoration }: {
   icon: React.ReactNode; label: string; value: number; before: number | null; accent?: boolean; delay: number;
+  /** Optional ornament rendered behind the figures (e.g. the alumni globe). */
+  decoration?: React.ReactNode;
 }) {
   const shown = useCountUp(value);
   const pct = before && before > 0 ? Math.min(100, Math.round((value / before) * 100)) : value > 0 ? 100 : 0;
   return (
     <div
-      className={`rounded-xl border p-4 flex flex-col justify-between min-h-[110px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both ${accent ? 'bg-accent text-accent-foreground border-accent' : 'bg-background border-separator'}`}
+      className={`relative overflow-hidden rounded-xl border p-5 flex flex-col justify-between min-h-[150px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both ${accent ? 'bg-accent text-accent-foreground border-accent' : 'bg-background border-separator'}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className={`flex items-center gap-2 text-[11px] uppercase tracking-wider ${accent ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>{icon}{label}</div>
-      <div className={`font-serif text-4xl leading-none mt-1 ${accent ? '' : 'text-accent'}`}>{shown}</div>
-      <div className="mt-2 space-y-1">
+      {decoration}
+      <div className={`relative z-10 flex items-center gap-2 text-xs uppercase tracking-wider ${accent ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>{icon}{label}</div>
+      <div className={`relative z-10 font-serif text-5xl leading-none mt-1 ${accent ? '' : 'text-accent'}`}>{shown}</div>
+      <div className="relative z-10 mt-2 space-y-1.5">
         {before !== null ? (
           <>
             <div className={`h-1 rounded-full overflow-hidden ${accent ? 'bg-accent-foreground/20' : 'bg-muted'}`}>
               <div className={`h-full rounded-full transition-all duration-1000 ease-out ${accent ? 'bg-accent-foreground' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
             </div>
             {!accent ? <DeltaChip now={value} before={before} /> : (
-              <span className="text-[11px] text-accent-foreground/70">{before > 0 ? `${pct}% of last semester, and counting` : 'the story starts here'}</span>
+              <span className="text-xs text-accent-foreground/70">{before > 0 ? `${pct}% of last semester, and counting` : 'the story starts here'}</span>
             )}
           </>
-        ) : <span className="text-[11px] opacity-70">since Fall 2017</span>}
+        ) : <span className="text-xs opacity-70">since Fall 2017</span>}
       </div>
     </div>
   );
@@ -198,7 +202,9 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
         }
       }
     }
-    return [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
+    // Show the last 12 months up to the most recent month WITH data (data can
+    // lag the calendar month, so the window ends at the last available point).
+    return [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v).slice(-12);
   }, [fundYears]);
 
   const funds = useMemo(() => activeFunds.map((f: Fund) => {
@@ -224,8 +230,8 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
     <div className="h-full min-h-0 flex flex-col gap-3 font-body">
       {/* Welcome strip */}
       <div className="shrink-0 animate-in fade-in slide-in-from-top-1 duration-500">
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Minerva Investment Management Society · est. Fall 2017</div>
-        <h1 className="font-serif text-2xl text-accent leading-tight">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">Minerva Investment Management Society · est. Fall 2017</div>
+        <h1 className="font-serif text-3xl xl:text-4xl text-accent leading-tight">
           Welcome to our {ordinal(semesterNumber)} semester. This is what we are building together in {cur.label}.
         </h1>
       </div>
@@ -237,39 +243,44 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
           ? <Kpi delay={80} icon={<FileBarChart2 className="h-3.5 w-3.5" />} label="Pages of research" value={pagesNow} before={pagesPrev} />
           : <Kpi delay={80} icon={<FileBarChart2 className="h-3.5 w-3.5" />} label="Reports all-time" value={allTimeReports} before={null} />}
         <Kpi delay={160} icon={<Users className="h-3.5 w-3.5" />} label="Members today" value={liveMembers} before={prevMembers} />
-        <Kpi delay={240} icon={<GraduationCap className="h-3.5 w-3.5" />} label="Alumni network" value={liveAlumni} before={prevAlumni} />
+        <Kpi delay={240} icon={<GraduationCap className="h-3.5 w-3.5" />} label="Alumni network" value={liveAlumni} before={prevAlumni}
+          decoration={
+            <div className="absolute -right-6 -top-4 bottom-[-1rem] w-[62%] opacity-80" aria-hidden>
+              <MiniAlumniGlobe />
+            </div>
+          } />
       </div>
 
       {/* Charts row */}
       <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-3">
         {/* Research by division */}
-        <div className="xl:col-span-4 rounded-xl border border-separator p-4 flex flex-col min-h-[230px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '150ms' }}>
+        <div className="xl:col-span-4 rounded-xl border border-separator p-4 flex flex-col min-h-[210px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '150ms' }}>
           <div className="flex items-baseline justify-between mb-1">
-            <h2 className="font-serif text-lg text-accent">Research by division</h2>
-            <span className="text-[11px] text-muted-foreground">{cur.label} vs {prev.label}</span>
+            <h2 className="font-serif text-xl text-accent">Research by division</h2>
+            <span className="text-xs text-muted-foreground">{cur.label} vs {prev.label}</span>
           </div>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={divisionData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="26%">
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.axis }} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: C.axis }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'hsl(210 40% 96.1%)' }} contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: C.axis }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: C.axis }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'hsl(210 40% 96.1%)' }} contentStyle={{ fontSize: 13, borderRadius: 8 }}
                   formatter={(v: number, n: string) => [v, n === 'current' ? cur.label : prev.label]} />
-                <Legend formatter={(v) => <span style={{ fontSize: 11, color: C.axis }}>{v === 'current' ? cur.label : prev.label}</span>} iconSize={9} />
+                <Legend formatter={(v) => <span style={{ fontSize: 12, color: C.axis }}>{v === 'current' ? cur.label : prev.label}</span>} iconSize={10} />
                 <Bar dataKey="previous" fill={C.prev} radius={[3, 3, 0, 0]} animationDuration={900} animationBegin={200} />
                 <Bar dataKey="current" fill={C.accent} radius={[3, 3, 0, 0]} animationDuration={900} animationBegin={450} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">Every bar is a division writing the association's name a little larger.</p>
+          <p className="text-xs text-muted-foreground mt-1.5">Every bar is a division writing the association's name a little larger.</p>
         </div>
 
         {/* Reports over time since founding */}
-        <div className="xl:col-span-4 rounded-xl border border-separator p-4 flex flex-col min-h-[230px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '250ms' }}>
+        <div className="xl:col-span-4 rounded-xl border border-separator p-4 flex flex-col min-h-[210px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '250ms' }}>
           <div className="flex items-baseline justify-between mb-1">
-            <h2 className="font-serif text-lg text-accent">Our research, compounding</h2>
-            <span className="text-[11px] text-muted-foreground">since Fall 2017</span>
+            <h2 className="font-serif text-xl text-accent">Our research, compounding</h2>
+            <span className="text-xs text-muted-foreground">since Fall 2017</span>
           </div>
           <div className="flex-1 min-h-0">
             {reportsOverTime.length >= 2 ? (
@@ -282,9 +293,9 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: C.axis }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: C.axis }} axisLine={false} tickLine={false} width={34} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.axis }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: C.axis }} axisLine={false} tickLine={false} width={36} />
+                  <Tooltip contentStyle={{ fontSize: 13, borderRadius: 8 }} />
                   <Area type="monotone" dataKey="total" name="Total reports" stroke={C.accent} strokeWidth={2.5} fill="url(#gTotal)" animationDuration={1200} />
                   <Area type="monotone" dataKey="semester" name="That semester" stroke={C.green} strokeWidth={1.5} fill="transparent" animationDuration={1200} animationBegin={300} />
                 </AreaChart>
@@ -295,18 +306,18 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
               </div>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">{allTimeReports} reports published and counting. Every upload moves the curve.</p>
+          <p className="text-xs text-muted-foreground mt-1.5">{allTimeReports} reports published and counting. Every upload moves the curve.</p>
         </div>
 
         {/* Funds: flagship achievement with performance chart */}
-        <div className="xl:col-span-4 rounded-xl border border-accent bg-accent text-accent-foreground p-4 flex flex-col min-h-[230px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '350ms' }}>
+        <div className="xl:col-span-4 rounded-xl border border-accent bg-accent text-accent-foreground p-4 flex flex-col min-h-[210px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '350ms' }}>
           <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /><h2 className="font-serif text-lg">Our funds, our pride</h2></div>
+            <div className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /><h2 className="font-serif text-xl">Our funds, our pride</h2><span className="text-xs text-accent-foreground/60 self-end pb-0.5">last 12 months of data</span></div>
             <div className="flex gap-4">
               {funds.map((f) => (
                 <div key={f.fund} className="text-right">
-                  <div className={`font-serif text-xl leading-none ${pctColor(f.ytd)}`}>{pct(f.ytd)}</div>
-                  <div className="text-[10px] text-accent-foreground/70">{fundLabels[f.fund]} YTD</div>
+                  <div className={`font-serif text-2xl leading-none ${pctColor(f.ytd)}`}>{pct(f.ytd)}</div>
+                  <div className="text-xs text-accent-foreground/70">{fundLabels[f.fund]} YTD</div>
                 </div>
               ))}
             </div>
@@ -316,10 +327,10 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={fundChart} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.15)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.7)' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.7)' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={40} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Legend formatter={(v) => <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>{fundLabels[v as Fund] ?? v}</span>} iconSize={9} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.8)' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.8)' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={42} />
+                  <Tooltip contentStyle={{ fontSize: 13, borderRadius: 8 }} />
+                  <Legend formatter={(v) => <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)' }}>{fundLabels[v as Fund] ?? v}</span>} iconSize={10} />
                   {activeFunds.map((f, i) => (
                     <Line key={f} type="monotone" dataKey={f} stroke={i === 0 ? '#6ee7b7' : '#93c5fd'} strokeWidth={2.5} dot={false} connectNulls animationDuration={1400} animationBegin={i * 250} />
                   ))}
@@ -332,10 +343,10 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
             )}
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[11px] text-accent-foreground/80">Run entirely by our members.</span>
+            <span className="text-xs text-accent-foreground/80">Run entirely by our members.</span>
             <div className="flex gap-3">
               {activeFunds.map((f) => (
-                <Link key={f} to={`/funds/${f}`} className="inline-flex items-center gap-1 text-[11px] text-accent-foreground/90 hover:text-accent-foreground underline underline-offset-2">
+                <Link key={f} to={`/funds/${f}`} className="inline-flex items-center gap-1 text-xs text-accent-foreground/90 hover:text-accent-foreground underline underline-offset-2">
                   {fundLabels[f]} page <ArrowUpRight className="h-3 w-3" />
                 </Link>
               ))}
@@ -344,7 +355,7 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
         </div>
       </div>
 
-      <p className="shrink-0 text-[11px] text-muted-foreground animate-in fade-in duration-700 fill-mode-both" style={{ animationDelay: '500ms' }}>
+      <p className="shrink-0 text-xs text-muted-foreground animate-in fade-in duration-700 fill-mode-both" style={{ animationDelay: '500ms' }}>
         Same numbers for every member, updated automatically. See something you can beat? That is the point. Workspace actions are logged for accountability and security.
       </p>
     </div>

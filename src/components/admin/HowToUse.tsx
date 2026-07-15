@@ -78,19 +78,22 @@ export default function HowToUse() {
       />
 
       <div className="space-y-8 font-body">
-        {/* Intro cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr,2fr,1.5fr] gap-3">
-          <div className="border border-separator rounded-lg p-4 flex gap-3">
-            <BookOpen className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">Everything below is generated from the workspace's live access rules since it always matches what you can actually do. You do not need to learn it all: use it as a reference, and look for the <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-separator text-[10px] align-middle">?</span> icons around the workspace for help in context.</p>
+        {/* Intro cards: quick orientation, not reading material. */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="border border-separator rounded-lg px-5 py-6 text-center">
+            <BookOpen className="h-10 w-10 text-accent mx-auto mb-3" strokeWidth={1.5} />
+            <div className="font-serif text-lg text-foreground mb-1">Always current</div>
+            <p className="text-sm text-muted-foreground">Built from your real permissions. Use the <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-separator text-[10px] align-middle">?</span> icons for help in place.</p>
           </div>
-          <div className="border border-separator rounded-lg p-4 flex gap-3">
-            <Sparkles className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">Prefer learning with AI? <span className="text-foreground">Download your manual</span> and paste or upload it into an AI assistant. Ask for a summary, a checklist for a specific task, or a step-by-step walkthrough in your own words.</p>
+          <div className="border border-separator rounded-lg px-5 py-6 text-center">
+            <Sparkles className="h-10 w-10 text-accent mx-auto mb-3" strokeWidth={1.5} />
+            <div className="font-serif text-lg text-foreground mb-1">Learn with AI</div>
+            <p className="text-sm text-muted-foreground">Download your manual and ask an AI assistant to walk you through it.</p>
           </div>
-          <div className="border border-separator rounded-lg p-4 flex gap-3">
-            <ShieldCheck className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">Actions you perform in the workspace are logged for accountability and security. The full record lives in Settings, Activity log.</p>
+          <div className="border border-separator rounded-lg px-5 py-6 text-center">
+            <ShieldCheck className="h-10 w-10 text-accent mx-auto mb-3" strokeWidth={1.5} />
+            <div className="font-serif text-lg text-foreground mb-1">Actions are logged</div>
+            <p className="text-sm text-muted-foreground">Every action is recorded in Settings, Activity log.</p>
           </div>
         </div>
 

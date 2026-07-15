@@ -24,7 +24,7 @@ const INTERVIEW_RULES = [
   'You may cancel your slot up to 90 minutes before it begins, from this page.',
   'After cancelling you can pick another available slot, but we cannot always guarantee that a cancelled interview can be rescheduled if none remain.',
   'Please book within 72 hours (3 days) of receiving your invitation email.',
-  'A short delay of 5–10 minutes may occur if a previous interview overruns — thank you for your patience.',
+  'A short delay of 5 to 10 minutes may occur if a previous interview overruns; thank you for your patience.',
 ];
 
 export default function InterviewCalendarCandidate() {

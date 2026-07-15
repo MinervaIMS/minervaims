@@ -132,7 +132,7 @@ const ApplicationSettings = () => {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Division-specific written questions are managed in the <span className="text-foreground">Form &amp; settings</span> subsection.
+          Division-specific written questions are managed in the <span className="text-foreground">Form &amp; Questions</span> subsection.
         </p>
       </div>
 

@@ -147,7 +147,7 @@ const NAV: NavSection[] = [
       { key: 'applications-screening', label: 'Candidates screening', allowed: (p) => p.can('applications-screening') },
       { key: 'applications-interview-calendar', label: 'Interview calendar', allowed: (p) => p.can('applications-interview-calendar') },
       { key: 'applications-joiners', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
-      { key: 'applications-form', label: 'Form & settings', allowed: (p) => p.can('applications-form') },
+      { key: 'applications-form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
     ],
   },
   {
@@ -707,7 +707,7 @@ const MinervaWorkspace = () => {
       case 'applications-joiners':
         return <NewJoiners />;
       case 'applications-form':
-        // "Form & settings" now also holds the division application Questions.
+        // "Form & Questions" holds the application form settings and the division questions.
         return <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-14 gap-y-12 items-start"><FormSettings /><QuestionsManagement /></div>;
       case 'applications-status':
         return <ApplicationStatus />;

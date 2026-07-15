@@ -83,13 +83,14 @@ function buildWorld(topo: any) {
 }
 
 /* ---- The globe engine (canvas, d3-geo orthographic) ----------------------- */
-function createGlobe(canvas: HTMLCanvasElement, t: any, world: any) {
+function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { autoRotate?: boolean; interactive?: boolean } = {}) {
   const ctx = canvas.getContext("2d")!;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const interactive = opts.interactive !== false;
 
   let rotate: [number, number] = [-EUROPE[0], -EUROPE[1] + 8];
   let zoom = 1, baseScale = 100;
-  let autoRotate = false, dragging = false, vLon = 0;
+  let autoRotate = !!opts.autoRotate, dragging = false, vLon = 0;
   let lastX = 0, lastY = 0;
   const mouse = { x: -1, y: -1 };
   let W = 0, H = 0, cx = 0, cy = 0, raf = 0;
@@ -353,15 +354,17 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any) {
   }
   function dblclick() { flyToEurope(); }
 
-  canvas.addEventListener("mousedown", down);
-  window.addEventListener("mousemove", move);
-  window.addEventListener("mouseup", up);
-  canvas.addEventListener("mouseleave", leave);
-  canvas.addEventListener("wheel", wheel, { passive: false });
-  canvas.addEventListener("touchstart", touchstart, { passive: false });
-  canvas.addEventListener("touchmove", touchmove, { passive: false });
-  window.addEventListener("touchend", up);
-  canvas.addEventListener("dblclick", dblclick);
+  if (interactive) {
+    canvas.addEventListener("mousedown", down);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    canvas.addEventListener("mouseleave", leave);
+    canvas.addEventListener("wheel", wheel, { passive: false });
+    canvas.addEventListener("touchstart", touchstart, { passive: false });
+    canvas.addEventListener("touchmove", touchmove, { passive: false });
+    window.addEventListener("touchend", up);
+    canvas.addEventListener("dblclick", dblclick);
+  }
   const ro = "ResizeObserver" in window ? new ResizeObserver(resize) : null;
   ro?.observe(canvas);
   window.addEventListener("resize", resize);
@@ -375,18 +378,44 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any) {
     destroy: () => {
       cancelAnimationFrame(raf);
       ro?.disconnect();
-      canvas.removeEventListener("mousedown", down);
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-      canvas.removeEventListener("mouseleave", leave);
-      canvas.removeEventListener("wheel", wheel);
-      canvas.removeEventListener("touchstart", touchstart);
-      canvas.removeEventListener("touchmove", touchmove);
-      window.removeEventListener("touchend", up);
-      canvas.removeEventListener("dblclick", dblclick);
+      if (interactive) {
+        canvas.removeEventListener("mousedown", down);
+        window.removeEventListener("mousemove", move);
+        window.removeEventListener("mouseup", up);
+        canvas.removeEventListener("mouseleave", leave);
+        canvas.removeEventListener("wheel", wheel);
+        canvas.removeEventListener("touchstart", touchstart);
+        canvas.removeEventListener("touchmove", touchmove);
+        window.removeEventListener("touchend", up);
+        canvas.removeEventListener("dblclick", dblclick);
+      }
       window.removeEventListener("resize", resize);
     },
   };
+}
+
+/* ---- Compact variant ------------------------------------------------------
+   The same globe (same geography, arcs and light pulses) as a decorative,
+   slowly self-rotating miniature for the workspace Dashboard's alumni card.
+   Non-interactive by design: it is an ornament, not a control. */
+export function MiniAlumniGlobe({ className = "" }: { className?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    let api: any = null;
+    fetch("https://unpkg.com/world-atlas@2/countries-110m.json")
+      .then((r) => r.json())
+      .then((topo) => {
+        if (disposed || !canvasRef.current) return;
+        const world = buildWorld(topo);
+        api = createGlobe(canvasRef.current, THEME, world, { autoRotate: true, interactive: false });
+      })
+      .catch(() => { /* stay empty on network failure */ });
+    return () => { disposed = true; api?.destroy?.(); };
+  }, []);
+
+  return <canvas ref={canvasRef} className={`block h-full w-full pointer-events-none ${className}`} aria-hidden />;
 }
 
 /* ---- React component ------------------------------------------------------ */

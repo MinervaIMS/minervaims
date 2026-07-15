@@ -18,6 +18,8 @@ import {
   DIVISION_REQUIRED_TYPES, ARCHIVED_TYPES,
   type EventType, type RegistrationAudience,
 } from '@/lib/events-api';
+import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
+import { useEffect } from 'react';
 
 // Only the five core research divisions organise events (Media and Operations
 // do not; Operations events are association-wide, not divisional).
@@ -42,6 +44,12 @@ export default function EventCreate() {
   const divisionRequired = DIVISION_REQUIRED_TYPES.includes(form.event_type);
   const willArchive = ARCHIVED_TYPES.includes(form.event_type);
 
+  // Exam session breaks: no event can be scheduled inside one (the database
+  // enforces this too; the pre-check keeps the message friendly).
+  const [examSessions, setExamSessions] = useState<ExamSession[]>([]);
+  useEffect(() => { listExamSessions().then(setExamSessions).catch(() => {}); }, []);
+  const examBreak = form.start_local ? examSessionOn(examSessions, form.start_local.slice(0, 10)) : undefined;
+
   const upload = async (file: File) => {
     setUploading(true);
     try { const url = await uploadEventPoster(file); setForm((f) => ({ ...f, poster_url: url })); toast({ title: 'Poster uploaded' }); }
@@ -53,6 +61,7 @@ export default function EventCreate() {
     if (!form.title.trim() || !form.start_local) { toast({ title: 'Title and start time are required', variant: 'destructive' }); return; }
     if (!form.online && !form.place.trim()) { toast({ title: 'Add a location (or mark the event online)', variant: 'destructive' }); return; }
     if (divisionRequired && !form.division) { toast({ title: 'Choose the organising division', description: 'This event type requires a division.', variant: 'destructive' }); return; }
+    if (examBreak) { toast({ title: 'Exam session break', description: `${examBreak.label}: the calendar does not accept events between ${examBreak.start_date} and ${examBreak.end_date}. Pick a date when the community can attend.`, variant: 'destructive' }); return; }
     setSaving(true);
     try {
       await saveEvent(session, {
@@ -97,6 +106,13 @@ export default function EventCreate() {
           <div className="space-y-1"><Label>Starts *</Label><Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} /></div>
           <div className="space-y-1"><Label>Ends</Label><Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} /></div>
         </div>
+
+        {examBreak && (
+          <p className="text-sm text-destructive border border-destructive/30 bg-destructive/5 px-3 py-2">
+            This date falls inside the exam session break "{examBreak.label}" ({examBreak.start_date} to {examBreak.end_date}).
+            The calendar does not accept events during exam breaks; choose a date when the community can attend.
+          </p>
+        )}
 
         <div className="flex items-center justify-between border border-separator p-3">
           <Label htmlFor="online">Online event</Label>

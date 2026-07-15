@@ -7,6 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
+import { logActivity } from '@/lib/activity-log';
 import { Plus, Edit, Trash2, Search, Loader2, Download } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { Progress } from '@/components/ui/progress';
@@ -28,7 +31,7 @@ interface AlumniRecord {
   name: string;
   surname: string;
   graduation_year: number;
-  company: string;
+  company: string | null;
   city: string | null;
   linkedin_url: string | null;
   job_area: string | null;
@@ -37,6 +40,8 @@ interface AlumniRecord {
 }
 
 export default function AlumniManagement() {
+  const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,7 +122,7 @@ export default function AlumniManagement() {
       name: record.name,
       surname: record.surname,
       graduation_year: record.graduation_year,
-      company: record.company,
+      company: record.company || '',
       city: record.city || '',
       linkedin_url: record.linkedin_url || '',
       job_area: record.job_area || '',
@@ -129,10 +134,10 @@ export default function AlumniManagement() {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!formData.name.trim() || !formData.surname.trim() || !formData.company.trim()) {
+    if (!formData.name.trim() || !formData.surname.trim()) {
       toast({
         title: "Error",
-        description: "Name, surname, and company are required",
+        description: "Name and surname are required",
         variant: "destructive",
       });
       return;
@@ -145,7 +150,7 @@ export default function AlumniManagement() {
       name: formData.name.trim(),
       surname: formData.surname.trim(),
       graduation_year: formData.graduation_year,
-      company: formData.company.trim(),
+      company: formData.company.trim() || null,
       city: formData.city.trim() || null,
       linkedin_url: formData.linkedin_url.trim() || null,
       job_area: formData.job_area.trim() || null,
@@ -192,6 +197,7 @@ export default function AlumniManagement() {
       }
 
       toast({ title: "Success", description: `Alumni ${editingAlumni ? 'updated' : 'created'} successfully` });
+      logActivity(session, primaryRole, { action: editingAlumni ? 'update' : 'create', section: 'People', subsection: 'Alumni', entityType: 'alumnus', entityName: `${alumniData.name} ${alumniData.surname}` });
       // Refresh to get real data
       fetchAlumni();
     } catch (error) {
@@ -224,6 +230,8 @@ export default function AlumniManagement() {
       }
 
       toast({ title: "Success", description: "Alumni deleted successfully" });
+      const rec = previousAlumni.find((a) => a.id === alumniId);
+      logActivity(session, primaryRole, { action: 'delete', section: 'People', subsection: 'Alumni', entityType: 'alumnus', entityId: alumniId, entityName: rec ? `${rec.name} ${rec.surname}` : null });
     } catch (error) {
       console.error('Delete error:', error);
       setAlumni(previousAlumni);
@@ -237,7 +245,7 @@ export default function AlumniManagement() {
     return alumni.filter(a => (
       a.name.toLowerCase().includes(query) ||
       a.surname.toLowerCase().includes(query) ||
-      a.company.toLowerCase().includes(query) ||
+      (a.company?.toLowerCase().includes(query) ?? false) ||
       a.city?.toLowerCase().includes(query)
     ));
   }, [alumni, searchQuery]);
@@ -361,13 +369,12 @@ export default function AlumniManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company" className="font-body">Company *</Label>
+                <Label htmlFor="company" className="font-body">Company</Label>
                 <Input
                   id="company"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   placeholder="Current company"
-                  required
                 />
               </div>
 
@@ -387,7 +394,7 @@ export default function AlumniManagement() {
                   id="city"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  placeholder="City"
+                  placeholder="e.g. Milan, Italy"
                 />
               </div>
 
@@ -497,7 +504,7 @@ export default function AlumniManagement() {
                           {record.job_area || '-'}
                         </span>
                         <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
-                          {record.company}
+                          {record.company || '-'}
                         </span>
                         <span className="font-body text-body text-muted-foreground w-[20%] truncate text-left">
                           {record.city || '-'}
@@ -520,7 +527,7 @@ export default function AlumniManagement() {
                           )}
                         </div>
                         <p className="font-body text-small text-muted-foreground">
-                          {record.company}{record.city ? ` • ${record.city}` : ''}
+                          {record.company || '-'}{record.city ? ` • ${record.city}` : ''}
                         </p>
                         {record.job_area && (
                           <p className="font-body text-xs text-muted-foreground/70">

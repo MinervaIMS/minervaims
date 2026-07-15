@@ -6,13 +6,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2, Download, Search, Upload, User as UserIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Download, Search, Upload, User as UserIcon, EyeOff, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import {
   divisionLabels, roleLabel as composeRoleLabel, memberRank, normalizeRole,
+  divisionsForRole, roleNeedsDivision, isBoardRole,
   type AppRole, type OrgDivision,
 } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
@@ -38,18 +39,17 @@ import {
   type MemberRow, type MemberInput,
 } from '@/lib/members-api';
 
-const DIVISION_OPTIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations', 'board', 'none'];
-
+// Roles assignable from the roster. This is the SAME canonical set used in
+// Settings → Users (minus access-only states like admin/pending), so the two
+// role-assignment surfaces always agree. Advisor kinds are assigned through
+// the alumni-registration flow below, never as a bare dropdown pick.
 const ROLE_OPTIONS: AppRole[] = [
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
-  'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
-  'head_of_operations', 'advisor', 'member',
+  'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
+  'media_analyst', 'head_of_operations', 'advisor', 'silent_advisor', 'member',
 ];
 
 const MEMBERSHIP_OPTIONS = ['active', 'on_exchange', 'one_semester_pause', 'expelled'] as const;
-
-// Board roles get the extra "keep as silent advisor" option when leaving.
-const BOARD_ROLES: AppRole[] = ['president', 'vice_president', 'head_of_asset_management', 'head_of_division', 'head_of_media', 'head_of_operations'];
 
 const EMPTY: MemberInput = {
   first_name: '', surname: '', email: '', phone: '', linkedin_url: '', photo_url: '',
@@ -57,8 +57,10 @@ const EMPTY: MemberInput = {
   fee_status: 'unpaid', is_public: true,
 };
 
+const ADVISOR_ROLES: AppRole[] = ['advisor', 'silent_advisor'];
+
 interface Props {
-  /** When true, render the Silent Advisors variant instead of active members. */
+  /** When true, render the Advisors variant instead of active members. */
   silentAdvisors?: boolean;
 }
 
@@ -67,6 +69,8 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const access = useAccess();
   const { toast } = useToast();
   const canEdit = access.canEdit('people-advisors') || access.canEdit('people-members');
+  // Removing a member's photo is reserved for the executive level.
+  const canRemovePhoto = ['admin', 'president', 'vice_president'].includes(normalizeRole(access.primaryRole ?? 'member'));
 
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,15 +82,19 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<MemberInput>(EMPTY);
+  const [originalRole, setOriginalRole] = useState<AppRole | null>(null);
   const [saving, setSaving] = useState(false);
   const [expelConfirm, setExpelConfirm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Leave flow (move to alumni).
+  // Leave flow (move to alumni), also reused when a member is made an
+  // advisor: every advisor is a role assignment on a registered alumnus.
   const [leaveTarget, setLeaveTarget] = useState<MemberRow | null>(null);
-  const [leaveForm, setLeaveForm] = useState({ graduation_year: String(new Date().getFullYear()), company: '', city: '' });
+  const [leaveForm, setLeaveForm] = useState({ graduation_year: String(new Date().getFullYear()), company: '', city: '', job_area: '' });
   const [leaving, setLeaving] = useState(false);
+  // When set, the leave dialog is running as the "make advisor" step.
+  const [advisorKind, setAdvisorKind] = useState<'advisor' | 'silent_advisor' | null>(null);
 
   // Semester member register — the official snapshot of who belonged to the
   // association each semester, taken when that semester's fee collection
@@ -122,16 +130,21 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     })();
   }, [silentAdvisors]);
 
-  const isSilent = (m: MemberRow) => m.role === 'silent_advisor' || m.membership_status === 'silent_advisor';
+  // The Advisors page shows BOTH advisor kinds; silent ones carry a marker.
+  const isAdvisorRow = (m: MemberRow) =>
+    ADVISOR_ROLES.includes(normalizeRole(m.role)) || m.membership_status === 'silent_advisor';
+  const isSilent = (m: MemberRow) => normalizeRole(m.role) === 'silent_advisor' || m.membership_status === 'silent_advisor';
 
   // The base set for this view (before column filters), used to build filter options.
   const base = useMemo(() => members
     .filter((m) => m.role !== 'admin')
-    .filter((m) => (silentAdvisors ? isSilent(m) : !isSilent(m))), [members, silentAdvisors]);
+    .filter((m) => (silentAdvisors ? isAdvisorRow(m) : !isAdvisorRow(m))), [members, silentAdvisors]);
 
   const divisionOptions = useMemo(() => {
     const present = new Set(base.map((m) => m.division));
-    return DIVISION_OPTIONS.filter((d) => present.has(d)).map((d) => ({ value: d, label: d === 'none' ? 'None' : divisionLabels[d] }));
+    return ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations', 'board', 'none']
+      .filter((d) => present.has(d as OrgDivision))
+      .map((d) => ({ value: d, label: d === 'none' ? 'None' : divisionLabels[d as OrgDivision] }));
   }, [base]);
   const roleOptions = useMemo(() => {
     const present = [...new Set(base.map((m) => normalizeRole(m.role)))];
@@ -159,19 +172,32 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
   // Only silent advisors can be created manually; members register themselves.
   const openCreate = () => {
     setEditingId(null);
-    setForm({ ...EMPTY, role: 'silent_advisor', membership_status: 'silent_advisor', account_status: 'approved', is_public: false });
+    setOriginalRole(null);
+    setForm({ ...EMPTY, role: 'silent_advisor', division: 'none', membership_status: 'silent_advisor', account_status: 'approved', is_public: false });
     setDialogOpen(true);
   };
   const openEdit = (m: MemberRow) => {
     setEditingId(m.id);
+    setOriginalRole(normalizeRole(m.role));
     setForm({
       id: m.id, first_name: m.first_name, surname: m.surname, email: m.email ?? '',
       phone: m.phone ?? '', linkedin_url: m.linkedin_url ?? '', photo_url: m.photo_url ?? '',
-      division: m.division, role: m.role,
+      division: m.division, role: normalizeRole(m.role),
       membership_status: m.membership_status === 'silent_advisor' ? 'active' : m.membership_status,
       account_status: m.account_status, fee_status: m.fee_status, is_public: m.is_public,
     });
     setDialogOpen(true);
+  };
+
+  // Changing the role re-scopes the division to what that role allows —
+  // the same pairing rules as Settings → Users (and the server re-checks).
+  const changeFormRole = (role: AppRole) => {
+    setForm((f) => {
+      const options = divisionsForRole(role);
+      if (options.length === 0) return { ...f, role, division: 'none' };
+      if (options.length === 1) return { ...f, role, division: options[0] };
+      return { ...f, role, division: options.includes(f.division) ? f.division : options[0] };
+    });
   };
 
   const handleUpload = async (file: File) => {
@@ -187,12 +213,12 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
     }
   };
 
-  const doSave = async () => {
+  const doSave = async (roleOverride?: AppRole) => {
     setSaving(true);
     try {
-      const payload: MemberInput = silentAdvisors
-        ? { ...form, role: 'silent_advisor', membership_status: 'silent_advisor', is_public: false }
-        : form;
+      const payload: MemberInput = silentAdvisors && !editingId
+        ? { ...form, role: 'silent_advisor', division: 'none', membership_status: 'silent_advisor', is_public: false }
+        : { ...form, role: roleOverride ?? form.role };
       await saveMember(session, payload);
       logActivity(session, access.primaryRole, { action: form.id ? 'update' : 'create', section: 'People', subsection: silentAdvisors ? 'Advisors' : 'Members', entityType: 'member', entityName: `${form.first_name} ${form.surname}` });
       toast({ title: editingId ? 'Updated' : 'Advisor added' });
@@ -211,29 +237,60 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
       toast({ title: 'Name required', description: 'First name and surname are required.', variant: 'destructive' });
       return;
     }
+    const newRole = normalizeRole(form.role);
+    // Becoming an advisor is not a plain role pick: every advisor is a role
+    // assignment on a registered ALUMNUS, so the alumni-registration step is
+    // always requested first (board members leaving is the typical case).
+    if (!silentAdvisors && editingId && ADVISOR_ROLES.includes(newRole) && originalRole && !ADVISOR_ROLES.includes(originalRole)) {
+      const target = members.find((m) => m.id === editingId);
+      if (target) {
+        setDialogOpen(false);
+        setAdvisorKind(newRole as 'advisor' | 'silent_advisor');
+        setLeaveTarget(target);
+        setLeaveForm({ graduation_year: String(new Date().getFullYear()), company: '', city: '', job_area: '' });
+        return;
+      }
+    }
     // Expelling is destructive: confirm first.
     if (!silentAdvisors && form.membership_status === 'expelled') { setExpelConfirm(true); return; }
     await doSave();
   };
 
   const openLeave = (m: MemberRow) => {
+    setAdvisorKind(null);
     setLeaveTarget(m);
-    setLeaveForm({ graduation_year: String(new Date().getFullYear()), company: '', city: '' });
+    setLeaveForm({ graduation_year: String(new Date().getFullYear()), company: '', city: '', job_area: '' });
   };
 
-  const doLeave = async (keepAsSilentAdvisor: boolean) => {
+  const doLeave = async (keepRole: 'advisor' | 'silent_advisor' | null) => {
     if (!leaveTarget) return;
-    if (!leaveForm.company.trim()) { toast({ title: 'Please add their current company', variant: 'destructive' }); return; }
+    // A silent advisor can be registered before their company is known; every
+    // other path requires the current company for the alumni directory.
+    if (keepRole !== 'silent_advisor' && !leaveForm.company.trim()) {
+      toast({ title: 'Please add their current company', variant: 'destructive' });
+      return;
+    }
     const year = parseInt(leaveForm.graduation_year, 10);
     if (!year) { toast({ title: 'Please add a graduation year', variant: 'destructive' }); return; }
     setLeaving(true);
     try {
-      logActivity(session, access.primaryRole, { action: 'update', section: 'People', subsection: 'Members', entityType: 'member', entityId: leaveTarget.id, entityName: `${leaveTarget.first_name} ${leaveTarget.surname}`, details: { moved_to: 'alumni' } });
-      await moveMemberToAlumni(session, { id: leaveTarget.id, graduation_year: year, company: leaveForm.company.trim(), city: leaveForm.city.trim() || null, keep_as_silent_advisor: keepAsSilentAdvisor });
-      toast({ title: keepAsSilentAdvisor ? 'Moved to alumni and kept as silent advisor' : 'Moved to alumni' });
+      logActivity(session, access.primaryRole, { action: 'update', section: 'People', subsection: 'Members', entityType: 'member', entityId: leaveTarget.id, entityName: `${leaveTarget.first_name} ${leaveTarget.surname}`, details: { moved_to: 'alumni', kept_as: keepRole ?? undefined } });
+      await moveMemberToAlumni(session, {
+        id: leaveTarget.id, graduation_year: year,
+        company: leaveForm.company.trim() || null,
+        city: leaveForm.city.trim() || null,
+        job_area: leaveForm.job_area.trim() || null,
+        keep_role: keepRole ?? undefined,
+      });
+      toast({
+        title: keepRole === 'silent_advisor' ? 'Registered as alumnus and kept as silent advisor'
+          : keepRole === 'advisor' ? 'Registered as alumnus and appointed advisor'
+          : 'Moved to alumni',
+      });
       setLeaveTarget(null);
+      setAdvisorKind(null);
       await load();
-    } catch (e) { toast({ title: 'Could not move to alumni', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    } catch (e) { toast({ title: 'Could not complete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLeaving(false); }
   };
 
@@ -262,16 +319,31 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
       { key: 'division', header: 'Division' }, { key: 'role', header: 'Role' },
       { key: 'phone', header: 'Phone' }, { key: 'email', header: 'Email' },
       { key: 'linkedin_url', header: 'LinkedIn' }, { key: 'membership_status', header: 'Membership' },
-    ], silentAdvisors ? 'silent-advisors.csv' : 'members-register.csv');
+    ], silentAdvisors ? 'advisors.csv' : 'members-register.csv');
     toast({ title: 'Download started' });
   };
 
   const title = silentAdvisors ? 'Advisors' : 'Members';
   const description = silentAdvisors
-    ? 'Silent Advisors - people with workspace access who are not shown on the public Members page.'
+    ? 'Advisors of the association: appointed alumni who assist the board. Advisors appear on the public Members page; silent advisors keep workspace access without any public visibility.'
     : 'The association members register. To join, a person registers with their university email; you cannot add members by hand. Removing a member offers to move them to the alumni section.';
 
-  const targetIsBoard = leaveTarget ? BOARD_ROLES.includes(normalizeRole(leaveTarget.role)) : false;
+  const targetIsBoard = leaveTarget ? isBoardRole(leaveTarget.role) : false;
+  const roleIsAdvisorPick = ADVISOR_ROLES.includes(normalizeRole(form.role));
+
+  // Semester registers show the board of directors first, then the members.
+  const registerGroups = (rowsIn: SemesterMemberRow[]) => {
+    const rank = (r: SemesterMemberRow) => memberRank((r.role ?? 'member') as AppRole);
+    const sorted = [...rowsIn].sort((a, b) => {
+      const d = rank(a) - rank(b);
+      if (d !== 0) return d;
+      return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
+    });
+    return {
+      board: sorted.filter((r) => isBoardRole((r.role ?? 'member') as AppRole)),
+      others: sorted.filter((r) => !isBoardRole((r.role ?? 'member') as AppRole)),
+    };
+  };
 
   return (
     <div>
@@ -282,7 +354,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
           </Button>
           {canEdit && silentAdvisors && (
             <Button className="font-body" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-2" />Add advisor
+              <Plus className="h-4 w-4 mr-2" />Add silent advisor
             </Button>
           )}
         </>
@@ -324,8 +396,15 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                       {m.photo_url ? <img src={m.photo_url} alt="" className="w-full h-full object-cover" /> : <UserIcon className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-foreground whitespace-nowrap">{m.first_name} {m.surname}</td>
-                  <td className="px-3 py-2">{m.division !== 'none' ? divisionLabels[m.division] : '-'}</td>
+                  <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                    {m.first_name} {m.surname}
+                    {silentAdvisors && isSilent(m) && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 bg-muted text-muted-foreground align-middle" title="Silent advisor: not shown on the public website">
+                        <EyeOff className="h-3 w-3" />silent
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">{m.division !== 'none' && m.division !== 'board' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{m.phone || '-'}</td>
                   <td className="px-3 py-2">{m.email || '-'}</td>
@@ -341,7 +420,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">
                         <Button variant="outline" size="icon" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="destructive" size="icon" onClick={() => (silentAdvisors ? setLeaveTarget(m) : openLeave(m))}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="destructive" size="icon" onClick={() => (silentAdvisors ? (setAdvisorKind(null), setLeaveTarget(m)) : openLeave(m))}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </td>
                   )}
@@ -360,36 +439,52 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         <div className="mt-10">
           <h3 className="font-serif text-lg text-accent mb-1 inline-flex items-center gap-2">Semester registers <HelpDot page="people-members" topic="registers" /></h3>
           <p className="font-body text-sm text-muted-foreground mb-3">
-            Who officially belonged to the association, semester by semester. Each register is frozen when that semester's membership-fee collection closes and can no longer change.
+            Who officially belonged to the association, semester by semester. Each register is frozen when that semester's membership-fee collection closes and can no longer change. The board of directors is listed first, then the members.
           </p>
           <div className="space-y-2">
-            {registers.map((g) => (
-              <div key={g.semester_key} className="border border-separator rounded-lg">
-                <button type="button" className="w-full flex items-center justify-between px-4 py-2.5 font-body text-sm"
-                  onClick={() => setOpenRegister(openRegister === g.semester_key ? null : g.semester_key)}>
-                  <span className="text-foreground font-serif">{g.semester_label}</span>
-                  <span className="text-muted-foreground text-xs">{g.rows.length} members {openRegister === g.semester_key ? '▾' : '▸'}</span>
-                </button>
-                {openRegister === g.semester_key && (
-                  <div className="border-t border-separator overflow-x-auto">
-                    <table className="w-full text-left font-body text-sm">
-                      <thead className="bg-muted/40 text-muted-foreground">
-                        <tr><th className="px-3 py-1.5 font-normal">Name</th><th className="px-3 py-1.5 font-normal">Role</th><th className="px-3 py-1.5 font-normal">Division</th></tr>
-                      </thead>
-                      <tbody>
-                        {g.rows.map((r, i) => (
-                          <tr key={i} className="border-t border-separator">
-                            <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
-                            <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
-                            <td className="px-3 py-1.5">{r.division && r.division !== 'none' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ))}
+            {registers.map((g) => {
+              const groups = registerGroups(g.rows);
+              return (
+                <div key={g.semester_key} className="border border-separator rounded-lg">
+                  <button type="button" className="w-full flex items-center justify-between px-4 py-2.5 font-body text-sm"
+                    onClick={() => setOpenRegister(openRegister === g.semester_key ? null : g.semester_key)}>
+                    <span className="text-foreground font-serif">{g.semester_label}</span>
+                    <span className="text-muted-foreground text-xs">{g.rows.length} members {openRegister === g.semester_key ? '▾' : '▸'}</span>
+                  </button>
+                  {openRegister === g.semester_key && (
+                    <div className="border-t border-separator overflow-x-auto">
+                      <table className="w-full text-left font-body text-sm">
+                        <thead className="bg-muted/40 text-muted-foreground">
+                          <tr><th className="px-3 py-1.5 font-normal">Name</th><th className="px-3 py-1.5 font-normal">Role</th><th className="px-3 py-1.5 font-normal">Division</th></tr>
+                        </thead>
+                        <tbody>
+                          {groups.board.length > 0 && (
+                            <tr><td colSpan={3} className="px-3 py-1.5 bg-accent/5 text-accent font-serif uppercase tracking-wider text-[11px]">Board of directors</td></tr>
+                          )}
+                          {groups.board.map((r, i) => (
+                            <tr key={`b${i}`} className="border-t border-separator">
+                              <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
+                              <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
+                              <td className="px-3 py-1.5">{r.division && r.division !== 'none' && r.division !== 'board' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
+                            </tr>
+                          ))}
+                          {groups.others.length > 0 && (
+                            <tr><td colSpan={3} className="px-3 py-1.5 bg-muted/40 text-muted-foreground font-serif uppercase tracking-wider text-[11px]">Members</td></tr>
+                          )}
+                          {groups.others.map((r, i) => (
+                            <tr key={`m${i}`} className="border-t border-separator">
+                              <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
+                              <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
+                              <td className="px-3 py-1.5">{r.division && r.division !== 'none' && r.division !== 'board' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -406,9 +501,16 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
               <div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-                <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                  {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><Upload className="h-4 w-4 mr-2" />Photo</>}
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                    {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><Upload className="h-4 w-4 mr-2" />Photo</>}
+                  </Button>
+                  {canRemovePhoto && form.photo_url && (
+                    <Button variant="outline" size="sm" onClick={() => setForm((p) => ({ ...p, photo_url: '' }))} title="Remove the current photo">
+                      <X className="h-4 w-4 mr-2" />Remove photo
+                    </Button>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground mt-2">A square photo works best.</p>
               </div>
             </div>
@@ -424,18 +526,39 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
                 <>
                   <div className="space-y-1">
                     <Label>Role</Label>
-                    <Select value={normalizeRole(form.role)} onValueChange={(v) => setForm({ ...form, role: v as AppRole })}>
+                    <Select value={normalizeRole(form.role)} onValueChange={(v) => changeFormRole(v as AppRole)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{ROLE_OPTIONS.map((r) => <SelectItem key={r} value={r}>{composeRoleLabel(r, form.division)}</SelectItem>)}</SelectContent>
+                      <SelectContent>{ROLE_OPTIONS.map((r) => <SelectItem key={r} value={r}>{composeRoleLabel(r, null)}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
                     <Label>Division</Label>
-                    <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
+                    <Select
+                      value={roleNeedsDivision(form.role) ? form.division : 'none'}
+                      onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}
+                      disabled={!roleNeedsDivision(form.role) || divisionsForRole(form.role).length === 1}
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{DIVISION_OPTIONS.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? '-' : divisionLabels[d]}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {roleNeedsDivision(form.role)
+                          ? divisionsForRole(form.role).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)
+                          : <SelectItem value="none">-</SelectItem>}
+                      </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {!roleNeedsDivision(form.role)
+                        ? 'This role carries no division (the board is not a division).'
+                        : divisionsForRole(form.role).length === 1
+                          ? `${composeRoleLabel(form.role, null)} always belongs to ${divisionLabels[divisionsForRole(form.role)[0]]}.`
+                          : 'Heads of a division sit on the board and lead their division.'}
+                    </p>
                   </div>
+                  {roleIsAdvisorPick && (
+                    <p className="col-span-2 text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                      Advisors are appointed alumni. Saving with this role first asks you to register this person as
+                      an alumnus (graduation year, company, city), then applies the advisor role.
+                    </p>
+                  )}
                   <div className="space-y-1">
                     <Label>Membership</Label>
                     <Select value={form.membership_status as string} onValueChange={(v) => setForm({ ...form, membership_status: v as MemberInput['membership_status'] })}>
@@ -461,19 +584,26 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Leave / move-to-alumni dialog */}
-      <Dialog open={!!leaveTarget} onOpenChange={(o) => !o && setLeaveTarget(null)}>
+      {/* Leave / move-to-alumni dialog. Also runs the "appoint advisor" step:
+          the person is registered as an alumnus, then keeps the advisor role. */}
+      <Dialog open={!!leaveTarget} onOpenChange={(o) => { if (!o) { setLeaveTarget(null); setAdvisorKind(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">Remove {leaveTarget?.first_name} {leaveTarget?.surname}</DialogTitle>
+            <DialogTitle className="font-serif">
+              {advisorKind
+                ? `Appoint ${leaveTarget?.first_name} ${leaveTarget?.surname} as ${advisorKind === 'advisor' ? 'advisor' : 'silent advisor'}`
+                : `Remove ${leaveTarget?.first_name} ${leaveTarget?.surname}`}
+            </DialogTitle>
             <DialogDescription className="font-body">
-              {silentAdvisors
-                ? 'Remove this silent advisor from the workspace.'
-                : 'A member leaving usually becomes an alumnus. Add a few details to move them to the alumni directory - their phone and email are kept privately for the association only.'}
+              {advisorKind
+                ? 'Every advisor is a role assignment on a registered alumnus. Complete the alumni details; the advisor role is applied right after.'
+                : silentAdvisors
+                  ? 'Remove this advisor from the workspace.'
+                  : 'A member leaving usually becomes an alumnus. Add a few details to move them to the alumni directory - their phone and email are kept privately for the association only.'}
             </DialogDescription>
           </DialogHeader>
 
-          {silentAdvisors ? (
+          {silentAdvisors && !advisorKind ? (
             <div className="flex gap-3 font-body">
               <Button variant="destructive" className="flex-1" disabled={leaving} onClick={doJustRemove}>{leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove'}</Button>
               <Button variant="outline" onClick={() => setLeaveTarget(null)}>Cancel</Button>
@@ -482,26 +612,48 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
             <div className="space-y-4 font-body">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label>Graduation year</Label><Input value={leaveForm.graduation_year} onChange={(e) => setLeaveForm({ ...leaveForm, graduation_year: e.target.value })} placeholder="e.g. 2026" /></div>
-                <div className="space-y-1"><Label>Current company</Label><Input value={leaveForm.company} onChange={(e) => setLeaveForm({ ...leaveForm, company: e.target.value })} placeholder="e.g. Goldman Sachs" /></div>
-                <div className="space-y-1 col-span-2"><Label>City (optional)</Label><Input value={leaveForm.city} onChange={(e) => setLeaveForm({ ...leaveForm, city: e.target.value })} placeholder="e.g. London" /></div>
+                <div className="space-y-1">
+                  <Label>Current company{advisorKind === 'silent_advisor' ? ' (optional)' : ''}</Label>
+                  <Input value={leaveForm.company} onChange={(e) => setLeaveForm({ ...leaveForm, company: e.target.value })} placeholder="e.g. Goldman Sachs" />
+                </div>
+                <div className="space-y-1"><Label>Job area (optional)</Label><Input value={leaveForm.job_area} onChange={(e) => setLeaveForm({ ...leaveForm, job_area: e.target.value })} placeholder="e.g. Investment Banking" /></div>
+                <div className="space-y-1"><Label>City (optional)</Label><Input value={leaveForm.city} onChange={(e) => setLeaveForm({ ...leaveForm, city: e.target.value })} placeholder="e.g. Milan, Italy" /></div>
               </div>
 
-              <Button className="w-full" disabled={leaving} onClick={() => doLeave(false)}>
-                {leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Move to alumni'}
-              </Button>
-
-              {targetIsBoard && (
-                <div className="border border-separator p-3 space-y-2">
-                  <Button variant="outline" className="w-full" disabled={leaving} onClick={() => doLeave(true)}>Move to alumni and keep as silent advisor</Button>
+              {advisorKind ? (
+                <>
+                  <Button className="w-full" disabled={leaving} onClick={() => doLeave(advisorKind)}>
+                    {leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : advisorKind === 'advisor' ? 'Register as alumnus and appoint advisor' : 'Register as alumnus and keep as silent advisor'}
+                  </Button>
                   <p className="text-xs text-muted-foreground">
-                    A silent advisor is no longer an active member and is not shown in the public Members section, but keeps read-only access to the workspace: they can see what is happening without editing anything.
+                    {advisorKind === 'advisor'
+                      ? 'An advisor appears on the public Members page and keeps consulting access to the workspace.'
+                      : 'A silent advisor is not shown anywhere on the public website, but keeps consulting access to the workspace. The company can be added later from the Alumni page.'}
                   </p>
-                </div>
-              )}
+                </>
+              ) : (
+                <>
+                  <Button className="w-full" disabled={leaving} onClick={() => doLeave(null)}>
+                    {leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Move to alumni'}
+                  </Button>
 
-              <button type="button" className="text-xs text-muted-foreground underline w-full text-center" disabled={leaving} onClick={doJustRemove}>
-                Remove without adding to alumni
-              </button>
+                  {targetIsBoard && (
+                    <div className="border border-separator p-3 space-y-2">
+                      <Button variant="outline" className="w-full" disabled={leaving} onClick={() => doLeave('silent_advisor')}>Move to alumni and keep as silent advisor</Button>
+                      <Button variant="outline" className="w-full" disabled={leaving} onClick={() => doLeave('advisor')}>Move to alumni and appoint as advisor</Button>
+                      <p className="text-xs text-muted-foreground">
+                        Advisors keep consulting access to the workspace. A public advisor is shown on the Members
+                        page; a silent advisor is not shown anywhere on the public website. For a silent advisor the
+                        company can be left empty and added later.
+                      </p>
+                    </div>
+                  )}
+
+                  <button type="button" className="text-xs text-muted-foreground underline w-full text-center" disabled={leaving} onClick={doJustRemove}>
+                    Remove without adding to alumni
+                  </button>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
@@ -518,7 +670,7 @@ export default function MembersManagement({ silentAdvisors = false }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={doSave} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Expel member'}</AlertDialogAction>
+            <AlertDialogAction onClick={() => doSave()} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Expel member'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

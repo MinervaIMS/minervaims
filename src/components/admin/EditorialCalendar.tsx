@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
+import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
@@ -28,6 +30,7 @@ const platformColor = (p: EditorialPlatform) =>
 
 export default function EditorialCalendar() {
   const { session } = useAuth();
+  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [items, setItems] = useState<EditorialItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,14 +86,22 @@ export default function EditorialCalendar() {
   const save = async () => {
     if (!form.title.trim()) { toast({ title: 'Title is required', variant: 'destructive' }); return; }
     setSaving(true);
-    try { await saveEditorial(session, form); toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load(); }
+    try {
+      await saveEditorial(session, form);
+      logActivity(session, primaryRole, { action: editingId ? 'update' : 'create', section: 'Media & Communication', subsection: 'Editorial calendar', entityType: 'editorial_item', entityName: form.title.trim() });
+      toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load();
+    }
     catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setSaving(false); }
   };
 
   const remove = async (i: EditorialItem) => {
     if (!confirm(`Delete "${i.title}"?`)) return;
-    try { await deleteEditorial(session, i.id); setDialogOpen(false); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    try {
+      await deleteEditorial(session, i.id);
+      logActivity(session, primaryRole, { action: 'delete', section: 'Media & Communication', subsection: 'Editorial calendar', entityType: 'editorial_item', entityId: i.id, entityName: i.title });
+      setDialogOpen(false); await load();
+    } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   const monthCells = (year: number, month: number): (string | null)[] => {

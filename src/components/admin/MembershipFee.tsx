@@ -11,6 +11,7 @@ import {
 import { Download, Lock, Loader2, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, roleLabel as composeRoleLabel, memberRank } from '@/lib/roles';
@@ -23,6 +24,9 @@ import {
   getCurrentFees, openFeePeriod, setFeePaid, closeFeePeriod,
   type FeePeriod, type FeeMember, type MembershipFeeRow,
 } from '@/lib/ops-api';
+
+interface PastFeeRow { first_name: string; surname: string; division: string | null; role: string | null; fee_paid: boolean }
+interface PastCollection { semester_key: string; semester_label: string; rows: PastFeeRow[] }
 
 export default function MembershipFee() {
   const { session } = useAuth();
@@ -37,6 +41,24 @@ export default function MembershipFee() {
   const [firstDeadline, setFirstDeadline] = useState('');
   const [secondDeadline, setSecondDeadline] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Past collections: who contributed each closed semester. Read from the
+  // frozen semester registers (snapshotted when a collection closes).
+  const [past, setPast] = useState<PastCollection[]>([]);
+  const [openPast, setOpenPast] = useState<string | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('semester_members')
+        .select('semester_key, semester_label, first_name, surname, division, role, fee_paid')
+        .order('semester_key', { ascending: false }).order('surname');
+      const map = new Map<string, PastCollection>();
+      for (const r of (data || []) as (PastFeeRow & { semester_key: string; semester_label: string })[]) {
+        const g = map.get(r.semester_key) ?? { semester_key: r.semester_key, semester_label: r.semester_label, rows: [] };
+        g.rows.push(r); map.set(r.semester_key, g);
+      }
+      setPast([...map.values()]);
+    })();
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -204,6 +226,57 @@ export default function MembershipFee() {
             </table>
           </div>
         </>
+      )}
+
+      {/* Past collections: the contribution record of every closed semester,
+          frozen when its collection closed. Always consultable, especially
+          useful while no collection is open. */}
+      {past.length > 0 && (
+        <div className="mt-10">
+          <h3 className="font-serif text-lg text-accent mb-1">Past collections</h3>
+          <p className="font-body text-sm text-muted-foreground mb-3">
+            Who contributed to each closed semester's fee collection. Each record was frozen when that
+            collection closed and can no longer change.
+          </p>
+          <div className="space-y-2">
+            {past.map((g) => {
+              const paid = g.rows.filter((r) => r.fee_paid).length;
+              return (
+                <div key={g.semester_key} className="border border-separator rounded-lg">
+                  <button type="button" className="w-full flex items-center justify-between px-4 py-2.5 font-body text-sm"
+                    onClick={() => setOpenPast(openPast === g.semester_key ? null : g.semester_key)}>
+                    <span className="text-foreground font-serif">{g.semester_label}</span>
+                    <span className="text-muted-foreground text-xs">{paid}/{g.rows.length} paid {openPast === g.semester_key ? '▾' : '▸'}</span>
+                  </button>
+                  {openPast === g.semester_key && (
+                    <div className="border-t border-separator overflow-x-auto">
+                      <table className="w-full text-left font-body text-sm">
+                        <thead className="bg-muted/40 text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-1.5 font-normal">Name</th>
+                            <th className="px-3 py-1.5 font-normal">Division</th>
+                            <th className="px-3 py-1.5 font-normal">Role</th>
+                            <th className="px-3 py-1.5 font-normal text-center">Fee</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {g.rows.map((r, i) => (
+                            <tr key={i} className="border-t border-separator">
+                              <td className="px-3 py-1.5 text-foreground">{r.first_name} {r.surname}</td>
+                              <td className="px-3 py-1.5">{r.division && r.division !== 'none' && r.division !== 'board' ? (divisionLabels[r.division as keyof typeof divisionLabels] ?? r.division) : '-'}</td>
+                              <td className="px-3 py-1.5">{r.role ? composeRoleLabel(r.role as never, (r.division ?? null) as never) : '-'}</td>
+                              <td className={`px-3 py-1.5 text-center ${r.fee_paid ? 'text-emerald-700' : 'text-muted-foreground'}`}>{r.fee_paid ? 'Paid' : 'Not paid'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
