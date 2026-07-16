@@ -6,7 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
-export type CalendarEntryType = 'meeting' | 'deadline' | 'reminder' | 'social' | 'other' | 'casa_committee';
+export type CalendarEntryType = 'meeting' | 'deadline' | 'reminder' | 'social' | 'other' | 'casa_committee' | 'casa_deadline';
 
 export interface CalendarEntry {
   id: string;
