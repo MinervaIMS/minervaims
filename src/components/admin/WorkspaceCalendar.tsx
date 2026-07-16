@@ -197,6 +197,16 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     return list;
   }, [items]);
 
+  // Italian public holidays for every year covered by the rendered range.
+  // Holidays HARD BLOCK scheduling (enforced in the database) and are not
+  // editable by any user — they render as a red badge on the day cell.
+  const holidayByDate = useMemo(() => {
+    const map: Record<string, string> = {};
+    const years = new Set(months.map((m) => m.year));
+    for (const y of years) for (const h of italianHolidays(y)) map[h.date] = h.label;
+    return map;
+  }, [months]);
+
   // Jump to the current month once the calendar is rendered.
   useEffect(() => {
     if (loading) return;
