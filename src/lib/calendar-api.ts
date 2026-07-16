@@ -36,7 +36,7 @@ export const CALENDAR_ENTRY_LABELS: Record<CalendarEntryType, string> = {
   social: 'Social',
   other: 'Other',
   casa_committee: 'CASA Committee Meeting',
-  casa_deadline: 'CASA Committee — Request Deadline',
+  casa_deadline: 'Deadline: CASA Committee request submission',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

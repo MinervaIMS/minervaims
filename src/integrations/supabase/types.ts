@@ -1909,6 +1909,8 @@ export type Database = {
       is_candidate: { Args: { _user_id: string }; Returns: boolean }
       is_full_access: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      italian_easter: { Args: { y: number }; Returns: string }
+      italian_holiday_on: { Args: { d: string }; Returns: string }
       link_member_account: { Args: { p_user_id: string }; Returns: Json }
       log_activity: {
         Args: {

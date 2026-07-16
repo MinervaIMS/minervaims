@@ -20,6 +20,7 @@ import {
   listExamSessions, saveExamSession, deleteExamSession, examSessionOn,
   type CalendarEntry, type CalendarEntryType, type ExamSession,
 } from '@/lib/calendar-api';
+import { italianHolidays, italianHolidayOn } from '@/lib/italian-holidays';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Kind = 'event' | 'aod' | 'alumni' | 'application' | 'fee' | 'custom';
@@ -119,6 +120,8 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     if (['meeting', 'social'].includes(entryForm.entry_type)) {
       const brk = examSessionOn(examSessions, entryForm.entry_date);
       if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: the calendar does not accept events between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
+      const hol = italianHolidayOn(entryForm.entry_date);
+      if (hol) { toast({ title: 'Italian public holiday', description: `${hol}: the calendar does not accept events on national holidays.`, variant: 'destructive' }); return; }
     }
     setSavingEntry(true);
     try {
@@ -193,6 +196,16 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     while (cur <= end) { list.push({ year: cur.getFullYear(), month: cur.getMonth() }); cur.setMonth(cur.getMonth() + 1); }
     return list;
   }, [items]);
+
+  // Italian public holidays for every year covered by the rendered range.
+  // Holidays HARD BLOCK scheduling (enforced in the database) and are not
+  // editable by any user — they render as a red badge on the day cell.
+  const holidayByDate = useMemo(() => {
+    const map: Record<string, string> = {};
+    const years = new Set(months.map((m) => m.year));
+    for (const y of years) for (const h of italianHolidays(y)) map[h.date] = h.label;
+    return map;
+  }, [months]);
 
   // Jump to the current month once the calendar is rendered.
   useEffect(() => {
@@ -272,6 +285,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         <span><span className="inline-block w-3 h-3 rounded-sm bg-violet-200 mr-1 align-middle" />Custom entry</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-indigo-200 mr-1 align-middle" />CASA Committee meetings (board only)</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-fuchsia-200 mr-1 align-middle" />CASA request deadline (board only)</span>
+        <span><span className="inline-block w-3 h-3 rounded-sm bg-red-200 mr-1 align-middle" />Italian public holiday: no events accepted</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-muted border border-separator mr-1 align-middle" />Exam session break: no events accepted</span>
       </div>
 
@@ -285,15 +299,25 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
               {WEEKDAYS.map((d) => <div key={d} className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider px-2 py-1 text-center">{d}</div>)}
               {monthCells(year, month).map((date, i) => {
                 const brk = date ? examSessionOn(examSessions, date) : undefined;
+                const hol = date ? holidayByDate[date] : undefined;
+                const blocked = !!brk || !!hol;
+                const blockedTitle = brk
+                  ? `${brk.label}: exam session break, the calendar does not accept events on this day`
+                  : hol
+                  ? `${hol}: Italian public holiday, the calendar does not accept events on this day`
+                  : undefined;
                 return (
                 <div key={i}
-                  className={`${brk ? 'bg-muted/70' : 'bg-background'} min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
-                  title={brk ? `${brk.label}: exam session break, the calendar does not accept events on this day` : undefined}>
+                  className={`${hol ? 'bg-red-50' : brk ? 'bg-muted/70' : 'bg-background'} min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
+                  title={blockedTitle}>
                   {date && <>
-                    {dayIsClickable ? (
+                    {dayIsClickable && !blocked ? (
                       <button type="button" className={`text-sm mb-1 hover:text-accent ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`} onClick={() => setEntryForm(emptyEntry(date))} title="Add an entry on this day">{parseInt(date.slice(-2), 10)}</button>
                     ) : (
-                      <div className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
+                      <div className={`text-sm mb-1 ${hol ? 'text-red-700' : date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
+                    )}
+                    {hol && (
+                      <div className="text-[10px] leading-tight px-1.5 py-0.5 rounded bg-red-100 text-red-800 truncate mb-1" title={hol}>{hol}</div>
                     )}
                     <div className="space-y-1">
                       {(itemsByDate[date] || []).map((it, j) => {
