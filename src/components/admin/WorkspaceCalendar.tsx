@@ -271,6 +271,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         <span><span className="inline-block w-3 h-3 rounded-sm bg-rose-200 mr-1 align-middle" />Membership fee</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-violet-200 mr-1 align-middle" />Custom entry</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-indigo-200 mr-1 align-middle" />CASA Committee meetings (board only)</span>
+        <span><span className="inline-block w-3 h-3 rounded-sm bg-fuchsia-200 mr-1 align-middle" />CASA request deadline (board only)</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-muted border border-separator mr-1 align-middle" />Exam session break: no events accepted</span>
       </div>
 
