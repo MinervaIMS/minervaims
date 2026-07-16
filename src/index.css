@@ -680,6 +680,28 @@ html.ws-active body[data-scroll-locked] {
   .jline .fill { transition: none; }
 }
 
+/* Workspace floating "?" help button — mirrors the journey-dot "lit" halo:
+   a one-time ignition on mount that leaves a lasting soft, semi-transparent
+   accent halo around the circle. */
+.help-dot-lit {
+  box-shadow:
+    0 0 0 6px hsl(var(--accent) / 0.10),
+    0 10px 28px hsl(var(--accent) / 0.30);
+  transition: box-shadow .55s ease, transform .15s ease;
+}
+@keyframes help-dot-ignite {
+  0%   { box-shadow: 0 0 0 0    hsl(var(--accent) / 0),
+                     0 10px 28px hsl(var(--accent) / 0); }
+  60%  { box-shadow: 0 0 0 14px hsl(var(--accent) / 0.18),
+                     0 10px 28px hsl(var(--accent) / 0.35); }
+  100% { box-shadow: 0 0 0 6px  hsl(var(--accent) / 0.10),
+                     0 10px 28px hsl(var(--accent) / 0.30); }
+}
+.help-dot-ignite { animation: help-dot-ignite .9s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .help-dot-ignite { animation: none; }
+}
+
 /* =====================================================================
    Minerva Workspace overrides (only inside /admin, scoped by .ws-flat
    on the shell and .ws-active on <html>).
