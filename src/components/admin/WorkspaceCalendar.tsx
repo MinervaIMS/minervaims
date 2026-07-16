@@ -20,6 +20,7 @@ import {
   listExamSessions, saveExamSession, deleteExamSession, examSessionOn,
   type CalendarEntry, type CalendarEntryType, type ExamSession,
 } from '@/lib/calendar-api';
+import { italianHolidays, italianHolidayOn } from '@/lib/italian-holidays';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Kind = 'event' | 'aod' | 'alumni' | 'application' | 'fee' | 'custom';
