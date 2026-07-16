@@ -212,7 +212,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
       : k === 'aod' ? 'bg-amber-100 text-amber-800'
       : k === 'alumni' ? 'bg-emerald-100 text-emerald-800'
       : k === 'fee' ? 'bg-rose-100 text-rose-800'
-      : k === 'custom' ? (entry?.entry_type === 'casa_committee' ? 'bg-indigo-100 text-indigo-800' : 'bg-violet-100 text-violet-800')
+      : k === 'custom' ? (entry?.entry_type === 'casa_committee' ? 'bg-indigo-100 text-indigo-800' : entry?.entry_type === 'casa_deadline' ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-violet-100 text-violet-800')
       : 'bg-blue-100 text-blue-800';
 
   const doRegister = async () => {
@@ -271,6 +271,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         <span><span className="inline-block w-3 h-3 rounded-sm bg-rose-200 mr-1 align-middle" />Membership fee</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-violet-200 mr-1 align-middle" />Custom entry</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-indigo-200 mr-1 align-middle" />CASA Committee meetings (board only)</span>
+        <span><span className="inline-block w-3 h-3 rounded-sm bg-fuchsia-200 mr-1 align-middle" />CASA request deadline (board only)</span>
         <span><span className="inline-block w-3 h-3 rounded-sm bg-muted border border-separator mr-1 align-middle" />Exam session break: no events accepted</span>
       </div>
 
@@ -345,17 +346,17 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                   <Select value={entryForm.entry_type} onValueChange={(v) => setEntryForm({ ...entryForm, entry_type: v as CalendarEntryType })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {(['meeting', 'deadline', 'reminder', 'social', 'other', 'casa_committee'] as CalendarEntryType[]).map((t) => (
+                      {(['meeting', 'deadline', 'reminder', 'social', 'other', 'casa_committee', 'casa_deadline'] as CalendarEntryType[]).map((t) => (
                         <SelectItem key={t} value={t}>{CALENDAR_ENTRY_LABELS[t]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              {entryForm.entry_type === 'casa_committee' && (
+              {(entryForm.entry_type === 'casa_committee' || entryForm.entry_type === 'casa_deadline') && (
                 <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                  CASA Committee meetings are visible ONLY to the members of the board of directors (and the admin
-                  account). Other members never see this entry on the calendar.
+                  CASA Committee meetings and request deadlines are visible ONLY to the members of the board of
+                  directors (and the admin account). Other members never see this entry on the calendar.
                 </p>
               )}
               <div className="space-y-1"><Label>Location</Label><Input value={entryForm.location} onChange={(e) => setEntryForm({ ...entryForm, location: e.target.value })} placeholder="e.g. Room N01 / online" /></div>

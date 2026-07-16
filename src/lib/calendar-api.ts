@@ -6,7 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
-export type CalendarEntryType = 'meeting' | 'deadline' | 'reminder' | 'social' | 'other' | 'casa_committee';
+export type CalendarEntryType = 'meeting' | 'deadline' | 'reminder' | 'social' | 'other' | 'casa_committee' | 'casa_deadline';
 
 export interface CalendarEntry {
   id: string;
@@ -36,6 +36,7 @@ export const CALENDAR_ENTRY_LABELS: Record<CalendarEntryType, string> = {
   social: 'Social',
   other: 'Other',
   casa_committee: 'CASA Committee Meeting',
+  casa_deadline: 'CASA Committee — Request Deadline',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

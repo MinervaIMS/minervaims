@@ -1,12 +1,38 @@
-## Reset Riccardo's auth account for redeem testing
+## Goal
 
-Delete Riccardo Colombo's auth login entirely so a fresh signup flow can be tested. The roster profile stays as-is (already `to_redeem` with `user_id = NULL`), so once the new signup confirms its email, `link_member_account` will claim the existing member row and restore the president role.
+From the attached schedule, pre-populate the workspace Calendar with the nine CASA Committee meeting dates, and add a companion entry type for the corresponding request-submission deadlines. Both are visible only to Board members (same rule already used for `casa_committee`).
 
-### Steps (single migration)
+## Dates to insert
 
-1. `DELETE FROM public.user_roles WHERE user_id = 'd29222b8-26f2-490c-9f6e-9a42145f749c'`
-2. `DELETE FROM public.profiles WHERE id = 'd29222b8-26f2-490c-9f6e-9a42145f749c'`
-3. `DELETE FROM auth.users WHERE id = 'd29222b8-26f2-490c-9f6e-9a42145f749c'`
-4. Safety check: confirm the members row for Colombo still has `user_id IS NULL` and `account_status = 'to_redeem'` (no change if already true).
+| Meeting (`casa_committee`) | Request deadline (`casa_deadline`) |
+| --- | --- |
+| 2026-09-23 | 2026-09-16 |
+| 2026-10-14 | 2026-10-07 |
+| 2026-11-11 | 2026-11-04 |
+| 2027-01-27 | 2027-01-20 |
+| 2027-02-17 | 2027-02-10 |
+| 2027-03-22 | 2027-03-15 |
+| 2027-04-14 | 2027-04-07 |
+| 2027-05-19 | 2027-05-12 |
+| 2027-07-07 | 2027-06-30 |
 
-After this, `riccardo.colombo7@studbocconi.it` can sign up from scratch, receive the verification email, confirm, and the redeem flow will link him back to the president member row automatically.
+Meeting title: "CASA Committee meeting". Deadline title: "CASA Committee — request submission deadline".
+
+## Changes
+
+### 1. Database migration
+- Drop and re-add `calendar_entries_entry_type_check` to include `casa_deadline`.
+- Update the RLS SELECT policy `calendar entries readable by staff` so both `casa_committee` AND `casa_deadline` are gated behind `is_board_member(auth.uid())`.
+- Insert the 18 rows above (9 meetings + 9 deadlines), `created_by = NULL`, `author_name = 'System'`, `author_role = NULL`.
+
+### 2. Edge function
+- `supabase/functions/admin-calendar/index.ts`: add `'casa_deadline'` to the Zod `entry_type` enum.
+
+### 3. Frontend
+- `src/lib/calendar-api.ts`: extend `CalendarEntryType` and `CALENDAR_ENTRY_LABELS` with `casa_deadline: 'CASA Committee — Request Deadline'`.
+- `src/components/admin/WorkspaceCalendar.tsx`:
+  - Add `casa_deadline` to the type Select in the add/edit dialog.
+  - Add a distinct color (e.g. `bg-fuchsia-100 text-fuchsia-800`) for `casa_deadline` chips and a matching legend entry "CASA request deadline (board only)".
+  - Keep the board-only info note visible for both CASA types in the dialog.
+
+Nothing else in the calendar pipeline changes — RLS + edge function enum are the only visibility surfaces.
