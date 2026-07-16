@@ -71,7 +71,7 @@ export function PageHelpButton({ page }: { page: string }) {
       aria-label={isOpen ? 'Close help' : 'Open help for this page'}
       className="help-dot-lit help-dot-ignite fixed bottom-5 right-4 lg:bottom-8 lg:right-8 z-[70] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center transition-transform duration-150 hover:scale-105"
     >
-      {isOpen ? <X className="h-6 w-6" /> : <HelpCircle className="h-7 w-7" />}
+      {isOpen ? <X className="h-6 w-6" /> : <span aria-hidden className="font-serif leading-none text-[1.75rem] lg:text-[2rem]" style={{ fontFamily: "'EB Garamond', 'Times New Roman', Times, Georgia, serif" }}>?</span>}
     </button>
   );
 }
