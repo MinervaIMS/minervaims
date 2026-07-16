@@ -120,6 +120,8 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     if (['meeting', 'social'].includes(entryForm.entry_type)) {
       const brk = examSessionOn(examSessions, entryForm.entry_date);
       if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: the calendar does not accept events between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
+      const hol = italianHolidayOn(entryForm.entry_date);
+      if (hol) { toast({ title: 'Italian public holiday', description: `${hol}: the calendar does not accept events on national holidays.`, variant: 'destructive' }); return; }
     }
     setSavingEntry(true);
     try {
