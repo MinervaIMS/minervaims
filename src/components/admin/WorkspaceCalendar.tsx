@@ -212,7 +212,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
       : k === 'aod' ? 'bg-amber-100 text-amber-800'
       : k === 'alumni' ? 'bg-emerald-100 text-emerald-800'
       : k === 'fee' ? 'bg-rose-100 text-rose-800'
-      : k === 'custom' ? (entry?.entry_type === 'casa_committee' ? 'bg-indigo-100 text-indigo-800' : 'bg-violet-100 text-violet-800')
+      : k === 'custom' ? (entry?.entry_type === 'casa_committee' ? 'bg-indigo-100 text-indigo-800' : entry?.entry_type === 'casa_deadline' ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-violet-100 text-violet-800')
       : 'bg-blue-100 text-blue-800';
 
   const doRegister = async () => {
