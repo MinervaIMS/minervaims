@@ -345,17 +345,17 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                   <Select value={entryForm.entry_type} onValueChange={(v) => setEntryForm({ ...entryForm, entry_type: v as CalendarEntryType })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {(['meeting', 'deadline', 'reminder', 'social', 'other', 'casa_committee'] as CalendarEntryType[]).map((t) => (
+                      {(['meeting', 'deadline', 'reminder', 'social', 'other', 'casa_committee', 'casa_deadline'] as CalendarEntryType[]).map((t) => (
                         <SelectItem key={t} value={t}>{CALENDAR_ENTRY_LABELS[t]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              {entryForm.entry_type === 'casa_committee' && (
+              {(entryForm.entry_type === 'casa_committee' || entryForm.entry_type === 'casa_deadline') && (
                 <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                  CASA Committee meetings are visible ONLY to the members of the board of directors (and the admin
-                  account). Other members never see this entry on the calendar.
+                  CASA Committee meetings and request deadlines are visible ONLY to the members of the board of
+                  directors (and the admin account). Other members never see this entry on the calendar.
                 </p>
               )}
               <div className="space-y-1"><Label>Location</Label><Input value={entryForm.location} onChange={(e) => setEntryForm({ ...entryForm, location: e.target.value })} placeholder="e.g. Room N01 / online" /></div>
