@@ -1,38 +1,50 @@
 ## Goal
+Give the floating "?" help button (bottom-right of the workspace) the same "reached step" treatment used by the numbered dots in /join's "The Application Journey": a brief ignition animation that leaves a lasting soft, semi‑transparent light‑purple halo around the button.
 
-From the attached schedule, pre-populate the workspace Calendar with the nine CASA Committee meeting dates, and add a companion entry type for the corresponding request-submission deadlines. Both are visible only to Board members (same rule already used for `casa_committee`).
+## Reference
+The journey dots use this "lit" style (already in `src/index.css`):
 
-## Dates to insert
+```css
+.jstep.lit .jdot {
+  background: hsl(var(--accent));
+  color: #fff;
+  box-shadow:
+    0 0 0 6px hsl(var(--accent) / 0.10),   /* the soft halo the user sees */
+    0 10px 28px hsl(var(--accent) / 0.30);
+  transition: background-color .55s ease, color .55s ease, box-shadow .55s ease;
+}
+```
 
-| Meeting (`casa_committee`) | Request deadline (`casa_deadline`) |
-| --- | --- |
-| 2026-09-23 | 2026-09-16 |
-| 2026-10-14 | 2026-10-07 |
-| 2026-11-11 | 2026-11-04 |
-| 2027-01-27 | 2027-01-20 |
-| 2027-02-17 | 2027-02-10 |
-| 2027-03-22 | 2027-03-15 |
-| 2027-04-14 | 2027-04-07 |
-| 2027-05-19 | 2027-05-12 |
-| 2027-07-07 | 2027-06-30 |
-
-Meeting title: "CASA Committee meeting". Deadline title: "CASA Committee — request submission deadline".
+The wide `0 0 0 6px hsl(var(--accent) / 0.10)` inset‑style ring is what creates the persistent light‑purple semi‑transparent border in the screenshot.
 
 ## Changes
 
-### 1. Database migration
-- Drop and re-add `calendar_entries_entry_type_check` to include `casa_deadline`.
-- Update the RLS SELECT policy `calendar entries readable by staff` so both `casa_committee` AND `casa_deadline` are gated behind `is_board_member(auth.uid())`.
-- Insert the 18 rows above (9 meetings + 9 deadlines), `created_by = NULL`, `author_name = 'System'`, `author_role = NULL`.
+1. `src/index.css` — add a new dedicated class for the help button, mirroring the journey dot treatment:
 
-### 2. Edge function
-- `supabase/functions/admin-calendar/index.ts`: add `'casa_deadline'` to the Zod `entry_type` enum.
+   ```css
+   .help-dot-lit {
+     box-shadow:
+       0 0 0 6px hsl(var(--accent) / 0.10),
+       0 10px 28px hsl(var(--accent) / 0.30);
+     transition: box-shadow .55s ease, transform .15s ease;
+   }
+   @keyframes help-dot-ignite {
+     0%   { box-shadow: 0 0 0 0    hsl(var(--accent) / 0.00),
+                        0 10px 28px hsl(var(--accent) / 0.00); }
+     60%  { box-shadow: 0 0 0 14px hsl(var(--accent) / 0.18),
+                        0 10px 28px hsl(var(--accent) / 0.35); }
+     100% { box-shadow: 0 0 0 6px  hsl(var(--accent) / 0.10),
+                        0 10px 28px hsl(var(--accent) / 0.30); }
+   }
+   .help-dot-ignite { animation: help-dot-ignite .9s ease-out both; }
+   @media (prefers-reduced-motion: reduce) {
+     .help-dot-ignite { animation: none; }
+   }
+   ```
 
-### 3. Frontend
-- `src/lib/calendar-api.ts`: extend `CalendarEntryType` and `CALENDAR_ENTRY_LABELS` with `casa_deadline: 'CASA Committee — Request Deadline'`.
-- `src/components/admin/WorkspaceCalendar.tsx`:
-  - Add `casa_deadline` to the type Select in the add/edit dialog.
-  - Add a distinct color (e.g. `bg-fuchsia-100 text-fuchsia-800`) for `casa_deadline` chips and a matching legend entry "CASA request deadline (board only)".
-  - Keep the board-only info note visible for both CASA types in the dialog.
+2. `src/components/admin/help/HelpSystem.tsx` — `PageHelpButton`:
+   - Drop the hard `ring-2 ring-accent ring-offset-4 ring-offset-background` classes (they compete with the halo).
+   - Add `help-dot-lit help-dot-ignite` so the button plays the ignition once on mount and then keeps the soft halo.
+   - Preserve existing behaviour: `bg-accent text-accent-foreground`, fixed position, size, click toggle, hover scale.
 
-Nothing else in the calendar pipeline changes — RLS + edge function enum are the only visibility surfaces.
+No other files change; behaviour, position, size, and accessibility of the button stay identical — only the visual "ring" is replaced with the journey‑dot halo + one‑time ignition.
