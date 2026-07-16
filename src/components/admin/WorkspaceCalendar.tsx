@@ -299,15 +299,25 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
               {WEEKDAYS.map((d) => <div key={d} className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider px-2 py-1 text-center">{d}</div>)}
               {monthCells(year, month).map((date, i) => {
                 const brk = date ? examSessionOn(examSessions, date) : undefined;
+                const hol = date ? holidayByDate[date] : undefined;
+                const blocked = !!brk || !!hol;
+                const blockedTitle = brk
+                  ? `${brk.label}: exam session break, the calendar does not accept events on this day`
+                  : hol
+                  ? `${hol}: Italian public holiday, the calendar does not accept events on this day`
+                  : undefined;
                 return (
                 <div key={i}
-                  className={`${brk ? 'bg-muted/70' : 'bg-background'} min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
-                  title={brk ? `${brk.label}: exam session break, the calendar does not accept events on this day` : undefined}>
+                  className={`${hol ? 'bg-red-50' : brk ? 'bg-muted/70' : 'bg-background'} min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
+                  title={blockedTitle}>
                   {date && <>
-                    {dayIsClickable ? (
+                    {dayIsClickable && !blocked ? (
                       <button type="button" className={`text-sm mb-1 hover:text-accent ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`} onClick={() => setEntryForm(emptyEntry(date))} title="Add an entry on this day">{parseInt(date.slice(-2), 10)}</button>
                     ) : (
-                      <div className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
+                      <div className={`text-sm mb-1 ${hol ? 'text-red-700' : date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
+                    )}
+                    {hol && (
+                      <div className="text-[10px] leading-tight px-1.5 py-0.5 rounded bg-red-100 text-red-800 truncate mb-1" title={hol}>{hol}</div>
                     )}
                     <div className="space-y-1">
                       {(itemsByDate[date] || []).map((it, j) => {
