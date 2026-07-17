@@ -1924,6 +1924,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      member_division_read: {
+        Args: {
+          _division: Database["public"]["Enums"]["org_division"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       member_rank: {
         Args: {
           _division: Database["public"]["Enums"]["org_division"]
@@ -1931,6 +1938,7 @@ export type Database = {
         }
         Returns: number
       }
+      members_full_read: { Args: { _user_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -1948,7 +1956,7 @@ export type Database = {
       process_offer_deadlines: { Args: never; Returns: undefined }
       public_alumni_directory: { Args: never; Returns: Json }
       public_alumni_filter_count: {
-        Args: { p_job_area?: string; p_company?: string; p_city?: string }
+        Args: { p_city?: string; p_company?: string; p_job_area?: string }
         Returns: number
       }
       read_email_batch: {
