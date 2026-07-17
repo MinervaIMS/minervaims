@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global Lucide icon stroke width — 1.25× relative scaling.
+   Applied at the top level so it is emitted by the build and overrides
+   every Lucide icon's default stroke without touching 60+ component files. */
+svg.lucide,
+.lucide svg {
+  stroke-width: 1.25 !important;
+}
+
 /* MIMS Design System - Institutional, Minimal, Premium */
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Carlito:wght@400;700&display=swap');
 
