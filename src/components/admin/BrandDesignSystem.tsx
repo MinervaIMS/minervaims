@@ -263,7 +263,7 @@ export default function BrandDesignSystem() {
       {/* 9. Iconography */}
       <Section title="9. Iconography">
         <ul className="list-disc pl-6 space-y-2">
-          <li>Icon library: <span className="font-serif text-accent">Lucide</span> via <code>lucide-react</code>. Thin, consistent stroke icons at 14–36px.</li>
+          <li>Icon library: <span className="font-serif text-accent">Lucide</span> via <code>lucide-react</code>. Thin, consistent stroke icons at 14–36px, rendered at a 1.25× stroke width for a lighter, more refined line.</li>
           <li>Brand SVGs: MIMS mark (classical M of two Ionic columns flanked by heraldic lions) and lion-head Community badge — bespoke vector marks, never redraw or distort.</li>
           <li>Social icons: purpose-built LinkedIn and Instagram SVGs at 65×65px.</li>
           <li>Emoji: never used as icons. Unicode glyphs appear only as tiny UI affordances — the dropdown caret <code>▾ / ▴</code>.</li>
