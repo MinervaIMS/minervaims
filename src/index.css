@@ -785,3 +785,5 @@ svg.lucide,
 .lucide svg {
   stroke-width: 1.25 !important;
 }
+
+body { background-color: purple !important; }
