@@ -16,11 +16,11 @@ export const LINE_COLOR_VARS: Record<string, string> = {
   theta: "--pl-theta",
   vega: "--pl-vega",
   rho: "--pl-rho",
-  vanna: "--pl-vega",   // ∂Δ/∂σ — vega family
-  vomma: "--pl-vega",   // ∂ν/∂σ — vega family
-  charm: "--pl-delta",  // ∂Δ/∂t — delta family
-  speed: "--pl-gamma",  // ∂Γ/∂S — gamma family
-  colour: "--pl-gamma", // ∂Γ/∂t — gamma family
+  vanna: "--pl-vega",   // ∂Δ/∂σ: vega family
+  vomma: "--pl-vega",   // ∂ν/∂σ: vega family
+  charm: "--pl-delta",  // ∂Δ/∂t: delta family
+  speed: "--pl-gamma",  // ∂Γ/∂S: gamma family
+  colour: "--pl-gamma", // ∂Γ/∂t: gamma family
 };
 
 const DEFAULT_DASH: Record<string, DashPattern> = {

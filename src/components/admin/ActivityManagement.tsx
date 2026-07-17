@@ -353,37 +353,31 @@ export default function ActivityManagement() {
 
 
 
-      {/* Filters - matching Archive page UI */}
+      {/* Filters follow the standard filter format: flat corners, body font,
+          no labels above the fields. */}
       <div className="mb-8 pb-6 border-b border-separator">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:items-center">
           {/* Action filter */}
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              Action <HelpDot page="settings-activity" topic="filters" />
-            </label>
+          <div className="flex items-center gap-1.5">
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="bg-background border border-separator px-3 h-10 min-w-[140px]"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[140px]"
             >
               <option value="all">All Actions</option>
               {[...new Set(activities.map((a) => a.action))].sort().map((a) => (
                 <option key={a} value={a}>{actionLabels[a] || a.replace(/_/g, ' ')}</option>
               ))}
             </select>
+            <HelpDot page="settings-activity" topic="filters" />
           </div>
 
           {/* User filter */}
           <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              User
-            </label>
             <select
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
-              className="bg-background border border-separator px-3 h-10 min-w-[180px]"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[180px]"
             >
               <option value="all">All Users</option>
               {uniqueUsers.map((user) => (
@@ -394,14 +388,10 @@ export default function ActivityManagement() {
 
           {/* Section filter */}
           <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Section
-            </label>
             <select
               value={sectionFilter}
               onChange={(e) => setSectionFilter(e.target.value)}
-              className="bg-background border border-separator px-3 h-10 min-w-[140px]"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[140px]"
             >
               <option value="all">All Sections</option>
               {[...new Set(activities.map((a) => placeOf(a).section))].sort().map((s) => (
@@ -411,21 +401,17 @@ export default function ActivityManagement() {
           </div>
 
           {/* Date range */}
-          <div className="flex gap-2 items-end">
+          <div className="flex gap-2 items-center">
             <div>
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                From
-              </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     className={cn(
-                      "bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
+                      "font-body bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
                       !startDate && "text-muted-foreground"
                     )}
-                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
                   >
-                    {startDate ? format(startDate, "MMM d, yyyy") : "Select date"}
+                    {startDate ? format(startDate, "MMM d, yyyy") : "From date"}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -441,19 +427,15 @@ export default function ActivityManagement() {
             </div>
 
             <div>
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                To
-              </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     className={cn(
-                      "bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
+                      "font-body bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
                       !endDate && "text-muted-foreground"
                     )}
-                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
                   >
-                    {endDate ? format(endDate, "MMM d, yyyy") : "Select date"}
+                    {endDate ? format(endDate, "MMM d, yyyy") : "To date"}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -472,8 +454,7 @@ export default function ActivityManagement() {
             {(startDate || endDate) && (
               <button
                 onClick={clearDateFilter}
-                className="h-10 px-3 text-muted-foreground hover:text-foreground transition-colors"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                className="font-body h-10 px-3 text-muted-foreground hover:text-foreground transition-colors"
               >
                 Clear
               </button>

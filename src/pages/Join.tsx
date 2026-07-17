@@ -17,17 +17,17 @@ const WHY_JOIN = [
   {
     title: "The only ones producing market outlooks",
     description:
-      "Across Equity, Investment, Macro and Quantitative Research, members publish cross-asset outlooks and trade ideas — work no other society on campus produces.",
+      "Across Equity, Investment, Macro and Quantitative Research, members publish cross-asset outlooks and trade ideas: work no other society on campus produces.",
   },
   {
     title: "Best-in-class equity research",
     description:
-      "Fundamental coverage of listed companies — business models, valuation, and investment theses with clear catalysts and risks — written to a standard recruiters recognise.",
+      "Fundamental coverage of listed companies: business models, valuation, and investment theses with clear catalysts and risks, written to a standard recruiters recognise.",
   },
   {
     title: "Industry-level quantitative research",
     description:
-      "Statistical and machine-learning models, derivatives pricing and risk measures (CVaR/EVaR) — the kind of work usually reserved for the desk, not the classroom.",
+      "Statistical and machine-learning models, derivatives pricing and risk measures (CVaR/EVaR): the kind of work usually reserved for the desk, not the classroom.",
   },
 ];
 
@@ -49,7 +49,7 @@ const WHAT_YOU_GAIN = [
   {
     title: "Professional-standard training",
     description:
-      "An onboarding programme covering research methodology and financial modelling — you learn the craft by producing real, disclosed work.",
+      "An onboarding programme covering research methodology and financial modelling: you learn the craft by producing real, disclosed work.",
   },
   {
     title: "Industry exposure & events",
@@ -59,7 +59,7 @@ const WHAT_YOU_GAIN = [
   {
     title: "An alumni network that opens doors",
     description:
-      "Alumni now work at top investment banks, hedge funds, asset managers and consultancies worldwide — reachable through the Society's alumni-call programme.",
+      "Alumni now work at top investment banks, hedge funds, asset managers and consultancies worldwide: reachable through the Society's alumni-call programme.",
   },
 ];
 
@@ -68,7 +68,7 @@ const FAQS = [
   {
     question: "Who should apply?",
     answer:
-      "MIMS is open to students currently enrolled at Università Bocconi (undergraduate or postgraduate) who show a genuine interest in financial markets and investment research, and who are ready to participate actively in the Society. We value academic integrity, humility, eagerness to learn, respect for other members, and full compliance with Università Bocconi's Honor Code. Prior experience is not required — we value potential, rigour, and a consistent commitment to learning.",
+      "MIMS is open to students currently enrolled at Università Bocconi (undergraduate or postgraduate) who show a genuine interest in financial markets and investment research, and who are ready to participate actively in the Society. We value academic integrity, humility, eagerness to learn, respect for other members, and full compliance with Università Bocconi's Honor Code. Prior experience is not required: we value potential, rigour, and a consistent commitment to learning.",
   },
   {
     question: "Are undergraduate first-year students considered in the application process?",
@@ -83,7 +83,7 @@ const FAQS = [
   {
     question: "Which division's written question do I need to answer?",
     answer:
-      "You are required to answer only the question for your first-choice division — the division you ranked 1 in the application form.",
+      "You are required to answer only the question for your first-choice division: the division you ranked 1 in the application form.",
   },
   {
     question: "Can I answer more than one division's question?",
@@ -237,7 +237,7 @@ const Join = () => {
                 {settings.applicationsOpen ? (
                   <>
                     <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Prepare a strong application — then apply.
+                      Prepare a strong application, then apply.
                     </h2>
                     <p className="font-body text-body-lg text-background/80 mt-5">
                       Applications for {settings.semesterLabel} are open. Submit the form with your CV, motivation
@@ -277,7 +277,7 @@ const Join = () => {
           <Reveal>
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl mb-10">
               No other society at Bocconi does what we do. Membership puts professional-standard research, real
-              portfolio decisions and a global alumni network within reach — well before your first internship.
+              portfolio decisions and a global alumni network within reach, well before your first internship.
             </p>
           </Reveal>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -299,7 +299,7 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Figures — full-bleed band with live counters */}
+        {/* Figures: full-bleed band with live counters */}
         <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
           <div ref={figures.ref} className="bg-accent text-accent-foreground py-12 md:py-16 px-6 md:px-12">
             <div className="container">
@@ -346,7 +346,7 @@ const Join = () => {
           </div>
         </section>
 
-        {/* Selectivity — full-bleed grey panel with giant quote watermark */}
+        {/* Selectivity: full-bleed grey panel with giant quote watermark */}
         <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
           <Reveal>
             <div className="bg-secondary relative overflow-hidden">
@@ -364,7 +364,7 @@ const Join = () => {
                 <div className="max-w-3xl">
                   <h2 className="font-serif text-heading text-accent mb-5">Demanding by design</h2>
                   <p className="font-serif text-xl md:text-2xl leading-snug text-foreground">
-                    We don't lead with acceptance rates — they understate the truth. The application itself is rigorous,
+                    We don't lead with acceptance rates: they understate the truth. The application itself is rigorous,
                     so candidates effectively self-select before they ever submit. The bar is the preparation. Treat the
                     steps below as the syllabus: meet them properly and you are already most of the way there.
                   </p>

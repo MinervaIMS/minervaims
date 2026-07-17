@@ -14,6 +14,7 @@ import { registerForEvent, EVENT_TYPE_LABELS, type EventRow } from '@/lib/events
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
 import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
+import Beams from '@/components/shared/Beams';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -73,11 +74,28 @@ export default function EventRegister() {
     finally { setSubmitting(false); }
   };
 
+  // Same backdrop as the /auth page: deep navy with the beams field behind a
+  // flat white card, so every registration card shares one visual identity.
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <>
       <Helmet><title>Register | MIMS</title></Helmet>
-      <div className="min-h-screen w-full bg-black flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
+      <div className="relative min-h-screen w-full flex items-center justify-center px-4 py-12 overflow-hidden" style={{ backgroundColor: '#05030F' }}>
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
+          <Beams
+            beamWidth={8.4}
+            beamHeight={30}
+            beamNumber={38}
+            lightColor="#afa2d2"
+            speed={2}
+            noiseIntensity={0.6}
+            scale={0.2}
+            rotation={30}
+          />
+        </div>
+        <div
+          className="relative z-10 w-full max-w-2xl bg-background px-6 sm:px-10 py-10"
+          style={{ borderRadius: 0, boxShadow: '0 20px 60px -20px rgba(31, 15, 77, 0.18)' }}
+        >
           <div className="flex justify-center mb-6"><img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '138px', width: 'auto' }} /></div>
           {children}
         </div>

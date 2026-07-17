@@ -16,6 +16,7 @@ import {
   divisionsForRole, roleNeedsDivision, isBoardRole,
   type AppRole, type OrgDivision,
 } from '@/lib/roles';
+import { MEMBERS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -63,6 +64,15 @@ export default function MembersManagement() {
   const canEdit = access.canEdit('people-members');
   // Removing a member's photo is reserved for the executive level.
   const canRemovePhoto = ['admin', 'president', 'vice_president'].includes(normalizeRole(access.primaryRole ?? 'member'));
+  // Portfolio managers, team leaders, senior analysts and analysts consult
+  // the register in a limited form: only their own division's people, names
+  // and LinkedIn (no phone or email columns). The database enforces the same
+  // row limit via RLS, so this is presentation on top of a hard rule.
+  const limitedToOwnDivision =
+    !!access.primaryRole &&
+    MEMBERS_DIVISION_VIEW_ROLES.includes(normalizeRole(access.primaryRole)) &&
+    !!access.allowedDivisions?.length;
+  const limitedDivisions = limitedToOwnDivision ? access.allowedDivisions! : null;
 
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +137,12 @@ export default function MembersManagement() {
 
   // The base set (before column filters), used to build filter options.
   // Advisors are part of the roster and appear here alongside members.
-  const base = useMemo(() => members.filter((m) => normalizeRole(m.role) !== 'admin'), [members]);
+  const base = useMemo(
+    () => members
+      .filter((m) => normalizeRole(m.role) !== 'admin')
+      .filter((m) => !limitedDivisions || limitedDivisions.includes(m.division)),
+    [members, limitedDivisions],
+  );
 
   const divisionOptions = useMemo(() => {
     const present = new Set(base.map((m) => m.division));
@@ -333,9 +348,11 @@ export default function MembersManagement() {
         description="The association register: members and advisors, with THE role each person holds. This role drives their workspace permissions everywhere (Settings > Users edits the same record). Advisors are appointed alumni; the switch in their profile decides whether they appear on the public website."
         actions={
           <>
-            <Button variant="outline" className="font-body" disabled={rows.length === 0} onClick={exportCsv}>
-              <Download className="h-4 w-4 mr-2" />Download CSV
-            </Button>
+            {!limitedToOwnDivision && (
+              <Button variant="outline" className="font-body" disabled={rows.length === 0} onClick={exportCsv}>
+                <Download className="h-4 w-4 mr-2" />Download CSV
+              </Button>
+            )}
             {canEdit && (
               <Button className="font-body" onClick={openCreate}>
                 <Plus className="h-4 w-4 mr-2" />Add advisor
@@ -365,8 +382,8 @@ export default function MembersManagement() {
                 <th className="px-3 py-2 font-normal">Name</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Division" options={divisionOptions} selected={divFilter} onChange={setDivFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Role" options={roleOptions} selected={roleFilter} onChange={setRoleFilter} /></th>
-                <th className="px-3 py-2 font-normal">Phone</th>
-                <th className="px-3 py-2 font-normal">Email</th>
+                {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Phone</th>}
+                {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Email</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
@@ -390,8 +407,8 @@ export default function MembersManagement() {
                   </td>
                   <td className="px-3 py-2">{m.division !== 'none' && m.division !== 'board' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{m.phone || '-'}</td>
-                  <td className="px-3 py-2">{m.email || '-'}</td>
+                  {!limitedToOwnDivision && <td className="px-3 py-2 whitespace-nowrap">{m.phone || '-'}</td>}
+                  {!limitedToOwnDivision && <td className="px-3 py-2">{m.email || '-'}</td>}
                   <td className="px-3 py-2 text-center">
                     {m.linkedin_url ? (
                       <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
@@ -417,7 +434,7 @@ export default function MembersManagement() {
 
       <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical. Advisors marked "hidden" do not appear on the public website.</p>
 
-      {/* Semester registers — the official member list of each past semester,
+      {/* Semester registers: the official member list of each past semester,
           snapshotted automatically when its fee collection closed. */}
       {registers.length > 0 && (
         <div className="mt-10">

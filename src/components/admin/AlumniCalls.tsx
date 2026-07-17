@@ -141,7 +141,7 @@ export default function AlumniCalls() {
 
             <div className="space-y-2">
               <Label className="inline-flex items-center gap-1.5">Alumni (2 to 5) * <HelpDot page="events-alumni-calls" topic="search" /></Label>
-              {/* Invited alumni — each chip shows the alumnus and their company. */}
+              {/* Invited alumni: each chip shows the alumnus and their company. */}
               <div className="flex flex-wrap gap-1.5">
                 {form.participants.map((p, i) => (
                   <span key={i} className="inline-flex items-center gap-1 text-sm bg-accent/10 text-accent px-2 py-1">

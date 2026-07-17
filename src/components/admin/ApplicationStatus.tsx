@@ -65,7 +65,7 @@ export default function ApplicationStatus() {
 
   const doAccept = async () => {
     setBusy(true);
-    try { await acceptOffer(session); toast({ title: 'Offer accepted', description: 'Welcome to Minerva! Your account is being upgraded — if your new role isn’t visible yet, please wait a few minutes and come back.' }); await load(); }
+    try { await acceptOffer(session); toast({ title: 'Offer accepted', description: 'Welcome to Minerva! Your account is being upgraded: if your new role isn’t visible yet, please wait a few minutes and come back.' }); await load(); }
     catch (e) { toast({ title: 'Could not accept the offer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
@@ -162,7 +162,7 @@ export default function ApplicationStatus() {
           </Card>
         )}
 
-        {/* Animated journey — only the reached steps light up. */}
+        {/* Animated journey: only the reached steps light up. */}
         <div ref={rootRef} className="journey">
           {STEPS.map((s, i) => {
             const lit = i < litCount;
@@ -183,7 +183,7 @@ export default function ApplicationStatus() {
           })}
         </div>
 
-        {/* Submitted documents — preview / download only (read-only). */}
+        {/* Submitted documents: preview / download only (read-only). */}
         <div className="pt-2 border-t border-separator">
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Your submitted documents</div>
           <div className="space-y-2">

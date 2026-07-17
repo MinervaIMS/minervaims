@@ -215,15 +215,16 @@ const UserManagement = () => {
     const isAdminAccount = u.email === ADMIN_EMAIL;
     if (!canEdit) return <Badge variant="secondary">{roleLabel(u.role, u.division)}</Badge>;
     if (isAdminAccount) return <Badge variant="secondary">Association account</Badge>;
+    // Nobody edits their own role, the President included: a role is always
+    // assigned by someone else (the server rejects self-changes too).
+    if (isSelf) return <Badge variant="secondary" title="Your own role can only be changed by another President or the association account.">Your account</Badge>;
     return (
       <div className="flex items-center gap-2 justify-end">
         <Button variant="outline" size="sm" className="h-8" disabled={busyUserId === u.id} onClick={() => openEdit(u)}>
           <Pencil className="h-3.5 w-3.5 mr-1.5" />Change role
         </Button>
-        {!isAdminAccount && !isSelf && (
-          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive/40 hover:bg-destructive/10"
-            disabled={busyUserId === u.id} onClick={() => setConfirmDelete(u)}><Trash2 className="h-4 w-4" /></Button>
-        )}
+        <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive/40 hover:bg-destructive/10"
+          disabled={busyUserId === u.id} onClick={() => setConfirmDelete(u)}><Trash2 className="h-4 w-4" /></Button>
       </div>
     );
   };
@@ -241,7 +242,7 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Pending approvals — secondary, collapsed by default. */}
+      {/* Pending approvals: secondary, collapsed by default. */}
       <div className="border border-separator rounded-lg">
         <button type="button" onClick={() => setPendingOpen((o) => !o)}
           className="w-full flex items-center justify-between px-4 py-3 font-body">
@@ -272,7 +273,7 @@ const UserManagement = () => {
         )}
       </div>
 
-      {/* Approved users — primary. */}
+      {/* Approved users: primary. */}
       <div>
         <div className="mb-4 max-w-md">
           <div className="relative">

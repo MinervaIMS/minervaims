@@ -60,8 +60,8 @@ const PendingApproval = () => {
     navigate('/auth');
   };
 
-  const displayName = profile?.full_name || user?.user_metadata?.full_name || '—';
-  const displayEmail = user?.email || '—';
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || '-';
+  const displayEmail = user?.email || '-';
 
   const contactLink = (
     <a

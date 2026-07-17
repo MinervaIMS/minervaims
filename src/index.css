@@ -2,14 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Lucide icon stroke width — 1.25× relative scaling.
-   Applied at the top level so it is emitted by the build and overrides
-   every Lucide icon's default stroke without touching 60+ component files. */
-svg.lucide,
-.lucide svg {
-  stroke-width: 1.25 !important;
-}
-
 /* MIMS Design System - Institutional, Minimal, Premium */
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Carlito:wght@400;700&display=swap');
 
@@ -22,16 +14,16 @@ html {
   overscroll-behavior-y: none;
 }
 
-/* When a Radix overlay (Select, Dialog, …) opens it locks page scroll. On
-   browsers whose scrollbars take layout space, react-remove-scroll adds a
-   compensating padding-right equal to the scrollbar width so the page does
-   NOT shift — that compensation must be left alone on normal pages.
-   Only INSIDE the workspace, where <html> is already overflow:hidden
-   (html.ws-active) and there is therefore no page scrollbar to compensate
-   for, do we force it to zero. That is what removed the old workspace
-   "black bar" width jump; applying it everywhere was what made the public
-   application form shift when a dropdown opened. */
-html.ws-active body[data-scroll-locked] {
+/* When a Radix overlay (Select, Dialog, …) opens it locks page scroll and
+   react-remove-scroll adds a compensating margin/padding to <body> equal to
+   the scrollbar width. Because <html> above already reserves that space
+   permanently via scrollbar-gutter: stable, the injected compensation is a
+   DOUBLE correction: the page shifts left when the overlay opens and shifts
+   back when it closes (the "phantom scrollbar space" glitch seen on the
+   application form). Neutralising the compensation globally makes opening a
+   dropdown a strict layout no-op on every page, current and future — the
+   gutter reservation alone keeps the width stable. */
+body[data-scroll-locked] {
   margin-right: 0 !important;
   padding-right: 0 !important;
 }
@@ -162,7 +154,10 @@ html.ws-active body[data-scroll-locked] {
     right: 0;
     bottom: 0;
     height: env(safe-area-inset-bottom);
-    background-color: #000000;
+    /* Colour follows the current route: RouteChrome sets --chrome-bottom so
+       the band matches the page it sits under (black on the public site,
+       white in the workspace, deep navy on auth pages). */
+    background-color: var(--chrome-bottom, #000000);
     z-index: -1;
     pointer-events: none;
   }
@@ -697,6 +692,42 @@ html.ws-active body[data-scroll-locked] {
     0 10px 28px hsl(var(--accent) / 0.30);
   transition: box-shadow .55s ease, transform .15s ease;
 }
+
+/* Floating "?" help button — ONE canonical definition (position, size,
+   circle, halo shadow and the serif glyph) so it renders identically on
+   desktop, tablet and mobile. Kept out of Tailwind utilities on purpose:
+   the workspace's shadow-stripping rules match utility class names, so a
+   dedicated class can never be accidentally flattened. */
+.ws-help-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 1.25rem;
+  z-index: 70;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 6px hsl(var(--accent) / 0.10),
+    0 10px 28px hsl(var(--accent) / 0.30);
+  transition: box-shadow .55s ease, transform .15s ease;
+}
+.ws-help-fab .ws-help-glyph {
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+@media (min-width: 1024px) {
+  .ws-help-fab { right: 2rem; bottom: 2rem; width: 3.5rem; height: 3.5rem; }
+  .ws-help-fab .ws-help-glyph { font-size: 2rem; }
+}
+.ws-help-fab:hover { transform: scale(1.05); }
 @keyframes help-dot-ignite {
   0%   { box-shadow: 0 0 0 0    hsl(var(--accent) / 0),
                      0 10px 28px hsl(var(--accent) / 0); }

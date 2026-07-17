@@ -84,7 +84,7 @@ export const divisionLabels: Record<OrgDivision, string> = {
   media: 'Media & Communication',
   operations: 'Operations',
   board: 'Board',
-  none: '—',
+  none: '-',
 };
 
 // Base label for a normalised role (without division).

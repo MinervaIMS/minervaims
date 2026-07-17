@@ -69,9 +69,12 @@ export function PageHelpButton({ page }: { page: string }) {
       onClick={() => (isOpen ? closeHelp() : openHelp(page))}
       title={isOpen ? 'Close help' : 'Help for this page'}
       aria-label={isOpen ? 'Close help' : 'Open help for this page'}
-      className="help-dot-lit help-dot-ignite fixed bottom-5 right-4 lg:bottom-8 lg:right-8 z-[70] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center transition-transform duration-150 hover:scale-105"
+      // All visual traits (circle, size, halo shadow, serif glyph) live in the
+      // dedicated .ws-help-fab class so the button renders identically on
+      // desktop, tablet and mobile and cannot be flattened by utility rules.
+      className="ws-help-fab help-dot-ignite"
     >
-      {isOpen ? <X className="h-6 w-6" /> : <span aria-hidden className="font-serif leading-none text-[1.75rem] lg:text-[2rem]" style={{ fontFamily: "'EB Garamond', 'Times New Roman', Times, Georgia, serif" }}>?</span>}
+      {isOpen ? <X className="h-6 w-6" /> : <span aria-hidden className="ws-help-glyph">?</span>}
     </button>
   );
 }

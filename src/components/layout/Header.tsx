@@ -239,8 +239,8 @@ export function Header() {
         style={{ ...headerStyle, paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="mx-auto grid h-[84px] w-full max-w-[1280px] grid-cols-[1fr_auto_1fr] items-center gap-7 px-6 md:px-10 min-[880px]:grid-cols-[1fr_auto_1fr] max-[879px]:!grid-cols-[1fr_auto]">
-          {/* zone 1 — logo */}
-          <Link to="/" aria-label="Minerva IMS — home" className="justify-self-start flex items-center">
+          {/* zone 1: logo */}
+          <Link to="/" aria-label="Minerva IMS: home" className="justify-self-start flex items-center">
             <img
               src={transparent ? logoWhite : logoColor}
               alt="Minerva IMS"
@@ -250,7 +250,7 @@ export function Header() {
             />
           </Link>
 
-          {/* zone 2 — centred links (desktop ≥ 880px) */}
+          {/* zone 2: centred links (desktop ≥ 880px) */}
           <nav className="hidden min-[880px]:flex items-center justify-center gap-[34px]">
             {NAV_LINKS.map((item) => {
               const active = isItemActive(item);
@@ -341,7 +341,7 @@ export function Header() {
             })}
           </nav>
 
-          {/* zone 3 — account (desktop ≥ 880px) */}
+          {/* zone 3: account (desktop ≥ 880px) */}
           <div className="hidden min-[880px]:flex justify-self-end">
             <Account user={accountUser} transparent={transparent} linkStyle={linkTextStyle} />
           </div>
@@ -379,7 +379,7 @@ export function Header() {
       >
         {/* Header row inside overlay */}
         <div className="flex items-center justify-between h-[84px] px-6 border-b border-[#E0E0E0] shrink-0">
-          <Link to="/" aria-label="Minerva IMS — home" className="flex items-center">
+          <Link to="/" aria-label="Minerva IMS: home" className="flex items-center">
             <img src={logoColor} alt="Minerva IMS" className="h-[52px] w-auto block" />
           </Link>
           <button

@@ -80,8 +80,23 @@ const MoveToAlumniSchema = z.object({
 });
 const ActionSchema = z.enum(['create', 'update', 'delete', 'move-to-alumni', 'upload-photo']);
 
-// Roles a division head may assign within their own division.
-const DIVISION_HEAD_ALLOWED_ROLES = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager'];
+// ── Role seniority ranking (mirror of src/lib/roles.ts) ────────────────
+// The hierarchy is the backbone of every authorisation decision here:
+// a caller may only manage people who rank strictly BELOW them, and may
+// only assign roles that rank strictly below their own. Nobody can touch
+// their own roster record through this endpoint (member-profile is the
+// only self-service surface, and it edits phone/photo alone).
+const ROLE_RANK: Record<string, number> = {
+  admin: 0, president: 1, vice_president: 2, head_of_asset_management: 3,
+  head_of_division: 4, head_of_equity: 4, head_of_investment: 4, head_of_macro: 4,
+  head_of_portfolio: 4, head_of_quant: 4, head_of_media: 5, head_of_operations: 6,
+  portfolio_manager: 7, team_leader: 8, senior_analyst: 9, analyst: 10,
+  media_analyst: 11, advisor: 12, silent_advisor: 12,
+  alumni: 90, member: 95, candidate: 98, pending: 99,
+};
+const rankOf = (role: string | null | undefined): number => ROLE_RANK[role ?? ''] ?? 99;
+
+const ADMIN_EMAIL = 'as.minerva@unibocconi.it';
 
 const rateLimits = new Map<string, { count: number; resetTime: number }>();
 function checkRateLimit(ip: string): boolean {
@@ -139,9 +154,14 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
 
-    // ── Authorisation: full access, head of operations, or a division head ──
-    const fullAccessRoles = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
-    const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
+    // ── Authorisation ─────────────────────────────────────────────────
+    // ONLY the roles the access matrix grants 'manage' on People > Members
+    // may write here: the association account (admin), the President, the
+    // Vice President and the Head of Operations (who maintains the register
+    // per statute). Everyone else is read-only, exactly as the matrix and
+    // the Settings > Role Permissions table state.
+    const MANAGER_ROLES = ['admin', 'president', 'vice_president', 'head_of_operations'];
+    const isAdminEmail = user.email === ADMIN_EMAIL;
 
     const { data: userRoles } = await supabase
       .from('user_roles')
@@ -149,21 +169,42 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id);
 
     const roleNames: string[] = (userRoles || []).map((r: any) => r.role);
-    const hasFullAccess = isAdminEmail || roleNames.some((r) => fullAccessRoles.includes(r));
-    const isOperations = roleNames.includes('head_of_operations');
-    const divisionHeadDivisions: string[] = (userRoles || [])
-      .filter((r: any) => r.role === 'head_of_division' && r.division)
-      .map((r: any) => r.division);
-    const isDivisionHead = divisionHeadDivisions.length > 0;
-
-    // Operations maintains the full members register (statute); full access
-    // sees everything; division heads are scoped to their own division.
-    const canManageAll = hasFullAccess || isOperations;
-    if (!canManageAll && !isDivisionHead) {
+    const isManager = isAdminEmail || roleNames.some((r) => MANAGER_ROLES.includes(r));
+    if (!isManager) {
       return json({ error: 'Access denied - insufficient permissions for member management' }, 403);
     }
 
+    // The caller's seniority: the STRONGEST of their roles decides what they
+    // may do (admin email counts as rank 0, above everyone).
+    const callerRank = isAdminEmail ? 0 : Math.min(...roleNames.map(rankOf), 99);
     const primaryRole = roleNames[0] || 'member';
+
+    // Hierarchy guards, applied to every mutating action:
+    //  - never your own record (no self promotion, demotion or deletion);
+    //  - never a peer's or a senior's record;
+    //  - never assign a role at or above your own rank;
+    //  - never the association account's record.
+    const guardTarget = (target: { user_id?: string | null; email?: string | null; role?: string | null } | null | undefined): string | null => {
+      if (!target) return null;
+      if (target.email && target.email === ADMIN_EMAIL) {
+        return 'The association account cannot be managed from here.';
+      }
+      if ((target.user_id && target.user_id === user.id) || (target.email && target.email === user.email)) {
+        return 'You cannot change your own record: roles are assigned by a more senior role. Use My Profile for your phone number and photo.';
+      }
+      if (target.role != null && rankOf(target.role) <= callerRank) {
+        return 'You can only manage members whose role ranks below your own.';
+      }
+      return null;
+    };
+    const guardAssignedRole = (role: string | null | undefined): string | null => {
+      if (role == null) return null;
+      if (role === 'admin') return 'The admin role belongs to the association account only and cannot be granted.';
+      if (rankOf(role) <= callerRank) {
+        return 'You can only assign roles that rank below your own.';
+      }
+      return null;
+    };
 
     // ── Photo upload (multipart) — reuses the existing team-photos bucket ──
     const contentType = req.headers.get('content-type') || '';
@@ -193,26 +234,14 @@ Deno.serve(async (req) => {
     if (!actionResult.success) return json({ error: 'Invalid action' }, 400);
     const action = actionResult.data;
 
-    // Helper: enforce division-head scoping on a target member payload/row.
-    const denyIfOutOfScope = (division?: string | null, role?: string | null): string | null => {
-      if (canManageAll) return null;
-      if (!division || !divisionHeadDivisions.includes(division)) {
-        return 'You can only manage members in your division';
-      }
-      if (role && !DIVISION_HEAD_ALLOWED_ROLES.includes(role)) {
-        return 'You can only assign analyst, team leader or portfolio manager roles';
-      }
-      return null;
-    };
-
     if (action === 'delete') {
       const parsed = DeleteSchema.safeParse(body.member);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
 
       const { data: existing } = await supabase
-        .from('members').select('first_name, surname, division, role').eq('id', parsed.data.id).single();
-      const scopeError = denyIfOutOfScope(existing?.division, existing?.role);
-      if (scopeError) return json({ error: scopeError }, 403);
+        .from('members').select('first_name, surname, division, role, user_id, email').eq('id', parsed.data.id).single();
+      const guardError = guardTarget(existing);
+      if (guardError) return json({ error: guardError }, 403);
 
       const { error } = await supabase.from('members').delete().eq('id', parsed.data.id);
       if (error) throw error;
@@ -239,8 +268,8 @@ Deno.serve(async (req) => {
       const { data: member } = await supabase.from('members')
         .select('user_id, first_name, surname, division, role, phone, email, linkedin_url').eq('id', parsed.data.id).single();
       if (!member) return json({ error: 'Member not found' }, 404);
-      const scopeError = denyIfOutOfScope(member.division, member.role);
-      if (scopeError) return json({ error: scopeError }, 403);
+      const guardError = guardTarget(member);
+      if (guardError) return json({ error: guardError }, 403);
 
       const { data: alum, error: alumErr } = await supabase.from('alumni').insert({
         name: member.first_name, surname: member.surname,
@@ -287,8 +316,9 @@ Deno.serve(async (req) => {
     if (resolved.error) return json({ error: resolved.error }, 400);
     const division = resolved.division;
 
-    const scopeError = denyIfOutOfScope(division, m.role);
-    if (scopeError) return json({ error: scopeError }, 403);
+    // The assigned role must rank strictly below the caller's own role.
+    const assignError = guardAssignedRole(m.role);
+    if (assignError) return json({ error: assignError }, 403);
 
     const isExpelled = m.membership_status === 'expelled';
     const payload = {
@@ -309,6 +339,11 @@ Deno.serve(async (req) => {
     };
 
     if (action === 'create') {
+      // A manager cannot create a roster record carrying their own email or
+      // the association's (that would be an indirect self/role grant).
+      if (payload.email && (payload.email === user.email || payload.email === ADMIN_EMAIL)) {
+        return json({ error: 'You cannot create a roster record with this email address.' }, 403);
+      }
       const { data, error } = await supabase.from('members').insert(payload).select().single();
       if (error) throw error;
       await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'create',
@@ -319,13 +354,14 @@ Deno.serve(async (req) => {
     if (action === 'update') {
       if (!m.id) return json({ error: 'Member ID is required for update' }, 400);
 
-      // Division heads may only edit members already inside their division.
-      if (!canManageAll) {
-        const { data: existing } = await supabase
-          .from('members').select('division, role').eq('id', m.id).single();
-        const existingScopeError = denyIfOutOfScope(existing?.division, existing?.role);
-        if (existingScopeError) return json({ error: existingScopeError }, 403);
-      }
+      // The CURRENT row decides whether the caller may touch it at all:
+      // never their own record, never a peer or senior, never the
+      // association account.
+      const { data: existing } = await supabase
+        .from('members').select('division, role, user_id, email').eq('id', m.id).single();
+      if (!existing) return json({ error: 'Member not found' }, 404);
+      const guardError = guardTarget(existing);
+      if (guardError) return json({ error: guardError }, 403);
 
       const { data, error } = await supabase.from('members').update(payload).eq('id', m.id).select().single();
       if (error) throw error;

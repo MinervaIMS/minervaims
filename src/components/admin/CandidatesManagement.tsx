@@ -257,7 +257,7 @@ export default function CandidatesManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        {/* Semester scope — the working area renews itself every semester. */}
+        {/* Semester scope: the working area renews itself every semester. */}
         <div className="flex items-center gap-2">
         <Select value={semKey} onValueChange={setSemKey}>
           <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>

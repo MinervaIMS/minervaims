@@ -209,7 +209,7 @@ export default function Apply() {
         navigate('/apply?submitted=1', { replace: true });
       } else if (verified) {
         // Confirmed account but not signed in → they just need to sign in.
-        toast({ title: 'Application received', description: 'This email is already verified — please sign in to view your application.' });
+        toast({ title: 'Application received', description: 'This email is already verified: please sign in to view your application.' });
         navigate('/auth', { replace: true });
       } else {
         // The normal path: confirm the email to finish the application.
@@ -249,7 +249,7 @@ export default function Apply() {
     <Shell>
       {readOnly && (
         <div className="mb-6 border border-amber-300 bg-amber-50 text-amber-800 text-sm font-body px-4 py-2 rounded text-center">
-          Preview mode — applications are currently closed. This is how the form appears to applicants; it cannot be submitted here.
+          Preview mode: applications are currently closed. This is how the form appears to applicants; it cannot be submitted here.
         </div>
       )}
       <h1 className="font-serif text-3xl text-accent text-center mb-2">Application Form ({settings.semesterLabel})</h1>

@@ -22,7 +22,7 @@ interface Category {
 
 const CATS: Category[] = [
   { key: 'necessary',   name: 'Strictly Necessary', locked: true,
-    desc: 'Required for the website to function — security, network management and accessibility. These cookies cannot be disabled.' },
+    desc: 'Required for the website to function: security, network management and accessibility. These cookies cannot be disabled.' },
   { key: 'preferences', name: 'Preferences',
     desc: 'Allow the website to remember choices you make (such as language or region) and provide enhanced, personalised features.' },
   { key: 'analytics',   name: 'Analytics',

@@ -27,9 +27,12 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function Bullets({ items }: { items: string[] }) {
   return (
-    <ul className="space-y-1.5">
+    <ul className="space-y-2">
       {items.map((t, i) => (
-        <li key={i} className="text-sm text-foreground pl-4 relative leading-relaxed before:content-['•'] before:absolute before:left-0 before:text-accent">{t}</li>
+        <li key={i} className="flex gap-2.5 text-sm text-foreground leading-relaxed">
+          <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-accent shrink-0" />
+          <span className="text-foreground/85">{t}</span>
+        </li>
       ))}
     </ul>
   );
@@ -228,119 +231,130 @@ export default function MyProfile() {
         </div>
       )}
 
-      <div className="max-w-4xl flex flex-col sm:flex-row gap-8">
-        {/* Square photo */}
-        <div className="shrink-0">
-          <div className="w-44 aspect-square border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
-            {photoUrl ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" /> : <UserIcon className="h-14 w-14 text-muted-foreground" />}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-          {isDesktop && (
-            <div className="mt-3 flex flex-wrap gap-2 w-44">
-              <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              </Button>
-              <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto}><Download className="h-4 w-4" /></Button>
-              <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto}><Trash2 className="h-4 w-4" /></Button>
-            </div>
-          )}
-        </div>
-
-        {/* Details, grouped: name+surname, email+phone, role+division */}
-        <div className="flex-1 min-w-0 space-y-5">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-            <Field label="First name" value={member.first_name} />
-            <Field label="Surname" value={member.surname} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-            <Field label="Email" value={email} />
-            {isDesktop ? (
-              <div>
-                <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
-                <Input id="phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
+      {/* Two halves on desktop: the personal profile on the left, the role
+          brief on the right. Static panels, hairline separations, no hover
+          effects: the workspace design rules apply. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-0 gap-y-10 items-start">
+        {/* LEFT: the profile itself */}
+        <div className="lg:pr-12 space-y-6">
+          <div className="flex flex-col sm:flex-row gap-8">
+            {/* Square photo */}
+            <div className="shrink-0">
+              <div className="w-44 aspect-square border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
+                {photoUrl ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" /> : <UserIcon className="h-14 w-14 text-muted-foreground" />}
               </div>
-            ) : (
-              <Field label="Phone number" value={phone || '-'} />
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-            <Field label="Role" value={roleText} />
-            <Field label="Division" value={divisionText} />
-          </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
+              {isDesktop && (
+                <div className="mt-3 flex flex-wrap gap-2 w-44">
+                  <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto}><Download className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              )}
+            </div>
 
-          {isDesktop ? (
-            <Button onClick={handleSave} disabled={saving || !dirty}>
-              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
-            </Button>
-          ) : (
-            <p className="text-xs text-muted-foreground">Editing your phone number and photo is available on desktop.</p>
-          )}
+            {/* Details, grouped: name+surname, email+phone, role+division */}
+            <div className="flex-1 min-w-0 space-y-5">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                <Field label="First name" value={member.first_name} />
+                <Field label="Surname" value={member.surname} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                <Field label="Email" value={email} />
+                {isDesktop ? (
+                  <div>
+                    <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
+                    <Input id="phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
+                  </div>
+                ) : (
+                  <Field label="Phone number" value={phone || '-'} />
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                <Field label="Role" value={roleText} />
+                <Field label="Division" value={divisionText} />
+              </div>
+
+              {isDesktop ? (
+                <Button onClick={handleSave} disabled={saving || !dirty}>
+                  {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Editing your phone number and photo is available on desktop.</p>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* RIGHT: the role brief, from "Your role" down. */}
+        {guide && (
+          <div className="lg:border-l lg:border-separator lg:pl-12 space-y-7">
+            {/* Role header band: the one tinted element of the page. */}
+            <div className="border-l-2 border-accent bg-accent/[0.05] px-5 py-4">
+              <div className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold mb-1">Your role</div>
+              <div className="font-serif text-2xl text-accent leading-tight">{roleText}</div>
+              {divisionText && <div className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{divisionText}</div>}
+              <p className="text-sm text-foreground leading-relaxed mt-3">{guide.summary}</p>
+            </div>
+
+            <section>
+              <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2 pb-1.5 border-b border-separator">Responsibilities</div>
+              <Bullets items={guide.responsibilities} />
+            </section>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <section>
+                <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1.5 pb-1.5 border-b border-separator">You report to</div>
+                <p className="text-sm text-foreground">{guide.reportsTo}</p>
+              </section>
+              {guide.oversees && (
+                <section>
+                  <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1.5 pb-1.5 border-b border-separator">You coordinate</div>
+                  <p className="text-sm text-foreground">{guide.oversees.join(', ')}</p>
+                </section>
+              )}
+            </div>
+
+            <section>
+              <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2 pb-1.5 border-b border-separator">Your rights</div>
+              <Bullets items={guide.rights} />
+            </section>
+
+            <section>
+              <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1.5 pb-1.5 border-b border-separator">Who to contact</div>
+              <p className="text-sm text-foreground">{guide.contact}</p>
+            </section>
+
+            {/* Shared membership rules */}
+            <Card><CardContent className="py-5 space-y-5">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your duties as a member</div>
+                <Bullets items={MEMBERSHIP_RULES.duties} />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Grounds for expulsion</div>
+                <Bullets items={MEMBERSHIP_RULES.expulsion} />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Report publication and blocking</div>
+                <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.publicationControl}</p>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Hierarchy</div>
+                <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.hierarchyNote}</p>
+              </div>
+            </CardContent></Card>
+          </div>
+        )}
       </div>
 
-      {/* Connection to the full statute — always available on the profile. */}
-      <div className="max-w-4xl mt-8">
+      {/* Connection to the full statute: the closing element of the page. */}
+      <div className="mt-10">
         <StatuteLink />
       </div>
-
-      {/* Role guide */}
-      {guide && (
-        <div className="max-w-4xl mt-10 space-y-6">
-          <div>
-            <h2 className="font-serif text-xl text-accent mb-1">Your role</h2>
-            <p className="text-sm text-foreground leading-relaxed">{guide.summary}</p>
-          </div>
-
-          <section>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Responsibilities</div>
-            <Bullets items={guide.responsibilities} />
-          </section>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <section>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">You report to</div>
-              <p className="text-sm text-foreground">{guide.reportsTo}</p>
-            </section>
-            {guide.oversees && (
-              <section>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">You coordinate</div>
-                <p className="text-sm text-foreground">{guide.oversees.join(', ')}</p>
-              </section>
-            )}
-          </div>
-
-          <section>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your rights</div>
-            <Bullets items={guide.rights} />
-          </section>
-
-          <section>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Who to contact</div>
-            <p className="text-sm text-foreground">{guide.contact}</p>
-          </section>
-
-          {/* Shared membership rules */}
-          <Card><CardContent className="py-5 space-y-5">
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your duties as a member</div>
-              <Bullets items={MEMBERSHIP_RULES.duties} />
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Grounds for expulsion</div>
-              <Bullets items={MEMBERSHIP_RULES.expulsion} />
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Report publication and blocking</div>
-              <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.publicationControl}</p>
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Hierarchy</div>
-              <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.hierarchyNote}</p>
-            </div>
-          </CardContent></Card>
-        </div>
-      )}
     </div>
   );
 }

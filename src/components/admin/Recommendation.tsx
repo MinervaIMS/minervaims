@@ -24,7 +24,7 @@ export function Recommendation({ title, children, collapsible = true }: {
         aria-expanded={open}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left ${collapsible ? '' : 'cursor-default'}`}
       >
-        <span aria-hidden className="flex items-center justify-center w-8 h-8 shrink-0 bg-accent/10 border border-accent/30 text-base">💡</span>
+        <span aria-hidden className="text-xl leading-none shrink-0">💡</span>
         <span className="min-w-0">
           <span className="block text-[11px] uppercase tracking-[0.14em] text-accent font-semibold">Non-binding recommendation</span>
           <span className="block font-serif text-[15px] text-foreground leading-snug truncate">{title}</span>
@@ -37,7 +37,7 @@ export function Recommendation({ title, children, collapsible = true }: {
         )}
       </button>
       {open && (
-        <div className="px-4 pb-3 pl-[60px] text-sm text-muted-foreground space-y-2 leading-relaxed">
+        <div className="px-4 pb-3 pl-12 text-sm text-muted-foreground space-y-2 leading-relaxed">
           {children}
           <p className="text-xs text-muted-foreground/80 border-t border-accent/20 pt-2">
             This is advice based on the past experience of association members. It is not a rule: it never replaces

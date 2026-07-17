@@ -233,9 +233,9 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'people-members', section: 'People', label: 'Members',
     purpose: 'The association register: members and advisors, each with THE one role that drives their workspace permissions everywhere. Also holds the semester registers: frozen snapshots of who officially belonged to the association each semester.',
-    view: ['Browse the directory and consult past semester registers.'],
+    view: ['Browse the directory and consult past semester registers.', 'Portfolio managers, team leaders, senior analysts and analysts see the people of their own division (names, search and filters).'],
     manage: ['Add, edit, move to alumni or expel members.'],
-    warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.'],
+    warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.', 'Roles are always assigned by a more senior role: nobody can change their own role, from any page.'],
     topics: [
       { id: 'registers', title: 'Semester registers', body: 'Each register lists who officially belonged to the association in a given semester. It is created automatically the moment that semester\'s membership fee collection is closed, and preserved unchanged from then on.' },
       { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Board members can additionally stay in the workspace as advisors (hidden from the website by default).', requires: 'manage' },
@@ -263,8 +263,9 @@ export const GUIDE: GuideEntry[] = [
   },
   { key: 'smm-ig', section: 'Media & Communication', label: 'Instagram', purpose: 'Reusable Instagram material: texts, files and links.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'] },
   { key: 'smm-li', section: 'Media & Communication', label: 'LinkedIn', purpose: 'Reusable LinkedIn material.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'] },
-  { key: 'smm-other', section: 'Media & Communication', label: 'Other templates', purpose: 'Other reusable communication material.', view: ['Open and download material.'], manage: ['Add, edit and remove items.'] },
-  { key: 'smm-brand', section: 'Media & Communication', label: 'Brand & design', purpose: 'The association\'s visual identity: fonts, colours, logo usage and design rules.', view: ['Consult the brand references.'], manage: ['Maintain the brand references.'] },
+  { key: 'smm-graphics', section: 'Media & Communication', label: 'MIMS Graphics', purpose: 'The association\'s graphic assets: logos, marks and ready-to-use graphic files.', view: ['Open and download the graphic assets.'], manage: ['Add, edit and remove items; pin favourites.'] },
+  { key: 'smm-other', section: 'Media & Communication', label: 'Other resources', purpose: 'Other reusable communication material.', view: ['Open and download material.'], manage: ['Add, edit and remove items.'] },
+  { key: 'smm-brand', section: 'Media & Communication', label: 'Design System', purpose: 'The association\'s visual identity: fonts, colours, logo usage and design rules.', view: ['Consult the design references.'], manage: ['Maintain the design references.'] },
   {
     key: 'smm-ads', section: 'Media & Communication', label: 'Ads & spending',
     purpose: 'The paid advertising register, organised semester by semester: content, platform, amount, purpose and effectiveness notes. Each amount is posted once to the Treasury.',

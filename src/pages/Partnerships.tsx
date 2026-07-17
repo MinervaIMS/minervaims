@@ -126,7 +126,7 @@ const Partnerships = () => {
         </div>
       </div>
 
-      {/* SECTION 1 — Lead + intro */}
+      {/* SECTION 1: Lead + intro */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
@@ -140,7 +140,7 @@ const Partnerships = () => {
         </div>
       </section>
 
-      {/* SECTION 2 — Formats */}
+      {/* SECTION 2: Formats */}
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
@@ -173,7 +173,7 @@ const Partnerships = () => {
         </div>
       </section>
 
-      {/* SECTION 3 — Establish a partnership (navy block) */}
+      {/* SECTION 3: Establish a partnership (navy block) */}
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <div className="bg-accent p-8 md:p-12">
@@ -202,7 +202,7 @@ const Partnerships = () => {
         </div>
       </section>
 
-      {/* SECTION 4 — Engagement framework */}
+      {/* SECTION 4: Engagement framework */}
       <section className="py-section-sm md:py-section bg-muted">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">

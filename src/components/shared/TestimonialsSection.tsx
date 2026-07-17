@@ -83,7 +83,7 @@ export function TestimonialsSection() {
 
   return (
     <section className="relative bg-accent text-background py-section-sm md:py-section overflow-hidden">
-      {/* Arrows — desktop only */}
+      {/* Arrows: desktop only */}
       <button
         type="button"
         aria-label="Previous testimonial"
