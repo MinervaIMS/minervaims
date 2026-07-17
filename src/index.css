@@ -783,13 +783,3 @@ select,
   border-radius: 0 !important;
   font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif !important;
 }
-
-/* =====================================================================
-   Global Lucide icon stroke width — 1.25× relative scaling.
-   Applied at the top level so it is emitted by the build and overrides
-   every Lucide icon's default stroke without touching 60+ component files.
-   ===================================================================== */
-svg.lucide,
-.lucide svg {
-  stroke-width: 1.25 !important;
-}
