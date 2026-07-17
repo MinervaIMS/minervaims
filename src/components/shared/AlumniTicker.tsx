@@ -367,7 +367,7 @@ const AlumniTicker = () => {
   const isMobile = useIsMobile();
   return (
     <section
-      aria-label="MIMS alumni network — employers and academic institutions"
+      aria-label="MIMS alumni network: employers and academic institutions"
       className="bg-background py-section-sm md:py-section"
       style={{ overflow: 'hidden' }}
     >

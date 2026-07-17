@@ -28,7 +28,8 @@ const SECTIONS: { section: string; items: { key: ResourceKey; label: string }[] 
     { key: 'people-members', label: 'Members' }, { key: 'people-alumni', label: 'Alumni' } ] },
   { section: 'Media & Communication', items: [
     { key: 'smm-editorial', label: 'Editorial calendar' }, { key: 'smm-ig', label: 'Instagram' }, { key: 'smm-li', label: 'LinkedIn' },
-    { key: 'smm-other', label: 'Other templates' }, { key: 'smm-brand', label: 'Brand & design' }, { key: 'smm-ads', label: 'Ads & spending' } ] },
+    { key: 'smm-graphics', label: 'MIMS Graphics' }, { key: 'smm-other', label: 'Other resources' },
+    { key: 'smm-brand', label: 'Design System' }, { key: 'smm-ads', label: 'Ads & spending' } ] },
   { section: 'Operations', items: [
     { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' },
     { key: 'ops-external', label: 'External relations' }, { key: 'ops-docs', label: 'Statute & documents' } ] },
@@ -148,6 +149,10 @@ export default function RolePermissionsTable() {
           <li className="flex gap-2">
             <span className="text-accent mt-0.5">÷</span>
             <span>On Reports and Templates, analysts, senior analysts, team leaders and portfolio managers see only their <span className="text-foreground">own division's</span> material; a Head of Division sees their own by default and can switch to view other divisions; the Head of Asset Management sees all divisions.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-accent mt-0.5">÷</span>
+            <span>On People &gt; Members, portfolio managers, team leaders, senior analysts and analysts see only the people of their <span className="text-foreground">own division</span> (names, search and filters; no contact columns). Roles are always assigned by a more senior role: nobody can change their own role, and the database enforces both rules.</span>
           </li>
         </ul>
       </div>

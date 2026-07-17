@@ -82,7 +82,17 @@ export default function MobileWorkspaceShell({
   }, [activeSection, activeSub]);
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
+    // The shell is FIXED to the viewport: the document itself can never
+    // scroll, so the header physically cannot be moved off screen (previously
+    // the browser's own page scroll / rubber-banding could push it away).
+    // Only the content pane below scrolls. The top strip extends its accent
+    // colour into the iOS status-bar safe area.
+    <div
+      className="fixed inset-0 z-[40] flex flex-col bg-background overflow-hidden"
+      style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      {/* Paint the status-bar safe area with the same accent as the header. */}
+      <div aria-hidden className="absolute top-0 left-0 right-0 bg-accent" style={{ height: 'env(safe-area-inset-top)' }} />
       {/* Top strip: compact counterpart of the desktop role/email bar. */}
       <header className="shrink-0 h-14 flex items-center gap-2 px-2 bg-accent text-accent-foreground">
         <button
@@ -146,8 +156,13 @@ export default function MobileWorkspaceShell({
         </div>
       )}
 
-      {/* Content slot. */}
-      <main id="mobile-ws-content" className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 relative">
+      {/* Content slot. Overscroll is contained so a bounce at the edges can
+          never chain to the document and drag the fixed header around. */}
+      <main
+        id="mobile-ws-content"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 relative"
+        style={{ overscrollBehavior: 'contain', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+      >
         <HelpProvider>
           {currentPolicy === 'no' ? (
             <div className="h-full flex items-center justify-center">
@@ -176,6 +191,7 @@ export default function MobileWorkspaceShell({
       />
       <aside
         className={`fixed inset-y-0 left-0 z-[90] w-[300px] max-w-[85vw] bg-accent text-accent-foreground flex flex-col transition-transform duration-200 ease-out ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-hidden={!drawerOpen}
       >
         {/* Drawer header: identity (role + email) plus close. */}

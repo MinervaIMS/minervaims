@@ -152,7 +152,7 @@ export function ApplicationJourney() {
               <div className="jwritten">
                 <p className="jw-note">
                   Answer the question for your first-choice division below. You may answer
-                  additional divisions too — if you do, combine everything into the same PDF.
+                  additional divisions too: if you do, combine everything into the same PDF.
                 </p>
                 {s.written.map((w) => (
                   <div key={w.div} className="jw-row">

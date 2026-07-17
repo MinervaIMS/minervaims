@@ -725,63 +725,46 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
 
 
-      {/* Filters - matching Archive page UI */}
+      {/* Filters follow the standard filter format: flat corners, body font,
+          no labels above the fields. */}
       <div className="mb-8 pb-6 border-b border-separator">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Division filter */}
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Division
-            </label>
-            <select
-              value={divisionFilter}
-              onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
-              className="bg-background border border-separator px-3 h-10 min-w-[200px]"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
-            >
-              {!allowedDivisions && <option value="all">All Divisions</option>}
-              {allowedDivisions && allowedDivisions.length > 1 && <option value="all">All Divisions</option>}
-              {availableDivisions.map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search by title or description"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="font-body w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+            />
           </div>
+
+          {/* Division filter */}
+          <select
+            value={divisionFilter}
+            onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
+            className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+          >
+            {!allowedDivisions && <option value="all">All Divisions</option>}
+            {allowedDivisions && allowedDivisions.length > 1 && <option value="all">All Divisions</option>}
+            {availableDivisions.map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
 
           {/* Year filter */}
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Year
-            </label>
-            <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="bg-background border border-separator px-3 h-10 min-w-[120px]"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
-            >
-              <option value="all">All Years</option>
-              {fileYears.map((year) => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Search */}
-          <div className="flex-1">
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Search
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search by title or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
-              />
-            </div>
-          </div>
+          <select
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            className="font-body bg-background border border-separator px-3 h-10 min-w-[120px]"
+          >
+            <option value="all">All Years</option>
+            {fileYears.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
         </div>
       </div>
 

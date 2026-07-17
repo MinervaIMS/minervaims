@@ -152,14 +152,22 @@ export default function ReportUpload() {
             <p className="text-sm text-muted-foreground">
               {publishNow
                 ? 'On: the report is published straight away and listed in Reports > Archive.'
-                : 'Off: the report is saved as a draft and held for a Head to review; it is not listed in the Archive until it is published.'}
+                : 'Off: the report is saved as a draft and held for a Head to review; it is not listed in the public website until it is published.'}
             </p>
             {!canPublishDirectly && <p className="text-xs text-muted-foreground">You can save drafts; a Head of Division publishes them.</p>}
           </div>
 
-          {/* PDF picker - moved to the end */}
-          <div className="space-y-2">
-            <Label>Report file (PDF) *</Label>
+          {/* PDF picker - framed like the publish control so the label and
+              the button breathe instead of sitting on top of each other. */}
+          <div className="border border-separator p-4 space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <Label>Report file (PDF) *</Label>
+              {!fileUrl && (
+                <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                  {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><UploadIcon className="h-4 w-4 mr-2" />Attach PDF</>}
+                </Button>
+              )}
+            </div>
             <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
             {fileUrl ? (
@@ -169,9 +177,7 @@ export default function ReportUpload() {
                 <Button variant="outline" size="sm" onClick={() => { setFileUrl(''); setFileName(''); }}>Replace</Button>
               </div>
             ) : (
-              <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading</> : <><UploadIcon className="h-4 w-4 mr-2" />Attach PDF</>}
-              </Button>
+              <p className="text-sm text-muted-foreground">One PDF per report, up to 10 MB.</p>
             )}
           </div>
 

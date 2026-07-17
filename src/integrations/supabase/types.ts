@@ -1946,6 +1946,11 @@ export type Database = {
         Returns: boolean
       }
       process_offer_deadlines: { Args: never; Returns: undefined }
+      public_alumni_directory: { Args: never; Returns: Json }
+      public_alumni_filter_count: {
+        Args: { p_job_area?: string; p_company?: string; p_city?: string }
+        Returns: number
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -1980,6 +1985,7 @@ export type Database = {
           is_valid: boolean
         }[]
       }
+      workspace_member_count: { Args: never; Returns: number }
     }
     Enums: {
       app_role:

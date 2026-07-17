@@ -16,9 +16,14 @@ const NotFound = () => {
         />
         <h1 className="font-serif text-hero text-accent mb-4">404</h1>
         <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-md">
-          The page you are looking for does not exist.
+          You&rsquo;ve just discovered a genuine Black Swan event. This page has vanished faster
+          than market liquidity in 2008, but discovering rare anomalies is exactly what we thrive
+          on. Let&rsquo;s redeploy that capital to the Home page.
         </p>
-        <Link to="/" className="cta-link">
+        <Link
+          to="/"
+          className="inline-block px-10 py-4 bg-accent text-background border border-accent font-serif text-lg transition-all duration-200 hover:bg-background hover:text-accent"
+        >
           Return to Homepage
         </Link>
       </div>

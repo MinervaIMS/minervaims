@@ -355,16 +355,18 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 border border-separator">
-      <div className="relative bg-muted aspect-[4/3] md:aspect-auto md:min-h-[320px]">
+      {/* The poster is shown WHOLE: the image keeps its natural aspect ratio
+          and the card's height adapts to it, so no crop ever happens. */}
+      <div className="relative bg-muted flex items-center justify-center">
         {event.photoUrl ? (
           <img
             src={event.photoUrl}
             alt={event.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="block w-full h-auto"
             loading="lazy"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full aspect-[4/3] md:min-h-[320px] flex items-center justify-center">
             <span className="font-serif text-muted-foreground">Event Photo</span>
           </div>
         )}

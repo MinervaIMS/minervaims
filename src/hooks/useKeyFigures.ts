@@ -61,16 +61,18 @@ export function useKeyFigures() {
 
     const fetchCounts = async () => {
       try {
+        // The alumni table is no longer publicly readable in full; the total
+        // comes from the public counting RPC instead.
         const [reportsRes, membersRes, alumniRes] = await Promise.all([
           supabase.from('archive_files').select('id', { count: 'exact', head: true }),
           supabase.from('team_members').select('id', { count: 'exact', head: true }),
-          supabase.from('alumni').select('id', { count: 'exact', head: true }),
+          supabase.rpc('public_alumni_filter_count'),
         ]);
 
         const data: KeyFigures = {
           reports: roundDownToTen(reportsRes.count || 0),
           members: roundDownToTen(membersRes.count || 0),
-          alumni: roundDownToTen(alumniRes.count || 0),
+          alumni: roundDownToTen((alumniRes.data as number | null) || 0),
         };
 
         setCounts(data);

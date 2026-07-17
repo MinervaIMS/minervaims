@@ -6,7 +6,6 @@ const alumniBg = alumniBgAsset.url;
 import AlumniGlobe from '@/components/AlumniGlobe';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
-import { Search } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import {
   Pagination,
@@ -16,6 +15,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+
+// =====================================================================
+// Public alumni page. The full directory is a privilege of the workspace
+// (active members and alumni with an account): this page receives ONLY
+// the first 100 alumni from the public_alumni_directory RPC, while the
+// three filters draw their options from the ENTIRE base and report how
+// many people match overall, even when the matches are not shown here.
+// =====================================================================
 
 interface AlumniRecord {
   id: string;
@@ -28,71 +35,80 @@ interface AlumniRecord {
   job_area: string | null;
 }
 
+interface DirectoryPayload {
+  total: number;
+  rows: AlumniRecord[];
+  job_areas: string[];
+  companies: string[];
+  cities: string[];
+}
+
 const ALUMNI_PER_PAGE = 25;
+const CONTACT = 'as.minerva@unibocconi.it';
 
 const Alumni = () => {
-  const [alumni, setAlumni] = useState<AlumniRecord[]>([]);
+  const [directory, setDirectory] = useState<DirectoryPayload | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [jobAreaFilter, setJobAreaFilter] = useState<string>('all');
+  // Matches over the ENTIRE alumni base for the active filters (null while loading).
+  const [totalMatches, setTotalMatches] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const imagesLoaded = useImagePreload([alumniBg]);
 
   useEffect(() => {
-    fetchAlumni();
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('public_alumni_directory');
+        if (error) throw error;
+        const payload = data as unknown as DirectoryPayload;
+        setDirectory({
+          total: payload?.total ?? 0,
+          rows: payload?.rows ?? [],
+          job_areas: [...(payload?.job_areas ?? [])].sort(),
+          companies: [...(payload?.companies ?? [])].sort(),
+          cities: [...(payload?.cities ?? [])].sort(),
+        });
+      } catch (error) {
+        console.error('Error fetching alumni:', error);
+        setDirectory({ total: 0, rows: [], job_areas: [], companies: [], cities: [] });
+      } finally {
+        setIsDataLoading(false);
+      }
+    })();
   }, []);
 
+  const filtersActive = companyFilter !== 'all' || cityFilter !== 'all' || jobAreaFilter !== 'all';
 
-  const fetchAlumni = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('alumni')
-        .select('*')
-        .order('graduation_year', { ascending: false });
+  // The base-wide match count for the current filters comes from the server,
+  // because most matching alumni may live beyond the visible 100.
+  useEffect(() => {
+    if (!filtersActive) { setTotalMatches(null); return; }
+    let active = true;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('public_alumni_filter_count', {
+          p_job_area: jobAreaFilter === 'all' ? undefined : jobAreaFilter,
+          p_company: companyFilter === 'all' ? undefined : companyFilter,
+          p_city: cityFilter === 'all' ? undefined : cityFilter,
+        });
+        if (active) setTotalMatches((data as number | null) ?? 0);
+      } catch { if (active) setTotalMatches(null); }
+    })();
+    return () => { active = false; };
+  }, [filtersActive, jobAreaFilter, companyFilter, cityFilter]);
 
-      if (error) throw error;
-      setAlumni(data || []);
-    } catch (error) {
-      console.error('Error fetching alumni:', error);
-    } finally {
-      setIsDataLoading(false);
-    }
-  };
+  const alumni = directory?.rows ?? [];
 
-  // Get unique companies and cities for filters
-  const uniqueCompanies = useMemo(() => {
-    const companies = [...new Set(alumni.map(a => a.company).filter(Boolean))].sort() as string[];
-    return companies;
-  }, [alumni]);
-
-  const uniqueCities = useMemo(() => {
-    const cities = [...new Set(alumni.map(a => a.city).filter(Boolean))].sort() as string[];
-    return cities;
-  }, [alumni]);
-
-  const uniqueJobAreas = useMemo(() => {
-    const areas = [...new Set(alumni.map(a => a.job_area).filter(Boolean))].sort() as string[];
-    return areas;
-  }, [alumni]);
-
-  // Filter alumni based on search and filters
   const filteredAlumni = useMemo(() => {
-    return alumni.filter(alumnus => {
-      const matchesSearch = searchQuery === '' || 
-        `${alumnus.name} ${alumnus.surname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (alumnus.company?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
-        (alumnus.city?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
-        (alumnus.job_area?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-      
+    return alumni.filter((alumnus) => {
       const matchesCompany = companyFilter === 'all' || alumnus.company === companyFilter;
       const matchesCity = cityFilter === 'all' || alumnus.city === cityFilter;
       const matchesJobArea = jobAreaFilter === 'all' || alumnus.job_area === jobAreaFilter;
-      
-      return matchesSearch && matchesCompany && matchesCity && matchesJobArea;
+      return matchesCompany && matchesCity && matchesJobArea;
     });
-  }, [alumni, searchQuery, companyFilter, cityFilter, jobAreaFilter]);
+  }, [alumni, companyFilter, cityFilter, jobAreaFilter]);
 
   // Pagination for filtered alumni
   const totalPages = Math.ceil(filteredAlumni.length / ALUMNI_PER_PAGE);
@@ -104,12 +120,12 @@ const Alumni = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, companyFilter, cityFilter, jobAreaFilter]);
+  }, [companyFilter, cityFilter, jobAreaFilter]);
 
   // Group paginated alumni by graduation year
   const groupedAlumni = useMemo(() => {
     const groups: Record<number, AlumniRecord[]> = {};
-    paginatedAlumni.forEach(alumnus => {
+    paginatedAlumni.forEach((alumnus) => {
       if (!groups[alumnus.graduation_year]) {
         groups[alumnus.graduation_year] = [];
       }
@@ -122,6 +138,11 @@ const Alumni = () => {
   const sortedYears = useMemo(() => {
     return Object.keys(groupedAlumni).map(Number).sort((a, b) => b - a);
   }, [groupedAlumni]);
+
+  // Matches that exist in the base but are hidden from the public page.
+  const hiddenMatches = filtersActive && totalMatches != null
+    ? Math.max(0, totalMatches - filteredAlumni.length)
+    : 0;
 
   // Fixed founders list - always show these 5 in alphabetical order with full details from alumni database
   const founders = [
@@ -159,7 +180,7 @@ const Alumni = () => {
             A Global Network, Still Close
           </h2>
           <p className="font-body text-body-lg text-muted-foreground">
-            MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers, as well as consultancies and top academic programmes worldwide. The network reflects the breadth of paths taken by members during and after their time in the Society, whether continuing with MSc or PhD studies, or building careers in major financial centres. The organisations shown below provide a snapshot of where our alumni study and work today, reinforcing the reach of a truly global community that remains closely connected to MIMS. Former members stay actively engaged through mentoring and alumni calls, supporting current students with practical guidance on academic choices, recruitment processes and early-career development. Further down the page you can explore the full alumni directory, with our founders highlighted.
+            MIMS alumni form an international community across leading banks, boutiques, hedge funds and asset managers, as well as consultancies and top academic programmes worldwide. The network reflects the breadth of paths taken by members during and after their time in the Society, whether continuing with MSc or PhD studies, or building careers in major financial centres. The organisations shown below provide a snapshot of where our alumni study and work today, reinforcing the reach of a truly global community that remains closely connected to MIMS. Former members stay actively engaged through mentoring and alumni calls, supporting current students with practical guidance on academic choices, recruitment processes and early-career development. Further down the page you can explore the first part of the alumni directory, with our founders highlighted.
           </p>
         </div>
       </section>
@@ -209,86 +230,54 @@ const Alumni = () => {
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div
-          className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-separator max-h-[calc(100vh-4rem)] overflow-y-auto"
-        >
-          <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
-            {/* Search */}
-            <div className="flex-1 min-w-[200px]">
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Search
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search by name, company, city, or job area..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 h-10 rounded-none font-body border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                />
-              </div>
-            </div>
+        {/* Filters: options span the ENTIRE alumni base; no labels, body font,
+            flat corners, and the bar scrolls with the page (not sticky). */}
+        <div className="py-4 mb-4 border-b border-separator">
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            <select
+              value={jobAreaFilter}
+              onChange={(e) => setJobAreaFilter(e.target.value)}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+            >
+              <option value="all">All Job Areas</option>
+              {(directory?.job_areas ?? []).map((area) => (
+                <option key={area} value={area}>{area}</option>
+              ))}
+            </select>
 
-            {/* Job Area Filter */}
-            <div>
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Job Area
-              </label>
-              <select
-                value={jobAreaFilter}
-                onChange={(e) => setJobAreaFilter(e.target.value)}
-                className="bg-background border border-separator px-3 h-10 min-w-[200px]"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
-              >
-                <option value="all">All Job Areas</option>
-                {uniqueJobAreas.map((area) => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+            >
+              <option value="all">All Companies</option>
+              {(directory?.companies ?? []).map((company) => (
+                <option key={company} value={company}>{company}</option>
+              ))}
+            </select>
 
-            {/* Company Filter */}
-            <div>
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Company
-              </label>
-              <select
-                value={companyFilter}
-                onChange={(e) => setCompanyFilter(e.target.value)}
-                className="bg-background border border-separator px-3 h-10 min-w-[200px]"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
-              >
-                <option value="all">All Companies</option>
-                {uniqueCompanies.map((company) => (
-                  <option key={company} value={company}>{company}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* City Filter */}
-            <div>
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                City
-              </label>
-              <select
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
-                className="bg-background border border-separator px-3 h-10 min-w-[200px]"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
-              >
-                <option value="all">All Cities</option>
-                {uniqueCities.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+            >
+              <option value="all">All Cities</option>
+              {(directory?.cities ?? []).map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
           </div>
 
-          <p className="text-small text-muted-foreground mt-4">
-            Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
-            {filteredAlumni.length !== alumni.length && ` (${alumni.length} total)`}
+          <p className="font-body text-small text-muted-foreground mt-4">
+            {filtersActive && totalMatches != null ? (
+              <>
+                {totalMatches} {totalMatches === 1 ? 'person' : 'people'} found across the alumni community
+                {hiddenMatches > 0 && <>, of which {filteredAlumni.length} shown here. Full access is restricted to active members and alumni.</>}
+                {hiddenMatches === 0 && <>.</>}
+              </>
+            ) : (
+              <>Showing the first {alumni.length} of {directory?.total ?? alumni.length} alumni.</>
+            )}
           </p>
         </div>
 
@@ -297,7 +286,11 @@ const Alumni = () => {
         {alumni.length === 0 ? (
           <p className="font-body text-muted-foreground">No alumni data available yet.</p>
         ) : filteredAlumni.length === 0 ? (
-          <p className="font-body text-muted-foreground">No alumni match your search criteria.</p>
+          <p className="font-body text-muted-foreground">
+            {filtersActive && (totalMatches ?? 0) > 0
+              ? `${totalMatches} ${totalMatches === 1 ? 'person' : 'people'} found, but outside the publicly visible list. Full access is restricted to active members and alumni.`
+              : 'No alumni match your criteria.'}
+          </p>
         ) : (
           <div className="space-y-8">
             {sortedYears.map((year) => (
@@ -330,7 +323,7 @@ const Alumni = () => {
                             ) : null}
                           </div>
                           <p className="font-body text-small text-muted-foreground">
-                            {alumnus.company || '-'}{alumnus.city ? ` • ${alumnus.city}` : ''}
+                            {alumnus.company || '-'}{alumnus.city ? ` · ${alumnus.city}` : ''}
                           </p>
                           {alumnus.job_area && (
                             <p className="font-body text-xs text-muted-foreground/70 mt-0.5">
@@ -338,7 +331,7 @@ const Alumni = () => {
                             </p>
                           )}
                         </div>
-                        
+
                         {/* Desktop layout - 5 columns */}
                         <div className="hidden sm:flex items-center">
                           <span className="text-body-lg font-medium w-[20%] truncate text-left" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
@@ -354,17 +347,17 @@ const Alumni = () => {
                                 <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
                               </a>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </span>
                           <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
-                            {alumnus.job_area || '—'}
+                            {alumnus.job_area || '-'}
                           </span>
                           <span className="font-body text-body text-muted-foreground w-[25%] truncate text-left">
                             {alumnus.company || '-'}
                           </span>
                           <span className="font-body text-body text-muted-foreground w-[20%] truncate text-left">
-                            {alumnus.city || '—'}
+                            {alumnus.city || '-'}
                           </span>
                         </div>
                       </div>
@@ -380,12 +373,12 @@ const Alumni = () => {
           <Pagination className="mt-8 overflow-x-auto">
             <PaginationContent className="flex-wrap justify-center gap-1">
               <PaginationItem>
-                <PaginationPrevious 
+                <PaginationPrevious
                   onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
                   className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>
-              
+
               {(() => {
                 const pages: (number | 'ellipsis')[] = [];
                 if (totalPages <= 5) {
@@ -415,9 +408,9 @@ const Alumni = () => {
                   </PaginationItem>
                 ));
               })()}
-              
+
               <PaginationItem>
-                <PaginationNext 
+                <PaginationNext
                   onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
                   className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
@@ -425,6 +418,17 @@ const Alumni = () => {
             </PaginationContent>
           </Pagination>
         )}
+
+        {/* Access note: the directory continues in the workspace. */}
+        <div className="mt-12 border border-separator bg-muted/40 px-6 py-5">
+          <p className="font-body text-sm text-muted-foreground leading-relaxed">
+            This page shows the first 100 alumni of the directory. Full access to the entire alumni
+            community is reserved for active members and alumni through the Minerva Workspace.
+            If you are an alumnus without access, contact{' '}
+            <a href={`mailto:${CONTACT}`} className="text-accent underline">{CONTACT}</a>{' '}
+            providing your name, surname, email, year of graduation and the role you held in the society.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { CookieConsent } from "@/components/cookies";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
+import { RouteChrome } from "@/components/shared/RouteChrome";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { Preloader } from "@/components/shared/Preloader";
 import { PageVisibilityGate, ParamVisibilityGate } from "@/components/shared/PageVisibilityGate";
@@ -82,6 +83,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <ScrollToTop />
+            <RouteChrome />
             <Routes>
               <Route element={<Layout />}>
               <Route path="/" element={<Index />} />

@@ -15,7 +15,7 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation, BarChart3, LayoutTemplate, Info, HelpCircle,
+  Presentation, BarChart3, LayoutTemplate, Info, HelpCircle, Star,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -29,7 +29,6 @@ import ContactPrompt from '@/components/admin/ContactPrompt';
 import CandidatesManagement from '@/components/admin/CandidatesManagement';
 import NewJoiners from '@/components/admin/NewJoiners';
 import FormSettings from '@/components/admin/FormSettings';
-import QuestionsManagement from '@/components/admin/QuestionsManagement';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import InterviewCalendar from '@/components/admin/InterviewCalendar';
 import InterviewCalendarCandidate from '@/components/admin/InterviewCalendarCandidate';
@@ -176,13 +175,14 @@ const NAV: NavSection[] = [
       { key: 'smm-editorial', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
       { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
       { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
+      { key: 'smm-graphics', label: 'MIMS Graphics', allowed: (p) => p.can('smm-graphics') },
       { key: 'smm-other', label: 'Other Resources', allowed: (p) => p.can('smm-other') },
-      { key: 'smm-brand', label: 'Brand & Design', allowed: (p) => p.can('smm-brand') },
+      { key: 'smm-brand', label: 'Design System', allowed: (p) => p.can('smm-brand') },
       { key: 'smm-ads', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
     ],
   },
   {
-    key: 'operations', label: 'Operations', Icon: Globe,
+    key: 'operations', label: 'Operations', Icon: Star,
     subItems: [
       { key: 'ops-fee', label: 'Membership Fees', allowed: (p) => p.can('ops-fee') },
       { key: 'ops-treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
@@ -276,6 +276,13 @@ const MinervaWorkspace = () => {
   const [submenuOpen, setSubmenuOpen] = useState(true);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [activeSubKey, setActiveSubKey] = useState<string | null>(null);
+
+  // Every subsection opens from its very top: the content pane scrolls back
+  // to zero whenever the visited page changes (the mobile shell does the
+  // same for its own pane).
+  useEffect(() => {
+    document.getElementById('ws-content')?.scrollTo({ top: 0 });
+  }, [activeSectionKey, activeSubKey]);
 
   const visibleNav = useMemo(
     () => (isCandidate ? CANDIDATE_NAV : filterNav(permissions)),
@@ -706,8 +713,8 @@ const MinervaWorkspace = () => {
       case 'applications-joiners':
         return <NewJoiners />;
       case 'applications-form':
-        // "Form & Questions" holds the application form settings and the division questions.
-        return <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-14 gap-y-12 items-start"><FormSettings /><QuestionsManagement /></div>;
+        // "Form & Questions": one integrated page (form structure + division questions).
+        return <FormSettings />;
       case 'applications-status':
         return <ApplicationStatus />;
       case 'applications-interview-calendar':
@@ -730,6 +737,8 @@ const MinervaWorkspace = () => {
         return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-li':
         return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
+      case 'smm-graphics':
+        return <ResourceManager category="smm_graphics" title="MIMS Graphics" description="The association's graphic assets: logos, marks and ready-to-use graphic files. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'smm-other':
         return <ResourceManager category="smm_other" title="Other Resources" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
       case 'smm-brand':
@@ -880,42 +889,30 @@ const MinervaWorkspace = () => {
       />
 
 
+      {/* Filters follow the standard filter/search format: flat corners,
+          secondary (body) font, no labels above the fields. */}
       <div className="mb-8 pb-6 border-b border-separator">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Year</label>
-            <select value={eventsYearFilter} onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="bg-background border border-separator px-3 h-10 min-w-[130px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              <option value="all">All Years</option>
-              {eventsYears.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-10 font-body" placeholder="Search by title, place, moderator, guests" value={eventsSearchQuery} onChange={(e) => setEventsSearchQuery(e.target.value)} />
           </div>
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Type</label>
-            <select value={eventsTypeFilter} onChange={(e) => setEventsTypeFilter(e.target.value as EventType | 'all')}
-              className="bg-background border border-separator px-3 h-10 min-w-[150px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              <option value="all">All types</option>
-              {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Website</label>
-            <select value={eventsWebsiteFilter} onChange={(e) => setEventsWebsiteFilter(e.target.value as 'all' | 'on' | 'off')}
-              className="bg-background border border-separator px-3 h-10 min-w-[140px]" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-              <option value="all">All events</option>
-              <option value="on">On the website</option>
-              <option value="off">Not on the website</option>
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Search</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input type="text" placeholder="Search by title, place, moderator, guests..." value={eventsSearchQuery} onChange={(e) => setEventsSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }} />
-            </div>
-          </div>
+          <select value={eventsYearFilter} onChange={(e) => setEventsYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            className="font-body bg-background border border-input px-3 h-10 min-w-[130px]">
+            <option value="all">All years</option>
+            {eventsYears.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select value={eventsTypeFilter} onChange={(e) => setEventsTypeFilter(e.target.value as EventType | 'all')}
+            className="font-body bg-background border border-input px-3 h-10 min-w-[150px]">
+            <option value="all">All types</option>
+            {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>)}
+          </select>
+          <select value={eventsWebsiteFilter} onChange={(e) => setEventsWebsiteFilter(e.target.value as 'all' | 'on' | 'off')}
+            className="font-body bg-background border border-input px-3 h-10 min-w-[150px]">
+            <option value="all">All events</option>
+            <option value="on">On the website</option>
+            <option value="off">Not on the website</option>
+          </select>
         </div>
       </div>
 
@@ -1193,7 +1190,7 @@ const MinervaWorkspace = () => {
 
             {/* Scrollable content. `relative` so the workspace loader can fill
                 and centre within exactly this pane (the portion that loads). */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 relative">
+            <div id="ws-content" className="flex-1 overflow-y-auto px-6 py-6 relative">
               <HelpProvider>
                 {renderContent()}
                 {/* Contextual help entry point for the page being viewed. */}

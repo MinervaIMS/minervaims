@@ -258,7 +258,7 @@ export default function ResourceManager({
 
       {showDivisions.length > 1 && (
         <div className="mb-6">
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Division</label>
+          {/* Standard filter format: no label above the field. */}
           <Select value={divFilter} onValueChange={(v) => setDivFilter(v as OrgDivision | 'all')}>
             <SelectTrigger className="min-w-[200px] font-body"><SelectValue /></SelectTrigger>
             <SelectContent>

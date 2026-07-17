@@ -97,6 +97,12 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'User ID and role are required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      // Nobody changes their OWN role, the President included: a role is
+      // always assigned by someone else, so it can never be self-granted.
+      if (userId === requestingUser.id) {
+        return new Response(JSON.stringify({ error: 'You cannot change your own role. Another President or the association account must do it.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       if (rawRole === 'admin') {
         return new Response(JSON.stringify({ error: 'The admin role belongs to the association account only and cannot be granted.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -210,6 +216,14 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ error: 'User ID is required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Self-deletion is not allowed from the administration surface.
+      if (userId === requestingUser.id) {
+        return new Response(
+          JSON.stringify({ error: 'You cannot delete your own account from here.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 

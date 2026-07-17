@@ -12,7 +12,6 @@ import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
-import { useIsDesktop } from '@/hooks/use-desktop';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listEvents, registerForEvent, myEventRegistrationIds, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
 import {
@@ -42,9 +41,6 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const { toast } = useToast();
   const { canManage } = useAccess();
   const canEdit = canManage('calendar');
-  // The calendar is read-only in the mobile shell: consult everything,
-  // register and edit from desktop.
-  const isDesktop = useIsDesktop();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
@@ -448,14 +444,14 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
             <div className="font-body text-sm space-y-3">
               <p className="text-muted-foreground">{EVENT_TYPE_LABELS[regEvent.event_type]} · {AUDIENCE_LABELS[regEvent.registration_audience]}</p>
               {regEvent.description && <p className="text-muted-foreground">{regEvent.description}</p>}
+              {/* The calendar is fully functional on mobile too, so event
+                  registration works from any device. */}
               {registered.has(regEvent.id) ? (
                 <div className="flex items-center gap-2 text-emerald-700"><CalendarClock className="h-4 w-4" />You are registered for this event.</div>
-              ) : isDesktop ? (
+              ) : (
                 <Button className="w-full" onClick={doRegister} disabled={registering}>
                   {registering ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering</> : 'Register for this event'}
                 </Button>
-              ) : (
-                <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">Registration is available on desktop.</p>
               )}
             </div>
           )}

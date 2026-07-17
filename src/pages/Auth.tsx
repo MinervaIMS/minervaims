@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
 import AuthLayout from '@/components/shared/AuthLayout';
+import { PageLoader } from '@/components/shared/PageLoader';
 import {
   AuthField,
   AuthPasswordField,
@@ -121,12 +121,9 @@ const Auth = () => {
     }
   };
 
+  // Uniform page loader: the same treatment used by every route while it loads.
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: AUTH_TOKENS.MUTED }} />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   /* -------- Render -------- */

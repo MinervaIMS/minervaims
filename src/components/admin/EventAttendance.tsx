@@ -81,9 +81,9 @@ export default function EventAttendance() {
     <div>
       <WorkspacePageHeader title="Attendance" description="See who registered, mark who attended, and add external participants. Members and external participants are distinguished." />
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-end">
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:items-center">
         <div className="flex-1">
-          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">Event</label>
+          {/* Standard filter format: no label above the field. */}
           <Select value={eventId} onValueChange={setEventId}>
             <SelectTrigger className="font-body"><SelectValue placeholder="Select an event…" /></SelectTrigger>
             <SelectContent>{events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {new Date(e.start_at || e.date).toLocaleDateString()}</SelectItem>)}</SelectContent>

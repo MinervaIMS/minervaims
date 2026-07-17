@@ -25,7 +25,7 @@ export const roleGuides: Partial<Record<AppRole, RoleGuide>> = {
       'Hold ultimate responsibility for the Treasury (operational management may be delegated to the Head of Operations).',
       'Organise events with external guests and manage the alumni community and external relations.',
       'Oversee Association on Display together with the Vice President.',
-      'Renew the association’s CASA registration at the end of the second semester — an exclusive, non-delegable duty (Art. 12).',
+      'Renew the association’s CASA registration at the end of the second semester: an exclusive, non-delegable duty (Art. 12).',
       'With the Vice President and Head of Asset Management, review any admission where transparency or fairness is in doubt, and propose blocking a report before publication.',
     ],
     reportsTo: 'The Assembly of members.',

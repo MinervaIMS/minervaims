@@ -109,17 +109,19 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
   useEffect(() => {
     (async () => {
       try {
+        // Counts go through RPCs: members reads are division-scoped for
+        // junior roles under RLS, so a raw count would under-report for them.
         const [rep, snap, mem, alu, fy] = await Promise.all([
           supabase.from('archive_files').select('division, date, page_count, status, title').eq('status', 'published'),
           supabase.from('semester_snapshots').select('semester_key, semester_label, members_count, alumni_count').order('semester_key'),
-          supabase.from('members').select('id', { count: 'exact', head: true }),
-          supabase.from('alumni').select('id', { count: 'exact', head: true }),
+          supabase.rpc('workspace_member_count'),
+          supabase.rpc('public_alumni_filter_count'),
           supabase.from('fund_performance_years').select('fund, year, ytd, itd, months').order('year', { ascending: true }),
         ]);
         setReports((rep.data || []) as ReportRow[]);
         setSnapshots((snap.data || []) as SnapshotRow[]);
-        setLiveMembers(mem.count ?? 0);
-        setLiveAlumni(alu.count ?? 0);
+        setLiveMembers((mem.data as number | null) ?? 0);
+        setLiveAlumni((alu.data as number | null) ?? 0);
         setFundYears((fy.data || []).map((r) => {
           const raw = Array.isArray(r.months) ? r.months : [];
           const months = Array.from({ length: 12 }, (_, i) => (raw[i] == null ? '' : String(raw[i])));

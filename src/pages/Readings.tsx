@@ -174,8 +174,7 @@ const Readings = () => {
                     activeCategory === 'all'
                       ? 'bg-accent text-background border-accent'
                       : 'bg-transparent text-accent border-accent/40 hover:border-accent'
-                  }`}
-                  style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                  } font-body`}
                 >
                   All
                 </button>
@@ -187,8 +186,7 @@ const Readings = () => {
                       activeCategory === type
                         ? 'bg-accent text-background border-accent'
                         : 'bg-transparent text-accent border-accent/40 hover:border-accent'
-                    }`}
-                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                    } font-body`}
                   >
                     {readingTypeLabels[type]}
                   </button>

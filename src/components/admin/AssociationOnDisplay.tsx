@@ -113,7 +113,7 @@ export default function AssociationOnDisplay() {
                   <tbody>
                     {semestersInData(pastDays.map((d) => d.event_date)).map((sem) => (
                       <Fragment key={sem.key}>
-                        {/* Semester divider — past sessions stay archived per semester. */}
+                        {/* Semester divider: past sessions stay archived per semester. */}
                         <tr className="border-t border-separator bg-accent/5">
                           <td colSpan={2} className="px-3 py-1.5 font-serif text-accent uppercase tracking-wider text-xs">{sem.label}</td>
                         </tr>
@@ -172,7 +172,7 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
                   {covered ? 'Covered' : `${people.length}/${MIN_COVER}`}
                 </span>
               </div>
-              {/* Registration button — clear, full-width, for everyone. */}
+              {/* Registration button: clear, full-width, for everyone. */}
               <div className="mt-2">
                 {mine ? (
                   <Button variant="outline" size="sm" className="w-full text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => onRemove(mine.id)}>

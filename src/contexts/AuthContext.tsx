@@ -285,7 +285,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (e) {
-      console.error('Sign-out error (ignored — local session already cleared):', e);
+      console.error('Sign-out error (ignored: local session already cleared):', e);
     }
   };
 

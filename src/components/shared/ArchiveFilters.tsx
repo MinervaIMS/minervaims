@@ -27,55 +27,44 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
 
   return (
     <div>
-      {/* Filters */}
+      {/* Filters follow the standard filter format: flat corners, body font,
+          no labels above the fields. */}
       <div className="mb-8 pb-6 border-b border-separator">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div>
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-              Division
-            </label>
-            <select
-              value={divisionFilter}
-              onChange={(e) => {
-                setDivisionFilter(e.target.value as Division | 'all');
-                if (e.target.value !== 'portfolio') {
-                  setFundFilter('all');
-                }
-              }}
-              className="bg-background border border-separator px-3 py-2 min-w-[200px]"
-              style={{ fontFamily: '"Times New Roman", Times, serif' }}
-            >
-              <option value="all">All Divisions</option>
-              {Object.entries(divisionLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={divisionFilter}
+            onChange={(e) => {
+              setDivisionFilter(e.target.value as Division | 'all');
+              if (e.target.value !== 'portfolio') {
+                setFundFilter('all');
+              }
+            }}
+            className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+          >
+            <option value="all">All Divisions</option>
+            {Object.entries(divisionLabels).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
 
           {divisionFilter === 'portfolio' && (
-            <div>
-              <label className="font-body text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Fund
-              </label>
-              <select
-                value={fundFilter}
-                onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
-                className="bg-background border border-separator px-3 py-2 min-w-[280px]"
-                style={{ fontFamily: '"Times New Roman", Times, serif' }}
-              >
-                <option value="all">All Funds</option>
-                <optgroup label="Active Funds">
-                  {activeFunds.map((fund) => (
-                    <option key={fund} value={fund}>{fundLabels[fund]}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Closed Funds">
-                  {closedFunds.map((fund) => (
-                    <option key={fund} value={fund}>{fundLabels[fund]}</option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
+            <select
+              value={fundFilter}
+              onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[280px]"
+            >
+              <option value="all">All Funds</option>
+              <optgroup label="Active Funds">
+                {activeFunds.map((fund) => (
+                  <option key={fund} value={fund}>{fundLabels[fund]}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Closed Funds">
+                {closedFunds.map((fund) => (
+                  <option key={fund} value={fund}>{fundLabels[fund]}</option>
+                ))}
+              </optgroup>
+            </select>
           )}
         </div>
       </div>

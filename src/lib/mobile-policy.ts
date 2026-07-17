@@ -16,33 +16,34 @@ export const MOBILE_POLICY: Record<string, MobilePolicy> = {
   // General
   'dashboard': 'view',
   'my-role': 'view',
-  'calendar': 'view',
+  'calendar': 'full',
   'welcome': 'view',
   // Reports
-  'reports-upload': 'no',
-  'reports-archive': 'no',
+  'reports-upload': 'full',
+  'reports-archive': 'view',
   'reports-templates': 'view',
   'reports-funds': 'no',
   // Recruiting
   'applications-website': 'no',
   'applications-screening': 'no',
   'applications-interview-calendar': 'no',
-  'applications-joiners': 'view',
+  'applications-joiners': 'no',
   'applications-form': 'no',
   // Events
   'events-create': 'no',
   'events-forms': 'no',
   'events-attendance': 'full',
   'events-archive': 'view',
-  'events-alumni-calls': 'no',
+  'events-alumni-calls': 'view',
   'events-on-display': 'full',
   // People
   'people-members': 'view',
-  'people-alumni': 'no',
+  'people-alumni': 'view',
   // Media & Communication
   'smm-editorial': 'view',
   'smm-ig': 'view',
   'smm-li': 'view',
+  'smm-graphics': 'view',
   'smm-other': 'view',
   'smm-brand': 'view',
   'smm-ads': 'no',
@@ -53,14 +54,14 @@ export const MOBILE_POLICY: Record<string, MobilePolicy> = {
   'ops-docs': 'view',
   // Website
   'website-pages': 'full',
-  'website-readings': 'no',
+  'website-readings': 'view',
   'website-testimonials': 'no',
   'ops-newsletter': 'no',
   'ops-auto-emails': 'no',
   // Settings
   'settings-users': 'no',
-  'settings-roles': 'view',
-  'settings-activity': 'view',
+  'settings-roles': 'no',
+  'settings-activity': 'no',
 };
 
 /** Policy for a page key; anything unlisted stays desktop-only. */

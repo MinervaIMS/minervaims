@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { TeamMember, Division, divisionLabels, fundLabels } from '@/lib/types';
 
 interface MembersDirectoryProps {
@@ -89,14 +89,29 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
       'Portfolio Management': 'portfolio',
       'Quantitative Research': 'quant',
     };
+    // Media & Ops: the two teams share one tab. Their heads sit on the Board
+    // of Directors AND appear here (like division heads do in their division
+    // tabs); their team members belong to the 'media' / 'operations'
+    // divisions or carry a Media/Operations position.
+    const mediaOps: TeamMember[] = [];
+    const isMediaOpsMember = (m: TeamMember) => {
+      const div = (m.division ?? '') as string;
+      return div === 'media' || div === 'operations' || m.position === 'Media' || m.position === 'Operations';
+    };
     members.forEach((m) => {
       if (!m.isBoard) {
         if (m.division && m.division in byDivision) {
           byDivision[m.division as Division].push(m);
+        } else if (isMediaOpsMember(m)) {
+          mediaOps.push(m);
         }
         return;
       }
-      // Board members who are heads of a division also appear in that division tab
+      // Board members who head a division or a team also appear in its tab.
+      if (m.position.includes('Head of Operations') || m.position.includes('Head of Media')) {
+        mediaOps.push(m);
+        return;
+      }
       for (const [key, div] of Object.entries(divisionHeadMap)) {
         if (m.position.includes(key)) {
           byDivision[div].push(m);
@@ -105,23 +120,44 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
       }
     });
     (Object.keys(byDivision) as Division[]).forEach((k) => byDivision[k].sort(sortMembers));
-    return { executive, byDivision };
+    mediaOps.sort(sortMembers);
+    return { executive, byDivision, mediaOps };
   }, [members]);
 
   const currentMembers: TeamMember[] =
     active === 'executive'
       ? grouped.executive
       : active === 'media-ops'
-      ? []
+      ? grouped.mediaOps
       : grouped.byDivision[active];
 
   const activeTab = TABS.find((t) => t.key === active)!;
+
+  // Edge fades on the horizontally scrolling tab bar: the LEFT fade appears
+  // only once the bar has actually been scrolled (so it never covers "Board
+  // of Directors" at rest), the RIGHT fade only while there is more to see.
+  const tabsRef = useRef<HTMLElement>(null);
+  const [fade, setFade] = useState({ left: false, right: false });
+  const updateFades = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 4;
+    setFade((f) => (f.left === left && f.right === right ? f : { left, right }));
+  }, []);
+  useEffect(() => {
+    updateFades();
+    window.addEventListener('resize', updateFades);
+    return () => window.removeEventListener('resize', updateFades);
+  }, [updateFades]);
 
   return (
     <div>
       {/* Tab bar */}
       <div className="relative -mx-4 lg:mx-0">
         <nav
+          ref={tabsRef}
+          onScroll={updateFades}
           className="flex flex-nowrap overflow-x-auto overflow-y-hidden gap-x-1 border-b border-separator px-4 lg:px-0 scrollbar-hide"
           aria-label="Members section"
         >
@@ -148,14 +184,14 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
             );
           })}
         </nav>
-        {/* Edge fade hints — invite horizontal scroll on mobile/tablet */}
+        {/* Edge fade hints: shown only on the side(s) with hidden content. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-background to-transparent"
+          className={`pointer-events-none absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-background to-transparent transition-opacity duration-200 ${fade.left ? 'opacity-100' : 'opacity-0'}`}
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-background to-transparent"
+          className={`pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-background to-transparent transition-opacity duration-200 ${fade.right ? 'opacity-100' : 'opacity-0'}`}
         />
       </div>
 
@@ -174,7 +210,9 @@ export function MembersDirectory({ members, initialDivisionFilter }: MembersDire
         <DivisionGroups members={currentMembers} />
       )}
 
-      {active === 'media-ops' && <EmptyDivision />}
+      {active === 'media-ops' && (
+        currentMembers.length > 0 ? <DivisionGroups members={currentMembers} /> : <EmptyDivision />
+      )}
     </div>
   );
 }

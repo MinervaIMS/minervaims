@@ -177,7 +177,7 @@ const ApplicationSettings = () => {
             <div className="p-5" style={{ backgroundColor: '#0b0720' }}>
               {previewOpen ? (
                 <>
-                  <div className="font-serif text-background text-base leading-tight">Prepare a strong application — then apply.</div>
+                  <div className="font-serif text-background text-base leading-tight">Prepare a strong application, then apply.</div>
                   <div className="font-body text-background/70 text-xs mt-2">Applications for {form.semester_label || '<semester label>'} are open. Submit the form with your CV, motivation letter and written answer.</div>
                   <span className="inline-block mt-3 px-4 py-2 bg-background text-foreground font-serif text-xs">Submit Application Form →</span>
                 </>

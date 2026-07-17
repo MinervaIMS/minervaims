@@ -126,7 +126,7 @@ export default function InterviewCalendarCandidate() {
                 <div className="flex items-center gap-2 text-muted-foreground"><Video className="h-4 w-4" /> A member of the association will share the meeting link before the interview.</div>
               )}
             </div>
-            {/* Cancellation & rescheduling rules — mirrors the invitation email. */}
+            {/* Cancellation & rescheduling rules: mirrors the invitation email. */}
             <div className="mt-6 pt-4 border-t border-separator">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Cancellation &amp; rescheduling</div>
               <ul className="space-y-1.5 text-sm text-foreground">
