@@ -29,7 +29,7 @@ const AUTH_DARK = '#05030F';  // auth/apply beams backdrop
 const BLACK = '#000000';      // public site: dark heroes + black footer
 const WHITE = '#ffffff';      // workspace body
 
-interface Chrome { theme: string; base: string; bottom: string }
+interface Chrome { theme: string | null; base: string; bottom: string }
 
 // Pages that share the dark auth backdrop (beams behind a white card).
 const AUTH_LIKE = [
@@ -39,9 +39,12 @@ const AUTH_LIKE = [
 ];
 
 function chromeFor(path: string): Chrome {
-  // Workspace: purple header behind the status bar, white page below, and a
-  // white bottom band so the content never looks cut off against black.
-  if (path.startsWith('/admin')) return { theme: NAVY, base: WHITE, bottom: WHITE };
+  // Workspace: the page is purple at the TOP (header strip) and white at the
+  // BOTTOM (content). A single theme-color cannot be right for both bars, so
+  // NO theme-color is declared here (theme: null): Safari then samples the
+  // page itself near each edge, picking up the purple header at the top and
+  // the white content at the bottom, exactly as they appear on screen.
+  if (path.startsWith('/admin')) return { theme: null, base: WHITE, bottom: WHITE };
   if (AUTH_LIKE.some((p) => path === p || path.startsWith(p + '/'))) {
     return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
   }
@@ -58,12 +61,18 @@ export function RouteChrome() {
   useEffect(() => {
     const c = chromeFor(pathname);
     let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.name = 'theme-color';
-      document.head.appendChild(meta);
+    if (c.theme === null) {
+      // No declared tint: the browser samples the page near each edge, which
+      // is the only way to get different top and bottom bar colours.
+      meta?.remove();
+    } else {
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      meta.content = c.theme;
     }
-    meta.content = c.theme;
     const root = document.documentElement;
     root.style.backgroundColor = c.base;
     root.style.setProperty('--chrome-bottom', c.bottom);

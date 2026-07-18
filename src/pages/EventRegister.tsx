@@ -15,6 +15,7 @@ import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
 import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
 import Beams from '@/components/shared/Beams';
+import { SpecularFx } from '@/components/shared/SpecularFx';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -93,7 +94,8 @@ export default function EventRegister() {
           />
         </div>
         {/* Flat white card per the Minerva Forms design. */}
-        <div className="relative z-10 w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+        {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
+        <div className="relative z-[55] w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6"><img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '118px', width: 'auto' }} /></div>
           {children}
         </div>
@@ -197,13 +199,17 @@ export default function EventRegister() {
             </Label>
           </div>
 
-          {/* Serif register button per the design: navy that inverts on hover. */}
+          {/* Serif register button per the design: navy that inverts on hover,
+              with the animated specular border. */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full mt-1 py-3.5 font-serif text-lg border border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent transition-colors duration-200 disabled:opacity-70"
+            className="relative w-full mt-1 py-3.5 font-serif text-lg border border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent transition-colors duration-200 disabled:opacity-70"
           >
-            {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Registering</span> : 'Register'}
+            <SpecularFx />
+            <span className="relative z-[2]">
+              {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Registering</span> : 'Register'}
+            </span>
           </button>
         </form>
       )}

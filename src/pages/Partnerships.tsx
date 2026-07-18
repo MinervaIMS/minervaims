@@ -140,7 +140,36 @@ const Partnerships = () => {
         </div>
       </section>
 
-      {/* SECTION 2: Formats */}
+      {/* SECTION 2: Establish a partnership (navy block) */}
+      <section className="pb-section-sm md:pb-section bg-background">
+        <div className="container">
+          <div className="bg-accent p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
+              <div>
+                <h2 className="font-serif text-heading text-background">
+                  Begin the Conversation to Partner with Minerva
+                </h2>
+                <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
+                  Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved.&nbsp;
+                </p>
+              </div>
+              <div className="md:justify-self-end md:text-right">
+                <div className="font-body uppercase tracking-[.1em] text-xs text-background/70">
+                  Write to
+                </div>
+                <a
+                  href="mailto:as.minerva@unibocconi.it"
+                  className="block font-serif text-2xl md:text-3xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
+                >
+                  as.minerva@unibocconi.it
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: Formats */}
       <section className="pb-section-sm md:pb-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
@@ -169,35 +198,6 @@ const Partnerships = () => {
                 </dl>
               </article>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 3: Establish a partnership (navy block) */}
-      <section className="pb-section-sm md:pb-section bg-background">
-        <div className="container">
-          <div className="bg-accent p-8 md:p-12">
-            <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
-              <div>
-                <h2 className="font-serif text-heading text-background">
-                  Begin the Conversation to Partner with Minerva
-                </h2>
-                <p className="font-body text-body-lg text-background/85 mt-4 max-w-xl leading-relaxed">
-                  Write to us with a brief description of the proposed format, the relevant theme, and those likely to be involved.&nbsp;
-                </p>
-              </div>
-              <div className="md:justify-self-end md:text-right">
-                <div className="font-body uppercase tracking-[.1em] text-xs text-background/70">
-                  Write to
-                </div>
-                <a
-                  href="mailto:as.minerva@unibocconi.it"
-                  className="block font-serif text-2xl md:text-3xl text-background mt-2.5 underline-offset-4 hover:underline break-words"
-                >
-                  as.minerva@unibocconi.it
-                </a>
-              </div>
-            </div>
           </div>
         </div>
       </section>

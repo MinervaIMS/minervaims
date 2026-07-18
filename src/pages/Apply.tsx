@@ -20,6 +20,7 @@ import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import PixelCardSuccess from '@/components/shared/PixelCardSuccess';
+import { SpecularFx } from '@/components/shared/SpecularFx';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
@@ -36,7 +37,8 @@ function Shell({ children }: { children: React.ReactNode }) {
         <ApplyBackground />
         {/* Flat white card per the Minerva Forms design: sharp corners, hairline
             border, deep drop shadow. */}
-        <div className="relative z-10 w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+        {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
+        <div className="relative z-[55] w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
             <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '100px', width: 'auto' }} />
           </div>
@@ -389,19 +391,23 @@ export default function Apply() {
           </span>
         </label>
 
-        {/* Serif submit button per the design: navy that inverts on hover. */}
+        {/* Serif submit button per the design: navy that inverts on hover,
+            with the animated specular border. */}
         <button
           type="submit"
           disabled={submitting || readOnly}
-          className={`w-full mt-6 py-4 font-serif text-lg border transition-colors duration-200 ${
+          className={`relative w-full mt-6 py-4 font-serif text-lg border transition-colors duration-200 ${
             readOnly
               ? 'border-input bg-white text-[#AFA2D2] cursor-not-allowed'
               : 'border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent disabled:opacity-70'
           }`}
         >
-          {submitting ? (
-            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Submitting</span>
-          ) : readOnly ? 'Submission disabled in preview' : 'Create account and submit application'}
+          {!readOnly && <SpecularFx />}
+          <span className="relative z-[2]">
+            {submitting ? (
+              <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Submitting</span>
+            ) : readOnly ? 'Submission disabled in preview' : 'Create account and submit application'}
+          </span>
         </button>
       </form>
     </Shell>

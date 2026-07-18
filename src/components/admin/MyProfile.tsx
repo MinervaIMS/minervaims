@@ -231,12 +231,13 @@ export default function MyProfile() {
         </div>
       )}
 
-      {/* Two halves on desktop: the personal profile on the left, the role
-          brief on the right. Static panels, hairline separations, no hover
-          effects: the workspace design rules apply. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-0 gap-y-10 items-start">
-        {/* LEFT: the profile itself */}
-        <div className="lg:pr-12 space-y-6">
+      {/* ONE unified column: the role is an integral part of the profile,
+          so the page reads top to bottom as a single flow. Static panels,
+          hairline separations, no hover effects: the workspace design
+          rules apply. */}
+      <div className="max-w-3xl space-y-10">
+        {/* The profile itself */}
+        <div className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-8">
             {/* Square photo */}
             <div className="shrink-0">
@@ -289,9 +290,9 @@ export default function MyProfile() {
           </div>
         </div>
 
-        {/* RIGHT: the role brief, from "Your role" down. */}
+        {/* The role brief, from "Your role" down. */}
         {guide && (
-          <div className="lg:border-l lg:border-separator lg:pl-12 space-y-7">
+          <div className="space-y-7 pt-8 border-t border-separator">
             {/* Role header band: the one tinted element of the page. */}
             <div className="border-l-2 border-accent bg-accent/[0.05] px-5 py-4">
               <div className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold mb-1">Your role</div>

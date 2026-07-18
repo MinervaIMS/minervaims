@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -290,15 +290,31 @@ const MinervaWorkspace = () => {
     [permissions, isCandidate],
   );
 
-  // Set initial active section/sub-item
+  // Set initial active section/sub-item. Deep links are supported:
+  // /admin?section=<key>&sub=<key> opens straight on that subsection
+  // (only if the viewer's role can actually see it in the navigation).
+  const [searchParams] = useSearchParams();
   useEffect(() => {
-    if (!activeSectionKey && visibleNav.length > 0) {
-      const first = visibleNav[0];
-      setActiveSectionKey(first.key);
-      setActiveSubKey(first.subItems[0]?.key ?? null);
-      if (first.subItems.length === 0) setSubmenuOpen(false);
+    if (activeSectionKey || visibleNav.length === 0) return;
+    const wantSub = searchParams.get('sub');
+    const wantSection = searchParams.get('section');
+    if (wantSub || wantSection) {
+      const target = visibleNav.find(
+        (s) => (wantSub && s.subItems.some((si) => si.key === wantSub)) || s.key === wantSection,
+      );
+      if (target) {
+        setActiveSectionKey(target.key);
+        const sub = target.subItems.find((si) => si.key === wantSub) ?? target.subItems[0] ?? null;
+        setActiveSubKey(sub?.key ?? null);
+        if (target.subItems.length === 0) setSubmenuOpen(false);
+        return;
+      }
     }
-  }, [visibleNav, activeSectionKey]);
+    const first = visibleNav[0];
+    setActiveSectionKey(first.key);
+    setActiveSubKey(first.subItems[0]?.key ?? null);
+    if (first.subItems.length === 0) setSubmenuOpen(false);
+  }, [visibleNav, activeSectionKey, searchParams]);
 
   // Auto-collapse main nav rail when a submenu panel is shown, except on the
   // very first visit of the session — where the expanded rail stays visible

@@ -683,6 +683,21 @@ body[data-scroll-locked] {
   .jline .fill { transition: none; }
 }
 
+/* Specular border effect on main action buttons: the WebGL canvas extends
+   past the button so the rim shine can bleed just outside the edge. The
+   label of the host button should sit at z-index 2 or above. */
+.specular-fx {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+  z-index: 1;
+}
+.specular-fx canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Workspace floating "?" help button — mirrors the journey-dot "lit" halo:
    a one-time ignition on mount that leaves a lasting soft, semi-transparent
    accent halo around the circle. */

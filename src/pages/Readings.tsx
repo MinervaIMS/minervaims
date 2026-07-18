@@ -83,7 +83,8 @@ const Readings = () => {
 
   const handleSubmitClick = () => {
     if (canSubmit) {
-      navigate('/admin?tab=readings');
+      // Deep link into the workspace, People > Alumni subsection.
+      navigate('/admin?section=people&sub=people-alumni');
     }
   };
 

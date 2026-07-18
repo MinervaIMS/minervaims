@@ -120,76 +120,92 @@ function HelpPanel() {
         {g && (
           <div className="h-full flex flex-col">
             {/* Header band: the one strongly coloured element, so the panel
-                reads as "help mode" at a glance. */}
-            <div className="flex items-start justify-between gap-3 px-5 py-4 bg-accent text-accent-foreground">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-accent-foreground/70 font-body">{g.section} · Help</div>
-                <h2 className="font-serif text-xl leading-snug">{g.label}</h2>
+                reads as "help mode" at a glance. Serif title carries the
+                hierarchy, the kicker gives the place. */}
+            <div className="flex items-start justify-between gap-3 px-6 py-5 bg-accent text-accent-foreground">
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-accent-foreground/65 font-body mb-1">Help · {g.section}</div>
+                <h2 className="font-serif text-2xl leading-tight">{g.label}</h2>
               </div>
-              <button type="button" onClick={closeHelp} aria-label="Close help" className="p-1 text-accent-foreground/80 hover:text-accent-foreground"><X className="h-5 w-5" /></button>
+              <button type="button" onClick={closeHelp} aria-label="Close help" className="p-1 -mr-1 text-accent-foreground/80 hover:text-accent-foreground"><X className="h-5 w-5" /></button>
             </div>
 
-            <div ref={bodyRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-6 font-body text-sm">
-              <section className="border-l-2 border-accent bg-accent/[0.05] px-4 py-3">
-                <h3 className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1">What you are looking at</h3>
-                <p className="text-foreground leading-relaxed">{g.purpose}</p>
+            <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8 font-body text-sm">
+              {/* 1 · Purpose: the tinted accent block opens the page. */}
+              <section className="border-l-2 border-accent bg-accent/[0.05] px-4 py-3.5">
+                <h3 className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold mb-1.5">What you are looking at</h3>
+                <p className="text-[15px] text-foreground leading-relaxed">{g.purpose}</p>
               </section>
 
+              {/* 2 · Actions, split into consult vs manage for a clear
+                  hierarchy (colours kept: accent = consult, green = manage). */}
               {(g.view.length > 0 || (canManage && g.manage.length > 0)) && (
                 <section>
-                  <h3 className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2">What you can do here</h3>
-                  <ul className="space-y-2">
-                    {g.view.map((v, i) => (
-                      <li key={`v${i}`} className="flex gap-2.5">
-                        <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-accent shrink-0" />
-                        <span className="text-foreground/80">{v}</span>
-                      </li>
-                    ))}
-                    {canManage && g.manage.map((m, i) => (
-                      <li key={`m${i}`} className="flex gap-2.5">
-                        <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-emerald-600 shrink-0" />
-                        <span className="text-foreground/80">{m}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold pb-2 mb-3 border-b border-separator">What you can do here</h3>
+                  {g.view.length > 0 && (
+                    <ul className="space-y-2">
+                      {g.view.map((v, i) => (
+                        <li key={`v${i}`} className="flex gap-2.5">
+                          <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-accent shrink-0" />
+                          <span className="text-foreground/85 leading-relaxed">{v}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {canManage && g.manage.length > 0 && (
-                    <p className="mt-2 text-[11px] text-muted-foreground">
-                      <span aria-hidden className="inline-block w-1.5 h-1.5 bg-emerald-600 mr-1.5 align-middle" />
-                      Green squares are managing actions your role unlocks.
-                    </p>
+                    <div className={g.view.length > 0 ? 'mt-4' : ''}>
+                      <div className="text-[11px] uppercase tracking-[0.1em] text-emerald-700 font-semibold mb-2">Managing actions your role unlocks</div>
+                      <ul className="space-y-2">
+                        {g.manage.map((m, i) => (
+                          <li key={`m${i}`} className="flex gap-2.5">
+                            <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-emerald-600 shrink-0" />
+                            <span className="text-foreground/85 leading-relaxed">{m}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </section>
               )}
 
               {!canManage && g.manage.length > 0 && (
-                <section className="border border-separator bg-muted/40 px-4 py-3">
-                  <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Reserved for managing roles</h3>
-                  <p className="text-muted-foreground">Creating, editing and removing here is reserved for roles with full access to this subsection. You can consult everything shown to you.</p>
+                <section className="border border-separator bg-muted/40 px-4 py-3.5">
+                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold mb-1.5">Reserved for managing roles</h3>
+                  <p className="text-muted-foreground leading-relaxed">Creating, editing and removing here is reserved for roles with full access to this subsection. You can consult everything shown to you.</p>
                 </section>
               )}
 
+              {/* 3 · Warnings keep their amber band: the colour IS the signal. */}
               {g.warnings && g.warnings.length > 0 && (
-                <section className="border-l-2 border-amber-500 bg-amber-50/70 px-4 py-3">
-                  <h3 className="text-[11px] uppercase tracking-wider text-amber-700 font-semibold mb-1.5">Good to know</h3>
-                  <ul className="space-y-1.5">
-                    {g.warnings.map((w, i) => <li key={i} className="flex gap-2"><span className="text-amber-600 font-semibold shrink-0">!</span><span className="text-foreground/75">{w}</span></li>)}
+                <section className="border-l-2 border-amber-500 bg-amber-50/70 px-4 py-3.5">
+                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-amber-700 font-semibold mb-2">Good to know</h3>
+                  <ul className="space-y-2">
+                    {g.warnings.map((w, i) => <li key={i} className="flex gap-2.5"><span className="text-amber-600 font-semibold shrink-0">!</span><span className="text-foreground/80 leading-relaxed">{w}</span></li>)}
                   </ul>
                 </section>
               )}
 
+              {/* 4 · Topics: serif titles over hairlines; the targeted topic
+                  is lifted with the accent tint. */}
               {topics.length > 0 && (
-                <section className="space-y-3">
-                  <h3 className="text-[11px] uppercase tracking-wider text-accent font-semibold">In detail</h3>
-                  {topics.map((t) => (
-                    <div key={t.id} id={`help-${t.id}`} className={`border p-3.5 ${state?.topic === t.id ? 'border-accent bg-accent/[0.06]' : 'border-separator'}`}>
-                      <div className="font-serif text-[15px] text-accent mb-1">{t.title}</div>
-                      <p className="text-muted-foreground leading-relaxed">{t.body}</p>
-                    </div>
-                  ))}
+                <section>
+                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold pb-2 mb-1 border-b border-separator">In detail</h3>
+                  <div className="divide-y divide-separator">
+                    {topics.map((t) => (
+                      <div
+                        key={t.id}
+                        id={`help-${t.id}`}
+                        className={`py-3.5 ${state?.topic === t.id ? 'border-l-2 border-accent bg-accent/[0.05] pl-3.5 pr-2 -mx-0' : ''}`}
+                      >
+                        <div className="font-serif text-base text-accent mb-1">{t.title}</div>
+                        <p className="text-muted-foreground leading-relaxed">{t.body}</p>
+                      </div>
+                    ))}
+                  </div>
                 </section>
               )}
 
-              <p className="text-xs text-muted-foreground border-t border-separator pt-3">
+              <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
                 Need the full picture? The <span className="text-foreground">How to use</span> section holds your complete role-based manual. Actions in the workspace are logged for accountability and security.
               </p>
             </div>
