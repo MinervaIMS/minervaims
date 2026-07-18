@@ -204,17 +204,26 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   }, [months]);
 
   // Jump to the current month once the calendar is rendered.
-  useEffect(() => {
-    if (loading) return;
+  // Bring the current month into view by scrolling ONLY the calendar's own
+  // scroll box. scrollIntoView() must not be used here: it scrolls every
+  // scrollable ancestor too, which dragged the whole workspace content pane
+  // down and hid the page title and description on load.
+  const scrollToCurrentMonth = (behavior: ScrollBehavior = 'auto') => {
     const now = new Date();
     const el = document.getElementById(monthKey(now.getFullYear(), now.getMonth()));
-    el?.scrollIntoView({ block: 'start' });
+    const box = scrollRef.current;
+    if (!el || !box) return;
+    const top = box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top;
+    box.scrollTo({ top, behavior });
+  };
+
+  useEffect(() => {
+    if (loading) return;
+    scrollToCurrentMonth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  const jumpToToday = () => {
-    const now = new Date();
-    document.getElementById(monthKey(now.getFullYear(), now.getMonth()))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const jumpToToday = () => scrollToCurrentMonth('smooth');
 
   const kindColor = (k: Kind, entry?: CalendarEntry) =>
     k === 'event' ? 'bg-accent/10 text-accent'
