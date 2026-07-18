@@ -152,7 +152,7 @@ export default function RolePermissionsTable() {
           </li>
           <li className="flex gap-2">
             <span className="text-accent mt-0.5">÷</span>
-            <span>On People &gt; Members, portfolio managers, team leaders, senior analysts and analysts see only the people of their <span className="text-foreground">own division</span> (names, search and filters; no contact columns). Roles are always assigned by a more senior role: nobody can change their own role, and the database enforces both rules.</span>
+            <span>On People &gt; Members, portfolio managers, team leaders, senior analysts and analysts see only the people of their <span className="text-foreground">own division</span> (names, search and filters; no contact columns). Roles are assigned ONLY by the President and the association account, and nobody can ever change their own role: both rules are enforced by the server and the database.</span>
           </li>
         </ul>
       </div>

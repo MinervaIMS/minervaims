@@ -166,18 +166,42 @@ Deno.serve(async (req) => {
       // is mirrored from it by the sync_member_access database trigger, so
       // this one write updates People > Members, this page and the person's
       // permissions in a single, drift-proof step.
-      const { data: memberRow } = await supabaseAdmin
-        .from('members').select('id, membership_status').eq('user_id', userId).maybeSingle();
+      //
+      // Finding THE record, in order:
+      //   1. the roster row already linked to this account (user_id);
+      //   2. otherwise, the roster row carrying this account's email but
+      //      not yet linked: it gets LINKED here (this is the same person;
+      //      creating a new row instead is exactly what used to fork
+      //      People > Members and Settings > Users into two records);
+      //   3. only if neither exists, a new roster row is created.
+      // The database additionally enforces one row per account and one row
+      // per email with unique indexes, so a duplicate can never be written.
+      const { data: targetProfile } = await supabaseAdmin
+        .from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
+
+      let memberRow: { id: string } | null = null;
+      {
+        const { data } = await supabaseAdmin
+          .from('members').select('id').eq('user_id', userId).maybeSingle();
+        memberRow = data ?? null;
+      }
+      if (!memberRow && targetProfile?.email) {
+        const { data } = await supabaseAdmin
+          .from('members').select('id')
+          .is('user_id', null)
+          .ilike('email', targetProfile.email)
+          .limit(1).maybeSingle();
+        memberRow = data ?? null;
+      }
+
       let writeError = null;
       if (memberRow) {
         ({ error: writeError } = await supabaseAdmin.from('members')
-          .update({ role, division: div ?? 'none' })
+          .update({ role, division: div ?? 'none', user_id: userId })
           .eq('id', memberRow.id));
       } else {
         // First assignment to an account that has no member profile yet:
         // create it from the account's own data.
-        const { data: targetProfile } = await supabaseAdmin
-          .from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
         const fullName = (targetProfile?.full_name || '').trim();
         const parts = fullName.split(/\s+/).filter(Boolean);
         const firstName = parts[0] || (targetProfile?.email?.split('@')[0] ?? 'Member');
@@ -244,6 +268,10 @@ Deno.serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // The person stays on the register: only the account link is removed
+      // from their roster row (they can redeem a new account later).
+      await supabaseAdmin.from('members').update({ user_id: null }).eq('user_id', userId);
 
       // Delete user roles first (due to foreign key)
       const { error: roleDeleteError } = await supabaseAdmin

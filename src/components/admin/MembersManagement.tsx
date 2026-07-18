@@ -62,6 +62,11 @@ export default function MembersManagement() {
   const access = useAccess();
   const { toast } = useToast();
   const canEdit = access.canEdit('people-members');
+  // ROLE AUTHORITY: only the President and the association (admin) account
+  // assign or change roles, anywhere in the workspace. Other managers can
+  // maintain the register's data but never touch roles (the server enforces
+  // the same rule).
+  const canAssignRoles = access.isFullAccess;
   // Removing a member's photo is reserved for the executive level.
   const canRemovePhoto = ['admin', 'president', 'vice_president'].includes(normalizeRole(access.primaryRole ?? 'member'));
   // Portfolio managers, team leaders, senior analysts and analysts consult
@@ -345,7 +350,7 @@ export default function MembersManagement() {
     <div>
       <WorkspacePageHeader
         title="Members"
-        description="The association register: members and advisors, with THE role each person holds. This role drives their workspace permissions everywhere (Settings > Users edits the same record). Advisors are appointed alumni; the switch in their profile decides whether they appear on the public website."
+        description="The association register: members and advisors, with THE role each person holds. This role drives their workspace permissions everywhere (Settings > Users edits the same record). Only the President and the association account can assign or change roles. Advisors are appointed alumni; the switch in their profile decides whether they appear on the public website."
         actions={
           <>
             {!limitedToOwnDivision && (
@@ -353,7 +358,7 @@ export default function MembersManagement() {
                 <Download className="h-4 w-4 mr-2" />Download CSV
               </Button>
             )}
-            {canEdit && (
+            {canEdit && canAssignRoles && (
               <Button className="font-body" onClick={openCreate}>
                 <Plus className="h-4 w-4 mr-2" />Add advisor
               </Button>
@@ -421,7 +426,9 @@ export default function MembersManagement() {
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">
                         <Button variant="outline" size="icon" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="destructive" size="icon" onClick={() => openLeave(m)}><Trash2 className="h-4 w-4" /></Button>
+                        {canAssignRoles && (
+                          <Button variant="destructive" size="icon" onClick={() => openLeave(m)}><Trash2 className="h-4 w-4" /></Button>
+                        )}
                       </div>
                     </td>
                   )}
@@ -525,7 +532,7 @@ export default function MembersManagement() {
 
               <div className="space-y-1">
                 <Label>Role</Label>
-                <Select value={normalizeRole(form.role)} onValueChange={(v) => changeFormRole(v as AppRole)} disabled={!editingId}>
+                <Select value={normalizeRole(form.role)} onValueChange={(v) => changeFormRole(v as AppRole)} disabled={!editingId || !canAssignRoles}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{ROLE_OPTIONS.map((r) => <SelectItem key={r} value={r}>{composeRoleLabel(r, null)}</SelectItem>)}</SelectContent>
                 </Select>
@@ -535,7 +542,7 @@ export default function MembersManagement() {
                 <Select
                   value={roleNeedsDivision(form.role) ? form.division : 'none'}
                   onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}
-                  disabled={!roleNeedsDivision(form.role) || divisionsForRole(form.role).length === 1}
+                  disabled={!canAssignRoles || !roleNeedsDivision(form.role) || divisionsForRole(form.role).length === 1}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -554,6 +561,9 @@ export default function MembersManagement() {
               </div>
               <p className="col-span-2 text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
                 This role is the person's ONE role: it drives their workspace permissions everywhere.
+                {!canAssignRoles
+                  ? ' Only the President and the association account can assign or change roles.'
+                  : ''}
                 {editingId && normalizeRole(form.role) === 'advisor' && originalRole !== 'advisor'
                   ? ' Advisors are appointed alumni: saving with this role first asks you to register this person as an alumnus.'
                   : ''}

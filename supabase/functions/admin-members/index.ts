@@ -179,6 +179,13 @@ Deno.serve(async (req) => {
     const callerRank = isAdminEmail ? 0 : Math.min(...roleNames.map(rankOf), 99);
     const primaryRole = roleNames[0] || 'member';
 
+    // ROLE AUTHORITY: only the association account (admin) and the President
+    // may assign, change or remove anyone's role, anywhere in the workspace.
+    // Other managers (Vice President, Head of Operations) may maintain the
+    // register's data (contacts, membership, visibility) but never roles.
+    const isRoleAuthority = isAdminEmail || roleNames.includes('admin') || roleNames.includes('president');
+    const ROLE_AUTHORITY_ERROR = 'Only the President and the association account can assign or change roles.';
+
     // Hierarchy guards, applied to every mutating action:
     //  - never your own record (no self promotion, demotion or deletion);
     //  - never a peer's or a senior's record;
@@ -235,6 +242,8 @@ Deno.serve(async (req) => {
     const action = actionResult.data;
 
     if (action === 'delete') {
+      // Removing someone from the register removes their role: President/admin only.
+      if (!isRoleAuthority) return json({ error: ROLE_AUTHORITY_ERROR }, 403);
       const parsed = DeleteSchema.safeParse(body.member);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
 
@@ -256,6 +265,9 @@ Deno.serve(async (req) => {
     // the workspace as an advisor (public) or silent advisor instead of being
     // removed: every advisor is, by definition, a registered alumnus.
     if (action === 'move-to-alumni') {
+      // Moving to alumni (optionally appointing advisor) changes the person's
+      // role: President/admin only.
+      if (!isRoleAuthority) return json({ error: ROLE_AUTHORITY_ERROR }, 403);
       const parsed = MoveToAlumniSchema.safeParse(body);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
       const keepRole = parsed.data.keep_role ?? null;
@@ -339,6 +351,8 @@ Deno.serve(async (req) => {
     };
 
     if (action === 'create') {
+      // Creating a register entry grants its role: President/admin only.
+      if (!isRoleAuthority) return json({ error: ROLE_AUTHORITY_ERROR }, 403);
       // A manager cannot create a roster record carrying their own email or
       // the association's (that would be an indirect self/role grant).
       if (payload.email && (payload.email === user.email || payload.email === ADMIN_EMAIL)) {
@@ -362,6 +376,13 @@ Deno.serve(async (req) => {
       if (!existing) return json({ error: 'Member not found' }, 404);
       const guardError = guardTarget(existing);
       if (guardError) return json({ error: guardError }, 403);
+
+      // Changing the ROLE (or its division) is reserved for President/admin;
+      // other managers may only maintain the person's data.
+      const roleChanged = existing.role !== m.role || (existing.division ?? 'none') !== division;
+      if (roleChanged && !isRoleAuthority) {
+        return json({ error: ROLE_AUTHORITY_ERROR }, 403);
+      }
 
       const { data, error } = await supabase.from('members').update(payload).eq('id', m.id).select().single();
       if (error) throw error;

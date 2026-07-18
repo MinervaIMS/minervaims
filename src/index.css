@@ -805,12 +805,55 @@ html.ws-active body {
 .minerva-nav nav::-webkit-scrollbar { display: none; }
 
 /* =====================================================================
-   Site-wide filter & search consistency (public pages + workspace):
-   filters (native <select> and shadcn dropdown triggers) are flat with the
-   secondary (body) font, so they never appear rounded or in the serif font.
+   Site-wide filter & search consistency (public pages + workspace).
+   THE structural rule: every filter and search control, present or
+   future, renders flat (no rounded corners) in the secondary (body)
+   font, matching Recruiting > Candidates Screening.
+
+   Why appearance: none is essential: without it, browsers paint native
+   <select> elements with the OPERATING SYSTEM's control style (rounded
+   corners, its own font, its own caret) and simply IGNORE border-radius
+   and font-family. So the old radius/font rules had no visible effect on
+   macOS/iOS. Removing the native appearance hands full control to CSS;
+   a single chevron is drawn back in as a background image.
    ===================================================================== */
 select,
 [role='combobox'] {
   border-radius: 0 !important;
   font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif !important;
+}
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: hsl(var(--background));
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  padding-right: 2rem;
+}
+select::-ms-expand { display: none; }
+
+/* Text-entry controls: flat corners everywhere; strip the native inner
+   styling (iOS Safari rounds inputs and adds an inset shadow otherwise).
+   Date/time inputs keep their native appearance so pickers still work,
+   but lose the rounding. */
+input,
+textarea {
+  border-radius: 0 !important;
+}
+input[type='text'],
+input[type='search'],
+input[type='email'],
+input[type='tel'],
+input[type='url'],
+input[type='password'],
+input[type='number'],
+textarea {
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
 }

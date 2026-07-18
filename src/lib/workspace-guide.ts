@@ -235,7 +235,7 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'The association register: members and advisors, each with THE one role that drives their workspace permissions everywhere. Also holds the semester registers: frozen snapshots of who officially belonged to the association each semester.',
     view: ['Browse the directory and consult past semester registers.', 'Portfolio managers, team leaders, senior analysts and analysts see the people of their own division (names, search and filters).'],
     manage: ['Add, edit, move to alumni or expel members.'],
-    warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.', 'Roles are always assigned by a more senior role: nobody can change their own role, from any page.'],
+    warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.', 'Roles are assigned only by the President and the association account, and nobody can ever change their own role, from any page.'],
     topics: [
       { id: 'registers', title: 'Semester registers', body: 'Each register lists who officially belonged to the association in a given semester. It is created automatically the moment that semester\'s membership fee collection is closed, and preserved unchanged from then on.' },
       { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Board members can additionally stay in the workspace as advisors (hidden from the website by default).', requires: 'manage' },
