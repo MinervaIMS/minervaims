@@ -925,13 +925,13 @@ export type Database = {
           event_type: string
           guest: string[] | null
           id: string
+          in_archive: boolean
           moderator: string | null
           online: boolean
           place: string
           poster_url: string | null
           registration_audience: string
           registration_enabled: boolean
-          in_archive: boolean
           show_on_website: boolean
           start_at: string | null
           title: string
@@ -947,13 +947,13 @@ export type Database = {
           event_type?: string
           guest?: string[] | null
           id?: string
+          in_archive?: boolean
           moderator?: string | null
           online?: boolean
           place: string
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
-          in_archive?: boolean
           show_on_website?: boolean
           start_at?: string | null
           title: string
@@ -969,13 +969,13 @@ export type Database = {
           event_type?: string
           guest?: string[] | null
           id?: string
+          in_archive?: boolean
           moderator?: string | null
           online?: boolean
           place?: string
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
-          in_archive?: boolean
           show_on_website?: boolean
           start_at?: string | null
           title?: string
