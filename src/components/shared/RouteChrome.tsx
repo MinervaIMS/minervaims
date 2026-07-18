@@ -36,15 +36,19 @@ const AUTH_LIKE = [
   '/auth', '/forgot-password', '/reset-password', '/password-reset-success',
   '/check-email', '/application-check-email', '/verify-email',
   '/session-expired', '/access-denied', '/pending-approval', '/apply',
+  '/unsubscribe',
 ];
 
 function chromeFor(path: string): Chrome {
-  // Workspace: the page is purple at the TOP (header strip) and white at the
-  // BOTTOM (content). A single theme-color cannot be right for both bars, so
-  // NO theme-color is declared here (theme: null): Safari then samples the
-  // page itself near each edge, picking up the purple header at the top and
-  // the white content at the bottom, exactly as they appear on screen.
-  if (path.startsWith('/admin')) return { theme: null, base: WHITE, bottom: WHITE };
+  // Workspace: the area behind the clock (status bar) must read PURPLE and
+  // the lower browser chrome must stay TRANSPARENT, blending with the white
+  // content. So the purple is DECLARED via theme-color (the only channel
+  // browsers reliably honour for their top chrome), while nothing at all is
+  // painted at the bottom: bottom is 'transparent', so the browser's own
+  // translucent bar sits directly over the page content with no band of ours
+  // beneath it. The html base stays white so any gap or overscroll around
+  // the content reads as the content itself.
+  if (path.startsWith('/admin')) return { theme: NAVY, base: WHITE, bottom: 'transparent' };
   if (AUTH_LIKE.some((p) => path === p || path.startsWith(p + '/'))) {
     return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
   }

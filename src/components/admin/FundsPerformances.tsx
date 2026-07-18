@@ -160,10 +160,14 @@ export default function FundsPerformances() {
                           <td className="px-2 py-2 text-center">{formatFundValue(r.vol, 'pct') || '-'}</td>
                           <td className="px-2 py-2 text-center">{formatFundValue(r.sharpe, 'ratio') || '-'}</td>
                           <td className="px-2 py-2 text-right">
-                            <div className="flex gap-2 justify-end">
-                              <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
-                              <Button variant="destructive" size="icon" onClick={() => remove(r)}><Trash2 className="h-4 w-4" /></Button>
-                            </div>
+                            {yearIsLocked(r.year) ? (
+                              <span className="text-xs text-muted-foreground pr-1">Frozen</span>
+                            ) : (
+                              <div className="flex gap-2 justify-end">
+                                <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="destructive" size="icon" onClick={() => remove(r)}><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
