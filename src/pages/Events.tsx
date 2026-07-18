@@ -244,25 +244,28 @@ const Events = () => {
                 New events are announced each semester. Browse our past events below,
                 or follow along to hear about the next one first.
               </p>
-              <form onSubmit={handleEventEmailSubmit} className="max-w-xl mx-auto">
-                <div className="flex border border-accent">
+              {/* Same identity as the footer newsletter form, adapted to the
+                  light background: plain input joined to a serif Sign Up
+                  button with the soft purple hover. */}
+              <form onSubmit={handleEventEmailSubmit} className="max-w-xl mx-auto text-left">
+                <div className="flex w-full">
                   <input
                     type="email"
                     required
                     placeholder="Enter your email here"
                     value={eventEmail}
                     onChange={(e) => setEventEmail(e.target.value)}
-                    className="flex-1 min-w-0 bg-background px-3 py-2 font-body text-body text-foreground placeholder:text-muted-foreground border-0 focus:outline-none focus:ring-0"
+                    className="flex-1 min-w-0 bg-background text-foreground px-3 py-2 font-body text-body border border-separator border-r-0 focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-muted-foreground rounded-none"
                   />
                   <button
                     type="submit"
-                    className="shrink-0 bg-accent text-background font-serif tracking-wider text-sm px-5 py-2 border border-transparent hover:bg-background hover:text-accent hover:border-accent transition-colors"
+                    className="shrink-0 bg-muted text-foreground border border-separator font-serif text-body px-6 py-2 hover:bg-[#ece9f4] transition-colors rounded-none"
                   >
                     Sign Up
                   </button>
                 </div>
-                <p className="font-body text-small text-muted-foreground leading-snug mt-4">
-                  By signing up, you agree to receive email updates from us. You can unsubscribe at any time.
+                <p className="font-body text-small text-muted-foreground leading-snug mt-4 text-center">
+                  * By signing up you agree to receive updates from us. You can unsubscribe at any time.
                 </p>
               </form>
             </div>

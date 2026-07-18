@@ -17,12 +17,11 @@ import {
 } from '@/lib/applications-api';
 
 // =====================================================================
-// Form & Questions — ONE page for the two halves of the application form:
-//   left  = the form's fixed structure (what every applicant fills in),
-//   right = the division-specific written questions (the editable part).
-// The two panels sit side by side on desktop so the whole form can be
-// understood at a glance; a hairline separates them, per the workspace
-// design rules (static panels, no hover effects, minimal decoration).
+// Form & Questions — ONE unified page for the application form: first
+// its fixed structure (what every applicant fills in), then the
+// division-specific written questions, which are an integral part of
+// the form. A single top-to-bottom column, per the workspace design
+// rules (static panels, no hover effects, minimal decoration).
 // =====================================================================
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
@@ -87,13 +86,15 @@ export default function FormSettings() {
     <div>
       <WorkspacePageHeader
         title="Form & Questions"
-        description="The application form in one place: on the left its fixed structure, on the right the written question each division asks. Question changes appear immediately on the public Join page and inside the form."
+        description="The application form in one place: its fixed structure first, then the written question each division asks, which is an integral part of the form. Question changes appear immediately on the public Join page and inside the form."
         actions={<Button variant="outline" className="font-body" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-0 gap-y-10 items-start font-body">
-        {/* LEFT: the form's fixed structure */}
-        <section className="xl:pr-12 space-y-6">
+      {/* ONE unified column: the division questions are an integral part of
+          the form, so the page reads top to bottom as a single flow. */}
+      <div className="max-w-3xl space-y-10 font-body">
+        {/* The form's fixed structure */}
+        <section className="space-y-6">
           <div>
             <Kicker>The form</Kicker>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -125,8 +126,8 @@ export default function FormSettings() {
           </p>
         </section>
 
-        {/* RIGHT: the division questions (the editable half) */}
-        <section className="xl:border-l xl:border-separator xl:pl-12 space-y-4">
+        {/* The division questions (the editable part of the form) */}
+        <section className="space-y-4">
           <div>
             <Kicker>Division questions</Kicker>
             <p className="text-sm text-muted-foreground leading-relaxed">

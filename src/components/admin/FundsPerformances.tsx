@@ -28,6 +28,12 @@ function monthIsLocked(year: number, monthIndex: number): boolean {
   const age = (now.getFullYear() * 12 + now.getMonth()) - (year * 12 + monthIndex);
   return age >= EDITABLE_MONTHS_WINDOW;
 }
+// Once EVERY month of a year is frozen, its aggregates (ITD, YTD, Vol,
+// Sharpe) freeze with it: the whole year is closed history.
+function yearIsLocked(year: number): boolean {
+  if (!year) return false;
+  return Array.from({ length: 12 }, (_, i) => i).every((i) => monthIsLocked(year, i));
+}
 
 interface EditState {
   fund: ActiveFund;
@@ -182,11 +188,16 @@ export default function FundsPerformances() {
             <div className="space-y-4 font-body">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1"><Label>Year</Label><Input value={edit.year} onChange={(e) => setEdit({ ...edit, year: e.target.value })} placeholder="e.g. 2026" disabled={!!edit.id} /></div>
-                <div className="space-y-1"><Label>ITD</Label><Input value={edit.itd} onChange={(e) => setEdit({ ...edit, itd: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, itd: formatFundValue(s.itd, 'pct') } : s))} placeholder="e.g. 52.8%" /></div>
-                <div className="space-y-1"><Label>YTD</Label><Input value={edit.ytd} onChange={(e) => setEdit({ ...edit, ytd: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, ytd: formatFundValue(s.ytd, 'signed-pct') } : s))} placeholder="e.g. +8.0%" /></div>
-                <div className="space-y-1"><Label>Vol</Label><Input value={edit.vol} onChange={(e) => setEdit({ ...edit, vol: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, vol: formatFundValue(s.vol, 'pct') } : s))} placeholder="e.g. 5.5%" /></div>
+                <div className="space-y-1"><Label>ITD</Label><Input value={edit.itd} disabled={yearIsLocked(parseInt(edit.year, 10) || 0)} onChange={(e) => setEdit({ ...edit, itd: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, itd: formatFundValue(s.itd, 'pct') } : s))} placeholder="e.g. 52.8%" /></div>
+                <div className="space-y-1"><Label>YTD</Label><Input value={edit.ytd} disabled={yearIsLocked(parseInt(edit.year, 10) || 0)} onChange={(e) => setEdit({ ...edit, ytd: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, ytd: formatFundValue(s.ytd, 'signed-pct') } : s))} placeholder="e.g. +8.0%" /></div>
+                <div className="space-y-1"><Label>Vol</Label><Input value={edit.vol} disabled={yearIsLocked(parseInt(edit.year, 10) || 0)} onChange={(e) => setEdit({ ...edit, vol: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, vol: formatFundValue(s.vol, 'pct') } : s))} placeholder="e.g. 5.5%" /></div>
               </div>
-              <div className="space-y-1 max-w-[8rem]"><Label>Sharpe</Label><Input value={edit.sharpe} onChange={(e) => setEdit({ ...edit, sharpe: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, sharpe: formatFundValue(s.sharpe, 'ratio') } : s))} placeholder="e.g. 1.20" /></div>
+              <div className="space-y-1 max-w-[8rem]"><Label>Sharpe</Label><Input value={edit.sharpe} disabled={yearIsLocked(parseInt(edit.year, 10) || 0)} onChange={(e) => setEdit({ ...edit, sharpe: e.target.value })} onBlur={() => setEdit((s) => (s ? { ...s, sharpe: formatFundValue(s.sharpe, 'ratio') } : s))} placeholder="e.g. 1.20" /></div>
+              {yearIsLocked(parseInt(edit.year, 10) || 0) && (
+                <p className="text-xs text-muted-foreground">
+                  Every month of this year is older than {EDITABLE_MONTHS_WINDOW} months, so the whole year, aggregates included, is frozen history.
+                </p>
+              )}
               <div>
                 <Label className="mb-2 block">Monthly returns</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">

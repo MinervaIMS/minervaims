@@ -25,12 +25,36 @@ function withDownloadParam(url: string, filename: string): string {
   return `${url}${sep}download=${encodeURIComponent(filename)}`;
 }
 
+// Mobile browsers (iOS Safari above all) render a PDF inside an <iframe>
+// as a single, unscrollable first page. Their NATIVE PDF viewers, reached
+// by navigating straight to the file, scroll and zoom perfectly and offer
+// share/download built in. So on phones and tablets the wrapper tab is
+// skipped entirely.
+function isMobileViewer(): boolean {
+  const ua = navigator.userAgent || '';
+  const iPadOs = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  return /iPhone|iPad|iPod|Android/i.test(ua) || iPadOs;
+}
+
 export function openReportInTab(title: string, url: string) {
   if (!url) return;
 
   const niceTitle = sanitizeFilename(title);
   const filename = `${niceTitle}.pdf`;
   const downloadUrl = withDownloadParam(url, filename);
+
+  if (isMobileViewer()) {
+    // Straight to the PDF: the platform viewer handles scrolling, zooming
+    // and sharing far better than anything embeddable.
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return;
+  }
 
   // IMPORTANT: pass no feature string. 'noopener' and 'noreferrer' both
   // force window.open() to return null in Chromium while still opening

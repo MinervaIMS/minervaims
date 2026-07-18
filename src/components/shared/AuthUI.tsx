@@ -1,5 +1,6 @@
 import { ButtonHTMLAttributes, forwardRef, InputHTMLAttributes, ReactNode, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { SpecularFx } from '@/components/shared/SpecularFx';
 
 /* ---------------- Tokens (mirror prompt) ---------------- */
 const NAVY = '#1F0F4D';
@@ -181,7 +182,7 @@ export function AuthButton({
       {...rest}
       disabled={disabled}
       className={className}
-      style={{ ...base, ...palettes[variant], ...style }}
+      style={{ ...base, ...palettes[variant], position: 'relative', ...style }}
       onMouseEnter={(e) => {
         if (disabled) return;
         Object.assign(e.currentTarget.style, hover[variant]);
@@ -193,7 +194,9 @@ export function AuthButton({
         rest.onMouseLeave?.(e);
       }}
     >
-      {children}
+      {/* Primary actions carry the specular border animation. */}
+      {variant === 'primary' && !disabled && <SpecularFx />}
+      <span style={{ position: 'relative', zIndex: 2 }}>{children}</span>
     </button>
   );
 }

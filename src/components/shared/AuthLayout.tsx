@@ -43,8 +43,9 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
               rotation={30}
             />
           </div>
+          {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
           <div
-            className="relative z-10 w-full max-w-md bg-background"
+            className="relative z-[55] w-full max-w-md bg-background"
             style={{
               borderRadius: 0,
               padding: '38px 32px',
