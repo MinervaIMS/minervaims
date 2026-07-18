@@ -772,7 +772,7 @@ const MinervaWorkspace = () => {
       case 'ops-auto-emails':
         return <AutoEmails />;
       case 'ops-docs':
-        return <ResourceManager category="operations_statuto" title="Statute And Important Documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="operations_statuto" title="Statute & Documents" description="Official association documents: the statute (PDF/Word), drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
       case 'website-pages':
