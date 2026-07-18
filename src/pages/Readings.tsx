@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
@@ -7,28 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { Search } from 'lucide-react';
 import readingsBgAsset from '@/assets/mims-readings.webp.asset.json';
+import { readingTypeLabels, type Reading, type ReadingType } from '@/components/readings/types';
 
-type ReadingType = 'academic_papers' | 'technical_textbooks' | 'free_time_readings';
-
-interface Reading {
-  id: string;
-  title: string;
-  author: string;
-  description: string;
-  reading_type: ReadingType;
-  contributor_name: string;
-  contributor_surname: string;
-  contributor_role: string;
-  display_order: number;
-  created_at: string;
-  publication_year?: number | null;
-}
-
-const readingTypeLabels: Record<ReadingType, string> = {
-  academic_papers: 'Academic Papers',
-  technical_textbooks: 'Technical Textbooks',
-  free_time_readings: 'Free Time Readings',
-};
+// The bookcase (and its GSAP choreography) loads in its own chunk so the
+// page's first paint stays light.
+const Bookcase = lazy(() => import('@/components/readings/Bookcase'));
 
 // Roles that can access the readings dashboard section
 const readingsAccessRoles = [
@@ -70,16 +53,6 @@ const Readings = () => {
 
     fetchReadings();
   }, []);
-
-  const filteredReadings = readings.filter(r => {
-    const matchesCategory = activeCategory === 'all' || r.reading_type === activeCategory;
-    const matchesSearch = searchQuery === '' || 
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      `${r.contributor_name} ${r.contributor_surname}`.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
 
   const handleSubmitClick = () => {
     if (canSubmit) {
@@ -196,42 +169,9 @@ const Readings = () => {
             </div>
           </div>
 
-          {filteredReadings.length === 0 ? (
-            <p className="font-body text-sm sm:text-body-lg text-muted-foreground text-center py-8">
-              {activeCategory === 'all' 
-                ? 'No reading recommendations have been added yet.'
-                : `No ${readingTypeLabels[activeCategory].toLowerCase()} have been added yet.`}
-            </p>
-          ) : (
-            <div className="space-y-4 sm:space-y-6">
-              {filteredReadings.map((reading) => (
-                <div
-                  key={reading.id}
-                  className="bg-background p-4 sm:p-6 transition-all duration-300 hover:shadow-lg border-b border-separator/30 last:border-b-0"
-                >
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-[10px] sm:text-xs font-body uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                        {readingTypeLabels[reading.reading_type]}
-                      </span>
-                    </div>
-                    <h3 className="font-serif text-lg sm:text-xl md:text-2xl text-accent mb-1 leading-tight">
-                      {reading.title}
-                    </h3>
-                    <p className="font-body text-sm sm:text-base text-muted-foreground mb-2 sm:mb-3">
-                      by {reading.author}{reading.reading_type === 'academic_papers' && reading.publication_year ? ` (${reading.publication_year})` : ''}
-                    </p>
-                    <p className="font-body text-sm sm:text-body text-foreground mb-3 sm:mb-4 leading-relaxed">
-                      {reading.description}
-                    </p>
-                    <p className="font-body text-xs sm:text-small text-muted-foreground italic">
-                      Recommended by {reading.contributor_name} {reading.contributor_surname}, {reading.contributor_role}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <Suspense fallback={<div className="min-h-[480px]" aria-hidden />}>
+            <Bookcase readings={readings} activeCategory={activeCategory} searchQuery={searchQuery} />
+          </Suspense>
         </div>
       </section>
 
