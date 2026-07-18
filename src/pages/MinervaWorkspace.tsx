@@ -92,6 +92,7 @@ interface DbEvent {
   registration_enabled?: boolean | null;
   registration_audience?: string | null;
   show_on_website?: boolean | null;
+  in_archive?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -389,7 +390,8 @@ const MinervaWorkspace = () => {
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
-      // The archive records every event type. Filter only by the controls below.
+      // Only events their creator chose to record in the archive are listed.
+      if (event.in_archive === false) return false;
       if (eventsTypeFilter !== 'all' && (event.event_type ?? 'other') !== eventsTypeFilter) return false;
       if (eventsWebsiteFilter === 'on' && event.show_on_website === false) return false;
       if (eventsWebsiteFilter === 'off' && event.show_on_website !== false) return false;
@@ -472,6 +474,7 @@ const MinervaWorkspace = () => {
             registration_enabled: event.registration_enabled ?? false,
             registration_audience: event.registration_audience ?? 'members',
             show_on_website: value,
+            in_archive: event.in_archive ?? true,
           },
         },
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -553,6 +556,7 @@ const MinervaWorkspace = () => {
           online: editingEvent.online ?? false,
           registration_enabled: editingEvent.registration_enabled ?? false,
           registration_audience: editingEvent.registration_audience ?? 'members',
+          in_archive: editingEvent.in_archive ?? true,
         }),
       };
       const { data, error } = await supabase.functions.invoke('admin-events', {
@@ -769,7 +773,7 @@ const MinervaWorkspace = () => {
     <div>
       <WorkspacePageHeader
         title="Events Archive"
-        description="Every event of every type: meetings, calls, division and guest events. Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it."
+        description="The events recorded in the archive: whether an event is recorded here is decided when it is created (online calls, guest events and alumni calls by default). Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it. Deleting an event from the archive is permanent."
         actions={<>
 
           <AlertDialog>

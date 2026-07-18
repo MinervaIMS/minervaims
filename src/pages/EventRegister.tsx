@@ -92,11 +92,9 @@ export default function EventRegister() {
             rotation={30}
           />
         </div>
-        <div
-          className="relative z-10 w-full max-w-2xl bg-background px-6 sm:px-10 py-10"
-          style={{ borderRadius: 0, boxShadow: '0 20px 60px -20px rgba(31, 15, 77, 0.18)' }}
-        >
-          <div className="flex justify-center mb-6"><img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '138px', width: 'auto' }} /></div>
+        {/* Flat white card per the Minerva Forms design. */}
+        <div className="relative z-10 w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+          <div className="flex justify-center mb-6"><img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '118px', width: 'auto' }} /></div>
           {children}
         </div>
       </div>
@@ -122,17 +120,23 @@ export default function EventRegister() {
 
   return (
     <Shell>
-      {/* Event details */}
-      <div className="text-center mb-6">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{EVENT_TYPE_LABELS[event.event_type]}</div>
-        <h1 className="font-serif text-2xl sm:text-3xl text-accent">{event.title}</h1>
+      {/* Event details per the Minerva Forms design: eyebrow, serif title,
+          icon meta rows, description. */}
+      <div className="text-center mb-5">
+        <div className="font-body text-xs uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-2">{EVENT_TYPE_LABELS[event.event_type]}</div>
+        <h1 className="font-serif text-2xl sm:text-3xl text-accent text-balance">{event.title}</h1>
       </div>
-      <div className="font-body text-sm text-muted-foreground space-y-1 mb-6 max-w-md mx-auto">
-        <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 shrink-0" />{when}</div>
-        {event.place && <div className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0" />{event.place}</div>}
-        {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
+      <div className="font-body text-sm text-muted-foreground space-y-2 mb-5 max-w-[470px] mx-auto">
+        <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{when}</div>
+        {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{event.place}</div>}
+        {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
       </div>
-      {event.description && <p className="font-body text-sm text-foreground mb-6 max-w-md mx-auto text-center">{event.description}</p>}
+      {event.description && <p className="font-body text-sm text-foreground leading-relaxed mb-2 max-w-[470px] mx-auto text-center">{event.description}</p>}
+
+      <div className="max-w-[520px] mx-auto mt-7">
+        <div className="pb-2 border-b border-[#D9D9D9] mb-5">
+          <span className="font-body text-xs font-semibold tracking-[0.1em] uppercase text-muted-foreground">Registration</span>
+        </div>
 
       {membersOnly && !user ? (
         <div className="font-body text-center">
@@ -140,9 +144,9 @@ export default function EventRegister() {
           <Button asChild><Link to="/auth" state={{ from: `/events/${id}/register` }}>Sign in</Link></Button>
         </div>
       ) : (
-        <form onSubmit={submit} className="space-y-4 font-body max-w-md mx-auto">
+        <form onSubmit={submit} className="space-y-4 font-body">
           {user ? (
-            <p className="text-sm text-muted-foreground text-center">Registering as {user.email}. Your details are filled in automatically.</p>
+            <p className="text-sm text-muted-foreground text-center">Registering as <span className="text-foreground">{user.email}</span>. Your details are filled in automatically.</p>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
@@ -193,9 +197,17 @@ export default function EventRegister() {
             </Label>
           </div>
 
-          <Button type="submit" className="w-full" disabled={submitting}>{submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering</> : 'Register'}</Button>
+          {/* Serif register button per the design: navy that inverts on hover. */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full mt-1 py-3.5 font-serif text-lg border border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent transition-colors duration-200 disabled:opacity-70"
+          >
+            {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Registering</span> : 'Register'}
+          </button>
         </form>
       )}
+      </div>
     </Shell>
   );
 }

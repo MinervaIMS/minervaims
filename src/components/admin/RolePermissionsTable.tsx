@@ -110,7 +110,12 @@ export default function RolePermissionsTable() {
             {grid.map((sec) => (
               <Fragment key={sec.section}>
                 <tr>
-                  <td colSpan={ROLES.length + 1} className="bg-accent/5 text-accent font-serif px-3 py-1.5 border-b border-separator uppercase tracking-wider text-[11px]">{sec.section}</td>
+                  {/* The section title is sticky to the LEFT edge of the scroll
+                      box, so GENERAL / REPORTS / ... stay readable while the
+                      table is scrolled horizontally. */}
+                  <td colSpan={ROLES.length + 1} className="bg-accent/5 border-b border-separator p-0">
+                    <span className="sticky left-0 inline-block text-accent font-serif px-3 py-1.5 uppercase tracking-wider text-[11px]">{sec.section}</span>
+                  </td>
                 </tr>
                 {sec.items.map((it) => (
                   <tr key={it.key} className="hover:bg-muted/30">

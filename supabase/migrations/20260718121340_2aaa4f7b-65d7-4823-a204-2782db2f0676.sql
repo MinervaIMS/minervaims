@@ -1,0 +1,1 @@
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS in_archive boolean NOT NULL DEFAULT true;

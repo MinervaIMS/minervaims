@@ -925,6 +925,7 @@ export type Database = {
           event_type: string
           guest: string[] | null
           id: string
+          in_archive: boolean
           moderator: string | null
           online: boolean
           place: string
@@ -946,6 +947,7 @@ export type Database = {
           event_type?: string
           guest?: string[] | null
           id?: string
+          in_archive?: boolean
           moderator?: string | null
           online?: boolean
           place: string
@@ -967,6 +969,7 @@ export type Database = {
           event_type?: string
           guest?: string[] | null
           id?: string
+          in_archive?: boolean
           moderator?: string | null
           online?: boolean
           place?: string

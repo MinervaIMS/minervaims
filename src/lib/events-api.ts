@@ -11,8 +11,12 @@ export type RegistrationAudience = 'members' | 'members_external' | 'public';
 
 // Event types for which choosing an organising division is mandatory.
 export const DIVISION_REQUIRED_TYPES: EventType[] = ['division_event', 'alumni_call', 'meeting'];
-// Event types that are recorded in the Events archive (auto, not user choice).
-export const ARCHIVED_TYPES: EventType[] = ['alumni_call', 'guest'];
+// Recording an event in the Events archive is the CREATOR'S choice; these
+// types default the choice to ON (it can be switched either way).
+export const DEFAULT_ARCHIVED_TYPES: EventType[] = ['online_call', 'guest', 'alumni_call'];
+// Types that can be created from Events > Create. Alumni calls are excluded:
+// they are created only through Events > Alumni Calls.
+export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_event', 'online_call', 'guest', 'association_wide', 'other'];
 
 export interface EventRow {
   id: string;
@@ -31,6 +35,7 @@ export interface EventRow {
   registration_enabled: boolean;
   registration_audience: RegistrationAudience;
   show_on_website: boolean;
+  in_archive: boolean;
   created_at: string;
 }
 
@@ -51,6 +56,7 @@ export interface EventInput {
   registration_enabled?: boolean;
   registration_audience?: RegistrationAudience;
   show_on_website?: boolean;
+  in_archive?: boolean;
 }
 
 export interface EventRegistration {

@@ -292,6 +292,19 @@ Deno.serve(async (req) => {
     if (action === 'set-question') {
       const division = body.division as string;
       if (!canAll && !reviewerDivisions.includes(division)) return json({ error: 'Out of scope' }, 403);
+      // Questions freeze while applications are open: from the scheduled
+      // opening until the close no question can change, so every applicant
+      // answers the same question.
+      const { data: aset } = await supabase.from('application_settings')
+        .select('start_date, end_date').limit(1).maybeSingle();
+      if (aset?.start_date && aset?.end_date) {
+        const now = Date.now();
+        const openFrom = new Date(aset.start_date).getTime();
+        const openTo = new Date(aset.end_date).getTime();
+        if (now >= openFrom && now <= openTo) {
+          return json({ error: 'Questions are locked while applications are open. They can be edited again once the application window closes.' }, 403);
+        }
+      }
       const { error } = await supabase.from('application_questions')
         .upsert({ division, question: body.question ?? '', updated_at: new Date().toISOString(), updated_by: user.id });
       if (error) throw error;
