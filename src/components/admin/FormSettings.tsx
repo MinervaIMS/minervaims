@@ -7,6 +7,7 @@ import { ExternalLink, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { logActivity } from '@/lib/activity-log';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -54,7 +55,11 @@ export default function FormSettings() {
     access.isFullAccess || !access.allowedDivisions?.length
       ? CORE
       : (access.allowedDivisions.filter((d) => (CORE as string[]).includes(d)) as OrgDivision[]);
-  const canEditQuestions = access.canManage('applications-form');
+  // Questions freeze while applications are open: from the scheduled opening
+  // until the close, no question can be edited (the server enforces this too).
+  const { settings: appSettings } = useApplicationSettings();
+  const questionsLocked = appSettings.applicationsOpen;
+  const canEditQuestions = access.canManage('applications-form') && !questionsLocked;
 
   useEffect(() => {
     (async () => {
@@ -127,8 +132,13 @@ export default function FormSettings() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               Each division asks applicants one written question, answered with a PDF upload.
               {canEditQuestions
-                ? ' You can edit the questions below; the others are shown for context.'
+                ? ' A Head of Division edits their own division’s question and consults the others; full-access roles edit all.'
                 : ' The questions are shown for consultation.'}
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2 border border-separator bg-muted/40 px-3 py-2">
+              Questions are locked while applications are open: from the scheduled opening date until the
+              closing date they cannot be edited, so every applicant answers the same question.
+              {questionsLocked && <span className="text-foreground"> Applications are open now, so editing is disabled.</span>}
             </p>
           </div>
 

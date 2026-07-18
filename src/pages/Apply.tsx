@@ -34,7 +34,9 @@ function Shell({ children }: { children: React.ReactNode }) {
       <Helmet><title>Apply | MIMS</title></Helmet>
       <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
         <ApplyBackground />
-        <div className="relative z-10 w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-separator px-6 sm:px-10 py-10">
+        {/* Flat white card per the Minerva Forms design: sharp corners, hairline
+            border, deep drop shadow. */}
+        <div className="relative z-10 w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
             <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '100px', width: 'auto' }} />
           </div>
@@ -42,6 +44,33 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     </>
+  );
+}
+
+/** Uppercase section kicker with a hairline, per the Minerva Forms design. */
+function SectionKicker({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-8 mb-4 pb-2 border-b border-[#D9D9D9]">
+      <span className="font-body text-xs font-semibold tracking-[0.1em] uppercase text-muted-foreground">{children}</span>
+    </div>
+  );
+}
+
+/** "Choose file | filename" picker row, per the Minerva Forms design. */
+function FilePicker({ label, file, onChange }: {
+  label: React.ReactNode;
+  file: File | null;
+  onChange: (f: File | null) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="font-body text-sm font-medium">{label}</Label>
+      <label className="flex items-stretch h-10 border border-input bg-white cursor-pointer overflow-hidden">
+        <span className="flex items-center px-3.5 bg-muted border-r border-input text-[13px] text-foreground whitespace-nowrap font-body">Choose file</span>
+        <span className="flex items-center px-3 text-sm text-muted-foreground truncate font-body">{file?.name ?? 'No file selected'}</span>
+        <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => onChange(e.target.files?.[0] ?? null)} />
+      </label>
+    </div>
   );
 }
 
@@ -259,12 +288,24 @@ export default function Apply() {
         <p className="text-xs">Your application cannot be edited after submission. Fields marked * are required.</p>
       </div>
 
-      <form onSubmit={submit} className="space-y-5 font-body">
+      {/* Sectioned layout per the Minerva Forms design: personal details,
+          account credentials, academic profile, division preferences and
+          documents, each opened by an uppercase kicker with a hairline. */}
+      <form onSubmit={submit} className="font-body">
+        <SectionKicker>Personal details</SectionKicker>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="First name *"><Input value={f.first_name} onChange={(e) => setF({ ...f, first_name: e.target.value })} placeholder="e.g. Maria" /></Field>
           <Field label="Surname *"><Input value={f.surname} onChange={(e) => setF({ ...f, surname: e.target.value })} placeholder="e.g. Rossi" /></Field>
           <Field label="Bocconi ID / matriculation *"><Input value={f.bocconi_id} onChange={(e) => setF({ ...f, bocconi_id: e.target.value })} placeholder="e.g. 3123456" /></Field>
-          <Field label="Bocconi email *"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="name.surname@studbocconi.it" /></Field>
+          <Field label="Phone *"><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="+39 333 000 0000" /></Field>
+        </div>
+        <div className="mt-4">
+          <Field label="LinkedIn (optional)"><Input value={f.linkedin_url} onChange={(e) => setF({ ...f, linkedin_url: e.target.value })} placeholder="https://linkedin.com/in/…" /></Field>
+        </div>
+
+        <SectionKicker>Account credentials</SectionKicker>
+        <Field label="Bocconi email *"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="name.surname@studbocconi.it" /></Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start mt-4">
           <Field label="Password *">
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
             {password.length > 0 && <div className="mt-2"><PasswordStrengthIndicator password={password} /></div>}
@@ -273,8 +314,10 @@ export default function Apply() {
             <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-enter your password" autoComplete="new-password" />
             {confirm.length > 0 && confirm !== password && <p className="text-xs text-destructive mt-1">Passwords do not match.</p>}
           </Field>
-          <Field label="Phone *"><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="+39 333 000 0000" /></Field>
-          <Field label="LinkedIn"><Input value={f.linkedin_url} onChange={(e) => setF({ ...f, linkedin_url: e.target.value })} placeholder="https://linkedin.com/in/…" /></Field>
+        </div>
+
+        <SectionKicker>Academic profile</SectionKicker>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Bocconi programme *">
             <Select value={f.degree_course} onValueChange={(v) => setF({ ...f, degree_course: v })}>
               <SelectTrigger><SelectValue placeholder="Select your programme" /></SelectTrigger>
@@ -294,13 +337,17 @@ export default function Apply() {
               <SelectContent>{(Object.keys(ACADEMIC_YEAR_LABELS) as AcademicYear[]).map((y) => <SelectItem key={y} value={y}>{ACADEMIC_YEAR_LABELS[y]}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
+        </div>
+
+        <SectionKicker>Division preferences</SectionKicker>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="First-choice division *">
             <Select value={f.first_choice} onValueChange={(v) => setF({ ...f, first_choice: v as OrgDivision })}>
               <SelectTrigger><SelectValue placeholder="Choose a division" /></SelectTrigger>
               <SelectContent>{CORE.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="Second-choice division">
+          <Field label="Second-choice division (optional)">
             <Select value={f.second_choice} onValueChange={(v) => setF({ ...f, second_choice: v as OrgDivision })}>
               <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
               <SelectContent>{CORE.filter((d) => d !== f.first_choice).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
@@ -309,37 +356,53 @@ export default function Apply() {
         </div>
 
         {/* Division question */}
-        {f.first_choice ? (
-          <div className="border border-accent/30 bg-accent/5 p-4 rounded">
-            <div className="text-xs uppercase tracking-wider text-accent mb-1">Written question ({divisionLabels[f.first_choice]})</div>
-            <p className="text-sm text-foreground">{questionFor || 'The question for this division will be published shortly.'}</p>
-            <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. You may also answer additional divisions. If you do, combine everything into the same PDF.</p>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">Select your first-choice division to see its written question.</p>
-        )}
-
-        {/* Document instructions */}
-        <div className="text-xs text-muted-foreground border border-separator rounded p-3 space-y-1">
-          <p className="font-medium text-foreground">Document guidelines</p>
-          <p>• <strong>CV</strong>: one page, finance-style layout, your most recent version. PDF named <code>Surname_Name_CV.pdf</code>.</p>
-          <p>• <strong>Written answer</strong>: a single PDF named <code>Surname_Name_Answer.pdf</code>. Place any charts/tables in an appendix after the first page.</p>
+        <div className="mt-4">
+          {f.first_choice ? (
+            <div className="border border-accent/30 bg-accent/5 p-4">
+              <div className="text-xs uppercase tracking-[0.08em] font-semibold text-accent mb-1.5">Written question ({divisionLabels[f.first_choice]})</div>
+              <p className="text-sm text-foreground leading-relaxed">{questionFor || 'The question for this division will be published shortly.'}</p>
+              <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. You may also answer additional divisions. If you do, combine everything into the same PDF.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Select your first-choice division to see its written question.</p>
+          )}
         </div>
 
-        <Field label="CV (PDF) *"><Input type="file" accept="application/pdf,.pdf" onChange={(e) => setCv(e.target.files?.[0] ?? null)} /></Field>
-        <Field label="Written answer (PDF) *"><Input type="file" accept="application/pdf,.pdf" onChange={(e) => setAnswer(e.target.files?.[0] ?? null)} /></Field>
+        <SectionKicker>Your documents</SectionKicker>
+        {/* Document instructions */}
+        <div className="border border-[#D9D9D9] px-4 py-3.5 space-y-1.5 mb-4">
+          <p className="text-[13px] font-semibold text-foreground">Document guidelines</p>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">CV</strong>: one page, finance-style layout, your most recent version. PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_CV.pdf</code>.</p>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">Written answer</strong>: a single PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_Answer.pdf</code>. Place any charts/tables in an appendix after the first page.</p>
+        </div>
+
+        <div className="space-y-4">
+          <FilePicker label="CV (PDF) *" file={cv} onChange={setCv} />
+          <FilePicker label="Written answer (PDF) *" file={answer} onChange={setAnswer} />
+        </div>
 
         {/* GDPR consent */}
-        <label className="flex items-start gap-3 cursor-pointer">
-          <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-1" />
-          <span className="text-xs text-muted-foreground">
+        <label className="flex items-start gap-3 cursor-pointer mt-6">
+          <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
+          <span className="text-xs text-muted-foreground leading-relaxed">
             I consent to Minerva Investment Management Society collecting and processing the personal data and documents (including my CV) I submit through this form for the purpose of evaluating my application, in accordance with the GDPR (EU) 2016/679 and the society’s privacy policy. *
           </span>
         </label>
 
-        <Button type="submit" disabled={submitting || readOnly} className="w-full font-body">
-          {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting</> : readOnly ? 'Submission disabled in preview' : 'Create account and submit application'}
-        </Button>
+        {/* Serif submit button per the design: navy that inverts on hover. */}
+        <button
+          type="submit"
+          disabled={submitting || readOnly}
+          className={`w-full mt-6 py-4 font-serif text-lg border transition-colors duration-200 ${
+            readOnly
+              ? 'border-input bg-white text-[#AFA2D2] cursor-not-allowed'
+              : 'border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent disabled:opacity-70'
+          }`}
+        >
+          {submitting ? (
+            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Submitting</span>
+          ) : readOnly ? 'Submission disabled in preview' : 'Create account and submit application'}
+        </button>
       </form>
     </Shell>
   );

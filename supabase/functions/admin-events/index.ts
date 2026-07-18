@@ -47,14 +47,15 @@ const EventSchema = z.object({
     .trim()
     .nullable()
     .optional(),
-  event_type: z.enum(['meeting','assembly','division_event','online_call','guest','alumni_call','association_wide','other']).optional(),
+  event_type: z.enum(['meeting','assembly','aperitivo','division_event','online_call','guest','alumni_call','association_wide','other']).optional(),
   division: z.enum(['equity','investment','macro','portfolio','quant','media','operations','board','none']).nullable().optional(),
   start_at: z.string().nullable().optional(),
   end_at: z.string().nullable().optional(),
   online: z.boolean().optional(),
   registration_enabled: z.boolean().optional(),
   registration_audience: z.enum(['members','members_external','guests','public']).optional(),
-  show_on_website: z.boolean().optional()
+  show_on_website: z.boolean().optional(),
+  in_archive: z.boolean().optional()
 })
 
 // Extra event columns shared by create and update.
@@ -68,6 +69,9 @@ function extraEventCols(v: Record<string, unknown>) {
     registration_enabled: v.registration_enabled ?? false,
     registration_audience: v.registration_audience ?? 'members',
     show_on_website: v.show_on_website ?? true,
+    // Whether the event is recorded in the Events archive. The creator
+    // decides; online calls, guest events and alumni calls default to yes.
+    in_archive: v.in_archive ?? ['online_call','guest','alumni_call'].includes(String(v.event_type ?? '')),
   }
 }
 
@@ -268,6 +272,14 @@ Deno.serve(async (req) => {
         }
 
         const validatedEvent = eventResult.data
+        // Alumni calls are created ONLY through Events > Alumni Calls, which
+        // owns their planning workflow; this endpoint refuses to create one.
+        if (validatedEvent.event_type === 'alumni_call') {
+          return new Response(
+            JSON.stringify({ error: 'Alumni calls are created from Events > Alumni Calls, not from Create Event.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         const { data, error } = await supabase
           .from('events')
           .insert({

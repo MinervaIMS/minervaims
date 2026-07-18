@@ -2,12 +2,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Download } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -89,15 +92,6 @@ const entityLabels: Record<string, string> = {
   reading: 'reading',
 };
 
-// Section labels for filter
-const sectionLabels: Record<string, string> = {
-  event: 'Events',
-  alumnus: 'Alumni',
-  file: 'Files',
-  team_member: 'Team',
-  reading: 'Readings',
-};
-
 // Role labels for display
 const roleLabels: Record<string, string> = {
   admin: 'Admin',
@@ -118,49 +112,18 @@ const roleLabels: Record<string, string> = {
 export default function ActivityManagement() {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [actionFilter, setActionFilter] = useState<string>('all');
-  const [sectionFilter, setSectionFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState<string[]>([]);
+  const [sectionFilter, setSectionFilter] = useState<string[]>([]);
+  const [userFilter, setUserFilter] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [userFilter, setUserFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
 
-  // Handle page change with scroll to top
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // Use setTimeout to scroll after React re-renders the new page content
-    setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }, 0);
-  };
-
-  // Get unique users for filter dropdown
-  const uniqueUsers = useMemo(() => {
-    const userMap = new Map<string, { id: string; email: string; name: string }>();
-    activities.forEach((activity) => {
-      if (!userMap.has(activity.user_id)) {
-        // Extract name from email or use email as fallback
-        const emailParts = activity.user_email.split('@')[0];
-        const nameParts = emailParts.split('.');
-        const displayName = nameParts.length >= 2 
-          ? `${nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1)} ${nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1)}`
-          : emailParts;
-        userMap.set(activity.user_id, {
-          id: activity.user_id,
-          email: activity.user_email,
-          name: displayName,
-        });
-      }
-    });
-    return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [activities]);
-
   useEffect(() => {
     fetchActivities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchActivities = async () => {
@@ -184,43 +147,72 @@ export default function ActivityManagement() {
     }
   };
 
+  // Column filter options are built over the whole log.
+  const actionOptions = useMemo(() =>
+    [...new Set(activities.map((a) => a.action))].sort()
+      .map((a) => ({ value: a, label: actionLabels[a] || a.replace(/_/g, ' ') })), [activities]);
+  const sectionOptions = useMemo(() =>
+    [...new Set(activities.map((a) => placeOf(a).section))].sort()
+      .map((s) => ({ value: s, label: s })), [activities]);
+  const userOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    activities.forEach((a) => { if (!seen.has(a.user_id)) seen.set(a.user_id, a.user_email); });
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, email]) => ({ value: id, label: email }));
+  }, [activities]);
+
+  const getActivityDescription = (activity: ActivityLog) => {
+    const actionLabel = actionLabels[activity.action] || activity.action;
+    const entityLabel = entityLabels[activity.entity_type] || activity.entity_type;
+
+    if (activity.action === 'reorder') {
+      const details = activity.details as { count?: number; division?: string; type?: string } | null;
+      const count = details?.count || 'multiple';
+      if (activity.entity_type === 'team_member' && details?.division) {
+        return `${actionLabel} ${count} team members in "${details.division}"`;
+      }
+      if (activity.entity_type === 'reading' && details?.type) {
+        return `${actionLabel} ${count} readings in "${details.type}"`;
+      }
+      return `${actionLabel} ${count} ${entityLabel}s`;
+    }
+
+    if (activity.entity_name) {
+      return `${actionLabel} ${entityLabel} "${activity.entity_name}"`;
+    }
+
+    return `${actionLabel} a ${entityLabel}`;
+  };
+
   // Filter activities
   const filteredActivities = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return activities.filter((activity) => {
-      // Action filter
-      if (actionFilter !== 'all' && activity.action !== actionFilter) {
-        return false;
-      }
-      // Section filter (new section column, with legacy entity-type fallback)
-      if (sectionFilter !== 'all' && placeOf(activity).section !== sectionFilter) {
-        return false;
-      }
-      // User filter
-      if (userFilter !== 'all' && activity.user_id !== userFilter) {
-        return false;
-      }
-      // Date range filter
+      if (actionFilter.length > 0 && !actionFilter.includes(activity.action)) return false;
+      if (sectionFilter.length > 0 && !sectionFilter.includes(placeOf(activity).section)) return false;
+      if (userFilter.length > 0 && !userFilter.includes(activity.user_id)) return false;
       if (startDate || endDate) {
         const activityDate = new Date(activity.created_at);
-        if (startDate && activityDate < startDate) {
-          return false;
-        }
+        if (startDate && activityDate < startDate) return false;
         if (endDate) {
           const endOfDay = new Date(endDate);
           endOfDay.setHours(23, 59, 59, 999);
-          if (activityDate > endOfDay) {
-            return false;
-          }
+          if (activityDate > endOfDay) return false;
         }
+      }
+      if (q) {
+        const hay = `${activity.user_email} ${activity.entity_name ?? ''} ${getActivityDescription(activity)} ${placeOf(activity).section} ${placeOf(activity).subsection}`.toLowerCase();
+        if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [activities, actionFilter, sectionFilter, userFilter, startDate, endDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activities, search, actionFilter, sectionFilter, userFilter, startDate, endDate]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [actionFilter, sectionFilter, userFilter, startDate, endDate]);
+  }, [search, actionFilter, sectionFilter, userFilter, startDate, endDate]);
 
   // Clear date filter
   const clearDateFilter = () => {
@@ -275,37 +267,13 @@ export default function ActivityManagement() {
 
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
     });
-  };
-
-  const getActivityDescription = (activity: ActivityLog) => {
-    const actionLabel = actionLabels[activity.action] || activity.action;
-    const entityLabel = entityLabels[activity.entity_type] || activity.entity_type;
-    
-    if (activity.action === 'reorder') {
-      const details = activity.details as { count?: number; division?: string; type?: string } | null;
-      const count = details?.count || 'multiple';
-      if (activity.entity_type === 'team_member' && details?.division) {
-        return `${actionLabel} ${count} team members in "${details.division}"`;
-      }
-      if (activity.entity_type === 'reading' && details?.type) {
-        return `${actionLabel} ${count} readings in "${details.type}"`;
-      }
-      return `${actionLabel} ${count} ${entityLabel}s`;
-    }
-    
-    if (activity.entity_name) {
-      return `${actionLabel} ${entityLabel} "${activity.entity_name}"`;
-    }
-    
-    return `${actionLabel} a ${entityLabel}`;
   };
 
   if (isLoading) {
@@ -321,202 +289,111 @@ export default function ActivityManagement() {
   }
 
   return (
-    <div id="activity-section" className="space-y-6">
+    <div id="activity-section">
       <WorkspacePageHeader
         title="Activity log"
         description="Every meaningful action in the workspace is recorded here for accountability and security: who did what, where, to which item, and when, with the role they held at that exact moment. Entries never change retroactively."
         actions={
-
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Download CSV
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Download Activity Logs</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will download {filteredActivities.length} activity log{filteredActivities.length !== 1 ? 's' : ''} as a CSV file.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="font-body">
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Download Activity Logs</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will download {filteredActivities.length} activity log{filteredActivities.length !== 1 ? 's' : ''} as a CSV file.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDownloadCSV}>Download</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         }
       />
 
-
-
-
-      {/* Filters follow the standard filter format: flat corners, body font,
-          no labels above the fields. */}
-      <div className="mb-8 pb-6 border-b border-separator">
-        <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:items-center">
-          {/* Action filter */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[140px]"
-            >
-              <option value="all">All Actions</option>
-              {[...new Set(activities.map((a) => a.action))].sort().map((a) => (
-                <option key={a} value={a}>{actionLabels[a] || a.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
-            <HelpDot page="settings-activity" topic="filters" />
-          </div>
-
-          {/* User filter */}
-          <div>
-            <select
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[180px]"
-            >
-              <option value="all">All Users</option>
-              {uniqueUsers.map((user) => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Section filter */}
-          <div>
-            <select
-              value={sectionFilter}
-              onChange={(e) => setSectionFilter(e.target.value)}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[140px]"
-            >
-              <option value="all">All Sections</option>
-              {[...new Set(activities.map((a) => placeOf(a).section))].sort().map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date range */}
-          <div className="flex gap-2 items-center">
-            <div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    className={cn(
-                      "font-body bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    {startDate ? format(startDate, "MMM d, yyyy") : "From date"}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    className={cn(
-                      "font-body bg-background border border-separator px-3 h-10 min-w-[130px] text-left",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    {endDate ? format(endDate, "MMM d, yyyy") : "To date"}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Clear dates */}
-            {(startDate || endDate) && (
-              <button
-                onClick={clearDateFilter}
-                className="font-body h-10 px-3 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+      {/* Search bar and date range above the table; the other filters live in
+          the table header row (the same pattern as People > Members). */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center flex-wrap">
+        <div className="relative max-w-md flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-10 font-body" placeholder="Search by user, item or description" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className={cn('font-body bg-background border border-input px-3 h-10 min-w-[130px] text-left', !startDate && 'text-muted-foreground')}>
+              {startDate ? format(startDate, 'MMM d, yyyy') : 'From date'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus className={cn('p-3 pointer-events-auto')} />
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className={cn('font-body bg-background border border-input px-3 h-10 min-w-[130px] text-left', !endDate && 'text-muted-foreground')}>
+              {endDate ? format(endDate, 'MMM d, yyyy') : 'To date'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus className={cn('p-3 pointer-events-auto')} />
+          </PopoverContent>
+        </Popover>
+        {(startDate || endDate) && (
+          <button onClick={clearDateFilter} className="font-body h-10 px-3 text-muted-foreground hover:text-foreground transition-colors">
+            Clear
+          </button>
+        )}
+        <HelpDot page="settings-activity" topic="filters" />
       </div>
 
-
-      {/* Results Count */}
-      <p
-        className="text-muted-foreground mb-4"
-        style={{ fontFamily: '"Times New Roman", Times, serif' }}
-      >
-        Showing {filteredActivities.length} activit{filteredActivities.length === 1 ? 'y' : 'ies'}
+      <p className="font-body text-small text-muted-foreground mb-4">
+        Showing {paginatedActivities.length} of {filteredActivities.length} {filteredActivities.length === 1 ? 'entry' : 'entries'}
+        {totalPages > 1 && ` (page ${currentPage} of ${totalPages})`}
       </p>
 
-      {/* Activities List */}
-      {paginatedActivities.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground font-body">No activities found.</p>
-        </div>
+      {filteredActivities.length === 0 ? (
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No activities match the current filters.</p></CardContent></Card>
       ) : (
-        <div className="divide-y divide-separator">
-          {paginatedActivities.map((activity) => (
-            <div key={activity.id} className="py-4">
-              <div className="flex items-start">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className="font-medium text-accent truncate"
-                      style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                    >
-                      {activity.user_email}
-                    </span>
-                    <span
-                      className="text-sm text-muted-foreground italic"
-                      title="Role held at the moment of the action. It never changes retroactively"
-                      style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                    >
-                      ({roleLabels[activity.user_role] || composeRoleLabel(activity.user_role as never, null)})
-                    </span>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent whitespace-nowrap">
-                      {placeOf(activity).section}{placeOf(activity).subsection ? ` › ${placeOf(activity).subsection}` : ''}
-                    </span>
-                  </div>
-                  <p
-                    className="text-foreground"
-                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                  >
-                    {getActivityDescription(activity)}
-                  </p>
-                  <p
-                    className="text-sm text-muted-foreground mt-1"
-                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
-                  >
-                    {formatDateTime(activity.created_at)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="border border-separator overflow-x-auto">
+          <table className="w-full text-left font-body text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 font-normal whitespace-nowrap">When</th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="User" options={userOptions} selected={userFilter} onChange={setUserFilter} /></th>
+                <th className="px-3 py-2 font-normal">Role at the time</th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Section" options={sectionOptions} selected={sectionFilter} onChange={setSectionFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Action" options={actionOptions} selected={actionFilter} onChange={setActionFilter} /></th>
+                <th className="px-3 py-2 font-normal">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedActivities.map((activity) => {
+                const place = placeOf(activity);
+                return (
+                  <tr key={activity.id} className="border-t border-separator align-top">
+                    <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{formatDateTime(activity.created_at)}</td>
+                    <td className="px-3 py-2 text-foreground">{activity.user_email}</td>
+                    <td className="px-3 py-2 whitespace-nowrap" title="Role held at the moment of the action. It never changes retroactively.">
+                      {roleLabels[activity.user_role] || composeRoleLabel(activity.user_role as never, null)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[11px] px-1.5 py-0.5 bg-accent/10 text-accent whitespace-nowrap">
+                        {place.section}{place.subsection ? ` › ${place.subsection}` : ''}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">{actionLabels[activity.action] || activity.action.replace(/_/g, ' ')}</td>
+                    <td className="px-3 py-2">{getActivityDescription(activity)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -527,7 +404,7 @@ export default function ActivityManagement() {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
                   className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>
@@ -539,7 +416,7 @@ export default function ActivityManagement() {
                 ) : (
                   <PaginationItem key={page}>
                     <PaginationLink
-                      onClick={() => handlePageChange(page)}
+                      onClick={() => setCurrentPage(page)}
                       isActive={currentPage === page}
                       className="cursor-pointer"
                     >
@@ -550,7 +427,7 @@ export default function ActivityManagement() {
               )}
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
                   className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>

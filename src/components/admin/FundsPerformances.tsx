@@ -19,6 +19,16 @@ import {
 const FUNDS: ActiveFund[] = ['long-short', 'multi-asset'];
 const emptyMonths = () => Array.from({ length: 12 }, () => '');
 
+// Only the LAST 15 calendar months (up to the current month, future months
+// included) stay editable; anything earlier is frozen history.
+const EDITABLE_MONTHS_WINDOW = 15;
+function monthIsLocked(year: number, monthIndex: number): boolean {
+  if (!year) return false;
+  const now = new Date();
+  const age = (now.getFullYear() * 12 + now.getMonth()) - (year * 12 + monthIndex);
+  return age >= EDITABLE_MONTHS_WINDOW;
+}
+
 interface EditState {
   fund: ActiveFund;
   id: string | null;
@@ -180,13 +190,26 @@ export default function FundsPerformances() {
               <div>
                 <Label className="mb-2 block">Monthly returns</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {MONTH_LABELS.map((m, i) => (
-                    <div key={m} className="space-y-1">
-                      <span className="text-xs text-muted-foreground">{m}</span>
-                      <Input value={edit.months[i]} onChange={(e) => { const months = [...edit.months]; months[i] = e.target.value; setEdit({ ...edit, months }); }} onBlur={() => setEdit((s) => { if (!s) return s; const months = [...s.months]; months[i] = formatFundValue(months[i], 'signed-pct'); return { ...s, months }; })} placeholder="+0.0%" />
-                    </div>
-                  ))}
+                  {MONTH_LABELS.map((m, i) => {
+                    const locked = monthIsLocked(parseInt(edit.year, 10) || 0, i);
+                    return (
+                      <div key={m} className="space-y-1">
+                        <span className="text-xs text-muted-foreground">{m}</span>
+                        <Input
+                          value={edit.months[i]}
+                          disabled={locked}
+                          title={locked ? 'Months older than 15 months are frozen history and cannot be edited.' : undefined}
+                          onChange={(e) => { const months = [...edit.months]; months[i] = e.target.value; setEdit({ ...edit, months }); }}
+                          onBlur={() => setEdit((s) => { if (!s) return s; const months = [...s.months]; months[i] = formatFundValue(months[i], 'signed-pct'); return { ...s, months }; })}
+                          placeholder="+0.0%"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Only the last {EDITABLE_MONTHS_WINDOW} months are editable; earlier months are frozen history.
+                </p>
               </div>
               <div className="flex gap-3 pt-1">
                 <Button className="flex-1" onClick={save} disabled={busy}>{busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>

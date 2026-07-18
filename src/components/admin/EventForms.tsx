@@ -40,6 +40,10 @@ export default function EventForms() {
         start_at: ev.start_at, end_at: ev.end_at, online: ev.online,
         registration_enabled: patch.registration_enabled ?? ev.registration_enabled,
         registration_audience: patch.registration_audience ?? ev.registration_audience,
+        // Preserve settings this page does not expose, so an update here can
+        // never silently reset them.
+        show_on_website: ev.show_on_website,
+        in_archive: ev.in_archive,
       });
       logActivity(session, primaryRole, { action: 'update', section: 'Events', subsection: 'Registration forms', entityType: 'event', entityId: ev.id, entityName: ev.title, details: patch as Record<string, unknown> });
       setEvents((prev) => prev.map((e) => (e.id === ev.id ? { ...e, ...patch } : e)));

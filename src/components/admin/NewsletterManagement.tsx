@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface Subscriber {
   id: string;
@@ -32,6 +34,7 @@ export default function NewsletterManagement() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 
   const load = async () => {
@@ -50,11 +53,16 @@ export default function NewsletterManagement() {
 
   useEffect(() => { load(); }, []);
 
+  const sourceOptions = useMemo(() =>
+    [...new Set(subscribers.map((s) => s.source))].sort()
+      .map((v) => ({ value: v, label: v })), [subscribers]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return subscribers;
-    return subscribers.filter((s) => s.email.toLowerCase().includes(q));
-  }, [subscribers, search]);
+    return subscribers
+      .filter((s) => sourceFilter.length === 0 || sourceFilter.includes(s.source))
+      .filter((s) => !q || s.email.toLowerCase().includes(q));
+  }, [subscribers, search, sourceFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -116,41 +124,48 @@ export default function NewsletterManagement() {
       />
 
 
-      <div className="mb-6 relative max-w-md">
+      {/* Search bar above the table; column filters live in the header row
+          (the same pattern as People > Members). */}
+      <div className="mb-4 relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search by email"
-          className="pl-9"
+          className="pl-10 font-body"
         />
       </div>
+
+      <p className="font-body text-small text-muted-foreground mb-4">
+        Showing {paged.length} of {filtered.length} subscriber{filtered.length !== 1 ? 's' : ''}
+        {filtered.length !== subscribers.length && ` (${subscribers.length} total)`}
+      </p>
 
       {loading ? (
         <WorkspaceLoader />
       ) : filtered.length === 0 ? (
-        <p className="font-body text-muted-foreground py-12 text-center">
-          {subscribers.length === 0 ? 'No subscribers yet.' : 'No subscribers match your search.'}
-        </p>
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">
+          {subscribers.length === 0 ? 'No subscribers yet.' : 'No subscribers match the current filters.'}
+        </p></CardContent></Card>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full font-body text-sm">
-              <thead>
-                <tr className="border-b border-separator text-left">
-                  <th className="py-3 pr-4 font-serif">Email</th>
-                  <th className="py-3 pr-4 font-serif">Subscribed at</th>
-                  <th className="py-3 pr-4 font-serif">Source</th>
-                  <th className="py-3 pr-4 font-serif w-20 text-right">Actions</th>
+          <div className="border border-separator overflow-x-auto">
+            <table className="w-full text-left font-body text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-normal">Email</th>
+                  <th className="px-3 py-2 font-normal">Subscribed at</th>
+                  <th className="px-3 py-2 font-normal"><ColumnFilter label="Source" options={sourceOptions} selected={sourceFilter} onChange={setSourceFilter} /></th>
+                  <th className="px-3 py-2 font-normal w-20 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paged.map((s) => (
-                  <tr key={s.id} className="border-b border-separator/60">
-                    <td className="py-3 pr-4">{s.email}</td>
-                    <td className="py-3 pr-4">{new Date(s.subscribed_at).toLocaleString()}</td>
-                    <td className="py-3 pr-4">{s.source}</td>
-                    <td className="py-3 pr-4 text-right">
+                  <tr key={s.id} className="border-t border-separator">
+                    <td className="px-3 py-2 text-foreground">{s.email}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{new Date(s.subscribed_at).toLocaleString()}</td>
+                    <td className="px-3 py-2">{s.source}</td>
+                    <td className="px-3 py-2 text-right">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" aria-label="Remove subscriber">
@@ -180,7 +195,7 @@ export default function NewsletterManagement() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6 font-body text-sm">
               <span className="text-muted-foreground">
-                Page {currentPage} of {totalPages} · {filtered.length} subscriber{filtered.length !== 1 ? 's' : ''}
+                Page {currentPage} of {totalPages}
               </span>
               <div className="flex gap-2">
                 <Button

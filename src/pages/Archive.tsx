@@ -232,8 +232,8 @@ const Archive = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Browse all research reports and publications
           </h2>
-          {/* Sticky Filters Bar */}
-          <div className="sticky top-16 z-20 bg-background py-4 mb-4 -mx-4 px-4 md:-mx-6 md:px-6">
+          {/* Filters bar (scrolls with the page; not sticky). */}
+          <div className="py-4 mb-4">
             {/* Filters follow the standard filter format: flat corners, body
                 font, no labels above the fields. */}
             <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
