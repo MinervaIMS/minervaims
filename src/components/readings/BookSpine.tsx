@@ -25,7 +25,7 @@ export function BookSpine({ reading, dimmed, vanished, onOpen }: Props) {
       aria-hidden={vanished || undefined}
       aria-label={`${reading.title}, ${reading.author}. Open this reading.`}
       onClick={(e) => onOpen(reading.id, e.currentTarget)}
-      className="relative shrink-0 border-[1.5px] border-[hsl(var(--accent-soft))] bg-[hsl(var(--accent-soft)/0.06)] outline-none transition-transform duration-200 hover:-translate-y-1.5 focus-visible:-translate-y-1.5 focus-visible:border-accent disabled:cursor-default"
+      className="relative shrink-0 rounded-t-[3px] border-[1.5px] border-[hsl(var(--accent-soft))] bg-[hsl(var(--accent-soft)/0.06)] outline-none transition-transform duration-200 hover:-translate-y-1.5 focus-visible:-translate-y-1.5 focus-visible:border-accent disabled:cursor-default"
       style={{ width: w, height: h, visibility: vanished ? 'hidden' : undefined }}
     >
       {/* Head and tail bands of the spine. */}

@@ -60,6 +60,6 @@ export function spineGeometry(id: string): { w: number; h: number } {
   const a = Math.abs(h);
   return {
     w: 26 + (a % 4) * 4, // 26 to 38px
-    h: 100 + (Math.floor(a / 7) % 5) * 7, // 100 to 128px
+    h: 86 + (Math.floor(a / 7) % 5) * 6, // 86 to 110px
   };
 }

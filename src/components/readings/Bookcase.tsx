@@ -17,10 +17,11 @@ import {
 // =====================================================================
 
 const SOFT = 'hsl(var(--accent-soft))';
-const SHELF_H = 150; // px, must exceed the tallest spine (128) plus lift
+const SHELF_H_DESKTOP = 130; // px, exceeds the tallest spine (110) plus lift
+const SHELF_H_MOBILE = 118;
 const SHELF_GAP = 7; // px between spines
 const SHELF_PAD = 28; // horizontal padding inside a column (14 + 14)
-const MIN_ROWS = 3;
+const MIN_ROWS = 5; // a proper case shows several shelves even when sparse
 
 function useMedia(query: string): boolean {
   const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
@@ -100,7 +101,13 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
     });
   }, [readings, searchFiltered, colWidth]);
 
-  const rows = Math.max(MIN_ROWS, ...columns.map((c) => c.shelves.length));
+  const shelfH = isMobile ? SHELF_H_MOBILE : SHELF_H_DESKTOP;
+  // Desktop: every column shows the same number of shelves so the boards
+  // align across the case. Mobile stacks the columns, so each one only
+  // carries the shelves it needs (plus one spare) and stays compact.
+  const desktopRows = Math.max(MIN_ROWS, ...columns.map((c) => c.shelves.length));
+  const rowsFor = (shelvesNeeded: number) =>
+    isMobile ? Math.max(2, shelvesNeeded) : desktopRows;
 
   // ---- reader state ---------------------------------------------------
   const [openIdx, setOpenIdx] = useState<number | null>(null);
@@ -141,15 +148,19 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
     <div>
       {/* ---- the case ---- */}
       <div className="relative select-none">
-        {/* Cornice: overhanging top boards. */}
-        <div aria-hidden className="h-3 -mx-1.5 sm:-mx-4 border-[1.5px]" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.05)' }} />
-        <div aria-hidden className="h-2 -mx-0.5 sm:-mx-2 border-x-[1.5px] border-b" style={hairline} />
+        {/* Cornice: a moulded crown in three stepped boards, the outermost
+            overhanging with softly rounded top corners, as in the drawing. */}
+        <div aria-hidden className="h-2 -mx-2 sm:-mx-6 rounded-t-[6px] border-[1.5px] border-b-0" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+        <div aria-hidden className="h-[9px] -mx-2 sm:-mx-6 rounded-t-[2px] border-[1.5px]" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.04)' }} />
+        <div aria-hidden className="h-[7px] -mx-1 sm:-mx-3 border-x-[1.5px] border-b" style={hairline} />
+        <div aria-hidden className="h-[5px] -mx-0.5 sm:-mx-1.5 border-x-[1.5px] border-b" style={hairline} />
 
-        {/* Body: three columns separated by fluted pilasters on desktop,
-            stacked full-width below md. */}
-        <div className="border-x-[1.5px] md:grid md:grid-cols-[1fr_22px_1fr_22px_1fr]" style={hairline}>
+        {/* Body: three columns separated by fluted pilasters (with capital
+            and base blocks) on desktop, stacked full-width below md. */}
+        <div className="border-x-[1.5px] md:grid md:grid-cols-[1fr_24px_1fr_24px_1fr]" style={hairline}>
           {columns.map((col, ci) => {
             const dimmed = activeCategory !== 'all' && col.type !== activeCategory;
+            const rows = rowsFor(col.shelves.length);
             const emptyCopy =
               col.all.length === 0
                 ? `No ${readingTypeLabels[col.type].toLowerCase()} have been added yet.`
@@ -157,9 +168,15 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
             return (
               <Fragment key={col.type}>
                 {ci > 0 && (
-                  <div aria-hidden className="hidden md:flex justify-center border-x-[1.5px]" style={hairline}>
-                    {/* Flutes of the pilaster. */}
-                    <span className="h-full w-[7px] border-x" style={hairline} />
+                  <div aria-hidden className="hidden md:flex flex-col border-x-[1.5px]" style={hairline}>
+                    {/* Capital, fluted shaft, base block. */}
+                    <span className="h-3 shrink-0 border-b" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+                    <span className="flex-1 flex justify-center py-1">
+                      <span className="h-full w-[9px] border-x" style={hairline}>
+                        <span className="block h-full w-px mx-auto" style={{ backgroundColor: SOFT }} />
+                      </span>
+                    </span>
+                    <span className="h-3 shrink-0 border-t" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
                   </div>
                 )}
                 <div
@@ -167,31 +184,33 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
                   className={`transition-opacity duration-300 ${dimmed ? 'opacity-25' : ''}`}
                   aria-hidden={dimmed || undefined}
                 >
-                  <div className="h-9 flex items-center justify-center border-b px-2" style={hairline}>
+                  <div className="h-9 flex items-center justify-center border-b px-2 relative" style={hairline}>
+                    <span aria-hidden className="absolute left-3 right-3 bottom-[3px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.55)' }} />
                     <span className="font-body text-[11px] uppercase tracking-[0.18em] text-accent truncate">
                       {readingTypeLabels[col.type]}
                     </span>
                   </div>
                   {col.visible.length === 0 ? (
-                    <div className="flex items-center justify-center text-center px-6" style={{ height: rows * SHELF_H }}>
+                    <div className="flex items-center justify-center text-center px-6 border-b-2" style={{ ...hairline, height: isMobile ? 128 : rows * shelfH }}>
                       <p className="font-body text-sm text-muted-foreground max-w-[220px]">{emptyCopy}</p>
                     </div>
                   ) : (
                     Array.from({ length: rows }, (_, si) => (
-                      <div
-                        key={si}
-                        className="flex items-end border-b-2 px-3.5 overflow-hidden"
-                        style={{ ...hairline, height: SHELF_H, gap: SHELF_GAP }}
-                      >
-                        {(col.shelves[si] ?? []).map((r) => (
-                          <BookSpine
-                            key={r.id}
-                            reading={r}
-                            dimmed={dimmed}
-                            vanished={openIdx !== null && originIdRef.current === r.id}
-                            onOpen={openBook}
-                          />
-                        ))}
+                      <div key={si} className="relative border-b-2" style={{ ...hairline, height: shelfH }}>
+                        {/* Shelf board underline: a second hairline gives the
+                            board its thickness, like the double strokes of the drawing. */}
+                        <span aria-hidden className="absolute left-0 right-0 bottom-[3px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
+                        <div className="absolute inset-x-0 top-0 bottom-[2px] flex items-end px-3.5 overflow-hidden" style={{ gap: SHELF_GAP }}>
+                          {(col.shelves[si] ?? []).map((r) => (
+                            <BookSpine
+                              key={r.id}
+                              reading={r}
+                              dimmed={dimmed}
+                              vanished={openIdx !== null && originIdRef.current === r.id}
+                              onOpen={openBook}
+                            />
+                          ))}
+                        </div>
                       </div>
                     ))
                   )}
@@ -201,9 +220,14 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
           })}
         </div>
 
-        {/* Base: mirrored plinth boards. */}
-        <div aria-hidden className="h-2 -mx-0.5 sm:-mx-2 border-x-[1.5px] border-t" style={hairline} />
-        <div aria-hidden className="h-3.5 -mx-1.5 sm:-mx-4 border-[1.5px]" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.05)' }} />
+        {/* Base: stepped plinth boards mirroring the cornice. */}
+        <div aria-hidden className="h-[5px] -mx-0.5 sm:-mx-1.5 border-x-[1.5px] border-t" style={hairline} />
+        <div aria-hidden className="h-[11px] -mx-2 sm:-mx-6 border-[1.5px]" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.05)' }} />
+        {/* Bracket feet with rounded undersides at the two ends. */}
+        <div aria-hidden className="relative h-3 -mx-2 sm:-mx-6">
+          <span className="absolute left-1 top-0 h-3 w-10 rounded-b-[6px] border-[1.5px] border-t-0" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+          <span className="absolute right-1 top-0 h-3 w-10 rounded-b-[6px] border-[1.5px] border-t-0" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+        </div>
       </div>
 
       {/* ---- the reader ---- */}

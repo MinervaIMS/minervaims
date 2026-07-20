@@ -124,7 +124,7 @@ function HelpPanel() {
                 hierarchy, the kicker gives the place. */}
             <div className="flex items-start justify-between gap-3 px-6 py-5 bg-accent text-accent-foreground">
               <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-accent-foreground/65 font-body mb-1">Help · {g.section}</div>
+                <div className="text-xs text-accent-foreground/70 font-body mb-1">Help · {g.section}</div>
                 <h2 className="font-serif text-2xl leading-tight">{g.label}</h2>
               </div>
               <button type="button" onClick={closeHelp} aria-label="Close help" className="p-1 -mr-1 text-accent-foreground/80 hover:text-accent-foreground"><X className="h-5 w-5" /></button>
@@ -133,7 +133,7 @@ function HelpPanel() {
             <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8 font-body text-sm">
               {/* 1 · Purpose: the tinted accent block opens the page. */}
               <section className="border-l-2 border-accent bg-accent/[0.05] px-4 py-3.5">
-                <h3 className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold mb-1.5">What you are looking at</h3>
+                <h3 className="font-serif text-[17px] text-accent mb-1.5">What you are looking at</h3>
                 <p className="text-[15px] text-foreground leading-relaxed">{g.purpose}</p>
               </section>
 
@@ -141,7 +141,7 @@ function HelpPanel() {
                   hierarchy (colours kept: accent = consult, green = manage). */}
               {(g.view.length > 0 || (canManage && g.manage.length > 0)) && (
                 <section>
-                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold pb-2 mb-3 border-b border-separator">What you can do here</h3>
+                  <h3 className="font-serif text-[17px] text-accent pb-2 mb-3 border-b border-separator">What you can do here</h3>
                   {g.view.length > 0 && (
                     <ul className="space-y-2">
                       {g.view.map((v, i) => (
@@ -154,7 +154,7 @@ function HelpPanel() {
                   )}
                   {canManage && g.manage.length > 0 && (
                     <div className={g.view.length > 0 ? 'mt-4' : ''}>
-                      <div className="text-[11px] uppercase tracking-[0.1em] text-emerald-700 font-semibold mb-2">Managing actions your role unlocks</div>
+                      <div className="text-[13px] font-semibold text-emerald-700 mb-2">Managing actions your role unlocks</div>
                       <ul className="space-y-2">
                         {g.manage.map((m, i) => (
                           <li key={`m${i}`} className="flex gap-2.5">
@@ -170,7 +170,7 @@ function HelpPanel() {
 
               {!canManage && g.manage.length > 0 && (
                 <section className="border border-separator bg-muted/40 px-4 py-3.5">
-                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold mb-1.5">Reserved for managing roles</h3>
+                  <h3 className="font-serif text-[17px] text-foreground/75 mb-1.5">Reserved for managing roles</h3>
                   <p className="text-muted-foreground leading-relaxed">Creating, editing and removing here is reserved for roles with full access to this subsection. You can consult everything shown to you.</p>
                 </section>
               )}
@@ -178,7 +178,7 @@ function HelpPanel() {
               {/* 3 · Warnings keep their amber band: the colour IS the signal. */}
               {g.warnings && g.warnings.length > 0 && (
                 <section className="border-l-2 border-amber-500 bg-amber-50/70 px-4 py-3.5">
-                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-amber-700 font-semibold mb-2">Good to know</h3>
+                  <h3 className="font-serif text-[17px] text-amber-800 mb-2">Good to know</h3>
                   <ul className="space-y-2">
                     {g.warnings.map((w, i) => <li key={i} className="flex gap-2.5"><span className="text-amber-600 font-semibold shrink-0">!</span><span className="text-foreground/80 leading-relaxed">{w}</span></li>)}
                   </ul>
@@ -189,7 +189,7 @@ function HelpPanel() {
                   is lifted with the accent tint. */}
               {topics.length > 0 && (
                 <section>
-                  <h3 className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold pb-2 mb-1 border-b border-separator">In detail</h3>
+                  <h3 className="font-serif text-[17px] text-accent pb-2 mb-1 border-b border-separator">In detail</h3>
                   <div className="divide-y divide-separator">
                     {topics.map((t) => (
                       <div
@@ -198,7 +198,7 @@ function HelpPanel() {
                         className={`py-3.5 ${state?.topic === t.id ? 'border-l-2 border-accent bg-accent/[0.05] pl-3.5 pr-2 -mx-0' : ''}`}
                       >
                         <div className="font-serif text-base text-accent mb-1">{t.title}</div>
-                        <p className="text-muted-foreground leading-relaxed">{t.body}</p>
+                        <p className="text-foreground/75 leading-relaxed">{t.body}</p>
                       </div>
                     ))}
                   </div>

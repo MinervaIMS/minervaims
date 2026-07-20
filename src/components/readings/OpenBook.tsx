@@ -81,7 +81,7 @@ export default function OpenBook({ readings, index, originRect, mobile, reducedM
     closeBtnRef.current?.focus();
 
     if (mode.mobile) {
-      gsap.fromTo(rootRef.current, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: mode.reduced ? 0 : 0.22, ease: 'power2.out' });
+      gsap.fromTo(rootRef.current, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: mode.reduced ? 0 : 0.26, ease: 'power3.out' });
       return;
     }
 
@@ -106,26 +106,28 @@ export default function OpenBook({ readings, index, originRect, mobile, reducedM
     const o = originRect;
 
     const tl = gsap.timeline({
-      defaults: { ease: 'power3.inOut' },
+      defaults: { ease: 'power2.inOut', force3D: true },
       onReverseComplete: () => onCloseRef.current(),
     });
-    tl.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.28, ease: 'power2.out' }, 0);
+    tl.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out' }, 0);
     // 1. The spine lifts off the shelf and travels to centre stage.
     tl.fromTo(
       proxy,
       { left: o.left, top: o.top, width: o.width, height: o.height, opacity: 1 },
-      { left: cx - (SPINE * k) / 2, top: cy - (H * k) / 2, width: SPINE * k, height: H * k, duration: 0.4 },
+      { left: cx - (SPINE * k) / 2, top: cy - (H * k) / 2, width: SPINE * k, height: H * k, duration: 0.42 },
       0.02,
     );
-    // 2. Seamless swap to the 3D box, spine still facing the viewer.
-    tl.set(proxy, { opacity: 0 }, '>');
-    tl.set(box, { opacity: 1 }, '<');
+    // 2. Crossfade to the 3D box while the flight is still settling and the
+    //    rotation has already begun: the stages melt into each other instead
+    //    of chaining, which is what makes the sequence read as one motion.
+    tl.fromTo(box, { opacity: 0, rotationY: 90 }, { opacity: 1, duration: 0.12, ease: 'none' }, '-=0.14');
+    tl.to(proxy, { opacity: 0, duration: 0.12, ease: 'none' }, '<');
     // 3. The book rotates to face front.
-    tl.fromTo(box, { rotationY: 90 }, { rotationY: 0, duration: 0.3 }, '<');
-    // 4. The cover opens and the spread recentres.
-    tl.to(cover, { rotationY: -178, duration: 0.38, ease: 'power2.inOut' }, '-=0.05');
-    tl.to(box, { x: C / 2, duration: 0.38, ease: 'power2.inOut' }, '<');
-    tl.fromTo(chromeRef.current, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power2.out' }, '-=0.15');
+    tl.to(box, { rotationY: 0, duration: 0.34 }, '-=0.12');
+    // 4. The cover opens and the spread recentres, overlapping the rotation.
+    tl.to(cover, { rotationY: -178, duration: 0.46, ease: 'power3.inOut' }, '-=0.14');
+    tl.to(box, { x: C / 2, duration: 0.46, ease: 'power3.inOut' }, '<');
+    tl.fromTo(chromeRef.current, { opacity: 0 }, { opacity: 1, duration: 0.24, ease: 'power2.out' }, '-=0.26');
     tlRef.current = tl;
 
     return () => {
@@ -167,8 +169,8 @@ export default function OpenBook({ readings, index, originRect, mobile, reducedM
       },
     });
     t.set(leafRef.current, { opacity: 1, rotationY: from });
-    t.to(leafRef.current, { rotationY: to, duration: 0.42, ease: 'power2.inOut' });
-    t.call(() => onNavigateRef.current(next), [], 0.21);
+    t.to(leafRef.current, { rotationY: to, duration: 0.5, ease: 'power3.inOut', force3D: true });
+    t.call(() => onNavigateRef.current(next), [], 0.25);
   };
 
   const handleClose = () => {
