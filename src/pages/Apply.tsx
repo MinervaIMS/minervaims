@@ -406,7 +406,7 @@ export default function Apply() {
           <span className="relative z-[2]">
             {submitting ? (
               <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Submitting</span>
-            ) : readOnly ? 'Submission disabled in preview' : 'Create account and submit application'}
+            ) : readOnly ? 'Submission disabled in preview' : 'Create Account and Submit Application'}
           </span>
         </button>
       </form>
