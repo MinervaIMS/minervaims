@@ -31,12 +31,13 @@ export interface GuideEntry {
 export const GUIDE: GuideEntry[] = [
   {
     key: 'my-role', section: 'General', label: 'My profile',
-    purpose: 'Your personal card: name, contacts, role, division and photo. This is what colleagues see about you.',
-    view: ['Read your profile and check which role and division you hold.'],
+    purpose: 'Your personal page in one column: your card (name, contacts, role, division and photo) first, then a brief describing what your role covers, closing with the link to the statute. This is what colleagues see about you.',
+    view: ['Read your profile, check which role and division you hold, and read your role brief.', 'Open the association statute from the link at the bottom of the page.'],
     manage: ['Update your contact details and photo.'],
     warnings: ['Applicants cannot change personal data after submitting the application form.'],
     topics: [
-      { id: 'role-shown', title: 'Where your role comes from', body: 'Your role and division are assigned by the President or Admin in Settings, Users. If something looks wrong, contact them: you cannot change your own role.' },
+      { id: 'role-shown', title: 'Where your role comes from', body: 'Your role and division are assigned by the President or Admin in Settings, Users. If something looks wrong, contact them: you cannot change your own role, from any page, and the server enforces this.' },
+      { id: 'role-brief', title: 'Your role brief', body: 'Below your card, the brief summarises what your role is responsible for and which parts of the workspace it unlocks. It is generated from the same access rules that drive the workspace, so it always matches reality.' },
     ],
   },
   {
@@ -53,11 +54,14 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'welcome', section: 'General', label: 'How to use',
-    purpose: 'Your personal user manual, generated for your role: what you can access, what each page does, what you can and cannot do, and what consequences actions have.',
-    view: ['Read the manual and download it as a file. You can also paste it into an AI assistant to have it explained in another format.'],
+    purpose: 'Your personal user manual, generated for your role: how the workspace is organised, what you can access, what each page does, what you can and cannot do, what consequences actions have, and what changed recently.',
+    view: ['Read the overview, the recent improvements and the full manual, and download everything as a file. You can also paste it into an AI assistant to have it explained in another format.'],
     manage: [],
     topics: [
-      { id: 'download', title: 'Download my manual', body: 'The download produces a Markdown file containing exactly the manual you see. Many members prefer to upload it to an AI assistant and ask for a summary, a checklist or a step-by-step walkthrough of one specific task.' },
+      { id: 'download', title: 'Download my manual', body: 'The download produces a Markdown file containing exactly the manual you see, overview included. Many members prefer to upload it to an AI assistant and ask for a summary, a checklist or a step-by-step walkthrough of one specific task.' },
+      { id: 'help-tools', title: 'Help, always in place', body: 'Every workspace page carries a floating question mark that opens the sliding help panel for that page, and many controls carry a small circled question mark that opens the panel directly at the matching topic. The panel shows only what your role can actually do.' },
+      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, consultation available everywhere. Subsections that need a full screen are marked with a monitor icon and open on desktop only, and read-only pages carry a ribbon saying editing is available on desktop.' },
+      { id: 'deep-links', title: 'Direct links into the workspace', body: 'A link of the form /admin?section=...&sub=... opens the workspace directly on that subsection, provided your role can see it. Some website buttons use these links to bring you to the right place in one click.' },
     ],
   },
   {
@@ -107,12 +111,13 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'reports-funds', section: 'Reports', label: 'Fund performances',
-    purpose: 'The Multi Asset Fund and Long Short Fund track record: monthly returns, NAV and yearly statistics. This data feeds the public website and the Dashboard.',
+    purpose: 'The Multi Asset Fund and Long Short Fund track record: monthly returns and yearly statistics. This data feeds the public website and the Dashboard.',
     view: ['Consult the full performance history.'],
-    manage: ['Insert and correct monthly performance rows and yearly statistics.'],
-    warnings: ['These numbers appear on the public website. Double-check before saving.'],
+    manage: ['Insert and correct monthly performance rows and yearly statistics, within the editing window.'],
+    warnings: ['These numbers appear on the public website. Double-check before saving.', 'Only the last 15 calendar months are editable. Anything earlier is frozen history and cannot be changed by anyone.'],
     topics: [
-      { id: 'yearly', title: 'Yearly statistics', body: 'The yearly rows (YTD, since inception, volatility, Sharpe) are what the public fund table and the Dashboard display. Keep them aligned with the monthly data.' },
+      { id: 'yearly', title: 'Yearly statistics', body: 'The yearly figures (ITD, YTD, volatility, Sharpe) are what the public fund table and the Dashboard display. Keep them aligned with the monthly data.' },
+      { id: 'editing-window', title: 'The 15-month editing window', body: 'Recent months can be corrected; months older than 15 months are locked, so the published track record cannot be rewritten. Once every month of a year is locked, the whole year freezes, aggregates included, and its row no longer offers the edit or delete actions: it simply reads as frozen history.' },
     ],
   },
   {
@@ -163,12 +168,12 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'applications-form', section: 'Recruiting', label: 'Form & Questions',
-    purpose: 'The application form configuration and the division-specific written questions.',
-    view: ['Read the current questions and settings.'],
-    manage: ['Edit form settings and each division\'s written question.'],
-    warnings: ['Changing questions in the middle of an application window means candidates answer different questions in the same round.'],
+    purpose: 'The application form in one page: its fixed structure first, then the division-specific written questions, which are an integral part of the form.',
+    view: ['Read the form structure and the current questions, and preview the public form.'],
+    manage: ['Edit the written question of each division you are responsible for. Heads of Division edit their own division\'s question; full-access roles edit all.'],
+    warnings: ['Questions are locked while applications are open: from the scheduled opening until the close nobody can edit them, so every applicant answers the same question. The server enforces the lock.'],
     topics: [
-      { id: 'questions', title: 'Division questions', body: 'Each division can define its own written question. Candidates answer the question of their first-choice division; keep questions stable during an open window so every candidate faces the same test.' },
+      { id: 'questions', title: 'Division questions', body: 'Each division asks applicants one written question, answered with a PDF upload. Candidates answer the question of their first-choice division. Edit questions before the window opens; during an open window they are read-only for everyone.' },
     ]
   },
   {
@@ -177,7 +182,8 @@ export const GUIDE: GuideEntry[] = [
     view: [],
     manage: ['Create events; they appear on the Calendar, in the archive and, if enabled, on the public website.'],
     topics: [
-      { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, alumni call, association-wide gathering). Internal types default to staying off the public website; you can change that per event in the Event archive.' },
+      { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, association-wide gathering). Alumni calls are not created here: they have their own subsection under Events. Internal types default to staying off the public website; you can change that per event in the Event archive.' },
+      { id: 'archive-visibility', title: 'Archive and website visibility', body: 'When creating the event you choose whether it enters the public archive. Website visibility can also be changed later, per event, from the Event archive.' },
       { id: 'poster', title: 'Posters', body: 'A poster makes the event stand out in the archive and on the website. JPG, PNG or PDF up to 10 MB; any aspect ratio is accepted.' },
     ],
   },
@@ -312,8 +318,8 @@ export const GUIDE: GuideEntry[] = [
       { id: 'hide-effect', title: 'What hiding does', body: 'A hidden page stays reachable at its address but visitors see a Page under update notice over a blurred body. The homepage and the legal pages can never be hidden.' },
     ],
   },
-  { key: 'website-readings', section: 'Website', label: 'Readings', purpose: 'The public readings list.', view: ['Consult it.'], manage: ['Add, edit and remove readings.'],
-    topics: [{ id: 'visibility', title: 'What visitors see', body: 'Readings appear on the public website in the order shown here. Add a reading only when the reference is complete and correctly attributed.' }] },
+  { key: 'website-readings', section: 'Website', label: 'Readings', purpose: 'The reading recommendations shown on the public website.', view: ['Consult the list.'], manage: ['Add, edit and remove readings.'],
+    topics: [{ id: 'visibility', title: 'What visitors see', body: 'On the public website the library is drawn as a stylised bookcase with one column per category (academic papers, technical textbooks, free time readings). Every reading added here becomes a book on its shelf, in the order shown in this list, and visitors open it to read the rationale and the attribution. Add a reading only when the reference is complete and correctly attributed.' }] },
   { key: 'website-testimonials', section: 'Website', label: 'Testimonials', purpose: 'The homepage testimonials.', view: ['Read them.'], manage: ['Manage which testimonials appear publicly.'],
     topics: [{ id: 'linking', title: 'Linking to alumni records', body: 'Each testimonial should be linked to its alumni record so the homepage can show the current company automatically. A warning appears when the link or the company is missing.' }] },
   { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends.'],
@@ -335,7 +341,7 @@ export const GUIDE: GuideEntry[] = [
     manage: ['Assign roles and divisions. Changes are confirmed, logged, and guarded so the last President or Admin can never be removed.'],
     warnings: ['A role change takes effect immediately and is recorded in the Activity log.'],
     topics: [
-      { id: 'change-role', title: 'Change role', body: 'Pick the new role; division-based roles then require a division. Portfolio Manager is always the Portfolio division because it is that division\'s team leader. Every change needs confirmation and is written to the Activity log with your identity.', requires: 'manage' },
+      { id: 'change-role', title: 'Change role', body: 'Pick the new role; division-based roles then require a division. Portfolio Manager is always the Portfolio division because it is that division\'s team leader. Every change needs confirmation and is written to the Activity log with your identity. Users and People > Members edit the same record, so a change made in either place is immediately visible in the other.', requires: 'manage' },
       { id: 'pending', title: 'Pending approvals', body: 'Accounts that exist but have no workspace role yet. With the current application flow these are rare; assign a role to activate the account or delete accounts that should not exist.', requires: 'manage' },
     ],
   },

@@ -15,6 +15,27 @@ import { logActivity } from '@/lib/activity-log';
 
 interface ManualSection { section: string; entries: (GuideEntry & { canManage: boolean })[] }
 
+// How the workspace is organised, independent of role.
+const AT_A_GLANCE = [
+  'The navigation is organised in sections, each holding subsections. You only ever see the pages your role can access, so nothing in your menu is off limits.',
+  'One role drives everything. It is assigned by the President or Admin in Settings, Users, which edits the same record as People, Members: a change made in either place appears in both immediately. Nobody can change their own role.',
+  'Help lives where you work: the floating question mark on every page opens the sliding help panel for that page, and the small circled question marks next to specific controls open the panel directly at the matching topic.',
+  'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, consultation available everywhere. Subsections that need a full screen are marked with a monitor icon and open on desktop only; read-only pages carry a ribbon.',
+  'Links of the form /admin?section=...&sub=... open the workspace directly on a subsection, provided your role can see it. Some website buttons use them to bring you to the right place in one click.',
+  'Every meaningful action is recorded in Settings, Activity log, together with the role you held at that moment.',
+];
+
+// What changed recently, so returning members catch up at a glance.
+const RECENT_IMPROVEMENTS = [
+  'Fund performances now protect the published track record: only the last 15 calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included, with no edit or delete actions offered.',
+  'Recruiting, Form & Questions is one unified page: the fixed form structure first, then the division questions. Heads of Division edit their own division only, and questions lock automatically while applications are open.',
+  'My profile reads as one column: your card, then your role brief, closing with the statute link.',
+  'Roles stay in step everywhere: People, Members and Settings, Users edit the same record, and workspace permissions follow instantly.',
+  'The Readings page of the public website presents the library as a stylised bookcase: every reading added in Website, Readings becomes a book visitors can open and page through.',
+  'Tables across People, Website and Settings share the same design, numbered pagination and standardized filters.',
+  'This manual and the sliding help panel are generated from the same updated guide, so both already reflect all of the above.',
+];
+
 export default function HowToUse() {
   const { session } = useAuth();
   const access = useAccess();
@@ -41,6 +62,12 @@ export default function HowToUse() {
     lines.push(`Generated for your role${divisionName ? ` (${divisionName})` : ''} on ${new Date().toLocaleDateString()}. It covers exactly the pages you can access and what you can do on each.`);
     lines.push('');
     lines.push('> Tip: paste this manual into an AI assistant and ask it to explain any part in the way you prefer: step by step, as a checklist, or with examples.');
+    lines.push('');
+    lines.push('## The workspace at a glance');
+    AT_A_GLANCE.forEach((p) => lines.push(`- ${p}`));
+    lines.push('');
+    lines.push('## Recent improvements');
+    RECENT_IMPROVEMENTS.forEach((p) => lines.push(`- ${p}`));
     lines.push('');
     for (const sec of manual) {
       lines.push(`## ${sec.section}`);
@@ -97,7 +124,31 @@ export default function HowToUse() {
           </div>
         </div>
 
+        {/* How the workspace is organised, before the per-page manual. */}
+        <section>
+          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">The workspace at a glance</h2>
+          <ul className="space-y-2.5 max-w-3xl">
+            {AT_A_GLANCE.map((p, i) => (
+              <li key={i} className="flex gap-2.5 text-sm text-muted-foreground leading-relaxed">
+                <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-accent shrink-0" />
+                <span>{p}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
+        {/* What changed recently across the workspace. */}
+        <section>
+          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Recent improvements</h2>
+          <ul className="space-y-2.5 max-w-3xl">
+            {RECENT_IMPROVEMENTS.map((p, i) => (
+              <li key={i} className="flex gap-2.5 text-sm text-muted-foreground leading-relaxed">
+                <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-accent shrink-0" />
+                <span>{p}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         {/* The manual itself */}
         {manual.map((sec) => (
@@ -116,7 +167,7 @@ export default function HowToUse() {
 
                   {(e.view.length > 0 || (e.canManage && e.manage.length > 0)) && (
                     <div className="mb-2">
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">You can</div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">You can</div>
                       <ul className="space-y-1">
                         {e.view.map((v, i) => <li key={`v${i}`} className="text-sm text-muted-foreground flex gap-2"><span className="text-accent">·</span>{v}</li>)}
                         {e.canManage && e.manage.map((m, i) => <li key={`m${i}`} className="text-sm text-muted-foreground flex gap-2"><span className="text-accent">·</span>{m}</li>)}
@@ -126,14 +177,14 @@ export default function HowToUse() {
 
                   {!e.canManage && e.manage.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">You cannot (reserved for managing roles)</div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">You cannot (reserved for managing roles)</div>
                       <ul className="space-y-1">{e.manage.map((m, i) => <li key={i} className="text-sm text-muted-foreground/70 flex gap-2"><span>×</span>{m}</li>)}</ul>
                     </div>
                   )}
 
                   {e.warnings && e.warnings.length > 0 && (
                     <div>
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Good to know</div>
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">Good to know</div>
                       <ul className="space-y-1">{e.warnings.map((w, i) => <li key={i} className="text-sm text-muted-foreground flex gap-2"><span className="text-amber-600">!</span>{w}</li>)}</ul>
                     </div>
                   )}

@@ -5,7 +5,7 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useImagePreload } from '@/hooks/useImagePreload';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import readingsBgAsset from '@/assets/mims-readings.webp.asset.json';
 import { readingTypeLabels, type Reading, type ReadingType } from '@/components/readings/types';
 
@@ -125,10 +125,9 @@ const Readings = () => {
             Our Library
           </h2>
 
-          {/* Category Filter and Search */}
-          <div className="flex flex-col gap-4 mb-6 sm:mb-8">
-            {/* Search bar - full width on mobile, comes first */}
-            <div className="relative w-full order-first md:order-last md:flex-1">
+          {/* Search and reading type filter, on one row. */}
+          <div className="flex flex-row items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-accent/60" />
               <input
                 type="text"
@@ -138,34 +137,19 @@ const Readings = () => {
                 className="w-full px-4 py-2.5 sm:py-2 pl-9 rounded-none font-body border border-accent/40 bg-transparent text-accent placeholder:text-accent/50 focus:border-accent focus:outline-none transition-all duration-200 text-sm sm:text-base"
               />
             </div>
-            
-            {/* Category buttons - scrollable on mobile */}
-            <div className="flex md:flex-row md:items-center gap-4">
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide md:flex-wrap">
-                <button
-                  onClick={() => setActiveCategory('all')}
-                  className={`px-3 sm:px-4 py-2 border transition-all duration-200 uppercase text-xs sm:text-sm whitespace-nowrap shrink-0 ${
-                    activeCategory === 'all'
-                      ? 'bg-accent text-background border-accent'
-                      : 'bg-transparent text-accent border-accent/40 hover:border-accent'
-                  } font-body`}
-                >
-                  All
-                </button>
+            <div className="relative w-[46%] max-w-[176px] sm:max-w-none sm:w-56 shrink-0">
+              <select
+                value={activeCategory}
+                onChange={(e) => setActiveCategory(e.target.value as ReadingType | 'all')}
+                aria-label="Filter by reading type"
+                className="w-full appearance-none px-4 py-2.5 sm:py-2 pr-9 rounded-none font-body border border-accent/40 bg-transparent text-accent focus:border-accent focus:outline-none transition-all duration-200 text-sm sm:text-base"
+              >
+                <option value="all">All types</option>
                 {(Object.keys(readingTypeLabels) as ReadingType[]).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setActiveCategory(type)}
-                    className={`px-3 sm:px-4 py-2 border transition-all duration-200 uppercase text-xs sm:text-sm whitespace-nowrap shrink-0 ${
-                      activeCategory === type
-                        ? 'bg-accent text-background border-accent'
-                        : 'bg-transparent text-accent border-accent/40 hover:border-accent'
-                    } font-body`}
-                  >
-                    {readingTypeLabels[type]}
-                  </button>
+                  <option key={type} value={type}>{readingTypeLabels[type]}</option>
                 ))}
-              </div>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-accent/60 pointer-events-none" />
             </div>
           </div>
 
