@@ -155,9 +155,10 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
         <div aria-hidden className="h-[7px] -mx-1 sm:-mx-3 border-x-[1.5px] border-b" style={hairline} />
         <div aria-hidden className="h-[5px] -mx-0.5 sm:-mx-1.5 border-x-[1.5px] border-b" style={hairline} />
 
-        {/* Body: three columns separated by fluted pilasters (with capital
-            and base blocks) on desktop, stacked full-width below md. */}
-        <div className="border-x-[1.5px] md:grid md:grid-cols-[1fr_24px_1fr_24px_1fr]" style={hairline}>
+        {/* Body: three columns framed by fluted pilasters (with capital and
+            base blocks) on desktop: one at each outer edge and one between
+            every pair of columns. Stacked full-width below md. */}
+        <div className="border-x-[1.5px] md:grid md:grid-cols-[24px_1fr_24px_1fr_24px_1fr_24px]" style={hairline}>
           {columns.map((col, ci) => {
             const dimmed = activeCategory !== 'all' && col.type !== activeCategory;
             const rows = rowsFor(col.shelves.length);
@@ -167,18 +168,16 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
                 : 'No readings match your search.';
             return (
               <Fragment key={col.type}>
-                {ci > 0 && (
-                  <div aria-hidden className="hidden md:flex flex-col border-x-[1.5px]" style={hairline}>
-                    {/* Capital, fluted shaft, base block. */}
-                    <span className="h-3 shrink-0 border-b" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
-                    <span className="flex-1 flex justify-center py-1">
-                      <span className="h-full w-[9px] border-x" style={hairline}>
-                        <span className="block h-full w-px mx-auto" style={{ backgroundColor: SOFT }} />
-                      </span>
+                <div aria-hidden className="hidden md:flex flex-col border-x-[1.5px]" style={hairline}>
+                  {/* Capital, fluted shaft, base block. */}
+                  <span className="h-3 shrink-0 border-b" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+                  <span className="flex-1 flex justify-center py-1">
+                    <span className="h-full w-[9px] border-x" style={hairline}>
+                      <span className="block h-full w-px mx-auto" style={{ backgroundColor: SOFT }} />
                     </span>
-                    <span className="h-3 shrink-0 border-t" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
-                  </div>
-                )}
+                  </span>
+                  <span className="h-3 shrink-0 border-t" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+                </div>
                 <div
                   ref={ci === 0 ? measureRef : undefined}
                   className={`transition-opacity duration-300 ${dimmed ? 'opacity-25' : ''}`}
@@ -218,16 +217,21 @@ export default function Bookcase({ readings, activeCategory, searchQuery }: Prop
               </Fragment>
             );
           })}
+          {/* Closing pilaster at the right outer edge. */}
+          <div aria-hidden className="hidden md:flex flex-col border-x-[1.5px]" style={hairline}>
+            <span className="h-3 shrink-0 border-b" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+            <span className="flex-1 flex justify-center py-1">
+              <span className="h-full w-[9px] border-x" style={hairline}>
+                <span className="block h-full w-px mx-auto" style={{ backgroundColor: SOFT }} />
+              </span>
+            </span>
+            <span className="h-3 shrink-0 border-t" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
+          </div>
         </div>
 
         {/* Base: stepped plinth boards mirroring the cornice. */}
         <div aria-hidden className="h-[5px] -mx-0.5 sm:-mx-1.5 border-x-[1.5px] border-t" style={hairline} />
         <div aria-hidden className="h-[11px] -mx-2 sm:-mx-6 border-[1.5px]" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.05)' }} />
-        {/* Bracket feet with rounded undersides at the two ends. */}
-        <div aria-hidden className="relative h-3 -mx-2 sm:-mx-6">
-          <span className="absolute left-1 top-0 h-3 w-10 rounded-b-[6px] border-[1.5px] border-t-0" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
-          <span className="absolute right-1 top-0 h-3 w-10 rounded-b-[6px] border-[1.5px] border-t-0" style={{ ...hairline, backgroundColor: 'hsl(var(--accent-soft)/0.06)' }} />
-        </div>
       </div>
 
       {/* ---- the reader ---- */}
