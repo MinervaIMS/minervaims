@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
       const file = form.get('file') as File | null;
       if (!file) return json({ error: 'No file provided' }, 400);
       if (file.size > 25 * 1024 * 1024) return json({ error: 'File must be under 25 MB.' }, 400);
+      if (!fileTypeAllowed(file)) return json({ error: 'This file type is not allowed. Upload a document, spreadsheet, presentation, PDF, image, CSV or zip.' }, 400);
       const safe = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const path = `auto-emails/${Date.now()}-${safe}`;
       const { data: up, error: upErr } = await supabase.storage.from('workspace-resources')
