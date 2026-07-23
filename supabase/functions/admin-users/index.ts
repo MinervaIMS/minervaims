@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
       }
       if (writeError) {
         console.error('Error setting role:', writeError);
-        return new Response(JSON.stringify({ error: `Failed to update role: ${writeError.message}` }),
+        return new Response(JSON.stringify({ error: 'Failed to update the role. Please try again.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 

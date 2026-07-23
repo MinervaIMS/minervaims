@@ -236,8 +236,10 @@ Deno.serve(async (req) => {
     }
 
     if (result.error) {
+      // Log the full error server-side only; the caller gets a generic
+      // message so no table or constraint details leak to the client.
       console.error('Database error:', result.error);
-      return new Response(JSON.stringify({ error: result.error.message }), {
+      return new Response(JSON.stringify({ error: 'The operation could not be completed. Please review the data and try again.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

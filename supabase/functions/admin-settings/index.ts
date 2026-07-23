@@ -31,28 +31,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create a client with the user's auth header
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
+    // Verify the token AGAINST THE AUTH SERVER (getUser), not by decoding it
+    // locally: a revoked or deleted session must be rejected immediately, not
+    // only when the token expires.
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      console.log('Invalid token:', claimsError);
+    const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !authUser) {
+      console.log('Invalid token:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub;
-    const userEmail = claimsData.claims.email as string | undefined;
-    
-    // Create a user-like object for compatibility
-    const user = { id: userId, email: userEmail };
+    const user = { id: authUser.id, email: authUser.email as string | undefined };
 
     console.log('User authenticated:', user.id, user.email);
 
