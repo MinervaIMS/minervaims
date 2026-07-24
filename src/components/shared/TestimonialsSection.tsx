@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  listPublishedTestimonials, listAlumniLite, resolveAlumnus,
-  type Testimonial, type AlumniLite,
+  listPublishedTestimonials, listTestimonialCompanies,
+  type Testimonial,
 } from "@/lib/testimonials-api";
 
 // Fallback used ONLY if the database has no published testimonials yet, so the
@@ -21,23 +21,23 @@ const AUTO_ADVANCE_MS = 15680;
 
 export function TestimonialsSection() {
   const [list, setList] = useState<Testimonial[]>(FALLBACK);
-  const [alumni, setAlumni] = useState<AlumniLite[]>([]);
+  const [companies, setCompanies] = useState<Map<string, string>>(new Map());
   const [index, setIndex] = useState(() => Math.floor(Math.random() * FALLBACK.length));
   const [direction, setDirection] = useState<"left" | "right">("left");
   const [animKey, setAnimKey] = useState(0);
 
-  // Load testimonials + alumni from the database, and live-update on changes.
+  // Load testimonials + resolved companies from the database, and live-update on changes.
   useEffect(() => {
     let cancelled = false;
 
     const loadAll = async () => {
-      const [ts, al] = await Promise.all([
+      const [ts, cs] = await Promise.all([
         listPublishedTestimonials().catch(() => [] as Testimonial[]),
-        listAlumniLite().catch(() => [] as AlumniLite[]),
+        listTestimonialCompanies().catch(() => new Map<string, string>()),
       ]);
       if (cancelled) return;
       if (ts.length > 0) setList(ts); // keep FALLBACK only while the table is empty
-      setAlumni(al);
+      setCompanies(cs);
     };
 
     loadAll();
@@ -77,8 +77,7 @@ export function TestimonialsSection() {
 
   const safeIndex = Math.min(index, Math.max(0, len - 1));
   const current = list[safeIndex] ?? FALLBACK[0];
-  const { alumnus } = resolveAlumnus(current, alumni);
-  const company = alumnus?.company?.trim();
+  const company = companies.get(current.id)?.trim();
   const displayedRole = company ? `${current.role_label}, currently at ${company}` : current.role_label;
 
   return (
