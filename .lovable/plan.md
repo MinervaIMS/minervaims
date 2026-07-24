@@ -1,27 +1,32 @@
-## Problem
+## Why the companies don't show
 
-The public archive page and homepage carousel query `public.archive_files` and get:
+The homepage testimonials block calls `listAlumniLite()` which does `select id, name, surname, company from alumni`. The `alumni` table has a single RLS policy: `SELECT` only for `authenticated` users where `is_staff(auth.uid())`. Anonymous homepage visitors therefore get an empty array (confirmed in the network log: `/rest/v1/alumni?...` → `[]`), so `resolveAlumnus` never matches and the "currently at <company>" suffix is dropped for every quote.
 
-```
-401 permission denied for function is_staff
-```
-
-Root cause (verified): the SELECT RLS policy on `archive_files` is
-`(status = 'published') OR is_staff(auth.uid())`. Step 19 revoked EXECUTE on `public.is_staff` from `anon`/`authenticated` — `information_schema.routine_privileges` now returns no grants for it. Because RLS `USING` expressions are evaluated as the caller's role, PostgREST short-circuits with a permission error on the function before the `OR` can resolve to true from the `status = 'published'` branch.
-
-Other public RLS policies reference the same helper (`is_staff`) — every one of them is currently unreachable from `anon`/`authenticated` for the same reason.
+Testimonials themselves load fine — only the alumni join is blocked.
 
 ## Fix
 
-One-line migration restoring EXECUTE on the RLS helper functions that public policies depend on:
+Add a narrow, public read path that returns just what the testimonials section needs (company per published testimonial), without opening the `alumni` table to anon.
 
-```sql
-GRANT EXECUTE ON FUNCTION public.is_staff(uuid) TO anon, authenticated;
+### 1. Database migration
+
+Create a `SECURITY DEFINER` function `public.public_testimonial_companies()` returning one row per published testimonial:
+
+```
+testimonial_id uuid, company text
 ```
 
-Scope: only `is_staff(uuid)`. It is a `SECURITY DEFINER` function that only reads `public.user_roles` and returns a boolean — safe to expose. No other functions, policies, or app code change.
+Resolution mirrors `resolveAlumnus`:
+- If `testimonials.alumni_id` is set → join `alumni` by id.
+- Else → match `alumni.name || ' ' || alumni.surname` against `testimonials.name` (case-insensitive, whitespace-normalised).
 
-## Verify
+Return only `company` (nothing else from `alumni`). `search_path = public`, `stable`. Grant `EXECUTE` to `anon` and `authenticated`.
 
-- Reload `/` and `/archive` — carousel and archive list render, no 401.
-- Confirm `admin` routes still behave (they already use service-role via edge functions, unaffected).
+### 2. Frontend
+
+- `src/lib/testimonials-api.ts`: replace `listAlumniLite` usage for the homepage with a new `listTestimonialCompanies()` that calls the RPC and returns `Map<testimonialId, company>`. Keep `listAlumniLite` for the staff-only workspace control centre (it still works there because staff are authenticated).
+- `src/components/shared/TestimonialsSection.tsx`: fetch the map instead of the alumni list, and look up `company` by `current.id`. Realtime subscription stays on `testimonials` and `alumni` so edits still refresh.
+
+### Out of scope
+
+Leaves the `alumni` table RLS unchanged (still staff-only). Does not touch the security findings shown in the More panel — those are unrelated to this bug.
