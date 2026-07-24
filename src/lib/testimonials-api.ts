@@ -52,11 +52,27 @@ export async function listAllTestimonials(): Promise<Testimonial[]> {
   return (data || []) as Testimonial[];
 }
 
-/** Alumni directory (public-readable) for linking + company resolution. */
+/** Alumni directory — staff-only (RLS restricts SELECT to staff). Used by the workspace control centre. */
 export async function listAlumniLite(): Promise<AlumniLite[]> {
   const { data, error } = await sb.from('alumni').select('id, name, surname, company').order('surname', { ascending: true });
   if (error) throw new Error(error.message);
   return (data || []) as AlumniLite[];
+}
+
+/**
+ * Public lookup of "company" per published testimonial. Uses a SECURITY DEFINER
+ * RPC so anonymous homepage visitors can resolve the "currently at <company>"
+ * suffix without opening the alumni table to public reads.
+ */
+export async function listTestimonialCompanies(): Promise<Map<string, string>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('public_testimonial_companies');
+  if (error) throw new Error(error.message);
+  const map = new Map<string, string>();
+  for (const row of (data || []) as Array<{ testimonial_id: string; company: string | null }>) {
+    if (row.company) map.set(row.testimonial_id, row.company);
+  }
+  return map;
 }
 
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
