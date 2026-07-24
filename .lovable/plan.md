@@ -1,27 +1,27 @@
-## Goal
-Make every Lucide icon across the app render with a thinner, consistent 1.25× stroke using a single global CSS override.
+## Problem
 
-## Why this works
-Lucide React renders each icon as an `<svg class="lucide ...">`. Setting `stroke-width: 1.25` on that SVG scales with the icon’s viewBox, so the stroke stays proportional at every icon size — equivalent to passing `strokeWidth={1.25}` on every icon without needing to edit 60+ files.
+The public archive page and homepage carousel query `public.archive_files` and get:
 
-## Implementation
-1. Add a global rule in `src/index.css` (near the existing iconography/design-system comments):
-   ```css
-   /* Global Lucide stroke width — 1.25× relative scaling */
-   svg.lucide,
-   .lucide svg {
-     stroke-width: 1.25 !important;
-   }
-   ```
-   The `!important` ensures it overrides any inline `stroke-width` attributes set by Lucide or explicit props in components.
+```
+401 permission denied for function is_staff
+```
 
-2. Add a short note in `src/components/admin/BrandDesignSystem.tsx` under the Iconography section documenting the 1.25× stroke convention.
+Root cause (verified): the SELECT RLS policy on `archive_files` is
+`(status = 'published') OR is_staff(auth.uid())`. Step 19 revoked EXECUTE on `public.is_staff` from `anon`/`authenticated` — `information_schema.routine_privileges` now returns no grants for it. Because RLS `USING` expressions are evaluated as the caller's role, PostgREST short-circuits with a permission error on the function before the `OR` can resolve to true from the `status = 'published'` branch.
 
-## Verification
-- Visually check the workspace help button, navigation, form inputs, shadcn buttons/selects, and public pages to confirm icons look thinner and remain crisp.
-- Confirm non-Lucide SVGs (custom social icons, brand marks, logo SVGs) are not affected because they do not carry the `.lucide` class.
+Other public RLS policies reference the same helper (`is_staff`) — every one of them is currently unreachable from `anon`/`authenticated` for the same reason.
 
-## Scope
-- Affects all Lucide icons site-wide, including shadcn/ui primitives.
-- Does not touch icon size, color, or animation.
-- No per-component prop changes required.
+## Fix
+
+One-line migration restoring EXECUTE on the RLS helper functions that public policies depend on:
+
+```sql
+GRANT EXECUTE ON FUNCTION public.is_staff(uuid) TO anon, authenticated;
+```
+
+Scope: only `is_staff(uuid)`. It is a `SECURITY DEFINER` function that only reads `public.user_roles` and returns a boolean — safe to expose. No other functions, policies, or app code change.
+
+## Verify
+
+- Reload `/` and `/archive` — carousel and archive list render, no 401.
+- Confirm `admin` routes still behave (they already use service-role via edge functions, unaffected).
