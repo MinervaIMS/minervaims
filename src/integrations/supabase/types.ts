@@ -1962,6 +1962,13 @@ export type Database = {
         Args: { p_city?: string; p_company?: string; p_job_area?: string }
         Returns: number
       }
+      public_testimonial_companies: {
+        Args: never
+        Returns: {
+          company: string
+          testimonial_id: string
+        }[]
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
