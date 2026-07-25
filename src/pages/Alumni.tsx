@@ -200,8 +200,8 @@ const Alumni = () => {
                 <h3 className="font-serif text-[1.25rem] text-foreground transition-transform duration-300 ease-out group-hover:-translate-y-[2px]">
                   {founder.surname} {founder.name}
                 </h3>
-                <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
-                  {founder.degree} · Class of {founder.graduation_year}
+                <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1 whitespace-pre-wrap">
+                  {founder.degree}
                 </p>
                 <p className="font-body text-body font-medium text-foreground mt-3">
                   {founder.company}
