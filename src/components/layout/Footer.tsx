@@ -15,7 +15,7 @@ const exploreLinks = [
   { label: 'Contacts', href: '/contacts' },
   { label: 'Partnerships', href: '/partnerships' },
   { label: 'Join Us', href: '/join' },
-  { label: 'Reports', href: '/archive' },
+  { label: 'Report Archive', href: '/archive' },
   { label: 'Readings', href: '/readings' },
 ];
 
