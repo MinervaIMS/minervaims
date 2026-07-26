@@ -1,6 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
+// Raster images only — SVG is XML and can carry executable script content.
+const ALLOWED_IMAGE_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
+
 // =====================================================================
 // admin-members — CRUD for the canonical roster (public.members).
 // Writes go ONLY to public.members; the members -> team_members
@@ -219,7 +222,7 @@ Deno.serve(async (req) => {
       const formData = await req.formData();
       const file = formData.get('file') as File | null;
       if (!file) return json({ error: 'No file provided' }, 400);
-      if (!file.type.startsWith('image/')) return json({ error: 'Only image files are allowed' }, 400);
+      if (!ALLOWED_IMAGE_TYPES.includes((file.type || '').toLowerCase())) return json({ error: 'Only PNG, JPEG, GIF or WEBP images are allowed.' }, 400);
       if (file.size > 5 * 1024 * 1024) return json({ error: 'Image size must be less than 5MB' }, 400);
 
       const fileExt = file.name.split('.').pop() || 'jpg';

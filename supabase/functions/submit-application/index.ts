@@ -140,8 +140,12 @@ Deno.serve(async (req) => {
     if (!cv) return json({ error: 'Please attach your CV (PDF).' }, 400);
     if (!answer) return json({ error: 'Please attach your written answer (PDF).' }, 400);
     for (const [label, f] of [['CV', cv], ['answer', answer]] as [string, File][]) {
-      if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) return json({ error: `${label} must be a PDF.` }, 400);
       if (f.size > 10 * 1024 * 1024) return json({ error: `${label} must be under 10 MB.` }, 400);
+      // Trust the actual bytes, not the client-supplied MIME type or filename:
+      // every real PDF starts with the "%PDF-" magic signature.
+      const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
+      const magic = String.fromCharCode(...head);
+      if (magic !== '%PDF-') return json({ error: `${label} must be a valid PDF file.` }, 400);
     }
 
     const cvPath = await uploadPdf(supabase, userId, 'cv', cv);

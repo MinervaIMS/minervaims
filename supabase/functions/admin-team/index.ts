@@ -1,6 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
+// Raster images only — SVG is XML and can carry executable script content.
+const ALLOWED_IMAGE_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -218,9 +221,9 @@ Deno.serve(async (req) => {
         }
         
         // Validate file type
-        if (!file.type.startsWith('image/')) {
+        if (!ALLOWED_IMAGE_TYPES.includes((file.type || '').toLowerCase())) {
           return new Response(
-            JSON.stringify({ error: 'Only image files are allowed' }),
+            JSON.stringify({ error: 'Only PNG, JPEG, GIF or WEBP images are allowed.' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
