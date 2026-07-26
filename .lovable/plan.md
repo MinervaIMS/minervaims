@@ -1,32 +1,20 @@
-## Why the companies don't show
+## Goal
+Swap the three uploaded background photos into the pages that currently use their older versions.
 
-The homepage testimonials block calls `listAlumniLite()` which does `select id, name, surname, company from alumni`. The `alumni` table has a single RLS policy: `SELECT` only for `authenticated` users where `is_staff(auth.uid())`. Anonymous homepage visitors therefore get an empty array (confirmed in the network log: `/rest/v1/alumni?...` → `[]`), so `resolveAlumnus` never matches and the "currently at <company>" suffix is dropped for every quote.
+## Mapping (confirmed by searching the codebase)
+| Upload | Current asset | Used in |
+|---|---|---|
+| `MIMS_Milan_Background-2.webp` | `MIMS_Milan_Background.webp` | `src/pages/Partnerships.tsx` |
+| `MIMS_Join_Background-4.webp` | `MIMS_Join_Background.webp` | `src/pages/Join.tsx` |
+| `MIMS_Alumnni_Background-2.webp` | `MIMS_Alumni_Background.webp` | `src/pages/Alumni.tsx` |
 
-Testimonials themselves load fine — only the alumni join is blocked.
+Each of these three assets is referenced in exactly one file, so no other page changes.
 
-## Fix
+## Steps
+1. Upload each new image to the CDN with the assets CLI, writing new pointer files (`MIMS_Milan_Background-v2.webp.asset.json`, `MIMS_Join_Background-v4.webp.asset.json`, `MIMS_Alumni_Background-v2.webp.asset.json`).
+2. Update the import in `Partnerships.tsx`, `Join.tsx`, and `Alumni.tsx` to the new pointer files. No layout/markup changes — same hero background usage and preload hints.
+3. Delete the three superseded assets (CDN object + pointer) so the repo keeps a single current version of each background.
+4. Verify with a build and a quick preview screenshot of `/partnerships`, `/join`, and `/alumni` to confirm the new images render and framing still looks right.
 
-Add a narrow, public read path that returns just what the testimonials section needs (company per published testimonial), without opening the `alumni` table to anon.
-
-### 1. Database migration
-
-Create a `SECURITY DEFINER` function `public.public_testimonial_companies()` returning one row per published testimonial:
-
-```
-testimonial_id uuid, company text
-```
-
-Resolution mirrors `resolveAlumnus`:
-- If `testimonials.alumni_id` is set → join `alumni` by id.
-- Else → match `alumni.name || ' ' || alumni.surname` against `testimonials.name` (case-insensitive, whitespace-normalised).
-
-Return only `company` (nothing else from `alumni`). `search_path = public`, `stable`. Grant `EXECUTE` to `anon` and `authenticated`.
-
-### 2. Frontend
-
-- `src/lib/testimonials-api.ts`: replace `listAlumniLite` usage for the homepage with a new `listTestimonialCompanies()` that calls the RPC and returns `Map<testimonialId, company>`. Keep `listAlumniLite` for the staff-only workspace control centre (it still works there because staff are authenticated).
-- `src/components/shared/TestimonialsSection.tsx`: fetch the map instead of the alumni list, and look up `company` by `current.id`. Realtime subscription stays on `testimonials` and `alumni` so edits still refresh.
-
-### Out of scope
-
-Leaves the `alumni` table RLS unchanged (still staff-only). Does not touch the security findings shown in the More panel — those are unrelated to this bug.
+## Note
+Old asset URLs are permanently removed in step 3; if you'd rather keep the previous backgrounds available, say so and I'll leave them in place.
