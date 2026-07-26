@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
-import alumniBgAsset from '@/assets/MIMS_Alumni_Background.webp.asset.json';
+import alumniBgAsset from '@/assets/MIMS_Alumni_Background-v2.webp.asset.json';
 const alumniBg = alumniBgAsset.url;
 import AlumniGlobe from '@/components/AlumniGlobe';
 import { supabase } from '@/integrations/supabase/client';

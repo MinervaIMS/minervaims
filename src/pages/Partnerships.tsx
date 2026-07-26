@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
-import milanBgAsset from "@/assets/MIMS_Milan_Background.webp.asset.json";
+import milanBgAsset from "@/assets/MIMS_Milan_Background-v2.webp.asset.json";
 
 interface Format {
   title: string;
