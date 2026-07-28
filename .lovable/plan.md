@@ -1,28 +1,22 @@
 ## Goal
 
-Update the Long-Short Equity Fund performance table with the uploaded CSV, extending it backward to 2018, and set the inception-date caption to 3 December 2018.
+Replace the static London-skyline photo behind the "Join Minerva" hero on `/join` with the interactive dot-field animation from the uploaded preview.
 
-## Data changes (fund_performance_years, fund = 'long-short')
+## What already exists
 
-Add new rows:
-- **2018** — ITD +6.6%, no monthly data, YTD +6.6%, Vol +12.6%, Sharpe blank
-- **2019** — ITD +5.8%, full monthly series (Jan -4.3% … Dec +0.4%), YTD -0.8%, Vol +5.9%, Sharpe -0.10
-- **2020** — ITD -7.6%, full monthly series (Jan -2.4% … Dec +1.0%), YTD -12.7%, Vol +6.0%, Sharpe -2.28
+`src/components/shared/DotField.tsx` is already the exact component from the uploaded module — same defaults (dotRadius 1, dotSpacing 17, cursorRadius 500, bulgeOnly, bulgeStrength 10, gradient `#7E5BC2` → `#B0A2DA`). No new component is needed; the uploaded files match it. Only difference in the preview: `glowRadius: 0` (no cursor glow) — I'll match the preview and pass `glowRadius={0}`.
 
-Update existing rows:
-- **2021** — ITD +6.7%, full monthly series from the file (Jan -4.4% … Dec +6.9%, replacing the current partial Nov/Dec-only row), YTD +15.5%, Vol +6.7%, Sharpe 2.10
-- **2022** — ITD +27.6% (was 29.1%); monthly returns, YTD, Vol, Sharpe unchanged
-- **2023** — ITD +28.3% (was 29.8%); rest unchanged
-- **2024** — ITD +44.8% (was 46.5%); rest unchanged
-- **2025** — ITD +56.4% (was 58.3%); rest unchanged
-- **2026** — ITD +51.0% (was 52.8%), YTD -3.5%, Vol +3.1%, Sharpe -1.47; existing Jan–Mar monthly returns kept
+## Changes (src/pages/Join.tsx only)
 
-All values normalised to the site's format (comma decimals from the CSV converted to dots, signed percentages for monthly/YTD).
+1. In the `data-page-hero` block, drop the `backgroundImage` div and the `hero-overlay` div; render instead a black-filled container (`#000`) with `<DotField glowRadius={0} />` absolutely filling it, behind the existing `PageIntroduction` (which already runs in `transparentBackground` mode).
+2. Give the hero a defined height so the canvas has a box to size against (it already gets one from `PageIntroduction`'s `min-h-[320px] md:min-h-[380px]`).
+3. Keep the heading/description in white — unchanged, already `text-background`.
 
-## Caption change
+## Left untouched
 
-`src/pages/FundDetail.tsx` (Long-Short block, footnote 1): change "Inception = 21/11/2021" to "Inception = 03/12/2018".
+- The CTA band lower on the page still uses the London image at 30% opacity, so the asset stays in use. Say the word if you'd like that swapped too.
+- The `useImagePreload([joinBg.url])` gate stays, since the image is still used further down.
 
 ## Notes
 
-The public fund page and the workspace Funds Performances screen both read this table, so both reflect the change automatically. No schema change is needed.
+The animation is canvas-based and pointer-driven; it respects container resize and is passive on touch devices (dots simply sit still without a cursor).
