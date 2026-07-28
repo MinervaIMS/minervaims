@@ -1,20 +1,28 @@
 ## Goal
-Swap the three uploaded background photos into the pages that currently use their older versions.
 
-## Mapping (confirmed by searching the codebase)
-| Upload | Current asset | Used in |
-|---|---|---|
-| `MIMS_Milan_Background-2.webp` | `MIMS_Milan_Background.webp` | `src/pages/Partnerships.tsx` |
-| `MIMS_Join_Background-4.webp` | `MIMS_Join_Background.webp` | `src/pages/Join.tsx` |
-| `MIMS_Alumnni_Background-2.webp` | `MIMS_Alumni_Background.webp` | `src/pages/Alumni.tsx` |
+Update the Long-Short Equity Fund performance table with the uploaded CSV, extending it backward to 2018, and set the inception-date caption to 3 December 2018.
 
-Each of these three assets is referenced in exactly one file, so no other page changes.
+## Data changes (fund_performance_years, fund = 'long-short')
 
-## Steps
-1. Upload each new image to the CDN with the assets CLI, writing new pointer files (`MIMS_Milan_Background-v2.webp.asset.json`, `MIMS_Join_Background-v4.webp.asset.json`, `MIMS_Alumni_Background-v2.webp.asset.json`).
-2. Update the import in `Partnerships.tsx`, `Join.tsx`, and `Alumni.tsx` to the new pointer files. No layout/markup changes — same hero background usage and preload hints.
-3. Delete the three superseded assets (CDN object + pointer) so the repo keeps a single current version of each background.
-4. Verify with a build and a quick preview screenshot of `/partnerships`, `/join`, and `/alumni` to confirm the new images render and framing still looks right.
+Add new rows:
+- **2018** — ITD +6.6%, no monthly data, YTD +6.6%, Vol +12.6%, Sharpe blank
+- **2019** — ITD +5.8%, full monthly series (Jan -4.3% … Dec +0.4%), YTD -0.8%, Vol +5.9%, Sharpe -0.10
+- **2020** — ITD -7.6%, full monthly series (Jan -2.4% … Dec +1.0%), YTD -12.7%, Vol +6.0%, Sharpe -2.28
 
-## Note
-Old asset URLs are permanently removed in step 3; if you'd rather keep the previous backgrounds available, say so and I'll leave them in place.
+Update existing rows:
+- **2021** — ITD +6.7%, full monthly series from the file (Jan -4.4% … Dec +6.9%, replacing the current partial Nov/Dec-only row), YTD +15.5%, Vol +6.7%, Sharpe 2.10
+- **2022** — ITD +27.6% (was 29.1%); monthly returns, YTD, Vol, Sharpe unchanged
+- **2023** — ITD +28.3% (was 29.8%); rest unchanged
+- **2024** — ITD +44.8% (was 46.5%); rest unchanged
+- **2025** — ITD +56.4% (was 58.3%); rest unchanged
+- **2026** — ITD +51.0% (was 52.8%), YTD -3.5%, Vol +3.1%, Sharpe -1.47; existing Jan–Mar monthly returns kept
+
+All values normalised to the site's format (comma decimals from the CSV converted to dots, signed percentages for monthly/YTD).
+
+## Caption change
+
+`src/pages/FundDetail.tsx` (Long-Short block, footnote 1): change "Inception = 21/11/2021" to "Inception = 03/12/2018".
+
+## Notes
+
+The public fund page and the workspace Funds Performances screen both read this table, so both reflect the change automatically. No schema change is needed.
