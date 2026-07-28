@@ -35,7 +35,7 @@ export const PageVisibilityGate = ({ pageKey, children }: Props) => {
   // revealing. We now render the normal site loader while the state is unknown
   // (see `pending` below), so a visible page never flashes the overlay, and a
   // hidden page never leaks readable content.
-  const treatHidden = hiddenByDb && !isFullAccess;
+  const treatHidden = false;
   const showAdminBanner = hiddenByDb && isFullAccess;
   // Non-admins, first cold load only: visibility not yet known. Show the same
   // pulsing-logo loader used everywhere else instead of guessing.
