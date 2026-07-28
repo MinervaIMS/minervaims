@@ -212,9 +212,10 @@ const Join = () => {
       <Helmet>
         <title>Join Us | MIMS</title>
       </Helmet>
-      <div data-page-hero className="relative">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${joinBg.url})` }} />
-        <div className="absolute inset-0 hero-overlay" />
+      <div data-page-hero className="relative overflow-hidden" style={{ backgroundColor: '#000' }}>
+        <div className="absolute inset-0" aria-hidden="true">
+          <DotField glowRadius={0} />
+        </div>
         <div className="relative z-10">
           <PageIntroduction
             title="Join Minerva"
