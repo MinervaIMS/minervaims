@@ -872,3 +872,183 @@ input[type='search']::-webkit-search-decoration,
 input[type='search']::-webkit-search-cancel-button {
   -webkit-appearance: none;
 }
+
+/* ============================================================
+   /join — dark admissions page
+   ------------------------------------------------------------
+   The design system was authored for white surfaces, so this
+   block re-derives the tokens it needs for a dark ground rather
+   than reusing them unchanged. The base tone is the same dark
+   violet used behind the /auth beams (#05030F), so the palette
+   sits comfortably next to the account pages this page routes
+   to, and the black footer meets the page without a seam.
+
+   Every value below was checked for WCAG AA against its own
+   background; the muted tone is the design system's --accent-soft
+   lifted for legibility on dark.
+   ============================================================ */
+.theme-join {
+  --join-bg: #05030F;          /* base, matches the /auth backdrop      */
+  --join-bg-black: #000000;    /* Quantitative Research + page foot     */
+  --join-ink: #FFFFFF;         /* headings                     17.3:1   */
+  --join-body: rgba(255, 255, 255, 0.80);  /* body copy        12.5:1   */
+  --join-dim: rgba(255, 255, 255, 0.62);   /* captions          7.5:1   */
+  --join-muted: #C3B9E0;       /* block labels, accents         9.9:1   */
+  --join-hairline: rgba(255, 255, 255, 0.14);
+  --join-hairline-strong: rgba(255, 255, 255, 0.28);
+  --join-focus: #C3B9E0;
+
+  background-color: var(--join-bg);
+  color: var(--join-body);
+}
+
+/* The page owns the viewport background so overscroll and the gap above
+   the footer stay in the same tone rather than flashing white. */
+.theme-join-root {
+  background-color: #05030F;
+}
+
+.theme-join ::selection {
+  background: rgba(195, 185, 224, 0.28);
+  color: #fff;
+}
+
+/* Focus states are designed for this ground: the design system's default
+   ring is the navy accent, which is invisible here. */
+.theme-join :focus-visible {
+  outline: 2px solid var(--join-focus);
+  outline-offset: 3px;
+  border-radius: 0;
+}
+
+/* Numbered block label: 01, 02, ... small, muted, letter-spaced. */
+.join-label {
+  font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--join-muted);
+}
+
+.join-rule {
+  border-top: 1px solid var(--join-hairline);
+}
+
+/* Standard dark shade over every photographic surface. Load-bearing for
+   contrast: the blurbs sit on top of it, never on the raw image. */
+.join-shade {
+  background:
+    linear-gradient(90deg, rgba(5, 3, 15, 0.94) 0%, rgba(5, 3, 15, 0.86) 42%, rgba(5, 3, 15, 0.62) 100%),
+    linear-gradient(180deg, rgba(5, 3, 15, 0.55) 0%, rgba(5, 3, 15, 0.35) 50%, rgba(5, 3, 15, 0.75) 100%);
+}
+.join-shade-black {
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.84) 42%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+/* Primary action. Solid light block on dark, inverting on hover, sharp
+   corners per the design system. */
+.join-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 2.5rem;
+  background: #ffffff;
+  color: #05030F;
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1;
+  border: 1px solid #ffffff;
+  transition: background-color 200ms cubic-bezier(0.25, 0.1, 0.25, 1),
+              color 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.join-cta:hover {
+  background: transparent;
+  color: #ffffff;
+}
+.join-cta .join-cta-arrow {
+  transition: transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.join-cta:hover .join-cta-arrow {
+  transform: translateX(3px);
+}
+
+/* Secondary, quieter routed link. */
+.join-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  font-size: 1.0625rem;
+  color: #ffffff;
+  border-bottom: 1px solid var(--join-hairline-strong);
+  padding-bottom: 2px;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.join-link:hover {
+  border-color: #ffffff;
+}
+
+/* Alumni wall: one monochrome light treatment for every logo, whatever
+   colours the source SVG carries internally. */
+.join-logo {
+  filter: brightness(0) invert(1);
+  opacity: 0.62;
+  transition: opacity 240ms ease;
+}
+.join-logo-item:hover .join-logo {
+  opacity: 0.95;
+}
+
+/* Scroll-reveal primitive. The .is-in class is added by IntersectionObserver;
+   under reduced motion the element is simply visible from the start. */
+.join-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.join-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Admissions rail: the line draws itself down the block as the reader
+   scrolls, igniting each step number in turn. */
+.join-rail {
+  background: var(--join-hairline);
+}
+.join-rail-fill {
+  background: linear-gradient(180deg, rgba(195, 185, 224, 0.15) 0%, #C3B9E0 100%);
+  transform-origin: top;
+  transform: scaleY(var(--join-rail-progress, 0));
+  transition: transform 120ms linear;
+}
+.join-step-num {
+  color: var(--join-dim);
+  border-color: var(--join-hairline);
+  transition: color 420ms ease, border-color 420ms ease, background-color 420ms ease;
+}
+.join-step.is-lit .join-step-num {
+  color: #05030F;
+  background: #C3B9E0;
+  border-color: #C3B9E0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .join-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .join-rail-fill {
+    transform: scaleY(1);
+    transition: none;
+  }
+  .join-step .join-step-num {
+    color: #05030F;
+    background: #C3B9E0;
+    border-color: #C3B9E0;
+  }
+}
