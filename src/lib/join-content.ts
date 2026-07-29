@@ -86,7 +86,7 @@ export const JOIN_JOURNEY = {
     {
       n: 1,
       title: 'Prepare your materials',
-      body: 'Assemble two documents before opening the form: your curriculum vitae and the written answer for your first-choice division. The CV and written answer must be submitted as single PDFs named Surname_Name_CV.pdf and Surname_Name_Answer.pdf.',
+      body: 'Assemble two documents before sending the application form: your curriculum vitae and the written answer for your first-choice division. The CV and written answer must be submitted as single PDFs named Surname_Name_CV.pdf and Surname_Name_Answer.pdf.',
       files: ['Surname_Name_CV.pdf', 'Surname_Name_Answer.pdf'],
     },
     {
