@@ -17,3 +17,4 @@ export { PageLoader } from './PageLoader';
 export { LegalLayout, LegalSectionBlock } from './LegalLayout';
 export type { LegalSection } from './LegalLayout';
 export { ApplicationJourney } from './ApplicationJourney';
+export { HistoryTimeline } from './HistoryTimeline';
