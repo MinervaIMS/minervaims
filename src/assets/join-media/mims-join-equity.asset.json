@@ -1,0 +1,27 @@
+{
+  "key": "equity",
+  "division": "Equity Research",
+  "video": {
+    "path": "/media/join/mims-join-equity.mp4",
+    "content_type": "video/mp4",
+    "codec": "h264 (High profile, yuv420p)",
+    "width": 810,
+    "height": 1440,
+    "aspect_ratio": "9:16",
+    "duration_seconds": 4.6,
+    "fps": 30,
+    "bytes": 356172,
+    "loop": true,
+    "has_audio": false
+  },
+  "poster": {
+    "path": "/media/join/mims-join-equity-poster.webp",
+    "content_type": "image/webp",
+    "width": 540,
+    "height": 960,
+    "bytes": 52700
+  },
+  "source_report": "BNP Paribas SA - Equity Research",
+  "source_page": "Exhibit 3: DCF Model - Summary (p.14)",
+  "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+}

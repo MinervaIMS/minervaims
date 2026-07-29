@@ -98,6 +98,16 @@ export default {
           from: { opacity: "0", transform: "translateX(-40px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        // /join: ambient layers fade in once ready, never on first paint.
+        "fadeIn": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        // /join: scroll cue in the white band under the hero stage.
+        "scrollCue": {
+          "0%, 100%": { opacity: "0.55", transform: "translateY(0)" },
+          "50%": { opacity: "1", transform: "translateY(5px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -105,6 +115,8 @@ export default {
         "slide-down": "slide-down 0.3s ease-out",
         "testimonial-in-left": "testimonial-in-left 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "testimonial-in-right": "testimonial-in-right 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
+        "fadeIn": "fadeIn 700ms ease-out forwards",
+        "scrollCue": "scrollCue 2.4s ease-in-out infinite",
       },
     },
   },

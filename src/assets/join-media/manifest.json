@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "generated_for": "/join",
+  "assets": [
+    {
+      "key": "equity",
+      "division": "Equity Research",
+      "video": {
+        "path": "/media/join/mims-join-equity.mp4",
+        "content_type": "video/mp4",
+        "codec": "h264 (High profile, yuv420p)",
+        "width": 810,
+        "height": 1440,
+        "aspect_ratio": "9:16",
+        "duration_seconds": 4.6,
+        "fps": 30,
+        "bytes": 356172,
+        "loop": true,
+        "has_audio": false
+      },
+      "poster": {
+        "path": "/media/join/mims-join-equity-poster.webp",
+        "content_type": "image/webp",
+        "width": 540,
+        "height": 960,
+        "bytes": 52700
+      },
+      "source_report": "BNP Paribas SA - Equity Research",
+      "source_page": "Exhibit 3: DCF Model - Summary (p.14)",
+      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+    },
+    {
+      "key": "investment",
+      "division": "Investment Research",
+      "video": {
+        "path": "/media/join/mims-join-investment.mp4",
+        "content_type": "video/mp4",
+        "codec": "h264 (High profile, yuv420p)",
+        "width": 810,
+        "height": 1440,
+        "aspect_ratio": "9:16",
+        "duration_seconds": 4.57,
+        "fps": 30,
+        "bytes": 400024,
+        "loop": true,
+        "has_audio": false
+      },
+      "poster": {
+        "path": "/media/join/mims-join-investment-poster.webp",
+        "content_type": "image/webp",
+        "width": 540,
+        "height": 960,
+        "bytes": 68354
+      },
+      "source_report": "Global Outlook - May 2026",
+      "source_page": "Asset Class Preferences (p.11)",
+      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+    },
+    {
+      "key": "macro",
+      "division": "Macro Research",
+      "video": {
+        "path": "/media/join/mims-join-macro.mp4",
+        "content_type": "video/mp4",
+        "codec": "h264 (High profile, yuv420p)",
+        "width": 810,
+        "height": 1440,
+        "aspect_ratio": "9:16",
+        "duration_seconds": 4.5,
+        "fps": 30,
+        "bytes": 374864,
+        "loop": true,
+        "has_audio": false
+      },
+      "poster": {
+        "path": "/media/join/mims-join-macro-poster.webp",
+        "content_type": "image/webp",
+        "width": 540,
+        "height": 960,
+        "bytes": 76000
+      },
+      "source_report": "Currency Tokenisation Race: Public institutions or Private Innovators?",
+      "source_page": "Figure 2: Balance sheets of the different consolidated sectors of the model economy (p.7)",
+      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+    },
+    {
+      "key": "quant",
+      "division": "Quantitative Research",
+      "video": {
+        "path": "/media/join/mims-join-quant.mp4",
+        "content_type": "video/mp4",
+        "codec": "h264 (High profile, yuv420p)",
+        "width": 810,
+        "height": 1440,
+        "aspect_ratio": "9:16",
+        "duration_seconds": 4.67,
+        "fps": 30,
+        "bytes": 326512,
+        "loop": true,
+        "has_audio": false
+      },
+      "poster": {
+        "path": "/media/join/mims-join-quant-poster.webp",
+        "content_type": "image/webp",
+        "width": 540,
+        "height": 960,
+        "bytes": 54668
+      },
+      "source_report": "Dupire's Local Volatility Model and Its Use on FX Exotic Desks",
+      "source_page": "Section 2: Theoretical Foundations of Local Volatility (p.5)",
+      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+    },
+    {
+      "key": "portfolio-report",
+      "division": "Portfolio Management",
+      "video": {
+        "path": "/media/join/mims-join-portfolio-report.mp4",
+        "content_type": "video/mp4",
+        "codec": "h264 (High profile, yuv420p)",
+        "width": 810,
+        "height": 1440,
+        "aspect_ratio": "9:16",
+        "duration_seconds": 4.7,
+        "fps": 30,
+        "bytes": 390230,
+        "loop": true,
+        "has_audio": false
+      },
+      "poster": {
+        "path": "/media/join/mims-join-portfolio-report-poster.webp",
+        "content_type": "image/webp",
+        "width": 540,
+        "height": 960,
+        "bytes": 65722
+      },
+      "source_report": "Multi Asset Global Opportunities Fund - May 2026",
+      "source_page": "Performance Summary and Portfolio Breakdown (p.2)",
+      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+    },
+    {
+      "key": "portfolio-performance",
+      "division": "Portfolio Management",
+      "video": {
+        "path": "/media/join/mims-join-portfolio-performance.mp4",
+        "content_type": "video/mp4",
+        "codec": "h264 (High profile, yuv420p)",
+        "width": 810,
+        "height": 1440,
+        "aspect_ratio": "9:16",
+        "duration_seconds": 4.7,
+        "fps": 30,
+        "bytes": 100892,
+        "loop": true,
+        "has_audio": false
+      },
+      "poster": {
+        "path": "/media/join/mims-join-portfolio-performance-poster.webp",
+        "content_type": "image/webp",
+        "width": 540,
+        "height": 960,
+        "bytes": 19274
+      },
+      "source_report": "fund_performance_years (public seed)",
+      "source_page": "Cumulative NAV of both virtual funds, indexed to 100",
+      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+    }
+  ],
+  "total_bytes": 2285412
+}
