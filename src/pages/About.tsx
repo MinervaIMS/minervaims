@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { PageIntroduction, PageLoader } from "@/components/shared";
+import { PageIntroduction, PageLoader, HistoryTimeline } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { useImagePreload } from "@/hooks/useImagePreload";
