@@ -53,6 +53,9 @@ const About = () => {
         </div>
       </section>
 
+      {/* SECTION 1b - Our History */}
+      <HistoryTimeline />
+
       {/* SECTION 2 - Readings Curated By Our Members */}
       <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
         <div className="container">
