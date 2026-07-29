@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { PageIntroduction, PageLoader, HistoryTimeline } from "@/components/shared";
+import { PageIntroduction, PageLoader } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -52,9 +52,6 @@ const About = () => {
           </div>
         </div>
       </section>
-
-      {/* SECTION 1b - Our History */}
-      <HistoryTimeline />
 
       {/* SECTION 2 - Readings Curated By Our Members */}
       <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
