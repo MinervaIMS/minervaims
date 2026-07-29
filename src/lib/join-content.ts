@@ -20,12 +20,12 @@ export const JOIN_SOCIETY = {
   statements: [
     {
       figure: '5',
-      title: 'core divisions',
+      title: 'Core Divisions',
       body: 'Equity Research, Investment Research, Macro Research, Portfolio Management and Quantitative Research, each built to the standard of a professional investment house, and supported by Media and Communication and by Operations.',
     },
     {
       figure: '2',
-      title: 'student-managed funds',
+      title: 'Student-managed Funds',
       body: 'The Multi-Asset Global Opportunities Fund and the Long-Short Equity Fund, run across global markets and asset classes on the Society’s own research and views.',
     },
   ],
