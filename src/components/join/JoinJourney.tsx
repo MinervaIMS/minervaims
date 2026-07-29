@@ -81,7 +81,7 @@ export function JoinJourney() {
                   step.body
                     .split(new RegExp(`(${step.files.join('|')})`, 'g'))
                     .map((part, i) =>
-                      step.files.includes(part as (typeof step.files)[number]) ? (
+                      (step.files as readonly string[]).includes(part) ? (
                         <span className="file" key={i}>
                           {part}
                         </span>
