@@ -893,7 +893,7 @@ input[type='search']::-webkit-search-cancel-button {
   padding-bottom: .75rem;
   border-bottom: 1px solid hsl(var(--separator));
 }
-.tl-h2--pinned { position: absolute; top: 3.5rem; left: var(--tl-pad); right: var(--tl-pad); z-index: 2; }
+.tl-h2--pinned { position: absolute; top: 6.5rem; left: var(--tl-pad); right: var(--tl-pad); z-index: 2; }
 .tl-h2--flow { margin: 0 var(--tl-pad) 2.5rem; }
 
 .tl-wrap { position: relative; }
