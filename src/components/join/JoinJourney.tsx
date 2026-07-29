@@ -71,7 +71,7 @@ export function JoinJourney() {
           </div>
           <div>
             <h3 className="jt-t">
-              {step.n} &middot; {step.title}
+              {step.title}
             </h3>
             <div className="jt-d">
               {step.files.length === 0
