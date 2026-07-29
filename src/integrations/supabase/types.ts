@@ -1226,39 +1226,45 @@ export type Database = {
       join_faqs: {
         Row: {
           answer: string
-          created_at: string
-          faq_group: string
+          group_key: string
+          group_label: string
+          group_order: number
           id: string
           is_published: boolean
+          link_href: string | null
           link_label: string | null
-          link_to: string | null
-          position: number
           question: string
+          sort_order: number
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           answer: string
-          created_at?: string
-          faq_group: string
+          group_key: string
+          group_label: string
+          group_order: number
           id?: string
           is_published?: boolean
+          link_href?: string | null
           link_label?: string | null
-          link_to?: string | null
-          position?: number
           question: string
+          sort_order: number
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           answer?: string
-          created_at?: string
-          faq_group?: string
+          group_key?: string
+          group_label?: string
+          group_order?: number
           id?: string
           is_published?: boolean
+          link_href?: string | null
           link_label?: string | null
-          link_to?: string | null
-          position?: number
           question?: string
+          sort_order?: number
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
