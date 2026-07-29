@@ -89,7 +89,7 @@ export function ApplicationCta({
             className={`inline-flex items-center gap-3 px-10 py-4 font-serif text-lg transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 ${buttonClass}`}
           >
             {action.label}
-            <span aria-hidden="true">&rarr;</span>
+            {'\n'}
           </Link>
         </div>
       </div>
