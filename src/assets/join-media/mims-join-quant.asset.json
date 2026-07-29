@@ -1,0 +1,27 @@
+{
+  "key": "quant",
+  "division": "Quantitative Research",
+  "video": {
+    "path": "/media/join/mims-join-quant.mp4",
+    "content_type": "video/mp4",
+    "codec": "h264 (High profile, yuv420p)",
+    "width": 810,
+    "height": 1440,
+    "aspect_ratio": "9:16",
+    "duration_seconds": 4.67,
+    "fps": 30,
+    "bytes": 326512,
+    "loop": true,
+    "has_audio": false
+  },
+  "poster": {
+    "path": "/media/join/mims-join-quant-poster.webp",
+    "content_type": "image/webp",
+    "width": 540,
+    "height": 960,
+    "bytes": 54668
+  },
+  "source_report": "Dupire's Local Volatility Model and Its Use on FX Exotic Desks",
+  "source_page": "Section 2: Theoretical Foundations of Local Volatility (p.5)",
+  "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+}

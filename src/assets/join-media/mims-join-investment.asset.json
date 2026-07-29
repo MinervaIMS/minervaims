@@ -1,0 +1,27 @@
+{
+  "key": "investment",
+  "division": "Investment Research",
+  "video": {
+    "path": "/media/join/mims-join-investment.mp4",
+    "content_type": "video/mp4",
+    "codec": "h264 (High profile, yuv420p)",
+    "width": 810,
+    "height": 1440,
+    "aspect_ratio": "9:16",
+    "duration_seconds": 4.57,
+    "fps": 30,
+    "bytes": 400024,
+    "loop": true,
+    "has_audio": false
+  },
+  "poster": {
+    "path": "/media/join/mims-join-investment-poster.webp",
+    "content_type": "image/webp",
+    "width": 540,
+    "height": 960,
+    "bytes": 68354
+  },
+  "source_report": "Global Outlook - May 2026",
+  "source_page": "Asset Class Preferences (p.11)",
+  "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+}

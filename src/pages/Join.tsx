@@ -1,452 +1,164 @@
-import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PageIntroduction, PageLoader, ApplicationJourney } from "@/components/shared";
-import DotField from "@/components/shared/DotField";
-import joinBg from "@/assets/MIMS_Join_Background-v4.webp.asset.json";
-import { useApplicationSettings } from "@/hooks/useApplicationSettings";
-import { useImagePreload } from "@/hooks/useImagePreload";
-import { useKeyFigures } from "@/hooks/useKeyFigures";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Helmet } from 'react-helmet-async';
+import AlumniTicker from '@/components/shared/AlumniTicker';
+import ApplicationCta from '@/components/join/ApplicationCta';
+import DivisionVideoRail from '@/components/join/DivisionVideoRail';
+import JoinFaq from '@/components/join/JoinFaq';
+import JoinFigures from '@/components/join/JoinFigures';
+import JoinHeroStage from '@/components/join/JoinHeroStage';
+import JoinJourney from '@/components/join/JoinJourney';
+import WrittenQuestions from '@/components/join/WrittenQuestions';
+import { useApplicationSettings } from '@/hooks/useApplicationSettings';
+import {
+  JOIN_JOURNEY,
+  JOIN_SOCIETY,
+  JOIN_STATUS_COPY,
+  JOIN_WRITTEN,
+} from '@/lib/join-content';
 
-const WHY_JOIN = [
-  {
-    title: "The only student-managed virtual funds at Bocconi",
-    description:
-      "MIMS is Bocconi's first and only association running student-managed virtual funds, with processes, reports and disclosures that replicate professional-industry standards.",
-  },
-  {
-    title: "The only ones producing market outlooks",
-    description:
-      "Across Equity, Investment, Macro and Quantitative Research, members publish cross-asset outlooks and trade ideas: work no other society on campus produces.",
-  },
-  {
-    title: "Best-in-class equity research",
-    description:
-      "Fundamental coverage of listed companies: business models, valuation, and investment theses with clear catalysts and risks, written to a standard recruiters recognise.",
-  },
-  {
-    title: "Industry-level quantitative research",
-    description:
-      "Statistical and machine-learning models, derivatives pricing and risk measures (CVaR/EVaR): the kind of work usually reserved for the desk, not the classroom.",
-  },
-];
-
-type Figure = { label: string; staticValue?: string; key?: "members" | "alumni" | "reports"; suffix?: string };
-const FIGURES: Figure[] = [
-  { label: "Founded", staticValue: "2017" },
-  { label: "Active Members", key: "members", suffix: "+" },
-  { label: "Alumni Network", key: "alumni", suffix: "+" },
-  { label: "Research Reports", key: "reports", suffix: "+" },
-  { label: "Research Divisions", staticValue: "5" },
-];
-
-const WHAT_YOU_GAIN = [
-  {
-    title: "A research-driven community",
-    description:
-      "Specialist divisions and a central Portfolio Management team that meet regularly to discuss markets, review ideas and develop theses.",
-  },
-  {
-    title: "Professional-standard training",
-    description:
-      "An onboarding programme covering research methodology and financial modelling: you learn the craft by producing real, disclosed work.",
-  },
-  {
-    title: "Industry exposure & events",
-    description:
-      "One flagship event each semester with industry professionals, company visits, and internal presentations and debate forums.",
-  },
-  {
-    title: "An alumni network that opens doors",
-    description:
-      "Alumni now work at top investment banks, hedge funds, asset managers and consultancies worldwide: reachable through the Society's alumni-call programme.",
-  },
-];
-
-
-const FAQS = [
-  {
-    question: "Who should apply?",
-    answer:
-      "MIMS is open to students currently enrolled at Università Bocconi (undergraduate or postgraduate) who show a genuine interest in financial markets and investment research, and who are ready to participate actively in the Society. We value academic integrity, humility, eagerness to learn, respect for other members, and full compliance with Università Bocconi's Honor Code. Prior experience is not required: we value potential, rigour, and a consistent commitment to learning.",
-  },
-  {
-    question: "Are undergraduate first-year students considered in the application process?",
-    answer:
-      "Yes. We value potential, especially at the start of an academic journey. Admission may be more challenging due to limited prior exposure to finance.",
-  },
-  {
-    question: "Are questions different based on experience?",
-    answer:
-      "Yes. Questions vary by academic year and individual profile. We assess both current knowledge and long-term potential.",
-  },
-  {
-    question: "Which division's written question do I need to answer?",
-    answer:
-      "You are required to answer only the question for your first-choice division: the division you ranked 1 in the application form.",
-  },
-  {
-    question: "Can I answer more than one division's question?",
-    answer:
-      "Yes. You may also answer additional division questions. If you do, combine all of your answers into one PDF and upload it as a single file.",
-  },
-  {
-    question: "Is it possible to apply again?",
-    answer:
-      "Yes. We encourage reapplication, particularly for first-year undergraduates. The February intake is typically more competitive due to fewer available places.",
-  },
-  {
-    question: "Are referrals available?",
-    answer:
-      "No. We no longer accept referrals. In our experience they did not add value for candidates or for the Society. Our selection process is designed so that strong candidates can prove their value on the merits of their application, so we encourage everyone to apply directly. You are still welcome to connect with members on LinkedIn.",
-  },
-];
-
-/* ---------------------- Animation primitives (page-local) ---------------------- */
-
-const prefersReducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-function useInView<T extends HTMLElement>(options: IntersectionObserverInit = { threshold: 0.15 }) {
-  const ref = useRef<T | null>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    if (prefersReducedMotion()) {
-      setInView(true);
-      return;
-    }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) {
-          setInView(true);
-          io.unobserve(e.target);
-        }
-      });
-    }, options);
-    io.observe(node);
-    return () => io.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return { ref, inView };
-}
-
-const Reveal = ({
-  children,
-  className = "",
-  as: Tag = "div",
-}: {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-  as?: keyof JSX.IntrinsicElements;
-}) => {
-  const Component = Tag as any;
-  return <Component className={className}>{children}</Component>;
-};
-
-
-const CountUp = ({
-  value,
-  suffix = "",
-  start,
-  duration = 1600,
-}: {
-  value: number;
-  suffix?: string;
-  start: boolean;
-  duration?: number;
-}) => {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    if (!start || value <= 0) return;
-    if (prefersReducedMotion()) {
-      setN(value);
-      return;
-    }
-    const from = 0;
-    const t0 = performance.now();
-    let raf = 0;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(from + (value - from) * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [start, value, duration]);
-  return (
-    <>
-      {n}
-      {suffix}
-    </>
-  );
-};
-
-/* ---------------------- Page ---------------------- */
+// Note on splitting: the heavy things on this page are the particle canvas and
+// the five cinemagraphs, and both are deferred at the point of use (DotField is
+// a lazy import inside JoinHeroStage; the videos carry poster frames and
+// preload="metadata" and only the visible card plays). The rail and FAQ
+// components themselves are a few kilobytes of markup, so importing them
+// eagerly keeps the section heights reserved from first paint and avoids the
+// large layout shift a Suspense swap would otherwise introduce.
+const META_DESCRIPTION =
+  'Admissions to Minerva Investment Management Society, the Bocconi student society founded in 2019 and dedicated to asset management. Five core research divisions, two student-managed funds, one intake each academic semester.';
 
 const Join = () => {
-  const { settings } = useApplicationSettings();
-  const imagesLoaded = useImagePreload([joinBg.url]);
-  const { counts: keyFigures, isLoading: keyFiguresLoading } = useKeyFigures();
+  const { settings, isLoading } = useApplicationSettings();
 
-  // Figures band trigger
-  const figures = useInView<HTMLDivElement>({ threshold: 0.15 });
-  const [figuresForceStart, setFiguresForceStart] = useState(false);
-  useEffect(() => {
-    const t = window.setTimeout(() => setFiguresForceStart(true), 1200);
-    return () => window.clearTimeout(t);
-  }, []);
-
-
-  if (!imagesLoaded) {
-    return <PageLoader />;
-  }
+  const status = {
+    applicationsOpen: settings.applicationsOpen,
+    semesterLabel: settings.semesterLabel,
+    endDate: settings.endDate,
+    isConfigured: settings.isConfigured,
+    isLoading,
+  };
 
   return (
     <>
       <Helmet>
         <title>Join Us | MIMS</title>
+        <meta name="description" content={META_DESCRIPTION} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Minerva Investment Management Society',
+            alternateName: 'MIMS',
+            foundingDate: '2019',
+            description: META_DESCRIPTION,
+            url: 'https://minervaims.org/join',
+            parentOrganization: { '@type': 'CollegeOrUniversity', name: 'Bocconi University' },
+          })}
+        </script>
       </Helmet>
-      <div data-page-hero className="relative overflow-hidden" style={{ backgroundColor: '#000' }}>
-        <div className="absolute inset-0" aria-hidden="true">
-          <DotField glowRadius={0} />
-        </div>
-        <div className="relative z-10">
-          <PageIntroduction
-            title="Join Minerva"
-            transparentBackground
-          />
-        </div>
-      </div>
 
-      <div className="container py-section md:py-section-lg">
-        {/* Status / CTA hero band (moved from the bottom) */}
-        <section className="mb-20 md:mb-24">
-          <Reveal>
-            <div className="relative overflow-hidden" style={{ backgroundColor: "#0b0720" }}>
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: `url(${joinBg.url})` }}
-                aria-hidden
-              />
-              <div className="relative z-10 px-6 md:px-12 py-16 md:py-24 max-w-3xl">
-                {settings.applicationsOpen ? (
-                  <>
-                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Prepare a strong application, then apply.
-                    </h2>
-                    <p className="font-body text-body-lg text-background/80 mt-5">
-                      Applications for {settings.semesterLabel} are open. Submit the form with your CV, motivation
-                      letter and written answer.
-                    </p>
-                    <div className="flex flex-wrap gap-4 items-center mt-8">
-                      <a
-                        href="/apply"
-                        className="inline-flex items-center gap-2 bg-background text-foreground font-serif text-body-lg px-8 py-4 hover:bg-background/90 transition-colors"
-                      >
-                        Submit Application Form <span aria-hidden>→</span>
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="font-serif text-display md:text-hero text-background leading-tight">
-                      Applications are closed. Start preparing now.
-                    </h2>
-                    <p className="font-body text-body-lg text-background/80 mt-5">
-                      Use the roadmap below to guide your journey. The next intake will be announced at the start of
-                      the upcoming semester.
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </Reveal>
-        </section>
+      {/* Hero + Status share the dark stage; the white band below carries the cue. */}
+      <JoinHeroStage>
+        <ApplicationCta
+          {...status}
+          tone="light"
+          closedBody={JOIN_STATUS_COPY.closedBodyTop}
+          headingId="join-status-heading"
+        />
+      </JoinHeroStage>
 
-
-        {/* Why Join */}
-        <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Why Join
+      {/* 01 The Society */}
+      <section aria-labelledby="join-society-heading" className="bg-background py-section-sm md:py-section">
+        <div className="container">
+          <h2
+            id="join-society-heading"
+            className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent"
+          >
+            {JOIN_SOCIETY.heading}
           </h2>
-          <Reveal>
-            <p className="font-body text-body-lg text-muted-foreground max-w-3xl mb-10">
-              No other society at Bocconi does what we do. Membership puts professional-standard research, real
-              portfolio decisions and a global alumni network within reach, well before your first internship.
-            </p>
-          </Reveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {WHY_JOIN.map((item, i) => (
-              <Reveal key={item.title} delay={i * 90}>
-                <div className="group relative bg-background border border-separator p-8 overflow-hidden transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-elevated hover:border-accent h-full">
-                  <span
-                    aria-hidden
-                    className="absolute left-0 top-0 w-[3px] h-0 bg-accent transition-[height] duration-500 ease-out group-hover:h-full"
-                  />
-                  <div className="font-serif text-sm tracking-[0.1em] text-muted-foreground mb-2">
-                    0{i + 1}
-                  </div>
-                  <h3 className="font-serif text-subheading text-accent mb-3 leading-snug">{item.title}</h3>
-                  <p className="font-body text-body text-muted-foreground leading-relaxed">{item.description}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
+          <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+            {JOIN_SOCIETY.lead}
+          </p>
 
-        {/* Figures: full-bleed band with live counters */}
-        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
-          <div ref={figures.ref} className="bg-accent text-accent-foreground py-12 md:py-16 px-6 md:px-12">
-            <div className="container">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
-                {FIGURES.map((f) => (
-                  <div key={f.label} className="text-center">
-                    <div className="font-serif text-3xl md:text-5xl text-accent-foreground leading-none">
-                      {f.staticValue !== undefined ? (
-                        f.staticValue
-                      ) : (
-                        <CountUp
-                          value={f.key ? keyFigures[f.key] : 0}
-                          suffix={f.suffix ?? ""}
-                          start={(figures.inView || figuresForceStart) && !keyFiguresLoading}
-                        />
-                      )}
-                    </div>
-                    <div className="font-body text-xs uppercase tracking-[0.12em] text-accent-foreground/70 mt-3">
-                      {f.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        {/* What You Gain */}
-        <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            What You Gain
-          </h2>
-          <div className="border-t border-separator">
-            {WHAT_YOU_GAIN.map((item, i) => (
-              <Reveal key={item.title} delay={i * 70}>
-                <div className="grid grid-cols-1 md:grid-cols-[3rem_minmax(0,1.1fr)_minmax(0,1.6fr)] gap-y-2 md:gap-x-8 py-6 md:py-8 border-b border-separator transition-[background-color,padding] duration-300 ease-out hover:bg-secondary hover:pl-5">
-                  <div className="font-serif text-xl text-muted-foreground">0{i + 1}</div>
-                  <h3 className="font-serif text-subheading text-accent">{item.title}</h3>
-                  <p className="font-body text-body-lg text-muted-foreground">{item.description}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* Selectivity: full-bleed grey panel with giant quote watermark */}
-        <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen mb-20 md:mb-24">
-          <Reveal>
-            <div className="bg-secondary relative overflow-hidden">
-              <span
-                aria-hidden
-                className="pointer-events-none select-none absolute top-2 left-3 md:top-3 md:left-6 lg:top-4 lg:left-10 font-serif leading-none whitespace-nowrap z-0"
-                style={{
-                  fontSize: "clamp(7rem, 18vw, 18rem)",
-                  color: "hsl(var(--accent) / 0.06)",
-                }}
-              >
-                “
-              </span>
-              <div className="container relative z-10 px-6 md:px-12 pt-16 md:pt-16 pb-12 md:pb-16">
-                <div className="max-w-3xl">
-                  <h2 className="font-serif text-heading text-accent mb-5">Demanding by design</h2>
-                  <p className="font-serif text-xl md:text-2xl leading-snug text-foreground">
-                    We don't lead with acceptance rates: they understate the truth. The application itself is rigorous,
-                    so candidates effectively self-select before they ever submit. The bar is the preparation. Treat the
-                    steps below as the syllabus: meet them properly and you are already most of the way there.
+          <div className="mt-12 grid grid-cols-1 gap-10 md:mt-16 md:grid-cols-2 md:gap-14">
+            {JOIN_SOCIETY.statements.map((statement) => (
+              <div key={statement.title} className="grid grid-cols-[auto_1fr] gap-5 md:gap-7">
+                <span
+                  aria-hidden="true"
+                  className="select-none leading-[0.8] text-accent/25"
+                  style={{
+                    fontFamily: "'Times New Roman', Times, Georgia, serif",
+                    fontSize: 'clamp(3.75rem, 11vw, 6.5rem)',
+                  }}
+                >
+                  {statement.figure}
+                </span>
+                <div>
+                  <h3 className="font-serif text-subheading text-accent">
+                    <span className="sr-only">{statement.figure} </span>
+                    {statement.title}
+                  </h3>
+                  <p className="font-body text-body text-muted-foreground mt-3 leading-relaxed">
+                    {statement.body}
                   </p>
                 </div>
               </div>
-            </div>
-          </Reveal>
-        </section>
+            ))}
+          </div>
 
+          <div className="mt-14 border-t border-separator pt-10 md:mt-20">
+            <JoinFigures />
+          </div>
+        </div>
+      </section>
 
-        {/* The Application Journey */}
-        <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            The Application Journey
+      {/* 02 The Divisions */}
+      <DivisionVideoRail />
+
+      {/* 03 Alumni: the homepage section, unchanged. */}
+      <AlumniTicker />
+
+      {/* 04 Admissions */}
+      <section aria-labelledby="join-journey-heading" className="bg-background py-section-sm md:py-section">
+        <div className="container">
+          <h2
+            id="join-journey-heading"
+            className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent"
+          >
+            {JOIN_JOURNEY.heading}
           </h2>
-          <ApplicationJourney />
-        </section>
+          <p className="font-body text-body-lg text-muted-foreground max-w-3xl mb-12">
+            {JOIN_JOURNEY.lead}
+          </p>
+          <JoinJourney />
+        </div>
+      </section>
 
-
-        {/* How To Prepare For The Interview */}
-        <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            How To Prepare For The Interview
+      {/* 05 The Written Question */}
+      <section aria-labelledby="join-written-heading" className="bg-background pb-section-sm md:pb-section">
+        <div className="container">
+          <h2
+            id="join-written-heading"
+            className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent"
+          >
+            {JOIN_WRITTEN.heading}
           </h2>
-          <Reveal>
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
-              <div className="lg:flex-1">
-                <p className="font-body text-body-lg text-muted-foreground mb-6">
-                  To prepare effectively, we recommend reviewing our division-specific publications to understand our
-                  analytical approach, reporting standards, and recurring themes. This will help you align your reasoning,
-                  structure, and level of depth with the work produced within MIMS. Applicants, with due respect, may also
-                  contact society members on LinkedIn to ask further questions.
-                </p>
-                <p className="font-body text-body-lg text-muted-foreground mb-4">
-                  In addition, candidates are expected to demonstrate a clear awareness of the current market environment.
-                  In practice, this means being comfortable discussing:
-                </p>
-                <ul className="space-y-3">
-                  <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                    Macroeconomic data (inflation, growth, labour market dynamics, central bank stance).
-                  </li>
-                  <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                    Relevant market data and recent performance (rates, credit, equities, FX, commodities; key moves and
-                    drivers).
-                  </li>
-                  <li className="font-body text-body-lg text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground">
-                    The most relevant market news from the last two weeks and its implications across asset classes.
-                  </li>
-                </ul>
-              </div>
-              <div className="lg:flex-shrink-0">
-                <Link to="/archive" className="cta-link">
-                  View Divisions Reports
-                </Link>
-              </div>
-            </div>
-          </Reveal>
-        </section>
+          <WrittenQuestions />
+        </div>
+      </section>
 
-        {/* FAQs */}
-        <section className="mb-20 md:mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">FAQs</h2>
-          <Reveal>
-            <div className="max-w-3xl">
-              <Accordion type="multiple" className="w-full">
-                {FAQS.map((faq, index) => (
-                  <AccordionItem key={index} value={`item-${index}`} className="border-separator">
-                    <AccordionTrigger className="font-serif text-lg sm:text-subheading text-left hover:no-underline py-6 [&>svg]:text-accent [&>svg]:w-5 [&>svg]:h-5">
-                      {faq.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="font-body text-body-lg text-muted-foreground pb-6 text-base sm:text-lg">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </Reveal>
-        </section>
-      </div>
+      {/* Close: mirrors the Status block, same source, same two states. */}
+      <section aria-labelledby="join-close-heading" className="bg-background pb-section-sm md:pb-section">
+        <div className="container">
+          <ApplicationCta
+            {...status}
+            tone="dark"
+            closedBody={JOIN_STATUS_COPY.closedBodyBottom}
+            headingId="join-close-heading"
+          />
+        </div>
+      </section>
+
+      {/* FAQs */}
+      <JoinFaq />
     </>
   );
 };
