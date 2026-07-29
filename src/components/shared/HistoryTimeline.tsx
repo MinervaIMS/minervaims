@@ -81,7 +81,8 @@ function useResolvedCovers() {
           const m = e.media;
           if (m.url) { out[e.year] = m.url; return; }
           try {
-            let q = supabase.from('archive_files').select('id, title, file_url, date, fund');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let q: any = (supabase as any).from('archive_files').select('id, title, file_url, date, fund');
             if (m.query?.eq) for (const [k, v] of Object.entries(m.query.eq)) q = q.eq(k, v);
             if (m.title) q = q.eq('title', m.title);
             if (m.query?.order) q = q.order(m.query.order.column, { ascending: m.query.order.ascending });
