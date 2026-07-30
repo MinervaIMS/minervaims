@@ -17,6 +17,7 @@ import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
 import {
@@ -226,6 +227,17 @@ export default function AlumniManagement() {
     [...new Set(alumni.map((a) => a.city).filter(Boolean))].sort()
       .map((v) => ({ value: v as string, label: v as string })), [alumni]);
 
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (yearFilter.length > 0 ? 1 : 0) + (jobAreaFilter.length > 0 ? 1 : 0) + (companyFilter.length > 0 ? 1 : 0) + (cityFilter.length > 0 ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setYearFilter([]);
+    setJobAreaFilter([]);
+    setCompanyFilter([]);
+    setCityFilter([]);
+    setSearchQuery('');
+  };
+
   const filteredAlumni = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return alumni
@@ -374,6 +386,7 @@ export default function AlumniManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by name, company, city or job area" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
       </div>
 
       <p className="font-body text-small text-muted-foreground mb-4">
@@ -395,18 +408,29 @@ export default function AlumniManagement() {
             column filters live in the toolbar above on this width. */}
         <div className="md:hidden divide-y divide-separator border border-separator">
           {paginatedAlumni.map((record) => (
-            <div key={record.id} className="px-3 py-3 font-body">
+            <div key={record.id} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-foreground text-base leading-snug break-words">{record.surname} {record.name}</span>
+                <div className="min-w-0 flex-1">
+                  {/* Name first, in the serif the public directory uses, so
+                      the eye lands on the person; everything else is quiet
+                      supporting detail underneath. */}
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-body-lg font-medium break-words" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                      {record.surname} {record.name}
+                    </span>
                     {record.linkedin_url && (
-                      <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex shrink-0">
-                        <img src={linkedinIcon} alt="LinkedIn" width={16} height={16} className="h-4 w-4 shrink-0 object-contain opacity-80" />
+                      <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="shrink-0">
+                        <img src={linkedinIcon} alt="LinkedIn" width={23} height={23} className="w-[1.4375rem] h-[1.4375rem] shrink-0 object-contain" />
                       </a>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Class of {record.graduation_year}</div>
+                  <p className="font-body text-small text-muted-foreground">
+                    {record.company || '-'}{record.city ? ` · ${record.city}` : ''}
+                  </p>
+                  {record.job_area && (
+                    <p className="font-body text-xs text-muted-foreground/70 mt-0.5">{record.job_area}</p>
+                  )}
+                  <p className="font-body text-xs text-muted-foreground/70 mt-0.5">Class of {record.graduation_year}</p>
                 </div>
                 {canManage && (
                   <div className="flex gap-2 shrink-0">
@@ -415,11 +439,6 @@ export default function AlumniManagement() {
                   </div>
                 )}
               </div>
-              <dl className="mt-2 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-1 text-sm">
-                <dt className="text-muted-foreground">Job area</dt><dd className="break-words">{record.job_area || '-'}</dd>
-                <dt className="text-muted-foreground">Company</dt><dd className="break-words">{record.company || '-'}</dd>
-                <dt className="text-muted-foreground">City</dt><dd className="break-words">{record.city || '-'}</dd>
-              </dl>
             </div>
           ))}
         </div>
@@ -445,7 +464,7 @@ export default function AlumniManagement() {
                   <td className="px-3 py-2 text-center">
                     {record.linkedin_url ? (
                       <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
-                        <img src={linkedinIcon} alt="LinkedIn" width={16} height={16} className="h-4 w-4 shrink-0 object-contain opacity-80" />
+                        <img src={linkedinIcon} alt="LinkedIn" width={18} height={18} className="h-[1.15rem] w-[1.15rem] shrink-0 object-contain opacity-80" />
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>

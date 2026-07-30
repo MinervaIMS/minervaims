@@ -51,15 +51,8 @@ const Sitemap = () => {
     {
       title: 'People',
       links: [
-        { label: 'People Overview', href: '/people' },
         { label: 'Members', href: '/people/members' },
         { label: 'Alumni', href: '/people/alumni' },
-      ],
-    },
-    {
-      title: 'Tools',
-      links: [
-        { label: 'Payoff Lab', href: '/lab' },
       ],
     },
     {

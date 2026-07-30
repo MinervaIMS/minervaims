@@ -14,6 +14,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -194,6 +195,15 @@ const UserManagement = () => {
     return present.map((d) => ({ value: d, label: divisionLabels[d] ?? d }));
   }, [approvedUsers]);
 
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (roleFilter.length > 0 ? 1 : 0) + (divFilter.length > 0 ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setRoleFilter([]);
+    setDivFilter([]);
+    setSearchQuery('');
+  };
+
   const filteredApproved = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return approvedUsers
@@ -281,6 +291,7 @@ const UserManagement = () => {
             <Input className="pl-10 font-body" placeholder="Search by name, email or role"
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
+          <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
         </div>
 
         {approvedUsers.length === 0 ? (

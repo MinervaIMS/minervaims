@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Helmet } from 'react-helmet-async';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import Beams from './Beams';
+import ApplyBackground from './ApplyBackground';
 
 interface AuthLayoutProps {
   title: string;
@@ -11,6 +12,17 @@ interface AuthLayoutProps {
   cardSubtitle?: ReactNode;
   /** Optional alignment override (defaults to centre). */
   align?: 'center' | 'left';
+  /**
+   * Which ambient layer sits behind the card.
+   *
+   * 'workspace' (default) is the beams backdrop shared by sign in, sign up,
+   * password reset and the other member-facing utility pages.
+   *
+   * 'application' is the /join particle field, used by the pages an
+   * APPLICANT meets while sending an application, so the recruiting page
+   * and the form it leads into read as one continuous journey.
+   */
+  background?: 'workspace' | 'application';
 }
 
 /**
@@ -22,7 +34,9 @@ interface AuthLayoutProps {
  * Every card opens with the full Minerva lock-up at the top, followed by the
  * heading / subtitle block and the page-specific body.
  */
-export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = 'center' }: AuthLayoutProps) {
+export function AuthLayout({
+  title, children, cardTitle, cardSubtitle, align = 'center', background = 'workspace',
+}: AuthLayoutProps) {
   return (
     <>
       <Helmet>
@@ -32,16 +46,20 @@ export function AuthLayout({ title, children, cardTitle, cardSubtitle, align = '
         {/* Form panel */}
         <main className="relative flex-1 flex items-center justify-center px-6 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12 lg:pb-[7.5vh] overflow-hidden" style={{ backgroundColor: '#05030F' }}>
           <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
-            <Beams
-              beamWidth={8.4}
-              beamHeight={30}
-              beamNumber={38}
-              lightColor="#afa2d2"
-              speed={2}
-              noiseIntensity={0.6}
-              scale={0.2}
-              rotation={30}
-            />
+            {background === 'application' ? (
+              <ApplyBackground />
+            ) : (
+              <Beams
+                beamWidth={8.4}
+                beamHeight={30}
+                beamNumber={38}
+                lightColor="#afa2d2"
+                speed={2}
+                noiseIntensity={0.6}
+                scale={0.2}
+                rotation={30}
+              />
+            )}
           </div>
           {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
           <div

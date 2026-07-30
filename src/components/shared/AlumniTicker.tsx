@@ -83,6 +83,44 @@ const ROWS: Row[] = [
   },
 ];
 
+/**
+ * On a phone the same organisations are dealt across SIX bands instead of
+ * four. Nothing is added or removed: the two longest groups are split along
+ * the line they already divide on (advisory firms from institutions, and
+ * the international schools from the European ones), and the directions
+ * keep alternating exactly as they do on a wide screen. Six shorter bands
+ * fill a tall, narrow viewport far better than four long ones, and each
+ * band's loop comes round sooner, so more names are read.
+ *
+ * The desktop and tablet arrangement above is untouched.
+ */
+const MOBILE_ROWS: Row[] = (() => {
+  const group = (id: string) => ROWS.find((r) => r.id === id)!.logos;
+  const advisory = group('advisory');
+  const academic = group('academic');
+  const splitAt = (logos: Logo[], names: string[]) => [
+    logos.filter((l) => names.includes(l.name)),
+    logos.filter((l) => !names.includes(l.name)),
+  ] as const;
+
+  const [consultancies, institutions] = splitAt(advisory, [
+    'McKinsey & Company', 'BCG', 'Bain & Company', 'Oliver Wyman', 'KPMG',
+  ]);
+  const [schoolsAbroad, schoolsEurope] = splitAt(academic, [
+    'University of Oxford', 'University of Chicago', 'Columbia University',
+    'MIT', 'Princeton University', 'Cornell University', 'Duke University',
+  ]);
+
+  return [
+    { id: 'banking', direction: 'left', logos: group('banking') },
+    { id: 'buyside', direction: 'right', logos: group('buyside') },
+    { id: 'advisory-firms', direction: 'left', logos: consultancies },
+    { id: 'advisory-institutions', direction: 'right', logos: institutions },
+    { id: 'academic-international', direction: 'left', logos: schoolsAbroad },
+    { id: 'academic-europe', direction: 'right', logos: schoolsEurope },
+  ];
+})();
+
 function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
   const [visible, setVisible] = useState(true);
   const [opacity, setOpacity] = useState(0);
@@ -105,8 +143,8 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         onLoad={() => setOpacity(1)}
         onError={() => setVisible(false)}
         style={{
-          maxHeight: isMobile ? '20px' : '40px',
-          maxWidth:  isMobile ? '325px' : '650px',
+          maxHeight: isMobile ? '22px' : '40px',
+          maxWidth:  isMobile ? '358px' : '650px',
           width: 'auto', height: 'auto', objectFit: 'contain',
           opacity, transition: 'opacity 0.35s ease',
           userSelect: 'none', pointerEvents: 'none', display: 'block',
@@ -317,7 +355,7 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
   }, [isMobile, row.direction, row.logos.length]);
 
   return (
-    <div style={{ position: 'relative', height: isMobile ? '57px' : '114px' }}>
+    <div style={{ position: 'relative', height: isMobile ? '63px' : '114px' }}>
       <div
         ref={bandRef}
         onMouseEnter={() => { pausedRef.current = true; }}
@@ -377,7 +415,7 @@ const AlumniTicker = () => {
         </h2>
       </div>
 
-      {ROWS.map((row) => (
+      {(isMobile ? MOBILE_ROWS : ROWS).map((row) => (
         <TickerBand key={row.id} row={row} isMobile={isMobile} />
       ))}
     </section>

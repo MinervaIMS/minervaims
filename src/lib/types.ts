@@ -77,5 +77,17 @@ export const fundLabels: Record<Fund, string> = {
   'pir': 'Italian Equity PIR Fund',
 };
 
+/**
+ * Compact fund names, for places where the label sits beside something else
+ * and the full name would dominate the line: the Members directory prints
+ * "Analyst · Multi Asset Fund", not the full mandate title.
+ */
+export const fundShortLabels: Record<Fund, string> = {
+  'long-short': 'Long Short Fund',
+  'multi-asset': 'Multi Asset Fund',
+  'dps': 'Diversified Passive Fund',
+  'pir': 'Italian Equity Fund',
+};
+
 export const activeFunds: Fund[] = ['long-short', 'multi-asset'];
 export const closedFunds: Fund[] = ['dps', 'pir'];

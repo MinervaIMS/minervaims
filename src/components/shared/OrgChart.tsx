@@ -19,9 +19,11 @@ import { useSeniorAnalystDivisions } from '@/hooks/useSeniorAnalystDivisions';
 //   * every route out of the chart points at the filtered Members page,
 //     so "Meet the Equity Research team" lands on Equity Research.
 //
-// Below 900px the camera is put away entirely and the same structure is
-// presented as a stacked outline, which is legible on a phone in a way
-// no amount of zooming into a wide diagram would be.
+// The same chart is shown at every width. A phone does not get a reduced
+// list: it gets the diagram, framed further out so the whole society fits,
+// in a taller window, with a one-finger horizontal drag to look around.
+// The frame declares `touch-action: pan-y`, so vertical gestures still
+// scroll the page and only clearly horizontal ones pan the camera.
 //
 // The motion tokens, easings and delays live in the .oc-* block of
 // src/index.css. They are the approved design: treat the numbers here and
@@ -223,11 +225,11 @@ const boxBase: CSSProperties = {
 
 const headText: CSSProperties = {
   fontFamily: serif, fontSize: 23, lineHeight: 1.14, letterSpacing: '-0.012em',
-  color: 'hsl(var(--accent))', fontWeight: 600, textWrap: 'balance' as CSSProperties['textWrap'],
+  color: 'hsl(var(--accent))', fontWeight: 400, textWrap: 'balance' as CSSProperties['textWrap'],
 };
 
 const leaderText: CSSProperties = {
-  fontFamily: serif, fontSize: 15, lineHeight: 1.15, color: 'hsl(var(--accent))', fontWeight: 500,
+  fontFamily: serif, fontSize: 15, lineHeight: 1.15, color: 'hsl(var(--accent))', fontWeight: 400,
 };
 
 const subText: CSSProperties = {
@@ -237,7 +239,7 @@ const subText: CSSProperties = {
 
 const rankText: CSSProperties = {
   fontFamily: body, fontSize: 12.5, lineHeight: 1.2, textTransform: 'uppercase',
-  letterSpacing: '0.06em', fontWeight: 600, color: 'hsl(var(--accent))',
+  letterSpacing: '0.06em', fontWeight: 500, color: 'hsl(var(--accent))',
 };
 
 const crumbText: CSSProperties = {
@@ -269,17 +271,19 @@ export function OrgChart() {
   const [revealed, setRevealed] = useState(false);
   const [settled, setSettled] = useState(false);
   const [vw, setVw] = useState(() => (typeof window === 'undefined' ? 1280 : window.innerWidth));
-  const [stackOpen, setStackOpen] = useState<string | null>(null);
 
   const reduced = useRef(prefersReducedMotion());
   const cam = useRef({ tx: -132, ty: 75, s: SMIN });
   const focusRef = useRef<DivKey | null>(null);
-  const drag = useRef<{ x: number; tx: number; moved: boolean } | null>(null);
+  const drag = useRef<{ x: number; y: number; tx: number; moved: boolean } | null>(null);
   const dragged = useRef(false);
   const pinch = useRef<{ d: number; s: number; tx: number; ty: number } | null>(null);
   const timers = useRef<number[]>([]);
 
-  const isStacked = vw > 0 && vw < 900;
+  // The chart itself is shown at every width: on a phone the camera simply
+  // starts further out and the frame is taller. `narrow` only changes
+  // sizing and how a drag is interpreted, never which structure is drawn.
+  const narrow = vw > 0 && vw < 768;
 
   const seniorsIn = useCallback(
     (key: AmDiv) => hasSeniorAnalysts(key),
@@ -312,14 +316,22 @@ export function OrgChart() {
     const b = bboxFor(key, key === 'media' ? true : seniorsIn(key));
     const bw = b.x2 - b.x1;
     const bh = b.y2 - b.y1;
-    const fit = Math.min((f.w - 2 * PADX) / bw, (f.h - 2 * PADY) / bh);
-    const s = Math.max(SMIN, Math.min(SMAX, fit));
+    // On a phone the padding has to shrink with the frame, otherwise 72px a
+    // side eats most of the width and the branch is framed too tightly.
+    const padX = Math.min(PADX, f.w * 0.08);
+    const padY = Math.min(PADY, f.h * 0.07);
+    const fit = Math.min((f.w - 2 * padX) / bw, (f.h - 2 * padY) / bh);
+    // The floor is the overview scale, not a fixed 0.86: on a narrow screen
+    // 0.86 is already larger than the whole world fits, so clamping to it
+    // would push a selected branch off both edges.
+    const floor = Math.min(SMIN, overviewCam().s);
+    const s = Math.max(floor, Math.min(SMAX, fit));
     return {
       tx: f.w / 2 - s * (b.x1 + b.x2) / 2,
       ty: f.h / 2 - s * (b.y1 + b.y2) / 2,
       s,
     };
-  }, [frameSize, seniorsIn]);
+  }, [frameSize, overviewCam, seniorsIn]);
 
   const setCam = useCallback((tx: number, ty: number, s: number, dur: number) => {
     cam.current = { tx, ty, s };
@@ -336,7 +348,10 @@ export function OrgChart() {
   const clampTx = useCallback((tx: number) => {
     const f = frameSize();
     const s = cam.current.s;
-    return Math.max(220 - CONTENT.x2 * s, Math.min(f.w - 220 - CONTENT.x1 * s, tx));
+    // Keep at least this much of the world inside the frame. On a phone the
+    // margin has to be smaller than the frame itself or the clamp inverts.
+    const edge = Math.min(220, f.w * 0.28);
+    return Math.max(edge - CONTENT.x2 * s, Math.min(f.w - edge - CONTENT.x1 * s, tx));
   }, [frameSize]);
 
   // --- Navigation -----------------------------------------------------
@@ -370,15 +385,14 @@ export function OrgChart() {
   // --- Lifecycle ------------------------------------------------------
 
   useEffect(() => {
-    if (isStacked) return;
     const c = overviewCam();
     setCam(c.tx, c.ty, c.s, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStacked]);
+  }, [narrow]);
 
   // Entrance: play once, when the chart is actually looked at.
   useEffect(() => {
-    if (isStacked || revealed) return;
+    if (revealed) return;
     const stage = stageRef.current;
     const reveal = () => {
       setRevealed(true);
@@ -394,7 +408,7 @@ export function OrgChart() {
     io.observe(stage);
     const fallback = window.setTimeout(reveal, 1600);
     return () => { io.disconnect(); window.clearTimeout(fallback); };
-  }, [isStacked, revealed]);
+  }, [revealed]);
 
   useEffect(() => {
     const onResize = () => {
@@ -422,7 +436,7 @@ export function OrgChart() {
   // the page's own scroll, so both need non-passive listeners.
   useEffect(() => {
     const frame = frameRef.current;
-    if (!frame || isStacked) return;
+    if (!frame) return;
 
     const dist = (t: TouchList) => {
       const dx = t[0].clientX - t[1].clientX;
@@ -469,14 +483,14 @@ export function OrgChart() {
       frame.removeEventListener('touchmove', onTouchMove);
       frame.removeEventListener('touchend', onTouchEnd);
     };
-  }, [isStacked, setCam]);
+  }, [setCam]);
 
   useEffect(() => () => { timers.current.forEach(window.clearTimeout); }, []);
 
   // --- Call to action --------------------------------------------------
   // The label follows the selection, crossfading rather than snapping.
 
-  const ctaKey = isStacked ? (stackOpen as DivKey | null) : focus;
+  const ctaKey = focus;
 
   useEffect(() => {
     const anchor = ctaRef.current;
@@ -584,17 +598,27 @@ export function OrgChart() {
     setHover((prev) => (prev === node.getAttribute('data-node') ? null : prev));
   };
 
+  // A finger may drag the chart sideways as well as a mouse: the frame
+  // declares `touch-action: pan-y`, so the browser keeps vertical gestures
+  // for the page and hands the horizontal ones to us. The drag only takes
+  // over once it is clearly horizontal, so scrolling past the chart on a
+  // phone never catches on it.
   const onPointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === 'touch' || (e.target as HTMLElement).closest('a,button')) return;
-    drag.current = { x: e.clientX, tx: cam.current.tx, moved: false };
+    if ((e.target as HTMLElement).closest('a,button')) return;
+    drag.current = { x: e.clientX, y: e.clientY, tx: cam.current.tx, moved: false };
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.x;
-    if (!d.moved && Math.abs(dx) < 5) return;
-    d.moved = true;
+    const dy = e.clientY - d.y;
+    if (!d.moved) {
+      if (Math.abs(dx) < 5) return;
+      // Ambiguous or mostly vertical: leave it to the page.
+      if (e.pointerType === 'touch' && Math.abs(dx) <= Math.abs(dy)) return;
+      d.moved = true;
+    }
     if (frameRef.current) frameRef.current.style.cursor = 'grabbing';
     setCam(clampTx(d.tx + dx), cam.current.ty, cam.current.s, 0);
   };
@@ -731,148 +755,11 @@ export function OrgChart() {
     );
   };
 
-  // --- Stacked (phone) outline -----------------------------------------
-
-  const stackedRow = (leader: string, sub: string | undefined, seniors: boolean) => (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '11px 14px', border: '1px solid hsl(var(--separator))', background: '#fff' }}>
-        <span style={leaderText}>{leader}</span>
-        {sub && <span style={subText}>{sub}</span>}
-      </div>
-      {seniors && (
-        <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: 24 }}>
-          <svg width="20" height="40" viewBox="0 0 20 40" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-            <path className="oc-p" d="M 1 0 C 1 16 1 20 19 20" />
-          </svg>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '11px 14px', background: 'hsl(var(--accent-soft) / 0.18)', border: '1px solid hsl(var(--accent-soft))' }}>
-            <span style={rankText}>Senior Analysts</span>
-          </div>
-        </div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: seniors ? 48 : 24 }}>
-        <svg width="20" height="40" viewBox="0 0 20 40" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-          <path className="oc-p" d="M 1 0 C 1 16 1 20 19 20" />
-        </svg>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '11px 14px', background: 'hsl(var(--accent-soft) / 0.14)' }}>
-          <span style={rankText}>Analysts</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderStacked = () => (
-    <div className="oc-sk" style={{ maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 30 }}>
-      <div>
-        <div style={{ ...crumbText, letterSpacing: '0.16em', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid hsl(var(--separator))' }}>
-          Executive and Board
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '15px 18px', border: '1px solid hsl(var(--accent))', background: '#fff', boxShadow: '0 3px 14px -9px rgba(31,15,77,.55)' }}>
-            <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 600, letterSpacing: '-0.015em' }}>President</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: 20 }}>
-            <svg width="20" height="52" viewBox="0 0 20 52" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-              <path className="oc-p" d="M 1 0 C 1 22 1 26 19 26" />
-            </svg>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '12px 16px', border: '1px solid hsl(var(--separator))', background: '#fff' }}>
-              <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 400 }}>Advisors</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: 20 }}>
-            <svg width="20" height="52" viewBox="0 0 20 52" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-              <path className="oc-p" d="M 1 0 C 1 22 1 26 19 26" />
-            </svg>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '13px 16px', border: '1px solid hsl(var(--accent))', background: '#fff' }}>
-              <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 600 }}>Vice President</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: 40 }}>
-            <svg width="20" height="52" viewBox="0 0 20 52" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-              <path className="oc-p" d="M 1 0 C 1 22 1 26 19 26" />
-            </svg>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '13px 16px', border: '1px solid hsl(var(--accent))', background: '#fff' }}>
-              <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 600 }}>Head of Asset Management</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '13px 16px', border: '1px solid hsl(var(--accent))', background: '#fff', marginTop: 6 }}>
-            <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 600 }}>Head of Media and Communication</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: 20 }}>
-            <svg width="20" height="44" viewBox="0 0 20 44" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-              <path className="oc-p" d="M 1 0 C 1 18 1 22 19 22" />
-            </svg>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '12px 15px', background: 'hsl(var(--accent-soft) / 0.14)' }}>
-              <span style={rankText}>Media Analysts</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '13px 16px', border: '1px solid hsl(var(--accent))', background: '#fff', marginTop: 6 }}>
-            <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 600 }}>Head of Operations</span>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div style={{ ...crumbText, letterSpacing: '0.16em', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid hsl(var(--separator))' }}>
-          Asset Management divisions
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {ORDER.map((key) => {
-            const t = SUBTREES[key];
-            const open = stackOpen === key;
-            const seniors = seniorsIn(key);
-            return (
-              <div key={key} style={{ border: '1px solid hsl(var(--accent))', background: '#fff' }}>
-                <button
-                  type="button"
-                  className="oc-row"
-                  onClick={() => setStackOpen((s) => (s === key ? null : key))}
-                  aria-expanded={open}
-                  aria-controls={`stk-${key}`}
-                  aria-label={`${open ? 'Collapse' : 'Expand'} ${HEADS[key]}`}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 16px', border: 0, background: 'transparent', textAlign: 'left', font: 'inherit', cursor: 'pointer' }}
-                >
-                  <span style={{ fontFamily: serif, fontSize: 19, color: 'hsl(var(--accent))', fontWeight: 600 }}>{HEADS[key]}</span>
-                  <span aria-hidden="true" style={{ flex: 'none', fontSize: 11, color: 'hsl(var(--accent))' }}>{open ? '▾' : '▸'}</span>
-                </button>
-                {open && (
-                  <div id={`stk-${key}`} style={{ padding: '4px 16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {t.chain ? (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {seniors && (
-                          <div style={{ display: 'flex', alignItems: 'center', padding: '12px 15px', background: 'hsl(var(--accent-soft) / 0.18)', border: '1px solid hsl(var(--accent-soft))' }}>
-                            <span style={rankText}>Senior Analysts</span>
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'stretch', paddingLeft: 24 }}>
-                          <svg width="20" height="40" viewBox="0 0 20 40" aria-hidden="true" style={{ flex: 'none', marginLeft: -20, overflow: 'visible' }}>
-                            <path className="oc-p" d="M 1 0 C 1 16 1 20 19 20" />
-                          </svg>
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '11px 14px', background: 'hsl(var(--accent-soft) / 0.14)' }}>
-                            <span style={rankText}>Analysts</span>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      t.columns.map((c, i) => (
-                        <div key={i}>{stackedRow(c.leader, c.sub, seniors)}</div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-
   // --- Render -----------------------------------------------------------
 
   return (
     <div className="oc" ref={rootRef}>
-      {!isStacked && (
-        <>
+      <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', margin: '0 0 14px', minHeight: 30 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, ...crumbText }}>
               <button
@@ -891,7 +778,7 @@ export function OrgChart() {
               )}
             </div>
             <p style={{ margin: '0 auto 0 0', fontSize: 12, lineHeight: 1.5, letterSpacing: '0.02em', color: 'hsl(var(--muted-foreground))' }}>
-              Select a division to explore its teams.
+              {narrow ? 'Tap a division to explore its teams, drag sideways to look around.' : 'Select a division to explore its teams.'}
             </p>
             {focus && (
               <button
@@ -918,7 +805,7 @@ export function OrgChart() {
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              style={{ position: 'relative', width: '100%', height: 'clamp(520px,64vh,680px)', overflow: 'hidden', background: 'hsl(var(--background))', touchAction: 'pan-y', cursor: 'default' }}
+              style={{ position: 'relative', width: '100%', height: narrow ? 'min(72vh, 560px)' : 'clamp(520px,64vh,680px)', overflow: 'hidden', background: 'hsl(var(--background))', touchAction: 'pan-y', cursor: 'default' }}
             >
               <div className="oc-mask" style={{ position: 'absolute', inset: 0 }}>
                 <div
@@ -938,8 +825,8 @@ export function OrgChart() {
                     </svg>
 
                     <div className={wrapClass('pres', entrance('e0'))} data-w="pres" style={{ position: 'absolute', left: 755, top: 0, width: 210, height: 66, pointerEvents: 'none' }}>
-                      <div data-node="pres" style={{ ...boxBase, border: '1px solid hsl(var(--accent))', boxShadow: '0 3px 14px -9px rgba(31,15,77,.55)' }}>
-                        <span style={{ fontFamily: serif, fontSize: 23, lineHeight: 1.1, letterSpacing: '-0.015em', color: 'hsl(var(--accent))', fontWeight: 600 }}>President</span>
+                      <div data-node="pres" style={{ ...boxBase, border: '1px solid hsl(var(--accent))', boxShadow: '0 8px 16px -4px hsl(var(--overlay) / 0.1), 0 4px 6px -2px hsl(var(--overlay) / 0.06)' }}>
+                        <span style={{ fontFamily: serif, fontSize: 23, lineHeight: 1.1, letterSpacing: '-0.015em', color: 'hsl(var(--accent))', fontWeight: 400 }}>President</span>
                       </div>
                     </div>
 
@@ -1032,13 +919,9 @@ export function OrgChart() {
               </div>
             </div>
           </div>
-        </>
-      )}
+      </>
 
-      {isStacked && renderStacked()}
-
-      {/* The outline every screen reader and search engine gets, whichever
-          view is on screen. */}
+      {/* The outline every screen reader and search engine gets. */}
       <nav className="sr-only" aria-label="Full organisational structure outline">
         <ul>
           <li>

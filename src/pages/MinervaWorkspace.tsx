@@ -61,6 +61,7 @@ import ActivityManagement from '@/components/admin/ActivityManagement';
 import NewsletterManagement from '@/components/admin/NewsletterManagement';
 import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
 import TestimonialsManagement from '@/components/admin/TestimonialsManagement';
+import HistoryManagement from '@/components/admin/HistoryManagement';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
@@ -198,6 +199,7 @@ const NAV: NavSection[] = [
       { key: 'website-pages', label: 'Pages', allowed: (p) => p.can('website-pages') },
       { key: 'website-readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
       { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
+      { key: 'website-history', label: 'History', allowed: (p) => p.can('website-history') },
       { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
       { key: 'ops-auto-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
@@ -743,6 +745,8 @@ const MinervaWorkspace = () => {
         return <ReadingsManagement />;
       case 'website-testimonials':
         return <TestimonialsManagement />;
+      case 'website-history':
+        return <HistoryManagement />;
       case 'settings-users':
         return <UserManagement />;
       case 'settings-roles':

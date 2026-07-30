@@ -7,6 +7,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,6 +186,16 @@ export default function ActivityManagement() {
   };
 
   // Filter activities
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (actionFilter.length > 0 ? 1 : 0) + (sectionFilter.length > 0 ? 1 : 0) + (userFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setActionFilter([]);
+    setSectionFilter([]);
+    setUserFilter([]);
+    setSearch('');
+  };
+
   const filteredActivities = useMemo(() => {
     const q = search.trim().toLowerCase();
     return activities.filter((activity) => {
@@ -324,6 +335,7 @@ export default function ActivityManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by user, item or description" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
         <Popover>
           <PopoverTrigger asChild>
             <button className={cn('font-body bg-background border border-input px-3 h-10 min-w-[130px] text-left', !startDate && 'text-muted-foreground')}>

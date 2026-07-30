@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FundPerformanceChart } from '@/components/shared/FundPerformanceChart';
 import { useParams, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
@@ -181,6 +182,9 @@ const FundDetail = () => {
         </div>
       </section>
 
+      {/* The track record as a curve, above the numbers it is drawn from. */}
+      {fundKey === 'long-short' && <FundPerformanceChart funds={['long-short']} />}
+
       {/* Performance Summary - long-short only */}
       {fundKey === 'long-short' && (
         <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
@@ -227,6 +231,8 @@ const FundDetail = () => {
           </div>
         </section>
       )}
+
+      {fundKey === 'multi-asset' && <FundPerformanceChart funds={['multi-asset']} />}
 
       {/* Performance Summary - multi-asset */}
       {fundKey === 'multi-asset' && (

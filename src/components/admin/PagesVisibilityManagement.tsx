@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 
 const formatDate = (iso: string | null | undefined) => {
   if (!iso) return '-';
@@ -46,6 +47,15 @@ const PagesVisibilityManagement = () => {
     { value: 'visible', label: 'Visible' },
     { value: 'hidden', label: 'Hidden' },
   ];
+
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (groupFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setGroupFilter([]);
+    setStatusFilter([]);
+    setSearch('');
+  };
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -130,6 +140,7 @@ const PagesVisibilityManagement = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by page or route" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
       </div>
 
       {rows.length === 0 ? (

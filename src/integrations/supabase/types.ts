@@ -1145,6 +1145,65 @@ export type Database = {
         }
         Relationships: []
       }
+      history_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          href: string | null
+          image_alt: string | null
+          image_url: string | null
+          is_active: boolean
+          media_kind: string
+          number_label: string | null
+          number_value: number | null
+          report_file_id: string | null
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          href?: string | null
+          image_alt?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          media_kind?: string
+          number_label?: string | null
+          number_value?: number | null
+          report_file_id?: string | null
+          title: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          href?: string | null
+          image_alt?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          media_kind?: string
+          number_label?: string | null
+          number_value?: number | null
+          report_file_id?: string | null
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "history_events_report_file_id_fkey"
+            columns: ["report_file_id"]
+            isOneToOne: false
+            referencedRelation: "archive_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interview_bookings: {
         Row: {
           application_id: string

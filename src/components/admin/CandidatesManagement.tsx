@@ -21,6 +21,7 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
   listApplications, getApplication, signDocumentUrl, bulkDocumentUrls,
   updateApplicationStatus, addApplicationNote, transferApplicationDivision,
@@ -102,6 +103,16 @@ export default function CandidatesManagement() {
     if (!list.some((s) => s.key === currentSemester().key)) list.unshift(currentSemester());
     return list;
   }, [apps]);
+
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (divFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setDivFilter([]);
+    setStatusFilter([]);
+    setYearFilter([]);
+    setSearch('');
+  };
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -257,6 +268,7 @@ export default function CandidatesManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
         {/* Semester scope: the working area renews itself every semester. */}
         <div className="flex items-center gap-2">
         <Select value={semKey} onValueChange={setSemKey}>

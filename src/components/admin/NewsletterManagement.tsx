@@ -24,6 +24,7 @@ import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface Subscriber {
@@ -64,6 +65,15 @@ export default function NewsletterManagement() {
   const sourceOptions = useMemo(() =>
     [...new Set(subscribers.map((s) => s.source))].sort()
       .map((v) => ({ value: v, label: v })), [subscribers]);
+
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (sourceFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setSourceFilter([]);
+    setSearch('');
+    setPage(1);
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -142,6 +152,7 @@ export default function NewsletterManagement() {
           placeholder="Search by email"
           className="pl-10 font-body"
         />
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
       </div>
 
       <p className="font-body text-small text-muted-foreground mb-4">
