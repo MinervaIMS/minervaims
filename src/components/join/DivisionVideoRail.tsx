@@ -124,9 +124,12 @@ export function DivisionVideoRail() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  /** The page container, measured so the rail can respect its content edges. */
+  const boundsRef = useRef<HTMLDivElement | null>(null);
 
   const [pinDistance, setPinDistance] = useState(0);
   const [overflow, setOverflow] = useState(0);
+  const [edgePad, setEdgePad] = useState(24);
   const [progress, setProgress] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   // Resolved during the first render so the reserved height is correct from
@@ -151,7 +154,23 @@ export function DivisionVideoRail() {
   const measure = useCallback(() => {
     const rail = railRef.current;
     const track = trackRef.current;
+    const bounds = boundsRef.current;
     if (!rail || !track) return;
+
+    // The track is full-bleed, so its inner padding has to reproduce the page
+    // container's gutter. Measuring the real container keeps the first card on
+    // the left content boundary at every breakpoint, including the stepped
+    // max-widths Tailwind's container uses.
+    if (bounds) {
+      // The container is full-width with an inner gutter, so the content edge
+      // is its box left plus its own padding, not the box left alone.
+      const pad = Math.round(
+        bounds.getBoundingClientRect().left +
+          parseFloat(getComputedStyle(bounds).paddingLeft || '0'),
+      );
+      if (pad >= 0) setEdgePad(pad);
+    }
+
     const extra = Math.max(0, track.scrollWidth - rail.clientWidth);
     setOverflow(extra);
     setPinDistance(Math.round(extra * SCROLL_PACING));
@@ -162,6 +181,7 @@ export function DivisionVideoRail() {
     const ro = new ResizeObserver(measure);
     if (trackRef.current) ro.observe(trackRef.current);
     if (railRef.current) ro.observe(railRef.current);
+    if (boundsRef.current) ro.observe(boundsRef.current);
     window.addEventListener('resize', measure);
     return () => {
       ro.disconnect();
@@ -181,6 +201,10 @@ export function DivisionVideoRail() {
     let frame = 0;
     const update = () => {
       frame = 0;
+      // Travel is expressed purely as a transform; any residual scrollLeft on
+      // the rail would offset the track and break the boundary alignment.
+      const rail = railRef.current;
+      if (rail && rail.scrollLeft !== 0) rail.scrollLeft = 0;
       const rect = section.getBoundingClientRect();
       const total = section.offsetHeight - window.innerHeight;
       if (total <= 0) {
@@ -227,21 +251,6 @@ export function DivisionVideoRail() {
     };
   }, [pinned]);
 
-  const goTo = (index: number) => {
-    if (pinned) {
-      const section = sectionRef.current;
-      if (!section) return;
-      const total = section.offsetHeight - window.innerHeight;
-      const target =
-        section.offsetTop + (total * index) / Math.max(1, JOIN_DIVISIONS.length - 1);
-      window.scrollTo({ top: target, behavior: reduced ? 'auto' : 'smooth' });
-    } else {
-      const rail = railRef.current;
-      const card = rail?.children[index] as HTMLElement | undefined;
-      card?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
-    }
-  };
-
   const translate = pinned ? -(progress * overflow) : 0;
 
   return (
@@ -252,7 +261,7 @@ export function DivisionVideoRail() {
       style={pinned && overflow > 0 ? { height: `calc(100svh + ${pinDistance}px)` } : undefined}
     >
       <div className={pinned && overflow > 0 ? 'jd-pin' : ''}>
-        <div className="container">
+        <div className="container" ref={boundsRef}>
           <h2
             id="join-divisions-heading"
             className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent"
@@ -268,7 +277,15 @@ export function DivisionVideoRail() {
           <div
             ref={trackRef}
             className="jd-track"
-            style={pinned && overflow > 0 ? { transform: `translate3d(${translate}px,0,0)` } : undefined}
+            style={{
+              // Gutters equal to the page container, so the sequence opens on
+              // the left content boundary and closes on the right one.
+              paddingLeft: edgePad,
+              paddingRight: edgePad,
+              ...(pinned && overflow > 0
+                ? { transform: `translate3d(${translate}px,0,0)` }
+                : null),
+            }}
           >
             {JOIN_DIVISIONS.map((division, i) => (
               <DivisionCard
@@ -282,19 +299,6 @@ export function DivisionVideoRail() {
           </div>
         </div>
 
-        <div className="jd-dots" role="tablist" aria-label="Divisions">
-          {JOIN_DIVISIONS.map((division, i) => (
-            <button
-              key={division.key}
-              type="button"
-              role="tab"
-              aria-selected={i === activeIndex}
-              aria-label={division.name}
-              className={`jd-dot ${i === activeIndex ? 'is-active' : ''}`}
-              onClick={() => goTo(i)}
-            />
-          ))}
-        </div>
       </div>
     </section>
   );

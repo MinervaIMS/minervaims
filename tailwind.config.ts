@@ -105,8 +105,8 @@ export default {
         },
         // /join: scroll cue in the white band under the hero stage.
         "scrollCue": {
-          "0%, 100%": { opacity: "0.55", transform: "translateY(0)" },
-          "50%": { opacity: "1", transform: "translateY(5px)" },
+          "0%, 100%": { opacity: "0.8", transform: "translateY(0)" },
+          "50%": { opacity: "1", transform: "translateY(7px)" },
         },
       },
       animation: {
