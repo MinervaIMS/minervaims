@@ -14,7 +14,42 @@
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1F0F4D" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!--
+      apple-mobile-web-app-status-bar-style is deliberately NOT set.
+      "black-translucent" paints the status bar black on the very first
+      frame, before any script runs, which is what made the workspace open
+      with a black bar and only turn purple after a manual reload.
+    -->
+    <script>
+      // Browser chrome, decided BEFORE the first paint.
+      // ---------------------------------------------------------------
+      // React mounts too late to colour the status bar: WebKit has already
+      // committed whatever the document declared. This runs in <head>, so
+      // the first frame is right and a reload behaves like a cold open.
+      // RouteChrome keeps it in step afterwards, using the same rules.
+      (function () {
+        try {
+          var path = location.pathname || '/';
+          var workspace = path.indexOf('/admin') === 0;
+          var root = document.documentElement;
+          root.setAttribute('data-route', workspace ? 'workspace' : 'public');
+          // The purple band over the top safe area is painted by CSS from
+          // this attribute, so the area reads purple from frame one.
+          var ua = navigator.userAgent || '';
+          var ios = /iPad|iPhone|iPod/.test(ua) ||
+            (ua.indexOf('Macintosh') > -1 && navigator.maxTouchPoints > 1);
+          var tag = document.querySelector('meta[name="theme-color"]');
+          if (ios) {
+            // One declared colour tints BOTH of Safari's bars. Removing it
+            // lets Safari sample each edge instead, which is the only way
+            // to get a purple top and a light bottom at the same time.
+            if (tag) tag.parentNode.removeChild(tag);
+          } else if (tag) {
+            tag.setAttribute('content', workspace ? '#1F0F4D' : '#000000');
+          }
+        } catch (e) { /* chrome colour is cosmetic: never block the app */ }
+      })();
+    </script>
     <link rel="preload" as="image" href="/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" fetchpriority="high" media="(max-width: 767px)" />
     <link rel="preload" as="image" href="/__l5e/assets-v1/1eaa5426-5147-4233-ae56-2cad28df4a47/logo-white-loader.webp" fetchpriority="high" media="(max-width: 767px)" />
     <link rel="preconnect" href="https://asjudzdgsccacpjbzsue.supabase.co" crossorigin />
@@ -22,6 +57,11 @@
     <link rel="preload" as="image" href="/src/assets/homepage-bg.webp" />
     <link rel="modulepreload" href="/src/main.tsx" />
     <style>
+      /* Top safe area, painted from the document itself so it is already the
+         right colour on the first frame and whenever Safari re-samples the
+         page edges. The bottom edge is deliberately left to the page. */
+      html[data-route="workspace"]::before{content:"";position:fixed;top:0;left:0;right:0;
+        height:env(safe-area-inset-top);background:#1F0F4D;z-index:2147483646;pointer-events:none;}
       #initial-loader{display:none;}
       @media (max-width: 767px){
         #initial-loader{position:fixed;top:0;left:0;width:100dvw;height:100dvh;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#1F0F4D;}

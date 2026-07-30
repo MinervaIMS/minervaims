@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { normaliseCity } from '@/lib/city-format';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
   Pagination,
   PaginationContent,
@@ -247,7 +248,7 @@ const Alumni = () => {
                       aria-label={`${founder.name} ${founder.surname} LinkedIn profile`}
                       className="inline-flex text-accent"
                     >
-                      <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
+                      <img src={linkedinIcon} alt="LinkedIn" width={23} height={23} className="w-[1.4375rem] h-[1.4375rem] shrink-0 object-contain" />
                     </a>
                   )}
                 </div>
@@ -296,6 +297,18 @@ const Alumni = () => {
               ))}
             </select>
           </div>
+
+          {/* The three filters stay the same width as the entries; the way
+              out of them sits directly beneath. */}
+          <ClearFilters
+            count={
+              (jobAreaFilter !== 'all' ? 1 : 0) +
+              (companyFilter !== 'all' ? 1 : 0) +
+              (cityFilter !== 'all' ? 1 : 0)
+            }
+            onClear={() => { setJobAreaFilter('all'); setCompanyFilter('all'); setCityFilter('all'); }}
+            className="mt-3"
+          />
 
           <p className="font-body text-small text-muted-foreground mt-4">
             {filtersActive && totalMatches != null ? (
@@ -347,7 +360,7 @@ const Alumni = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
+                                <img src={linkedinIcon} alt="LinkedIn" width={23} height={23} className="w-[1.4375rem] h-[1.4375rem] shrink-0 object-contain" />
                               </a>
                             ) : null}
                           </div>
@@ -373,7 +386,7 @@ const Alumni = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
+                                <img src={linkedinIcon} alt="LinkedIn" width={23} height={23} className="w-[1.4375rem] h-[1.4375rem] shrink-0 object-contain" />
                               </a>
                             ) : (
                               <span className="text-muted-foreground">-</span>

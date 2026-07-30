@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import { Report, Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { ReportsList } from './ReportsList';
 
@@ -66,6 +67,12 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
               </optgroup>
             </select>
           )}
+
+          {/* One press back to the unfiltered archive. */}
+          <ClearFilters
+            count={(divisionFilter !== 'all' ? 1 : 0) + (fundFilter !== 'all' ? 1 : 0)}
+            onClear={() => { setDivisionFilter('all'); setFundFilter('all'); }}
+          />
         </div>
       </div>
 

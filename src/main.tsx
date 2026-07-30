@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
+import { installInputZoomGuard } from "./lib/input-zoom-guard";
 
 // Auto-recover from stale chunk references after a new deploy.
 // When index.html still in the browser points at vendor/asset hashes that no
@@ -34,6 +35,10 @@ window.addEventListener("unhandledrejection", (e) => {
 window.addEventListener("load", () => {
   setTimeout(() => sessionStorage.removeItem(RELOAD_KEY), 2000);
 });
+
+// Suspend viewport scaling while a field has focus, so iOS never zooms
+// into a control and leaves the reader magnified afterwards.
+installInputZoomGuard();
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>

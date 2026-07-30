@@ -322,6 +322,19 @@ export const GUIDE: GuideEntry[] = [
     topics: [{ id: 'visibility', title: 'What visitors see', body: 'On the public website the library is drawn as a stylised bookcase with one column per category (academic papers, technical textbooks, free time readings). Every reading added here becomes a book on its shelf, in the order shown in this list, and visitors open it to read the rationale and the attribution. Add a reading only when the reference is complete and correctly attributed.' }] },
   { key: 'website-testimonials', section: 'Website', label: 'Testimonials', purpose: 'The homepage testimonials.', view: ['Read them.'], manage: ['Manage which testimonials appear publicly.'],
     topics: [{ id: 'linking', title: 'Linking to alumni records', body: 'Each testimonial should be linked to its alumni record so the homepage can show the current company automatically. A warning appears when the link or the company is missing.' }] },
+  {
+    key: 'website-history', section: 'Website', label: 'History',
+    purpose: 'The "Our History" timeline on the About page: one key event per year, from the founding in 2019 to today.',
+    view: ['Read the timeline year by year and see which years carry a key event.'],
+    manage: ['Record, edit or clear the key event of any past year, and choose the report cover, figure or image that goes with it.'],
+    warnings: ['A key event cannot be recorded for a future year, and a year can hold only one.'],
+    topics: [
+      { id: 'one-per-year', title: 'One event per year', body: 'The subsection lists years rather than events, which is what keeps the timeline to one key event per year. Saving a year that already has an event edits it instead of adding a second.' },
+      { id: 'quiet-years', title: 'Quiet years', body: 'A year with no key event is not removed: it stays on the rail as a smaller marker, so the story reads continuously instead of jumping from one milestone to the next. Turn the switch off to make a year quiet.' },
+      { id: 'media', title: 'What a card can show', body: 'Beneath the copy a card may carry one of three things: the cover of a published report, chosen from the archive; a fixed number with a caption, counted up as the card appears; or an image. Title and description are always required.' },
+      { id: 'live-figure', title: 'The live alumni total', body: 'Writing [n] anywhere in a description inserts the current number of alumni when the page is read, so a sentence about the size of the network stays true without anyone editing it.' },
+    ]
+  },
   { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends.'],
     topics: [{ id: 'consent', title: 'Subscriber consent', body: 'Subscribers joined through the website form and consented to updates. Every message must keep the unsubscribe link intact, and unsubscribed addresses are never contacted again.' }] },
   {

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { TeamMember, Division, divisionLabels, fundLabels } from '@/lib/types';
+import { TeamMember, Division, divisionLabels, fundShortLabels } from '@/lib/types';
 
 interface MembersDirectoryProps {
   members: TeamMember[];
@@ -251,7 +251,8 @@ function FeatureCard({ member }: { member: TeamMember }) {
         )}
       </div>
       <h3 className="font-serif text-[1.12rem] mt-4 text-foreground">
-        {member.name} {member.surname}
+        <span className="whitespace-nowrap">{member.name}</span>{' '}
+        <span className="whitespace-nowrap">{member.surname}</span>
       </h3>
       <p className="font-body text-[.74rem] uppercase tracking-[.08em] text-muted-foreground mt-1">
         {member.position}
@@ -358,18 +359,19 @@ function CompactCard({
       <div className="min-w-0 flex-1 mt-4 md:mt-0">
         <h3
           className={[
-            'font-serif text-[1.08rem] leading-tight md:truncate',
+            'font-serif text-[1.08rem] leading-tight',
             isLead ? 'text-accent' : 'text-foreground',
           ].join(' ')}
         >
-          {member.name} {member.surname}
+          <span className="whitespace-nowrap">{member.name}</span>{' '}
+          <span className="whitespace-nowrap">{member.surname}</span>
         </h3>
         <p className="font-body text-[.74rem] md:text-[.8rem] uppercase md:normal-case tracking-[.08em] md:tracking-normal text-muted-foreground mt-1">
           {member.position}
           {member.division === 'portfolio' &&
             member.fund &&
             !member.position.includes('Head of Portfolio Management') && (
-              <span className="text-accent/70 italic"> · {fundLabels[member.fund]}</span>
+              <span className="text-accent/70 italic"> · {fundShortLabels[member.fund]}</span>
             )}
         </p>
       </div>

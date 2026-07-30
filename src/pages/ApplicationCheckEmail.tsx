@@ -43,6 +43,8 @@ export default function ApplicationCheckEmail() {
       title="Confirm your email"
       cardTitle="Confirm Your Email"
       cardSubtitle={`A verification link is on its way to ${maskEmail(email)}.`}
+      /* Still inside the application: the /join field, not the beams. */
+      background="application"
     >
       <p
         className="font-body mb-6"

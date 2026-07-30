@@ -56,6 +56,7 @@ export const MOBILE_POLICY: Record<string, MobilePolicy> = {
   'website-pages': 'full',
   'website-readings': 'view',
   'website-testimonials': 'no',
+  'website-history': 'no',
   'ops-newsletter': 'no',
   'ops-auto-emails': 'no',
   // Settings

@@ -162,11 +162,22 @@ export function SpecularFx({
 
     const sizeRef = { w: 1, h: 1 };
     const resize = () => {
-      // Fractional size + explicit center keep the SDF pinned to the exact
-      // CSS border, instead of drifting up to a pixel from offsetWidth rounding.
+      // getBoundingClientRect reports the VISUAL box, so inside anything that
+      // scales - a dialog animating open, for instance - it returns the
+      // mid-animation size. ResizeObserver never fires for a transform, so
+      // that wrong size used to stick: the streak was drawn for a box the
+      // button no longer had, and appeared as a bright seam inside the
+      // button instead of along its edge.
+      //
+      // offsetWidth/offsetHeight are the LAYOUT size and ignore transforms.
+      // Dividing the rect by them recovers the ancestor scale, so the
+      // geometry is right during the animation and keeps sub-pixel accuracy
+      // once everything has settled.
       const rect = btn.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+      const scale = btn.offsetWidth > 0 ? rect.width / btn.offsetWidth : 1;
+      const w = scale > 0.01 ? rect.width / scale : rect.width;
+      const h = scale > 0.01 ? rect.height / scale : rect.height;
+      if (w < 1 || h < 1) return; // Not laid out yet: wait for the next call.
       sizeRef.w = w;
       sizeRef.h = h;
       renderer.setSize(w + PAD * 2, h + PAD * 2);
@@ -176,6 +187,15 @@ export function SpecularFx({
     const ro = new ResizeObserver(resize);
     ro.observe(btn);
     resize();
+
+    // Re-measure once the entrance animation of any container has finished,
+    // and on the next two frames, so a button revealed inside a dialog,
+    // popover or accordion is always drawn against its final box.
+    const settle = () => resize();
+    const frame1 = requestAnimationFrame(() => { settle(); requestAnimationFrame(settle); });
+    const host = btn.closest('[role="alertdialog"], [role="dialog"], [data-state]') ?? btn;
+    host.addEventListener('animationend', settle);
+    host.addEventListener('transitionend', settle);
 
     // Light angle steers toward the pointer (anywhere on the page) and falls
     // back to a slow sweep when the pointer hasn't moved yet.
@@ -244,7 +264,10 @@ export function SpecularFx({
 
     return () => {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(frame1);
       ro.disconnect();
+      host.removeEventListener('animationend', settle);
+      host.removeEventListener('transitionend', settle);
       window.removeEventListener('pointermove', onPointerMove);
       if (gl.canvas.parentNode === fx) fx.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();

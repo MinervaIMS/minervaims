@@ -67,7 +67,12 @@ function chromeFor(path: string): Chrome {
   // paints the top safe area with the accent itself, so on iOS (where the
   // tag is dropped and Safari samples the edges) both ends come out right;
   // elsewhere the declared navy tints the top chrome as intended.
-  if (path.startsWith('/admin')) return { theme: NAVY, base: WHITE, bottom: 'transparent' };
+  // The bottom band is painted WHITE rather than left transparent: with no
+  // theme-color declared, Safari samples the page near each edge, and a
+  // transparent band let it reach the purple shell and tint the lower
+  // toolbar purple after a reload. A white strip over the home-indicator
+  // zone gives it something light to find, every time.
+  if (path.startsWith('/admin')) return { theme: NAVY, base: WHITE, bottom: WHITE };
   if (AUTH_LIKE.some((p) => path === p || path.startsWith(p + '/'))) {
     return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
   }
@@ -92,6 +97,12 @@ export function RouteChrome() {
 
   useEffect(() => {
     const c = chromeFor(pathname);
+    const root = document.documentElement;
+
+    // The head script already set this for the entry URL; keep it true for
+    // every client-side navigation, since the purple top band is painted
+    // from it.
+    root.setAttribute('data-route', pathname.startsWith('/admin') ? 'workspace' : 'public');
 
     // Always drop the current tag first: on WebKit a replaced element is
     // re-read, while an edited one is not.
@@ -104,7 +115,6 @@ export function RouteChrome() {
       document.head.appendChild(meta);
     }
 
-    const root = document.documentElement;
     root.style.backgroundColor = c.base;
     root.style.setProperty('--chrome-bottom', c.bottom);
   }, [pathname]);

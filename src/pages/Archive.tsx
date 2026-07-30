@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { ClearFilters } from "@/components/shared/ClearFilters";
 import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
@@ -305,6 +306,21 @@ const Archive = () => {
                   </select>
                 </div>
               )}
+
+              {/* One press back to the whole archive: the filters live in the
+                  URL, so this also restores a clean, shareable address. */}
+              <ClearFilters
+                count={
+                  (divisionFilter !== "all" ? 1 : 0) +
+                  (fundFilter !== "all" ? 1 : 0) +
+                  (yearFilter !== "all" ? 1 : 0) +
+                  (searchQuery.trim() ? 1 : 0)
+                }
+                onClear={() => {
+                  setSearchQuery("");
+                  setSearchParams({}, { replace: true });
+                }}
+              />
             </div>
           </div>
 

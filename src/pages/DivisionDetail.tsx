@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FundPerformanceChart } from '@/components/shared/FundPerformanceChart';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
@@ -198,6 +199,16 @@ const DivisionDetail = () => {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Both live mandates on one pair of axes, directly below the funds
+          they belong to, so the two track records can be read together. */}
+      {isPortfolio && (
+        <FundPerformanceChart
+          funds={['long-short', 'multi-asset']}
+          title="Fund Performance"
+          caption="Cumulative growth of the two active funds since inception, compounded from the monthly returns published on each fund's page."
+        />
       )}
 
       {/* Third Section: Latest Reports/Publications */}

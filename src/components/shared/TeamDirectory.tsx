@@ -239,7 +239,7 @@ function MemberCard({ member }: { member: TeamMember }) {
             rel="noopener noreferrer"
             aria-label={`${member.name} ${member.surname} LinkedIn profile`}
           >
-            <img src={linkedinIcon} alt="LinkedIn" width={24} height={24} className="w-6 h-6 shrink-0 object-contain" />
+            <img src={linkedinIcon} alt="LinkedIn" width={28} height={28} className="w-[1.725rem] h-[1.725rem] shrink-0 object-contain" />
           </Link>
         )}
       </div>

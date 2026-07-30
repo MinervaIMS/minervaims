@@ -28,8 +28,16 @@ export interface ArchiveLookup {
 
 export type HistoryMedia =
   | { kind: 'photo'; src?: string | null; alt: string; note?: string }
-  | { kind: 'pdf'; url?: string | null; note?: string; lookup?: ArchiveLookup }
-  | { kind: 'counter'; label: string };
+  | {
+      kind: 'pdf';
+      url?: string | null;
+      note?: string;
+      /** Resolve the cover by describing the report it belongs to. */
+      lookup?: ArchiveLookup;
+      /** Or name the archive file outright, as chosen in the workspace. */
+      fileId?: string;
+    }
+  | { kind: 'counter'; label: string; /** Fixed figure shown by the graphic. */ value: number };
 
 export interface HistoryMilestone {
   year: number;
@@ -54,7 +62,17 @@ export const isQuietYear = (event: HistoryEvent): event is HistoryQuietYear =>
 /** Scroll distance multiplier for the pinned run: overflow x this. */
 export const HISTORY_SCROLL_PACE = 2.5;
 
-/** Alumni total used until the live figure arrives. */
+/**
+ * The figure the 2021 counter graphic shows on the website. It is fixed at
+ * one hundred on purpose: the card is about the year the network PASSED a
+ * hundred, so a live number that keeps climbing would tell a different
+ * story every semester. The sentence underneath still carries [n], which is
+ * substituted with the live alumni total, so the copy stays current while
+ * the graphic stays historical.
+ */
+export const HISTORY_COUNTER_VALUE = 100;
+
+/** Alumni total used for [n] until the live figure arrives. */
 export const HISTORY_ALUMNI_FALLBACK = 100;
 
 export const HISTORY_EVENTS: HistoryEvent[] = [
@@ -64,7 +82,7 @@ export const HISTORY_EVENTS: HistoryEvent[] = [
     href: '/people/alumni#founders',
     description:
       'In 2019 five students founded a society Bocconi did not have: one devoted entirely to asset management. They built it like the firms they hoped to join, with a board of eight and five divisions. Research was written to feed portfolio decisions, not to sit in a drawer. Minerva has grown since, but it still works that way.',
-    media: { kind: 'photo', src: null, alt: 'The founding cohort, 2019', note: 'Photo to be supplied' },
+    media: { kind: 'photo', src: '/history/2019-founding-cohort.jpg', alt: 'The founding cohort, 2019', note: 'The founding cohort, 2019' },
   },
   {
     year: 2020,
@@ -84,7 +102,7 @@ export const HISTORY_EVENTS: HistoryEvent[] = [
     href: '/people/alumni',
     description:
       'By 2021 the alumni list had passed one hundred names. They had arrived at Minerva as students with little experience and gone on to trade, invest, advise and teach at some of the strongest institutions in the industry. They still answer when a current member writes. The network now stands at [n], across several continents.',
-    media: { kind: 'counter', label: 'Alumni Network' },
+    media: { kind: 'counter', label: 'Alumni Network', value: HISTORY_COUNTER_VALUE },
   },
   { year: 2022, minor: true },
   {
@@ -118,6 +136,6 @@ export const HISTORY_EVENTS: HistoryEvent[] = [
     href: '/events',
     description:
       'In the first half of 2026, across four public events and five alumni calls, Minerva welcomed its founders back to Bocconi. They had described a society much like this one back in 2019, at a point when there was very little evidence it would work. Most of the members who came to listen had never met them. All of them had been living inside the idea for years.',
-    media: { kind: 'photo', src: null, alt: 'The founders back at Bocconi, 2026', note: 'Photo to be supplied' },
+    media: { kind: 'photo', src: '/history/2026-founders-return.jpg', alt: 'The founders back at Bocconi, 2026', note: 'The founders back at Bocconi, 2026' },
   },
 ];

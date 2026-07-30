@@ -22,6 +22,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import { CityInput } from '@/components/shared/CityInput';
 import { normaliseCity } from '@/lib/city-format';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,12 @@ const ROLE_OPTIONS: AppRole[] = [
 ];
 
 const MEMBERSHIP_OPTIONS = ['active', 'on_exchange', 'one_semester_pause', 'expelled'] as const;
+
+/** The Public column: who the website shows, filterable like every other column. */
+const VISIBILITY_OPTIONS = [
+  { value: 'shown', label: 'Shown on the website' },
+  { value: 'hidden', label: 'Hidden from the website' },
+];
 
 const EMPTY: MemberInput = {
   first_name: '', surname: '', email: '', phone: '', linkedin_url: '', photo_url: '',
@@ -87,6 +94,7 @@ export default function MembersManagement() {
   const [divFilter, setDivFilter] = useState<string[]>([]);
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
   const [membershipFilter, setMembershipFilter] = useState<string[]>([]);
+  const [visibilityFilter, setVisibilityFilter] = useState<string[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -164,19 +172,31 @@ export default function MembersManagement() {
     return present.map((s) => ({ value: s, label: MEMBERSHIP_STATUS_LABELS[s] ?? s }));
   }, [base]);
 
+
+  // Every filter on this register, and the way back out of all of them.
+  const activeFilterCount = (divFilter.length > 0 ? 1 : 0) + (roleFilter.length > 0 ? 1 : 0) + (membershipFilter.length > 0 ? 1 : 0) + (visibilityFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearAllFilters = () => {
+    setDivFilter([]);
+    setRoleFilter([]);
+    setMembershipFilter([]);
+    setVisibilityFilter([]);
+    setSearch('');
+  };
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return base
       .filter((m) => divFilter.length === 0 || divFilter.includes(m.division))
       .filter((m) => roleFilter.length === 0 || roleFilter.includes(normalizeRole(m.role)))
       .filter((m) => membershipFilter.length === 0 || membershipFilter.includes(m.membership_status))
+      .filter((m) => visibilityFilter.length === 0 || visibilityFilter.includes(m.is_public ? 'shown' : 'hidden'))
       .filter((m) => !q || `${m.first_name} ${m.surname} ${m.email ?? ''}`.toLowerCase().includes(q))
       .sort((a, b) => {
         const r = memberRank(a.role) - memberRank(b.role);
         if (r !== 0) return r;
         return `${a.surname} ${a.first_name}`.localeCompare(`${b.surname} ${b.first_name}`);
       });
-  }, [base, search, divFilter, roleFilter, membershipFilter]);
+  }, [base, search, divFilter, roleFilter, membershipFilter, visibilityFilter]);
 
   // Members register themselves (recruiting); only advisors can be added by
   // hand, hidden from the website by default.
@@ -372,6 +392,7 @@ export default function MembersManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input className="pl-10 font-body" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mt-3" />
       </div>
 
       {loading ? (
@@ -391,6 +412,7 @@ export default function MembersManagement() {
                 {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Email</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Public" options={VISIBILITY_OPTIONS} selected={visibilityFilter} onChange={setVisibilityFilter} /></th>
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
               </tr>
             </thead>
@@ -404,17 +426,6 @@ export default function MembersManagement() {
                   </td>
                   <td className="px-3 py-2 text-foreground whitespace-nowrap">
                     {m.first_name} {m.surname}
-                    {/* Public visibility at a glance, for every person on the
-                        register: filled eye = on the public Members page,
-                        struck eye = not shown there. */}
-                    <span
-                      className="ml-2 inline-flex align-middle"
-                      title={m.is_public ? 'Shown on the public Members page' : 'Hidden from the public website'}
-                    >
-                      {m.is_public
-                        ? <Eye className="h-3.5 w-3.5 text-accent" aria-label="Shown on the public Members page" />
-                        : <EyeOff className="h-3.5 w-3.5 text-muted-foreground/70" aria-label="Hidden from the public website" />}
-                    </span>
                   </td>
                   <td className="px-3 py-2">{m.division !== 'none' && m.division !== 'board' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
@@ -423,11 +434,23 @@ export default function MembersManagement() {
                   <td className="px-3 py-2 text-center">
                     {m.linkedin_url ? (
                       <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
-                        <img src={linkedinIcon} alt="LinkedIn" width={16} height={16} className="h-4 w-4 shrink-0 object-contain opacity-80" />
+                        <img src={linkedinIcon} alt="LinkedIn" width={18} height={18} className="h-[1.15rem] w-[1.15rem] shrink-0 object-contain opacity-80" />
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
                   <td className="px-3 py-2">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</td>
+                  {/* Public visibility as a column of its own, so the register
+                      can be read and filtered by who the website shows. */}
+                  <td className="px-3 py-2">
+                    <span
+                      className="inline-flex align-middle"
+                      title={m.is_public ? 'Shown on the public Members page' : 'Hidden from the public website'}
+                    >
+                      {m.is_public
+                        ? <Eye className="h-4 w-4 text-accent" aria-label="Shown on the public Members page" />
+                        : <EyeOff className="h-4 w-4 text-muted-foreground/70" aria-label="Hidden from the public website" />}
+                    </span>
+                  </td>
                   {canEdit && (
                     <td className="px-3 py-2">
                       <div className="flex gap-2 justify-end">

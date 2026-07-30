@@ -593,10 +593,10 @@ function NavyVariant({
                     the row's rhythm instead of a detached button above. */}
                 {archiveHref ? (
                   <a className="v2-card v2-card--cta" href={archiveHref} aria-label={archiveLabel}>
-                    <span className="v2-cta-frame" aria-hidden="true">
-                      <span className="v2-cta-circle"><IconArrowUR /></span>
+                    <span className="v2-cta-frame">
+                      <span className="v2-cta-circle" aria-hidden="true"><IconArrowUR /></span>
+                      <span className="v2-cta-label">{archiveLabel}</span>
                     </span>
-                    <div className="t">{archiveLabel}</div>
                   </a>
                 ) : null}
               </div>

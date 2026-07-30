@@ -11,6 +11,7 @@ import {
   HistoryMedia,
   isQuietYear,
 } from '@/data/historyTimeline';
+import { listHistoryEvents, type HistoryEventRow } from '@/lib/history-api';
 
 // =====================================================================
 // HistoryTimeline — "Our History" on /about.
@@ -31,8 +32,14 @@ import {
 // calc(100dvh - 19rem), so a shorter viewport would clip the media frame.
 // =====================================================================
 
-const PINNED_MIN_WIDTH = 768;
-const PINNED_MIN_HEIGHT = 680;
+/**
+ * A pinned card needs roughly this much room for its title, copy, toggle
+ * and media frame. Below it the media would be clipped, so the vertical
+ * spine takes over. Width is deliberately NOT a condition: the sideways
+ * run is the point of the section and a phone gets it too, with narrower
+ * columns and a smaller dot (see the .tl-* mobile block in index.css).
+ */
+const PINNED_MIN_HEIGHT = 560;
 /** Body copy taller than three lines earns a "Read more" control. */
 const COLLAPSED_COPY_PX = 84;
 
@@ -42,6 +49,54 @@ function reducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
+}
+
+// --- The timeline itself ----------------------------------------------
+// The years come from the workspace (Website > History). The seeded module
+// is the fallback, so the section still reads correctly on a cold cache or
+// if the register cannot be reached: it is never blank.
+
+function rowToEvent(row: HistoryEventRow): HistoryEvent {
+  if (!row.is_active) return { year: row.year, minor: true };
+
+  let media: HistoryMedia;
+  if (row.media_kind === 'number') {
+    media = { kind: 'counter', label: row.number_label ?? 'Alumni Network', value: row.number_value ?? 0 };
+  } else if (row.media_kind === 'report') {
+    media = { kind: 'pdf', note: row.title, fileId: row.report_file_id ?? undefined };
+  } else if (row.media_kind === 'image') {
+    media = { kind: 'photo', src: row.image_url, alt: row.image_alt ?? row.title, note: row.image_alt ?? row.title };
+  } else {
+    media = { kind: 'photo', src: null, alt: row.title, note: row.title };
+  }
+
+  return {
+    year: row.year,
+    title: row.title,
+    href: row.href ?? '/about',
+    description: row.description,
+    media,
+  };
+}
+
+function useTimelineEvents(): HistoryEvent[] {
+  const [events, setEvents] = useState<HistoryEvent[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    listHistoryEvents()
+      .then((rows) => {
+        if (!active || rows.length === 0) return;
+        setEvents(rows.map(rowToEvent));
+      })
+      .catch((error) => {
+        // The seeded module carries the story: a failed read changes nothing.
+        console.error('Error loading the history timeline:', error);
+      });
+    return () => { active = false; };
+  }, []);
+
+  return events ?? HISTORY_EVENTS;
 }
 
 // --- Report covers -----------------------------------------------------
@@ -54,8 +109,12 @@ function useArchiveCovers(events: HistoryEvent[]) {
   const lookups = useMemo(
     () => events
       .filter((e): e is Extract<HistoryEvent, { media: HistoryMedia }> => !isQuietYear(e))
-      .filter((e) => e.media.kind === 'pdf' && e.media.lookup)
-      .map((e) => ({ year: e.year, lookup: (e.media as { lookup: NonNullable<Extract<HistoryMedia, { kind: 'pdf' }>['lookup']> }).lookup })),
+      .filter((e) => e.media.kind === 'pdf' && ((e.media as { lookup?: unknown }).lookup || (e.media as { fileId?: string }).fileId))
+      .map((e) => ({
+        year: e.year,
+        lookup: (e.media as { lookup?: NonNullable<Extract<HistoryMedia, { kind: 'pdf' }>['lookup']> }).lookup,
+        fileId: (e.media as { fileId?: string }).fileId,
+      })),
     [events],
   );
 
@@ -63,8 +122,15 @@ function useArchiveCovers(events: HistoryEvent[]) {
     let active = true;
     (async () => {
       const found: Record<number, string> = {};
-      await Promise.all(lookups.map(async ({ year, lookup }) => {
+      await Promise.all(lookups.map(async ({ year, lookup, fileId }) => {
         try {
+          // A cover chosen by hand in the workspace wins over a description.
+          if (fileId) {
+            const { data } = await supabase
+              .from('archive_files').select('file_url').eq('id', fileId).maybeSingle();
+            if (data?.file_url) { found[year] = data.file_url; return; }
+          }
+          if (!lookup) return;
           let query = supabase
             .from('archive_files')
             .select('id, title, file_url, date')
@@ -131,7 +197,7 @@ function Media({ media, coverUrl, revealed, alumniTotal }: {
     return (
       <div className="tl-media tl-media--counter">
         <span className="tl-count">
-          <CountUp target={alumniTotal} run={revealed} />
+          <CountUp target={media.value} run={revealed} />
           <span>+</span>
         </span>
         <span className="tl-count-label">{media.label}</span>
@@ -150,17 +216,34 @@ function Media({ media, coverUrl, revealed, alumniTotal }: {
     );
   }
 
-  // Photography is not supplied yet. The frame is painted with a
-  // background-image rather than an <img> so an absent source can never
-  // fire a request that fails in the console.
+  // The frame is painted with a background-image rather than an <img>, and
+  // only after the file has decoded: a photograph that has not been added
+  // yet leaves the caption in place instead of a blank frame.
+  return <PhotoFrame media={media} />;
+}
+
+function PhotoFrame({ media }: { media: Extract<HistoryMedia, { kind: 'photo' }> }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!media.src) return;
+    let active = true;
+    const img = new Image();
+    img.onload = () => { if (active) setReady(true); };
+    img.src = media.src;
+    return () => { active = false; };
+  }, [media.src]);
+
   return (
     <div
       className="tl-media tl-media--photo"
       role="img"
       aria-label={media.alt}
-      style={media.src ? { backgroundImage: `url(${media.src})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      style={ready && media.src
+        ? { backgroundImage: `url(${media.src})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+        : undefined}
     >
-      {!media.src && <span className="tl-note">{media.note}</span>}
+      {!ready && <span className="tl-note">{media.note}</span>}
     </div>
   );
 }
@@ -232,15 +315,14 @@ function MilestoneCard({
 // =====================================================================
 
 export function HistoryTimeline() {
-  const events = HISTORY_EVENTS;
+  const events = useTimelineEvents();
   const covers = useArchiveCovers(events);
   const { counts } = useKeyFigures();
   const alumniTotal = counts.alumni > 0 ? counts.alumni : HISTORY_ALUMNI_FALLBACK;
 
   const [mode, setMode] = useState<Mode>(() => {
     if (typeof window === 'undefined') return 'pinned';
-    return reducedMotion() || window.innerWidth < PINNED_MIN_WIDTH || window.innerHeight < PINNED_MIN_HEIGHT
-      ? 'vertical' : 'pinned';
+    return reducedMotion() || window.innerHeight < PINNED_MIN_HEIGHT ? 'vertical' : 'pinned';
   });
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [lit, setLit] = useState<Set<number>>(new Set());
@@ -272,8 +354,7 @@ export function HistoryTimeline() {
   useEffect(() => {
     const decide = () => {
       const next: Mode =
-        reducedMotion() || window.innerWidth < PINNED_MIN_WIDTH || window.innerHeight < PINNED_MIN_HEIGHT
-          ? 'vertical' : 'pinned';
+        reducedMotion() || window.innerHeight < PINNED_MIN_HEIGHT ? 'vertical' : 'pinned';
       setMode((prev) => (prev === next ? prev : next));
     };
     decide();
@@ -515,8 +596,18 @@ export function HistoryTimeline() {
             <div className="tl-rail" ref={railRef} aria-hidden="true">
               <div className="tl-fill" ref={fillRef} />
             </div>
+            {/* The rail does not simply stop after the last year: it thins
+                into a gradient and lands on an open circle with a forward
+                arrow, so the end of the row reads as the story continuing
+                rather than as the drawing running out. */}
             <div className="tl-cont" ref={contRef} aria-hidden="true">
-              <i /><i style={{ opacity: .72 }} /><i style={{ opacity: .5 }} /><i style={{ opacity: .32 }} /><i style={{ opacity: .18 }} />
+              <span className="tl-cont-line" />
+              <span className="tl-cont-cap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </span>
+              <span className="tl-cont-label">The story continues</span>
             </div>
             <ol className="tl-list" ref={listRef}>
               {events.map((event, i) => {

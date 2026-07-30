@@ -56,8 +56,9 @@ const Readings = () => {
 
   const handleSubmitClick = () => {
     if (canSubmit) {
-      // Deep link into the workspace, People > Alumni subsection.
-      navigate('/admin?section=people&sub=people-alumni');
+      // Deep link into the workspace subsection that actually holds this
+      // library: Website > Readings, where a recommendation is added.
+      navigate('/admin?section=website&sub=website-readings');
     }
   };
 
