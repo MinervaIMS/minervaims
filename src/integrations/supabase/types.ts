@@ -712,6 +712,24 @@ export type Database = {
         }
         Relationships: []
       }
+      city_country: {
+        Row: {
+          alias: string
+          city: string
+          country: string
+        }
+        Insert: {
+          alias: string
+          city: string
+          country: string
+        }
+        Update: {
+          alias?: string
+          city?: string
+          country?: string
+        }
+        Relationships: []
+      }
       editorial_items: {
         Row: {
           created_at: string
@@ -1951,6 +1969,7 @@ export type Database = {
         Returns: string
       }
       can_manage_calendar: { Args: { uid: string }; Returns: boolean }
+      city_key: { Args: { value: string }; Returns: string }
       claim_member_account: { Args: never; Returns: Json }
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
@@ -2023,6 +2042,7 @@ export type Database = {
         }
         Returns: number
       }
+      normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
       pricing_rate_check: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
