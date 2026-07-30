@@ -129,7 +129,7 @@ const Join = () => {
       </section>
 
       {/* 05 The Written Question */}
-      <section aria-labelledby="join-written-heading" className="bg-background pb-section-sm md:pb-section">
+      <section aria-labelledby="join-written-heading" className="bg-background py-section-sm md:py-section">
         <div className="container">
           <h2
             id="join-written-heading"
@@ -142,7 +142,7 @@ const Join = () => {
       </section>
 
       {/* Close: mirrors the Status block, same source, same two states. */}
-      <section aria-labelledby="join-close-heading" className="bg-background pb-section-sm md:pb-section">
+      <section aria-labelledby="join-close-heading" className="bg-background py-section-sm md:py-section">
         <div className="container">
           <ApplicationCta
             {...status}

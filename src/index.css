@@ -1057,7 +1057,8 @@ input[type='search']::-webkit-search-cancel-button {
   --tl-desc-collapsed: 5.05rem;  /* three lines of body copy           */
 }
 
-.tl-section { background: hsl(var(--background)); padding: 2rem 0; }
+.tl-section { background: hsl(var(--background)); padding: 5rem 0; }
+@media (min-width: 768px) { .tl-section { padding: 8rem 0; } }
 .tl-h2 {
   font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
   font-size: clamp(1.625rem, 4.5vw + .5rem, 2rem); line-height: 1.2; letter-spacing: -.01em;
