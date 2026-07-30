@@ -141,7 +141,7 @@ export const JOIN_STATUS_COPY = {
   closedInvitation: '\n',
   applyLabel: 'Apply',
   archiveLabel: 'Read Our Reports',
-  contactLabel: 'Contact Us',
+  contactLabel: '',
 } as const;
 
 export const JOIN_FAQ_HEADING = 'Frequently Asked Questions';
