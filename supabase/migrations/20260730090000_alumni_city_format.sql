@@ -274,3 +274,7 @@ DROP TRIGGER IF EXISTS alumni_normalise_city_trg ON public.alumni;
 CREATE TRIGGER alumni_normalise_city_trg
   BEFORE INSERT OR UPDATE OF city ON public.alumni
   FOR EACH ROW EXECUTE FUNCTION public.alumni_normalise_city();
+
+-- Data API access for the city reference table (read-only lookup).
+GRANT SELECT ON public.city_country TO anon, authenticated;
+GRANT ALL ON public.city_country TO service_role;
