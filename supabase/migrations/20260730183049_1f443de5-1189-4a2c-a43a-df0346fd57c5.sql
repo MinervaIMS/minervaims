@@ -1,0 +1,3 @@
+UPDATE public.join_faqs 
+SET answer = 'Membership of another society is not in itself an obstacle. That said, since we value active participation and sustained commitment, several commitments from other demanding finance or consulting societies will be a matter of reflection for the Talent Recruiting Team and the Head of Division. We have had members who managed both their academic duties and commitments across demanding societies well (Minerva and others), but they are the exception that proves the rule. In most cases, members have been asked to focus on one associations-related endeavour at a time.'
+WHERE id = '90e00d3f-3b4b-4cc3-82ad-215c5a75de43';
