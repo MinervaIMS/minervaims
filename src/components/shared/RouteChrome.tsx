@@ -8,20 +8,30 @@ import { useLocation } from 'react-router-dom';
 // bar at the top (time, battery, signal) and the lower browser chrome
 // around the URL bar. Both derive their colour from a mix of the
 // <meta name="theme-color"> tag and the page background behind them.
-// A single static colour cannot be right for every page, so this
-// component keeps three values in step with the current route:
 //
-//   theme  -> <meta name="theme-color">: the tint browsers use for their
-//             own chrome (status bar area, tab bar on iOS Safari).
-//   base   -> the <html> background: what shows through rubber-band
-//             overscroll and behind any safe-area gap, top and bottom.
-//   bottom -> the --chrome-bottom CSS variable consumed by the body::after
-//             band that sits exactly over the iOS home-indicator zone.
+// Two behaviours of iOS Safari drive the design of this module:
 //
-// No negative positioning, no viewport hacks: only proper viewport-fit
-// (already set in index.html), backgrounds and the standard theme-color
-// mechanism, which work consistently across Safari iOS, Chrome iOS,
-// Android Chrome and WebViews.
+//  1. Safari reads theme-color when the document loads and does NOT
+//     re-evaluate it when the meta element's `content` attribute is
+//     merely mutated. A client-side route change therefore kept showing
+//     the previous route's tint until the page was reloaded by hand.
+//     Re-INSERTING a fresh element does force a re-read, so every update
+//     here replaces the node instead of editing it.
+//
+//  2. Safari applies one theme-color to BOTH its top chrome and its
+//     bottom toolbar. A single declared colour can never give a purple
+//     status bar and a light bottom bar at the same time — declaring the
+//     workspace navy is exactly what turned the bottom bar navy too.
+//     When no theme-color is declared, Safari instead samples the page's
+//     own colours near each edge, which is the only mechanism that can
+//     produce a different colour at the top and at the bottom.
+//
+// So on iOS the tag is deliberately removed and the page paints its own
+// edges (the workspace shell fills the top safe area with the accent and
+// its content is white; public pages open on a dark hero and end on the
+// black footer). Every other engine — Android Chrome, Firefox, Samsung
+// Internet, in-app WebViews — keeps the declared colour, which is what
+// they honour and what they render correctly.
 // =====================================================================
 
 const NAVY = '#1F0F4D';       // workspace header purple
@@ -29,7 +39,7 @@ const AUTH_DARK = '#05030F';  // auth/apply beams backdrop
 const BLACK = '#000000';      // public site: dark heroes + black footer
 const WHITE = '#ffffff';      // workspace body
 
-interface Chrome { theme: string | null; base: string; bottom: string }
+interface Chrome { theme: string; base: string; bottom: string }
 
 // Pages that share the dark auth backdrop (beams behind a white card).
 const AUTH_LIKE = [
@@ -39,15 +49,24 @@ const AUTH_LIKE = [
   '/unsubscribe',
 ];
 
+/**
+ * iOS (including iPadOS, which reports itself as a Mac with touch points).
+ * Everything on iOS renders through WebKit, so Chrome, Firefox and every
+ * in-app browser on the platform share Safari's chrome behaviour.
+ */
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/iPad|iPhone|iPod/.test(ua)) return true;
+  return ua.includes('Macintosh') && typeof document !== 'undefined' && navigator.maxTouchPoints > 1;
+}
+
 function chromeFor(path: string): Chrome {
-  // Workspace: the area behind the clock (status bar) must read PURPLE and
-  // the lower browser chrome must stay TRANSPARENT, blending with the white
-  // content. So the purple is DECLARED via theme-color (the only channel
-  // browsers reliably honour for their top chrome), while nothing at all is
-  // painted at the bottom: bottom is 'transparent', so the browser's own
-  // translucent bar sits directly over the page content with no band of ours
-  // beneath it. The html base stays white so any gap or overscroll around
-  // the content reads as the content itself.
+  // Workspace: the status-bar area must read PURPLE and the lower browser
+  // chrome must stay light, blending into the white content. The shell
+  // paints the top safe area with the accent itself, so on iOS (where the
+  // tag is dropped and Safari samples the edges) both ends come out right;
+  // elsewhere the declared navy tints the top chrome as intended.
   if (path.startsWith('/admin')) return { theme: NAVY, base: WHITE, bottom: 'transparent' };
   if (AUTH_LIKE.some((p) => path === p || path.startsWith(p + '/'))) {
     return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
@@ -55,8 +74,17 @@ function chromeFor(path: string): Chrome {
   // Event registration shares the auth backdrop.
   if (/^\/events\/[^/]+\/register/.test(path)) return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
   // Public site: hero images fade from near-black and every page ends with
-  // the black footer, so black is the coherent base at both edges.
-  return { theme: BLACK, base: BLACK, bottom: BLACK };
+  // the black footer, so black is the coherent base for overscroll.
+  //
+  // The bottom band, however, is deliberately NOT painted. It used to be a
+  // hard black strip over the home-indicator zone, which assumed every page
+  // is dark where that strip sits. /about breaks the assumption: its long
+  // white "What We Do" body means the strip reads as a black bar under white
+  // content — the anomaly reported on that page while the darker, shorter
+  // pages hid it. Leaving the band transparent lets the real surface show
+  // through (white in a white section, black over the footer), which is
+  // correct on every page rather than on most of them.
+  return { theme: BLACK, base: BLACK, bottom: 'transparent' };
 }
 
 export function RouteChrome() {
@@ -64,19 +92,18 @@ export function RouteChrome() {
 
   useEffect(() => {
     const c = chromeFor(pathname);
-    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    if (c.theme === null) {
-      // No declared tint: the browser samples the page near each edge, which
-      // is the only way to get different top and bottom bar colours.
-      meta?.remove();
-    } else {
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.name = 'theme-color';
-        document.head.appendChild(meta);
-      }
+
+    // Always drop the current tag first: on WebKit a replaced element is
+    // re-read, while an edited one is not.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove());
+
+    if (!isIOS()) {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
       meta.content = c.theme;
+      document.head.appendChild(meta);
     }
+
     const root = document.documentElement;
     root.style.backgroundColor = c.base;
     root.style.setProperty('--chrome-bottom', c.bottom);

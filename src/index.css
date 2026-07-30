@@ -458,6 +458,21 @@ body[data-scroll-locked] {
 .v2-card:hover .rcover, .v2-card:focus-visible .rcover { transform:translateY(-6px) rotate(-1deg); }
 
 .v2-card:focus-visible { outline:2px solid #fff; outline-offset:4px; }
+
+/* Closing card of the "Previously published" rail: the route into the full
+   archive, sized and spaced exactly like a report cover so the row keeps
+   its rhythm (it replaces the detached button that used to sit above). */
+.v2-card--cta { text-decoration:none; }
+.v2-cta-frame { display:grid; place-items:center; width:100%; aspect-ratio:1 / 1.414;
+  border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.05);
+  transition:transform var(--dur-base) var(--ease-standard), background-color var(--dur-base) var(--ease-standard); }
+.v2-card--cta:hover .v2-cta-frame, .v2-card--cta:focus-visible .v2-cta-frame {
+  transform:translateY(-6px); background:rgba(255,255,255,.1); }
+.v2-cta-circle { width:4rem; height:4rem; border-radius:9999px; background:#fff;
+  display:grid; place-items:center; color:hsl(var(--accent));
+  transition:transform var(--dur-base) var(--ease-standard); }
+.v2-card--cta:hover .v2-cta-circle { transform:scale(1.08); }
+.v2-cta-circle svg { width:1.4rem; height:1.4rem; }
 .v2-card .t { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif; font-size:1.05rem;
   line-height:1.25; color:#fff; margin-top:.85rem; font-weight:400;
   display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
@@ -871,4 +886,323 @@ textarea {
 input[type='search']::-webkit-search-decoration,
 input[type='search']::-webkit-search-cancel-button {
   -webkit-appearance: none;
+}
+
+
+/* =====================================================================
+   Mobile form controls — never let iOS auto-zoom the page.
+   ---------------------------------------------------------------------
+   Safari (and older Android WebViews) zoom into a focused field whenever
+   its computed font-size is below 16px, and they do NOT zoom back out
+   afterwards, leaving the user stranded on a magnified fragment of the
+   page. Sizing every text-entry control at 16px below the md breakpoint
+   removes the trigger entirely, which is the only reliable cure: the
+   viewport keeps user-scalable pinch zoom for accessibility.
+   ===================================================================== */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  [contenteditable='true'] {
+    font-size: 16px !important;
+  }
+}
+
+
+/* =====================================================================
+   Organisational chart (/about) — the approved interactive structure.
+   ---------------------------------------------------------------------
+   A camera pans and zooms over a fixed 1560x808 world. Selecting a
+   division flies the camera to that branch, recesses everything else
+   (scale, opacity, blur) and reveals the branch's sub-tree with a
+   staggered lift and drawn connectors. Every timing below is part of the
+   approved design: change a number here and the whole motion re-reads.
+   ===================================================================== */
+.oc {
+  --e-in: cubic-bezier(.22, 1, .36, 1);
+  --e-cam: cubic-bezier(.32, .72, 0, 1);
+  --e-out: cubic-bezier(.4, 0, 1, 1);
+  --e-hov: cubic-bezier(.22, .61, .36, 1);
+  --rec-op: .42;
+  --rec-bl: 1.2px;
+}
+.oc-cam { transition-property: transform; transition-timing-function: var(--e-cam); transition-duration: 640ms; }
+.oc-w { transition: transform 300ms var(--e-cam), opacity 260ms var(--e-out), filter 260ms var(--e-out); }
+.oc-w.rec { transform: scale(.94); opacity: var(--rec-op); filter: blur(var(--rec-bl)); }
+.oc-n { transition: transform 160ms var(--e-hov), box-shadow 160ms var(--e-hov), background-color 160ms var(--e-hov), border-color 160ms var(--e-hov); }
+.oc-n:hover { transform: translateY(-2px); box-shadow: 0 12px 26px -16px rgba(31, 15, 77, .62); }
+.oc-n:focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 3px; }
+.oc-aff { opacity: 0; transition: opacity 160ms var(--e-hov); }
+.oc-n:hover .oc-aff, .oc-n:focus-visible .oc-aff { opacity: 1; }
+.oc-p {
+  fill: none; stroke: hsl(var(--accent-soft)); stroke-width: 1; opacity: .62;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 300ms var(--e-cam), stroke-width 300ms var(--e-cam), opacity 300ms var(--e-cam);
+}
+.oc-p.lt { opacity: .34; }
+.oc-p.rec { opacity: .15; }
+.oc-p.hot { stroke: hsl(var(--accent)); stroke-width: 1.5; opacity: 1; }
+.oc-p.hid { opacity: 0; }
+.oc-sub { opacity: 0; visibility: hidden; transition: opacity 220ms var(--e-out), visibility 0s linear 220ms; }
+.oc-sub.on { opacity: 1; visibility: visible; transition: opacity 300ms var(--e-in), visibility 0s; }
+.oc-sub .oc-w { opacity: 0; transform: translateY(10px); }
+.oc-sub.on .oc-w { opacity: 1; transform: none; transition: opacity 420ms var(--e-in), transform 420ms var(--e-in); }
+.oc-sub.on .oc-w:nth-of-type(1) { transition-delay: 150ms; }
+.oc-sub.on .oc-w:nth-of-type(2) { transition-delay: 184ms; }
+.oc-sub.on .oc-w:nth-of-type(3) { transition-delay: 218ms; }
+.oc-sub.on .oc-w:nth-of-type(4) { transition-delay: 252ms; }
+.oc-sub.on .oc-w:nth-of-type(5) { transition-delay: 286ms; }
+.oc-sub.on .oc-w:nth-of-type(6) { transition-delay: 320ms; }
+.oc-sub.on .oc-w:nth-of-type(7) { transition-delay: 354ms; }
+.oc-sub.on .oc-w:nth-of-type(8) { transition-delay: 388ms; }
+.oc-sub.on .oc-w:nth-of-type(9) { transition-delay: 422ms; }
+.oc-sub.on .oc-w:nth-of-type(10) { transition-delay: 456ms; }
+.oc-sub.on .oc-w:nth-of-type(11) { transition-delay: 490ms; }
+.oc-sub.on .oc-w:nth-of-type(12) { transition-delay: 524ms; }
+.oc-sub.on .oc-w:nth-of-type(13) { transition-delay: 558ms; }
+.oc-sub.on .oc-w:nth-of-type(14) { transition-delay: 592ms; }
+.oc-sub.on .oc-w:nth-of-type(15) { transition-delay: 626ms; }
+.oc-sub.on .oc-w:nth-of-type(16) { transition-delay: 660ms; }
+.oc-sub svg path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.oc-sub.on svg path { stroke-dashoffset: 0; transition: stroke-dashoffset 380ms var(--e-in); }
+.oc-sub.on svg path.l1 { transition-delay: 120ms; }
+.oc-sub.on svg path.l2 { transition-delay: 300ms; }
+.oc-sub.on svg path.l3 { transition-delay: 480ms; }
+.oc-stage .oc-e { opacity: 0; transform: translateY(12px); }
+.oc-stage.in .oc-e { opacity: 1; transform: none; transition: opacity 460ms var(--e-in), transform 460ms var(--e-in); }
+.oc-stage.in .e0 { transition-delay: 0ms; }
+.oc-stage.in .e1 { transition-delay: 240ms; }
+.oc-stage.in .e2 { transition-delay: 330ms; }
+.oc-stage.in .e3 { transition-delay: 420ms; }
+.oc-stage.in .e4 { transition-delay: 470ms; }
+.oc-stage.in .e5 { transition-delay: 520ms; }
+.oc-stage.in .e6 { transition-delay: 570ms; }
+.oc-stage.in .c0 { transition-delay: 560ms; }
+.oc-stage.in .c1 { transition-delay: 600ms; }
+.oc-stage.in .c2 { transition-delay: 640ms; }
+.oc-stage.in .c3 { transition-delay: 680ms; }
+.oc-stage.in .c4 { transition-delay: 720ms; }
+.oc-stage .oc-draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.oc-stage.in .oc-draw { stroke-dashoffset: 0; transition: stroke-dashoffset 620ms var(--e-in) 180ms; }
+.oc-crumb { transition: color 160ms var(--e-hov), border-color 160ms var(--e-hov), opacity 160ms var(--e-hov); }
+.oc-crumb:hover { color: hsl(var(--accent)); border-color: hsl(var(--accent)); }
+.oc-crumb:focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 3px; }
+.oc-sk .oc-row { transition: background-color 200ms var(--e-hov); }
+.oc-sk .oc-row:hover { background: hsl(var(--accent-soft) / 0.08); }
+.oc-sk .oc-row:focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: -2px; }
+
+/* The frame fades its own edges so the world reads as a window, not a crop. */
+.oc-mask {
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 80px, #000 calc(100% - 80px), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 48px, #000 100%);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 80px, #000 calc(100% - 80px), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 48px, #000 100%);
+  -webkit-mask-composite: source-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oc-cam, .oc-w, .oc-n, .oc-p { transition-duration: 1ms !important; transition-delay: 0ms !important; }
+  .oc-w.rec { filter: none; transform: none; }
+  .oc-n:hover { transform: none; }
+  .oc-sub { transition: opacity 140ms linear !important; }
+  .oc-sub.on { transition: opacity 140ms linear !important; }
+  .oc-sub .oc-w { opacity: 1; transform: none; }
+  .oc-sub.on .oc-w { transition-delay: 0ms !important; }
+  .oc-sub svg path,
+  .oc-sub.on svg path.l1,
+  .oc-sub.on svg path.l2,
+  .oc-sub.on svg path.l3,
+  .oc-stage .oc-draw { stroke-dashoffset: 0 !important; transition: none !important; transition-delay: 0ms !important; }
+  .oc-stage .oc-e { opacity: 1; transform: none; }
+}
+
+
+/* =====================================================================
+   Our History (/about) — the pinned horizontal timeline.
+   ---------------------------------------------------------------------
+   The section holds the screen while the years travel sideways: the rail
+   fills, each circle lights as it is reached, and every card rises into
+   place. All geometry lives in the variables below, because the columns,
+   the rail, the dots and the media frames all measure themselves against
+   the same handful of numbers. The max() floors on the media heights are
+   load-bearing: without them a short viewport resolves the height to a
+   negative value and every frame collapses to its 1px border.
+
+   Below 768px wide, under 680px tall, or with reduced motion, the same
+   content is presented as a vertical spine instead.
+   ===================================================================== */
+.tl {
+  --tl-dot: 80px;                /* milestone year circle              */
+  --tl-minor-dot: 50px;          /* quiet-year circle (0.62 x dot)     */
+  --tl-card: 400px;              /* milestone column width             */
+  --tl-gap: 3rem;                /* space between columns              */
+  --tl-railtop: 2.5rem;          /* space above the rail               */
+  --tl-cardh: min(640px, calc(100dvh - 19rem));
+  --tl-gutter: max(1.5rem, calc((100vw - 1280px) / 2 + 1.5rem));
+  --tl-media-gap: 2.25rem;       /* description or toggle to media     */
+  --tl-desc-collapsed: 5.05rem;  /* three lines of body copy           */
+}
+
+.tl-section { background: hsl(var(--background)); padding: 2rem 0; }
+.tl-h2 {
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  font-size: clamp(1.625rem, 4.5vw + .5rem, 2rem); line-height: 1.2; letter-spacing: -.01em;
+  font-weight: 400; color: hsl(var(--accent));
+  padding-bottom: .75rem; border-bottom: 1px solid hsl(var(--separator)); margin: 0;
+}
+.tl-h2--pinned { flex: 0 0 auto; margin: 0 var(--tl-gutter) 2.25rem; }
+.tl-h2--flow { max-width: 1280px; margin: 0 auto 2rem; padding-left: 1.5rem; padding-right: 1.5rem; }
+
+/* pinned horizontal layout --------------------------------------------- */
+.tl-wrap { position: relative; }
+.tl-sticky {
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center;
+  padding-top: 5rem; /* clears the fixed 84px site header */
+}
+@supports (height: 100dvh) { .tl-sticky { height: 100dvh; } }
+.tl-track { position: relative; width: max-content; padding: 0 var(--tl-gutter); will-change: transform; }
+
+.tl-rail {
+  position: absolute; left: 0; width: 0; height: 2px; overflow: hidden;
+  background: hsl(var(--separator));
+  top: calc(var(--tl-railtop) + var(--tl-dot) / 2 - 1px);
+}
+.tl-fill {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+  background: linear-gradient(90deg, hsl(var(--accent)), hsl(var(--accent-soft)));
+}
+.tl-cont {
+  position: absolute; left: 0; height: 2px; display: flex; align-items: center; gap: 11px;
+  pointer-events: none; top: calc(var(--tl-railtop) + var(--tl-dot) / 2 - 1px);
+}
+.tl-cont i { width: 34px; height: 2px; background: hsl(var(--separator)); flex: 0 0 auto; }
+
+.tl-list { display: flex; align-items: stretch; gap: var(--tl-gap); margin: 0; padding: 0; list-style: none; }
+.tl-item {
+  flex: 0 0 auto; width: var(--tl-card);
+  display: grid; grid-template-rows: var(--tl-railtop) var(--tl-dot) var(--tl-cardh);
+}
+.tl-item[data-minor='1'] { width: calc(var(--tl-minor-dot) + 26px); }
+.tl-tail { flex: 0 0 auto; width: 240px; }
+.tl-dotcell { grid-row: 2; display: flex; align-items: center; justify-content: center; }
+
+/* year circles ---------------------------------------------------------- */
+.tl-dot {
+  position: relative; z-index: 2; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border-radius: 50%; background: hsl(var(--background)); cursor: pointer;
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  width: var(--tl-dot); height: var(--tl-dot);
+  border: 1.5px solid hsl(var(--accent)); color: hsl(var(--accent));
+  font-size: calc(var(--tl-dot) / 50 * 1rem);
+  transition: background-color .55s ease, color .55s ease, box-shadow .55s ease, border-color .55s ease;
+}
+.tl-dot.is-lit {
+  background: hsl(var(--accent)); color: hsl(var(--background));
+  box-shadow: 0 0 0 6px rgba(31, 15, 77, .10), 0 10px 28px rgba(31, 15, 77, .30);
+}
+.tl-dot--minor {
+  width: var(--tl-minor-dot); height: var(--tl-minor-dot);
+  border: 1px solid hsl(var(--separator)); color: hsl(var(--muted-foreground)); font-size: 1.02rem;
+}
+.tl-dot--minor.is-lit {
+  background: hsl(var(--background)); color: hsl(var(--accent));
+  border-color: hsl(var(--accent)); box-shadow: none;
+}
+
+/* milestone card -------------------------------------------------------- */
+.tl-card {
+  grid-row: 3; display: flex; flex-direction: column; justify-content: flex-start;
+  height: 100%; min-height: 0; overflow: hidden; padding-top: 1.6rem;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .6s var(--ease-standard), transform .6s var(--ease-standard);
+}
+.tl-card.is-in { opacity: 1; transform: none; }
+.tl-title {
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  font-size: 1.5rem; line-height: 1.25; letter-spacing: -.01em; font-weight: 400;
+  color: hsl(var(--foreground)); margin: 0 0 .55rem; flex-shrink: 0;
+}
+.tl-title a { color: inherit; text-decoration: none; }
+.tl-title a:hover { text-decoration: underline; text-decoration-color: hsl(var(--accent)); text-underline-offset: 3px; }
+.tl-desc {
+  flex-shrink: 0; overflow: hidden; max-height: var(--tl-desc-collapsed);
+  transition: max-height .32s var(--ease-standard);
+}
+.tl-desc.is-open { max-height: 26rem; overflow-y: auto; }
+.tl-desc p {
+  font-family: Calibri, Carlito, Arial, Helvetica, sans-serif;
+  font-size: 1.05rem; line-height: 1.6; color: hsl(var(--muted-foreground)); margin: 0;
+}
+.tl-toggle {
+  align-self: flex-start; flex-shrink: 0; margin-top: .55rem;
+  background: none; border: 0; padding: 0;
+  font-family: Calibri, Carlito, Arial, Helvetica, sans-serif; font-size: .9375rem;
+  color: hsl(var(--accent)); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.tl-toggle:hover { opacity: .75; }
+
+/* media beneath the copy ------------------------------------------------ */
+.tl-media {
+  position: relative; flex: 0 0 auto; align-self: center; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  margin-top: var(--tl-media-gap);
+  background: hsl(var(--background)); border: 1px solid hsl(var(--separator));
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .6s var(--ease-standard), transform .6s var(--ease-standard);
+  transition-delay: .15s;
+}
+.is-in .tl-media { opacity: 1; transform: none; }
+.tl-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tl-media--photo { width: 100%; height: min(292px, max(150px, calc(var(--tl-cardh) - 300px))); }
+.tl-media--pdf { aspect-ratio: 1 / 1.4142; height: min(330px, max(170px, calc(var(--tl-cardh) - 300px))); }
+.tl-media--counter { border: 0; width: 100%; margin-top: 2.5rem; }
+.tl-media--pdf > * { width: 100%; height: 100%; }
+.tl-note {
+  font-family: Calibri, Carlito, Arial, Helvetica, sans-serif; font-size: .75rem;
+  text-transform: uppercase; letter-spacing: .14em;
+  color: hsl(var(--muted-foreground)); text-align: center; padding: 0 1rem;
+}
+.tl-count {
+  display: flex; align-items: baseline;
+  font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
+  font-size: clamp(2.75rem, 4vw, 4rem); line-height: 1; color: hsl(var(--accent));
+}
+.tl-count-label {
+  font-family: Calibri, Carlito, Arial, Helvetica, sans-serif; font-size: .75rem;
+  text-transform: uppercase; letter-spacing: .14em; color: hsl(var(--muted-foreground)); margin-top: .6rem;
+}
+
+/* vertical fallback (narrow, short, or reduced motion) ------------------- */
+.tl-vlist { max-width: 54rem; margin: .5rem 0 0; padding: 0 1.5rem; list-style: none; position: relative; }
+.tl-vitem { position: relative; display: grid; grid-template-columns: 68px 1fr; gap: 1.4rem; padding-bottom: 2.5rem; }
+.tl-vrailcell { position: relative; display: flex; justify-content: center; }
+.tl-vdot { width: 68px; height: 68px; font-size: 1.15rem; }
+.tl-vdot.tl-dot--minor { width: 50px; height: 50px; margin-top: 9px; font-size: .98rem; }
+.tl-vrail {
+  position: absolute; left: 50%; top: 68px; bottom: -2.5rem; width: 2px;
+  background: hsl(var(--separator)); transform: translateX(-50%); overflow: hidden;
+}
+.tl-vitem[data-minor='1'] .tl-vrail { top: 62px; width: 1px; }
+.tl-vitem:last-child .tl-vrail { display: none; }
+.tl-vfill {
+  position: absolute; left: 0; right: 0; top: 0; height: 0;
+  background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--accent-soft)));
+  transition: height 1s ease;
+}
+.tl-vcard { display: flex; flex-direction: column; padding-top: .5rem; }
+.tl-vcard .tl-media { align-self: flex-start; }
+.tl-vcard .tl-media--photo { width: 100%; max-width: 320px; height: auto; aspect-ratio: 4 / 3; }
+.tl-vcard .tl-media--pdf { width: 210px; height: auto; }
+.tl-vcard .tl-media--counter { align-items: flex-start; width: auto; }
+.tl-vcard .tl-desc.is-open { max-height: 48rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-card, .tl-media, .tl-dot, .tl-vfill, .tl-desc { transition: none !important; }
+  .tl-card { opacity: 1; transform: none; }
+  .tl-media { opacity: 1; transform: none; }
 }

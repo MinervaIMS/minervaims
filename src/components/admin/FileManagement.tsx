@@ -14,6 +14,7 @@ import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, Chevr
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-utils';
+import { downloadTitled } from '@/lib/file-download';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -46,6 +47,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [divisionFilter, setDivisionFilter] = useState<Division | 'all'>('all');
+  // Portfolio Management publishes per fund, so that division gets the same
+  // fund filter the public archive offers.
+  const [fundFilter, setFundFilter] = useState<Fund | 'all'>('all');
   const [yearFilter, setYearFilter] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
@@ -138,6 +142,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       if (allowedDivisions && !allowedDivisions.includes(file.division as Division)) return false;
       // Division filter
       if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
+      if (divisionFilter === 'portfolio' && fundFilter !== 'all' && file.fund !== fundFilter) return false;
       // Year filter
       if (yearFilter !== 'all') {
         const fileYear = new Date(file.date).getFullYear();
@@ -154,7 +159,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     })
     // Favourites are pinned on top; otherwise keep the newest-first order.
     .sort((a, b) => (a.is_favourite === b.is_favourite ? 0 : a.is_favourite ? -1 : 1));
-  }, [files, divisionFilter, yearFilter, searchQuery, allowedDivisions]);
+  }, [files, divisionFilter, fundFilter, yearFilter, searchQuery, allowedDivisions]);
 
   const fileYears = useMemo(() => {
     let relevantFiles = files;
@@ -173,7 +178,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [divisionFilter, yearFilter, searchQuery]);
+  }, [divisionFilter, fundFilter, yearFilter, searchQuery]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -252,28 +257,13 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
   const handleDownload = async (file: ArchiveFile) => {
     if (downloadingFiles.has(file.id)) return;
-    
+
     setDownloadingFiles(prev => new Set(prev).add(file.id));
-    
+
     try {
-      const response = await fetch(file.file_url);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      // Clean filename: keep letters, numbers, spaces, hyphens, underscores
-      const cleanTitle = file.title
-        .replace(/[^a-zA-Z0-9\s\-_]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      link.download = `${cleanTitle || 'document'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
+      // Saved under the report's own title, never the storage key.
+      await downloadTitled(file.file_url, file.title, 'pdf');
+
       toast({
         title: "Download complete",
         description: `${file.title} has been downloaded.`,
@@ -744,7 +734,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
           {/* Division filter */}
           <select
             value={divisionFilter}
-            onChange={(e) => setDivisionFilter(e.target.value as Division | 'all')}
+            onChange={(e) => {
+              const next = e.target.value as Division | 'all';
+              setDivisionFilter(next);
+              if (next !== 'portfolio') setFundFilter('all');
+            }}
             className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
           >
             {!allowedDivisions && <option value="all">All Divisions</option>}
@@ -753,6 +747,27 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
+
+          {/* Fund filter — only meaningful for Portfolio Management */}
+          {divisionFilter === 'portfolio' && (
+            <select
+              value={fundFilter}
+              onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}
+              className="font-body bg-background border border-separator px-3 h-10 min-w-[280px]"
+            >
+              <option value="all">All Funds</option>
+              <optgroup label="Active Funds">
+                {activeFunds.map((fund) => (
+                  <option key={fund} value={fund}>{fundLabels[fund]}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Closed Funds">
+                {closedFunds.map((fund) => (
+                  <option key={fund} value={fund}>{fundLabels[fund]}</option>
+                ))}
+              </optgroup>
+            </select>
+          )}
 
           {/* Year filter */}
           <select
@@ -789,33 +804,35 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         </div>
       ) : (
         <>
-          <div className="space-y-0">
+          {/* Phones show two compact report cards per row; from md up the
+              established single-column reading layout is unchanged. */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-1 md:gap-0 md:space-y-0">
             {paginatedFiles.map((file, index) => (
-              <article key={file.id} className={`py-6 ${index !== paginatedFiles.length - 1 ? 'border-b border-separator' : ''}`}>
-                <div className="flex flex-col md:flex-row md:items-start gap-4">
+              <article key={file.id} className={`md:py-6 ${index !== paginatedFiles.length - 1 ? 'md:border-b md:border-separator' : ''}`}>
+                <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
                   {/* PDF Preview Thumbnail - A4 aspect ratio */}
                   <div className="flex-shrink-0">
                     <PdfThumbnail
                       url={file.file_url}
-                      className="w-28 bg-background rounded border border-separator"
+                      className="w-full md:w-28 bg-background rounded border border-separator"
                       alt={`Preview of ${file.title}`}
                     />
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1">
-                    <time className="font-body text-xs text-muted-foreground uppercase tracking-wider">
+                  <div className="flex-1 min-w-0">
+                    <time className="font-body text-[0.65rem] md:text-xs text-muted-foreground uppercase tracking-wider block leading-tight">
                       {formatDate(file.date)}
-                      <span className="ml-4 text-primary">
+                      <span className="block md:inline md:ml-4 text-primary">
                         {divisionLabels[file.division as Division]}
                       </span>
                       {file.fund && (
-                        <span className="ml-4 text-primary/70">
+                        <span className="block md:inline md:ml-4 text-primary/70">
                           {fundLabels[file.fund as Fund]}
                         </span>
                       )}
                     </time>
-                    <h3 className="font-serif text-subheading mt-2 mb-2">
+                    <h3 className="font-serif text-base leading-snug md:text-subheading mt-1.5 md:mt-2 mb-1.5 md:mb-2">
                       {file.title}
                       {file.status && file.status !== 'published' && (
                         <span className={`ml-3 align-middle text-xs uppercase tracking-wider font-body px-2 py-0.5 border ${file.status === 'blocked' ? 'text-destructive border-destructive/40' : 'text-amber-700 border-amber-700/40'}`}>
@@ -825,13 +842,13 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                     </h3>
                     {file.description && (
                       <div>
-                        <p className={`font-body text-body text-muted-foreground ${expandedDescriptions.has(file.id) ? '' : 'line-clamp-2'}`}>
+                        <p className={`font-body text-sm md:text-body text-muted-foreground ${expandedDescriptions.has(file.id) ? '' : 'line-clamp-2'}`}>
                           {file.description}
                         </p>
                         {file.description.length > 150 && (
                           <button
                             onClick={() => toggleDescription(file.id)}
-                            className="inline-flex items-center gap-1 font-body text-small text-primary hover:underline mt-1"
+                            className="inline-flex items-center gap-1 font-body text-xs md:text-small text-primary hover:underline mt-1"
                           >
                             {expandedDescriptions.has(file.id) ? (
                               <>
@@ -848,11 +865,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                         )}
                       </div>
                     )}
-                    <div className="mt-3">
+                    <div className="mt-1.5 md:mt-3">
                       <button
                         onClick={() => handleDownload(file)}
                         disabled={downloadingFiles.has(file.id)}
-                        className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
+                        className="inline-flex items-center gap-1.5 font-body text-xs md:text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
                       >
                         {downloadingFiles.has(file.id) ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -865,7 +882,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   </div>
 
                   {/* Admin Actions */}
-                  <div className="flex gap-2 mt-2 md:mt-6 flex-shrink-0 flex-wrap justify-end">
+                  <div className="flex gap-2 mt-2 md:mt-6 flex-shrink-0 flex-wrap justify-start md:justify-end">
                     {file.status !== 'published' && file.status !== 'blocked' && (
                       <Button variant="outline" size="sm" className="font-body" onClick={() => handleSetStatus(file.id, 'published')}>
                         Publish

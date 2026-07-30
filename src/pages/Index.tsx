@@ -7,6 +7,7 @@ import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/compone
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
+import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
@@ -139,7 +140,7 @@ const Index = () => {
             <div className="max-w-3xl">
               <p className="font-body text-body-lg text-muted-foreground mb-6">
                 Minerva Investment Management Society (MIMS) is an association promoted and run by students of Bocconi
-                University. Founded in 2017, it operates student-managed virtual funds supported by structured research
+                University. Founded in 2019, it operates student-managed virtual funds supported by structured research
                 and portfolio management processes. Members work across specialist research divisions and Portfolio
                 Management, producing professional-standard reports and documenting decisions through due diligence and
                 risk analysis.
@@ -162,6 +163,11 @@ const Index = () => {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* Our Divisions (scroll-driven card stack) */}
+      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
+        <DivisionScrollStack />
       </section>
 
       {/* Alumni Ticker */}

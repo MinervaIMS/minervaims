@@ -13,7 +13,7 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       if (divisionFilter !== 'all' && report.division !== divisionFilter) return false;
-      if (divisionFilter === 'portfolio' && fundFilter !== 'all' && report.fund !== fundFilter) return false;
+      if (fundFilter !== 'all' && report.fund !== fundFilter) return false;
       return true;
     });
   }, [reports, divisionFilter, fundFilter]);
@@ -47,7 +47,7 @@ export function ArchiveFilters({ reports }: ArchiveFiltersProps) {
             ))}
           </select>
 
-          {divisionFilter === 'portfolio' && (
+          {(divisionFilter === 'portfolio' || fundFilter !== 'all') && (
             <select
               value={fundFilter}
               onChange={(e) => setFundFilter(e.target.value as Fund | 'all')}

@@ -300,14 +300,6 @@ function FeaturedInfo({
         >
           Open Report
         </button>
-        {archiveHref ? (
-          <a className="rbtn rbtn--onnavy-ghost" href={archiveHref}>
-            {archiveLabel}
-            <span className="rarw">
-              <IconArrowUR />
-            </span>
-          </a>
-        ) : null}
       </div>
     </div>
   );
@@ -597,6 +589,16 @@ function NavyVariant({
                     <div className="t">{rep.title}</div>
                   </button>
                 ))}
+                {/* The rail ends on the way into the full archive, keeping
+                    the row's rhythm instead of a detached button above. */}
+                {archiveHref ? (
+                  <a className="v2-card v2-card--cta" href={archiveHref} aria-label={archiveLabel}>
+                    <span className="v2-cta-frame" aria-hidden="true">
+                      <span className="v2-cta-circle"><IconArrowUR /></span>
+                    </span>
+                    <div className="t">{archiveLabel}</div>
+                  </a>
+                ) : null}
               </div>
               {showDots && (
                 <div className="v2-strip-dots" role="tablist" aria-label="Reports pagination">

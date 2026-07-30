@@ -53,7 +53,7 @@ export default function BrandDesignSystem() {
       <Section title="1. Identity">
         <p>
           Minerva Investment Management Society (MIMS) is the student association at Bocconi University dedicated to
-          asset management. Founded in 2017, it is Bocconi's first and only association to run student-managed virtual
+          asset management. Founded in 2019, it is Bocconi's first and only association to run student-managed virtual
           funds with processes, reports and disclosures that replicate professional-industry standards.
         </p>
         <p>
@@ -99,7 +99,7 @@ export default function BrandDesignSystem() {
         </div>
         <blockquote className="mt-6 border-l-2 border-accent pl-4 italic text-muted-foreground">
           "Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi University.
-          Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and the only one with
+          Founded in 2019, MIMS is Bocconi's first student association dedicated to asset management and the only one with
           student-managed virtual funds."
         </blockquote>
       </Section>

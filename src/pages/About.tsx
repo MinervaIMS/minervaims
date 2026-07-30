@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
-import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
+import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import aboutBgAsset from "@/assets/mims-about-us.webp.asset.json";
 
@@ -38,7 +38,7 @@ const About = () => {
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
-              Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi University. Founded in 2017, MIMS is Bocconi's first student association dedicated to asset management and the only one with student-managed virtual funds.
+              Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi University. Founded in 2019, MIMS is Bocconi's first student association dedicated to asset management and the only one with student-managed virtual funds.
             </p>
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               We are organised as an investment management firm. Members work in specialised research divisions and in portfolio management. Each research team meets regularly to discuss market developments, review ideas, and develop investment theses. Each team's work is consolidated into written research reports and publications structured to professional investment-industry standards.
@@ -52,6 +52,9 @@ const About = () => {
           </div>
         </div>
       </section>
+
+      {/* SECTION 1b - Our History */}
+      <HistoryTimeline />
 
       {/* SECTION 2 - Readings Curated By Our Members */}
       <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
@@ -73,30 +76,14 @@ const About = () => {
         </div>
       </section>
 
-      {/* SECTION 3 - Our Divisions (scroll-driven card stack) */}
-      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
-        <DivisionScrollStack />
-      </section>
-
       {/* SECTION 4 - Organisational Structure */}
       <section id="organisational-structure" className="bg-background pt-6 md:pt-8 pb-16 md:pb-24">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
 
-          {/* Org Chart with integrated role descriptions */}
-          <div className="mb-12">
-            <OrgChart />
-          </div>
-
-          {/* CTA */}
-          <div className="text-center">
-            <Link
-              to="/people/members"
-              className="cta-link"
-            >
-              Meet the Team
-            </Link>
-          </div>
+          {/* The chart carries its own call to action: the label follows the
+              selected division, so it lands on that division's team. */}
+          <OrgChart />
         </div>
       </section>
     </>

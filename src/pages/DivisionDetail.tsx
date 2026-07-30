@@ -164,7 +164,7 @@ const DivisionDetail = () => {
               {content.description}
             </p>
             <Link
-              to="/people/members"
+              to={`/people/members?division=${divisionKey}`}
               className="cta-link whitespace-nowrap shrink-0"
             >
               Meet the Team
@@ -205,7 +205,7 @@ const DivisionDetail = () => {
         variant="navy"
         heading={content.sectionTitle}
         archiveHref={`/archive?division=${divisionKey}`}
-        archiveLabel="Browse The Archive"
+        archiveLabel="Browse The Full Archive"
         reports={archiveFilesToReports(files)}
         useRealCover
       />

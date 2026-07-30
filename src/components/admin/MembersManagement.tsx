@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2, Download, Search, Upload, User as UserIcon, EyeOff, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Download, Search, Upload, User as UserIcon, Eye, EyeOff, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
@@ -22,6 +22,8 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { CityInput } from '@/components/shared/CityInput';
+import { normaliseCity } from '@/lib/city-format';
 import { supabase } from '@/integrations/supabase/client';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
@@ -137,8 +139,6 @@ export default function MembersManagement() {
   }, []);
 
   const isAdvisor = (m: MemberRow) => normalizeRole(m.role) === 'advisor';
-  // An advisor hidden from the public website (what used to be a "silent advisor").
-  const isHiddenAdvisor = (m: MemberRow) => isAdvisor(m) && !m.is_public;
 
   // The base set (before column filters), used to build filter options.
   // Advisors are part of the roster and appear here alongside members.
@@ -284,7 +284,7 @@ export default function MembersManagement() {
       await moveMemberToAlumni(session, {
         id: leaveTarget.id, graduation_year: year,
         company: leaveForm.company.trim() || null,
-        city: leaveForm.city.trim() || null,
+        city: normaliseCity(leaveForm.city) || null,
         job_area: leaveForm.job_area.trim() || null,
         keep_role: keepAsAdvisor ? 'advisor' : undefined,
       });
@@ -379,7 +379,7 @@ export default function MembersManagement() {
       ) : rows.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No members match.</p></CardContent></Card>
       ) : (
-        <div className="border border-separator overflow-x-auto">
+        <div className="max-w-full border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
@@ -404,11 +404,17 @@ export default function MembersManagement() {
                   </td>
                   <td className="px-3 py-2 text-foreground whitespace-nowrap">
                     {m.first_name} {m.surname}
-                    {isHiddenAdvisor(m) && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 bg-muted text-muted-foreground align-middle" title="Advisor hidden from the public website (toggle in the edit dialog)">
-                        <EyeOff className="h-3 w-3" />hidden
-                      </span>
-                    )}
+                    {/* Public visibility at a glance, for every person on the
+                        register: filled eye = on the public Members page,
+                        struck eye = not shown there. */}
+                    <span
+                      className="ml-2 inline-flex align-middle"
+                      title={m.is_public ? 'Shown on the public Members page' : 'Hidden from the public website'}
+                    >
+                      {m.is_public
+                        ? <Eye className="h-3.5 w-3.5 text-accent" aria-label="Shown on the public Members page" />
+                        : <EyeOff className="h-3.5 w-3.5 text-muted-foreground/70" aria-label="Hidden from the public website" />}
+                    </span>
                   </td>
                   <td className="px-3 py-2">{m.division !== 'none' && m.division !== 'board' ? divisionLabels[m.division] : '-'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{composeRoleLabel(m.role, m.division)}</td>
@@ -417,7 +423,7 @@ export default function MembersManagement() {
                   <td className="px-3 py-2 text-center">
                     {m.linkedin_url ? (
                       <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
-                        <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 opacity-80" />
+                        <img src={linkedinIcon} alt="LinkedIn" width={16} height={16} className="h-4 w-4 shrink-0 object-contain opacity-80" />
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
@@ -439,7 +445,7 @@ export default function MembersManagement() {
         </div>
       )}
 
-      <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical. Advisors marked "hidden" do not appear on the public website.</p>
+      <p className="font-body text-xs text-muted-foreground mt-3">Ordering is automatic by role seniority, then alphabetical. The eye icon next to each name shows whether that person appears on the public Members page.</p>
 
       {/* Semester registers: the official member list of each past semester,
           snapshotted automatically when its fee collection closed. */}
@@ -460,7 +466,7 @@ export default function MembersManagement() {
                     <span className="text-muted-foreground text-xs">{g.rows.length} members {openRegister === g.semester_key ? '▾' : '▸'}</span>
                   </button>
                   {openRegister === g.semester_key && (
-                    <div className="border-t border-separator overflow-x-auto">
+                    <div className="max-w-full border-t border-separator overflow-x-auto">
                       <table className="w-full text-left font-body text-sm">
                         <thead className="bg-muted/40 text-muted-foreground">
                           <tr><th className="px-3 py-1.5 font-normal">Name</th><th className="px-3 py-1.5 font-normal">Role</th><th className="px-3 py-1.5 font-normal">Division</th></tr>
@@ -619,7 +625,7 @@ export default function MembersManagement() {
                 <Input value={leaveForm.company} onChange={(e) => setLeaveForm({ ...leaveForm, company: e.target.value })} placeholder="e.g. Goldman Sachs" />
               </div>
               <div className="space-y-1"><Label>Job area (optional)</Label><Input value={leaveForm.job_area} onChange={(e) => setLeaveForm({ ...leaveForm, job_area: e.target.value })} placeholder="e.g. Investment Banking" /></div>
-              <div className="space-y-1"><Label>City (optional)</Label><Input value={leaveForm.city} onChange={(e) => setLeaveForm({ ...leaveForm, city: e.target.value })} placeholder="e.g. Milan, Italy" /></div>
+              <div className="space-y-1"><Label>City (optional)</Label><CityInput value={leaveForm.city} onChange={(city) => setLeaveForm({ ...leaveForm, city })} /></div>
             </div>
 
             {advisorFlow ? (

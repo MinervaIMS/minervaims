@@ -2,6 +2,13 @@
 // Shared helper used across the site (homepage Latest Reports, division pages,
 // archive page, lightbox cover button, etc.) so every "open report" flow uses
 // the same wrapper tab, clean title, and clean download filename.
+//
+// Naming is delegated to the `report-file` edge function whenever the
+// report's id is known: it streams the stored object with the report title
+// in Content-Disposition AND in the URL's last path segment, so the file is
+// named correctly even when the reader uses the PDF viewer's own download
+// button (which never sees anything this page knows). Without an id the
+// storage URL is used directly, exactly as before.
 
 function sanitizeFilename(t: string): string {
   const cleaned = String(t || '')
@@ -15,6 +22,17 @@ function escapeHtml(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]!));
+}
+
+const FUNCTIONS_BASE = `${import.meta.env.VITE_SUPABASE_URL ?? ''}/functions/v1/report-file`;
+
+/**
+ * A titled URL for a published report: the trailing segment IS the file
+ * name, and the endpoint sets Content-Disposition to match.
+ */
+export function titledReportUrl(id: string, title: string, forceDownload = false): string {
+  const name = encodeURIComponent(`${sanitizeFilename(title)}.pdf`);
+  return `${FUNCTIONS_BASE}/${name}?id=${encodeURIComponent(id)}${forceDownload ? '&download=1' : ''}`;
 }
 
 function withDownloadParam(url: string, filename: string): string {
@@ -36,18 +54,23 @@ function isMobileViewer(): boolean {
   return /iPhone|iPad|iPod|Android/i.test(ua) || iPadOs;
 }
 
-export function openReportInTab(title: string, url: string) {
-  if (!url) return;
+export function openReportInTab(title: string, url: string, id?: string | null) {
+  if (!url && !id) return;
 
   const niceTitle = sanitizeFilename(title);
   const filename = `${niceTitle}.pdf`;
-  const downloadUrl = withDownloadParam(url, filename);
+  // With an id the titled endpoint is authoritative for the file name in
+  // every viewer; without one we fall back to the storage URL.
+  const viewUrl = id ? titledReportUrl(id, title) : url;
+  const downloadUrl = id ? titledReportUrl(id, title, true) : withDownloadParam(url, filename);
 
   if (isMobileViewer()) {
     // Straight to the PDF: the platform viewer handles scrolling, zooming
-    // and sharing far better than anything embeddable.
+    // and sharing far better than anything embeddable. The titled URL keeps
+    // the tab (and any "save to Files") named after the report instead of
+    // showing the raw storage key.
     const a = document.createElement('a');
-    a.href = url;
+    a.href = viewUrl;
     a.target = '_blank';
     a.rel = 'noopener';
     document.body.appendChild(a);
@@ -65,7 +88,7 @@ export function openReportInTab(title: string, url: string) {
     // Genuine popup-block: simulate a user-driven anchor click. A second
     // window.open() here would also be blocked.
     const a = document.createElement('a');
-    a.href = url;
+    a.href = viewUrl;
     a.target = '_blank';
     a.rel = 'noopener';
     document.body.appendChild(a);
@@ -75,7 +98,7 @@ export function openReportInTab(title: string, url: string) {
   }
 
   const safeTitle = escapeHtml(niceTitle);
-  const safeUrl = escapeHtml(url);
+  const safeUrl = escapeHtml(viewUrl);
   const safeDownloadUrl = escapeHtml(downloadUrl);
   const safeFilename = escapeHtml(filename);
 

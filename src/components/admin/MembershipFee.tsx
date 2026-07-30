@@ -201,7 +201,7 @@ export default function MembershipFee() {
             </div>
           </div>
 
-          <div className="border border-separator overflow-x-auto">
+          <div className="max-w-full border border-separator overflow-x-auto">
             <table className="w-full text-left font-body text-sm">
               <thead className="bg-muted/40 text-muted-foreground">
                 <tr>
@@ -249,7 +249,7 @@ export default function MembershipFee() {
                     <span className="text-muted-foreground text-xs">{paid}/{g.rows.length} paid {openPast === g.semester_key ? '▾' : '▸'}</span>
                   </button>
                   {openPast === g.semester_key && (
-                    <div className="border-t border-separator overflow-x-auto">
+                    <div className="max-w-full border-t border-separator overflow-x-auto">
                       <table className="w-full text-left font-body text-sm">
                         <thead className="bg-muted/40 text-muted-foreground">
                           <tr>

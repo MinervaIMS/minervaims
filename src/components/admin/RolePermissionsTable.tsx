@@ -94,7 +94,7 @@ export default function RolePermissionsTable() {
         <HelpDot page="settings-roles" topic="levels" />
       </div>
 
-      <div className="overflow-x-auto border border-separator">
+      <div className="max-w-full overflow-x-auto border border-separator">
         <table className="border-collapse font-body text-xs">
           <thead>
             <tr>
