@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, MembersDirectory, PageLoader } from '@/components/shared';
+import { OrgChart } from '@/components/shared/OrgChart';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
 import { useImagePreload } from '@/hooks/useImagePreload';
@@ -25,6 +26,8 @@ const Team = () => {
   const [searchParams] = useSearchParams();
   const divisionParam = searchParams.get('division') as Division | null;
   const [members, setMembers] = useState<DbTeamMember[]>([]);
+  // Which team the directory is showing, so the chart below opens on it.
+  const [activeTab, setActiveTab] = useState<string>(divisionParam ?? 'executive');
   const [isDataLoading, setIsDataLoading] = useState(true);
   const imagesLoaded = useImagePreload([teamBg]);
 
@@ -106,7 +109,21 @@ const Team = () => {
           <MembersDirectory
             members={transformedMembers}
             initialDivisionFilter={divisionParam || undefined}
+            onActiveTabChange={setActiveTab}
           />
+        </div>
+      </section>
+
+      {/* The same chart that explains the structure on /about, closing this
+          page already open on the team the directory is showing, so the
+          reader sees where those people sit without changing page. The call
+          to action is dropped: this IS the team page. */}
+      <section id="organisational-structure" className="bg-background pb-section-sm md:pb-section">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
+            Organisational Structure
+          </h2>
+          <OrgChart initialFocus={activeTab} showCta={false} />
         </div>
       </section>
     </>

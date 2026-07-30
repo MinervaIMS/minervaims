@@ -25,6 +25,19 @@ export const useHelp = () => useContext(HelpContext);
 
 export function HelpProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<HelpState | null>(null);
+
+  // The workspace search can land on a help topic rather than a page. It
+  // lives outside this provider (in the shell's header), so it asks through
+  // an event rather than reaching into the context across the tree.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<{ page: string; topic?: string }>).detail;
+      if (detail?.page) setState({ page: detail.page, topic: detail.topic });
+    };
+    window.addEventListener('minerva:open-help', onOpen);
+    return () => window.removeEventListener('minerva:open-help', onOpen);
+  }, []);
+
   return (
     <HelpContext.Provider value={{
       openHelp: (page, topic) => setState({ page, topic }),

@@ -18,6 +18,7 @@ interface ManualSection { section: string; entries: (GuideEntry & { canManage: b
 // How the workspace is organised, independent of role.
 const AT_A_GLANCE = [
   'The navigation is organised in sections, each holding subsections. You only ever see the pages your role can access, so nothing in your menu is off limits.',
+  'The fastest way anywhere is the search bar in the header, or Ctrl K (Cmd K on a Mac). It searches subsections and help topics together, limited to what your role can open.',
   'One role drives everything. It is assigned by the President or Admin in Settings, Users, which edits the same record as People, Members: a change made in either place appears in both immediately. Nobody can change their own role.',
   'Help lives where you work: the floating question mark on every page opens the sliding help panel for that page, and the small circled question marks next to specific controls open the panel directly at the matching topic.',
   'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, consultation available everywhere. Subsections that need a full screen are marked with a monitor icon and open on desktop only; read-only pages carry a ribbon.',
@@ -27,13 +28,16 @@ const AT_A_GLANCE = [
 
 // What changed recently, so returning members catch up at a glance.
 const RECENT_IMPROVEMENTS = [
-  'Fund performances now protect the published track record: only the last 15 calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included, with no edit or delete actions offered.',
-  'Recruiting, Form & Questions is one unified page: the fixed form structure first, then the division questions. Heads of Division edit their own division only, and questions lock automatically while applications are open.',
-  'My profile reads as one column: your card, then your role brief, closing with the statute link.',
+  'A search bar sits in the workspace header, on desktop and on a phone. Ctrl K, Cmd K or the / key opens it from anywhere. It searches every subsection AND every help topic your role can reach, so a page you have never opened is one or two letters away. Nothing you cannot access is ever in the results.',
+  'Website, History is new: it holds the "Our History" timeline shown on the About page, one key event per year from 2019 onwards. A year with no event stays on the rail as a quiet marker, and future years are never offered.',
+  'Every filtered list can be cleared in one press. The button appears only when something is filtered and says how many filters are on.',
+  'People, Members carries a Public column stating who the website shows, filterable like any other column. People, Alumni reads as cards on a phone, and turning a page returns you to the top of the list.',
+  'Fund performances feed a real chart on the public fund pages and on the Portfolio Management page: a period selector from three months to inception, the return over the period on screen, and the curve extending on its own as each month is published.',
+  'Fund performances protect the published track record: only the last 15 calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included.',
+  'Recruiting, Form & Questions is one unified page: the division questions, with the fixed form inspected through "Preview the form". Heads of Division edit their own division only, and questions lock automatically while applications are open.',
   'Roles stay in step everywhere: People, Members and Settings, Users edit the same record, and workspace permissions follow instantly.',
-  'The Readings page of the public website presents the library as a stylised bookcase: every reading added in Website, Readings becomes a book visitors can open and page through.',
-  'Tables across People, Website and Settings share the same design, numbered pagination and standardized filters.',
-  'This manual and the sliding help panel are generated from the same updated guide, so both already reflect all of the above.',
+  'Tables across People, Website and Settings share one design, numbered pagination and standard filters.',
+  'This manual and the sliding help panel are generated from the same guide, so both already reflect all of the above, for your role only.',
 ];
 
 export default function HowToUse() {

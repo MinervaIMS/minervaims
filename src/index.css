@@ -1059,6 +1059,12 @@ input[type='search']::-webkit-search-cancel-button {
 
 .tl-section { background: hsl(var(--background)); padding: 5rem 0; }
 @media (min-width: 768px) { .tl-section { padding: 8rem 0; } }
+/* Pinned, the section is a full viewport that already centres its own
+   content, so the section padding would be counted twice and open a band
+   of empty page before and after it that no other section has. The
+   vertical fallback is an ordinary block and keeps the standard rhythm. */
+.tl-section--pinned { padding: 0; }
+@media (min-width: 768px) { .tl-section--pinned { padding: 0; } }
 .tl-h2 {
   font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
   font-size: clamp(1.625rem, 4.5vw + .5rem, 2rem); line-height: 1.2; letter-spacing: -.01em;
@@ -1088,25 +1094,20 @@ input[type='search']::-webkit-search-cancel-button {
   background: linear-gradient(90deg, hsl(var(--accent)), hsl(var(--accent-soft)));
 }
 .tl-cont {
-  position: absolute; left: 0; display: flex; align-items: center; gap: 0;
+  position: absolute; display: flex; align-items: center; left: 0;
   pointer-events: none; top: calc(var(--tl-railtop) + var(--tl-dot) / 2 - 1px);
   transform: translateY(-50%);
 }
+/* The rail carries on past the last year and fades out. It is long enough
+   to read as continuation rather than as a stub, and starts flush against
+   the final circle so there is no gap to mistake for a fault. */
 .tl-cont-line {
-  width: 150px; height: 2px; flex: 0 0 auto;
-  background: linear-gradient(90deg, hsl(var(--accent-soft)), hsl(var(--separator)) 55%, transparent);
-}
-.tl-cont-cap {
-  flex: 0 0 auto; width: 2.75rem; height: 2.75rem; margin-left: .35rem;
-  border: 1px dashed hsl(var(--accent-soft)); border-radius: 50%;
-  display: grid; place-items: center; color: hsl(var(--accent-soft));
-  background: hsl(var(--background));
-}
-.tl-cont-cap svg { width: 1rem; height: 1rem; }
-.tl-cont-label {
-  margin-left: .85rem; font-family: Calibri, Carlito, Arial, Helvetica, sans-serif;
-  font-size: .6875rem; text-transform: uppercase; letter-spacing: .18em;
-  color: hsl(var(--muted-foreground)); white-space: nowrap;
+  width: 320px; height: 2px; flex: 0 0 auto;
+  background: linear-gradient(90deg,
+    hsl(var(--separator)) 0%,
+    hsl(var(--separator)) 22%,
+    hsl(var(--accent-soft) / .5) 48%,
+    transparent 100%);
 }
 
 .tl-list { display: flex; align-items: stretch; gap: var(--tl-gap); margin: 0; padding: 0; list-style: none; }
@@ -1201,11 +1202,12 @@ input[type='search']::-webkit-search-cancel-button {
 .tl-count {
   display: flex; align-items: baseline;
   font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
-  font-size: clamp(2.75rem, 4vw, 4rem); line-height: 1; color: hsl(var(--accent));
+  font-size: clamp(3.75rem, 6vw, 5.5rem); line-height: 1; letter-spacing: -.02em;
+  color: hsl(var(--accent));
 }
 .tl-count-label {
-  font-family: Calibri, Carlito, Arial, Helvetica, sans-serif; font-size: .75rem;
-  text-transform: uppercase; letter-spacing: .14em; color: hsl(var(--muted-foreground)); margin-top: .6rem;
+  font-family: Calibri, Carlito, Arial, Helvetica, sans-serif; font-size: .8125rem;
+  text-transform: uppercase; letter-spacing: .16em; color: hsl(var(--muted-foreground)); margin-top: .75rem;
 }
 
 /* vertical fallback (narrow, short, or reduced motion) ------------------- */
@@ -1251,8 +1253,10 @@ input[type='search']::-webkit-search-cancel-button {
   .tl-media--photo { height: min(210px, max(120px, calc(var(--tl-cardh) - 250px))); }
   .tl-media--pdf { height: min(240px, max(140px, calc(var(--tl-cardh) - 250px))); }
   .tl-tail { width: 40vw; }
-  .tl-cont-line { width: 96px; }
-  .tl-cont-label { display: none; }
+  .tl-cont-line { width: 190px; }
+  /* A year with no key event is punctuation on a phone, not a milestone. */
+  .tl { --tl-minor-dot: 32px; }
+  .tl-dot--minor { font-size: .95rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1287,7 +1291,7 @@ input[type='search']::-webkit-search-cancel-button {
   width: max-content; padding: 0 1.25rem; will-change: transform;
 }
 .dstack-card {
-  flex: 0 0 auto; width: 78vw; aspect-ratio: 5 / 7;
+  flex: 0 0 auto; width: 78vw; aspect-ratio: 9 / 16;
   max-height: calc(100dvh - 13rem);
   overflow: hidden; box-shadow: 0 12px 28px -16px hsl(var(--overlay) / 0.28);
 }
@@ -1305,4 +1309,20 @@ input[type='search']::-webkit-search-cancel-button {
 
 @media (prefers-reduced-motion: reduce) {
   .dstack-track { transition: none !important; }
+}
+
+
+/* =====================================================================
+   The lock-up on the card pages (sign in, apply, event registration).
+   ---------------------------------------------------------------------
+   Every one of these pages is a white card over the dark animated
+   background, and every one opens with the full Minerva lock-up. On a
+   phone that mark was taking more of the card than it needs to, so it is
+   scaled to 85% below the md breakpoint. Each page keeps its own height
+   in --lockup-h, so tablet and desktop are untouched and the proportions
+   follow from `width: auto`.
+   ===================================================================== */
+.card-lockup { height: var(--lockup-h); width: auto; }
+@media (max-width: 767px) {
+  .card-lockup { height: calc(var(--lockup-h) * 0.85); }
 }

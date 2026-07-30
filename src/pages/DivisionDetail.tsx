@@ -206,8 +206,8 @@ const DivisionDetail = () => {
       {isPortfolio && (
         <FundPerformanceChart
           funds={['long-short', 'multi-asset']}
-          title="Fund Performance"
-          caption="Cumulative growth of the two active funds since inception, compounded from the monthly returns published on each fund's page."
+          title="Funds Performance"
+          caption="The two live mandates, side by side, over the period you choose."
         />
       )}
 

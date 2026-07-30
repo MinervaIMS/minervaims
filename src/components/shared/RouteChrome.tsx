@@ -78,18 +78,21 @@ function chromeFor(path: string): Chrome {
   }
   // Event registration shares the auth backdrop.
   if (/^\/events\/[^/]+\/register/.test(path)) return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
-  // Public site: hero images fade from near-black and every page ends with
-  // the black footer, so black is the coherent base for overscroll.
+  // Public site. Two bands, decided separately.
   //
-  // The bottom band, however, is deliberately NOT painted. It used to be a
-  // hard black strip over the home-indicator zone, which assumed every page
-  // is dark where that strip sits. /about breaks the assumption: its long
-  // white "What We Do" body means the strip reads as a black bar under white
-  // content — the anomaly reported on that page while the darker, shorter
-  // pages hid it. Leaving the band transparent lets the real surface show
-  // through (white in a white section, black over the footer), which is
-  // correct on every page rather than on most of them.
-  return { theme: BLACK, base: BLACK, bottom: 'transparent' };
+  // The bottom band is painted WHITE. Leaving it transparent has now been
+  // tried twice and fails the same way: with no theme-color declared,
+  // Safari samples the page near each edge to tint its bars, and a
+  // transparent band lets it reach whatever happens to sit underneath. On
+  // the homepage that is the dark hero on a cold load (a black strip) and
+  // the purple section after a reload. A white strip over the
+  // home-indicator zone gives it one predictable thing to find, on every
+  // public page and on every load.
+  //
+  // `base` is the overscroll colour, and it follows the band for the same
+  // reason: a rubber-band bounce should reveal the page's own surface, not
+  // a black gutter under a white section.
+  return { theme: BLACK, base: WHITE, bottom: WHITE };
 }
 
 export function RouteChrome() {

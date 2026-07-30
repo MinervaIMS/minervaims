@@ -226,6 +226,13 @@ const DotField = memo(function DotField({
 
     doResize();
     window.addEventListener('resize', resize);
+    // The field also has to follow its CONTAINER, not just the window. On a
+    // long form the page keeps its viewport size while the card below grows
+    // past the first screen, so a window-only listener never fires and the
+    // canvas stays one screen tall: the background visibly stopped halfway
+    // down /apply. A ResizeObserver on the parent catches exactly that.
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
+    if (ro && canvas.parentElement) ro.observe(canvas.parentElement);
     window.addEventListener('mousemove', onMouseMove, { passive: true });
     rafRef.current = requestAnimationFrame(tick);
 
@@ -239,6 +246,7 @@ const DotField = memo(function DotField({
       window.clearInterval(speedInterval);
       window.clearTimeout(resizeTimer);
       window.removeEventListener('resize', resize);
+      ro?.disconnect();
       window.removeEventListener('mousemove', onMouseMove);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
