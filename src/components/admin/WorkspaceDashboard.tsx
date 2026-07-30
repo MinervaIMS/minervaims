@@ -232,7 +232,7 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
     <div className="h-full min-h-0 flex flex-col gap-3 font-body">
       {/* Welcome strip */}
       <div className="shrink-0 animate-in fade-in slide-in-from-top-1 duration-500">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Minerva Investment Management Society · est. Fall 2019</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">{"\n"}</div>
         <h1 className="font-serif text-3xl xl:text-4xl text-accent leading-tight">
           Welcome to our {ordinal(semesterNumber)} semester. This is what we are building together in {cur.label}.
         </h1>
