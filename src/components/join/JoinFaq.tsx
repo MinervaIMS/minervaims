@@ -56,7 +56,7 @@ export function JoinFaq() {
                   aria-hidden="true"
                   className="font-serif text-lg leading-none text-accent/35 md:text-xl"
                 >
-                  {String(index + 1).padStart(2, '0')}
+                  {"\n"}
                 </span>
                 <h3
                   id={`faq-group-${group.key}`}
