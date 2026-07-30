@@ -12,6 +12,8 @@
 export const JOIN_HERO = {
   title: 'Join Minerva',
   payoff: 'Built like an investment firm, run by students. Your first step towards a career in finance.',
+  /** Invitation in the white band under the stage, in place of a bare "Scroll". */
+  scrollCue: 'Discover Our Work And How To Join',
 } as const;
 
 export const JOIN_SOCIETY = {
@@ -131,7 +133,15 @@ export const JOIN_STATUS_COPY = {
   closedBodyTop: 'Admissions open at the start of each academic semester.',
   /** Closed-state sentence for the Close block at the foot of the page. */
   closedBodyBottom: 'Admissions open once each academic semester.',
+  /**
+   * Second closed-state sentence. Between intakes the most useful thing a
+   * prospective candidate can do is read the work, so the closed state sends
+   * them to the archive rather than leaving them with nothing to act on.
+   */
+  closedInvitation:
+    'In the meantime, read the research we publish. It is the clearest picture of the work you would be joining, and the best preparation for the next round.',
   applyLabel: 'Apply',
+  archiveLabel: 'Read Our Reports',
   contactLabel: 'Contact Us',
 } as const;
 

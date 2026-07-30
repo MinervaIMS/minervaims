@@ -7,12 +7,20 @@ import {
 } from '@/components/ui/accordion';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useJoinFaqs } from '@/hooks/useJoinFaqs';
+import { JOIN_FAQ_HEADING } from '@/lib/join-content';
 
 /**
- * Four FAQ groups on the grey panel used by the technical pages, driven by the
- * join_faqs table. Radix Accordion supplies the button-in-heading semantics,
- * aria-expanded and keyboard handling. Empty data renders the heading with the
- * groups omitted and an admin-only notice, never a broken accordion.
+ * Four FAQ groups driven by the join_faqs table.
+ *
+ * Hierarchy, from largest to smallest: the section heading, then each category
+ * title set in the serif at heading size in accent on its own white panel, then
+ * the questions in the serif at subheading size, then the answers in the body
+ * font. Each category sits on a white card against the grey page panel so the
+ * four groups separate at a glance rather than running together.
+ *
+ * Radix Accordion supplies the button-in-heading semantics, aria-expanded and
+ * keyboard handling. Empty data renders the heading with the groups omitted and
+ * an admin-only notice, never a broken accordion.
  */
 export function JoinFaq() {
   const { groups, isLoading } = useJoinFaqs();
@@ -25,9 +33,9 @@ export function JoinFaq() {
       <div className="container py-section-sm md:py-section">
         <h2
           id="join-faq-heading"
-          className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent"
+          className="font-serif text-heading mb-10 pb-3 border-b border-separator text-accent md:mb-14"
         >
-          Frequently Asked Questions
+          {JOIN_FAQ_HEADING}
         </h2>
 
         {isLoading && (
@@ -36,15 +44,28 @@ export function JoinFaq() {
           </p>
         )}
 
-        <div className="grid grid-cols-1 gap-x-14 gap-y-12 lg:grid-cols-2">
-          {groups.map((group) => (
-            <section key={group.key} aria-labelledby={`faq-group-${group.key}`}>
-              <h3
-                id={`faq-group-${group.key}`}
-                className="font-body text-xs uppercase tracking-[0.16em] text-muted-foreground pb-3 border-b border-separator"
-              >
-                {group.label}
-              </h3>
+        <div className="flex flex-col gap-6 md:gap-8">
+          {groups.map((group, index) => (
+            <section
+              key={group.key}
+              aria-labelledby={`faq-group-${group.key}`}
+              className="bg-background p-6 md:p-10"
+            >
+              <div className="mb-2 flex items-baseline gap-4 border-b-2 border-accent pb-4 md:mb-4">
+                <span
+                  aria-hidden="true"
+                  className="font-serif text-lg leading-none text-accent/35 md:text-xl"
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <h3
+                  id={`faq-group-${group.key}`}
+                  className="font-serif text-heading leading-tight text-accent"
+                >
+                  {group.label}
+                </h3>
+              </div>
+
               <Accordion type="multiple" className="w-full">
                 {group.entries.map((entry) => (
                   <AccordionItem
@@ -52,15 +73,17 @@ export function JoinFaq() {
                     value={entry.id}
                     className="border-separator"
                   >
-                    <AccordionTrigger className="font-serif text-left text-lg text-accent hover:no-underline py-5 [&>svg]:text-accent [&>svg]:w-4 [&>svg]:h-4">
+                    <AccordionTrigger className="py-5 text-left font-serif text-lg leading-snug text-foreground hover:no-underline hover:text-accent md:text-subheading [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0 [&>svg]:text-accent">
                       {entry.question}
                     </AccordionTrigger>
-                    <AccordionContent className="font-body text-body text-muted-foreground pb-5">
-                      <p>{entry.answer}</p>
+                    <AccordionContent className="pb-6">
+                      <p className="font-body text-body leading-relaxed text-muted-foreground md:text-body-lg">
+                        {entry.answer}
+                      </p>
                       {entry.linkLabel && entry.linkHref && (
                         <Link
                           to={entry.linkHref}
-                          className="mt-4 inline-flex items-center gap-2 font-serif text-accent underline-offset-4 hover:underline"
+                          className="mt-4 inline-flex items-center gap-2 font-serif text-base text-accent underline-offset-4 hover:underline md:text-lg"
                         >
                           {entry.linkLabel}
                           <span aria-hidden="true">&rarr;</span>
@@ -75,7 +98,7 @@ export function JoinFaq() {
         </div>
 
         {isFullAccess && isEmpty && (
-          <p className="font-body text-sm text-muted-foreground mt-2">
+          <p className="font-body text-sm text-muted-foreground">
             Visible to administrators only. No FAQ entries are published, so this
             section has no content beneath its heading. Add entries in Workspace,
             Website, Join FAQ.

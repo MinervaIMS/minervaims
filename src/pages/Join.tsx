@@ -56,7 +56,7 @@ const Join = () => {
       </Helmet>
 
       {/* Hero + Status share the dark stage; the white band below carries the cue. */}
-      <JoinHeroStage>
+      <JoinHeroStage figures={<JoinFigures tone="dark" />}>
         <ApplicationCta
           {...status}
           tone="light"
@@ -86,7 +86,7 @@ const Join = () => {
                   className="select-none leading-[0.8] text-accent/25"
                   style={{
                     fontFamily: "'Times New Roman', Times, Georgia, serif",
-                    fontSize: 'clamp(3.75rem, 11vw, 6.5rem)',
+                    fontSize: 'clamp(4.5rem, 13.2vw, 7.8rem)',
                   }}
                 >
                   {statement.figure}
@@ -102,10 +102,6 @@ const Join = () => {
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="mt-14 border-t border-separator pt-10 md:mt-20">
-            <JoinFigures />
           </div>
         </div>
       </section>

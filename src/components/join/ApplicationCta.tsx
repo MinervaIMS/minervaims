@@ -50,19 +50,25 @@ export function ApplicationCta({
     ? formatDeadlineSentence(semesterLabel, endDate)
     : closedBody;
 
-  // The closed state always keeps a route into the funnel, so the block is
-  // never a dead end regardless of what the settings row contains.
+  // The closed state always keeps a route into the funnel. Between intakes the
+  // useful destination is the research archive, so the primary action sends
+  // candidates to the reports; contact stays available as a secondary link.
   const action = applicationsOpen
     ? { to: '/apply', label: JOIN_STATUS_COPY.applyLabel }
-    : { to: '/contacts', label: JOIN_STATUS_COPY.contactLabel };
+    : { to: '/archive', label: JOIN_STATUS_COPY.archiveLabel };
 
+  /*
+    Button behaviour matches the site-wide .cta-link system used on /about:
+    a bordered button that fills with the opposite colour on hover. On the
+    accent card the fill is inverted so the same gesture reads correctly.
+  */
   const buttonClass = light
-    ? 'bg-accent text-background hover:bg-accent/90 focus-visible:outline-accent'
-    : 'bg-background text-accent hover:bg-background/90 focus-visible:outline-background';
+    ? 'cta-link'
+    : 'inline-block border border-background bg-background px-10 py-4 font-serif text-lg text-accent shadow-none transition-all duration-200 hover:bg-transparent hover:text-background hover:shadow-elevated';
 
   return (
-    <div className={`${surface} p-8 md:p-12 shadow-elevated`}>
-      <div className="grid grid-cols-1 md:grid-cols-[1.4fr_auto] gap-8 md:gap-10 items-center">
+    <div className={`${surface} p-6 sm:p-8 md:p-12 shadow-elevated`}>
+      <div className="grid grid-cols-1 md:grid-cols-[1.4fr_auto] gap-5 md:gap-10 items-center">
         <div>
           <h2 id={headingId} className={`font-serif text-heading ${headingClass}`}>
             {heading}
@@ -77,20 +83,35 @@ export function ApplicationCta({
               {closedBody}
             </p>
           ) : (
-            <p className={`font-body text-body-lg mt-4 max-w-xl leading-relaxed ${bodyClass}`}>
-              {body}
-            </p>
+            <>
+              <p className={`font-body text-body mt-3 max-w-xl leading-relaxed sm:text-body-lg md:mt-4 ${bodyClass}`}>
+                {body}
+              </p>
+              {!applicationsOpen && (
+                <p className={`font-body text-sm mt-3 max-w-xl leading-relaxed sm:text-body ${bodyClass}`}>
+                  {JOIN_STATUS_COPY.closedInvitation}
+                </p>
+              )}
+            </>
           )}
         </div>
 
         <div className="md:justify-self-end">
-          <Link
-            to={action.to}
-            className={`inline-flex items-center gap-3 px-10 py-4 font-serif text-lg transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 ${buttonClass}`}
-          >
+          <Link to={action.to} className={buttonClass}>
             {action.label}
-            {'\n'}
           </Link>
+          {!applicationsOpen && !isLoading && (
+            <p className="mt-4 md:text-right">
+              <Link
+                to="/contacts"
+                className={`font-body text-sm underline-offset-4 hover:underline ${
+                  light ? 'text-muted-foreground' : 'text-background/75'
+                }`}
+              >
+                {JOIN_STATUS_COPY.contactLabel}
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

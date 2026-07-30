@@ -18,7 +18,9 @@
 .jd-rail {
   --jd-card-w: min(78vw, 340px);
   --jd-gap: clamp(1rem, 3vw, 2.25rem);
-  --jd-pad: clamp(1.25rem, 6vw, 4rem);
+  /* Set from JS to the measured left edge of the page container, so the first
+     card begins exactly on the content boundary and the last card ends on it. */
+  --jd-pad: 1.5rem;
   margin-top: clamp(1rem, 2.5vw, 2rem);
 }
 
@@ -31,6 +33,14 @@
 
 .jd-rail.is-pinned {
   overflow: hidden;
+  /* The pinned rail is driven entirely by transform. Leaving snapping on makes
+     the browser treat it as a scroll container and set scrollLeft, which shifts
+     the track sideways and breaks the content-boundary alignment. */
+  scroll-snap-type: none;
+}
+
+.jd-rail.is-pinned .jd-card {
+  scroll-snap-align: none;
 }
 
 .jd-track {
@@ -52,13 +62,11 @@
   flex: 0 0 auto;
   width: var(--jd-card-w);
   aspect-ratio: 9 / 16;
-  /* Never taller than the pinned stage minus the heading and dots. */
+  /* Never taller than the pinned stage minus the heading. */
   max-height: min(72svh, 620px);
   overflow: hidden;
   background: hsl(var(--accent));
-  scroll-snap-align: center;
-  transition: transform 480ms cubic-bezier(0.22, 0.61, 0.36, 1),
-              box-shadow 480ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  scroll-snap-align: start;
 }
 
 /* Cards are sized by height inside the pinned stage so five of them can be
@@ -136,51 +144,10 @@
   margin: 0;
 }
 
-/* Desktop hover: a controlled lift, proportions preserved. */
-@media (hover: hover) and (pointer: fine) {
-  .jd-card:hover {
-    transform: scale(1.2);
-    z-index: 2;
-    box-shadow: 0 26px 60px -18px rgba(0, 0, 0, 0.55);
-  }
-}
-
-.jd-dots {
-  display: flex;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: clamp(1.1rem, 2.5vw, 1.75rem);
-}
-
-.jd-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: 1px solid hsl(var(--accent) / 0.5);
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 220ms ease, transform 220ms ease;
-}
-
-.jd-dot.is-active {
-  background: hsl(var(--accent));
-  transform: scale(1.25);
-}
-
-.jd-dot:focus-visible {
-  outline: 2px solid hsl(var(--accent));
-  outline-offset: 3px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .jd-card,
-  .jd-video,
-  .jd-dot {
+  .jd-video {
     transition: none;
-  }
-  .jd-card:hover {
-    transform: none;
-    box-shadow: none;
   }
   .jd-rail.is-static {
     scroll-snap-type: none;
