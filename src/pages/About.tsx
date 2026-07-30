@@ -33,7 +33,7 @@ const About = () => {
       </div>
 
       {/* SECTION 1 - What We Do */}
-      <section className="bg-background text-foreground pt-10 md:pt-14 pb-6 md:pb-8">
+      <section className="bg-background text-foreground py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
@@ -57,7 +57,7 @@ const About = () => {
       <HistoryTimeline />
 
       {/* SECTION 2 - Readings Curated By Our Members */}
-      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
+      <section className="bg-background py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Readings Curated By Our Members
@@ -77,7 +77,7 @@ const About = () => {
       </section>
 
       {/* SECTION 4 - Organisational Structure */}
-      <section id="organisational-structure" className="bg-background pt-6 md:pt-8 pb-16 md:pb-24">
+      <section id="organisational-structure" className="bg-background py-section-sm md:py-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
 
