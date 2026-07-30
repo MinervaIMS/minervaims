@@ -86,7 +86,7 @@ export function JoinFaq() {
                           className="mt-4 inline-flex items-center gap-2 font-serif text-base text-accent underline-offset-4 hover:underline md:text-lg"
                         >
                           {entry.linkLabel}
-                          <span aria-hidden="true">&rarr;</span>
+                          <span aria-hidden="true">{"\n"}</span>
                         </Link>
                       )}
                     </AccordionContent>
