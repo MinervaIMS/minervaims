@@ -100,7 +100,7 @@ export function ApplicationCta({
           <Link to={action.to} className={buttonClass}>
             {action.label}
           </Link>
-          {!applicationsOpen && !isLoading && (
+          {!applicationsOpen && !isLoading && JOIN_STATUS_COPY.contactLabel && (
             <p className="mt-4 md:text-right">
               <Link
                 to="/contacts"
