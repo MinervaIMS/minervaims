@@ -4,6 +4,8 @@ import { TeamMember, Division, divisionLabels, fundShortLabels } from '@/lib/typ
 interface MembersDirectoryProps {
   members: TeamMember[];
   initialDivisionFilter?: Division;
+  /** Told which team is on screen, so the page can mirror it elsewhere. */
+  onActiveTabChange?: (tab: string) => void;
 }
 
 type TabKey = 'executive' | Division | 'media-ops';
@@ -67,12 +69,14 @@ const isLeadership = (m: TeamMember) =>
 const getInitials = (m: TeamMember) =>
   `${m.name?.charAt(0) ?? ''}${m.surname?.charAt(0) ?? ''}`.toUpperCase();
 
-export function MembersDirectory({ members, initialDivisionFilter }: MembersDirectoryProps) {
+export function MembersDirectory({ members, initialDivisionFilter, onActiveTabChange }: MembersDirectoryProps) {
   const [active, setActive] = useState<TabKey>(initialDivisionFilter ?? 'executive');
 
   useEffect(() => {
     if (initialDivisionFilter) setActive(initialDivisionFilter);
   }, [initialDivisionFilter]);
+
+  useEffect(() => { onActiveTabChange?.(active); }, [active, onActiveTabChange]);
 
   const grouped = useMemo(() => {
     // Advisors are appointed alumni who assist the board: they are shown in

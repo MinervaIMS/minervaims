@@ -33,14 +33,19 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Helmet><title>Apply | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
+      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
         <ApplyBackground />
         {/* Flat white card per the Minerva Forms design: sharp corners, hairline
             border, deep drop shadow. */}
         {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
         <div className="relative z-[55] w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
-            <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '100px', width: 'auto' }} />
+            <img
+              src={fullLogo}
+              alt="Minerva Investment Management Society"
+              className="card-lockup"
+              style={{ '--lockup-h': '100px' } as React.CSSProperties}
+            />
           </div>
           {children}
         </div>
@@ -99,7 +104,7 @@ function SuccessScreen() {
   return (
     <>
       <Helmet><title>Application submitted | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
+      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
         <ApplyBackground />
         <div className="relative z-10 w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}
@@ -107,7 +112,12 @@ function SuccessScreen() {
             <PixelCardSuccess />
           </div>
           <div className="relative z-10 px-8 py-12 text-center">
-            <img src={fullLogoColor.url} alt="Minerva Investment Management Society" style={{ height: '116px', width: 'auto' }} className="mx-auto mb-6" />
+            <img
+              src={fullLogoColor.url}
+              alt="Minerva Investment Management Society"
+              className="card-lockup mx-auto mb-6"
+              style={{ '--lockup-h': '116px' } as React.CSSProperties}
+            />
             <h1 className="font-serif text-accent mb-3" style={{ fontSize: '26px', fontWeight: 400 }}>Application submitted</h1>
             <p className="font-body text-foreground mb-2" style={{ fontSize: '16px', lineHeight: 1.55 }}>
               Your email is verified and your application has been submitted successfully.

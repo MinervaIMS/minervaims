@@ -96,7 +96,12 @@ export default function EventRegister() {
         {/* Flat white card per the Minerva Forms design. */}
         {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
         <div className="relative z-[55] w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
-          <div className="flex justify-center mb-6"><img src={fullLogoAsset.url} alt="Minerva Investment Management Society" style={{ height: '118px', width: 'auto' }} /></div>
+          <div className="flex justify-center mb-6"><img
+            src={fullLogoAsset.url}
+            alt="Minerva Investment Management Society"
+            className="card-lockup"
+            style={{ '--lockup-h': '118px' } as React.CSSProperties}
+          /></div>
           {children}
         </div>
       </div>

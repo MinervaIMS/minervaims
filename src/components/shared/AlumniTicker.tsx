@@ -144,7 +144,7 @@ function LogoItem({ logo, isMobile }: { logo: Logo; isMobile: boolean }) {
         onError={() => setVisible(false)}
         style={{
           maxHeight: isMobile ? '22px' : '40px',
-          maxWidth:  isMobile ? '358px' : '650px',
+          maxWidth:  isMobile ? '394px' : '650px',
           width: 'auto', height: 'auto', objectFit: 'contain',
           opacity, transition: 'opacity 0.35s ease',
           userSelect: 'none', pointerEvents: 'none', display: 'block',

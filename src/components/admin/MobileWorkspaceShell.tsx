@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import { mobilePolicyFor } from '@/lib/mobile-policy';
+import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import logoWhite from '@/assets/logo-white.svg';
 
 // =====================================================================
@@ -34,6 +35,8 @@ export interface MobileNavSection {
 
 interface Props {
   nav: MobileNavSection[];
+  /** Open a search result: the same routine the desktop shell uses. */
+  onSearch: (target: SearchTarget) => void;
   activeSectionKey: string | null;
   activeSubKey: string | null;
   onNavigate: (sectionKey: string, subKey: string | null) => void;
@@ -45,7 +48,7 @@ interface Props {
 }
 
 export default function MobileWorkspaceShell({
-  nav, activeSectionKey, activeSubKey, onNavigate, roleLabel, email, onWebsite, onSignOut, children,
+  nav, activeSectionKey, activeSubKey, onNavigate, onSearch, roleLabel, email, onWebsite, onSignOut, children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(activeSectionKey);
@@ -109,6 +112,7 @@ export default function MobileWorkspaceShell({
             <div className="text-[11px] text-accent-foreground/70 leading-tight truncate">{activeSection.label}</div>
           )}
         </div>
+        <WorkspaceSearch onNavigate={onSearch} variant="icon" className="text-accent-foreground/90" />
         <button type="button" onClick={onWebsite} aria-label="Return to website" title="Return to Website"
           className="h-11 w-11 flex items-center justify-center shrink-0 text-accent-foreground/90">
           <Globe className="h-5 w-5" />

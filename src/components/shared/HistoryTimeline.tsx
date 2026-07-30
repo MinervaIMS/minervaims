@@ -12,6 +12,7 @@ import {
   isQuietYear,
 } from '@/data/historyTimeline';
 import { listHistoryEvents, type HistoryEventRow } from '@/lib/history-api';
+import { bindPinnedScroll } from '@/lib/pinned-scroll';
 
 // =====================================================================
 // HistoryTimeline — "Our History" on /about.
@@ -339,6 +340,7 @@ export function HistoryTimeline() {
   const titleRefs = useRef<Map<number, HTMLHeadingElement>>(new Map());
 
   const geometry = useRef({ thresholds: [] as number[], range: 0, budget: 1, wrapTop: 0, pinned: false });
+  const progressRef = useRef(0);
 
   const registerTitle = useCallback((index: number, el: HTMLHeadingElement | null) => {
     if (el) titleRefs.current.set(index, el);
@@ -409,7 +411,9 @@ export function HistoryTimeline() {
     rail.style.left = `${first}px`;
     rail.style.width = `${Math.max(0, len)}px`;
     const lastDot = list.querySelector<HTMLElement>('li[data-ev]:last-of-type [data-dot]');
-    cont.style.left = `${last + (lastDot ? lastDot.offsetWidth / 2 : 44) + 14}px`;
+    // Flush against the last circle: any gap here reads as a rendering
+    // fault rather than as the rail carrying on.
+    cont.style.left = `${last + (lastDot ? lastDot.offsetWidth / 2 : 44)}px`;
 
     const range = Math.max(0, track.scrollWidth - sticky.clientWidth);
     geometry.current.range = range;
@@ -440,6 +444,7 @@ export function HistoryTimeline() {
 
     let p = 1;
     if (pinned) p = Math.max(0, Math.min(1, (window.scrollY - wrapTop) / budget));
+    progressRef.current = p;
 
     track.style.transform = `translate3d(${-p * (pinned ? range : 0)}px,0,0)`;
     fill.style.width = `${p * 100}%`;
@@ -477,12 +482,21 @@ export function HistoryTimeline() {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
+    // A sideways gesture over the pinned run advances it too, so reaching
+    // for the direction the years are travelling in actually works.
+    const unbind = wrapRef.current
+      ? bindPinnedScroll(wrapRef.current, {
+          progress: () => progressRef.current,
+          enabled: () => geometry.current.pinned,
+        })
+      : undefined;
     if (typeof document !== 'undefined' && document.fonts?.ready) {
       document.fonts.ready.then(() => { measure(); paint(); }).catch(() => undefined);
     }
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
+      unbind?.();
       if (scrollFrame) cancelAnimationFrame(scrollFrame);
       if (resizeFrame) cancelAnimationFrame(resizeFrame);
     };
@@ -588,7 +602,7 @@ export function HistoryTimeline() {
   }
 
   return (
-    <section id="our-history" className="tl tl-section" aria-label={heading}>
+    <section id="our-history" className="tl tl-section tl-section--pinned" aria-label={heading}>
       <div className="tl-wrap" ref={wrapRef}>
         <div className="tl-sticky" ref={stickyRef}>
           <h2 className="tl-h2 tl-h2--pinned">{heading}</h2>
@@ -596,18 +610,12 @@ export function HistoryTimeline() {
             <div className="tl-rail" ref={railRef} aria-hidden="true">
               <div className="tl-fill" ref={fillRef} />
             </div>
-            {/* The rail does not simply stop after the last year: it thins
-                into a gradient and lands on an open circle with a forward
-                arrow, so the end of the row reads as the story continuing
-                rather than as the drawing running out. */}
+            {/* Beyond the last year the rail simply keeps going and fades
+                out, which reads as a story still being written. It starts
+                flush against the final circle, so there is no gap to
+                mistake for a rendering fault. */}
             <div className="tl-cont" ref={contRef} aria-hidden="true">
               <span className="tl-cont-line" />
-              <span className="tl-cont-cap">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h13M13 6l6 6-6 6" />
-                </svg>
-              </span>
-              <span className="tl-cont-label">The story continues</span>
             </div>
             <ol className="tl-list" ref={listRef}>
               {events.map((event, i) => {

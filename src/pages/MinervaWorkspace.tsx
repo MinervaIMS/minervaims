@@ -62,6 +62,7 @@ import NewsletterManagement from '@/components/admin/NewsletterManagement';
 import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
 import TestimonialsManagement from '@/components/admin/TestimonialsManagement';
 import HistoryManagement from '@/components/admin/HistoryManagement';
+import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 
@@ -678,6 +679,25 @@ const MinervaWorkspace = () => {
     </div>
   );
 
+  // Opening a search result: find the section that owns the subsection,
+  // switch to it, and let the help panel open on the matching topic when
+  // the hit was a help topic rather than a page.
+  const openSearchTarget = (target: SearchTarget) => {
+    const section = NAV.find((s) => s.subItems.some((si) => si.key === target.key))
+      ?? NAV.find((s) => s.key === target.key);
+    if (!section) return;
+    setActiveSectionKey(section.key);
+    setActiveSubKey(section.subItems.some((si) => si.key === target.key) ? target.key : null);
+    if (target.topicId) {
+      // The subsection has to mount before its help panel can be addressed.
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('minerva:open-help', {
+          detail: { page: target.key, topic: target.topicId },
+        }));
+      }, 60);
+    }
+  };
+
   const renderContent = () => {
     // Hard guard: a candidate can only ever render their profile or status.
     if (isCandidate) {
@@ -1047,6 +1067,7 @@ const MinervaWorkspace = () => {
           nav={visibleNav}
           activeSectionKey={activeSectionKey}
           activeSubKey={activeSubKey}
+          onSearch={openSearchTarget}
           onNavigate={(sectionKey, subKey) => { setActiveSectionKey(sectionKey); setActiveSubKey(subKey); }}
           roleLabel={roleLabel}
           email={user.email ?? ''}
@@ -1132,6 +1153,7 @@ const MinervaWorkspace = () => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <WorkspaceSearch onNavigate={openSearchTarget} />
             <Button
               variant="outline"
               className="text-base"

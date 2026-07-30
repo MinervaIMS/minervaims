@@ -80,7 +80,7 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'reports-upload', section: 'Reports', label: 'Upload report',
     purpose: 'Publish a new research report to the archive and, when published, to the public website.',
-    view: [],
+    view: ['Consult the upload form and the rules a report must satisfy before it is published.'],
     manage: ['Attach the PDF, fill in title, date and division, then publish or save as a draft.', 'Division-scoped roles upload only for their own division.'],
     warnings: ['Publishing makes the report publicly visible on the website.', 'The number of pages is detected automatically from the PDF. No manual input is needed.'],
     topics: [
@@ -179,7 +179,7 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'events-create', section: 'Events', label: 'Create event',
     purpose: 'Create a new event of any type (meeting, aperitivo, guest event, online call and more) with schedule, place and poster.',
-    view: [],
+    view: ['Read the event form and see what an event needs before it can be created.'],
     manage: ['Create events; they appear on the Calendar, in the archive and, if enabled, on the public website.'],
     topics: [
       { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, association-wide gathering). Alumni calls are not created here: they have their own subsection under Events. Internal types default to staying off the public website; you can change that per event in the Event archive.' },
@@ -190,7 +190,7 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'events-forms', section: 'Events', label: 'Registration forms',
     purpose: 'Turn registration on for any event, choose the audience, preview the public form and share the link.',
-    view: [],
+    view: ['Read a registration form and the answers it collects.'],
     manage: ['Enable or disable registration, pick who can register, copy the public link.'],
     warnings: ['Registrations flow into Attendance automatically.'],
     topics: [
@@ -267,11 +267,32 @@ export const GUIDE: GuideEntry[] = [
       { id: 'planning', title: 'Planning items', body: 'Each item represents one piece of content with its channel and date. Move items as plans change; completing an item records that the content went out.' },
     ]
   },
-  { key: 'smm-ig', section: 'Media & Communication', label: 'Instagram', purpose: 'Reusable Instagram material: texts, files and links.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'] },
-  { key: 'smm-li', section: 'Media & Communication', label: 'LinkedIn', purpose: 'Reusable LinkedIn material.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'] },
-  { key: 'smm-graphics', section: 'Media & Communication', label: 'MIMS Graphics', purpose: 'The association\'s graphic assets: logos, marks and ready-to-use graphic files.', view: ['Open and download the graphic assets.'], manage: ['Add, edit and remove items; pin favourites.'] },
-  { key: 'smm-other', section: 'Media & Communication', label: 'Other resources', purpose: 'Other reusable communication material.', view: ['Open and download material.'], manage: ['Add, edit and remove items.'] },
-  { key: 'smm-brand', section: 'Media & Communication', label: 'Design System', purpose: 'The association\'s visual identity: fonts, colours, logo usage and design rules.', view: ['Consult the design references.'], manage: ['Maintain the design references.'] },
+  { key: 'smm-ig', section: 'Media & Communication', label: 'Instagram', purpose: 'Reusable Instagram material: texts, files and links.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'],
+    topics: [
+      { id: 'posts', title: 'Planning a post', body: 'Each item holds the caption, the assets and up to five files. Every file can be previewed full screen or downloaded from the item itself, so nothing has to be hunted for on a shared drive.' },
+      { id: 'approval', title: 'Before publishing', body: 'Anything quoting a report, a figure or a member should be checked against the source in Reports or People first. The Society publishes under its own name and the post is the Society speaking.' },
+    ]
+  },
+  { key: 'smm-li', section: 'Media & Communication', label: 'LinkedIn', purpose: 'Reusable LinkedIn material.', view: ['Open and download material.'], manage: ['Add, edit and remove items; pin favourites.'],
+    topics: [
+      { id: 'tone', title: 'LinkedIn tone', body: 'LinkedIn reaches alumni, partners and recruiters as well as students. Posts here carry the Society\'s professional register: the substance of the research, not the atmosphere of the event.' },
+    ]
+  },
+  { key: 'smm-graphics', section: 'Media & Communication', label: 'MIMS Graphics', purpose: 'The association\'s graphic assets: logos, marks and ready-to-use graphic files.', view: ['Open and download the graphic assets.'], manage: ['Add, edit and remove items; pin favourites.'],
+    topics: [
+      { id: 'assets', title: 'Reusing assets', body: 'Templates and finished graphics live here so that a post never starts from a blank canvas. Add the editable file alongside the export whenever there is one.' },
+    ]
+  },
+  { key: 'smm-other', section: 'Media & Communication', label: 'Other resources', purpose: 'Other reusable communication material.', view: ['Open and download material.'], manage: ['Add, edit and remove items.'],
+    topics: [
+      { id: 'scope', title: 'What belongs here', body: 'Anything that supports communication but has no home of its own: press material, photography, third-party mentions. If a category grows, it earns its own subsection.' },
+    ]
+  },
+  { key: 'smm-brand', section: 'Media & Communication', label: 'Design System', purpose: 'The association\'s visual identity: fonts, colours, logo usage and design rules.', view: ['Consult the design references.'], manage: ['Maintain the design references.'],
+    topics: [
+      { id: 'usage', title: 'Using the design system', body: 'Colours, typefaces, spacing and logo rules are recorded here so that everything the Society publishes reads as one voice. It is a reference: it is not edited from this page.' },
+    ]
+  },
   {
     key: 'smm-ads', section: 'Media & Communication', label: 'Ads & spending',
     purpose: 'The paid advertising register, organised semester by semester: content, platform, amount, purpose and effectiveness notes. Each amount is posted once to the Treasury.',
@@ -305,7 +326,12 @@ export const GUIDE: GuideEntry[] = [
       { id: 'semester-dividers', title: 'Semester dividers', body: 'Entries are grouped under the semester in which they were executed, with a net amount per semester, so each leadership team\'s period reads separately.' },
     ],
   },
-  { key: 'ops-external', section: 'Operations', label: 'External relations', purpose: 'Repository of external relationships: contacts, agreements, files and links.', view: ['Consult the material.'], manage: ['Maintain the material.'] },
+  { key: 'ops-external', section: 'Operations', label: 'External relations', purpose: 'Repository of external relationships: contacts, agreements, files and links.', view: ['Consult the material.'], manage: ['Maintain the material.'],
+    topics: [
+      { id: 'records', title: 'Keeping the relationship', body: 'Every partner, sponsor and institution the Society deals with, with the documents and the contacts that go with them. Star up to five to keep the ones in play at the top.' },
+      { id: 'handover', title: 'Why it matters', body: 'Boards change every year. This subsection is what makes a relationship survive that change instead of leaving with the person who built it.' },
+    ]
+  },
   { key: 'ops-docs', section: 'Operations', label: 'Statute & documents', purpose: 'Official documents: the statute, drafts and approval documents.', view: ['Read and download documents.'], manage: ['Maintain the document repository.'],
     topics: [{ id: 'official', title: 'Official documents', body: 'This repository holds the statute and the association\'s formal documents. Keep the latest approved versions pinned as favourites so members always find the current text first.' }] },
   {

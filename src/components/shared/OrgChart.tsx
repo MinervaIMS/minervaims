@@ -39,7 +39,10 @@ const WORLD_H = 808;
 
 /** Camera limits and padding when framing a branch. */
 const SMIN = 0.86;
-const SMAX = 1.35;
+// The strongest zoom a dive is allowed. Framing a branch should bring
+// it forward, not blow it up: past this the diagram stops reading as
+// one structure and starts reading as a fragment.
+const SMAX = 1.05;
 const PADX = 72;
 const PADY = 56;
 const CONTENT = { x1: 137, x2: 1521 };
@@ -224,21 +227,21 @@ const boxBase: CSSProperties = {
 };
 
 const headText: CSSProperties = {
-  fontFamily: serif, fontSize: 23, lineHeight: 1.14, letterSpacing: '-0.012em',
+  fontFamily: serif, fontSize: 16, lineHeight: 1.18, letterSpacing: '-0.008em',
   color: 'hsl(var(--accent))', fontWeight: 400, textWrap: 'balance' as CSSProperties['textWrap'],
 };
 
 const leaderText: CSSProperties = {
-  fontFamily: serif, fontSize: 15, lineHeight: 1.15, color: 'hsl(var(--accent))', fontWeight: 400,
+  fontFamily: serif, fontSize: 12.5, lineHeight: 1.18, color: 'hsl(var(--accent))', fontWeight: 400,
 };
 
 const subText: CSSProperties = {
-  fontFamily: body, fontSize: 12, lineHeight: 1.25,
+  fontFamily: body, fontSize: 10, lineHeight: 1.25,
   color: 'color-mix(in srgb, hsl(var(--accent)) 75%, #ffffff)',
 };
 
 const rankText: CSSProperties = {
-  fontFamily: body, fontSize: 12.5, lineHeight: 1.2, textTransform: 'uppercase',
+  fontFamily: body, fontSize: 9.5, lineHeight: 1.2, textTransform: 'uppercase',
   letterSpacing: '0.06em', fontWeight: 500, color: 'hsl(var(--accent))',
 };
 
@@ -255,7 +258,20 @@ function prefersReducedMotion(): boolean {
 
 // =====================================================================
 
-export function OrgChart() {
+export interface OrgChartProps {
+  /**
+   * Open on this branch instead of the overview. Used by the Members page,
+   * where the chart repeats the division the reader is already looking at.
+   * Anything that is not a branch (the board, for instance) opens on the
+   * overview, which is the honest answer for a group the chart does not
+   * draw as a branch of its own.
+   */
+  initialFocus?: string | null;
+  /** The "Meet the team" call to action. Off where the page is the team. */
+  showCta?: boolean;
+}
+
+export function OrgChart({ initialFocus = null, showCta = true }: OrgChartProps = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -307,9 +323,19 @@ export function OrgChart() {
 
   const overviewCam = useCallback(() => {
     const f = frameSize();
+    if (narrow) {
+      // A phone must NOT be shown the whole 1560px world at once: fitting
+      // it sideways resolves to about a third of full size and the labels
+      // become unreadable specks. Instead the chart is scaled so the
+      // structure fits VERTICALLY at a legible size, centred on the spine,
+      // and the reader drags sideways to reach the outer divisions. That
+      // is the same gesture the diagram already teaches on the desktop.
+      const s = Math.max(0.5, Math.min(0.95, (f.h - 44) / 520));
+      return { tx: f.w / 2 - s * 860, ty: f.h / 2 - s * 250, s };
+    }
     const s = Math.min(SMIN, (f.w - 56) / 1096, (f.h - 56) / 476);
     return { tx: f.w / 2 - s * 870, ty: f.h / 2 - s * 238, s };
-  }, [frameSize]);
+  }, [frameSize, narrow]);
 
   const focusCam = useCallback((key: DivKey) => {
     const f = frameSize();
@@ -381,6 +407,19 @@ export function OrgChart() {
     const button = worldRef.current?.querySelector<HTMLElement>(`[data-dive="${previous}"]`);
     button?.focus({ preventScroll: true });
   }, [overviewCam, setCam]);
+
+  // The Members page repeats this chart under its directory and asks for
+  // the division shown above to be open already. It is applied once the
+  // camera exists, and again whenever the page switches tab.
+  useEffect(() => {
+    const key = initialFocus as DivKey | null;
+    if (key && CELL[key]) {
+      if (focusRef.current !== key) dive(key);
+    } else if (focusRef.current != null) {
+      toOverview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFocus]);
 
   // --- Lifecycle ------------------------------------------------------
 
@@ -760,7 +799,16 @@ export function OrgChart() {
   return (
     <div className="oc" ref={rootRef}>
       <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', margin: '0 0 14px', minHeight: 30 }}>
+          {/* Breadcrumb, hint and the way back, all gathered at the top
+              right so the diagram itself starts at the section's left edge
+              and nothing competes with it for the first read. */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            gap: 14, flexWrap: 'wrap', margin: '0 0 14px', minHeight: 30, textAlign: 'right',
+          }}>
+            <p style={{ margin: 0, fontSize: 11, lineHeight: 1.5, letterSpacing: '0.02em', color: 'hsl(var(--muted-foreground))' }}>
+              {narrow ? 'Tap a division to explore its teams, drag sideways to look around.' : 'Select a division to explore its teams.'}
+            </p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, ...crumbText }}>
               <button
                 type="button"
@@ -777,15 +825,12 @@ export function OrgChart() {
                 </>
               )}
             </div>
-            <p style={{ margin: '0 auto 0 0', fontSize: 12, lineHeight: 1.5, letterSpacing: '0.02em', color: 'hsl(var(--muted-foreground))' }}>
-              {narrow ? 'Tap a division to explore its teams, drag sideways to look around.' : 'Select a division to explore its teams.'}
-            </p>
             {focus && (
               <button
                 type="button"
                 className="oc-crumb"
                 onClick={toOverview}
-                style={{ border: '1px solid hsl(var(--separator))', background: 'none', padding: '6px 13px', fontFamily: 'inherit', ...crumbText, cursor: 'pointer' }}
+                style={{ border: '1px solid hsl(var(--separator))', background: 'none', padding: '5px 11px', fontFamily: 'inherit', ...crumbText, cursor: 'pointer' }}
               >
                 Overview
               </button>
@@ -826,13 +871,13 @@ export function OrgChart() {
 
                     <div className={wrapClass('pres', entrance('e0'))} data-w="pres" style={{ position: 'absolute', left: 755, top: 0, width: 210, height: 66, pointerEvents: 'none' }}>
                       <div data-node="pres" style={{ ...boxBase, border: '1px solid hsl(var(--accent))', boxShadow: '0 8px 16px -4px hsl(var(--overlay) / 0.1), 0 4px 6px -2px hsl(var(--overlay) / 0.06)' }}>
-                        <span style={{ fontFamily: serif, fontSize: 23, lineHeight: 1.1, letterSpacing: '-0.015em', color: 'hsl(var(--accent))', fontWeight: 400 }}>President</span>
+                        <span style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.1, letterSpacing: '-0.012em', color: 'hsl(var(--accent))', fontWeight: 400 }}>President</span>
                       </div>
                     </div>
 
                     <div className={wrapClass('advisors', entrance('e3'))} data-w="advisors" style={{ position: 'absolute', left: 422, top: 12, width: 156, height: 44, pointerEvents: 'none' }}>
                       <div data-node="advisors" style={{ ...boxBase, border: '1px solid hsl(var(--separator))' }}>
-                        <span style={{ fontFamily: serif, fontSize: 23, lineHeight: 1.15, letterSpacing: '-0.01em', color: 'hsl(var(--accent))', fontWeight: 400 }}>Advisors</span>
+                        <span style={{ fontFamily: serif, fontSize: 16, lineHeight: 1.15, letterSpacing: '-0.008em', color: 'hsl(var(--accent))', fontWeight: 400 }}>Advisors</span>
                       </div>
                     </div>
 
@@ -954,16 +999,18 @@ export function OrgChart() {
         </ul>
       </nav>
 
-      <div style={{ textAlign: 'center', marginTop: 52 }}>
-        <a
-          ref={ctaRef}
-          href="/people/members"
-          className="cta-link"
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', minWidth: 'min(392px,100%)' }}
-        >
-          <span ref={ctaTextRef} aria-live="polite" style={{ display: 'inline-block', opacity: 1 }}>Meet the Team</span>
-        </a>
-      </div>
+      {showCta && (
+        <div style={{ textAlign: 'center', marginTop: 52 }}>
+          <a
+            ref={ctaRef}
+            href="/people/members"
+            className="cta-link"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', minWidth: 'min(392px,100%)' }}
+          >
+            <span ref={ctaTextRef} aria-live="polite" style={{ display: 'inline-block', opacity: 1 }}>Meet the Team</span>
+          </a>
+        </div>
+      )}
     </div>
   );
 }

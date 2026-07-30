@@ -60,7 +60,7 @@ export const isQuietYear = (event: HistoryEvent): event is HistoryQuietYear =>
   (event as HistoryQuietYear).minor === true;
 
 /** Scroll distance multiplier for the pinned run: overflow x this. */
-export const HISTORY_SCROLL_PACE = 2.5;
+export const HISTORY_SCROLL_PACE = 1.8;
 
 /**
  * The figure the 2021 counter graphic shows on the website. It is fixed at

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { JOIN_DIVISIONS, type JoinDivision } from '@/lib/join-content';
+import { bindPinnedScroll } from '@/lib/pinned-scroll';
 import './DivisionVideoRail.css';
 
 // =====================================================================
@@ -18,7 +19,7 @@ import './DivisionVideoRail.css';
 // =====================================================================
 
 /** Horizontal travel is stretched by this factor relative to normal scrolling. */
-const SCROLL_PACING = 2.4;
+const SCROLL_PACING = 1.8;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
@@ -131,6 +132,9 @@ export function DivisionVideoRail() {
   const [overflow, setOverflow] = useState(0);
   const [edgePad, setEdgePad] = useState(24);
   const [progress, setProgress] = useState(0);
+  // The scroll bridge reads progress synchronously during a gesture,
+  // where React state would always be a render behind.
+  const progressRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   // Resolved during the first render so the reserved height is correct from
   // the very first paint. Constrained devices and reduced motion keep the
@@ -192,6 +196,7 @@ export function DivisionVideoRail() {
   // Drive horizontal travel from the pinned wrapper's scroll progress.
   useEffect(() => {
     if (!pinned || overflow <= 0) {
+      progressRef.current = 0;
       setProgress(0);
       return;
     }
@@ -208,10 +213,12 @@ export function DivisionVideoRail() {
       const rect = section.getBoundingClientRect();
       const total = section.offsetHeight - window.innerHeight;
       if (total <= 0) {
+        progressRef.current = 0;
         setProgress(0);
         return;
       }
       const p = Math.min(1, Math.max(0, -rect.top / total));
+      progressRef.current = p;
       setProgress(p);
       setActiveIndex(Math.min(JOIN_DIVISIONS.length - 1, Math.round(p * (JOIN_DIVISIONS.length - 1))));
     };
@@ -221,8 +228,16 @@ export function DivisionVideoRail() {
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+    // A sideways gesture over the pinned rail advances it as well: once the
+    // cards are visibly travelling horizontally, that is what a reader
+    // reaches for, and it used to do nothing at all.
+    const unbind = bindPinnedScroll(section, {
+      progress: () => progressRef.current,
+      enabled: () => true,
+    });
     return () => {
       if (frame) cancelAnimationFrame(frame);
+      unbind();
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };

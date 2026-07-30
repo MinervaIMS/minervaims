@@ -277,6 +277,20 @@ export default function AlumniManagement() {
     toast({ title: "Download started", description: "Alumni CSV is being downloaded." });
   };
 
+  // Turning a page should put the reader back at the head of the list. The
+  // workspace scrolls inside its own panel on desktop and inside the mobile
+  // shell's main element, so neither is the document: both are asked, and
+  // the window is the fallback for anything else.
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    const surfaces = [
+      document.getElementById('ws-content'),
+      document.getElementById('mobile-ws-content'),
+    ].filter(Boolean) as HTMLElement[];
+    if (surfaces.length === 0) window.scrollTo({ top: 0, behavior: 'smooth' });
+    surfaces.forEach((el) => el.scrollTo({ top: 0, behavior: 'smooth' }));
+  };
+
   return (
     <div id="alumni-section">
       <WorkspacePageHeader
@@ -493,7 +507,7 @@ export default function AlumniManagement() {
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                onClick={() => currentPage > 1 && goToPage(currentPage - 1)}
                 className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
               />
             </PaginationItem>
@@ -518,7 +532,7 @@ export default function AlumniManagement() {
                   ) : (
                     <PaginationLink
                       isActive={currentPage === page}
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => goToPage(page)}
                       className="cursor-pointer"
                     >
                       {page}
@@ -530,7 +544,7 @@ export default function AlumniManagement() {
 
             <PaginationItem>
               <PaginationNext
-                onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                onClick={() => currentPage < totalPages && goToPage(currentPage + 1)}
                 className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
               />
             </PaginationItem>

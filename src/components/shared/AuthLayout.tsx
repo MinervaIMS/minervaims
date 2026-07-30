@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 import { Helmet } from 'react-helmet-async';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import Beams from './Beams';
@@ -71,7 +71,12 @@ export function AuthLayout({
             }}
           >
             <div className="flex justify-center mb-7">
-              <img src={fullLogo} alt="Minerva Investment Management Society" style={{ height: '138px', width: 'auto' }} />
+              <img
+                src={fullLogo}
+                alt="Minerva Investment Management Society"
+                className="card-lockup"
+                style={{ '--lockup-h': '138px' } as CSSProperties}
+              />
             </div>
 
 
