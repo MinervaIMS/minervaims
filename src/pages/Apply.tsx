@@ -33,7 +33,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Helmet><title>Apply | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
+      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
         <ApplyBackground />
         {/* Flat white card per the Minerva Forms design: sharp corners, hairline
             border, deep drop shadow. */}
@@ -99,7 +99,7 @@ function SuccessScreen() {
   return (
     <>
       <Helmet><title>Application submitted | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.16))] pb-12">
+      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
         <ApplyBackground />
         <div className="relative z-10 w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}

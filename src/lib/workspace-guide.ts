@@ -168,8 +168,8 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'applications-form', section: 'Recruiting', label: 'Form & Questions',
-    purpose: 'The application form in one page: its fixed structure first, then the division-specific written questions, which are an integral part of the form.',
-    view: ['Read the form structure and the current questions, and preview the public form.'],
+    purpose: 'The written question each division asks its applicants, answered with a PDF upload. The rest of the application form is fixed for consistency across semesters and divisions and is inspected with "Preview the form".',
+    view: ['Read the current questions and preview the public form as applicants see it.'],
     manage: ['Edit the written question of each division you are responsible for. Heads of Division edit their own division\'s question; full-access roles edit all.'],
     warnings: ['Questions are locked while applications are open: from the scheduled opening until the close nobody can edit them, so every applicant answers the same question. The server enforces the lock.'],
     topics: [

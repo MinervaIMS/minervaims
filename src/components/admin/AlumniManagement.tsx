@@ -17,6 +17,8 @@ import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { CityInput } from '@/components/shared/CityInput';
+import { normaliseCity } from '@/lib/city-format';
 import {
   Pagination,
   PaginationContent,
@@ -92,7 +94,10 @@ export default function AlumniManagement() {
         .order('surname', { ascending: true });
 
       if (error) throw error;
-      setAlumni(data || []);
+      // Historic rows were typed by many hands ("milan", "Milano", "Milan").
+      // Reading them through the formatter means the register, the column
+      // filter and the export all show one spelling, with no edit required.
+      setAlumni((data || []).map((row) => ({ ...row, city: normaliseCity(row.city) || null })));
     } catch (error) {
       console.error('Error fetching alumni:', error);
       toast({ title: "Error", description: "Failed to fetch alumni", variant: "destructive" });
@@ -142,7 +147,9 @@ export default function AlumniManagement() {
       surname: formData.surname.trim(),
       graduation_year: formData.graduation_year,
       company: formData.company.trim() || null,
-      city: formData.city.trim() || null,
+      // Stored canonical ("Milan" becomes "Milan, Italy"), so the register,
+      // the public directory and the city filter all agree on one spelling.
+      city: normaliseCity(formData.city) || null,
       linkedin_url: formData.linkedin_url.trim() || null,
       job_area: formData.job_area.trim() || null,
       ...(editingAlumni && { id: editingAlumni.id }),
@@ -330,7 +337,7 @@ export default function AlumniManagement() {
 
                   <div className="space-y-2">
                     <Label htmlFor="city" className="font-body">City</Label>
-                    <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} placeholder="e.g. Milan, Italy" />
+                    <CityInput id="city" value={formData.city} onChange={(city) => setFormData({ ...formData, city })} />
                   </div>
 
                   <div className="space-y-2">
@@ -381,7 +388,43 @@ export default function AlumniManagement() {
       ) : filteredAlumni.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No alumni match the current filters.</p></CardContent></Card>
       ) : (
-        <div className="border border-separator overflow-x-auto">
+        <>
+        {/* Phones: one card per alumnus. Seven columns cannot be read on a
+            narrow screen, and letting the table set the width pushed the
+            whole page sideways, so the register is stacked instead. The
+            column filters live in the toolbar above on this width. */}
+        <div className="md:hidden divide-y divide-separator border border-separator">
+          {paginatedAlumni.map((record) => (
+            <div key={record.id} className="px-3 py-3 font-body">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-foreground text-base leading-snug break-words">{record.surname} {record.name}</span>
+                    {record.linkedin_url && (
+                      <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex shrink-0">
+                        <img src={linkedinIcon} alt="LinkedIn" width={16} height={16} className="h-4 w-4 shrink-0 object-contain opacity-80" />
+                      </a>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Class of {record.graduation_year}</div>
+                </div>
+                {canManage && (
+                  <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => openEditDialog(record)}><Edit className="h-4 w-4" /></Button>
+                    <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleDelete(record.id)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                )}
+              </div>
+              <dl className="mt-2 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-1 text-sm">
+                <dt className="text-muted-foreground">Job area</dt><dd className="break-words">{record.job_area || '-'}</dd>
+                <dt className="text-muted-foreground">Company</dt><dd className="break-words">{record.company || '-'}</dd>
+                <dt className="text-muted-foreground">City</dt><dd className="break-words">{record.city || '-'}</dd>
+              </dl>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block max-w-full border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
@@ -402,7 +445,7 @@ export default function AlumniManagement() {
                   <td className="px-3 py-2 text-center">
                     {record.linkedin_url ? (
                       <a href={record.linkedin_url} target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile" className="inline-flex">
-                        <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 opacity-80" />
+                        <img src={linkedinIcon} alt="LinkedIn" width={16} height={16} className="h-4 w-4 shrink-0 object-contain opacity-80" />
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
@@ -422,6 +465,7 @@ export default function AlumniManagement() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Pagination */}

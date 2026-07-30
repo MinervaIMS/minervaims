@@ -131,7 +131,7 @@ export default function AutoEmails() {
         {log.length === 0 ? (
           <p className="font-body text-sm text-muted-foreground">No automatic emails recorded yet.</p>
         ) : (
-          <div className="border border-separator overflow-x-auto">
+          <div className="max-w-full border border-separator overflow-x-auto">
             <table className="w-full text-left font-body text-sm">
               <thead className="bg-muted/40 text-muted-foreground">
                 <tr>

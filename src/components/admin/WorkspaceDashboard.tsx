@@ -25,8 +25,8 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const SHORT_DIV: Record<string, string> = { equity: 'Equity', investment: 'Investment', macro: 'Macro', portfolio: 'Portfolio', quant: 'Quant' };
-// The society was born in Fall 2017: semester number 1.
-const FOUNDING_SORT = 2017 * 2 + 1;
+// The society was born in Fall 2019: semester number 1.
+const FOUNDING_SORT = 2019 * 2 + 1;
 
 // Chart palette: intentionally bolder than the base design system.
 const C = {
@@ -92,7 +92,7 @@ function Kpi({ icon, label, value, before, accent, delay, decoration }: {
               <span className="text-xs text-accent-foreground/70">{before > 0 ? `${pct}% of last semester, and counting` : 'the story starts here'}</span>
             )}
           </>
-        ) : <span className="text-xs opacity-70">since Fall 2017</span>}
+        ) : <span className="text-xs opacity-70">since Fall 2019</span>}
       </div>
     </div>
   );
@@ -232,7 +232,7 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
     <div className="h-full min-h-0 flex flex-col gap-3 font-body">
       {/* Welcome strip */}
       <div className="shrink-0 animate-in fade-in slide-in-from-top-1 duration-500">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Minerva Investment Management Society · est. Fall 2017</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">Minerva Investment Management Society · est. Fall 2019</div>
         <h1 className="font-serif text-3xl xl:text-4xl text-accent leading-tight">
           Welcome to our {ordinal(semesterNumber)} semester. This is what we are building together in {cur.label}.
         </h1>
@@ -282,7 +282,7 @@ export default function WorkspaceDashboard({ onNavigate }: { onNavigate?: (secti
         <div className="xl:col-span-4 rounded-xl border border-separator p-4 flex flex-col min-h-[210px] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both" style={{ animationDelay: '250ms' }}>
           <div className="flex items-baseline justify-between mb-1">
             <h2 className="font-serif text-xl text-accent">Our research, compounding</h2>
-            <span className="text-xs text-muted-foreground">since Fall 2017</span>
+            <span className="text-xs text-muted-foreground">since Fall 2019</span>
           </div>
           <div className="flex-1 min-h-0">
             {reportsOverTime.length >= 2 ? (

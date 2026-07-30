@@ -4,6 +4,7 @@ import { Download, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { PdfThumbnail } from './PdfThumbnail';
 import { useToast } from '@/hooks/use-toast';
 import { openReportInTab } from '@/lib/open-report';
+import { downloadTitled } from '@/lib/file-download';
 
 interface ArchiveFile {
   id: string;
@@ -40,38 +41,18 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
 
   const handleDownload = async (file: ArchiveFile) => {
     if (downloadingFiles.has(file.id)) return;
-    
     setDownloadingFiles(prev => new Set(prev).add(file.id));
-    
     try {
-      const response = await fetch(file.file_url);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      // Clean filename: keep letters, numbers, spaces, hyphens, underscores
-      const cleanTitle = file.title
-        .replace(/[^a-zA-Z0-9\s\-_]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      link.download = `${cleanTitle || 'document'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Download complete",
-        description: `${file.title} has been downloaded.`,
-      });
+      // The shared helper saves the bytes under the report's own title,
+      // whatever the storage key behind the URL is called.
+      await downloadTitled(file.file_url, file.title, 'pdf');
+      toast({ title: 'Download complete', description: `${file.title} has been downloaded.` });
     } catch (error) {
       console.error('Download error:', error);
       toast({
-        title: "Download failed",
-        description: "Please try again or right-click the link to save.",
-        variant: "destructive",
+        title: 'Download failed',
+        description: 'Please try again or right-click the link to save.',
+        variant: 'destructive',
       });
     } finally {
       setDownloadingFiles(prev => {
@@ -101,48 +82,50 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
 
   return (
     <>
-      <div className="space-y-0">
+      {/* Phones show two compact report cards per row; from md up the
+          established single-column reading layout is unchanged. */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-1 md:gap-0 md:space-y-0">
         {files.map((file, index) => (
           <article
             key={file.id}
             id={`file-${file.id}`}
-            className={`py-6 transition-colors duration-500 ${index !== files.length - 1 ? 'border-b border-separator' : ''} ${highlightedFileId === file.id ? 'bg-primary/10 -mx-4 px-4 rounded-lg' : ''}`}
+            className={`md:py-6 transition-colors duration-500 ${index !== files.length - 1 ? 'md:border-b md:border-separator' : ''} ${highlightedFileId === file.id ? 'bg-primary/10 -mx-2 px-2 md:-mx-4 md:px-4 rounded-lg' : ''}`}
           >
-            <div className="flex flex-col md:flex-row md:items-start gap-4">
+            <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
               {/* PDF Preview Thumbnail - A4 aspect ratio */}
               <div 
                 className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => openReportInTab(file.title, file.file_url)}
+                onClick={() => openReportInTab(file.title, file.file_url, file.id)}
                 title="Click to preview PDF"
               >
                 <PdfThumbnail
                   url={file.file_url}
-                  className="w-28 bg-background rounded border border-separator"
+                  className="w-full md:w-28 bg-background rounded border border-separator"
                   alt={`Preview of ${file.title}`}
                 />
               </div>
 
               {/* Content */}
               <div className="flex-1">
-                <time className="font-body text-xs text-muted-foreground uppercase tracking-wider">
+                <time className="font-body text-[0.65rem] md:text-xs text-muted-foreground uppercase tracking-wider block leading-tight">
                   {formatDate(file.date)}
                   {showDivision && file.division && (
-                    <span className="ml-4 text-primary">
+                    <span className="block md:inline md:ml-4 text-primary">
                       {divisionLabels[file.division as Division]}
                     </span>
                   )}
                   {file.fund && (
-                    <span className="ml-4 text-primary/70">
+                    <span className="block md:inline md:ml-4 text-primary/70">
                       {fundLabels[file.fund as Fund]}
                     </span>
                   )}
                 </time>
-                <h3 className="font-serif text-subheading mt-2 mb-2">
+                <h3 className="font-serif text-base leading-snug md:text-subheading mt-1.5 md:mt-2 mb-1.5 md:mb-2">
                   {file.title}
                 </h3>
                 {file.description && (
                   <div>
-                    <p className={`font-body text-body text-muted-foreground ${expandedDescriptions.has(file.id) ? '' : 'line-clamp-2'}`}>
+                    <p className={`font-body text-sm md:text-body text-muted-foreground ${expandedDescriptions.has(file.id) ? '' : 'line-clamp-2'}`}>
                       {file.description}
                     </p>
                     {file.description.length > 150 && (
@@ -151,7 +134,7 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
                           e.stopPropagation();
                           toggleDescription(file.id);
                         }}
-                        className="inline-flex items-center gap-1 font-body text-small text-primary hover:underline mt-1"
+                        className="inline-flex items-center gap-1 font-body text-xs md:text-small text-primary hover:underline mt-1"
                       >
                         {expandedDescriptions.has(file.id) ? (
                           <>
@@ -171,18 +154,18 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 mt-2 md:mt-6">
+              <div className="flex gap-2 mt-1.5 md:mt-6">
                 <button
                   onClick={() => handleDownload(file)}
                   disabled={downloadingFiles.has(file.id)}
-                  className="inline-flex items-center gap-1.5 font-body text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
+                  className="inline-flex items-center gap-1.5 font-body text-xs md:text-small text-primary hover:underline disabled:opacity-50 disabled:cursor-wait"
                 >
                   {downloadingFiles.has(file.id) ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  <span>{downloadingFiles.has(file.id) ? 'Downloading...' : 'Download'}</span>
+                  <span>{downloadingFiles.has(file.id) ? 'Downloading…' : 'Download'}</span>
                 </button>
               </div>
             </div>

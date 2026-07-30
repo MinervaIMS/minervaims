@@ -1130,7 +1130,7 @@ function SortableMemberCard({
                     className="hover:opacity-80 transition-opacity flex-shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                    <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
                   </a>
                 )}
               </div>

@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader2, Upload, Star, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader2, Upload, Star, X, Eye, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
@@ -23,6 +23,7 @@ import {
   listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite, signResourceFile,
   MAX_FAVOURITES, MAX_SOURCES_PER_KIND, type ResourceRow, type ResourceSource,
 } from '@/lib/resources-api';
+import { downloadTitled } from '@/lib/file-download';
 
 interface Props {
   /** Resource bucket, e.g. 'reports_templates', 'smm_instagram', 'external_relations'. */
@@ -70,6 +71,11 @@ export default function ResourceManager({
   canManage = canManage && isDesktop;
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
+  // Quick look: a signed URL rendered in place, so a file can be checked
+  // without leaving the page or committing to a download.
+  const [preview, setPreview] = useState<{ url: string; label: string } | null>(null);
+  const [previewBusy, setPreviewBusy] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState<string | null>(null);
 
   // Division scoping. When `restrictDivisions` is set this instance holds
   // per-division material: users who cannot view other divisions only ever
@@ -186,6 +192,25 @@ export default function ResourceManager({
     catch (e) { toast({ title: 'Could not open the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
+  /** Quick look at an attachment, in place. */
+  const previewFile = async (fileUrl: string, label: string) => {
+    setPreviewBusy(fileUrl);
+    try { setPreview({ url: await signResourceFile(session, fileUrl), label }); }
+    catch (e) { toast({ title: 'Could not open the preview', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setPreviewBusy(null); }
+  };
+
+  /** Save an attachment under its own name, not the storage key. */
+  const downloadFile = async (fileUrl: string, label: string) => {
+    setDownloadBusy(fileUrl);
+    try {
+      const url = await signResourceFile(session, fileUrl);
+      await downloadTitled(url, label.replace(/\.[a-z0-9]{1,8}$/i, ''), 'pdf');
+    } catch (e) {
+      toast({ title: 'Could not download the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setDownloadBusy(null); }
+  };
+
   // ── Sub-editors for each source kind ──────────────────────────────────────
   const setTexts = (texts: string[]) => setForm((p) => ({ ...p, texts }));
   const setLinks = (links: string[]) => setForm((p) => ({ ...p, links }));
@@ -226,12 +251,29 @@ export default function ResourceManager({
                 {s.label || 'Open link'} <ExternalLink className="h-3 w-3" />
               </a>
             ))}
-            {r.sources.filter((s) => s.kind === 'file').map((s, i) => (
-              <button key={`f${i}`} type="button" onClick={() => openFile(s.value)} className="text-accent text-sm underline inline-flex items-center gap-1">
-                {s.label || 'Open file'} <FileText className="h-3 w-3" />
-              </button>
-            ))}
           </div>
+
+          {/* Attachments: every file carries its own quick look and download. */}
+          {r.sources.filter((s) => s.kind === 'file').length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {r.sources.filter((s) => s.kind === 'file').map((s, i) => (
+                <li key={`f${i}`} className="flex items-center gap-2 flex-wrap text-sm">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-foreground truncate max-w-[16rem]">{s.label || `File ${i + 1}`}</span>
+                  <button type="button" onClick={() => previewFile(s.value, s.label || `File ${i + 1}`)}
+                    className="text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
+                    disabled={previewBusy === s.value}>
+                    {previewBusy === s.value ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}Preview
+                  </button>
+                  <button type="button" onClick={() => downloadFile(s.value, s.label || `File ${i + 1}`)}
+                    className="text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
+                    disabled={downloadBusy === s.value}>
+                    {downloadBusy === s.value ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}Download
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="text-xs text-muted-foreground mt-2">
             {r.author_name || 'Unknown'}{r.author_role ? `, ${r.author_role}` : ''} · {new Date(r.created_at).toLocaleDateString()}
@@ -373,6 +415,30 @@ export default function ResourceManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quick look at an attachment: full-height frame, download to hand. */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-5xl w-[min(96vw,64rem)] h-[92vh] flex flex-col gap-3 p-5">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="font-serif truncate pr-8">{preview?.label}</DialogTitle>
+          </DialogHeader>
+          {preview && (
+            <>
+              <div className="flex-1 min-h-0 border border-separator bg-muted/20">
+                <iframe title={`preview-${preview.label}`} src={preview.url} className="w-full h-full block" />
+              </div>
+              <div className="shrink-0 flex justify-end gap-2 font-body">
+                <Button variant="outline" onClick={() => window.open(preview.url, '_blank', 'noopener')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />Open in a new tab
+                </Button>
+                <Button onClick={() => downloadTitled(preview.url, preview.label.replace(/\.[a-z0-9]{1,8}$/i, ''), 'pdf')}>
+                  <Download className="h-4 w-4 mr-2" />Download
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

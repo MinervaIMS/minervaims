@@ -136,8 +136,11 @@ const Archive = () => {
     return files.filter((file) => {
       // Division filter
       if (divisionFilter !== "all" && file.division !== divisionFilter) return false;
-      // Fund filter (only when portfolio division is selected)
-      if (divisionFilter === "portfolio" && fundFilter !== "all" && file.fund !== fundFilter) return false;
+      // Fund filter. Arriving straight from a fund page (?fund=… with no
+      // division) must still narrow to that fund, so the filter applies
+      // whenever a fund is selected rather than only inside Portfolio
+      // Management.
+      if (fundFilter !== "all" && file.fund !== fundFilter) return false;
       // Year filter
       if (yearFilter !== "all") {
         const fileYear = new Date(file.date).getFullYear().toString();
@@ -277,7 +280,7 @@ const Archive = () => {
                 ))}
               </select>
 
-              {divisionFilter === "portfolio" && (
+              {(divisionFilter === "portfolio" || fundFilter !== "all") && (
                 <div>
                   <select
                     value={fundFilter}

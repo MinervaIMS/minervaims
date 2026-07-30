@@ -137,7 +137,7 @@ export default function FundsPerformances() {
               {byFund[fund].length === 0 ? (
                 <Card><CardContent className="py-10 text-center"><p className="font-body text-muted-foreground">No performance data yet.</p></CardContent></Card>
               ) : (
-                <div className="border border-separator overflow-x-auto">
+                <div className="max-w-full border border-separator overflow-x-auto">
                   <table className="w-full text-left font-body text-sm min-w-[960px]">
                     <thead className="bg-muted/40 text-muted-foreground">
                       <tr>

@@ -279,7 +279,7 @@ const FundDetail = () => {
         variant="navy"
         heading={content.sectionTitle}
         archiveHref={`/archive?fund=${fundKey}`}
-        archiveLabel="Browse The Archive"
+        archiveLabel="Browse The Full Archive"
         reports={archiveFilesToReports(files)}
         useRealCover
       />

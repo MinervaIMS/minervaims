@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Link } from 'react-router-dom';
-import { ExternalLink, Eye, Loader2 } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -12,26 +11,17 @@ import { logActivity } from '@/lib/activity-log';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import {
-  listQuestions, setDivisionQuestion, ACADEMIC_YEAR_LABELS,
-} from '@/lib/applications-api';
+import { listQuestions, setDivisionQuestion } from '@/lib/applications-api';
 
 // =====================================================================
-// Form & Questions — ONE unified page for the application form: first
-// its fixed structure (what every applicant fills in), then the
-// division-specific written questions, which are an integral part of
-// the form. A single top-to-bottom column, per the workspace design
-// rules (static panels, no hover effects, minimal decoration).
+// Form & Questions — the division-specific written questions that make up
+// the editable part of the application form. The form's fixed structure
+// is not restated here: it never changes and can be inspected directly
+// with "Preview the form". A single top-to-bottom column, per the
+// workspace design rules (static panels, no hover effects).
 // =====================================================================
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
-
-const FIELDS = [
-  'First name', 'Surname', 'Bocconi ID / matriculation number', 'Bocconi email address',
-  'Phone number', 'LinkedIn profile', 'Degree or course code', 'Academic year',
-  'CV upload (PDF)', 'PDF answer to the division-specific question',
-  'First-choice division', 'Second-choice division',
-];
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -86,47 +76,13 @@ export default function FormSettings() {
     <div>
       <WorkspacePageHeader
         title="Form & Questions"
-        description="The application form in one place: its fixed structure first, then the written question each division asks, which is an integral part of the form. Question changes appear immediately on the public Join page and inside the form."
+        description="The written question each division asks its applicants, answered with a PDF upload. Changes appear immediately on the public Join page and inside the application form. The rest of the form is fixed for consistency across semesters and divisions; use Preview the form to see it as applicants do."
         actions={<Button variant="outline" className="font-body" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
       />
 
-      {/* ONE unified column: the division questions are an integral part of
-          the form, so the page reads top to bottom as a single flow. */}
+      {/* One column: the division questions, which are the editable part
+          of the application form. */}
       <div className="max-w-3xl space-y-10 font-body">
-        {/* The form's fixed structure */}
-        <section className="space-y-6">
-          <div>
-            <Kicker>The form</Kicker>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              The internal application form is part of the website. Applicants can only submit it while
-              applications are open; authorised members can preview it at any time. Its structure is fixed
-              for consistency across semesters and divisions.
-            </p>
-          </div>
-
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Fields collected</div>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-              {FIELDS.map((f) => (
-                <li key={f} className="flex gap-2.5 text-sm text-foreground">
-                  <span aria-hidden className="mt-[7px] w-1.5 h-1.5 bg-accent shrink-0" />
-                  <span className="text-foreground/85">{f}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="border border-separator bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-            Academic year options: {Object.values(ACADEMIC_YEAR_LABELS).join(' · ')}.
-          </div>
-
-          <p className="text-sm text-muted-foreground">
-            Public form: <Link to="/apply" className="text-accent underline inline-flex items-center gap-1">/apply <ExternalLink className="h-3 w-3" /></Link>.
-            Applications are locked after submission and cannot be edited by the candidate.
-          </p>
-        </section>
-
-        {/* The division questions (the editable part of the form) */}
         <section className="space-y-4">
           <div>
             <Kicker>Division questions</Kicker>

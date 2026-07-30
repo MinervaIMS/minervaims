@@ -7,6 +7,7 @@ import AlumniGlobe from '@/components/AlumniGlobe';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import linkedinIcon from '@/assets/linkedin-icon.png';
+import { normaliseCity } from '@/lib/city-format';
 import {
   Pagination,
   PaginationContent,
@@ -63,12 +64,22 @@ const Alumni = () => {
         const { data, error } = await supabase.rpc('public_alumni_directory');
         if (error) throw error;
         const payload = data as unknown as DirectoryPayload;
+        // Cities are read through the formatter, so "milan", "Milano" and
+        // "Milan" reach the page as the single option "Milan, Italy" both
+        // in the list and in the filter.
+        const rows = (payload?.rows ?? []).map((row) => ({
+          ...row,
+          city: normaliseCity(row.city) || null,
+        }));
+        const cities = [...new Set(
+          (payload?.cities ?? []).map((c) => normaliseCity(c)).filter(Boolean),
+        )].sort();
         setDirectory({
           total: payload?.total ?? 0,
-          rows: payload?.rows ?? [],
+          rows,
           job_areas: [...(payload?.job_areas ?? [])].sort(),
           companies: [...(payload?.companies ?? [])].sort(),
-          cities: [...(payload?.cities ?? [])].sort(),
+          cities,
         });
       } catch (error) {
         console.error('Error fetching alumni:', error);
@@ -78,6 +89,21 @@ const Alumni = () => {
       }
     })();
   }, []);
+
+  // The page holds a loader while the directory arrives, so the browser's
+  // own jump to #founders fires against a page that is not there yet. Once
+  // the content is on screen, land on the anchor ourselves.
+  useEffect(() => {
+    if (isDataLoading || !imagesLoaded) return;
+    if (window.location.hash !== '#founders') return;
+    const id = window.setTimeout(() => {
+      const target = document.getElementById('founders');
+      if (!target) return;
+      const top = target.getBoundingClientRect().top + window.scrollY - 112;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [isDataLoading, imagesLoaded]);
 
   const filtersActive = companyFilter !== 'all' || cityFilter !== 'all' || jobAreaFilter !== 'all';
 
@@ -146,11 +172,11 @@ const Alumni = () => {
 
   // Fixed founders list - always show these 5 in alphabetical order with full details from alumni database
   const founders = [
-    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: 'Paris', linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
-    { id: 'founder-2', name: 'Federico', surname: 'Fantauzzi', degree: "MSC ACCOUNTING - AFM\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Valuation & M&A', company: 'KPMG', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/federico-fantauzzi-a6a9b2160/' },
-    { id: 'founder-3', name: 'Francesca', surname: 'Rigante', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: 'London', linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
-    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
-    { id: 'founder-5', name: 'Stefano', surname: 'Serio', degree: "MSC FINANCE - FIN\nCLASS OF 2020", graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: 'Milan', linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
+    { id: 'founder-1', name: 'Lucrezia', surname: 'Cimiotti', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Markets (Structuring)', company: 'J.P.Morgan', city: normaliseCity('Paris'), linkedin_url: 'https://www.linkedin.com/in/lucrezia-cimiotti-5b2aa1151/' },
+    { id: 'founder-2', name: 'Federico', surname: 'Fantauzzi', degree: "MSC ACCOUNTING - AFM\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Valuation & M&A', company: 'KPMG', city: normaliseCity('Milan'), linkedin_url: 'https://www.linkedin.com/in/federico-fantauzzi-a6a9b2160/' },
+    { id: 'founder-3', name: 'Francesca', surname: 'Rigante', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Markets', company: 'Citi', city: normaliseCity('London'), linkedin_url: 'https://www.linkedin.com/in/francesca-rigante-79b121143/' },
+    { id: 'founder-4', name: 'Arturo', surname: 'Schembri', degree: "MSC ECONOMICS - ESS\u00a0\nCLASS OF 2020", graduation_year: 2020, job_area: 'Brokerage', company: 'Hercle', city: normaliseCity('Milan'), linkedin_url: 'https://www.linkedin.com/in/arturo-schembri/' },
+    { id: 'founder-5', name: 'Stefano', surname: 'Serio', degree: "MSC FINANCE - FIN\nCLASS OF 2020", graduation_year: 2020, job_area: 'Consulting', company: 'McKinsey&Co', city: normaliseCity('Milan'), linkedin_url: 'https://www.linkedin.com/in/stefano-serio-a272a6136/' },
   ];
 
   if (isDataLoading || !imagesLoaded) {
@@ -188,9 +214,9 @@ const Alumni = () => {
       <div className="container py-section-sm md:py-section">
         <AlumniGlobe />
 
-        {/* Our Founders */}
-        <div className="mb-24">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2017</h2>
+        {/* Our Founders. The 2019 milestone on /about links straight here. */}
+        <div id="founders" className="mb-24 scroll-mt-28">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2019</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
             {founders.map((founder) => (
               <article
@@ -221,7 +247,7 @@ const Alumni = () => {
                       aria-label={`${founder.name} ${founder.surname} LinkedIn profile`}
                       className="inline-flex text-accent"
                     >
-                      <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                      <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
                     </a>
                   )}
                 </div>
@@ -233,11 +259,14 @@ const Alumni = () => {
         {/* Filters: options span the ENTIRE alumni base; no labels, body font,
             flat corners, and the bar scrolls with the page (not sticky). */}
         <div className="py-4 mb-4 border-b border-separator">
-          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+          {/* The three filters share the row edge to edge, so they line up with
+              the alumni entries listed underneath instead of trailing off
+              into empty space. */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select
               value={jobAreaFilter}
               onChange={(e) => setJobAreaFilter(e.target.value)}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+              className="font-body bg-background border border-separator px-3 h-10 w-full"
             >
               <option value="all">All Job Areas</option>
               {(directory?.job_areas ?? []).map((area) => (
@@ -248,7 +277,7 @@ const Alumni = () => {
             <select
               value={companyFilter}
               onChange={(e) => setCompanyFilter(e.target.value)}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+              className="font-body bg-background border border-separator px-3 h-10 w-full"
             >
               <option value="all">All Companies</option>
               {(directory?.companies ?? []).map((company) => (
@@ -259,7 +288,7 @@ const Alumni = () => {
             <select
               value={cityFilter}
               onChange={(e) => setCityFilter(e.target.value)}
-              className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+              className="font-body bg-background border border-separator px-3 h-10 w-full"
             >
               <option value="all">All Cities</option>
               {(directory?.cities ?? []).map((city) => (
@@ -318,7 +347,7 @@ const Alumni = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                                <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
                               </a>
                             ) : null}
                           </div>
@@ -344,7 +373,7 @@ const Alumni = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
-                                <img src={linkedinIcon} alt="LinkedIn" className="w-5 h-5" />
+                                <img src={linkedinIcon} alt="LinkedIn" width={20} height={20} className="w-5 h-5 shrink-0 object-contain" />
                               </a>
                             ) : (
                               <span className="text-muted-foreground">-</span>

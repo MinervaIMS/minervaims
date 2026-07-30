@@ -45,6 +45,7 @@ const legalLinks = [
   { label: 'Cookie Policy', href: '/cookie-policy' },
   { label: 'Disclaimer', href: '/disclaimer' },
   { label: 'Society Statute', href: '/statute' },
+  { label: 'Sitemap', href: '/sitemap' },
 ];
 
 const socialLinks = [

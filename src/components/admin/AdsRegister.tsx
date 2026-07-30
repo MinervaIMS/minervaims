@@ -110,7 +110,7 @@ export default function AdsRegister() {
           {groups.map((g) => {
             const isCurrent = g.label === currentLabel;
             const table = (
-              <div className="border border-separator overflow-x-auto">
+              <div className="max-w-full border border-separator overflow-x-auto">
                 <table className="w-full text-left font-body text-sm">
                   <thead className="bg-muted/40 text-muted-foreground">
                     <tr>

@@ -15,10 +15,18 @@ const Sitemap = () => {
         { label: 'Home', href: '/' },
         { label: 'About', href: '/about' },
         { label: 'Events', href: '/events' },
-        { label: 'Join Us', href: '/join' },
         { label: 'Archive', href: '/archive' },
         { label: 'Readings', href: '/readings' },
+        { label: 'Partnerships', href: '/partnerships' },
         { label: 'Contacts', href: '/contacts' },
+      ],
+    },
+    {
+      title: 'Join Us',
+      links: [
+        { label: 'Recruiting And Admissions', href: '/join' },
+        { label: 'Application Form', href: '/apply' },
+        { label: 'Sign In To The Workspace', href: '/auth' },
       ],
     },
     {
@@ -43,8 +51,15 @@ const Sitemap = () => {
     {
       title: 'People',
       links: [
+        { label: 'People Overview', href: '/people' },
         { label: 'Members', href: '/people/members' },
         { label: 'Alumni', href: '/people/alumni' },
+      ],
+    },
+    {
+      title: 'Tools',
+      links: [
+        { label: 'Payoff Lab', href: '/lab' },
       ],
     },
     {
@@ -55,6 +70,7 @@ const Sitemap = () => {
         { label: 'Cookie Policy', href: '/cookie-policy' },
         { label: 'Disclaimer', href: '/disclaimer' },
         { label: 'Society Statute', href: '/statute' },
+        { label: 'Sitemap', href: '/sitemap' },
       ],
     },
   ];
