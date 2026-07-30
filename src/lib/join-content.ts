@@ -138,8 +138,7 @@ export const JOIN_STATUS_COPY = {
    * prospective candidate can do is read the work, so the closed state sends
    * them to the archive rather than leaving them with nothing to act on.
    */
-  closedInvitation:
-    'In the meantime, read the research we publish. It is the clearest picture of the work you would be joining, and the best preparation for the next round.',
+  closedInvitation: '\n',
   applyLabel: 'Apply',
   archiveLabel: 'Read Our Reports',
   contactLabel: 'Contact Us',
