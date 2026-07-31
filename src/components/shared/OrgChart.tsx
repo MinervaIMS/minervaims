@@ -804,7 +804,7 @@ export function OrgChart({ initialFocus = null, showCta = true }: OrgChartProps 
               and nothing competes with it for the first read. */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-            gap: 14, flexWrap: 'wrap', margin: '0 0 14px', minHeight: 30, textAlign: 'right',
+            gap: 14, flexWrap: 'wrap', margin: '0 0 10px', minHeight: 26, textAlign: 'right',
           }}>
             <p style={{ margin: 0, fontSize: 11, lineHeight: 1.5, letterSpacing: '0.02em', color: 'hsl(var(--muted-foreground))' }}>
               {narrow ? 'Tap a division to explore its teams, drag sideways to look around.' : 'Select a division to explore its teams.'}
@@ -837,6 +837,12 @@ export function OrgChart({ initialFocus = null, showCta = true }: OrgChartProps 
             )}
           </div>
 
+          {/* The overview draws a band of world about 476px tall, so a frame
+              taller than that simply opens white above and below it. The
+              desktop frame is sized to the diagram rather than to the
+              viewport, which is what closes the gap between the section rule
+              and the chart. The focused views are capped at SMAX and framed
+              by width, so nothing is squeezed by the shorter frame. */}
           <div className={`oc-stage${revealed ? ' in' : ''}`} ref={stageRef}>
             <div
               ref={frameRef}
@@ -850,7 +856,7 @@ export function OrgChart({ initialFocus = null, showCta = true }: OrgChartProps 
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              style={{ position: 'relative', width: '100%', height: narrow ? 'min(72vh, 560px)' : 'clamp(520px,64vh,680px)', overflow: 'hidden', background: 'hsl(var(--background))', touchAction: 'pan-y', cursor: 'default' }}
+              style={{ position: 'relative', width: '100%', height: narrow ? 'min(72vh, 560px)' : 'clamp(460px,54vh,578px)', overflow: 'hidden', background: 'hsl(var(--background))', touchAction: 'pan-y', cursor: 'default' }}
             >
               <div className="oc-mask" style={{ position: 'absolute', inset: 0 }}>
                 <div

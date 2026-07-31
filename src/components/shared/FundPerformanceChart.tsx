@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine,
+  Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
@@ -15,16 +15,29 @@ import { fundShortLabels } from '@/lib/types';
 // ---------------------------------------------------------------------
 // Built to be read the way a fund factsheet is read, not as decoration:
 //
-//   * a period selector (3M to MAX) that REBASES the window to zero, so
-//     the headline figure is the return over the period actually shown,
-//     which is the number anyone comparing funds wants;
-//   * the return printed at the top left beside the period, and the last
-//     data date at the top right;
-//   * a full grid, vertical and horizontal, with the zero line drawn
-//     heavier than the rest so gain and loss are never confused;
+//   * a period selector that REBASES the window to zero, so the headline
+//     figure is the return over the period actually shown, which is the
+//     number anyone comparing funds wants. 3 years is the default: long
+//     enough to carry a cycle, short enough to still be about this team;
+//   * a real date range beside it, built from the months that exist in the
+//     record, so an arbitrary window is one that can actually be drawn;
+//   * the return printed beside the period name and coloured by SIGN, and
+//     the last data date on the right;
+//   * ticks chosen at round numbers and set in tabular figures so the axis
+//     reads as a scale rather than as a column of decimals;
 //   * straight segments with mitred joins. Monthly returns are discrete
 //     observations, and a smoothed curve would invent movement between
-//     them that never happened.
+//     them that never happened;
+//   * the lines draw themselves in when the chart first comes into view,
+//     once, and not at all for a reader who has asked for reduced motion.
+//
+// On a page that shows two funds each line can be switched off. With one
+// line left the chart becomes the single-fund reading: signed green and
+// red shading either side of zero, exactly as on the fund pages.
+//
+// The grid, the L-frame, the round ticks, the tabular figures and the
+// large soft watermark are all borrowed from the PayoffLab surface, so a
+// Minerva chart reads the same wherever it appears.
 //
 // Everything is derived from `fund_performance_years`, the table the
 // workspace maintains, so publishing a month extends the chart. A month
@@ -38,23 +51,26 @@ const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 const UP = 'hsl(142 52% 34%)';
 const DOWN = 'hsl(0 62% 46%)';
 
-/** Two funds compared: brand navy against the soft purple, plus a dash. */
-const COMPARE: Record<ActiveFund, { colour: string; dash?: string }> = {
+/** Two funds compared: brand navy against the soft purple. Both solid. */
+const COMPARE: Record<ActiveFund, { colour: string }> = {
   'long-short': { colour: 'hsl(252 68% 18%)' },
-  'multi-asset': { colour: 'hsl(252 41% 55%)', dash: '6 4' },
+  'multi-asset': { colour: 'hsl(252 41% 55%)' },
 };
 
-type PeriodKey = '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'YTD' | 'MAX';
+type PeriodKey = '6M' | '1Y' | '2Y' | '3Y' | '5Y' | '7Y' | 'YTD' | 'MAX';
 
 const PERIODS: { key: PeriodKey; label: string; months: number | null; headline: string }[] = [
-  { key: '3M', label: '3M', months: 3, headline: '3 months' },
   { key: '6M', label: '6M', months: 6, headline: '6 months' },
   { key: '1Y', label: '1Y', months: 12, headline: '1 year' },
+  { key: '2Y', label: '2Y', months: 24, headline: '2 years' },
   { key: '3Y', label: '3Y', months: 36, headline: '3 years' },
   { key: '5Y', label: '5Y', months: 60, headline: '5 years' },
+  { key: '7Y', label: '7Y', months: 84, headline: '7 years' },
   { key: 'YTD', label: 'YTD', months: null, headline: 'Year to date' },
   { key: 'MAX', label: 'MAX', months: null, headline: 'Since inception' },
 ];
+
+const DEFAULT_PERIOD: PeriodKey = '3Y';
 
 interface Observation {
   /** year * 12 + monthIndex, the sortable key. */
@@ -91,10 +107,35 @@ function signed(v: number, decimals = 2): string {
   return `${v > 0 ? '+' : ''}${v.toFixed(decimals)}%`;
 }
 
+/** Month label for an `order` value: "Mar 2024". */
+function monthLabel(order: number): string {
+  const year = Math.floor(order / 12);
+  return `${MONTHS_SHORT[order - year * 12]} ${year}`;
+}
+
+/**
+ * Round tick values covering [lo, hi], the way an axis should be read.
+ * Borrowed from the PayoffLab plot surface so both charts step the same.
+ */
+function niceTicks(lo: number, hi: number, n = 5): number[] {
+  if (!(hi > lo)) return [lo];
+  const step0 = (hi - lo) / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const norm = step0 / mag;
+  const step = (norm >= 5 ? 10 : norm >= 2.2 ? 5 : norm >= 1.2 ? 2 : 1) * mag;
+  const start = Math.floor(lo / step) * step;
+  const out: number[] = [];
+  for (let v = start; v <= hi + step * 1e-9; v += step) {
+    out.push(Math.abs(v) < step * 1e-9 ? 0 : Number(v.toFixed(6)));
+  }
+  if (out[out.length - 1] < hi) out.push(Number((out[out.length - 1] + step).toFixed(6)));
+  return out;
+}
+
 interface Row { order: number; label: string; date: string; [fund: string]: number | string }
 
 interface Props {
-  /** One fund draws a signed area; two draw comparable lines. */
+  /** One fund draws a signed area; two draw comparable lines that can be switched off. */
   funds: ActiveFund[];
   title?: string;
   /** Short line under the title. Omit for none. */
@@ -102,9 +143,26 @@ interface Props {
 }
 
 export function FundPerformanceChart({ funds, title = 'Fund Performance', caption }: Props) {
+  const fundsKey = funds.join(',');
+  // Derived from the key rather than from the prop, so an inline array at
+  // the call site cannot invalidate every memo below on each render, which
+  // would restart the draw-in animation continuously.
+  const fundList = useMemo(() => fundsKey.split(',') as ActiveFund[], [fundsKey]);
+
   const [rows, setRows] = useState<FundYear[] | null>(null);
-  const [period, setPeriod] = useState<PeriodKey>('1Y');
-  const rangeRef = useRef<HTMLDivElement>(null);
+  const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
+  /** An explicit window, in `order` units. Set by the date range control. */
+  const [custom, setCustom] = useState<{ from: number; to: number } | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  /** Funds switched off on a comparison chart. Never all of them. */
+  const [hidden, setHidden] = useState<string[]>([]);
+  const [revealed, setRevealed] = useState(false);
+
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const plotRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useRef(false);
+
+  useEffect(() => { setCustom(null); setHidden([]); }, [fundsKey]);
 
   useEffect(() => {
     let active = true;
@@ -117,17 +175,66 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
     return () => { active = false; };
   }, []);
 
+  // The lines draw themselves in the first time the chart is reached, and
+  // never again. A reader who has asked for reduced motion gets the final
+  // state immediately.
+  useEffect(() => {
+    if (revealed) return;
+    const el = plotRef.current;
+    if (!el) return;
+    reducedMotion.current = typeof globalThis.matchMedia === 'function'
+      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion.current) { setRevealed(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setRevealed(true); io.disconnect(); }
+    }, { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [rows, revealed]);
+
+  // Close the date range panel on an outside press or on Escape.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!pickerRef.current?.contains(e.target as Node)) setPickerOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPickerOpen(false); };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [pickerOpen]);
+
   const series = useMemo(
-    () => new Map(funds.map((f) => [f, rows ? observations(rows, f) : []])),
-    [rows, funds],
+    () => new Map(fundList.map((f) => [f, rows ? observations(rows, f) : []])),
+    [rows, fundList],
   );
 
-  /** The window the selected period covers, in `order` units. */
-  const window = useMemo(() => {
-    const all = funds.flatMap((f) => series.get(f) ?? []);
+  /** The funds actually drawn. Hiding the last one is refused. */
+  const shown = useMemo(
+    () => (fundList.filter((f) => !hidden.includes(f)).length ? fundList.filter((f) => !hidden.includes(f)) : fundList),
+    [fundList, hidden],
+  );
+
+  /** The whole record, in `order` units: the bounds every window sits in. */
+  const bounds = useMemo(() => {
+    const all = fundList.flatMap((f) => series.get(f) ?? []);
     if (all.length === 0) return null;
-    const last = Math.max(...all.map((o) => o.order));
-    const first = Math.min(...all.map((o) => o.order));
+    return {
+      first: Math.min(...all.map((o) => o.order)),
+      last: Math.max(...all.map((o) => o.order)),
+    };
+  }, [series, fundList]);
+
+  /** The window on screen. Named `viewWindow`, never `window`. */
+  const viewWindow = useMemo(() => {
+    if (!bounds) return null;
+    const { first, last } = bounds;
+    if (custom) {
+      return { from: Math.max(first, custom.from), to: Math.min(last, custom.to) };
+    }
     const spec = PERIODS.find((p) => p.key === period)!;
     if (period === 'MAX') return { from: first, to: last };
     if (period === 'YTD') {
@@ -135,7 +242,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
       return { from: Math.max(first, year * 12 - 1), to: last };
     }
     return { from: Math.max(first, last - spec.months! + 1 - 1), to: last };
-  }, [series, funds, period]);
+  }, [bounds, period, custom]);
 
   /**
    * The chart's rows. Each fund is rebased so the first month IN THE
@@ -143,13 +250,13 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
    * over the period on screen rather than since inception.
    */
   const { data, headline, lastDate, available } = useMemo(() => {
-    if (!window) return { data: [] as Row[], headline: {} as Record<string, number>, lastDate: '', available: new Set<PeriodKey>() };
+    if (!viewWindow) return { data: [] as Row[], headline: {} as Record<string, number>, lastDate: '', available: new Set<PeriodKey>() };
 
     const byOrder = new Map<number, Row>();
     const head: Record<string, number> = {};
 
-    funds.forEach((fund) => {
-      const inWindow = (series.get(fund) ?? []).filter((o) => o.order >= window.from && o.order <= window.to);
+    shown.forEach((fund) => {
+      const inWindow = (series.get(fund) ?? []).filter((o) => o.order >= viewWindow.from && o.order <= viewWindow.to);
       let nav = 1;
       inWindow.forEach((o, i) => {
         // The first month of the window anchors the rebase at zero.
@@ -169,11 +276,9 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
     const merged = [...byOrder.values()].sort((a, b) => a.order - b.order);
 
     // Only offer a period the record can actually fill.
-    const all = funds.flatMap((f) => series.get(f) ?? []);
-    const span = all.length ? Math.max(...all.map((o) => o.order)) - Math.min(...all.map((o) => o.order)) + 1 : 0;
+    const span = bounds ? bounds.last - bounds.first + 1 : 0;
     const offered = new Set<PeriodKey>(['MAX', 'YTD']);
     PERIODS.forEach((p) => { if (p.months && span >= p.months) offered.add(p.key); });
-    if (span >= 3) offered.add('3M');
 
     return {
       data: merged,
@@ -181,23 +286,60 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
       lastDate: merged.length ? String(merged[merged.length - 1].date) : '',
       available: offered,
     };
-  }, [series, funds, window]);
+  }, [series, shown, viewWindow, bounds]);
 
-  const single = funds.length === 1;
-  const values = data.flatMap((r) => funds.map((f) => r[f]).filter((v): v is number => typeof v === 'number'));
-  const max = values.length ? Math.max(...values) : 0;
-  const min = values.length ? Math.min(...values) : 0;
+  // A record too short for the default falls back to the whole history
+  // rather than showing an empty chart with 3Y lit.
+  useEffect(() => {
+    if (available.size > 1 && !available.has(period) && !custom) setPeriod('MAX');
+  }, [available, period, custom]);
+
+  const single = shown.length === 1;
+  const values = data.flatMap((r) => shown.map((f) => r[f]).filter((v): v is number => typeof v === 'number'));
+  const rawMax = values.length ? Math.max(...values) : 0;
+  const rawMin = values.length ? Math.min(...values) : 0;
+  // Round ticks, with zero always on the scale, then the domain follows the
+  // ticks. Reading a return chart whose axis stops at 13.47% is harder than
+  // it needs to be.
+  const scaleLo = Math.min(0, rawMin);
+  const scaleHi = Math.max(0, rawMax);
+  const ticks = useMemo(
+    () => niceTicks(scaleLo, scaleHi === scaleLo ? scaleLo + 1 : scaleHi, 5),
+    [scaleLo, scaleHi],
+  );
+  const dLo = ticks[0];
+  const dHi = ticks[ticks.length - 1];
+  const tickDecimals = dHi - dLo >= 20 ? 0 : dHi - dLo >= 5 ? 1 : 2;
   // Where zero falls in the plotted range, so the fill can change colour
   // exactly at the axis rather than at an approximation of it.
-  const zeroOffset = max === min ? 0.5 : Math.max(0, Math.min(1, max / (max - min)));
+  const zeroOffset = dHi === dLo ? 0.5 : Math.max(0, Math.min(1, dHi / (dHi - dLo)));
 
   const spec = PERIODS.find((p) => p.key === period)!;
-  const headlineValue = single ? headline[funds[0]] : undefined;
-  const gradientId = `fundFill-${funds.join('-')}`;
+  const gradientId = `fundFill-${shown.join('-')}`;
+  const animate = revealed && !reducedMotion.current;
+
+  const allOrders = useMemo(() => {
+    if (!bounds) return [] as number[];
+    const out: number[] = [];
+    for (let o = bounds.first; o <= bounds.last; o += 1) out.push(o);
+    return out;
+  }, [bounds]);
+
+  const setRange = (from: number, to: number) => {
+    // Two points is the least that draws a line; the control never offers
+    // a window that cannot be plotted.
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    setCustom({ from: lo, to: Math.max(hi, lo + 1) });
+  };
 
   if (rows && data.length < 2) return null;
 
-  const axisTick = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' };
+  const axisTick = {
+    fontSize: 11,
+    fill: 'hsl(var(--muted-foreground))',
+    fontVariantNumeric: 'tabular-nums' as const,
+  };
   const gridStroke = 'hsl(var(--separator))';
 
   const tooltip = (
@@ -213,6 +355,41 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
     />
   );
 
+  const xAxis = (
+    <XAxis
+      dataKey="label" tickLine={false} axisLine={{ stroke: gridStroke }}
+      minTickGap={40} tickMargin={8} tick={axisTick} padding={{ left: 6, right: 6 }}
+    />
+  );
+  const yAxis = (
+    <YAxis
+      orientation="right" tickLine={false} axisLine={false} width={56}
+      domain={[dLo, dHi]} ticks={ticks} tick={axisTick} tickMargin={6}
+      tickFormatter={(v: number) => `${v.toFixed(tickDecimals)}%`}
+    />
+  );
+  // One grid, read two ways: solid rules across the scale, a lighter dashed
+  // comb down the time axis. Recharts renders only the FIRST CartesianGrid
+  // in a chart, so the second reading is drawn through the `vertical`
+  // renderer rather than through a second grid.
+  const grid = (
+    <CartesianGrid
+      stroke={gridStroke}
+      strokeDasharray="0"
+      horizontal
+      vertical={({ key, x1, y1, x2, y2 }) => (
+        <line
+          key={key}
+          x1={x1} y1={y1} x2={x2} y2={y2}
+          stroke={gridStroke} strokeOpacity={0.55} strokeDasharray="2 4" fill="none"
+        />
+      )}
+    />
+  );
+  const zeroLine = (
+    <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.55} strokeWidth={1.25} />
+  );
+
   return (
     <section className="pt-0 pb-section-sm md:pb-section bg-background">
       <div className="container">
@@ -220,43 +397,80 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
         {caption && <p className="font-body text-small text-muted-foreground mb-6">{caption}</p>}
 
         <div className={caption ? '' : 'mt-6'}>
-          {/* Header: the return over the period on the left, the date of the
-              most recent observation on the right. */}
+          {/* Header: the return over the period on the left, coloured by
+              sign, and the date of the most recent observation on the
+              right. On a comparison chart the fund name keeps the line
+              colour so the two readings stay attached to their lines. */}
           <div className="flex items-baseline justify-between gap-4 mb-3 font-body">
             <div className="text-body-lg">
-              <span className="text-muted-foreground">{spec.headline}: </span>
-              {single ? (
-                <span style={{ color: (headlineValue ?? 0) < 0 ? DOWN : UP }}>
-                  {typeof headlineValue === 'number' ? signed(headlineValue) : '-'}
-                </span>
-              ) : (
-                <span className="inline-flex flex-wrap gap-x-4">
-                  {funds.map((f) => (
-                    <span key={f} style={{ color: COMPARE[f].colour }}>
-                      {fundShortLabels[f]} {typeof headline[f] === 'number' ? signed(headline[f]) : '-'}
+              <span className="text-muted-foreground">{custom ? 'Selected period' : spec.headline}: </span>
+              <span className="inline-flex flex-wrap gap-x-4">
+                {shown.map((f) => {
+                  const v = headline[f];
+                  const known = typeof v === 'number';
+                  return (
+                    <span key={f}>
+                      {!single && (
+                        <span style={{ color: COMPARE[f].colour }}>{fundShortLabels[f]} </span>
+                      )}
+                      <span style={{ color: known && v < 0 ? DOWN : UP }}>
+                        {known ? signed(v) : '-'}
+                      </span>
                     </span>
-                  ))}
-                </span>
-              )}
+                  );
+                })}
+              </span>
             </div>
             <div className="text-small text-muted-foreground whitespace-nowrap">
               {lastDate && <>date: {lastDate}</>}
             </div>
           </div>
 
+          {/* Switch a line off. With one left the chart becomes the
+              single-fund reading, signed green and red about zero. */}
+          {fundList.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3" role="group" aria-label="Funds shown">
+              {fundList.map((f) => {
+                const on = shown.includes(f);
+                const onlyOne = on && shown.length === 1;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={onlyOne}
+                    title={onlyOne ? 'At least one fund stays on the chart' : undefined}
+                    onClick={() => setHidden((h) => (h.includes(f) ? h.filter((x) => x !== f) : [...h, f]))}
+                    className={`inline-flex items-center gap-2 font-body text-sm h-8 px-3 border transition-colors ${
+                      on ? 'border-accent text-foreground' : 'border-separator text-muted-foreground/60 hover:text-muted-foreground'
+                    } ${onlyOne ? 'cursor-default' : ''}`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-[3px] w-4 shrink-0"
+                      style={{ background: on ? COMPARE[f].colour : 'hsl(var(--separator))' }}
+                    />
+                    {ACTIVE_FUND_LABELS[f]}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div className="relative">
-            {/* The mark sits behind the plot, small enough that no reading of
-                the data ever has to look through it. */}
+            {/* The mark sits behind the plot, large and very faint, so it is
+                present in any screenshot without ever being something the
+                data has to be read through. */}
             <img
               src={fullLogoColor.url}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 w-[24%] max-w-[190px] -translate-x-1/2 -translate-y-1/2 opacity-[0.05] select-none"
+              className="pointer-events-none absolute left-1/2 top-1/2 w-[34%] max-w-[260px] -translate-x-1/2 -translate-y-1/2 opacity-[0.035] select-none"
             />
 
-            <div className="relative h-[300px] md:h-[420px] w-full">
-              {!rows ? (
-                <div className="h-full w-full animate-pulse bg-muted/40" />
+            <div ref={plotRef} className="relative h-[300px] md:h-[420px] w-full">
+              {!rows || !revealed ? (
+                <div className={`h-full w-full ${rows ? '' : 'animate-pulse bg-muted/40'}`} />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   {single ? (
@@ -275,50 +489,36 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                           <stop offset={1} stopColor={DOWN} stopOpacity={0.45} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical horizontal />
-                      <XAxis
-                        dataKey="label" tickLine={false} axisLine={{ stroke: gridStroke }}
-                        minTickGap={36} tick={axisTick}
-                      />
-                      <YAxis
-                        orientation="right" tickLine={false} axisLine={false} width={58}
-                        tick={axisTick} tickFormatter={(v: number) => `${v.toFixed(2)}%`}
-                      />
-                      <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.55} strokeWidth={1.25} />
+                      {grid}
+                      {xAxis}
+                      {yAxis}
+                      {zeroLine}
                       {tooltip}
                       <Area
-                        type="linear" dataKey={funds[0]}
+                        type="linear" dataKey={shown[0]}
                         stroke={`url(#${gradientId}-stroke)`} strokeWidth={2}
                         strokeLinejoin="miter" strokeLinecap="butt"
                         fill={`url(#${gradientId})`} dot={false} activeDot={{ r: 3.5 }}
-                        isAnimationActive={false} name={ACTIVE_FUND_LABELS[funds[0]]}
+                        isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out"
+                        name={ACTIVE_FUND_LABELS[shown[0]]}
                       />
                     </AreaChart>
                   ) : (
                     <LineChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
-                      <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical horizontal />
-                      <XAxis
-                        dataKey="label" tickLine={false} axisLine={{ stroke: gridStroke }}
-                        minTickGap={36} tick={axisTick}
-                      />
-                      <YAxis
-                        orientation="right" tickLine={false} axisLine={false} width={58}
-                        tick={axisTick} tickFormatter={(v: number) => `${v.toFixed(2)}%`}
-                      />
-                      <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.55} strokeWidth={1.25} />
+                      {grid}
+                      {xAxis}
+                      {yAxis}
+                      {zeroLine}
                       {tooltip}
-                      <Legend
-                        verticalAlign="top" align="left" height={26} iconType="plainline"
-                        wrapperStyle={{ fontFamily: 'Calibri, Carlito, Arial, sans-serif', fontSize: 13 }}
-                      />
-                      {funds.map((fund) => (
+                      {shown.map((fund, i) => (
                         <Line
                           key={fund} type="linear" dataKey={fund}
                           stroke={COMPARE[fund].colour} strokeWidth={2}
-                          strokeDasharray={COMPARE[fund].dash}
                           strokeLinejoin="miter" strokeLinecap="butt"
                           dot={false} activeDot={{ r: 3.5 }}
-                          isAnimationActive={false} connectNulls name={fundShortLabels[fund]}
+                          isAnimationActive={animate} animationDuration={1100}
+                          animationBegin={i * 140} animationEasing="ease-out"
+                          connectNulls name={fundShortLabels[fund]}
                         />
                       ))}
                     </LineChart>
@@ -328,19 +528,19 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
             </div>
           </div>
 
-          {/* Period selector on the left, the resolved window on the right. */}
+          {/* Period selector on the left, the date range control on the right. */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-1" role="group" aria-label="Chart period">
               {PERIODS.map((p) => {
                 const enabled = available.has(p.key);
-                const on = period === p.key;
+                const on = !custom && period === p.key;
                 return (
                   <button
                     key={p.key}
                     type="button"
                     disabled={!enabled}
                     aria-pressed={on}
-                    onClick={() => setPeriod(p.key)}
+                    onClick={() => { setCustom(null); setPeriod(p.key); }}
                     className={`font-body text-sm px-3 h-9 border transition-colors ${
                       on
                         ? 'bg-accent text-background border-accent'
@@ -355,16 +555,75 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               })}
             </div>
 
-            <div
-              ref={rangeRef}
-              className="font-body text-sm text-muted-foreground border border-separator h-9 px-3 inline-flex items-center gap-2"
-              title="The window the selected period covers"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="3" y="5" width="18" height="16" />
-                <path d="M3 10h18M8 3v4M16 3v4" />
-              </svg>
-              {data.length ? `${data[0].date} - ${data[data.length - 1].date}` : '-'}
+            {/* The date range. Built from the months that exist in the
+                record, so it can only ever select a window that draws. */}
+            <div className="relative" ref={pickerRef}>
+              <button
+                type="button"
+                onClick={() => setPickerOpen((o) => !o)}
+                aria-expanded={pickerOpen}
+                aria-haspopup="dialog"
+                className={`font-body text-sm h-9 px-3 inline-flex items-center gap-2 border transition-colors ${
+                  custom ? 'border-accent text-accent' : 'border-separator text-muted-foreground hover:border-accent hover:text-accent'
+                }`}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" />
+                  <path d="M3 10h18M8 3v4M16 3v4" />
+                </svg>
+                {data.length ? `${data[0].date} - ${data[data.length - 1].date}` : '-'}
+              </button>
+
+              {pickerOpen && viewWindow && (
+                <div
+                  role="dialog"
+                  aria-label="Choose a date range"
+                  className="absolute right-0 bottom-full mb-2 z-20 w-[17rem] bg-background border border-separator p-4 shadow-[0_20px_50px_-20px_hsl(var(--overlay)/0.35)]"
+                >
+                  <div className="grid grid-cols-[3.25rem_1fr] items-center gap-x-3 gap-y-3 font-body text-sm">
+                    <label htmlFor="fund-range-from" className="text-muted-foreground">From</label>
+                    <select
+                      id="fund-range-from"
+                      value={viewWindow.from}
+                      onChange={(e) => setRange(Number(e.target.value), viewWindow.to)}
+                      className="h-9 px-2 border border-separator bg-background text-foreground"
+                    >
+                      {allOrders.filter((o) => o < viewWindow.to).map((o) => (
+                        <option key={o} value={o}>{monthLabel(o)}</option>
+                      ))}
+                    </select>
+
+                    <label htmlFor="fund-range-to" className="text-muted-foreground">To</label>
+                    <select
+                      id="fund-range-to"
+                      value={viewWindow.to}
+                      onChange={(e) => setRange(viewWindow.from, Number(e.target.value))}
+                      className="h-9 px-2 border border-separator bg-background text-foreground"
+                    >
+                      {allOrders.filter((o) => o > viewWindow.from).map((o) => (
+                        <option key={o} value={o}>{monthLabel(o)}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setCustom(null); setPickerOpen(false); }}
+                      className="font-body text-sm text-muted-foreground hover:text-accent"
+                    >
+                      Reset to {spec.label}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(false)}
+                      className="font-body text-sm h-9 px-4 bg-accent text-background"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
