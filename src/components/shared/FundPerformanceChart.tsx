@@ -439,10 +439,72 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
         {caption && <p className="font-body text-small text-muted-foreground mb-6">{caption}</p>}
 
         <div className={caption ? '' : 'mt-6'}>
+          {/* WHICH FUNDS ARE ON THE CHART, stated before the reading of
+              them, because that is the order the question arrives in.
+              Two checkboxes rather than two buttons: a button that is off
+              looks like a button that is unavailable, and a pale chip left
+              the reader unable to tell "switched off" from "no data". */}
+          {fundList.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="font-body text-[11px] uppercase tracking-wider text-muted-foreground mr-1">
+                Showing
+              </span>
+              {fundList.map((f) => {
+                const on = shown.includes(f);
+                const onlyOne = on && shown.length === 1;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={on}
+                    disabled={onlyOne}
+                    title={
+                      onlyOne
+                        ? 'One fund always stays on the chart'
+                        : on ? `Hide ${ACTIVE_FUND_LABELS[f]}` : `Show ${ACTIVE_FUND_LABELS[f]}`
+                    }
+                    onClick={() => setHidden((h) => (h.includes(f) ? h.filter((x) => x !== f) : [...h, f]))}
+                    className={`inline-flex items-center gap-2 font-body text-xs sm:text-sm h-8 px-2.5 sm:px-3 border transition-colors ${
+                      on
+                        ? 'border-accent text-foreground'
+                        : 'border-separator text-muted-foreground hover:border-accent hover:text-accent'
+                    } ${onlyOne ? 'cursor-default' : ''}`}
+                  >
+                    {/* The tick is what says "on", so the off state can stay
+                        legible instead of having to fade to prove a point. */}
+                    <span
+                      aria-hidden="true"
+                      className={`h-3.5 w-3.5 shrink-0 flex items-center justify-center border ${
+                        on ? 'bg-accent border-accent' : 'bg-background border-separator'
+                      }`}
+                    >
+                      {on && (
+                        <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="hsl(var(--background))" strokeWidth="2">
+                          <path d="M2.5 6.2 4.8 8.5 9.5 3.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="h-[3px] w-4 shrink-0"
+                      style={{ background: on ? COMPARE[f].colour : 'hsl(var(--separator))' }}
+                    />
+                    <span className="sm:hidden">{fundShortLabels[f]}</span>
+                    <span className="hidden sm:inline">{ACTIVE_FUND_LABELS[f]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Header: the return over the period on the left, coloured by
               sign, and the date of the most recent observation on the
-              right. On a comparison chart the fund name keeps the line
-              colour so the two readings stay attached to their lines. */}
+              right. WHENEVER THE CHART COULD HOLD MORE THAN ONE FUND the
+              figure is named, including when only one is left on it: an
+              unattributed "+15.59%" beside a selector is the one number a
+              reader cannot act on. The name carries the line colour, so
+              each reading stays attached to its own line. */}
           <div className="flex items-baseline justify-between gap-3 mb-3 font-body">
             <div className="text-sm sm:text-base min-w-0">
               <span className="text-muted-foreground">{custom ? 'Selected period' : spec.headline}: </span>
@@ -452,8 +514,16 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                   const known = typeof v === 'number';
                   return (
                     <span key={f}>
-                      {!single && (
-                        <span style={{ color: COMPARE[f].colour }}>{fundShortLabels[f]} </span>
+                      {fundList.length > 1 && (
+                        <span style={{ color: COMPARE[f].colour }}>
+                          {shown.length === 1 ? (
+                            <>
+                              <span className="sm:hidden">{fundShortLabels[f]}</span>
+                              <span className="hidden sm:inline">{ACTIVE_FUND_LABELS[f]}</span>
+                            </>
+                          ) : fundShortLabels[f]}
+                          {' '}
+                        </span>
                       )}
                       <span style={{ color: known && v < 0 ? DOWN : UP }}>
                         {known ? signed(v) : '-'}
@@ -467,37 +537,6 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               {lastDate && <>date: {lastDate}</>}
             </div>
           </div>
-
-          {/* Switch a line off. With one left the chart becomes the
-              single-fund reading, signed green and red about zero. */}
-          {fundList.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 mb-3" role="group" aria-label="Funds shown">
-              {fundList.map((f) => {
-                const on = shown.includes(f);
-                const onlyOne = on && shown.length === 1;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    aria-pressed={on}
-                    disabled={onlyOne}
-                    title={onlyOne ? 'At least one fund stays on the chart' : undefined}
-                    onClick={() => setHidden((h) => (h.includes(f) ? h.filter((x) => x !== f) : [...h, f]))}
-                    className={`inline-flex items-center gap-2 font-body text-xs sm:text-sm h-8 px-2.5 sm:px-3 border transition-colors ${
-                      on ? 'border-accent text-foreground' : 'border-separator text-muted-foreground/60 hover:text-muted-foreground'
-                    } ${onlyOne ? 'cursor-default' : ''}`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="h-[3px] w-4 shrink-0"
-                      style={{ background: on ? COMPARE[f].colour : 'hsl(var(--separator))' }}
-                    />
-                    {ACTIVE_FUND_LABELS[f]}
-                  </button>
-                );
-              })}
-            </div>
-          )}
 
           <div className="relative">
             {/* The mark sits behind the plot, large and very faint, so it is
