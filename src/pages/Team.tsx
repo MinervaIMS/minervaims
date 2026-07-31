@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, MembersDirectory, PageLoader } from '@/components/shared';
 import { OrgChart } from '@/components/shared/OrgChart';
