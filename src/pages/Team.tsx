@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, MembersDirectory, PageLoader } from '@/components/shared';
 import { OrgChart } from '@/components/shared/OrgChart';
@@ -93,12 +93,12 @@ const Team = () => {
             <p className="font-body text-body-lg text-muted-foreground max-w-[46rem] flex-1">
               Our members operate in a structured, professional environment modelled on a real investment firm: four&nbsp;research divisions feeding a central Portfolio Management team, supported by Media, Communication &amp; Operations. Each team meets regularly to develop investment views, produce publishable research and support disciplined portfolio decisions.
             </p>
-            <Link
-              to="/about#organisational-structure"
+            <a
+              href="#organisational-structure"
               className="cta-link whitespace-nowrap shrink-0"
             >
-              How We Are Structured
-            </Link>
+              Roles &amp; Divisions
+            </a>
           </div>
         </div>
       </section>
@@ -121,7 +121,7 @@ const Team = () => {
       <section id="organisational-structure" className="bg-background pb-section-sm md:pb-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
-            Organisational Structure
+            Roles &amp; Divisions
           </h2>
           <OrgChart initialFocus={activeTab} showCta={false} />
         </div>

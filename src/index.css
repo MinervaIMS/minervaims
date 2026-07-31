@@ -357,7 +357,11 @@ body[data-scroll-locked] {
 .mdots, .rdots, .v3-dots, .v2-strip-dots, .dstack-dots {
   display:flex; justify-content:center; align-items:center; gap:.4rem;
 }
-.mdot, .rdot, .dstack-dot {
+/* Specificity note: `.rsec button { background:none }` sits above and would
+   otherwise strip the inactive dot fill inside the report sections, leaving
+   only the active lozenge visible. Matching the element keeps the base fill. */
+.mdot, .rdot, .dstack-dot,
+button.mdot, button.rdot, button.dstack-dot {
   flex:0 0 auto; width:6px; height:6px; border:0; padding:0; border-radius:9999px;
   background:hsl(var(--accent) / .28);
   transition:width 240ms var(--ease-standard), background-color 240ms var(--ease-standard);

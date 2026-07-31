@@ -84,7 +84,7 @@ const About = () => {
       {/* SECTION 4 - Organisational Structure */}
       <section id="organisational-structure" className="bg-background py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Roles &amp; Divisions</h2>
 
           {/* The chart carries its own call to action: the label follows the
               selected division, so it lands on that division's team. */}
