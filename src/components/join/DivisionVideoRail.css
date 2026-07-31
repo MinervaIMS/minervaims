@@ -13,6 +13,11 @@
   height: 100svh;
   padding-top: 84px; /* clear the fixed header */
   overflow: hidden;
+  /* Vertical panning stays with the browser; horizontal gestures belong to
+     the scroll bridge (see src/lib/pinned-scroll.ts). Without this WebKit
+     decides the axis at touch-start and the sideways gesture can never be
+     claimed, which is why it did nothing on a phone. */
+  touch-action: pan-y;
 }
 
 .jd-rail {

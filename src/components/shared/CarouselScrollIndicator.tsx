@@ -70,7 +70,9 @@ export function CarouselScrollIndicator({
   if (visibleDots <= 1) return null;
 
   return (
-    <div className="flex justify-center items-center gap-2 mt-6">
+    // One dot style site-wide: see the shared rule in src/index.css. These
+    // rails sit on the navy strip, hence the dark-ground modifier.
+    <div className="mdots mdots--ondark mt-6">
       {Array.from({ length: visibleDots }).map((_, index) => (
         <button
           key={index}
@@ -90,13 +92,7 @@ export function CarouselScrollIndicator({
               });
             });
           }}
-          className={`
-            w-2 h-2 rounded-full transition-all duration-300 ease-out
-            ${index === activeIndex 
-              ? 'bg-background scale-125' 
-              : 'bg-background/40 hover:bg-background/60'
-            }
-          `}
+          className={`mdot${index === activeIndex ? ' is-on' : ''}`}
           aria-label={`Go to slide ${index + 1}`}
         />
       ))}

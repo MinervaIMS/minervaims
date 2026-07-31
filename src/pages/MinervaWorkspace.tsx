@@ -688,14 +688,10 @@ const MinervaWorkspace = () => {
     if (!section) return;
     setActiveSectionKey(section.key);
     setActiveSubKey(section.subItems.some((si) => si.key === target.key) ? target.key : null);
-    if (target.topicId) {
-      // The subsection has to mount before its help panel can be addressed.
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('minerva:open-help', {
-          detail: { page: target.key, topic: target.topicId },
-        }));
-      }, 60);
-    }
+    // A search result opens the subsection and nothing else. It used to
+    // slide the help panel open too whenever the hit came from a help
+    // topic, which arrived over the page the reader had just asked for.
+    // The panel is one click away on the page itself.
   };
 
   const renderContent = () => {

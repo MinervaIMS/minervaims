@@ -32,10 +32,14 @@ const About = () => {
         </div>
       </div>
 
-      {/* SECTION 1 - What We Do */}
-      <section className="bg-background text-foreground py-section-sm md:py-section">
+      {/* SECTION 1 - What We Do
+          The bottom half of the rhythm is halved because the section below
+          is the pinned timeline, a full viewport that opens with a band of
+          its own. Counting both in full is what left a gap here that no
+          other boundary on the page has. */}
+      <section className="bg-background text-foreground pt-section-sm md:pt-section pb-10 md:pb-16">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-left text-accent">What We Do</h2>
           <div className="max-w-4xl text-left space-y-6">
             <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
               Minerva Investment Management Society (MIMS) is a society promoted and run by students of Bocconi University. Founded in 2019, MIMS is Bocconi's first student association dedicated to asset management and the only one with student-managed virtual funds.
@@ -56,8 +60,9 @@ const About = () => {
       {/* SECTION 1b - Our History */}
       <HistoryTimeline />
 
-      {/* SECTION 2 - Readings Curated By Our Members */}
-      <section className="bg-background py-section-sm md:py-section">
+      {/* SECTION 2 - Readings Curated By Our Members
+          Half rhythm on top for the same reason as above. */}
+      <section className="bg-background pt-10 md:pt-16 pb-section-sm md:pb-section">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Readings Curated By Our Members
@@ -79,7 +84,7 @@ const About = () => {
       {/* SECTION 4 - Organisational Structure */}
       <section id="organisational-structure" className="bg-background py-section-sm md:py-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Organisational Structure</h2>
 
           {/* The chart carries its own call to action: the label follows the
               selected division, so it lands on that division's team. */}

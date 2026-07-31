@@ -120,7 +120,7 @@ const Team = () => {
           to action is dropped: this IS the team page. */}
       <section id="organisational-structure" className="bg-background pb-section-sm md:pb-section">
         <div className="container">
-          <h2 className="font-serif text-heading mb-8 pb-3 border-b border-separator text-accent">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Organisational Structure
           </h2>
           <OrgChart initialFocus={activeTab} showCta={false} />

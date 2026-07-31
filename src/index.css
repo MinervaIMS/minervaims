@@ -341,12 +341,31 @@ body[data-scroll-locked] {
 .rsec--navy .rarrow:hover { background:#fff; color:hsl(var(--accent)); }
 .rsec--navy .rarrow:disabled { background:transparent; color:#fff; border-color:rgba(255,255,255,.4); }
 .rarrow svg { width:1.1rem; height:1.1rem; }
-.rdots { display:flex; align-items:center; gap:.5rem; }
-.rdot { width:7px; height:7px; border-radius:9999px; background:hsl(var(--separator));
-  transition:all var(--dur-base) var(--ease-standard); }
-.rdot.is-active { width:26px; background:hsl(var(--accent)); }
-.rsec--navy .rdot { background:rgba(255,255,255,.3); }
-.rsec--navy .rdot.is-active { background:#fff; }
+/* =====================================================================
+   Scroll dots — ONE implementation for the whole site and workspace.
+   ---------------------------------------------------------------------
+   The layout is the one adopted for the Our Divisions tiles on the
+   homepage: a 6px dot that stretches into a 20px lozenge when its item is
+   the one on screen. Every indicator that stands for a horizontal set of
+   items now uses it, so the same gesture is always signalled the same
+   way, whatever section the reader is in.
+
+   Aliases rather than a rename: the components keep the class names they
+   already carry (.rdots on the report rails, .dstack-dots on the pinned
+   divisions, .mdots for anything new), and all of them resolve here.
+   ===================================================================== */
+.mdots, .rdots, .v3-dots, .v2-strip-dots, .dstack-dots {
+  display:flex; justify-content:center; align-items:center; gap:.4rem;
+}
+.mdot, .rdot, .dstack-dot {
+  flex:0 0 auto; width:6px; height:6px; border:0; padding:0; border-radius:9999px;
+  background:hsl(var(--accent) / .28);
+  transition:width 240ms var(--ease-standard), background-color 240ms var(--ease-standard);
+}
+.mdot.is-on, .rdot.is-active, .dstack-dot.is-on { width:20px; background:hsl(var(--accent)); }
+/* The same shape on a dark ground reads in white. */
+.mdots--ondark .mdot, .rsec--navy .rdot, .v2-strip-dots .rdot { background:hsl(0 0% 100% / .34); }
+.mdots--ondark .mdot.is-on, .rsec--navy .rdot.is-active, .v2-strip-dots .rdot.is-active { background:#fff; }
 
 /* ---- V3 card carousel ---- */
 .v3-rail-bleed { width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
@@ -383,10 +402,8 @@ body[data-scroll-locked] {
 .v3-card .rplus { right:clamp(1.2rem,2vw,1.75rem); bottom:clamp(1.2rem,2vw,1.75rem); }
 .v3-foot { display:flex; align-items:center; justify-content:center; gap:1.5rem;
   margin-top:1.75rem; flex-wrap:wrap; }
-.v3-dots { display:flex; justify-content:center; gap:.6rem; cursor:pointer; }
-.v3-dots .rdot { cursor:pointer; width:9px; height:9px; border-radius:9999px;
-  background:hsl(var(--accent) / .28); }
-.v3-dots .rdot.is-active { width:9px; background:hsl(var(--accent)); }
+.v3-dots { cursor:pointer; }
+.v3-dots .rdot { cursor:pointer; }
 /* CTA card at end of carousel — matches v3-card grid */
 .v3-card--cta { text-decoration:none; }
 .v3-cta-coverhold { align-items:center; justify-content:flex-start; }
@@ -447,9 +464,7 @@ body[data-scroll-locked] {
 .v2-strip-rail > .v2-card { flex:0 0 calc((100% - 4 * clamp(1rem,1.8vw,1.6rem)) / 5); scroll-snap-align:start; }
 @media (max-width: 1023px) { .v2-strip-rail > .v2-card { flex:0 0 60%; } }
 @media (max-width: 640px)  { .v2-strip-rail > .v2-card { flex:0 0 78%; } }
-.v2-strip-dots { display:flex; justify-content:center; gap:.6rem; margin-top:1.25rem; }
-.v2-strip-dots .rdot { width:9px; height:9px; border-radius:9999px; background:rgba(255,255,255,.35); }
-.v2-strip-dots .rdot.is-active { width:9px; background:#fff; }
+.v2-strip-dots { margin-top:1.25rem; }
 .v2-card { cursor:pointer; background:none; padding:0; text-align:left; width:100%;
   display:flex; flex-direction:column; align-items:stretch; border:0; }
 .v2-card .rcover { box-shadow:0 8px 22px -12px rgba(0,0,0,.5);
@@ -1051,7 +1066,11 @@ input[type='search']::-webkit-search-cancel-button {
   --tl-card: 400px;              /* milestone column width             */
   --tl-gap: 3rem;                /* space between columns              */
   --tl-railtop: 2.5rem;          /* space above the rail               */
-  --tl-cardh: min(640px, calc(100dvh - 19rem));
+  /* The pinned viewport centres its content, so anything the card does not
+     use opens as white above the heading and below the cards, which is the
+     band that made this section sit oddly in the page rhythm. The column
+     now takes what the viewport actually has. */
+  --tl-cardh: min(700px, calc(100dvh - 18rem));
   --tl-gutter: max(1.5rem, calc((100vw - 1280px) / 2 + 1.5rem));
   --tl-media-gap: 2.25rem;       /* description or toggle to media     */
   --tl-desc-collapsed: 5.05rem;  /* three lines of body copy           */
@@ -1080,6 +1099,10 @@ input[type='search']::-webkit-search-cancel-button {
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   display: flex; flex-direction: column; justify-content: center;
   padding-top: 5rem; /* clears the fixed 84px site header */
+  /* Vertical panning stays with the browser; horizontal gestures are ours
+     (see src/lib/pinned-scroll.ts). Without this WebKit decides the axis
+     at touch-start and the sideways gesture can never be claimed. */
+  touch-action: pan-y;
 }
 @supports (height: 100dvh) { .tl-sticky { height: 100dvh; } }
 .tl-track { position: relative; width: max-content; padding: 0 var(--tl-gutter); will-change: transform; }
@@ -1280,6 +1303,8 @@ input[type='search']::-webkit-search-cancel-button {
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   display: flex; flex-direction: column; justify-content: center;
   padding-top: 5rem; /* clears the fixed site header */
+  /* See .tl-sticky: horizontal gestures belong to the scroll bridge. */
+  touch-action: pan-y;
 }
 @supports (height: 100dvh) { .dstack-sticky { height: 100dvh; } }
 .dstack-h2 {
@@ -1296,16 +1321,8 @@ input[type='search']::-webkit-search-cancel-button {
   overflow: hidden; box-shadow: 0 12px 28px -16px hsl(var(--overlay) / 0.28);
 }
 .dstack-tail { flex: 0 0 auto; width: 1px; }
-.dstack-dots {
-  flex: 0 0 auto; display: flex; justify-content: center; align-items: center;
-  gap: .4rem; margin-top: 1.1rem;
-}
-.dstack-dot {
-  width: 6px; height: 6px; border-radius: 9999px;
-  background: hsl(var(--accent) / .28);
-  transition: width 240ms var(--ease-standard), background-color 240ms var(--ease-standard);
-}
-.dstack-dot.is-on { width: 20px; background: hsl(var(--accent)); }
+/* Layout only: the dots themselves come from the shared rule above. */
+.dstack-dots { flex: 0 0 auto; margin-top: 1.1rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .dstack-track { transition: none !important; }

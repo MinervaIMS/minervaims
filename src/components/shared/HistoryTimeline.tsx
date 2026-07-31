@@ -406,7 +406,6 @@ export function HistoryTimeline() {
     const first = centres[0];
     const last = centres[centres.length - 1];
     const len = last - first;
-    geometry.current.thresholds = centres.map((c) => (len > 0 ? (c - first) / len : 0));
 
     rail.style.left = `${first}px`;
     rail.style.width = `${Math.max(0, len)}px`;
@@ -415,7 +414,29 @@ export function HistoryTimeline() {
     // fault rather than as the rail carrying on.
     cont.style.left = `${last + (lastDot ? lastDot.offsetWidth / 2 : 44)}px`;
 
-    const range = Math.max(0, track.scrollWidth - sticky.clientWidth);
+    // Travel stops at the RIGHT EDGE OF THE LAST CARD plus the gutter, not
+    // at the end of the track. The track carries a tail and a continuation
+    // line past that point, and scrolling through them left the reader
+    // pushing against dead space after the story had finished.
+    const lastItem = items[items.length - 1];
+    const gutter = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+    const contentEnd = lastItem.offsetLeft + lastItem.offsetWidth + gutter;
+    const range = Math.max(0, Math.min(track.scrollWidth, contentEnd) - sticky.clientWidth);
+
+    // A year lights when ITS COLUMN ARRIVES, which has to be measured in
+    // the same units as the translate. The thresholds used to be the dot
+    // centres normalised between the first and the last, a different scale
+    // entirely, so every year lit long after its card was being read.
+    //
+    // At progress p the track is translated by -p * range, so a column
+    // whose left edge is at `l` sits on screen at `l - p * range`. Solving
+    // for the moment that edge reaches the gutter gives the threshold
+    // below: the dot lights exactly as its own card takes the screen.
+    geometry.current.thresholds = items.map((li) => {
+      if (range <= 0) return 0;
+      const trigger = (li.offsetLeft - gutter) / range;
+      return Math.max(0, Math.min(1, trigger));
+    });
     geometry.current.range = range;
     geometry.current.pinned = range > 8;
     if (geometry.current.pinned) {
