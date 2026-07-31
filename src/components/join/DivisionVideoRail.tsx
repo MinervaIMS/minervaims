@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { JOIN_DIVISIONS, type JoinDivision } from '@/lib/join-content';
 import { bindPinnedScroll } from '@/lib/pinned-scroll';
 import './DivisionVideoRail.css';
+import { clsx } from 'clsx';
 
 // =====================================================================
 // Our Divisions — vertical-to-horizontal-to-vertical scroll sequence.
@@ -312,6 +313,27 @@ export function DivisionVideoRail() {
               />
             ))}
           </div>
+        </div>
+
+        <div className="mdots mt-6" aria-hidden="true">
+          {JOIN_DIVISIONS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                if (pinned && sectionRef.current) {
+                  const maxScroll = sectionRef.current.offsetHeight - window.innerHeight;
+                  const targetProgress = i / (JOIN_DIVISIONS.length - 1);
+                  window.scrollTo({ top: sectionRef.current.offsetTop + maxScroll * targetProgress, behavior: 'smooth' });
+                } else if (railRef.current) {
+                  const max = railRef.current.scrollWidth - railRef.current.clientWidth;
+                  railRef.current.scrollTo({ left: max * (i / (JOIN_DIVISIONS.length - 1)), behavior: 'smooth' });
+                }
+              }}
+              className={clsx('mdot', i === activeIndex && 'is-on')}
+              aria-label={`Go to division ${i + 1}`}
+            />
+          ))}
         </div>
 
       </div>
