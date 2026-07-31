@@ -134,6 +134,24 @@ function niceTicks(lo: number, hi: number, n = 5): number[] {
 
 interface Row { order: number; label: string; date: string; [fund: string]: number | string }
 
+/**
+ * True below the `sm` breakpoint. Recharts sizes its axes in numbers rather
+ * than in classes, so the gutters and the tick density have to be told
+ * about a phone rather than styled into one.
+ */
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    if (typeof globalThis.matchMedia !== 'function') return;
+    const mq = globalThis.matchMedia('(max-width: 639px)');
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  return narrow;
+}
+
 interface Props {
   /** One fund draws a signed area; two draw comparable lines that can be switched off. */
   funds: ActiveFund[];
@@ -161,6 +179,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   const pickerRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useRef(false);
+  const narrow = useNarrow();
 
   useEffect(() => { setCustom(null); setHidden([]); }, [fundsKey]);
 
@@ -303,16 +322,38 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   // it needs to be.
   const scaleLo = Math.min(0, rawMin);
   const scaleHi = Math.max(0, rawMax);
-  const ticks = useMemo(
-    () => niceTicks(scaleLo, scaleHi === scaleLo ? scaleLo + 1 : scaleHi, 5),
-    [scaleLo, scaleHi],
-  );
-  const dLo = ticks[0];
-  const dHi = ticks[ticks.length - 1];
+  const { ticks, dLo, dHi } = useMemo(() => {
+    const hi = scaleHi === scaleLo ? scaleLo + 1 : scaleHi;
+    const all = niceTicks(scaleLo, hi, 5);
+    const top = all[all.length - 1];
+    // The scale is anchored on a round number at the top and released just
+    // under the lowest reading at the bottom. Rounding BOTH ends down to a
+    // tick is what opened a fifth of the plot as dead space on a fund that
+    // had dipped a fraction of a point below zero at the start.
+    const bottom = scaleLo === 0 ? 0 : scaleLo - (top - scaleLo) * 0.04;
+    return { ticks: all.filter((t) => t >= bottom), dLo: bottom, dHi: top };
+  }, [scaleLo, scaleHi]);
   const tickDecimals = dHi - dLo >= 20 ? 0 : dHi - dLo >= 5 ? 1 : 2;
-  // Where zero falls in the plotted range, so the fill can change colour
-  // exactly at the axis rather than at an approximation of it.
-  const zeroOffset = dHi === dLo ? 0.5 : Math.max(0, Math.min(1, dHi / (dHi - dLo)));
+
+  // WHERE ZERO SITS IN EACH GRADIENT.
+  //
+  // A gradient in objectBoundingBox units is measured against THE BOUNDING
+  // BOX OF THE PATH IT PAINTS, never against the axis. Measuring it against
+  // the axis domain is what painted red well inside positive territory: on
+  // a fund up 73% with an axis running to 80, the switch landed at
+  // 80 / (80 + 20) = 0.8 down a box whose top is +73% and whose bottom is
+  // zero, which is +14.6%, not zero.
+  //
+  // Each path therefore gets an offset computed from its own box. Recharts
+  // draws an area as two paths:
+  //   the FILL runs from the curve down to the baseline, which sits at zero
+  //   whenever the domain crosses it, so its box spans
+  //   [min(0, low), max(0, high)];
+  //   the STROKE follows the curve alone, so its box spans [low, high].
+  const boxZero = (top: number, bottom: number) =>
+    (top === bottom ? 0.5 : Math.max(0, Math.min(1, top / (top - bottom))));
+  const fillZero = boxZero(Math.max(0, rawMax), Math.min(0, rawMin));
+  const strokeZero = boxZero(rawMax, rawMin);
 
   const spec = PERIODS.find((p) => p.key === period)!;
   const gradientId = `fundFill-${shown.join('-')}`;
@@ -336,7 +377,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   if (rows && data.length < 2) return null;
 
   const axisTick = {
-    fontSize: 11,
+    fontSize: narrow ? 10 : 11,
     fill: 'hsl(var(--muted-foreground))',
     fontVariantNumeric: 'tabular-nums' as const,
   };
@@ -358,12 +399,13 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   const xAxis = (
     <XAxis
       dataKey="label" tickLine={false} axisLine={{ stroke: gridStroke }}
-      minTickGap={40} tickMargin={8} tick={axisTick} padding={{ left: 6, right: 6 }}
+      minTickGap={narrow ? 22 : 40} tickMargin={narrow ? 6 : 8} tick={axisTick}
+      padding={{ left: 6, right: 6 }}
     />
   );
   const yAxis = (
     <YAxis
-      orientation="right" tickLine={false} axisLine={false} width={56}
+      orientation="right" tickLine={false} axisLine={false} width={narrow ? 42 : 56}
       domain={[dLo, dHi]} ticks={ticks} tick={axisTick} tickMargin={6}
       tickFormatter={(v: number) => `${v.toFixed(tickDecimals)}%`}
     />
@@ -401,10 +443,10 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               sign, and the date of the most recent observation on the
               right. On a comparison chart the fund name keeps the line
               colour so the two readings stay attached to their lines. */}
-          <div className="flex items-baseline justify-between gap-4 mb-3 font-body">
-            <div className="text-body-lg">
+          <div className="flex items-baseline justify-between gap-3 mb-3 font-body">
+            <div className="text-sm sm:text-base min-w-0">
               <span className="text-muted-foreground">{custom ? 'Selected period' : spec.headline}: </span>
-              <span className="inline-flex flex-wrap gap-x-4">
+              <span className="inline-flex flex-wrap gap-x-3 sm:gap-x-4">
                 {shown.map((f) => {
                   const v = headline[f];
                   const known = typeof v === 'number';
@@ -421,7 +463,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                 })}
               </span>
             </div>
-            <div className="text-small text-muted-foreground whitespace-nowrap">
+            <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap shrink-0">
               {lastDate && <>date: {lastDate}</>}
             </div>
           </div>
@@ -441,7 +483,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                     disabled={onlyOne}
                     title={onlyOne ? 'At least one fund stays on the chart' : undefined}
                     onClick={() => setHidden((h) => (h.includes(f) ? h.filter((x) => x !== f) : [...h, f]))}
-                    className={`inline-flex items-center gap-2 font-body text-sm h-8 px-3 border transition-colors ${
+                    className={`inline-flex items-center gap-2 font-body text-xs sm:text-sm h-8 px-2.5 sm:px-3 border transition-colors ${
                       on ? 'border-accent text-foreground' : 'border-separator text-muted-foreground/60 hover:text-muted-foreground'
                     } ${onlyOne ? 'cursor-default' : ''}`}
                   >
@@ -468,7 +510,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               className="pointer-events-none absolute left-1/2 top-1/2 w-[34%] max-w-[260px] -translate-x-1/2 -translate-y-1/2 opacity-[0.035] select-none"
             />
 
-            <div ref={plotRef} className="relative h-[300px] md:h-[420px] w-full">
+            <div ref={plotRef} className="relative h-[280px] sm:h-[360px] md:h-[420px] w-full">
               {!rows || !revealed ? (
                 <div className={`h-full w-full ${rows ? '' : 'animate-pulse bg-muted/40'}`} />
               ) : (
@@ -476,16 +518,17 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                   {single ? (
                     <AreaChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
                       <defs>
-                        {/* One gradient for the stroke and one for the fill,
-                            both switching colour exactly at the zero line. */}
+                        {/* One gradient for the stroke and one for the fill.
+                            The two offsets differ because the two paths have
+                            different bounding boxes: see the note above. */}
                         <linearGradient id={`${gradientId}-stroke`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset={zeroOffset} stopColor={UP} />
-                          <stop offset={zeroOffset} stopColor={DOWN} />
+                          <stop offset={strokeZero} stopColor={UP} />
+                          <stop offset={strokeZero} stopColor={DOWN} />
                         </linearGradient>
                         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                           <stop offset={0} stopColor={UP} stopOpacity={0.45} />
-                          <stop offset={zeroOffset} stopColor={UP} stopOpacity={0.04} />
-                          <stop offset={zeroOffset} stopColor={DOWN} stopOpacity={0.04} />
+                          <stop offset={fillZero} stopColor={UP} stopOpacity={0.04} />
+                          <stop offset={fillZero} stopColor={DOWN} stopOpacity={0.04} />
                           <stop offset={1} stopColor={DOWN} stopOpacity={0.45} />
                         </linearGradient>
                       </defs>
@@ -528,25 +571,25 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
             </div>
           </div>
 
-          {/* Period selector on the left, the date range control on the right. */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-1" role="group" aria-label="Chart period">
-              {PERIODS.map((p) => {
-                const enabled = available.has(p.key);
+          {/* Period selector on the left, the date range control on the
+              right. On a phone the two stack and each takes the full width,
+              so the periods form even rows instead of a ragged block with
+              the range control stranded beside them. */}
+          <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2 sm:gap-3">
+            {/* A period the record cannot fill is not offered at all. */}
+            <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-1" role="group" aria-label="Chart period">
+              {PERIODS.filter((p) => available.has(p.key)).map((p) => {
                 const on = !custom && period === p.key;
                 return (
                   <button
                     key={p.key}
                     type="button"
-                    disabled={!enabled}
                     aria-pressed={on}
                     onClick={() => { setCustom(null); setPeriod(p.key); }}
-                    className={`font-body text-sm px-3 h-9 border transition-colors ${
+                    className={`font-body text-sm px-2 sm:px-3 h-9 border transition-colors ${
                       on
                         ? 'bg-accent text-background border-accent'
-                        : enabled
-                          ? 'bg-background text-muted-foreground border-separator hover:border-accent hover:text-accent'
-                          : 'bg-background text-muted-foreground/40 border-separator/60 cursor-not-allowed'
+                        : 'bg-background text-muted-foreground border-separator hover:border-accent hover:text-accent'
                     }`}
                   >
                     {p.label}
@@ -557,13 +600,13 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
 
             {/* The date range. Built from the months that exist in the
                 record, so it can only ever select a window that draws. */}
-            <div className="relative" ref={pickerRef}>
+            <div className="relative w-full sm:w-auto" ref={pickerRef}>
               <button
                 type="button"
                 onClick={() => setPickerOpen((o) => !o)}
                 aria-expanded={pickerOpen}
                 aria-haspopup="dialog"
-                className={`font-body text-sm h-9 px-3 inline-flex items-center gap-2 border transition-colors ${
+                className={`font-body text-sm h-9 px-3 w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 border transition-colors ${
                   custom ? 'border-accent text-accent' : 'border-separator text-muted-foreground hover:border-accent hover:text-accent'
                 }`}
               >
@@ -578,7 +621,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                 <div
                   role="dialog"
                   aria-label="Choose a date range"
-                  className="absolute right-0 bottom-full mb-2 z-20 w-[17rem] bg-background border border-separator p-4 shadow-[0_20px_50px_-20px_hsl(var(--overlay)/0.35)]"
+                  className="absolute right-0 bottom-full mb-2 z-20 w-full sm:w-[17rem] bg-background border border-separator p-4 shadow-[0_20px_50px_-20px_hsl(var(--overlay)/0.35)]"
                 >
                   <div className="grid grid-cols-[3.25rem_1fr] items-center gap-x-3 gap-y-3 font-body text-sm">
                     <label htmlFor="fund-range-from" className="text-muted-foreground">From</label>
