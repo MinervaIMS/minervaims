@@ -314,6 +314,27 @@ export function DivisionVideoRail() {
           </div>
         </div>
 
+        <div className="mdots mt-6" aria-hidden="true">
+          {JOIN_DIVISIONS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                if (pinned && railRef.current) {
+                  const maxScroll = sectionRef.current ? sectionRef.current.offsetHeight - window.innerHeight : 0;
+                  const targetProgress = i / (JOIN_DIVISIONS.length - 1);
+                  window.scrollTo({ top: (sectionRef.current?.offsetTop ?? 0) + maxScroll * targetProgress, behavior: 'smooth' });
+                } else if (railRef.current) {
+                  const max = railRef.current.scrollWidth - railRef.current.clientWidth;
+                  railRef.current.scrollTo({ left: max * (i / (JOIN_DIVISIONS.length - 1)), behavior: 'smooth' });
+                }
+              }}
+              className={`mdot${i === activeIndex ? ' is-on' : ''}`}
+              aria-label={`Go to division ${i + 1}`}
+            />
+          ))}
+        </div>
+
       </div>
     </section>
   );
