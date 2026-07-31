@@ -364,7 +364,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
                 <ul
                   ref={listRef}
                   id="workspace-search-results"
-                  className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-1 [touch-action:pan-y]"
+                  className="flex-1 min-h-0 overflow-hidden pb-1"
                   role="listbox"
                 >
                   {results.map((item, i) => {
