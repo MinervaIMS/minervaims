@@ -167,13 +167,13 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
   const results = useMemo(() => {
     if (!q) {
       // An empty box is still useful: offer the pages, in workspace order.
-      return index.filter((i) => i.kind === 'page').slice(0, 12);
+      return index.filter((i) => i.kind === 'page').slice(0, 5);
     }
     return index
       .map((item) => ({ item, s: score(item, q) }))
       .filter((r) => r.s > 0)
       .sort((a, b) => b.s - a.s || a.item.label.length - b.item.label.length)
-      .slice(0, 20)
+      .slice(0, 5)
       .map((r) => r.item);
   }, [index, q]);
 
@@ -364,7 +364,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
                 <ul
                   ref={listRef}
                   id="workspace-search-results"
-                  className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-1 [touch-action:pan-y]"
+                  className="flex-1 min-h-0 overflow-hidden pb-1"
                   role="listbox"
                 >
                   {results.map((item, i) => {
