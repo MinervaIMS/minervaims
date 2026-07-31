@@ -359,7 +359,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
             ) : (
               <>
                 <p className="px-4 pt-3 pb-1 font-body text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 shrink-0">
-                  {q ? 'Results' : 'Jump to'}
+                  {q ? 'Results' : '\n'}
                 </p>
                 <ul
                   ref={listRef}
@@ -425,7 +425,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
               <span className="hidden sm:inline-flex items-center gap-1"><ArrowUp className="h-3 w-3" /><ArrowDown className="h-3 w-3" />move</span>
               <span className="hidden sm:inline-flex items-center gap-1"><CornerDownLeft className="h-3 w-3" />open</span>
               <span className="hidden sm:inline">esc to close</span>
-              <span className="sm:ml-auto">{results.length} {results.length === 1 ? 'result' : 'results'}</span>
+              <span className="sm:ml-auto">{"\n"}</span>
             </div>
           </div>
         </div>
