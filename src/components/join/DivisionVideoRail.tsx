@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { JOIN_DIVISIONS, type JoinDivision } from '@/lib/join-content';
 import { bindPinnedScroll } from '@/lib/pinned-scroll';
 import './DivisionVideoRail.css';
+import { clsx } from 'clsx';
 
 // =====================================================================
 // Our Divisions — vertical-to-horizontal-to-vertical scroll sequence.
