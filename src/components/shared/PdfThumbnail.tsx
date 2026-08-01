@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FileText } from 'lucide-react';
+import { A4_ASPECT_RATIO, loadPdfJs } from '@/lib/pdfjs';
 
 interface PdfThumbnailProps {
   url: string;
@@ -9,76 +10,6 @@ interface PdfThumbnailProps {
   renderWidth?: number;
 }
 
-// PDF.js types (minimal subset we need)
-interface PDFDocumentProxy {
-  numPages: number;
-  getPage(pageNumber: number): Promise<PDFPageProxy>;
-}
-
-interface PDFPageProxy {
-  getViewport(params: { scale: number }): PDFPageViewport;
-  render(params: { canvasContext: CanvasRenderingContext2D; viewport: PDFPageViewport }): { promise: Promise<void> };
-}
-
-interface PDFPageViewport {
-  width: number;
-  height: number;
-}
-
-interface PDFJSLib {
-  getDocument(params: { url?: string; data?: ArrayBuffer; disableRange?: boolean; disableStream?: boolean }): { promise: Promise<PDFDocumentProxy> };
-  GlobalWorkerOptions: { workerSrc: string };
-}
-
-// A4 aspect ratio: 1:√2 ≈ 1:1.4142
-const A4_ASPECT_RATIO = 1.4142;
-
-// Load PDF.js from CDN - lazy loaded only when needed
-let pdfjsLib: PDFJSLib | null = null;
-let loadingPromise: Promise<PDFJSLib> | null = null;
-
-const loadPdfJs = (): Promise<PDFJSLib> => {
-  if (pdfjsLib) {
-    return Promise.resolve(pdfjsLib);
-  }
-  
-  if (loadingPromise) {
-    return loadingPromise;
-  }
-
-  loadingPromise = new Promise((resolve, reject) => {
-    // Check if already loaded
-    if ((window as unknown as { pdfjsLib?: PDFJSLib }).pdfjsLib) {
-      pdfjsLib = (window as unknown as { pdfjsLib: PDFJSLib }).pdfjsLib;
-      resolve(pdfjsLib);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    script.async = true;
-    
-    script.onload = () => {
-      const lib = (window as unknown as { pdfjsLib?: PDFJSLib }).pdfjsLib;
-      if (lib) {
-        lib.GlobalWorkerOptions.workerSrc = 
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        pdfjsLib = lib;
-        resolve(lib);
-      } else {
-        reject(new Error('PDF.js failed to load'));
-      }
-    };
-    
-    script.onerror = () => {
-      reject(new Error('Failed to load PDF.js script'));
-    };
-    
-    document.head.appendChild(script);
-  });
-
-  return loadingPromise;
-};
 
 /**
  * Count the pages of a PDF file using the same PDF.js loader as the

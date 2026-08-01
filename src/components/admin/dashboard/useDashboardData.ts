@@ -69,21 +69,18 @@ export interface FundSeries { fund: Fund; points: FundPoint[] }
 
 export interface DivisionCount { name: string; previous: number; current: number }
 
-export interface AlumniPoint { label: string; sort: number; alumni: number }
-
-/** A previous-period comparison, or a static reference when none exists. */
-export interface Comparison {
-  /** Present when a genuine comparison exists. */
-  delta?: number;
-  /** What the delta is measured against, e.g. "Fall 2025". */
-  reference: string;
-  /**
-   * How the change should read. `up` is a genuine improvement, `flat` is
-   * neutral, and a decrease that is not a problem (members leaving after
-   * graduation) is `flat` too. Nothing on this page is ever `down`.
-   */
-  tone: 'up' | 'flat';
+/** One academic year on the Alumni Growth chart. */
+export interface AlumniYear {
+  /** '2024/25' */
+  label: string;
+  /** Total alumni at the end of that academic year. */
+  total: number;
+  /** Alumni added during it. */
+  added: number;
 }
+
+/** One reading, for the library crop on the Readings card. */
+export interface ReadingRow { id: string; title: string; author: string }
 
 export interface LatestUpdate {
   kind: 'fee' | 'aod' | 'event-public' | 'event-internal' | 'report';
@@ -108,18 +105,18 @@ export interface DashboardData {
   alumni: number | null;
   readings: number | null;
 
-  reportsComparison: Comparison | null;
-  membersComparison: Comparison | null;
-  alumniComparison: Comparison | null;
-  readingsComparison: Comparison | null;
 
   divisionCounts: DivisionCount[] | null;
-  alumniHistory: AlumniPoint[] | null;
+  alumniYears: AlumniYear[] | null;
   fundSeries: FundSeries[] | null;
   latestUpdate: LatestUpdate | null;
   /** False only when the update query itself failed. */
   latestUpdateOk: boolean;
   avatars: AvatarRow[] | null;
+  /** Recent published PDFs, for the report-cover columns. */
+  reportFiles: string[] | null;
+  /** Titles for the library crop. */
+  readingRows: ReadingRow[] | null;
 
   greetingVars: GreetingVars;
   /** False until every greeting variable has settled, so it is picked once. */
@@ -148,18 +145,6 @@ async function safe<T>(run: () => PromiseLike<{ data: T | null; error: unknown }
   }
 }
 
-/**
- * A comparison line. `up` for an increase, `flat` for level or for a
- * decrease that is not a problem. A member-count decrease reflects
- * graduation and is never marked as a failure.
- */
-function compare(now: number | null, before: number | null, reference: string | null): Comparison | null {
-  if (now === null) return null;
-  if (before === null || reference === null) return null;
-  const delta = now - before;
-  return { delta, reference, tone: delta > 0 ? 'up' : 'flat' };
-}
-
 export function useDashboardData(): DashboardData {
   const { user } = useAuth();
   const userId = user?.id ?? 'anonymous';
@@ -169,7 +154,7 @@ export function useDashboardData(): DashboardData {
   const [snapshots, setSnapshots] = useState<{ label: string; sort: number; members: number; alumni: number }[] | null>(null);
   const [members, setMembers] = useState<number | null>(null);
   const [alumni, setAlumni] = useState<number | null>(null);
-  const [readingDates, setReadingDates] = useState<string[] | null>(null);
+  const [readingList, setReadingList] = useState<{ id: string; title: string; author: string; created_at: string }[] | null>(null);
   const [fundRows, setFundRows] = useState<{ fund: string; year: number; months: string[] }[] | null>(null);
   const [events, setEvents] = useState<EventRow[] | null>(null);
   const [aod, setAod] = useState<{ event_date: string; registration_open: boolean }[] | null>(null);
@@ -195,7 +180,8 @@ export function useDashboardData(): DashboardData {
           .select('semester_key, semester_label, members_count, alumni_count')),
         safe<number>(() => supabase.rpc('workspace_member_count')),
         safe<number>(() => supabase.rpc('public_alumni_filter_count')),
-        safe<{ created_at: string }[]>(() => supabase.from('readings').select('created_at')),
+        safe<{ id: string; title: string; author: string; created_at: string }[]>(() => supabase
+          .from('readings').select('id, title, author, created_at').order('display_order', { ascending: true })),
         safe<{ fund: string; year: number; months: unknown }[]>(() => supabase
           .from('fund_performance_years')
           .select('fund, year, months')
@@ -218,7 +204,7 @@ export function useDashboardData(): DashboardData {
           .from('team_members')
           .select('name, surname, photo_url')
           .not('photo_url', 'is', null)
-          .limit(24)),
+          .limit(40)),
       ]);
 
       if (!active) return;
@@ -234,7 +220,7 @@ export function useDashboardData(): DashboardData {
         : null);
       setMembers(typeof mem === 'number' ? mem : null);
       setAlumni(typeof alu === 'number' ? alu : null);
-      setReadingDates(read ? read.map((r) => r.created_at) : null);
+      setReadingList(read);
       setFundRows(funds
         ? funds.map((r) => {
           const raw = Array.isArray(r.months) ? (r.months as unknown[]) : [];
@@ -284,47 +270,45 @@ export function useDashboardData(): DashboardData {
     });
   }, [reports, semester.key, previous.key]);
 
-  const reportsComparison = useMemo<Comparison | null>(() => {
-    if (!reports) return null;
-    const inSem = (key: string) => reports.filter((r) => r.date && semesterOf(r.date).key === key).length;
-    const now = inSem(semester.key);
-    const before = inSem(previous.key);
-    // A semester with nothing on either side is not a comparison, it is an
-    // absence. The card falls back to the society's own reference point.
-    if (now === 0 && before === 0) return { reference: 'since Fall 2019', tone: 'flat' };
-    return compare(now, before, previous.label);
-  }, [reports, semester.key, previous.key, previous.label]);
+  // --- snapshots, as academic years ------------------------------------
 
-  // --- snapshots -------------------------------------------------------
-
-  const lastSnapshot = snapshots && snapshots.length ? snapshots[snapshots.length - 1] : null;
-
-  const membersComparison = useMemo(
-    () => compare(members, lastSnapshot?.members ?? null, lastSnapshot?.label ?? null),
-    [members, lastSnapshot],
-  );
-  const alumniComparison = useMemo(
-    () => compare(alumni, lastSnapshot?.alumni ?? null, lastSnapshot?.label ?? null),
-    [alumni, lastSnapshot],
-  );
-
-  const alumniHistory = useMemo<AlumniPoint[] | null>(() => {
+  /**
+   * The alumni network by ACADEMIC YEAR, cumulative and yearly.
+   *
+   * A snapshot is written when a fee collection closes, so the record is
+   * semester-based. An academic year runs Fall then the following Spring,
+   * which is exactly one `sort` pair, so the year's closing total is its
+   * LATEST snapshot and the year's intake is the rise from the year
+   * before. Presenting two semesters of the same year as two independent
+   * bars invited the reader to read a summer intake that does not exist.
+   */
+  const alumniYears = useMemo<AlumniYear[] | null>(() => {
     if (!snapshots) return null;
-    return snapshots.map((s) => ({ label: s.label, sort: s.sort, alumni: s.alumni }));
+    const byYear = new Map<number, { label: string; total: number; sort: number }>();
+    for (const s of snapshots) {
+      // Fall of year Y and Spring of Y+1 are one academic year, keyed on Y.
+      const year = Math.floor((s.sort - 1) / 2);
+      const previousEntry = byYear.get(year);
+      if (!previousEntry || s.sort >= previousEntry.sort) {
+        byYear.set(year, {
+          label: `${year}/${String((year + 1) % 100).padStart(2, '0')}`,
+          total: s.alumni,
+          sort: s.sort,
+        });
+      }
+    }
+    const ordered = [...byYear.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v);
+    let carried = 0;
+    return ordered.map((y) => {
+      const added = Math.max(0, y.total - carried);
+      carried = y.total;
+      return { label: y.label, total: y.total, added };
+    });
   }, [snapshots]);
 
   // --- readings --------------------------------------------------------
 
-  const readings = readingDates ? readingDates.length : null;
-
-  const readingsComparison = useMemo<Comparison | null>(() => {
-    if (!readingDates) return null;
-    const added = (key: string) => readingDates.filter((d) => d && semesterOf(d).key === key).length;
-    const now = added(semester.key);
-    const before = added(previous.key);
-    if (now === 0 && before === 0) return { reference: 'currently published', tone: 'flat' };
-    return compare(now, before, previous.label);
-  }, [readingDates, semester.key, previous.key, previous.label]);
+  const readings = readingList ? readingList.length : null;
 
   // --- funds -----------------------------------------------------------
 
@@ -432,6 +416,16 @@ export function useDashboardData(): DashboardData {
     return null;
   }, [fee, aod, events, reports]);
 
+  /**
+   * The PDFs behind the report-cover columns. Six is the whole ask: each
+   * is fetched once and then reused as an image, so the loop costs nothing
+   * per frame however many copies are on screen.
+   */
+  const reportFiles = useMemo(
+    () => (reports ? reports.slice(0, 6).map((r) => r.file_url).filter(Boolean) : null),
+    [reports],
+  );
+
   const greetingVars = useMemo<GreetingVars>(() => {
     const ordinalNumber = semester.sort - FOUNDING_SORT + 1;
     const thisSemesterReports = reports
@@ -443,11 +437,11 @@ export function useDashboardData(): DashboardData {
       alumniCount: alumni ?? undefined,
       reportsThisSemester: thisSemesterReports,
       reportsAllTime: reports ? reports.length : undefined,
-      readingsCount: readingDates ? readingDates.length : undefined,
+      readingsCount: readingList ? readingList.length : undefined,
       semesterLabel: semester.label,
       semesterOrdinal: ordinalNumber > 0 ? semesterOrdinal(ordinalNumber) : undefined,
     };
-  }, [firstName, members, alumni, reports, readingDates, semester]);
+  }, [firstName, members, alumni, reports, readingList, semester]);
 
   return {
     loading,
@@ -457,16 +451,14 @@ export function useDashboardData(): DashboardData {
     members,
     alumni,
     readings,
-    reportsComparison,
-    membersComparison,
-    alumniComparison,
-    readingsComparison,
     divisionCounts,
-    alumniHistory,
+    alumniYears,
     fundSeries,
     latestUpdate,
     latestUpdateOk: reports !== null || events !== null,
     avatars,
+    reportFiles,
+    readingRows: readingList,
     greetingVars,
     greetingReady: !loading && nameSettled,
     userId,
