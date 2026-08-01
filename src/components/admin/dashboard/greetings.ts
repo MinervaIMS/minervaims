@@ -57,7 +57,7 @@ export const SPECIAL_BLOCKS: Array<{
     key: 'summer',
     match: (m, d) => m === 7 || (m === 8 && d <= 15),
     lines: [
-      "Hope your summer is treating you well, whether you're relaxing somewhere sunny or spending it surrounded by spreadsheets.",
+      "{firstName}, hope your summer is treating you well, whether you're relaxing somewhere sunny or spending it surrounded by spreadsheets.",
     ],
   },
   {

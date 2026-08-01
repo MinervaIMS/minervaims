@@ -3,24 +3,31 @@ import {
   Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
+import fullLogoWhite from '@/assets/full_logo_white.svg.asset.json';
 import { fundShortLabels } from '@/lib/types';
 import { Block } from './DashboardKit';
-import { POSITIVE, NEGATIVE } from './motion';
 
 /**
- * ONE COLOUR PER FUND, the pair the Portfolio Management section already
- * uses: brand navy against the soft purple. Colouring both lines by the
- * SIGN of their return, as this card did, gave two green lines whenever
- * both funds were up, which is most of the time, and the reader had to
- * go back to the legend on every glance. Sign is still stated, by the
- * colour of the FIGURE in the header, where it belongs.
+ * ONE COLOUR PER FUND, chosen for the deep purple ground this card now
+ * sits on: white against a light pink. Navy on purple would have been
+ * invisible. Colouring both lines by the SIGN of their return, as this
+ * card once did, gave two identical lines whenever both funds were up,
+ * which is most of the time. Sign is still stated, by the colour of the
+ * FIGURE in the header, where it belongs.
  */
 const FUND_COLOUR: Record<string, string> = {
-  'long-short': 'hsl(252 68% 18%)',
-  'multi-asset': 'hsl(252 41% 55%)',
+  'long-short': '#ffffff',
+  'multi-asset': 'hsl(340 62% 78%)',
 };
-const colourOf = (fund: string) => FUND_COLOUR[fund] ?? 'hsl(var(--accent))';
+const colourOf = (fund: string) => FUND_COLOUR[fund] ?? '#ffffff';
+
+/** Everything drawn on the purple ground. */
+const ON_PURPLE = 'hsl(var(--accent-foreground))';
+const INK = 'rgba(255,255,255,0.78)';
+const GRID = 'rgba(255,255,255,0.16)';
+/** The performance figure. Bright enough to read on deep purple. */
+const GAIN = 'hsl(142 62% 62%)';
+const LOSS = 'hsl(0 72% 72%)';
 import type { FundSeries } from './useDashboardData';
 
 // =====================================================================
@@ -158,29 +165,31 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
   const strokeZero = boxZero(rawHi, rawLo);
   const gradientId = `dashFund-${drawn.map((s) => s.fund).join('-') || 'none'}`;
 
-  const tickText = { fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' as const };
-  const gridStroke = 'hsl(var(--separator))';
+  const tickText = { fontSize: 11, fill: INK, fontVariantNumeric: 'tabular-nums' as const };
+  const gridStroke = GRID;
 
   const axes = (
     <>
       <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
       <XAxis
         dataKey="label" tick={tickText} tickLine={false}
-        axisLine={{ stroke: gridStroke }} minTickGap={26} tickMargin={6} padding={{ left: 4, right: 4 }}
+        axisLine={{ stroke: gridStroke }} minTickGap={34} tickMargin={6} padding={{ left: 2, right: 2 }}
       />
       <YAxis
-        orientation="right" tick={tickText} tickLine={false} axisLine={false} width={40} tickMargin={4}
+        orientation="right" tick={tickText} tickLine={false} axisLine={false} width={38} tickMargin={3}
         domain={[Number(dLo.toFixed(2)), dHi]} ticks={visibleTicks}
         tickFormatter={(v: number) => `${v.toFixed(dHi - dLo >= 20 ? 0 : 1)}%`}
       />
-      <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.5} strokeWidth={1} />
+      <ReferenceLine y={0} stroke={ON_PURPLE} strokeOpacity={0.45} strokeWidth={1} />
       <Tooltip
-        cursor={{ stroke: 'hsl(var(--accent))', strokeWidth: 1, strokeDasharray: '3 3' }}
+        cursor={{ stroke: ON_PURPLE, strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.5 }}
         contentStyle={{
-          border: '1px solid hsl(var(--separator))', borderRadius: 0,
-          background: 'hsl(var(--background))', fontSize: 12,
+          border: '1px solid rgba(255,255,255,0.35)', borderRadius: 6,
+          background: 'hsl(var(--accent))', color: ON_PURPLE, fontSize: 12,
           fontFamily: 'Calibri, Carlito, Arial, sans-serif',
         }}
+        itemStyle={{ color: ON_PURPLE }}
+        labelStyle={{ color: INK }}
         labelFormatter={(_l, payload) => (payload?.[0]?.payload as Row | undefined)?.date ?? ''}
         formatter={(v: number, name: string) => [signed(v), fundShortLabels[name as keyof typeof fundShortLabels] ?? name]}
       />
@@ -189,9 +198,10 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
 
   return (
     <Block
+      filled
       title="Fund performance"
       aside={
-        <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 justify-end tabular-nums">
+        <span className="flex w-full sm:w-auto flex-wrap items-center gap-x-4 gap-y-1.5 justify-start sm:justify-end tabular-nums">
           {drawn.map((s) => (
             <button
               key={s.fund}
@@ -202,17 +212,21 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                 h.includes(s.fund) ? h.filter((x) => x !== s.fund)
                   : drawn.length === 1 ? h : [...h, s.fund]
               ))}
-              className="inline-flex items-center gap-1.5 text-[13px] hover:opacity-80"
+              className="inline-flex items-baseline gap-1.5 hover:opacity-80"
             >
               {/* The swatch is the line, so the name never has to be
                   matched back to the legend. */}
-              <span className="h-[3px] w-4 shrink-0 rounded-full" style={{ background: colourOf(s.fund) }} />
-              <span className="text-foreground">{fundShortLabels[s.fund]}</span>
-              <span style={{ color: returns[s.fund] < 0 ? NEGATIVE : POSITIVE }}>{signed(returns[s.fund])}</span>
+              <span className="h-[3px] w-5 shrink-0 self-center rounded-full" style={{ background: colourOf(s.fund) }} />
+              <span className="text-[13px]" style={{ color: INK }}>{fundShortLabels[s.fund]}</span>
+              {/* The number is the point of this card: a size up, and in
+                  the sign colour rather than the fund colour. */}
+              <span className="font-serif text-[19px] sm:text-[22px] leading-none" style={{ color: returns[s.fund] < 0 ? LOSS : GAIN }}>
+                {signed(returns[s.fund])}
+              </span>
             </button>
           ))}
           {hidden.length > 0 && (
-            <button type="button" onClick={() => setHidden([])} className="text-[13px] text-muted-foreground hover:text-accent">
+            <button type="button" onClick={() => setHidden([])} className="text-[13px]" style={{ color: INK }}>
               show both
             </button>
           )}
@@ -222,7 +236,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
             value={horizon}
             onChange={(e) => setHorizon(e.target.value as Horizon)}
             aria-label="Chart horizon"
-            className="sm:hidden h-10 rounded-md border border-separator bg-background px-2 text-xs text-foreground"
+            className="sm:hidden ml-auto h-9 rounded-md border border-[rgba(255,255,255,0.4)] bg-transparent px-2 text-xs text-[hsl(var(--accent-foreground))]"
           >
             {HORIZONS.filter((h) => available.has(h.key)).map((h) => (
               <option key={h.key} value={h.key}>{h.key}</option>
@@ -239,8 +253,8 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                   onClick={() => setHorizon(h.key)}
                   className={`h-6 min-w-[30px] px-1.5 rounded-md border text-[11px] transition-colors ${
                     on
-                      ? 'bg-accent text-accent-foreground border-accent'
-                      : 'bg-background text-muted-foreground border-separator hover:border-accent hover:text-accent'
+                      ? 'bg-[hsl(var(--accent-foreground))] text-accent border-[hsl(var(--accent-foreground))]'
+                      : 'bg-transparent border-[rgba(255,255,255,0.35)] text-[rgba(255,255,255,0.78)] hover:border-[hsl(var(--accent-foreground))] hover:text-[hsl(var(--accent-foreground))]'
                   }`}
                 >
                   {h.key}
@@ -254,27 +268,27 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
       <div className="relative h-full min-h-0">
           {/* The mark reads clearly behind the plot, as on the public chart. */}
           <img
-            src={fullLogoColor.url}
+            src={fullLogoWhite.url}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[38%] max-w-[150px] -translate-x-1/2 -translate-y-1/2 opacity-[0.13] select-none"
+            className="pointer-events-none absolute left-1/2 top-1/2 w-[42%] max-w-[170px] -translate-x-1/2 -translate-y-1/2 opacity-[0.16] select-none"
           />
           {!series ? (
-            <div className="h-full w-full animate-pulse rounded-lg bg-muted/40" />
+            <div className="h-full w-full animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />
           ) : data.length >= 2 ? (
             <ResponsiveContainer width="100%" height="100%">
               {single ? (
-                <AreaChart data={data} margin={{ top: 6, right: 0, bottom: 0, left: -18 }}>
+                <AreaChart data={data} margin={{ top: 6, right: 0, bottom: 0, left: -26 }}>
                   <defs>
                     <linearGradient id={`${gradientId}-stroke`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset={strokeZero} stopColor={POSITIVE} />
-                      <stop offset={strokeZero} stopColor={NEGATIVE} />
+                      <stop offset={strokeZero} stopColor={GAIN} />
+                      <stop offset={strokeZero} stopColor={LOSS} />
                     </linearGradient>
                     <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset={0} stopColor={POSITIVE} stopOpacity={0.4} />
-                      <stop offset={fillZero} stopColor={POSITIVE} stopOpacity={0.03} />
-                      <stop offset={fillZero} stopColor={NEGATIVE} stopOpacity={0.03} />
-                      <stop offset={1} stopColor={NEGATIVE} stopOpacity={0.4} />
+                      <stop offset={0} stopColor={GAIN} stopOpacity={0.45} />
+                      <stop offset={fillZero} stopColor={GAIN} stopOpacity={0.04} />
+                      <stop offset={fillZero} stopColor={LOSS} stopOpacity={0.04} />
+                      <stop offset={1} stopColor={LOSS} stopOpacity={0.45} />
                     </linearGradient>
                   </defs>
                   {axes}
@@ -287,7 +301,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                   />
                 </AreaChart>
               ) : (
-                <LineChart data={data} margin={{ top: 6, right: 0, bottom: 0, left: -18 }}>
+                <LineChart data={data} margin={{ top: 6, right: 0, bottom: 0, left: -26 }}>
                   {axes}
                   {drawn.map((s, i) => (
                     <Line
@@ -304,7 +318,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
               )}
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center font-body text-xs text-muted-foreground">
+            <div className="h-full flex items-center justify-center font-body text-xs" style={{ color: INK }}>
               Not enough published months to draw this window.
             </div>
           )}

@@ -43,7 +43,11 @@ export function Block({ title, aside, children, filled = false, className = '' }
       {(title || aside) && (
         <div className="shrink-0 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5 mb-2">
           {title && <h2 className={`font-serif text-lg leading-tight ${filled ? '' : 'text-accent'}`}>{title}</h2>}
-          {aside && <div className="font-body text-[11px] text-muted-foreground">{aside}</div>}
+          {aside && (
+            <div className={`font-body text-[11px] ${filled ? 'text-accent-foreground/80' : 'text-muted-foreground'}`}>
+              {aside}
+            </div>
+          )}
         </div>
       )}
       <div className="flex-1 min-h-0">{children}</div>
@@ -98,7 +102,20 @@ export function KpiCard({ label, value, decoration, filled = false, animate }: K
         </span>
       </div>
       {decoration && (
-        <div className="relative shrink-0 w-[42%] sm:w-[46%] overflow-hidden" aria-hidden="true">
+        /* THE ORNAMENT IS INERT AND SEALED.
+           `pointer-events: none` means the cursor never enters it, so no
+           hover rule, no canvas listener and no React handler inside it
+           can ever fire: moving the mouse across the card cannot reach
+           the animation to disturb it. This was lost when the ornament
+           moved from an overlay into a column, and losing it is what let
+           hover reach the globe and the portraits.
+           `contain` seals the column off from the rest of the page, so
+           nothing inside can trigger a layout or paint outside it. */
+        <div
+          className="relative shrink-0 w-[42%] sm:w-[46%] overflow-hidden pointer-events-none select-none"
+          style={{ contain: 'layout paint style' }}
+          aria-hidden="true"
+        >
           {decoration}
         </div>
       )}

@@ -1,4 +1,3 @@
-import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import type { LatestUpdate } from './useDashboardData';
@@ -72,12 +71,12 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   const hasImage = !!update.imageUrl || !!update.pdfUrl;
 
   const body = (
-    <div className={`h-full w-full p-4 sm:p-5 font-body flex ${hasImage ? 'gap-4 sm:gap-5' : ''} text-left`}>
+    <div className={`h-full w-full p-5 sm:p-6 font-body flex ${hasImage ? 'gap-5 sm:gap-6' : ''} text-left`}>
       {hasImage && (
         // A fixed WIDTH and a free height: the picture decides its own
-        // proportions inside the column and is centred in what it leaves.
-        // Wider than before, because the cover IS the content here.
-        <div className="shrink-0 w-[34%] max-w-[180px] flex items-center justify-center">
+        // proportions inside the column and is centred in what it leaves,
+        // so a portrait poster and an A4 cover both fit undistorted.
+        <div className="shrink-0 w-[38%] max-w-[210px] flex items-center justify-center">
           {update.imageUrl ? (
             <img
               src={update.imageUrl}
@@ -97,33 +96,44 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
         </div>
       )}
 
-      <div className="min-w-0 flex-1 flex flex-col">
+      {/* The content column is centred against the preview rather than
+          stretched to the card's full height, which is what left a band
+          of unused purple under the text and the action stranded at the
+          very bottom edge. */}
+      <div className="min-w-0 flex-1 flex flex-col justify-center gap-3">
         {/* No category heading. The report, the event or the reminder IS
             the content; a label above it saying so spends a line to
             repeat what the next line already says. */}
-        <h3 className="font-serif text-xl sm:text-2xl leading-snug line-clamp-2">{update.title}</h3>
+        <h3 className="font-serif text-[22px] sm:text-[26px] leading-snug line-clamp-3">{update.title}</h3>
         {update.detail && (
-          <p className="text-[13px] sm:text-sm leading-relaxed text-accent-foreground/80 mt-2.5 line-clamp-3">
+          <p className="text-sm sm:text-[15px] leading-relaxed text-accent-foreground/80 line-clamp-4">
             {update.detail}
           </p>
         )}
-        <div className="mt-auto pt-4 flex flex-wrap items-center justify-between gap-3">
-          {update.date && <span className="text-xs sm:text-[13px] text-accent-foreground/70">{formatDate(update.date)}</span>}
-          {/* A button, not a text link: white on the filled card, and the
-              site's standard inversion on hover. */}
-          <span
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-background bg-background
-                       font-body text-[13px] text-accent whitespace-nowrap
-                       transition-colors duration-200 group-hover:bg-accent group-hover:text-accent-foreground"
-          >
-            {target.label} <ArrowUpRight className="h-3.5 w-3.5" />
-          </span>
-        </div>
+        {update.date && (
+          <span className="text-[13px] text-accent-foreground/70">{formatDate(update.date)}</span>
+        )}
+        {/* The site's button language: white fill and purple label, and
+            on hover the full inversion to the deep purple with a white
+            border. No icon: the site's buttons do not carry one. */}
+        <span
+          className="mt-1 inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
+                     border border-background bg-background
+                     font-serif text-[15px] text-accent whitespace-nowrap
+                     transition-colors duration-200
+                     group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
+        >
+          {target.label}
+        </span>
       </div>
     </div>
   );
 
-  const interactive = `${shell} group block text-left transition-colors hover:bg-accent/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft`;
+  // The card does not lighten on hover. The purple is the brand's, and
+  // washing it out was the one interaction on this page that did not
+  // look like the rest of the site. The button carries the whole state
+  // change instead.
+  const interactive = `${shell} group block text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft`;
 
   if (target.kind === 'workspace') {
     return (
