@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { MiniAlumniGlobe } from '@/components/AlumniGlobe';
 import { spineGeometry } from '@/components/readings/types';
 import type { AvatarRow, ReadingRow } from './useDashboardData';
@@ -6,26 +6,28 @@ import type { AvatarRow, ReadingRow } from './useDashboardData';
 // =====================================================================
 // The four KPI ornaments.
 // ---------------------------------------------------------------------
-// Each one runs edge to edge inside its card and is CUT BY THE ROUNDED
-// BOUNDARY. That clipping is the point: a globe sliced by the card's
-// curve reads as something embedded in the card, where the same globe
-// floating inside a safe margin reads as a sticker. Three rules:
+// Each one fills its own column inside the card and is cut by the card's
+// rounded corner. Four rules, and the first two are why the hover
+// glitches are gone:
 //
-//   * NOTHING HERE COMPETES WITH A NUMBER. Every ornament is masked so
-//     it fades out before it reaches the figure on the left.
-//   * NOTHING HERE COSTS ANYTHING PER FRAME. Every loop is a single
+//   * EVERY ORNAMENT IS MEMOISED ON PRIMITIVE PROPS. A CSS animation
+//     restarts when its element is replaced, so a parent re-render for
+//     any reason at all used to be able to jump a column back to its
+//     first frame or shift a ring. These components now re-render only
+//     when their own data changes, which is once.
+//   * NOTHING HERE IS INTERACTIVE. The column that holds them declares
+//     `pointer-events: none`, so the cursor cannot reach a canvas, a
+//     hover rule or a handler inside any of them.
+//   * NOTHING HERE COSTS ANYTHING PER FRAME. Every loop is one
 //     composited transform on one element. No layout property is
-//     animated, so nothing can trigger reflow while it runs.
+//     animated, so no loop can trigger reflow.
 //   * NOTHING HERE IS INVENTED. Real report covers, real member photos,
-//     real reading titles. Where an asset is missing the ornament draws
-//     with what exists rather than substituting a facsimile.
+//     real reading titles.
 // =====================================================================
 
 /**
  * The page's keyframes, declared here so the Dashboard carries its own
- * motion and no global stylesheet has to change. `will-change` is set on
- * the two elements that actually translate, so the compositor keeps them
- * on their own layer instead of repainting a column of images.
+ * motion and no global stylesheet has to change.
  */
 export function DashboardMotionStyles() {
   return (
@@ -34,25 +36,20 @@ export function DashboardMotionStyles() {
       @keyframes dash-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       @keyframes dash-counter-orbit { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
       @keyframes dash-rise { from { transform: translate3d(0,14px,0); opacity: 0; } to { transform: none; opacity: 1; } }
-      .dash-col { will-change: transform; }
-      .dash-ring { will-change: transform; }
+      .dash-col, .dash-ring { will-change: transform; backface-visibility: hidden; }
       .dash-paused, .dash-paused * { animation-play-state: paused !important; }
       @media (prefers-reduced-motion: reduce) {
-        .dash-col, .dash-ring, .dash-spin, .dash-rise { animation: none !important; }
+        .dash-col, .dash-ring, .dash-rise { animation: none !important; }
         .dash-rise { transform: none !important; opacity: 1 !important; }
       }
     `}</style>
   );
 }
 
-/**
- * Softens the ornament's inner edge so it dissolves into the card rather
- * than starting at a hard line. It is no longer holding the ornament off
- * the text: the column does that, structurally.
- */
+/** Softens the ornament's inner edge so it dissolves into the card. */
 const FADE_LEFT: React.CSSProperties = {
-  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 26%, #000 100%)',
-  maskImage: 'linear-gradient(to right, transparent 0%, #000 26%, #000 100%)',
+  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 24%, #000 100%)',
+  maskImage: 'linear-gradient(to right, transparent 0%, #000 24%, #000 100%)',
 };
 
 // --- Reports ----------------------------------------------------------
@@ -60,13 +57,18 @@ const FADE_LEFT: React.CSSProperties = {
 /**
  * Two columns of REAL report covers travelling upward at different
  * speeds. The stack is rendered twice and translated by exactly half its
- * height, which is what makes the loop seamless; both halves are the same
- * <img> elements, so the second costs no extra decode.
+ * height, which is what makes the loop seamless.
+ *
+ * THE ORDER IS FIXED AT FIRST RENDER and never reshuffled: the covers
+ * arrive in publication order and are dealt alternately between the two
+ * columns, a pure function of the list, so nothing about the cursor or a
+ * re-render can change which cover is where.
  */
-export function ReportColumns({ covers, paused }: { covers: string[]; paused: boolean }) {
+export const ReportColumns = memo(function ReportColumns({ covers, paused }: {
+  covers: string[]; paused: boolean;
+}) {
   const columns = useMemo(() => {
     if (covers.length === 0) return [] as string[][];
-    // Deal the covers alternately, so the two columns never run in step.
     const a = covers.filter((_, i) => i % 2 === 0);
     const b = covers.filter((_, i) => i % 2 === 1);
     return [a.length ? a : covers, b.length ? b : covers.slice().reverse()];
@@ -75,12 +77,12 @@ export function ReportColumns({ covers, paused }: { covers: string[]; paused: bo
   if (!columns.length) return null;
 
   return (
-    /* Two equal columns, the pair centred in the ornament column and
-       pushed just past the right edge, so the second contributes as much
-       as the first and only the outer sliver is cut by the card. */
-    <div className={`absolute inset-y-0 -left-1 -right-5 flex items-stretch justify-center gap-2 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
+    <div
+      className={`absolute inset-y-0 -left-1 -right-5 flex items-stretch justify-center gap-2 ${paused ? 'dash-paused' : ''}`}
+      style={FADE_LEFT}
+    >
       {columns.map((column, ci) => (
-        <div key={ci} className="relative flex-1 min-w-0 max-w-[80px] overflow-hidden">
+        <div key={ci} className="relative flex-1 min-w-0 max-w-[84px] overflow-hidden">
           <div
             className="dash-col absolute inset-x-0 top-0 flex flex-col gap-2"
             style={{ animation: `dash-column-up ${ci === 0 ? 26 : 34}s linear infinite` }}
@@ -90,7 +92,7 @@ export function ReportColumns({ covers, paused }: { covers: string[]; paused: bo
                 key={i}
                 src={src}
                 alt=""
-                loading="lazy"
+                draggable={false}
                 decoding="async"
                 className="w-full rounded-[2px] border border-accent/15 shadow-[0_2px_8px_-4px_hsl(var(--overlay)/0.35)]"
                 style={{ aspectRatio: '1 / 1.414', objectFit: 'cover' }}
@@ -101,39 +103,39 @@ export function ReportColumns({ covers, paused }: { covers: string[]; paused: bo
       ))}
     </div>
   );
-}
+});
 
 // --- Members ----------------------------------------------------------
 
 /**
- * The membership as an ordered composition: two concentric rings of
- * portraits turning slowly in opposite directions, each photo held
- * upright by a counter-rotation so no face is ever on its side.
+ * The membership as a connected network: two concentric rings of
+ * portraits turning slowly in opposite directions, joined by a web of
+ * chords, each photo held upright by a counter-rotation.
  *
- * Rings rather than a scatter because the previous swarm placed people at
- * pseudo-random radii, which let two portraits overlap and read as
- * confusion. On a ring, the gap between neighbours is a function of the
- * radius and the count, so NO TWO IMAGES CAN EVER TOUCH: the sizes below
- * are chosen so the chord between adjacent centres exceeds a diameter.
+ * The web is drawn in the SAME rotating frame as the portraits, so a
+ * connection is nailed to the two people it joins and cannot drift or
+ * lag behind them however long the loop runs.
+ *
+ * NO TWO PORTRAITS CAN TOUCH, and that is arithmetic rather than
+ * inspection: on a ring of `n` at radius `r`, adjacent centres are
+ * 2*r*sin(pi/n) apart, and each ring below leaves that chord comfortably
+ * larger than one diameter at the size it is drawn.
  */
-export function MemberRings({ avatars, compact, paused }: {
+export const MemberRings = memo(function MemberRings({ avatars, compact, paused }: {
   avatars: AvatarRow[] | null; compact: boolean; paused: boolean;
 }) {
   const rings = useMemo(() => {
     const list = (avatars ?? []).filter((a) => a.photo_url);
     if (!list.length) return [];
-    // Sized against the card as it ACTUALLY renders, not enlarged: the
-    // ornament column is about 46% of a 300px card, so the field is
-    // roughly 140px across and a ring of twelve at that radius resolves
-    // to portraits too small to be anybody. Nine outside and four inside,
-    // larger and closer, reads as a group of people.
-    const outerCount = compact ? 7 : 9;
-    const innerCount = compact ? 3 : 4;
+    // Denser than before: eleven and six, at a larger diameter, on radii
+    // close enough that the two rings read as one group.
+    const outerCount = compact ? 9 : 11;
+    const innerCount = compact ? 5 : 6;
     const outer = list.slice(0, outerCount);
     const inner = list.slice(outerCount, outerCount + innerCount);
     return [
-      { people: outer, radius: 38, size: compact ? 26 : 30, spin: 110, reverse: false },
-      { people: inner.length ? inner : outer.slice(0, innerCount), radius: 15, size: compact ? 22 : 25, spin: 86, reverse: true },
+      { people: outer, radius: 40, size: compact ? 27 : 31, spin: 118, reverse: false },
+      { people: inner.length ? inner : outer.slice(0, innerCount), radius: 18, size: compact ? 23 : 26, spin: 92, reverse: true },
     ];
   }, [avatars, compact]);
 
@@ -141,108 +143,127 @@ export function MemberRings({ avatars, compact, paused }: {
 
   return (
     <div className={`absolute inset-0 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      {/* A square field keeps the composition circular rather than oval,
-          and sits just past the right edge so the outer ring is cut. */}
-      <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 aspect-square h-[128%]">
-        {rings.map((ring, ri) => (
-          <div
-            key={ri}
-            className="dash-ring absolute inset-0"
-            style={{ animation: `${ring.reverse ? 'dash-counter-orbit' : 'dash-orbit'} ${ring.spin}s linear infinite` }}
-          >
-            {ring.people.map((person, i) => {
-              // Placed by COORDINATE, not by a percentage translate: a
-              // percentage translate is measured against the element's own
-              // box, which for a 17px portrait would put every ring at a
-              // radius of seven pixels.
-              const rad = (i / ring.people.length) * Math.PI * 2;
-              return (
+      <div className="absolute right-[-12%] top-1/2 -translate-y-1/2 aspect-square h-[132%]">
+        {rings.map((ring, ri) => {
+          const points = ring.people.map((_, i) => {
+            const rad = (i / ring.people.length) * Math.PI * 2;
+            return {
+              x: 50 + Math.cos(rad) * ring.radius,
+              y: 50 + Math.sin(rad) * ring.radius,
+            };
+          });
+          return (
+            <div
+              key={ri}
+              className="dash-ring absolute inset-0"
+              style={{ animation: `${ring.reverse ? 'dash-counter-orbit' : 'dash-orbit'} ${ring.spin}s linear infinite` }}
+            >
+              {/* The network, drawn first and inside the same rotating
+                  frame, so every chord stays attached to its two people. */}
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+                {points.map((p, i) => {
+                  const next = points[(i + 1) % points.length];
+                  const across = points[(i + Math.floor(points.length / 2)) % points.length];
+                  return (
+                    <g key={i} stroke="hsl(var(--accent))" vectorEffect="non-scaling-stroke" fill="none">
+                      <line x1={p.x} y1={p.y} x2={next.x} y2={next.y} strokeOpacity={0.22} strokeWidth={0.8} />
+                      {i % 2 === 0 && (
+                        <line x1={p.x} y1={p.y} x2={across.x} y2={across.y} strokeOpacity={0.1} strokeWidth={0.6} />
+                      )}
+                    </g>
+                  );
+                })}
+              </svg>
+              {ring.people.map((person, i) => (
                 <span
                   key={`${person.name}-${person.surname}-${i}`}
                   className="absolute -translate-x-1/2 -translate-y-1/2"
                   style={{
-                    left: `${50 + Math.cos(rad) * ring.radius}%`,
-                    top: `${50 + Math.sin(rad) * ring.radius}%`,
+                    left: `${points[i].x}%`,
+                    top: `${points[i].y}%`,
                     width: ring.size,
                     height: ring.size,
                   }}
                 >
                   {/* Undoes the ring's rotation, so no face is ever tilted. */}
                   <span
-                    className="dash-ring block h-full w-full rounded-full overflow-hidden border border-background bg-muted"
+                    className="dash-ring block h-full w-full rounded-full overflow-hidden border-2 border-background bg-muted shadow-[0_2px_6px_-3px_hsl(var(--overlay)/0.5)]"
                     style={{
                       animation: `${ring.reverse ? 'dash-orbit' : 'dash-counter-orbit'} ${ring.spin}s linear infinite`,
                     }}
                   >
-                    <img src={person.photo_url!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                    <img
+                      src={person.photo_url!}
+                      alt=""
+                      draggable={false}
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
                   </span>
                 </span>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
-}
+});
 
 // --- Alumni -----------------------------------------------------------
 
 /**
- * The globe from the alumni page, oversized and pushed into the corner so
- * the rounded card edge cuts it. That crop is the effect the earlier
- * Dashboard had and the reason the card read as a window rather than a box.
+ * The globe from the alumni page, a little larger than the card is tall
+ * and offset just enough for the card's edge to clip it.
  */
-export function GlobeOrnament({ paused }: { paused: boolean }) {
+export const GlobeOrnament = memo(function GlobeOrnament({ paused }: { paused: boolean }) {
   return (
     <div className={`absolute inset-0 overflow-hidden ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      {/* 168% of the card height put the sphere so far outside the column
-          that only a sliver of its limb survived the crop: unrecognisable
-          on a wide screen and, on a phone, nothing at all. The globe is
-          now a little larger than the card is tall and offset just enough
-          for the card's edge to clip it, which is the crop that worked. */}
       <div className="absolute right-[-16%] top-1/2 -translate-y-1/2 aspect-square h-[116%]">
         <MiniAlumniGlobe />
       </div>
     </div>
   );
-}
+});
 
 // --- Readings ---------------------------------------------------------
 
 /**
- * A SHELF from the /readings bookcase, cropped so the books are the
- * subject.
+ * FOUR REAL BOOKS from the /readings library, standing at full height on
+ * a shelf board.
  *
- * The first crop took the case's upper-left corner, which is where its
- * category header sits: "BOOKS" ended up set at nearly the scale of the
- * KPI number and read as a second, competing label, while the actual
- * spines were a detail in the corner. This crop drops the header
- * entirely and takes a shelf instead: four real books at legible size,
- * standing on a real shelf board, with just enough of the pilaster and
- * the board above to place them in the case rather than on a generic
- * bookshelf.
+ * The two earlier crops both failed for the same reason: they framed the
+ * bookcase and let the books fall where they may, so the case's header
+ * or its architecture ended up the subject. This one frames the BOOKS,
+ * fits them to the height available, and keeps only as much of the case
+ * as places them: the board they stand on, the rule of the board above,
+ * and a sliver of the fluted pilaster at the left.
  */
-export function LibraryCorner({ readings, animate }: { readings: ReadingRow[] | null; animate: boolean }) {
+export const LibraryCorner = memo(function LibraryCorner({ readings, animate }: {
+  readings: ReadingRow[] | null; animate: boolean;
+}) {
   const books = (readings ?? []).slice(0, 4);
   const soft = 'hsl(var(--accent-soft))';
   if (!books.length) return null;
 
+  // The tallest spine sets the scale, so every book fits the shelf with
+  // its head and tail bands visible whatever the collection holds.
+  const tallest = books.reduce((m, r) => Math.max(m, spineGeometry(r.id).h), 1);
+
   return (
     <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT} aria-hidden="true">
       <div
-        className="absolute inset-x-[6%] -right-[10%] top-1/2 -translate-y-1/2"
+        className={`absolute left-[4%] right-[-6%] top-1/2 -translate-y-1/2 ${animate ? 'dash-rise' : ''}`}
         style={animate ? { animation: 'dash-rise 560ms cubic-bezier(.22,1,.36,1) both' } : undefined}
       >
-        {/* The underside of the board above, so the shelf is enclosed. */}
-        <div className="h-[3px] border-t-[1.5px]" style={{ borderColor: soft }} />
+        {/* The underside of the board above. */}
+        <div className="h-[3px] border-t-[1.5px] opacity-70" style={{ borderColor: soft }} />
         <div className="flex">
-          {/* A slice of the fluted pilaster, for context, not for weight. */}
-          <div className="w-[9px] shrink-0 flex justify-center border-r-[1.5px] py-1" style={{ borderColor: soft }}>
-            <span className="h-full w-[5px] border-x" style={{ borderColor: soft }} />
+          <div className="w-[7px] shrink-0 flex justify-center border-r-[1.5px] py-1 opacity-70" style={{ borderColor: soft }}>
+            <span className="h-full w-[3px] border-x" style={{ borderColor: soft }} />
           </div>
           <div className="relative flex-1 min-w-0">
-            <div className="flex items-end gap-[6px] pl-2.5 pr-1 h-[104px]">
+            <div className="flex items-end gap-[7px] pl-3 pr-1 h-[112px]">
               {books.map((r, i) => {
                 const g = spineGeometry(r.id);
                 return (
@@ -250,17 +271,17 @@ export function LibraryCorner({ readings, animate }: { readings: ReadingRow[] | 
                     key={r.id}
                     className="relative shrink-0 rounded-t-[3px] border-[1.5px]"
                     style={{
-                      width: Math.round(g.w * 0.92),
-                      height: Math.round(g.h * 0.86),
+                      width: Math.round(g.w * 1.06),
+                      height: Math.round((g.h / tallest) * 104),
                       borderColor: soft,
-                      background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.12)' : 'hsl(var(--accent-soft)/0.05)',
+                      background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.14)' : 'hsl(var(--accent-soft)/0.06)',
                     }}
                   >
                     <span className="absolute left-[3px] right-[3px] top-2 border-t" style={{ borderColor: soft }} />
                     <span className="absolute left-[3px] right-[3px] bottom-2 border-t" style={{ borderColor: soft }} />
-                    <span className="absolute inset-x-0 top-[13px] bottom-[13px] flex items-center justify-center overflow-hidden">
+                    <span className="absolute inset-x-0 top-[14px] bottom-[14px] flex items-center justify-center overflow-hidden">
                       <span
-                        className="max-h-full overflow-hidden whitespace-nowrap font-serif text-[9px] leading-none text-accent/80"
+                        className="max-h-full overflow-hidden whitespace-nowrap font-serif text-[9px] leading-none text-accent/85"
                         style={{ writingMode: 'vertical-rl' }}
                       >
                         {r.title}
@@ -278,4 +299,4 @@ export function LibraryCorner({ readings, animate }: { readings: ReadingRow[] | 
       </div>
     </div>
   );
-}
+});

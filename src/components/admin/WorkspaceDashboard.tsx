@@ -12,14 +12,15 @@ import FundPerformanceBlock from '@/components/admin/dashboard/FundPerformanceBl
 import CurrentUpdateBlock from '@/components/admin/dashboard/CurrentUpdateBlock';
 import ResearchByDivisionBlock from '@/components/admin/dashboard/ResearchByDivisionBlock';
 import AlumniGrowthBlock from '@/components/admin/dashboard/AlumniGrowthBlock';
+import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
 
 // =====================================================================
 // Dashboard.
 // ---------------------------------------------------------------------
-//   greeting                                        full Minerva mark
+//   greeting, centred
 //   Reports | Readings | Members | Alumni Network
-//   research by division (40%)   |  current update (60%)
-//   fund performance    (55%)    |  alumni growth  (45%)
+//   research by division (40%)  |  current update (60%)
+//   fund performance (35%) | reports mix (25%) | alumni growth (40%)
 //
 // THE WHOLE PAGE IS ONE DESKTOP SCREEN. The root is a height-bounded
 // flex column inside the workspace's content pane, the greeting and the
@@ -69,7 +70,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
       {/* Taller on a phone: the ornament has its own column, and the
           column needs enough height for the composition inside it to be
           worth looking at. */}
-      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3 auto-rows-[152px] sm:auto-rows-[160px] xl:auto-rows-[156px]">
+      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3 auto-rows-[160px] sm:auto-rows-[168px] xl:auto-rows-[156px]">
         <KpiCard
           label="Reports" value={data.reportsAllTime} filled animate={animate}
           decoration={<ReportColumns covers={covers} paused={ambientPaused} />}
@@ -111,9 +112,16 @@ export default function WorkspaceDashboard({ onNavigate }: {
             <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} />
           </div>
         </div>
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-3">
+        {/* Three cards across, 35 / 25 / 40 of the row once the two gaps
+            are taken out of the width. On a phone they stack, with the
+            doughnut last: it is the most compact reading and the least
+            urgent. */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[35fr_25fr_40fr] gap-3">
           <div className="h-[300px] lg:h-auto min-h-0">
             <FundPerformanceBlock series={data.fundSeries} animate={animate} />
+          </div>
+          <div className="order-3 lg:order-none h-[300px] lg:h-auto min-h-0">
+            <ReportsMixBlock shares={data.divisionShares} animate={animate} narrow={!isDesktop} />
           </div>
           <div className="h-[288px] lg:h-auto min-h-0">
             <AlumniGrowthBlock years={data.alumniYears} animate={animate} narrow={!isDesktop} />

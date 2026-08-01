@@ -64,6 +64,14 @@ export function AlumniGrowthBlock({ years, animate, narrow }: {
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={years} margin={{ top: 8, right: 2, bottom: 0, left: -6 }}>
           <defs>
+            {/* The class columns borrow the Research by division
+                treatment, one notch quieter: same gradient shape, same
+                rounded head, lower opacity, so they read as the same
+                family of object without competing with the line. */}
+            <linearGradient id="dashAlumniBar" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--accent-soft))" stopOpacity={0.62} />
+              <stop offset="100%" stopColor="hsl(var(--accent-soft))" stopOpacity={0.24} />
+            </linearGradient>
             <linearGradient id="dashAlumniFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.32} />
               <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.02} />
@@ -96,8 +104,8 @@ export function AlumniGrowthBlock({ years, animate, narrow }: {
           />
           {/* Columns first, so the line is drawn over them. */}
           <Bar
-            yAxisId="added" dataKey="added" fill="hsl(var(--accent-soft))" fillOpacity={0.34} radius={[2, 2, 0, 0]}
-            barSize={16} isAnimationActive={animate} animationDuration={700}
+            yAxisId="added" dataKey="added" fill="url(#dashAlumniBar)" radius={[3, 3, 0, 0]}
+            barSize={narrow ? 16 : 24} isAnimationActive={animate} animationDuration={760} animationEasing="ease-out"
           />
           <Area
             yAxisId="total" type="monotone" dataKey="total"

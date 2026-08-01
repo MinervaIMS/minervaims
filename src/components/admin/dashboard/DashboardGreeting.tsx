@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import minervaMark from '@/assets/legal-hero-logo.svg';
 import { pickGreeting, type GreetingVars } from './greetings';
 
 // =====================================================================
@@ -9,34 +8,24 @@ import { pickGreeting, type GreetingVars } from './greetings';
 // analyst reads is the line the President reads. The copy lives in
 // `greetings.ts` and is used verbatim; nothing here paraphrases it.
 //
-// The mark is the full Minerva roundel, at a size that holds its own
-// against the sentence beside it. BELOW `sm` IT IS NOT DRAWN AT ALL: a
-// phone has no width to present it properly, and a roundel shrunk into a
-// corner is worse than an absent one.
+// It is CENTRED, and it is the only thing on its row. The Minerva mark
+// that used to sit at the right is gone: the workspace already carries
+// the association's mark in its own header, and a second one here was
+// competing with the sentence rather than introducing it.
 //
-// The block is deliberately short. It sits directly under the workspace
-// breadcrumb with no spacer of its own, because the gap that opened
-// there was empty height on the one screen that has none to spare.
+// A phone gets a size up and a little more air above and below, because
+// this is the first thing a member reads and it was arriving squeezed
+// between the chrome and the first card.
 // =====================================================================
 
 export function DashboardGreeting({ userId, vars }: { userId: string; vars: GreetingVars }) {
   const line = useMemo(() => pickGreeting(new Date(), userId, vars), [userId, vars]);
 
   return (
-    /* items-start, not items-center: the mark is ANCHORED to the top of
-       the greeting area rather than floating in the middle of it, which
-       is what left an unused band above a small roundel. */
-    <header className="shrink-0 -mt-1 flex items-start justify-between gap-6">
-      {/* The line takes the width it has. `max-w-3xl` was holding a two
-          word greeting to a third of the row on a wide screen. */}
-      <h1 className="font-serif text-lg sm:text-2xl xl:text-[2.125rem] leading-[1.15] text-accent flex-1 min-w-0 text-balance">
+    <header className="shrink-0 py-2 sm:py-1">
+      <h1 className="mx-auto max-w-4xl text-center font-serif text-xl sm:text-2xl xl:text-[2rem] leading-[1.2] text-accent text-balance">
         {line}
       </h1>
-      <img
-        src={minervaMark}
-        alt="Minerva Investment Management Society"
-        className="hidden sm:block shrink-0 -mt-1 h-[84px] w-[84px] xl:h-[104px] xl:w-[104px]"
-      />
     </header>
   );
 }

@@ -69,6 +69,9 @@ export interface FundSeries { fund: Fund; points: FundPoint[] }
 
 export interface DivisionCount { name: string; previous: number; current: number }
 
+/** One division's share of everything ever published. */
+export interface DivisionShare { key: string; name: string; reports: number }
+
 /** One graduation class on the Alumni Growth chart. */
 export interface AlumniYear {
   /** The class, e.g. '2024'. */
@@ -107,6 +110,8 @@ export interface DashboardData {
 
 
   divisionCounts: DivisionCount[] | null;
+  /** All-time reports per division, for the proportional reading. */
+  divisionShares: DivisionShare[] | null;
   alumniYears: AlumniYear[] | null;
   fundSeries: FundSeries[] | null;
   latestUpdate: LatestUpdate | null;
@@ -273,6 +278,23 @@ export function useDashboardData(): DashboardData {
       return { name: DIVISION_SHORT[d] ?? d, previous: inSem(previous.key), current: inSem(semester.key) };
     });
   }, [reports, semester.key, previous.key]);
+
+  /**
+   * Every published report, apportioned to the division that wrote it.
+   * All time, not a semester: the doughnut answers "who writes the
+   * research", which is a standing proportion, and a semester window
+   * would make it swing on a single late upload.
+   */
+  const divisionShares = useMemo<DivisionShare[] | null>(() => {
+    if (!reports) return null;
+    return CORE_DIVISIONS
+      .map((d) => ({
+        key: d,
+        name: DIVISION_SHORT[d] ?? d,
+        reports: reports.filter((r) => r.division === d).length,
+      }))
+      .filter((d) => d.reports > 0);
+  }, [reports]);
 
   // --- snapshots, as academic years ------------------------------------
 
@@ -447,6 +469,7 @@ export function useDashboardData(): DashboardData {
     alumni,
     readings,
     divisionCounts,
+    divisionShares,
     alumniYears,
     fundSeries,
     latestUpdate,

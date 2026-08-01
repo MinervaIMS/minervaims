@@ -36,11 +36,13 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, ani
   previousLabel: string;
   animate: boolean;
 }) {
-  const tickText = { fontSize: 11, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' as const };
+  // A step up on every label: this card was legible only with effort.
+  const tickText = { fontSize: 12, fill: 'hsl(var(--foreground))', fontVariantNumeric: 'tabular-nums' as const };
+  const valueText = { ...tickText, fill: 'hsl(var(--muted-foreground))' };
   const { max, ticks } = scale(rows ?? []);
 
   return (
-    <Block title="Research by division" aside={`${currentLabel} vs ${previousLabel}`}>
+    <Block title="Research by division" aside={<span className="text-[12px]">{`${currentLabel} vs ${previousLabel}`}</span>}>
       {rows ? (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} margin={{ top: 10, right: 6, bottom: 0, left: 0 }} barCategoryGap="20%" barGap={4}>
@@ -67,7 +69,7 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, ani
             />
             <YAxis
               domain={[0, max]} ticks={ticks} allowDecimals={false}
-              tick={tickText} tickLine={false} axisLine={false} width={30} tickMargin={6}
+              tick={valueText} tickLine={false} axisLine={false} width={32} tickMargin={6}
             />
             <Tooltip
               cursor={{ fill: 'hsl(var(--muted) / 0.45)' }}
@@ -79,9 +81,9 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, ani
               formatter={(v: number, n: string) => [v, n === 'current' ? currentLabel : previousLabel]}
             />
             <Legend
-              verticalAlign="bottom" height={22} iconType="square" iconSize={9}
+              verticalAlign="bottom" height={24} iconType="square" iconSize={10}
               formatter={(v) => (
-                <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
+                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
                   {v === 'current' ? currentLabel : previousLabel}
                 </span>
               )}
