@@ -443,12 +443,10 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               them, because that is the order the question arrives in.
               Two checkboxes rather than two buttons: a button that is off
               looks like a button that is unavailable, and a pale chip left
-              the reader unable to tell "switched off" from "no data". */}
+              the reader unable to tell "switched off" from "no data". A tick
+              box carries its own meaning, so no label introduces the row. */}
           {fundList.length > 1 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="font-body text-[11px] uppercase tracking-wider text-muted-foreground mr-1">
-                Showing
-              </span>
               {fundList.map((f) => {
                 const on = shown.includes(f);
                 const onlyOne = on && shown.length === 1;
@@ -546,7 +544,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
               src={fullLogoColor.url}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 w-[34%] max-w-[260px] -translate-x-1/2 -translate-y-1/2 opacity-[0.035] select-none"
+              className="pointer-events-none absolute left-1/2 top-1/2 w-[34%] max-w-[260px] -translate-x-1/2 -translate-y-1/2 opacity-[0.13] select-none"
             />
 
             <div ref={plotRef} className="relative h-[280px] sm:h-[360px] md:h-[420px] w-full">
