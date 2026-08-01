@@ -222,6 +222,15 @@ body[data-scroll-locked] {
            font-serif text-lg shadow-none transition-all duration-200
            hover:bg-accent hover:text-background hover:shadow-elevated;
   }
+
+  /* Filled counterpart of .cta-link: same geometry, border, timing and hover
+     shadow, with the fill reversed. Used where the button sits on a light
+     surface and has to carry primary weight, e.g. the /join landing status. */
+  .cta-link-invert {
+    @apply inline-block px-10 py-4 bg-accent text-background border border-accent
+           font-serif text-lg shadow-none transition-all duration-200
+           hover:bg-background hover:text-accent hover:shadow-elevated;
+  }
 }
 
 /* Typography utilities */

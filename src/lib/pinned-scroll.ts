@@ -76,11 +76,16 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
     if (!enabled()) return;
     const dx = e.deltaX;
     const dy = e.deltaY;
-    // Leave anything that is not clearly a sideways gesture to the page.
-    if (Math.abs(dx) <= Math.abs(dy) * 1.2 || Math.abs(dx) < 2) return;
+    // Leave anything that is not clearly a sideways gesture to the page: a
+    // vertical or vertical-dominant gesture already advances the pinned
+    // section natively, so intercepting it would process it twice.
+    if (Math.abs(dx) <= Math.abs(dy) || Math.abs(dx) < 2) return;
     if (!hasRoom(dx)) return;
     e.preventDefault();
-    scrollNow(dx);
+    // Default is prevented, so nothing else will move the page. A diagonal
+    // gesture therefore has to contribute both axes here or its vertical
+    // component would simply be discarded.
+    scrollNow(dx + dy);
   };
 
   // Touch: a horizontal drag over the section moves the page by the same

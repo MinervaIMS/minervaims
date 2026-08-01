@@ -12,14 +12,15 @@ const prefersReducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * Navbar, hero, figures and status share one dark stage occupying ~85% of the
- * landing viewport, with the remaining ~15% a white band carrying the scroll
- * cue. Heights use svh so the mobile URL bar does not push the cue off screen.
+ * The landing stage: navbar, title, payoff, live figures, application status
+ * and the scroll invitation all share one dark surface that fills the whole
+ * viewport. Heights use svh so the mobile URL bar cannot push the invitation
+ * off screen.
  *
- * Vertical order inside the stage: title and payoff sit high, the live figures
- * sit in the middle, and the application status sits low but fully inside the
- * dark area. `figures` and `children` are passed in rather than imported here
- * so this component stays layout-only.
+ * The middle zone (the figures) is the elastic one, so the composition stays
+ * balanced from short laptop viewports to tall phones without any element
+ * being compressed or stranded. `figures` and `children` are passed in rather
+ * than imported so this component stays layout-only.
  */
 export function JoinHeroStage({
   figures,
@@ -59,7 +60,7 @@ export function JoinHeroStage({
     <>
       <div
         data-page-hero
-        className="relative flex min-h-[85svh] flex-col overflow-hidden"
+        className="relative flex min-h-[100svh] flex-col overflow-hidden"
         style={{ backgroundColor: '#000' }}
       >
         {/*
@@ -76,53 +77,62 @@ export function JoinHeroStage({
           )}
         </div>
 
-        <div className="container relative z-10 flex flex-1 flex-col pb-6 pt-24 md:pb-12 md:pt-32">
-          {/* Title and payoff, held high in the stage. */}
-          <div>
-            <h1 className="font-serif text-[2.5rem] leading-[1.05] text-background text-balance sm:text-hero md:text-[4.5rem]">
+        {/*
+          Vertical rhythm is viewport-relative so the whole composition fits
+          100svh on a short laptop as well as a tall phone. The top inset never
+          falls below the height of the fixed header.
+        */}
+        <div className="container relative z-10 flex flex-1 flex-col pb-[3svh] pt-[max(96px,13svh)]">
+          {/* Title and payoff, set a little below the navbar. */}
+          <div className="mt-[1svh] md:mt-[2svh]">
+            <h1 className="font-serif text-[2.5rem] leading-[1.05] text-background text-balance sm:text-hero md:text-[4.5rem] md:h-sm:text-[3.4rem]">
               {JOIN_HERO.title}
             </h1>
-            <p className="font-body mt-4 max-w-2xl text-body text-background/85 sm:text-body-lg md:mt-5 md:text-xl">
+            <p className="font-body mt-4 max-w-2xl text-body text-background/85 sm:text-body-lg md:mt-5 md:text-xl md:h-sm:mt-3 md:h-sm:text-body-lg">
               {JOIN_HERO.payoff}
             </p>
           </div>
 
-          {/* Live figures, centred in the space between title and status. */}
-          <div className="flex flex-1 items-center py-4 md:py-10">{figures}</div>
+          {/*
+            Figures take the elastic middle, so they are clearly separated from
+            both the payoff above and the status rectangle below at any height.
+          */}
+          <div className="flex flex-1 items-center py-[2.5svh]">{figures}</div>
 
-          {/* Application status, low in the stage but fully inside the dark area. */}
-          <div>{children}</div>
+          {/* Application status, lifted clear of the cue beneath it. */}
+          <div className="mb-[2.5svh]">{children}</div>
+
+          {/* Scroll invitation, on the same dark stage. */}
+          <div className="flex justify-center pt-1">
+            <span
+              className={`flex flex-col items-center gap-1.5 text-background ${
+                reduced ? '' : 'motion-safe:animate-[scrollCue_2.2s_ease-in-out_infinite]'
+              }`}
+            >
+              <span className="font-serif text-lg leading-none md:text-xl">
+                {JOIN_HERO.scrollCue}
+              </span>
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 26 26"
+                fill="none"
+                aria-hidden="true"
+                className="shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
+              >
+                <path
+                  d="M13 4v14M6 12.5 13 19.5 20 12.5"
+                  stroke="currentColor"
+                  strokeWidth="2.1"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Remaining ~15% of the landing viewport: white, with the scroll cue. */}
-      <div className="flex h-[15svh] min-h-[84px] items-center justify-center bg-background">
-        <span
-          className={`flex flex-col items-center gap-2 text-accent ${
-            reduced ? '' : 'motion-safe:animate-[scrollCue_2.4s_ease-in-out_infinite]'
-          }`}
-        >
-          <span className="font-serif text-base leading-none md:text-lg">
-            {JOIN_HERO.scrollCue}
-          </span>
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 22 22"
-            fill="none"
-            aria-hidden="true"
-            className="shrink-0"
-          >
-            <path
-              d="M11 3.5v13M5 11l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      </div>
     </>
   );
 }

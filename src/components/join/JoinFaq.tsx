@@ -45,19 +45,19 @@ export function JoinFaq() {
         )}
 
         <div className="flex flex-col gap-6 md:gap-8">
-          {groups.map((group, index) => (
+          {groups.map((group) => (
             <section
               key={group.key}
               aria-labelledby={`faq-group-${group.key}`}
               className="bg-background p-6 md:p-10"
             >
-              <div className="mb-2 flex items-baseline gap-4 border-b-2 border-accent pb-4 md:mb-4">
-                <span
-                  aria-hidden="true"
-                  className="font-serif text-lg leading-none text-accent/35 md:text-xl"
-                >
-                  {"\n"}
-                </span>
+              {/*
+                The title sits directly on its rule. A decorative numeral used
+                to sit to its left; a round-trip left it holding only a newline,
+                so it rendered as an empty flex item plus its gap, which is the
+                unexplained blank space that appeared before every heading.
+              */}
+              <div className="mb-2 border-b-2 border-accent pb-4 md:mb-4">
                 <h3
                   id={`faq-group-${group.key}`}
                   className="font-serif text-heading leading-tight text-accent"

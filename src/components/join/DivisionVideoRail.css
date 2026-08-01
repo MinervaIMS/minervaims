@@ -36,6 +36,11 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.jd-rail:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 4px;
+}
+
 .jd-rail.is-pinned {
   overflow: hidden;
   /* The pinned rail is driven entirely by transform. Leaving snapping on makes

@@ -58,16 +58,27 @@ export function ApplicationCta({
     : { to: '/archive', label: JOIN_STATUS_COPY.archiveLabel };
 
   /*
-    Button behaviour matches the site-wide .cta-link system used on /about:
-    a bordered button that fills with the opposite colour on hover. On the
-    accent card the fill is inverted so the same gesture reads correctly.
+    Both variants come from the site-wide button system, so geometry, border,
+    transition timing and hover shadow are identical to /about.
+
+    On the light card (the landing stage) the button carries primary weight and
+    is filled accent by default, clearing to white on hover: .cta-link-invert.
+    On the accent card (the close block) it stays white with accent text, which
+    is the treatment already signed off there.
   */
   const buttonClass = light
-    ? 'cta-link'
+    ? 'cta-link-invert'
     : 'inline-block border border-background bg-background px-10 py-4 font-serif text-lg text-accent shadow-none transition-all duration-200 hover:bg-transparent hover:text-background hover:shadow-elevated';
 
   return (
-    <div className={`${surface} p-6 sm:p-8 md:p-12 shadow-elevated`}>
+    <div
+      className={`${surface} p-6 sm:p-8 md:p-12 shadow-elevated ${
+        // The landing card shares the viewport with everything else on the
+        // stage, so it tightens on short screens. The close block, which sits
+        // on an ordinary scrolling page, is left alone.
+        light ? 'md:h-sm:p-8' : ''
+      }`}
+    >
       <div className="grid grid-cols-1 md:grid-cols-[1.4fr_auto] gap-5 md:gap-10 items-center">
         <div>
           <h2 id={headingId} className={`font-serif text-heading ${headingClass}`}>

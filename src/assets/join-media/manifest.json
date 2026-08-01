@@ -147,9 +147,9 @@
         "width": 810,
         "height": 1440,
         "aspect_ratio": "9:16",
-        "duration_seconds": 4.7,
+        "duration_seconds": 4.73,
         "fps": 30,
-        "bytes": 100892,
+        "bytes": 144109,
         "loop": true,
         "has_audio": false
       },
@@ -158,12 +158,12 @@
         "content_type": "image/webp",
         "width": 540,
         "height": 960,
-        "bytes": 19274
+        "bytes": 16624
       },
-      "source_report": "fund_performance_years (public seed)",
-      "source_page": "Cumulative NAV of both virtual funds, indexed to 100",
-      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+      "source_report": "fund_performance_years (public seed): monthly returns and published year-end ITD",
+      "source_page": "Cumulative NAV of both virtual funds, indexed to 100, Jan 2020 to Apr 2026",
+      "method": "Institutional terminal visualisation rendered from the repository's own fund performance record. Within-year shape from the published monthly returns, each year anchored to the published year-end inception-to-date figure. No value is invented."
     }
   ],
-  "total_bytes": 2285412
+  "total_bytes": 2325979
 }

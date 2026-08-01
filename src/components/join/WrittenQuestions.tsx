@@ -42,12 +42,12 @@ export function WrittenQuestions() {
               key={division.key}
               className="grid grid-cols-1 gap-3 bg-muted p-6 transition-colors duration-300 ease-out hover:bg-[#ece9f4] md:grid-cols-[minmax(0,18rem)_1fr] md:gap-10 md:p-7"
             >
-              <h3 className="font-serif text-subheading text-accent">{division.name}</h3>
+              <h3 className="font-serif text-lg text-accent">{division.name}</h3>
               {question ? (
                 // The vertical rule is the one separator kept, running the full
                 // height of the quoted question.
                 <blockquote className="border-l-2 border-accent/45 pl-5">
-                  <p className="font-body text-body-lg text-muted-foreground">{question}</p>
+                  <p className="font-body text-body text-muted-foreground">{question}</p>
                 </blockquote>
               ) : noneSet ? null : (
                 // Mixed state: only the divisions still waiting carry the line.
