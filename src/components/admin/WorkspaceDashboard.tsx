@@ -45,13 +45,17 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const reduced = useReducedMotion();
   const visible = usePageVisible();
   const isDesktop = useIsDesktop();
-  const covers = useReportCovers(data.reportFiles);
+  const { covers, ready: coversReady } = useReportCovers(data.reportFiles);
 
   const animate = !reduced;
   const ambientPaused = reduced || !visible;
 
-  // One gate for the whole page. Everything below mounts together.
-  if (data.loading) return <div className="h-full"><WorkspaceLoader /></div>;
+  // ONE GATE FOR THE WHOLE PAGE. The loader holds the pane until every
+  // query has answered AND the decorative assets are drawn, so when it
+  // lifts the structure is complete, no chart is missing and no ornament
+  // pops in afterwards. The cover renderer reports ready on a cap as well
+  // as on success, so a slow PDF can never hold the Dashboard hostage.
+  if (data.loading || !coversReady) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
     <div className="flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0">
@@ -62,7 +66,10 @@ export default function WorkspaceDashboard({ onNavigate }: {
       {/* KPI row. Reports carries the filled treatment; the other three
           are light, so the row reads as one instrument panel with a
           single point of emphasis. */}
-      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3 h-[132px] sm:h-[148px] xl:h-[156px]">
+      {/* Taller on a phone: the ornament has its own column, and the
+          column needs enough height for the composition inside it to be
+          worth looking at. */}
+      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3 auto-rows-[152px] sm:auto-rows-[160px] xl:auto-rows-[156px]">
         <KpiCard
           label="Reports" value={data.reportsAllTime} filled animate={animate}
           decoration={<ReportColumns covers={covers} paused={ambientPaused} />}
@@ -86,8 +93,13 @@ export default function WorkspaceDashboard({ onNavigate }: {
           narrow screen every card is full width, in the same order, at a
           height that keeps its chart readable. */}
       <div className="flex-1 min-h-0 flex flex-col gap-3">
+        {/* ORDER DIFFERS BY BREAKPOINT, deliberately. On a wide screen
+            Research sits left of the Current update. On a phone the
+            Current update comes FIRST, directly under the KPI row: it is
+            the only card that asks the reader to do something, and it was
+            arriving under three charts. */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3">
-          <div className="h-[300px] lg:h-auto min-h-0">
+          <div className="order-2 lg:order-1 h-[264px] lg:h-auto min-h-0">
             <ResearchByDivisionBlock
               rows={data.divisionCounts}
               currentLabel={data.semester.label}
@@ -95,16 +107,16 @@ export default function WorkspaceDashboard({ onNavigate }: {
               animate={animate}
             />
           </div>
-          <div className="h-[300px] lg:h-auto min-h-0">
+          <div className="order-1 lg:order-2 h-[300px] sm:h-[320px] lg:h-auto min-h-0">
             <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} />
           </div>
         </div>
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-3">
-          <div className="h-[320px] lg:h-auto min-h-0">
+          <div className="h-[300px] lg:h-auto min-h-0">
             <FundPerformanceBlock series={data.fundSeries} animate={animate} />
           </div>
-          <div className="h-[300px] lg:h-auto min-h-0">
-            <AlumniGrowthBlock years={data.alumniYears} animate={animate} />
+          <div className="h-[288px] lg:h-auto min-h-0">
+            <AlumniGrowthBlock years={data.alumniYears} animate={animate} narrow={!isDesktop} />
           </div>
         </div>
       </div>

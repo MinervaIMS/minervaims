@@ -69,13 +69,13 @@ export interface FundSeries { fund: Fund; points: FundPoint[] }
 
 export interface DivisionCount { name: string; previous: number; current: number }
 
-/** One academic year on the Alumni Growth chart. */
+/** One graduation class on the Alumni Growth chart. */
 export interface AlumniYear {
-  /** '2024/25' */
+  /** The class, e.g. '2024'. */
   label: string;
-  /** Total alumni at the end of that academic year. */
+  /** Cumulative alumni once this class has graduated. */
   total: number;
-  /** Alumni added during it. */
+  /** How many people are in this class. */
   added: number;
 }
 
@@ -164,12 +164,13 @@ export function useDashboardData(): DashboardData {
   // and the counts arrive would be replaced a moment later, in front of
   // the reader. It waits until every variable it could use has settled.
   const [nameSettled, setNameSettled] = useState(false);
+  const [alumniClasses, setAlumniClasses] = useState<{ graduation_year: number; alumni_count: number }[] | null>(null);
   const [avatars, setAvatars] = useState<AvatarRow[] | null>(null);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const [rep, snap, mem, alu, read, funds, evs, aodDays, feePeriod, avatarRows] = await Promise.all([
+      const [rep, snap, mem, alu, read, funds, evs, aodDays, feePeriod, classes, avatarRows] = await Promise.all([
         safe<ReportRow[]>(() => supabase
           .from('archive_files')
           .select('id, title, description, file_url, division, date')
@@ -200,6 +201,8 @@ export function useDashboardData(): DashboardData {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle()),
+        safe<{ graduation_year: number; alumni_count: number }[]>(() => supabase
+          .rpc('public_alumni_classes')),
         safe<AvatarRow[]>(() => supabase
           .from('team_members')
           .select('name, surname, photo_url')
@@ -234,6 +237,7 @@ export function useDashboardData(): DashboardData {
       setEvents(evs);
       setAod(aodDays);
       setFee(feePeriod);
+      setAlumniClasses(classes);
       setAvatars(avatarRows);
       setLoading(false);
     })();
@@ -273,38 +277,29 @@ export function useDashboardData(): DashboardData {
   // --- snapshots, as academic years ------------------------------------
 
   /**
-   * The alumni network by ACADEMIC YEAR, cumulative and yearly.
+   * The alumni network BY GRADUATION CLASS, cumulative and per class.
    *
-   * A snapshot is written when a fee collection closes, so the record is
-   * semester-based. An academic year runs Fall then the following Spring,
-   * which is exactly one `sort` pair, so the year's closing total is its
-   * LATEST snapshot and the year's intake is the rise from the year
-   * before. Presenting two semesters of the same year as two independent
-   * bars invited the reader to read a summer intake that does not exist.
+   * Nothing here waits for anything. The previous version derived the
+   * series from `semester_snapshots`, which are written when a fee
+   * collection closes, so a workspace with one closed collection had a
+   * chart that said the series would begin at the next one. Graduation
+   * classes exist the moment an alumnus is recorded, which is the right
+   * basis for a chart about how the network grew.
+   *
+   * `alumni.graduation_year` is NOT NULL, so no record can be missing a
+   * class and none is ever assigned an invented one.
    */
   const alumniYears = useMemo<AlumniYear[] | null>(() => {
-    if (!snapshots) return null;
-    const byYear = new Map<number, { label: string; total: number; sort: number }>();
-    for (const s of snapshots) {
-      // Fall of year Y and Spring of Y+1 are one academic year, keyed on Y.
-      const year = Math.floor((s.sort - 1) / 2);
-      const previousEntry = byYear.get(year);
-      if (!previousEntry || s.sort >= previousEntry.sort) {
-        byYear.set(year, {
-          label: `${year}/${String((year + 1) % 100).padStart(2, '0')}`,
-          total: s.alumni,
-          sort: s.sort,
-        });
-      }
-    }
-    const ordered = [...byYear.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v);
-    let carried = 0;
-    return ordered.map((y) => {
-      const added = Math.max(0, y.total - carried);
-      carried = y.total;
-      return { label: y.label, total: y.total, added };
+    if (!alumniClasses) return null;
+    const ordered = [...alumniClasses]
+      .filter((c) => Number.isFinite(c.graduation_year) && c.alumni_count > 0)
+      .sort((a, b) => a.graduation_year - b.graduation_year);
+    let running = 0;
+    return ordered.map((c) => {
+      running += Number(c.alumni_count);
+      return { label: String(c.graduation_year), total: running, added: Number(c.alumni_count) };
     });
-  }, [snapshots]);
+  }, [alumniClasses]);
 
   // --- readings --------------------------------------------------------
 

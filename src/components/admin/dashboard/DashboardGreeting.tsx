@@ -23,14 +23,19 @@ export function DashboardGreeting({ userId, vars }: { userId: string; vars: Gree
   const line = useMemo(() => pickGreeting(new Date(), userId, vars), [userId, vars]);
 
   return (
-    <header className="shrink-0 flex items-center justify-between gap-6">
-      <h1 className="font-serif text-lg sm:text-2xl xl:text-[2rem] leading-[1.15] text-accent max-w-3xl text-balance">
+    /* items-start, not items-center: the mark is ANCHORED to the top of
+       the greeting area rather than floating in the middle of it, which
+       is what left an unused band above a small roundel. */
+    <header className="shrink-0 -mt-1 flex items-start justify-between gap-6">
+      {/* The line takes the width it has. `max-w-3xl` was holding a two
+          word greeting to a third of the row on a wide screen. */}
+      <h1 className="font-serif text-lg sm:text-2xl xl:text-[2.125rem] leading-[1.15] text-accent flex-1 min-w-0 text-balance">
         {line}
       </h1>
       <img
         src={minervaMark}
         alt="Minerva Investment Management Society"
-        className="hidden sm:block shrink-0 h-[68px] w-[68px] xl:h-[84px] xl:w-[84px]"
+        className="hidden sm:block shrink-0 -mt-1 h-[84px] w-[84px] xl:h-[104px] xl:w-[104px]"
       />
     </header>
   );

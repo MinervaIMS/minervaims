@@ -26,23 +26,33 @@ const A4 = 1.414;
 
 const cache = new Map<string, string>();
 
-export function useReportCovers(urls: string[] | null): string[] {
+/**
+ * `ready` is what the loader waits on. It turns true when the covers have
+ * been drawn, when there were none to draw, or when a cap elapses, so a
+ * slow or unreachable PDF can delay a decoration but can never hold the
+ * whole Dashboard behind the loader.
+ */
+export function useReportCovers(urls: string[] | null): { covers: string[]; ready: boolean } {
   const key = (urls ?? []).join('|');
   const [covers, setCovers] = useState<string[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!urls || urls.length === 0) { setCovers([]); return; }
+    if (!urls || urls.length === 0) { setCovers([]); setReady(true); return; }
     let active = true;
+    const cap = window.setTimeout(() => { if (active) setReady(true); }, 2500);
 
     // Anything already rendered in this session paints immediately.
     const known = urls.map((u) => cache.get(u)).filter((v): v is string => !!v);
     if (known.length) setCovers(known);
+    if (known.length === urls.length) setReady(true);
 
     (async () => {
       let pdfjs: Awaited<ReturnType<typeof loadPdfJs>>;
       try {
         pdfjs = await loadPdfJs();
       } catch {
+        if (active) setReady(true);
         return;
       }
       const out: string[] = [];
@@ -71,13 +81,14 @@ export function useReportCovers(urls: string[] | null): string[] {
           // A cover that cannot be drawn is left out, never faked.
         }
       }
+      if (active) setReady(true);
     })();
 
-    return () => { active = false; };
+    return () => { active = false; window.clearTimeout(cap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  return covers;
+  return { covers, ready };
 }
 
 export default useReportCovers;
