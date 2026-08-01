@@ -11,9 +11,22 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
+    // Hooks and the renderer must always resolve through the same React module.
+    // This also protects HMR after dependency graph changes from retaining a
+    // second pre-bundled React identity with an empty hook dispatcher.
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "react-dom",
+      "react-dom/client",
+    ],
   },
   build: {
     rollupOptions: {
