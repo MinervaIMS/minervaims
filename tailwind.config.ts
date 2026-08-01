@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: ["class"],
@@ -17,11 +18,9 @@ export default {
       },
     },
     extend: {
-      screens: {
-        // Short viewports, e.g. a 1440x700 laptop. Used by the /join landing
-        // so the full-height composition still fits without scrolling.
-        'h-sm': { raw: '(max-height: 780px)' },
-      },
+      // NOTE: `h-sm` is registered as a plugin variant below, not as a screen.
+      // A `screens` entry with an object value disables Tailwind's arbitrary
+      // `min-[...]` / `max-[...]` variants, which the header relies on.
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -127,5 +126,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // Short viewports, e.g. a 1440x700 laptop. Used by the /join landing so the
+    // full-height composition still fits without scrolling.
+    plugin(({ addVariant }) => {
+      addVariant("h-sm", "@media (max-height: 780px)");
+    }),
+  ],
 } satisfies Config;
