@@ -55,7 +55,7 @@ interface KpiProps {
   label: string;
   /** null renders a dash: the figure could not be read. */
   value: number | null;
-  /** Runs edge to edge behind the text and is clipped by the card's curve. */
+  /** Lives in its own column and is clipped by it and by the card's curve. */
   decoration?: ReactNode;
   /** The one filled KPI, first in the row. */
   filled?: boolean;
@@ -63,36 +63,45 @@ interface KpiProps {
 }
 
 /**
- * One KPI. The number and the label keep to the left; the ornament has
- * the rest of the card and is deliberately cut by the rounded boundary.
+ * One KPI: a number, a label and an ornament, in two COLUMNS.
+ *
+ * The ornament used to be an absolutely positioned overlay held off the
+ * text by a mask. On a phone the card is half as wide and the mask no
+ * longer cleared the figure, so a report cover sat across "164" and a
+ * ring of portraits across "97". A column cannot do that: the text and
+ * the ornament are siblings in a flex row, each clipping its own
+ * overflow, so an overlap is structurally impossible at ANY width while
+ * the ornament is still cut by the card's rounded corner.
  */
 export function KpiCard({ label, value, decoration, filled = false, animate }: KpiProps) {
   const shown = useAnimatedCounter(value ?? 0, 1100, animate && value !== null);
   return (
     <div
-      className={`relative h-full min-h-0 overflow-hidden rounded-xl border ${
+      className={`h-full min-h-0 flex overflow-hidden rounded-xl border ${
         filled ? 'bg-accent text-accent-foreground border-accent' : 'bg-background border-separator'
       }`}
     >
-      {decoration && (
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">{decoration}</div>
-      )}
-      <div className="relative z-10 h-full flex flex-col justify-center gap-1 p-4 sm:p-5">
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 pl-4 pr-1 sm:pl-5 sm:pr-2 py-4">
         <span
-          className={`font-body text-[11px] sm:text-xs uppercase tracking-[0.14em] whitespace-nowrap ${
+          className={`font-body text-[10px] sm:text-[11px] uppercase tracking-[0.12em] leading-tight ${
             filled ? 'text-accent-foreground/75' : 'text-muted-foreground'
           }`}
         >
           {label}
         </span>
         <span
-          className={`font-serif leading-[0.95] tabular-nums text-[2.75rem] sm:text-5xl xl:text-[3.5rem] ${
+          className={`font-serif leading-[0.95] tabular-nums text-[2.5rem] sm:text-5xl xl:text-[3.5rem] ${
             filled ? '' : 'text-accent'
           }`}
         >
-          {value === null ? '—' : shown}
+          {value === null ? '\u2014' : shown}
         </span>
       </div>
+      {decoration && (
+        <div className="relative shrink-0 w-[42%] sm:w-[46%] overflow-hidden" aria-hidden="true">
+          {decoration}
+        </div>
+      )}
     </div>
   );
 }

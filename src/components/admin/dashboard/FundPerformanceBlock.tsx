@@ -7,6 +7,20 @@ import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import { fundShortLabels } from '@/lib/types';
 import { Block } from './DashboardKit';
 import { POSITIVE, NEGATIVE } from './motion';
+
+/**
+ * ONE COLOUR PER FUND, the pair the Portfolio Management section already
+ * uses: brand navy against the soft purple. Colouring both lines by the
+ * SIGN of their return, as this card did, gave two green lines whenever
+ * both funds were up, which is most of the time, and the reader had to
+ * go back to the legend on every glance. Sign is still stated, by the
+ * colour of the FIGURE in the header, where it belongs.
+ */
+const FUND_COLOUR: Record<string, string> = {
+  'long-short': 'hsl(252 68% 18%)',
+  'multi-asset': 'hsl(252 41% 55%)',
+};
+const colourOf = (fund: string) => FUND_COLOUR[fund] ?? 'hsl(var(--accent))';
 import type { FundSeries } from './useDashboardData';
 
 // =====================================================================
@@ -188,18 +202,33 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                 h.includes(s.fund) ? h.filter((x) => x !== s.fund)
                   : drawn.length === 1 ? h : [...h, s.fund]
               ))}
-              className="hover:opacity-80"
-              style={{ color: returns[s.fund] < 0 ? NEGATIVE : POSITIVE }}
+              className="inline-flex items-center gap-1.5 text-[13px] hover:opacity-80"
             >
-              {fundShortLabels[s.fund]} {signed(returns[s.fund])}
+              {/* The swatch is the line, so the name never has to be
+                  matched back to the legend. */}
+              <span className="h-[3px] w-4 shrink-0 rounded-full" style={{ background: colourOf(s.fund) }} />
+              <span className="text-foreground">{fundShortLabels[s.fund]}</span>
+              <span style={{ color: returns[s.fund] < 0 ? NEGATIVE : POSITIVE }}>{signed(returns[s.fund])}</span>
             </button>
           ))}
           {hidden.length > 0 && (
-            <button type="button" onClick={() => setHidden([])} className="text-muted-foreground hover:text-accent">
+            <button type="button" onClick={() => setHidden([])} className="text-[13px] text-muted-foreground hover:text-accent">
               show both
             </button>
           )}
-          <span className="inline-flex gap-1" role="group" aria-label="Chart horizon">
+          {/* A phone gets one control instead of six: the same horizons,
+              a fraction of the width, and a 40px target. */}
+          <select
+            value={horizon}
+            onChange={(e) => setHorizon(e.target.value as Horizon)}
+            aria-label="Chart horizon"
+            className="sm:hidden h-10 rounded-md border border-separator bg-background px-2 text-xs text-foreground"
+          >
+            {HORIZONS.filter((h) => available.has(h.key)).map((h) => (
+              <option key={h.key} value={h.key}>{h.key}</option>
+            ))}
+          </select>
+          <span className="hidden sm:inline-flex gap-1" role="group" aria-label="Chart horizon">
             {HORIZONS.filter((h) => available.has(h.key)).map((h) => {
               const on = horizon === h.key;
               return (
@@ -208,7 +237,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                   type="button"
                   aria-pressed={on}
                   onClick={() => setHorizon(h.key)}
-                  className={`h-7 sm:h-6 min-w-[38px] sm:min-w-[30px] px-1.5 rounded-md border text-[11px] transition-colors ${
+                  className={`h-6 min-w-[30px] px-1.5 rounded-md border text-[11px] transition-colors ${
                     on
                       ? 'bg-accent text-accent-foreground border-accent'
                       : 'bg-background text-muted-foreground border-separator hover:border-accent hover:text-accent'
@@ -263,8 +292,9 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                   {drawn.map((s, i) => (
                     <Line
                       key={s.fund} type="linear" dataKey={s.fund}
-                      stroke={returns[s.fund] < 0 ? NEGATIVE : POSITIVE}
-                      strokeWidth={2} strokeLinejoin="miter" strokeLinecap="butt"
+                      stroke={colourOf(s.fund)}
+                      strokeWidth={s.fund === 'long-short' ? 2.4 : 2}
+                      strokeLinejoin="miter" strokeLinecap="butt"
                       dot={false} activeDot={{ r: 3 }} connectNulls={false}
                       isAnimationActive={animate} animationDuration={900}
                       animationBegin={i * 110} animationEasing="ease-out"

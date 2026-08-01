@@ -9,11 +9,15 @@ import type { DivisionCount } from './useDashboardData';
 // being compared stated on the title line, generous bars, a legend under
 // the chart, and an axis that follows the data.
 //
-// THE TOP TICK WAS BEING CLIPPED. The chart's top margin was 4px while
-// the highest gridline label needs half its own line-height above it, so
-// the topmost number was drawn half outside the plot. The axis maximum is
-// now one step ABOVE the data maximum, which both leaves the tallest bar
-// clear of the top rule and gives the label the room it needs.
+// THE Y LABELS WERE BEING CLIPPED, top and left. Two separate causes,
+// and only the first was fixed last time:
+//
+//   * the top label needs half its own line-height above the highest
+//     gridline, so the axis maximum runs one step ABOVE the data;
+//   * the LEFT MARGIN WAS NEGATIVE (-24px). A negative left margin pulls
+//     the whole plot outside its container, taking the y-axis with it,
+//     so every tick was drawn partly off the card. The margin is zero
+//     now and the axis reserves its own width instead.
 // =====================================================================
 
 const PREVIOUS_TONE = 'hsl(var(--accent-soft))';
@@ -39,15 +43,31 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, ani
     <Block title="Research by division" aside={`${currentLabel} vs ${previousLabel}`}>
       {rows ? (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} margin={{ top: 10, right: 6, bottom: 0, left: -24 }} barCategoryGap="22%" barGap={3}>
+          <BarChart data={rows} margin={{ top: 10, right: 6, bottom: 0, left: 0 }} barCategoryGap="20%" barGap={4}>
+            <defs>
+              {/* A restrained gradient and a soft shadow give the columns
+                  depth without making them glossy: both are a few percent
+                  of lightness, not a highlight. */}
+              <linearGradient id="dashDivPrev" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={PREVIOUS_TONE} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={PREVIOUS_TONE} stopOpacity={0.55} />
+              </linearGradient>
+              <linearGradient id="dashDivCurr" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CURRENT_TONE} stopOpacity={1} />
+                <stop offset="100%" stopColor={CURRENT_TONE} stopOpacity={0.78} />
+              </linearGradient>
+              <filter id="dashDivShadow" x="-40%" y="-20%" width="180%" height="150%">
+                <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" floodColor="hsl(var(--overlay))" floodOpacity="0.18" />
+              </filter>
+            </defs>
             <CartesianGrid stroke="hsl(var(--separator))" strokeDasharray="0" vertical={false} />
             <XAxis
               dataKey="name" tick={tickText} tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--separator))' }} tickMargin={6} interval={0}
+              axisLine={{ stroke: 'hsl(var(--foreground))', strokeOpacity: 0.28 }} tickMargin={8} interval={0}
             />
             <YAxis
               domain={[0, max]} ticks={ticks} allowDecimals={false}
-              tick={tickText} tickLine={false} axisLine={false} width={34}
+              tick={tickText} tickLine={false} axisLine={false} width={30} tickMargin={6}
             />
             <Tooltip
               cursor={{ fill: 'hsl(var(--muted) / 0.45)' }}
@@ -66,8 +86,16 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, ani
                 </span>
               )}
             />
-            <Bar dataKey="previous" fill={PREVIOUS_TONE} radius={[2, 2, 0, 0]} isAnimationActive={animate} animationDuration={700} />
-            <Bar dataKey="current" fill={CURRENT_TONE} radius={[2, 2, 0, 0]} isAnimationActive={animate} animationDuration={700} animationBegin={140} />
+            <Bar
+              dataKey="previous" fill="url(#dashDivPrev)" radius={[3, 3, 0, 0]}
+              filter="url(#dashDivShadow)" maxBarSize={30}
+              isAnimationActive={animate} animationDuration={760} animationEasing="ease-out"
+            />
+            <Bar
+              dataKey="current" fill="url(#dashDivCurr)" radius={[3, 3, 0, 0]}
+              filter="url(#dashDivShadow)" maxBarSize={30}
+              isAnimationActive={animate} animationDuration={760} animationBegin={160} animationEasing="ease-out"
+            />
           </BarChart>
         </ResponsiveContainer>
       ) : (

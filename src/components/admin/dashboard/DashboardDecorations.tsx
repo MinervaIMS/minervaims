@@ -45,10 +45,14 @@ export function DashboardMotionStyles() {
   );
 }
 
-/** Fades the ornament out before it reaches the figure on the left. */
+/**
+ * Softens the ornament's inner edge so it dissolves into the card rather
+ * than starting at a hard line. It is no longer holding the ornament off
+ * the text: the column does that, structurally.
+ */
 const FADE_LEFT: React.CSSProperties = {
-  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 34%, #000 62%, #000 100%)',
-  maskImage: 'linear-gradient(to right, transparent 0%, transparent 34%, #000 62%, #000 100%)',
+  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 26%, #000 100%)',
+  maskImage: 'linear-gradient(to right, transparent 0%, #000 26%, #000 100%)',
 };
 
 // --- Reports ----------------------------------------------------------
@@ -71,9 +75,12 @@ export function ReportColumns({ covers, paused }: { covers: string[]; paused: bo
   if (!columns.length) return null;
 
   return (
-    <div className={`absolute inset-y-0 right-0 w-[62%] flex justify-end gap-2 pr-4 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
+    /* Two equal columns, the pair centred in the ornament column and
+       pushed just past the right edge, so the second contributes as much
+       as the first and only the outer sliver is cut by the card. */
+    <div className={`absolute inset-y-0 -left-1 -right-5 flex items-stretch justify-center gap-2 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
       {columns.map((column, ci) => (
-        <div key={ci} className="relative w-[42%] max-w-[74px] overflow-hidden">
+        <div key={ci} className="relative flex-1 min-w-0 max-w-[80px] overflow-hidden">
           <div
             className="dash-col absolute inset-x-0 top-0 flex flex-col gap-2"
             style={{ animation: `dash-column-up ${ci === 0 ? 26 : 34}s linear infinite` }}
@@ -115,23 +122,28 @@ export function MemberRings({ avatars, compact, paused }: {
   const rings = useMemo(() => {
     const list = (avatars ?? []).filter((a) => a.photo_url);
     if (!list.length) return [];
-    const outerCount = compact ? 8 : 12;
-    const innerCount = compact ? 4 : 6;
+    // Sized against the card as it ACTUALLY renders, not enlarged: the
+    // ornament column is about 46% of a 300px card, so the field is
+    // roughly 140px across and a ring of twelve at that radius resolves
+    // to portraits too small to be anybody. Nine outside and four inside,
+    // larger and closer, reads as a group of people.
+    const outerCount = compact ? 7 : 9;
+    const innerCount = compact ? 3 : 4;
     const outer = list.slice(0, outerCount);
     const inner = list.slice(outerCount, outerCount + innerCount);
     return [
-      { people: outer, radius: 43, size: compact ? 15 : 17, spin: 96, reverse: false },
-      { people: inner.length ? inner : outer.slice(0, innerCount), radius: 21, size: compact ? 13 : 15, spin: 74, reverse: true },
+      { people: outer, radius: 38, size: compact ? 26 : 30, spin: 110, reverse: false },
+      { people: inner.length ? inner : outer.slice(0, innerCount), radius: 15, size: compact ? 22 : 25, spin: 86, reverse: true },
     ];
   }, [avatars, compact]);
 
   if (!rings.length) return null;
 
   return (
-    <div className={`absolute inset-y-0 right-0 w-[62%] ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      {/* A square field keeps the composition circular rather than oval
-          when the card is wider than it is tall. */}
-      <div className="absolute right-[-6%] top-1/2 -translate-y-1/2 aspect-square h-[150%]">
+    <div className={`absolute inset-0 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
+      {/* A square field keeps the composition circular rather than oval,
+          and sits just past the right edge so the outer ring is cut. */}
+      <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 aspect-square h-[128%]">
         {rings.map((ring, ri) => (
           <div
             key={ri}
@@ -184,7 +196,12 @@ export function MemberRings({ avatars, compact, paused }: {
 export function GlobeOrnament({ paused }: { paused: boolean }) {
   return (
     <div className={`absolute inset-0 overflow-hidden ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      <div className="absolute right-[-14%] top-1/2 -translate-y-1/2 aspect-square h-[168%]">
+      {/* 168% of the card height put the sphere so far outside the column
+          that only a sliver of its limb survived the crop: unrecognisable
+          on a wide screen and, on a phone, nothing at all. The globe is
+          now a little larger than the card is tall and offset just enough
+          for the card's edge to clip it, which is the crop that worked. */}
+      <div className="absolute right-[-16%] top-1/2 -translate-y-1/2 aspect-square h-[116%]">
         <MiniAlumniGlobe />
       </div>
     </div>
@@ -194,70 +211,68 @@ export function GlobeOrnament({ paused }: { paused: boolean }) {
 // --- Readings ---------------------------------------------------------
 
 /**
- * The upper-left corner of the /readings bookcase, cropped into the card:
- * the stepped cornice, the fluted pilaster, a category header and one
- * shelf carrying three REAL books, each at the width and height its own
- * id resolves to through `spineGeometry`, so the spines here are exactly
- * the spines on the public page.
+ * A SHELF from the /readings bookcase, cropped so the books are the
+ * subject.
+ *
+ * The first crop took the case's upper-left corner, which is where its
+ * category header sits: "BOOKS" ended up set at nearly the scale of the
+ * KPI number and read as a second, competing label, while the actual
+ * spines were a detail in the corner. This crop drops the header
+ * entirely and takes a shelf instead: four real books at legible size,
+ * standing on a real shelf board, with just enough of the pilaster and
+ * the board above to place them in the case rather than on a generic
+ * bookshelf.
  */
 export function LibraryCorner({ readings, animate }: { readings: ReadingRow[] | null; animate: boolean }) {
-  const books = (readings ?? []).slice(0, 3);
+  const books = (readings ?? []).slice(0, 4);
   const soft = 'hsl(var(--accent-soft))';
+  if (!books.length) return null;
 
   return (
-    <div className="absolute inset-y-0 right-0 w-[64%] overflow-hidden" style={FADE_LEFT} aria-hidden="true">
+    <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT} aria-hidden="true">
       <div
-        className={`absolute left-[12%] right-[-24%] top-[10%] bottom-[-14%] ${animate ? 'dash-rise' : ''}`}
-        style={animate ? { animation: 'dash-rise 520ms cubic-bezier(.22,1,.36,1) both' } : undefined}
+        className="absolute inset-x-[6%] -right-[10%] top-1/2 -translate-y-1/2"
+        style={animate ? { animation: 'dash-rise 560ms cubic-bezier(.22,1,.36,1) both' } : undefined}
       >
-        {/* Cornice: three stepped boards, the outermost overhanging. */}
-        <div className="h-[5px] -mx-2 rounded-t-[5px] border-[1.5px] border-b-0" style={{ borderColor: soft, background: 'hsl(var(--accent-soft)/0.07)' }} />
-        <div className="h-[6px] -mx-1 border-[1.5px]" style={{ borderColor: soft, background: 'hsl(var(--accent-soft)/0.05)' }} />
-        {/* Body: the closing pilaster on the left, then one column. */}
-        <div className="flex border-x-[1.5px]" style={{ borderColor: soft, height: 'calc(100% - 11px)' }}>
-          <div className="w-[14px] shrink-0 flex flex-col border-r-[1.5px]" style={{ borderColor: soft }}>
-            <span className="h-2 shrink-0 border-b" style={{ borderColor: soft, background: 'hsl(var(--accent-soft)/0.07)' }} />
-            <span className="flex-1 flex justify-center py-1">
-              <span className="h-full w-[7px] border-x" style={{ borderColor: soft }}>
-                <span className="block h-full w-px mx-auto" style={{ background: soft }} />
-              </span>
-            </span>
+        {/* The underside of the board above, so the shelf is enclosed. */}
+        <div className="h-[3px] border-t-[1.5px]" style={{ borderColor: soft }} />
+        <div className="flex">
+          {/* A slice of the fluted pilaster, for context, not for weight. */}
+          <div className="w-[9px] shrink-0 flex justify-center border-r-[1.5px] py-1" style={{ borderColor: soft }}>
+            <span className="h-full w-[5px] border-x" style={{ borderColor: soft }} />
           </div>
-          <div className="flex-1 min-w-0 flex flex-col">
-            <div className="h-5 shrink-0 flex items-center justify-center border-b px-2" style={{ borderColor: soft }}>
-              <span className="font-body text-[7px] uppercase tracking-[0.18em] text-accent truncate">Books</span>
-            </div>
-            <div className="relative flex-1 border-b-2" style={{ borderColor: soft }}>
-              <span className="absolute left-0 right-0 bottom-[2px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
-              <div className="absolute inset-x-0 top-0 bottom-[2px] flex items-end gap-[5px] px-2 overflow-hidden">
-                {books.map((r) => {
-                  const g = spineGeometry(r.id);
-                  return (
-                    <span
-                      key={r.id}
-                      className="relative shrink-0 rounded-t-[2px] border-[1.5px]"
-                      style={{
-                        width: g.w * 0.62,
-                        height: g.h * 0.52,
-                        borderColor: soft,
-                        background: 'hsl(var(--accent-soft)/0.07)',
-                      }}
-                    >
-                      <span className="absolute left-[2px] right-[2px] top-1 border-t" style={{ borderColor: soft }} />
-                      <span className="absolute left-[2px] right-[2px] bottom-1 border-t" style={{ borderColor: soft }} />
-                      <span className="absolute inset-x-0 top-[9px] bottom-[9px] flex items-center justify-center overflow-hidden">
-                        <span
-                          className="max-h-full overflow-hidden whitespace-nowrap font-serif text-[7px] leading-none text-accent/80"
-                          style={{ writingMode: 'vertical-rl' }}
-                        >
-                          {r.title}
-                        </span>
+          <div className="relative flex-1 min-w-0">
+            <div className="flex items-end gap-[6px] pl-2.5 pr-1 h-[104px]">
+              {books.map((r, i) => {
+                const g = spineGeometry(r.id);
+                return (
+                  <span
+                    key={r.id}
+                    className="relative shrink-0 rounded-t-[3px] border-[1.5px]"
+                    style={{
+                      width: Math.round(g.w * 0.92),
+                      height: Math.round(g.h * 0.86),
+                      borderColor: soft,
+                      background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.12)' : 'hsl(var(--accent-soft)/0.05)',
+                    }}
+                  >
+                    <span className="absolute left-[3px] right-[3px] top-2 border-t" style={{ borderColor: soft }} />
+                    <span className="absolute left-[3px] right-[3px] bottom-2 border-t" style={{ borderColor: soft }} />
+                    <span className="absolute inset-x-0 top-[13px] bottom-[13px] flex items-center justify-center overflow-hidden">
+                      <span
+                        className="max-h-full overflow-hidden whitespace-nowrap font-serif text-[9px] leading-none text-accent/80"
+                        style={{ writingMode: 'vertical-rl' }}
+                      >
+                        {r.title}
                       </span>
                     </span>
-                  );
-                })}
-              </div>
+                  </span>
+                );
+              })}
             </div>
+            {/* The shelf board the books stand on: two strokes, as drawn. */}
+            <div className="border-b-2" style={{ borderColor: soft }} />
+            <div className="mt-[2px] border-b" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
           </div>
         </div>
       </div>
