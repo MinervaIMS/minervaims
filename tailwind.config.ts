@@ -125,5 +125,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // Short viewports, e.g. a 1440x700 laptop. Used by the /join landing so the
+    // full-height composition still fits without scrolling.
+    plugin(({ addVariant }) => {
+      addVariant("h-sm", "@media (max-height: 780px)");
+    }),
+  ],
 } satisfies Config;
