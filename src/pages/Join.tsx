@@ -55,7 +55,7 @@ const Join = () => {
         </script>
       </Helmet>
 
-      {/* Hero + Status share the dark stage; the white band below carries the cue. */}
+      {/* Hero, figures, status and the scroll cue all share one full-height dark stage. */}
       <JoinHeroStage figures={<JoinFigures tone="dark" />}>
         <ApplicationCta
           {...status}
@@ -86,7 +86,7 @@ const Join = () => {
                   className="select-none leading-[0.8] text-accent/25"
                   style={{
                     fontFamily: "'Times New Roman', Times, Georgia, serif",
-                    fontSize: 'clamp(4.5rem, 13.2vw, 7.8rem)',
+                    fontSize: 'clamp(4.85rem, 14.2vw, 8.4rem)',
                   }}
                 >
                   {statement.figure}
@@ -96,7 +96,8 @@ const Join = () => {
                     <span className="sr-only">{statement.figure} </span>
                     {statement.title}
                   </h3>
-                  <p className="font-body text-body text-muted-foreground mt-3 leading-relaxed">
+                  {/* Same size as the section lead, so the two carry equal weight. */}
+                  <p className="font-body text-body-lg text-muted-foreground mt-3 leading-relaxed">
                     {statement.body}
                   </p>
                 </div>

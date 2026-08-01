@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { JOIN_JOURNEY } from '@/lib/join-content';
 
 /**
- * The four admission stages on the glowing spine. The progressive
- * illumination is the pattern already used on this page and is kept as is;
- * under prefers-reduced-motion every step renders fully lit immediately.
+ * The four admission stages on the glowing spine. Each stage lights as the
+ * reader reaches it, so the illumination tracks progress through the process
+ * rather than firing all at once on a single section-level trigger. Under
+ * prefers-reduced-motion every step renders fully lit immediately.
  */
 export function JoinJourney() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -13,12 +14,11 @@ export function JoinJourney() {
     const root = rootRef.current;
     if (!root) return;
 
-    const lightAll = () => {
-      root.querySelectorAll<HTMLElement>('.jstep').forEach((step) => {
-        step.classList.add('lit');
-        const fill = step.querySelector<HTMLElement>('.jline .fill');
-        if (fill) fill.style.height = 'calc(100% + 2.5rem)';
-      });
+    const steps = Array.from(root.querySelectorAll<HTMLElement>('.jstep'));
+    const light = (step: HTMLElement) => {
+      step.classList.add('lit');
+      const fill = step.querySelector<HTMLElement>('.jline .fill');
+      if (fill) fill.style.height = 'calc(100% + 2.5rem)';
     };
 
     const prefersReduced =
@@ -27,36 +27,33 @@ export function JoinJourney() {
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReduced) {
-      lightAll();
+      steps.forEach(light);
       return;
     }
 
-    const timers: number[] = [];
+    /*
+      Each step is observed on its own, so a stage only illuminates once the
+      reader has actually reached it. A single section-level trigger lit the
+      whole journey at once, which told the reader nothing about the sequence.
+
+      rootMargin pulls the trigger line up to roughly the lower third of the
+      viewport, so a step lights as it settles into reading position rather
+      than the instant its top edge appears. Once lit, a step stays lit and is
+      unobserved, so the spine reads as a path already travelled.
+    */
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
-          const steps = Array.from(root.querySelectorAll<HTMLElement>('.jstep'));
-          steps.forEach((step, i) => {
-            timers.push(
-              window.setTimeout(() => {
-                step.classList.add('lit');
-                const fill = step.querySelector<HTMLElement>('.jline .fill');
-                if (fill) fill.style.height = 'calc(100% + 2.5rem)';
-              }, 250 + i * 400),
-            );
-          });
+          light(entry.target as HTMLElement);
           observer.unobserve(entry.target);
         });
       },
-      { threshold: 0.2 },
+      { rootMargin: '0px 0px -32% 0px', threshold: 0.35 },
     );
 
-    observer.observe(root);
-    return () => {
-      observer.disconnect();
-      timers.forEach((t) => window.clearTimeout(t));
-    };
+    steps.forEach((step) => observer.observe(step));
+    return () => observer.disconnect();
   }, []);
 
   return (

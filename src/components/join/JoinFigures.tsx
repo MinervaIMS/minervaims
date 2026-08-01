@@ -59,15 +59,19 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
           }`}
         >
           <p
-            className={`font-serif text-[1.75rem] leading-none sm:text-5xl md:text-hero md:mb-2 ${
-              dark ? 'text-background' : 'text-primary'
+            className={`font-serif leading-none md:mb-2 ${
+              dark
+                ? 'text-[1.95rem] text-background sm:text-[3.35rem] md:text-[4.5rem] md:h-sm:text-[3.3rem]'
+                : 'text-[1.75rem] text-primary sm:text-5xl md:text-hero'
             }`}
           >
             <AnimatedFigure value={item.value} isLoading={isLoading} dark={dark} />
           </p>
           <p
-            className={`font-body mt-2 text-[0.6rem] uppercase leading-tight tracking-wider sm:text-xs md:text-body ${
-              dark ? 'text-background/75' : 'text-muted-foreground'
+            className={`font-body mt-2 uppercase leading-tight tracking-wider ${
+              dark
+                ? 'text-[0.66rem] text-background/80 sm:text-[0.82rem] md:text-[1.1rem] md:h-sm:text-[0.85rem]'
+                : 'text-[0.6rem] text-muted-foreground sm:text-xs md:text-body'
             }`}
           >
             {item.label}

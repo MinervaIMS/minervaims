@@ -19,8 +19,13 @@ import { clsx } from 'clsx';
 // too small to pin comfortably.
 // =====================================================================
 
-/** Horizontal travel is stretched by this factor relative to normal scrolling. */
-const SCROLL_PACING = 1.8;
+/**
+ * Horizontal travel relative to page scrolling. Just above 1:1, so the cards
+ * track the gesture almost exactly and the section never feels like it is
+ * holding the reader back. Earlier values (2.4, then 1.8) stretched the travel
+ * far enough that the sequence read as resistance rather than pacing.
+ */
+const SCROLL_PACING = 1.15;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
@@ -267,6 +272,29 @@ export function DivisionVideoRail() {
     };
   }, [pinned]);
 
+  // Keyboard: the rail is focusable and the arrow keys step one card at a
+  // time, in whichever mode the section is running.
+  const step = (direction: 1 | -1) => {
+    const count = JOIN_DIVISIONS.length;
+    if (pinned && sectionRef.current && overflow > 0) {
+      const perCard = (overflow * SCROLL_PACING) / (count - 1);
+      window.scrollBy({ top: direction * perCard, behavior: 'smooth' });
+    } else if (railRef.current) {
+      const perCard = railRef.current.scrollWidth / count;
+      railRef.current.scrollBy({ left: direction * perCard, behavior: 'smooth' });
+    }
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      step(1);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      step(-1);
+    }
+  };
+
   const translate = pinned ? -(progress * overflow) : 0;
 
   return (
@@ -289,6 +317,10 @@ export function DivisionVideoRail() {
         <div
           ref={railRef}
           className={`jd-rail ${pinned && overflow > 0 ? 'is-pinned' : 'is-static scrollbar-hide'}`}
+          tabIndex={0}
+          role="group"
+          aria-label="Divisions, use the left and right arrow keys to move through them"
+          onKeyDown={onKeyDown}
         >
           <div
             ref={trackRef}

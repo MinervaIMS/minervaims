@@ -17,6 +17,11 @@ export default {
       },
     },
     extend: {
+      screens: {
+        // Short viewports, e.g. a 1440x700 laptop. Used by the /join landing
+        // so the full-height composition still fits without scrolling.
+        'h-sm': { raw: '(max-height: 780px)' },
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -103,10 +108,12 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
-        // /join: scroll cue in the white band under the hero stage.
+        // /join: scroll cue at the foot of the dark landing stage.
         "scrollCue": {
-          "0%, 100%": { opacity: "0.8", transform: "translateY(0)" },
-          "50%": { opacity: "1", transform: "translateY(7px)" },
+          "0%": { opacity: "0.75", transform: "translateY(0)" },
+          "45%": { opacity: "1", transform: "translateY(10px)" },
+          "70%": { opacity: "0.9", transform: "translateY(4px)" },
+          "100%": { opacity: "0.75", transform: "translateY(0)" },
         },
       },
       animation: {
@@ -116,7 +123,7 @@ export default {
         "testimonial-in-left": "testimonial-in-left 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "testimonial-in-right": "testimonial-in-right 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "fadeIn": "fadeIn 700ms ease-out forwards",
-        "scrollCue": "scrollCue 2.4s ease-in-out infinite",
+        "scrollCue": "scrollCue 2.2s cubic-bezier(0.45, 0, 0.25, 1) infinite",
       },
     },
   },

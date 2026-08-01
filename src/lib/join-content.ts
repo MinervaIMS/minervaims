@@ -12,8 +12,8 @@
 export const JOIN_HERO = {
   title: 'Join Minerva',
   payoff: 'Built like an investment firm, run by students. Your first step towards a career in finance.',
-  /** Invitation in the white band under the stage, in place of a bare "Scroll". */
-  scrollCue: 'Discover Our Work And How To Join',
+  /** Invitation at the foot of the dark stage, in place of a bare "Scroll". */
+  scrollCue: 'Discover how to join',
 } as const;
 
 export const JOIN_SOCIETY = {
