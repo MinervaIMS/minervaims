@@ -20,13 +20,10 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: [
-      "react",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "react-dom",
-      "react-dom/client",
-    ],
+    // App.tsx and several pages contain lazy imports. Treat every source module
+    // as a scan entry so Vite discovers their dependencies before serving the
+    // first request instead of re-optimizing (and replacing React) mid-render.
+    entries: ["index.html", "src/**/*.{ts,tsx}"],
   },
   build: {
     rollupOptions: {
