@@ -53,6 +53,12 @@ export default function MobileWorkspaceShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(activeSectionKey);
   const [blocked, setBlocked] = useState<{ section: string; label: string } | null>(null);
+  // The read-only ribbon states a fact once. Keeping it on screen for the
+  // rest of the session costs a line of height on every scroll of every
+  // read-only page, so it can be dismissed for the session. It returns on
+  // the next sign-in, which is the right cadence for something a member
+  // needs to be told but not reminded of.
+  const [ribbonDismissed, setRibbonDismissed] = useState(false);
 
   const activeSection = nav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
@@ -152,11 +158,19 @@ export default function MobileWorkspaceShell({
         </nav>
       )}
 
-      {/* Read-only ribbon for 'view' pages. */}
-      {currentPolicy === 'view' && (
+      {/* Read-only ribbon for 'view' pages, dismissible for the session. */}
+      {currentPolicy === 'view' && !ribbonDismissed && (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-muted/60 border-b border-separator font-body text-xs text-muted-foreground">
           <Eye className="h-3.5 w-3.5 shrink-0" />
-          Read-only on mobile. Editing is available on desktop.
+          <span className="flex-1 min-w-0 truncate">Read-only on mobile. Editing is available on desktop.</span>
+          <button
+            type="button"
+            onClick={() => setRibbonDismissed(true)}
+            aria-label="Dismiss the read-only notice"
+            className="shrink-0 -mr-2 h-7 w-7 flex items-center justify-center text-muted-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 
