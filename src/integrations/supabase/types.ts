@@ -2108,7 +2108,6 @@ export type Database = {
         Returns: boolean
       }
       process_offer_deadlines: { Args: never; Returns: undefined }
-      public_alumni_directory: { Args: never; Returns: Json }
       public_alumni_classes: {
         Args: never
         Returns: {
@@ -2116,6 +2115,7 @@ export type Database = {
           graduation_year: number
         }[]
       }
+      public_alumni_directory: { Args: never; Returns: Json }
       public_alumni_filter_count: {
         Args: { p_city?: string; p_company?: string; p_job_area?: string }
         Returns: number
