@@ -8,9 +8,9 @@
     "width": 810,
     "height": 1440,
     "aspect_ratio": "9:16",
-    "duration_seconds": 4.6,
+    "duration_seconds": 5.85,
     "fps": 30,
-    "bytes": 356172,
+    "bytes": 173744,
     "loop": true,
     "has_audio": false
   },
@@ -19,9 +19,10 @@
     "content_type": "image/webp",
     "width": 540,
     "height": 960,
-    "bytes": 52700
+    "bytes": 25246
   },
   "source_report": "BNP Paribas SA - Equity Research",
   "source_page": "Exhibit 3: DCF Model - Summary (p.14)",
-  "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+  "method": "Dark-mode analytical rendering of the published DCF summary, filling column by column. Every figure, and the closing target price, potential, rating and cost of equity, is read off the report. No value is invented.",
+  "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
 }

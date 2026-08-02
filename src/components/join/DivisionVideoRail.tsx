@@ -240,6 +240,11 @@ export function DivisionVideoRail() {
     const unbind = bindPinnedScroll(section, {
       progress: () => progressRef.current,
       enabled: () => true,
+      // A sideways gesture is scaled by the pacing so the cards travel exactly
+      // as far as the gesture did. Without this the reading pace intended for
+      // vertical scrolling was also applied sideways, and the section felt as
+      // though it were pushing back.
+      pacing: () => SCROLL_PACING,
     });
     return () => {
       if (frame) cancelAnimationFrame(frame);

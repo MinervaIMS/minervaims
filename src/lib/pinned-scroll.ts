@@ -42,6 +42,32 @@ export interface PinnedScrollOptions {
   progress: () => number;
   /** False while the section is not pinned (short viewport, reduced motion). */
   enabled: () => boolean;
+  /**
+   * Page scroll needed per pixel of horizontal card travel.
+   *
+   * A pinned section stretches its travel: it consumes `overflow * pacing`
+   * pixels of page scroll to move the cards `overflow` pixels. That ratio is
+   * deliberate for VERTICAL scrolling, where it sets the reading pace. Applied
+   * to a HORIZONTAL gesture it is simply drag: the reader pushes the cards
+   * sideways by a hundred pixels and they move eighty-seven. Multiplying a
+   * sideways gesture by the same ratio makes the cards track the gesture
+   * one to one, which is the whole point of touching them sideways.
+   */
+  pacing?: () => number;
+}
+
+/** A line-mode wheel tick, in pixels. Firefox and many mice report lines. */
+const LINE_HEIGHT = 16;
+
+/**
+ * Wheel deltas arrive in three units. Without normalising them a line-mode
+ * wheel reports "3" for a full notch, which used to move the page three
+ * pixels: indistinguishable from the gesture doing nothing at all.
+ */
+function normaliseDelta(value: number, mode: number): number {
+  if (mode === 1) return value * LINE_HEIGHT;
+  if (mode === 2) return value * window.innerHeight;
+  return value;
 }
 
 /**
@@ -62,7 +88,12 @@ function scrollNow(delta: number): void {
  * Returns the unbind function.
  */
 export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions): () => void {
-  const { progress, enabled } = options;
+  const { progress, enabled, pacing } = options;
+
+  const ratio = () => {
+    const p = pacing ? pacing() : 1;
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  };
 
   /** True when travel in this direction still has somewhere to go. */
   const hasRoom = (delta: number) => {
@@ -72,10 +103,32 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
     return false;
   };
 
+  /*
+    Gestures are coalesced into a single scroll per animation frame. A
+    trackpad can deliver several wheel events between two frames, and each
+    synchronous window.scrollTo forces its own layout pass; batching them
+    keeps the travel smooth under a fast flick without changing the total
+    distance by a single pixel.
+  */
+  let queued = 0;
+  let frame = 0;
+
+  const flush = () => {
+    frame = 0;
+    const delta = queued;
+    queued = 0;
+    if (delta !== 0) scrollNow(delta);
+  };
+
+  const push = (delta: number) => {
+    queued += delta;
+    if (!frame) frame = requestAnimationFrame(flush);
+  };
+
   const onWheel = (e: WheelEvent) => {
     if (!enabled()) return;
-    const dx = e.deltaX;
-    const dy = e.deltaY;
+    const dx = normaliseDelta(e.deltaX, e.deltaMode);
+    const dy = normaliseDelta(e.deltaY, e.deltaMode);
     // Leave anything that is not clearly a sideways gesture to the page: a
     // vertical or vertical-dominant gesture already advances the pinned
     // section natively, so intercepting it would process it twice.
@@ -84,8 +137,9 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
     e.preventDefault();
     // Default is prevented, so nothing else will move the page. A diagonal
     // gesture therefore has to contribute both axes here or its vertical
-    // component would simply be discarded.
-    scrollNow(dx + dy);
+    // component would simply be discarded. Only the sideways part is scaled
+    // to card travel; the vertical part is already page scroll.
+    push(dx * ratio() + dy);
   };
 
   // Touch: a horizontal drag over the section moves the page by the same
@@ -122,7 +176,8 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
     lastX = x;
     if (!hasRoom(step)) { claimed = false; return; }
     if (e.cancelable) e.preventDefault();
-    scrollNow(step);
+    // Same one-to-one rule as the wheel: the cards keep up with the finger.
+    push(step * ratio());
   };
 
   const onTouchEnd = () => { claimed = null; };
@@ -134,6 +189,7 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
   el.addEventListener('touchcancel', onTouchEnd);
 
   return () => {
+    if (frame) cancelAnimationFrame(frame);
     el.removeEventListener('wheel', onWheel);
     el.removeEventListener('touchstart', onTouchStart);
     el.removeEventListener('touchmove', onTouchMove);

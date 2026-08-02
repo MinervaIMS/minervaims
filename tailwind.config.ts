@@ -107,12 +107,32 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
-        // /join: scroll cue at the foot of the dark landing stage.
-        "scrollCue": {
-          "0%": { opacity: "0.75", transform: "translateY(0)" },
-          "45%": { opacity: "1", transform: "translateY(10px)" },
-          "70%": { opacity: "0.9", transform: "translateY(4px)" },
-          "100%": { opacity: "0.75", transform: "translateY(0)" },
+        /*
+          /join scroll invitation. Three layers on one 2.8s clock, so the
+          composition reads as a single continuous descent rather than three
+          separate loops:
+
+          cueTrail  a light travelling down the vertical rail. It fades in at
+                    the top and out at the bottom, so the loop has no seam and
+                    nothing snaps back into place.
+          cueChevron the glyph brightening as the light arrives, then settling.
+          cueRule    the flanking hairlines breathing very slightly, which
+                     keeps the whole group alive without any movement.
+        */
+        "cueTrail": {
+          "0%": { top: "-42%", opacity: "0" },
+          "16%": { opacity: "1" },
+          "78%": { opacity: "1" },
+          "100%": { top: "100%", opacity: "0" },
+        },
+        "cueChevron": {
+          "0%, 40%": { opacity: "0.45", transform: "translateY(0)" },
+          "72%": { opacity: "1", transform: "translateY(3px)" },
+          "100%": { opacity: "0.45", transform: "translateY(0)" },
+        },
+        "cueRule": {
+          "0%, 100%": { opacity: "0.28" },
+          "50%": { opacity: "0.6" },
         },
       },
       animation: {
@@ -122,7 +142,9 @@ export default {
         "testimonial-in-left": "testimonial-in-left 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "testimonial-in-right": "testimonial-in-right 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "fadeIn": "fadeIn 700ms ease-out forwards",
-        "scrollCue": "scrollCue 2.2s cubic-bezier(0.45, 0, 0.25, 1) infinite",
+        "cueTrail": "cueTrail 2.8s cubic-bezier(0.5, 0, 0.3, 1) infinite",
+        "cueChevron": "cueChevron 2.8s cubic-bezier(0.5, 0, 0.3, 1) infinite",
+        "cueRule": "cueRule 2.8s ease-in-out infinite",
       },
     },
   },

@@ -10,7 +10,7 @@
     "aspect_ratio": "9:16",
     "duration_seconds": 4.73,
     "fps": 30,
-    "bytes": 144109,
+    "bytes": 114838,
     "loop": true,
     "has_audio": false
   },
@@ -19,9 +19,10 @@
     "content_type": "image/webp",
     "width": 540,
     "height": 960,
-    "bytes": 16624
+    "bytes": 12614
   },
   "source_report": "fund_performance_years (public seed): monthly returns and published year-end ITD",
   "source_page": "Cumulative NAV of both virtual funds, indexed to 100, Jan 2020 to Apr 2026",
-  "method": "Institutional terminal visualisation rendered from the repository's own fund performance record. Within-year shape from the published monthly returns, each year anchored to the published year-end inception-to-date figure. No value is invented."
+  "method": "Institutional terminal visualisation rendered from the repository's own fund performance record. Within-year shape from the published monthly returns, each year anchored to the published year-end inception-to-date figure. No value is invented.",
+  "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
 }

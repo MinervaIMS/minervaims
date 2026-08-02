@@ -18,9 +18,15 @@
      decides the axis at touch-start and the sideways gesture can never be
      claimed, which is why it did nothing on a phone. */
   touch-action: pan-y;
+  /* A sideways gesture over the stage belongs to the bridge, never to the
+     browser's swipe-to-go-back. */
+  overscroll-behavior-x: contain;
 }
 
 .jd-rail {
+  /* A sideways gesture over the rail belongs to this section, never to the
+     browser's swipe-to-go-back. */
+  overscroll-behavior-x: contain;
   --jd-card-w: min(78vw, 340px);
   --jd-gap: clamp(1rem, 3vw, 2.25rem);
   /* Set from JS to the measured left edge of the page container, so the first
@@ -32,7 +38,10 @@
 .jd-rail.is-static {
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  /* Proximity rather than mandatory: the rail settles on a card when the
+     reader stops near one, and never yanks a deliberate half-scroll into
+     place. */
+  scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -72,8 +81,11 @@
   flex: 0 0 auto;
   width: var(--jd-card-w);
   aspect-ratio: 9 / 16;
-  /* Never taller than the pinned stage minus the heading. */
-  max-height: min(72svh, 620px);
+  /* Never taller than the pinned stage minus the heading. The pixel cap is
+     deliberately generous: on a tall desktop a small cap leaves the centred
+     stage with a wide empty band above the heading, which is what read as an
+     unexplained gap between this section and the one before it. */
+  max-height: min(72svh, 760px);
   overflow: hidden;
   background: hsl(var(--accent));
   scroll-snap-align: start;
@@ -82,7 +94,7 @@
 /* Cards are sized by height inside the pinned stage so five of them can be
    in play horizontally without overflowing vertically. */
 .jd-rail.is-pinned .jd-card {
-  height: min(72svh, 620px);
+  height: min(72svh, 760px);
   width: auto;
 }
 
@@ -111,18 +123,23 @@
 }
 
 /* Diagonal shade: darkest in the top-left corner where the title sits,
-   clearing towards the bottom-right so the report page stays visible.
-   This layer is load-bearing for contrast, per the design system. */
+   clearing towards the bottom-right so the analysis stays visible. This layer
+   is load-bearing for contrast, per the design system.
+
+   It was tuned against animations printed on white paper. The five are now
+   near-black themselves, so the same weights buried them; these are the
+   lightest values that still hold the title above WCAG AA over the brightest
+   frame of every division. */
 .jd-scrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.88) 0%,
-    rgba(0, 0, 0, 0.74) 30%,
-    rgba(0, 0, 0, 0.46) 56%,
-    rgba(0, 0, 0, 0.22) 80%,
-    rgba(0, 0, 0, 0.08) 100%
+    rgba(0, 0, 0, 0.70) 0%,
+    rgba(0, 0, 0, 0.56) 30%,
+    rgba(0, 0, 0, 0.32) 56%,
+    rgba(0, 0, 0, 0.12) 80%,
+    rgba(0, 0, 0, 0.02) 100%
   );
 }
 

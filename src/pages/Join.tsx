@@ -66,7 +66,7 @@ const Join = () => {
       </JoinHeroStage>
 
       {/* 01 The Society */}
-      <section aria-labelledby="join-society-heading" className="bg-background py-section-sm md:py-section">
+      <section aria-labelledby="join-society-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-society-heading"
@@ -114,7 +114,7 @@ const Join = () => {
       <AlumniTicker />
 
       {/* 04 Admissions */}
-      <section aria-labelledby="join-journey-heading" className="bg-background py-section-sm md:py-section">
+      <section aria-labelledby="join-journey-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-journey-heading"
@@ -130,7 +130,7 @@ const Join = () => {
       </section>
 
       {/* 05 The Written Question */}
-      <section aria-labelledby="join-written-heading" className="bg-background py-section-sm md:py-section">
+      <section aria-labelledby="join-written-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-written-heading"
@@ -143,7 +143,7 @@ const Join = () => {
       </section>
 
       {/* Close: mirrors the Status block, same source, same two states. */}
-      <section aria-labelledby="join-close-heading" className="bg-background py-section-sm md:py-section">
+      <section aria-labelledby="join-close-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
         <div className="container">
           <ApplicationCta
             {...status}
