@@ -8,9 +8,9 @@
     "width": 810,
     "height": 1440,
     "aspect_ratio": "9:16",
-    "duration_seconds": 4.57,
+    "duration_seconds": 5.08,
     "fps": 30,
-    "bytes": 400024,
+    "bytes": 90079,
     "loop": true,
     "has_audio": false
   },
@@ -19,9 +19,10 @@
     "content_type": "image/webp",
     "width": 540,
     "height": 960,
-    "bytes": 68354
+    "bytes": 14520
   },
   "source_report": "Global Outlook - May 2026",
   "source_page": "Asset Class Preferences (p.11)",
-  "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+  "method": "Dark-mode rendering of the published preferences page. The four asset classes, the strategic and tactical positions, the previous-weight markers and the tactical detail are exactly as printed.",
+  "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
 }

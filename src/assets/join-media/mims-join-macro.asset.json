@@ -8,9 +8,9 @@
     "width": 810,
     "height": 1440,
     "aspect_ratio": "9:16",
-    "duration_seconds": 4.5,
+    "duration_seconds": 5.85,
     "fps": 30,
-    "bytes": 374864,
+    "bytes": 104270,
     "loop": true,
     "has_audio": false
   },
@@ -19,9 +19,10 @@
     "content_type": "image/webp",
     "width": 540,
     "height": 960,
-    "bytes": 76000
+    "bytes": 14666
   },
-  "source_report": "Currency Tokenisation Race: Public institutions or Private Innovators?",
-  "source_page": "Figure 2: Balance sheets of the different consolidated sectors of the model economy (p.7)",
-  "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+  "source_report": "Currency Tokenisation Race - Macro Research, January 2026",
+  "source_page": "Figure 2: Balance sheets of the consolidated sectors of the model economy (p.7, after Abad et al. 2024)",
+  "method": "Dark-mode redraw of the published balance-sheet figure for a 9:16 card, built sector by sector and then linked. Every sector, item and cross-sector claim is taken from the figure.",
+  "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
 }

@@ -12,9 +12,9 @@
         "width": 810,
         "height": 1440,
         "aspect_ratio": "9:16",
-        "duration_seconds": 4.6,
+        "duration_seconds": 5.85,
         "fps": 30,
-        "bytes": 356172,
+        "bytes": 173744,
         "loop": true,
         "has_audio": false
       },
@@ -23,11 +23,12 @@
         "content_type": "image/webp",
         "width": 540,
         "height": 960,
-        "bytes": 52700
+        "bytes": 25246
       },
       "source_report": "BNP Paribas SA - Equity Research",
       "source_page": "Exhibit 3: DCF Model - Summary (p.14)",
-      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+      "method": "Dark-mode analytical rendering of the published DCF summary, filling column by column. Every figure, and the closing target price, potential, rating and cost of equity, is read off the report. No value is invented.",
+      "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
     },
     {
       "key": "investment",
@@ -39,9 +40,9 @@
         "width": 810,
         "height": 1440,
         "aspect_ratio": "9:16",
-        "duration_seconds": 4.57,
+        "duration_seconds": 5.08,
         "fps": 30,
-        "bytes": 400024,
+        "bytes": 90079,
         "loop": true,
         "has_audio": false
       },
@@ -50,11 +51,12 @@
         "content_type": "image/webp",
         "width": 540,
         "height": 960,
-        "bytes": 68354
+        "bytes": 14520
       },
       "source_report": "Global Outlook - May 2026",
       "source_page": "Asset Class Preferences (p.11)",
-      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+      "method": "Dark-mode rendering of the published preferences page. The four asset classes, the strategic and tactical positions, the previous-weight markers and the tactical detail are exactly as printed.",
+      "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
     },
     {
       "key": "macro",
@@ -66,9 +68,9 @@
         "width": 810,
         "height": 1440,
         "aspect_ratio": "9:16",
-        "duration_seconds": 4.5,
+        "duration_seconds": 5.85,
         "fps": 30,
-        "bytes": 374864,
+        "bytes": 104270,
         "loop": true,
         "has_audio": false
       },
@@ -77,11 +79,12 @@
         "content_type": "image/webp",
         "width": 540,
         "height": 960,
-        "bytes": 76000
+        "bytes": 14666
       },
-      "source_report": "Currency Tokenisation Race: Public institutions or Private Innovators?",
-      "source_page": "Figure 2: Balance sheets of the different consolidated sectors of the model economy (p.7)",
-      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+      "source_report": "Currency Tokenisation Race - Macro Research, January 2026",
+      "source_page": "Figure 2: Balance sheets of the consolidated sectors of the model economy (p.7, after Abad et al. 2024)",
+      "method": "Dark-mode redraw of the published balance-sheet figure for a 9:16 card, built sector by sector and then linked. Every sector, item and cross-sector claim is taken from the figure.",
+      "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
     },
     {
       "key": "quant",
@@ -93,9 +96,9 @@
         "width": 810,
         "height": 1440,
         "aspect_ratio": "9:16",
-        "duration_seconds": 4.67,
+        "duration_seconds": 9.65,
         "fps": 30,
-        "bytes": 326512,
+        "bytes": 212340,
         "loop": true,
         "has_audio": false
       },
@@ -104,11 +107,12 @@
         "content_type": "image/webp",
         "width": 540,
         "height": 960,
-        "bytes": 54668
+        "bytes": 21354
       },
       "source_report": "Dupire's Local Volatility Model and Its Use on FX Exotic Desks",
-      "source_page": "Section 2: Theoretical Foundations of Local Volatility (p.5)",
-      "method": "Deterministic reveal composited from two pixel-accurate renders of the published report page. No generative interpolation is applied to any figure."
+      "source_page": "Sections 2.2 and 3.1, equations 2.1 to 3.13",
+      "method": "The paper's own derivation, written out line by line with its own equation numbers: the local volatility SDE, forward Kolmogorov, Breeden-Litzenberger, the integration by parts, the zero-rate Dupire formula, then the FX drift and the deterministic-rate FX Dupire formula. Typeset from the paper, not reconstructed.",
+      "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
     },
     {
       "key": "portfolio-report",
@@ -149,7 +153,7 @@
         "aspect_ratio": "9:16",
         "duration_seconds": 4.73,
         "fps": 30,
-        "bytes": 144109,
+        "bytes": 114838,
         "loop": true,
         "has_audio": false
       },
@@ -158,12 +162,13 @@
         "content_type": "image/webp",
         "width": 540,
         "height": 960,
-        "bytes": 16624
+        "bytes": 12614
       },
       "source_report": "fund_performance_years (public seed): monthly returns and published year-end ITD",
       "source_page": "Cumulative NAV of both virtual funds, indexed to 100, Jan 2020 to Apr 2026",
-      "method": "Institutional terminal visualisation rendered from the repository's own fund performance record. Within-year shape from the published monthly returns, each year anchored to the published year-end inception-to-date figure. No value is invented."
+      "method": "Institutional terminal visualisation rendered from the repository's own fund performance record. Within-year shape from the published monthly returns, each year anchored to the published year-end inception-to-date figure. No value is invented.",
+      "palette": "Dark visual system shared by all five divisions: near-black ground, white primary content, the design system's light purple (#AFA2D2) and a muted pink sibling (#CDA2BF) as accents, grey for structure."
     }
   ],
-  "total_bytes": 2325979
+  "total_bytes": 1239623
 }

@@ -42,7 +42,16 @@ export function WrittenQuestions() {
               key={division.key}
               className="grid grid-cols-1 gap-3 bg-muted p-6 transition-colors duration-300 ease-out hover:bg-[#ece9f4] md:grid-cols-[minmax(0,18rem)_1fr] md:gap-10 md:p-7"
             >
-              <h3 className="font-serif text-lg text-accent">{division.name}</h3>
+              {/*
+                The name has to identify its block at a glance, so it sits a
+                clear step above the question text. It stops short of the
+                section subheading size: the section lead is a full measure of
+                text and must stay the louder voice on the page, while this is
+                a short label doing local work.
+              */}
+              <h3 className="font-serif text-xl leading-snug text-accent md:text-[1.375rem]">
+                {division.name}
+              </h3>
               {question ? (
                 // The vertical rule is the one separator kept, running the full
                 // height of the quoted question.
