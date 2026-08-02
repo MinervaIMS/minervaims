@@ -24,6 +24,10 @@ export default defineConfig(({ mode }) => ({
     // as a scan entry so Vite discovers their dependencies before serving the
     // first request instead of re-optimizing (and replacing React) mid-render.
     entries: ["index.html", "src/**/*.{ts,tsx}"],
+    // Do not publish an initial dependency generation while Vite is still
+    // crawling the application; replacing it in an open tab can split React's
+    // hook dispatcher from the renderer that owns it.
+    holdUntilCrawlEnd: true,
   },
   build: {
     rollupOptions: {
