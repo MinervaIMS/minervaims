@@ -82,6 +82,49 @@ function buildWorld(topo: any) {
   };
 }
 
+/* ---- The graticule alone, which needs no network at all ------------------
+   `geoGraticule10()` is a pure d3-geo computation, so a globe can always
+   draw its sphere, its grid, its arcs and its cities. Land and borders are
+   the only things that depend on the atlas download. */
+type Geography = { land: unknown; borders: unknown; graticule: unknown };
+function baseWorld(): Geography {
+  return { land: null, borders: null, graticule: geoGraticule10() };
+}
+
+/* ---- The atlas, fetched ONCE PER SESSION and remembered -------------------
+   The globe used to fetch the world atlas from unpkg on every mount, and
+   every mount could fail on its own: a slow network, a blocked CDN, a rate
+   limit or simply navigating away and back. That is why the globe was
+   sometimes there and sometimes not.
+
+   One module-level promise now serves every globe on the site, so the file
+   is downloaded at most once; a failure is not cached, so the next mount
+   tries again; and two hosts are tried before giving up. Whatever happens
+   here, the globe is already on screen: geography is an upgrade, never a
+   precondition. */
+const ATLAS_HOSTS = [
+  "https://unpkg.com/world-atlas@2/countries-110m.json",
+  "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
+];
+let worldPromise: Promise<Geography> | null = null;
+function loadWorld(): Promise<Geography> {
+  if (worldPromise) return worldPromise;
+  worldPromise = (async () => {
+    let lastError: unknown = null;
+    for (const host of ATLAS_HOSTS) {
+      try {
+        const res = await fetch(host);
+        if (!res.ok) throw new Error(String(res.status));
+        return buildWorld(await res.json());
+      } catch (e) { lastError = e; }
+    }
+    // Not cached: a later mount is free to try again.
+    worldPromise = null;
+    throw lastError ?? new Error("atlas unavailable");
+  })();
+  return worldPromise;
+}
+
 /* ---- The globe engine (canvas, d3-geo orthographic) ----------------------- */
 function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { autoRotate?: boolean; interactive?: boolean } = {}) {
   const ctx = canvas.getContext("2d")!;
@@ -96,12 +139,19 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
   let W = 0, H = 0, cx = 0, cy = 0, raf = 0;
   let hover: any = null, screenCities: any[] = [];
   let flashes: any[] = [], arcCache: any[] = [];
+  // Geography can arrive after the globe is already turning, or never.
+  let geo: Geography = world || baseWorld();
+  let destroyed = false, running = false;
 
   const projection = geoOrthographic().clipAngle(90).precision(0.4);
   const path = geoPath(projection, ctx);
 
   function resize() {
+    if (destroyed) return;
     const w = canvas.clientWidth, h = canvas.clientHeight;
+    // A canvas with no layout yet is asked again next frame, but never
+    // after the globe has been torn down: that retry used to outlive the
+    // component and keep a dead canvas alive.
     if (!w || !h) { requestAnimationFrame(resize); return; }
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
@@ -109,6 +159,10 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
     W = w; H = h; cx = w / 2; cy = h / 2;
     baseScale = Math.min(w, h) * 0.46;
     applyProjection();
+    // A globe that is paused (hidden tab, reduced motion) still has to be
+    // VISIBLE. Without this, pausing before the canvas had been measured
+    // left an empty square where the globe should be.
+    if (!running) { try { render(performance.now()); } catch { /* next frame */ } }
   }
   function applyProjection() {
     projection.rotate(rotate).translate([cx, cy]).scale(baseScale * zoom);
@@ -262,19 +316,19 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
       ctx.fillStyle = g;
     } else { ctx.fillStyle = t.sea; }
     ctx.fill();
-    if (t.grid) {
-      ctx.beginPath(); path(world.graticule);
+    if (t.grid && geo.graticule) {
+      ctx.beginPath(); path(geo.graticule);
       ctx.strokeStyle = t.grid; ctx.lineWidth = 0.6;
       ctx.globalAlpha = t.gridAlpha != null ? t.gridAlpha : 0.5; ctx.stroke(); ctx.globalAlpha = 1;
     }
-    if (t.land) { ctx.beginPath(); path(world.land); ctx.fillStyle = t.land; ctx.fill(); }
-    if (t.border) {
-      ctx.beginPath(); path(world.borders);
+    if (t.land && geo.land) { ctx.beginPath(); path(geo.land); ctx.fillStyle = t.land; ctx.fill(); }
+    if (t.border && geo.borders) {
+      ctx.beginPath(); path(geo.borders);
       ctx.strokeStyle = t.border; ctx.lineWidth = t.borderWidth || 0.5;
       ctx.globalAlpha = t.borderAlpha != null ? t.borderAlpha : 0.6; ctx.stroke(); ctx.globalAlpha = 1;
     }
-    if (t.coast) {
-      ctx.beginPath(); path(world.land);
+    if (t.coast && geo.land) {
+      ctx.beginPath(); path(geo.land);
       ctx.strokeStyle = t.coast; ctx.lineWidth = t.coastWidth || 0.7; ctx.stroke();
     }
     if (t.rim) {
@@ -294,6 +348,7 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
     drawLabel();
   }
   function frame(now: number) {
+    if (!running) return;
     if (!dragging) {
       if (Math.abs(vLon) > 0.01) { rotate[0] += vLon; vLon *= 0.93; }
       else if (autoRotate) rotate[0] += 0.12;
@@ -301,6 +356,22 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
     maybeSpawnFlash(now);
     try { render(now); } catch (e) { /* keep looping */ }
     raf = requestAnimationFrame(frame);
+  }
+  /* The loop is a real on/off, so a hidden tab or a reader who has asked
+     for reduced motion costs nothing per frame instead of costing a full
+     canvas redraw. Stopping never clears the canvas: the last frame stays
+     painted, so a paused globe is a still globe, not an absent one. */
+  function start() {
+    if (running || destroyed) return;
+    running = true;
+    raf = requestAnimationFrame(frame);
+  }
+  function stop() {
+    if (!running) return;
+    running = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    try { render(performance.now()); } catch { /* the last frame stands */ }
   }
 
   /* ---------- interaction ---------- */
@@ -369,14 +440,20 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
   ro?.observe(canvas);
   window.addEventListener("resize", resize);
   resize();
-  raf = requestAnimationFrame(frame);
+  start();
 
   return {
     zoomIn: () => setZoom(zoom * 1.3),
     zoomOut: () => setZoom(zoom / 1.3),
     flyToEurope,
+    /** Land and borders, once the atlas has arrived. */
+    setWorld: (next: Geography) => { if (next && !destroyed) { geo = next; if (!running) { try { render(performance.now()); } catch { /* next frame */ } } } },
+    pause: stop,
+    resume: start,
     destroy: () => {
-      cancelAnimationFrame(raf);
+      destroyed = true;
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
       ro?.disconnect();
       if (interactive) {
         canvas.removeEventListener("mousedown", down);
@@ -398,22 +475,33 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
    The same globe (same geography, arcs and light pulses) as a decorative,
    slowly self-rotating miniature for the workspace Dashboard's alumni card.
    Non-interactive by design: it is an ornament, not a control. */
-export function MiniAlumniGlobe({ className = "" }: { className?: string }) {
+export function MiniAlumniGlobe({ className = "", paused = false }: { className?: string; paused?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const apiRef = useRef<any>(null);
 
+  /* THE GLOBE IS BUILT IMMEDIATELY, BEFORE ANY NETWORK CALL.
+     It used to be built inside the atlas download's `then`, so a slow,
+     blocked or failed request meant no globe at all: that is why it was
+     sometimes simply absent from the card. It now draws its sphere, its
+     grid, its arcs and its cities from the first frame, and land and
+     borders are painted in when, and only if, the atlas arrives. */
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     let disposed = false;
-    let api: any = null;
-    fetch("https://unpkg.com/world-atlas@2/countries-110m.json")
-      .then((r) => r.json())
-      .then((topo) => {
-        if (disposed || !canvasRef.current) return;
-        const world = buildWorld(topo);
-        api = createGlobe(canvasRef.current, THEME, world, { autoRotate: true, interactive: false });
-      })
-      .catch(() => { /* stay empty on network failure */ });
-    return () => { disposed = true; api?.destroy?.(); };
+    const api = createGlobe(canvas, THEME, null, { autoRotate: true, interactive: false });
+    apiRef.current = api;
+    loadWorld().then((w) => { if (!disposed) api.setWorld(w); }).catch(() => { /* the base globe stands */ });
+    return () => { disposed = true; apiRef.current = null; api.destroy(); };
   }, []);
+
+  // Pausing STOPS THE LOOP rather than hiding anything: the last frame
+  // stays on the canvas, so a paused globe is a still globe.
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    if (paused) api.pause(); else api.resume();
+  }, [paused]);
 
   return <canvas ref={canvasRef} className={`block h-full w-full pointer-events-none ${className}`} aria-hidden />;
 }
@@ -424,22 +512,19 @@ export default function AlumniGlobe() {
   const apiRef = useRef<any>(null);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     let disposed = false;
-    let api: any = null;
-    fetch("https://unpkg.com/world-atlas@2/countries-110m.json")
-      .then((r) => r.json())
-      .then((topo) => {
-        if (disposed || !canvasRef.current) return;
-        const world = buildWorld(topo);
-        api = createGlobe(canvasRef.current, THEME, world);
-        apiRef.current = api;
-        // Desktop/tablet: default focus on Europe
-        if (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches) {
-          api.flyToEurope();
-        }
-      })
-      .catch(() => { /* leave the static frame in place on network failure */ });
-    return () => { disposed = true; api?.destroy?.(); apiRef.current = null; };
+    // Built first, geography added when it lands: a failed atlas download
+    // now costs the land masses, not the whole globe.
+    const api = createGlobe(canvas, THEME, null);
+    apiRef.current = api;
+    // Desktop/tablet: default focus on Europe
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches) {
+      api.flyToEurope();
+    }
+    loadWorld().then((w) => { if (!disposed) api.setWorld(w); }).catch(() => { /* the base globe stands */ });
+    return () => { disposed = true; apiRef.current = null; api.destroy(); };
   }, []);
 
   const zoomButtons = (

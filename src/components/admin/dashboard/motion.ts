@@ -33,6 +33,33 @@ export function usePageVisible(): boolean {
   return visible;
 }
 
+/**
+ * A media query, ANSWERED ON THE FIRST RENDER.
+ *
+ * `useIsDesktop` starts as `undefined` and settles in an effect, so a
+ * component reading it renders once as "narrow" and again as "wide" one
+ * frame later. For an ornament that is one long CSS animation, that
+ * second render REPLACES the element and restarts the animation from its
+ * first frame: the report columns jump back to the top, the swarm snaps
+ * into a different shape. Reading the query synchronously in the state
+ * initialiser means the answer is right the first time and every ornament
+ * is built exactly once.
+ */
+export function useMediaMatch(query: string): boolean {
+  const [matches, setMatches] = useState(() => (
+    typeof globalThis.matchMedia === 'function' ? globalThis.matchMedia(query).matches : false
+  ));
+  useEffect(() => {
+    if (typeof globalThis.matchMedia !== 'function') return;
+    const mq = globalThis.matchMedia(query);
+    const apply = () => setMatches(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [query]);
+  return matches;
+}
+
 /** True once, `delay` ms after mount. Drives the one entry animation. */
 export function useEntered(delay = 0): boolean {
   const [entered, setEntered] = useState(false);
