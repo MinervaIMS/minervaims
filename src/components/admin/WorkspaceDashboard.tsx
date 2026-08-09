@@ -1,8 +1,7 @@
-import { useIsDesktop } from '@/hooks/use-desktop';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useDashboardData } from '@/components/admin/dashboard/useDashboardData';
 import { KpiCard } from '@/components/admin/dashboard/DashboardKit';
-import { usePageVisible, useReducedMotion } from '@/components/admin/dashboard/motion';
+import { useMediaMatch, usePageVisible, useReducedMotion } from '@/components/admin/dashboard/motion';
 import { useReportCovers } from '@/components/admin/dashboard/useReportCovers';
 import {
   DashboardMotionStyles, GlobeOrnament, LibraryCorner, MemberRings, ReportColumns,
@@ -45,7 +44,14 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const data = useDashboardData();
   const reduced = useReducedMotion();
   const visible = usePageVisible();
-  const isDesktop = useIsDesktop();
+  // BOTH BREAKPOINTS ARE ANSWERED ON THE FIRST RENDER, never in an effect
+  // a frame later: an ornament that is one long CSS animation restarts
+  // when its element is replaced, and a breakpoint that changes its mind
+  // after mount is exactly such a replacement.
+  const isDesktop = useMediaMatch('(min-width: 1024px)');
+  // The KPI cards are two to a row until `xl`, so the only genuinely
+  // narrow ornament column is a phone's.
+  const isPhone = useMediaMatch('(max-width: 639px)');
   const { covers, ready: coversReady } = useReportCovers(data.reportFiles);
 
   const animate = !reduced;
@@ -77,11 +83,11 @@ export default function WorkspaceDashboard({ onNavigate }: {
         />
         <KpiCard
           label="Readings" value={data.readings} animate={animate}
-          decoration={<LibraryCorner readings={data.readingRows} animate={animate} />}
+          decoration={<LibraryCorner readings={data.readingRows} compact={isPhone} animate={animate} />}
         />
         <KpiCard
           label="Members" value={data.members} animate={animate}
-          decoration={<MemberRings avatars={data.avatars} compact={!isDesktop} paused={ambientPaused} />}
+          decoration={<MemberRings avatars={data.avatars} compact={isPhone} paused={ambientPaused} />}
         />
         <KpiCard
           label="Alumni Network" value={data.alumni} animate={animate}
@@ -121,7 +127,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
             <FundPerformanceBlock series={data.fundSeries} animate={animate} />
           </div>
           <div className="order-3 lg:order-none h-[300px] lg:h-auto min-h-0">
-            <ReportsMixBlock shares={data.divisionShares} animate={animate} narrow={!isDesktop} />
+            <ReportsMixBlock shares={data.divisionShares} animate={animate} />
           </div>
           <div className="h-[288px] lg:h-auto min-h-0">
             <AlumniGrowthBlock years={data.alumniYears} animate={animate} narrow={!isDesktop} />

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
+import AodPromoCard from './AodPromoCard';
 import type { LatestUpdate } from './useDashboardData';
 
 // =====================================================================
@@ -42,7 +43,7 @@ function destination(update: LatestUpdate): { kind: 'workspace'; section: string
     case 'fee':
       return { kind: 'workspace', section: 'operations', sub: 'ops-fee', label: 'Open membership fees' };
     case 'aod':
-      return { kind: 'workspace', section: 'events', sub: 'events-on-display', label: 'Open registration' };
+      return { kind: 'workspace', section: 'events', sub: 'events-on-display', label: 'Register Participation' };
     case 'event-public':
       return { kind: 'route', to: '/events', label: 'Open the event' };
     case 'event-internal':
@@ -70,7 +71,14 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   const target = destination(update);
   const hasImage = !!update.imageUrl || !!update.pdfUrl;
 
-  const body = (
+  // ASSOCIATION ON DISPLAY TAKES THE WHOLE CARD. It is the one state that
+  // is a promotion rather than a notice, so it gets its own composition
+  // edge to edge instead of the text-and-preview layout. Everything about
+  // it is still live: it only appears while a day's registration is open,
+  // and the day is in the sentence.
+  const body = update.kind === 'aod' ? (
+    <AodPromoCard date={update.date} />
+  ) : (
     <div className={`h-full w-full p-5 sm:p-6 font-body flex ${hasImage ? 'gap-5 sm:gap-6' : ''} text-left`}>
       {hasImage && (
         // A fixed WIDTH and a free height: the picture decides its own
@@ -96,35 +104,47 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
         </div>
       )}
 
-      {/* The content column is centred against the preview rather than
-          stretched to the card's full height, which is what left a band
-          of unused purple under the text and the action stranded at the
-          very bottom edge. */}
-      <div className="min-w-0 flex-1 flex flex-col justify-center gap-3">
+      {/* THE CONTENT COLUMN IS ALIGNED TO THE COVER, top and bottom.
+          The title's first line starts at the top edge of the cover; the
+          description and the date follow it immediately, keeping their
+          own spacing; the slack is collected by `mt-auto` into one wide
+          band of purple ABOVE the action; and the action itself sits at
+          the foot of the column, level with the bottom of the cover.
+          Centring the group is what left the title low, the button
+          crowding the date, and a band of unused purple underneath.
+
+          IT HOLDS AT EVERY CARD HEIGHT. The title, the date and the
+          action are `shrink-0`, so none of them can ever be squeezed or
+          clipped; the description is the one flexible element, and on a
+          short window it gives up its second line rather than pushing
+          anything out of the card. */}
+      <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
         {/* No category heading. The report, the event or the reminder IS
             the content; a label above it saying so spends a line to
             repeat what the next line already says. */}
-        <h3 className="font-serif text-[22px] sm:text-[26px] leading-snug line-clamp-3">{update.title}</h3>
+        <h3 className="shrink-0 font-serif text-[22px] sm:text-[24px] leading-[1.16] line-clamp-2">{update.title}</h3>
         {update.detail && (
-          <p className="text-sm sm:text-[15px] leading-relaxed text-accent-foreground/80 line-clamp-4">
+          <p className="mt-3 min-h-0 overflow-hidden text-[13px] sm:text-sm leading-[1.45] text-accent-foreground/80 line-clamp-2">
             {update.detail}
           </p>
         )}
         {update.date && (
-          <span className="text-[13px] text-accent-foreground/70">{formatDate(update.date)}</span>
+          <span className="mt-2.5 shrink-0 text-[13px] text-accent-foreground/70">{formatDate(update.date)}</span>
         )}
         {/* The site's button language: white fill and purple label, and
             on hover the full inversion to the deep purple with a white
             border. No icon: the site's buttons do not carry one. */}
-        <span
-          className="mt-1 inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
-                     border border-background bg-background
-                     font-serif text-[15px] text-accent whitespace-nowrap
-                     transition-colors duration-200
-                     group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
-        >
-          {target.label}
-        </span>
+        <div className="mt-auto shrink-0 pt-5">
+          <span
+            className="inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
+                       border border-background bg-background
+                       font-serif text-[15px] text-accent whitespace-nowrap
+                       transition-colors duration-200
+                       group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
+          >
+            {target.label}
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -85,10 +85,17 @@ export function KpiCard({ label, value, decoration, filled = false, animate }: K
         filled ? 'bg-accent text-accent-foreground border-accent' : 'bg-background border-separator'
       }`}
     >
-      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 pl-4 pr-1 sm:pl-5 sm:pr-2 py-4">
+      {/* The pair sits slightly ABOVE the card's centre: the extra bottom
+          padding shortens the centring box, which lifts the label and the
+          figure together without moving either off the optical middle. */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5 pl-4 pr-1 sm:pl-5 sm:pr-2 pt-4 pb-6">
+        {/* ONE TYPOGRAPHY FOR ALL FOUR LABELS: the body face, bold, one
+            size at every breakpoint, and five per cent letter spacing.
+            REPORTS, READINGS, MEMBERS and ALUMNI NETWORK are the same
+            kind of word and now look it. */}
         <span
-          className={`font-body text-[10px] sm:text-[11px] uppercase tracking-[0.12em] leading-tight ${
-            filled ? 'text-accent-foreground/75' : 'text-muted-foreground'
+          className={`font-body text-[11px] font-bold uppercase tracking-[0.05em] leading-tight ${
+            filled ? 'text-accent-foreground/80' : 'text-muted-foreground'
           }`}
         >
           {label}

@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import { MiniAlumniGlobe } from '@/components/AlumniGlobe';
 import { spineGeometry } from '@/components/readings/types';
 import type { AvatarRow, ReadingRow } from './useDashboardData';
@@ -7,14 +7,16 @@ import type { AvatarRow, ReadingRow } from './useDashboardData';
 // The four KPI ornaments.
 // ---------------------------------------------------------------------
 // Each one fills its own column inside the card and is cut by the card's
-// rounded corner. Four rules, and the first two are why the hover
-// glitches are gone:
+// rounded corner. The rules below are what make them RELIABLE rather
+// than merely decorative, and every one of them exists because of a
+// failure it prevents:
 //
 //   * EVERY ORNAMENT IS MEMOISED ON PRIMITIVE PROPS. A CSS animation
-//     restarts when its element is replaced, so a parent re-render for
-//     any reason at all used to be able to jump a column back to its
-//     first frame or shift a ring. These components now re-render only
-//     when their own data changes, which is once.
+//     restarts when its element is replaced, so a parent re-render used
+//     to be able to jump a column back to its first frame.
+//   * EVERY ORNAMENT IS BUILT ONCE, FROM DATA IT LATCHES. A cover that
+//     finishes rendering after the page has opened no longer reshuffles
+//     the stack underneath a loop that is already running.
 //   * NOTHING HERE IS INTERACTIVE. The column that holds them declares
 //     `pointer-events: none`, so the cursor cannot reach a canvas, a
 //     hover rule or a handler inside any of them.
@@ -22,25 +24,42 @@ import type { AvatarRow, ReadingRow } from './useDashboardData';
 //     composited transform on one element. No layout property is
 //     animated, so no loop can trigger reflow.
 //   * NOTHING HERE IS INVENTED. Real report covers, real member photos,
-//     real reading titles.
+//     real reading titles, real geography.
 // =====================================================================
 
 /**
  * The page's keyframes, declared here so the Dashboard carries its own
  * motion and no global stylesheet has to change.
+ *
+ * Every loop is a TRANSFORM OF ONE ELEMENT. Nothing animates a layout
+ * property, nothing animates a colour, and no loop depends on being
+ * re-rendered to keep running.
  */
 export function DashboardMotionStyles() {
   return (
     <style>{`
       @keyframes dash-column-up { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,-50%,0); } }
-      @keyframes dash-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      @keyframes dash-counter-orbit { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+      @keyframes dash-sway-a {
+        0%   { transform: translate3d(0,0,0); }
+        34%  { transform: translate3d(-2.2%,1.8%,0); }
+        67%  { transform: translate3d(1.6%,-1.4%,0); }
+        100% { transform: translate3d(0,0,0); }
+      }
+      @keyframes dash-sway-b {
+        0%   { transform: rotate(0deg); }
+        50%  { transform: rotate(1.5deg); }
+        100% { transform: rotate(0deg); }
+      }
       @keyframes dash-rise { from { transform: translate3d(0,14px,0); opacity: 0; } to { transform: none; opacity: 1; } }
-      .dash-col, .dash-ring { will-change: transform; backface-visibility: hidden; }
+      @keyframes dash-draw { from { stroke-dashoffset: var(--dash-len); } to { stroke-dashoffset: 0; } }
+      @keyframes dash-fade { from { opacity: 0; } to { opacity: 1; } }
+      .dash-col, .dash-swarm { will-change: transform; backface-visibility: hidden; }
       .dash-paused, .dash-paused * { animation-play-state: paused !important; }
       @media (prefers-reduced-motion: reduce) {
-        .dash-col, .dash-ring, .dash-rise { animation: none !important; }
+        .dash-col, .dash-swarm, .dash-rise, .dash-arc, .dash-label { animation: none !important; }
         .dash-rise { transform: none !important; opacity: 1 !important; }
+        .dash-arc { stroke-dashoffset: 0 !important; }
+        .dash-label { opacity: 1 !important; }
       }
     `}</style>
   );
@@ -55,24 +74,46 @@ const FADE_LEFT: React.CSSProperties = {
 // --- Reports ----------------------------------------------------------
 
 /**
+ * Seconds per cover, which is what actually sets the SPEED. The duration
+ * of the loop is the height of one stack, so tying it to the number of
+ * covers keeps the columns travelling at the same pace whatever the
+ * archive holds. Both are a third quicker than before, and they are not
+ * a whole-number ratio of each other, so the two columns never fall into
+ * step however long the page is left open.
+ */
+const SECONDS_PER_COVER = [5.8, 7.6];
+
+/**
  * Two columns of REAL report covers travelling upward at different
- * speeds. The stack is rendered twice and translated by exactly half its
- * height, which is what makes the loop seamless.
+ * speeds.
  *
- * THE ORDER IS FIXED AT FIRST RENDER and never reshuffled: the covers
- * arrive in publication order and are dealt alternately between the two
- * columns, a pure function of the list, so nothing about the cursor or a
- * re-render can change which cover is where.
+ * THE LOOP IS SEAMLESS BY ARITHMETIC. The stack is rendered twice and
+ * translated by exactly half its height, which only lands on the same
+ * picture if every item occupies exactly the same vertical pitch. A flex
+ * `gap` puts a gap BETWEEN items but not after the last one, so half the
+ * doubled stack was half a gap short and the column twitched once per
+ * revolution. Each cover now carries its own bottom margin, so 2n items
+ * are exactly 2n pitches tall and half of that is exactly n.
+ *
+ * THE COVER LIST IS LATCHED at the first render that has one. The loader
+ * waits for the covers, but it also gives up after a cap, so a slow PDF
+ * could arrive after the page had opened and replace the stack under a
+ * running animation. What arrives late is used on the next visit.
  */
 export const ReportColumns = memo(function ReportColumns({ covers, paused }: {
   covers: string[]; paused: boolean;
 }) {
+  const latched = useRef<string[] | null>(null);
+  if (latched.current === null && covers.length > 0) latched.current = covers;
+  const list = latched.current;
+
   const columns = useMemo(() => {
-    if (covers.length === 0) return [] as string[][];
-    const a = covers.filter((_, i) => i % 2 === 0);
-    const b = covers.filter((_, i) => i % 2 === 1);
-    return [a.length ? a : covers, b.length ? b : covers.slice().reverse()];
-  }, [covers]);
+    const stack = list ?? [];
+    if (stack.length === 0) return [] as string[][];
+    const a = stack.filter((_, i) => i % 2 === 0);
+    const b = stack.filter((_, i) => i % 2 === 1);
+    return [a.length ? a : stack, b.length ? b : stack.slice().reverse()];
+  }, [list]);
 
   if (!columns.length) return null;
 
@@ -81,130 +122,199 @@ export const ReportColumns = memo(function ReportColumns({ covers, paused }: {
       className={`absolute inset-y-0 -left-1 -right-5 flex items-stretch justify-center gap-2 ${paused ? 'dash-paused' : ''}`}
       style={FADE_LEFT}
     >
-      {columns.map((column, ci) => (
-        <div key={ci} className="relative flex-1 min-w-0 max-w-[84px] overflow-hidden">
-          <div
-            className="dash-col absolute inset-x-0 top-0 flex flex-col gap-2"
-            style={{ animation: `dash-column-up ${ci === 0 ? 26 : 34}s linear infinite` }}
-          >
-            {[...column, ...column].map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt=""
-                draggable={false}
-                decoding="async"
-                className="w-full rounded-[2px] border border-accent/15 shadow-[0_2px_8px_-4px_hsl(var(--overlay)/0.35)]"
-                style={{ aspectRatio: '1 / 1.414', objectFit: 'cover' }}
-              />
-            ))}
+      {columns.map((column, ci) => {
+        // Different pitches and a different starting offset, so a cover in
+        // one column never lines up horizontally with a cover in the other.
+        const gap = ci === 0 ? 8 : 14;
+        const offset = ci === 0 ? 0 : -26;
+        return (
+          <div key={ci} className="relative flex-1 min-w-0 max-w-[84px] overflow-hidden">
+            <div
+              className="dash-col absolute inset-x-0 flex flex-col"
+              style={{
+                top: offset,
+                animation: `dash-column-up ${(column.length * SECONDS_PER_COVER[ci]).toFixed(1)}s linear infinite`,
+              }}
+            >
+              {[...column, ...column].map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  draggable={false}
+                  decoding="async"
+                  className="w-full rounded-[2px] border border-accent/15 shadow-[0_2px_8px_-4px_hsl(var(--overlay)/0.35)]"
+                  style={{ aspectRatio: '1 / 1.414', objectFit: 'cover', marginBottom: gap }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 });
 
 // --- Members ----------------------------------------------------------
 
+/** Deterministic 32-bit PRNG: the same seed gives the same swarm, always. */
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+interface Node { x: number; y: number }
+
 /**
- * The membership as a connected network: two concentric rings of
- * portraits turning slowly in opposite directions, joined by a web of
- * chords, each photo held upright by a counter-rotation.
+ * An ORGANIC scatter, not a constructed figure.
  *
- * The web is drawn in the SAME rotating frame as the portraits, so a
- * connection is nailed to the two people it joins and cannot drift or
- * lag behind them however long the loop runs.
+ * Rings, grids and symmetric arrangements all read as diagrams: the eye
+ * finds the rule before it finds the people. This places each portrait by
+ * rejection sampling instead: a candidate is drawn, and it is kept unless
+ * it comes within `minDist` of someone already placed. That leaves the
+ * spacing genuinely uneven, with tighter knots and looser air, which is
+ * what "organic" means here. It is not chaos: the minimum distance is a
+ * hard floor, so the composition can crowd but can never collide.
+ *
+ * The density leans RIGHT. `1 - (1-u)^bias` pushes draws toward the far
+ * edge without ever emptying the near one, so the weight of the group
+ * sits at the outer edge of the card and the innermost portraits fade
+ * under the card's mask.
+ *
+ * It is a pure function of its arguments and its seed, so the swarm is
+ * identical on every render, in every session, on every device.
+ */
+function swarm(spec: {
+  count: number; minDist: number; xMin: number; yMin: number; yMax: number; seed: number; bias: number;
+}): Node[] {
+  const { count, minDist, xMin, yMin, yMax, seed, bias } = spec;
+  const rand = mulberry32(seed);
+  const pts: Node[] = [];
+  for (let attempt = 0; attempt < 9000 && pts.length < count; attempt += 1) {
+    const x = xMin + (100 - xMin) * (1 - Math.pow(1 - rand(), bias));
+    const y = yMin + (yMax - yMin) * rand();
+    let ok = true;
+    for (const p of pts) {
+      if (Math.hypot(p.x - x, p.y - y) < minDist) { ok = false; break; }
+    }
+    if (ok) pts.push({ x, y });
+  }
+  return pts;
+}
+
+/**
+ * The two swarms, generated once for the whole application rather than
+ * per card, so the same people stand in the same places every time the
+ * Dashboard is opened.
+ *
+ * THE NUMBERS ARE NOT TASTE, THEY ARE CLEARANCE. Positions are
+ * percentages of a SQUARE box, so one per cent is the same number of
+ * pixels in both directions:
+ *
+ *   wide   box = 1.34 x 156px card = 209px. A 31px portrait is 14.8% of
+ *          it, and the minimum separation is 16.5%, which leaves 3.6px
+ *          of air between the two closest people on the card.
+ *   phone  box = 1.18 x 160px card = 189px. A 26px portrait is 13.8%,
+ *          against a minimum separation of 15%, which leaves 2.3px.
+ *
+ * The vertical range stops short of the box's edges so no portrait is
+ * lost off the top or bottom of the card, and the horizontal range
+ * starts where the card's own mask stops fading, which on a phone is
+ * much further right because the ornament column is half as wide.
+ */
+const SWARM_WIDE = swarm({ count: 12, minDist: 16.5, xMin: 36, yMin: 9, yMax: 91, seed: 23, bias: 1.5 });
+const SWARM_PHONE = swarm({ count: 8, minDist: 15, xMin: 58, yMin: 8, yMax: 92, seed: 23, bias: 1.35 });
+
+/** Each portrait joined to its two nearest neighbours, deduplicated. */
+function web(nodes: Node[]): [number, number][] {
+  const seen = new Set<string>();
+  const out: [number, number][] = [];
+  nodes.forEach((p, i) => {
+    const near = nodes
+      .map((q, j) => ({ j, d: Math.hypot(q.x - p.x, q.y - p.y) }))
+      .filter((c) => c.j !== i)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 2);
+    near.forEach(({ j }) => {
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push([i, j]);
+    });
+  });
+  return out;
+}
+
+/**
+ * The membership as a swarm of people rather than a figure made of them.
+ *
+ * THE WHOLE SWARM MOVES AS ONE BODY, under two slow transforms with
+ * periods that are not a whole-number ratio of each other, so the drift
+ * never visibly repeats. Because both are rigid transforms of the same
+ * element, every connecting line stays nailed to the two people it joins,
+ * and the distance between any two portraits is EXACTLY preserved: if
+ * they do not overlap at rest they cannot overlap in motion.
  *
  * NO TWO PORTRAITS CAN TOUCH, and that is arithmetic rather than
- * inspection: on a ring of `n` at radius `r`, adjacent centres are
- * 2*r*sin(pi/n) apart, and each ring below leaves that chord comfortably
- * larger than one diameter at the size it is drawn.
+ * inspection: the clearances are stated where the two swarms are
+ * generated, above.
  */
 export const MemberRings = memo(function MemberRings({ avatars, compact, paused }: {
   avatars: AvatarRow[] | null; compact: boolean; paused: boolean;
 }) {
-  const rings = useMemo(() => {
+  const layout = useMemo(() => {
     const list = (avatars ?? []).filter((a) => a.photo_url);
-    if (!list.length) return [];
-    // Denser than before: eleven and six, at a larger diameter, on radii
-    // close enough that the two rings read as one group.
-    const outerCount = compact ? 9 : 11;
-    const innerCount = compact ? 5 : 6;
-    const outer = list.slice(0, outerCount);
-    const inner = list.slice(outerCount, outerCount + innerCount);
-    return [
-      { people: outer, radius: 40, size: compact ? 27 : 31, spin: 118, reverse: false },
-      { people: inner.length ? inner : outer.slice(0, innerCount), radius: 18, size: compact ? 23 : 26, spin: 92, reverse: true },
-    ];
+    if (!list.length) return null;
+    // A phone shows the right-hand sliver of the same square, so its swarm
+    // is generated inside that sliver rather than being scaled down.
+    const nodes = compact ? SWARM_PHONE : SWARM_WIDE;
+    const people = nodes.map((_, i) => list[i % list.length]);
+    return { nodes, people, links: web(nodes), size: compact ? 26 : 31 };
   }, [avatars, compact]);
 
-  if (!rings.length) return null;
+  if (!layout) return null;
 
   return (
     <div className={`absolute inset-0 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      <div className="absolute right-[-12%] top-1/2 -translate-y-1/2 aspect-square h-[132%]">
-        {rings.map((ring, ri) => {
-          const points = ring.people.map((_, i) => {
-            const rad = (i / ring.people.length) * Math.PI * 2;
-            return {
-              x: 50 + Math.cos(rad) * ring.radius,
-              y: 50 + Math.sin(rad) * ring.radius,
-            };
-          });
-          return (
-            <div
-              key={ri}
-              className="dash-ring absolute inset-0"
-              style={{ animation: `${ring.reverse ? 'dash-counter-orbit' : 'dash-orbit'} ${ring.spin}s linear infinite` }}
-            >
-              {/* The network, drawn first and inside the same rotating
-                  frame, so every chord stays attached to its two people. */}
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
-                {points.map((p, i) => {
-                  const next = points[(i + 1) % points.length];
-                  const across = points[(i + Math.floor(points.length / 2)) % points.length];
-                  return (
-                    <g key={i} stroke="hsl(var(--accent))" vectorEffect="non-scaling-stroke" fill="none">
-                      <line x1={p.x} y1={p.y} x2={next.x} y2={next.y} strokeOpacity={0.22} strokeWidth={0.8} />
-                      {i % 2 === 0 && (
-                        <line x1={p.x} y1={p.y} x2={across.x} y2={across.y} strokeOpacity={0.1} strokeWidth={0.6} />
-                      )}
-                    </g>
-                  );
-                })}
-              </svg>
-              {ring.people.map((person, i) => (
-                <span
-                  key={`${person.name}-${person.surname}-${i}`}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    left: `${points[i].x}%`,
-                    top: `${points[i].y}%`,
-                    width: ring.size,
-                    height: ring.size,
-                  }}
-                >
-                  {/* Undoes the ring's rotation, so no face is ever tilted. */}
-                  <span
-                    className="dash-ring block h-full w-full rounded-full overflow-hidden border-2 border-background bg-muted shadow-[0_2px_6px_-3px_hsl(var(--overlay)/0.5)]"
-                    style={{
-                      animation: `${ring.reverse ? 'dash-orbit' : 'dash-counter-orbit'} ${ring.spin}s linear infinite`,
-                    }}
-                  >
-                    <img
-                      src={person.photo_url!}
-                      alt=""
-                      draggable={false}
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  </span>
-                </span>
+      <div className={`absolute right-[-10px] top-1/2 -translate-y-1/2 aspect-square ${compact ? 'h-[118%]' : 'h-[134%]'}`}>
+        {/* Two nested rigid transforms: a slow wander and a slower lean.
+            Both carry the web and the portraits together. */}
+        <div className="dash-swarm absolute inset-0" style={{ animation: 'dash-sway-a 31s ease-in-out infinite' }}>
+          <div className="dash-swarm absolute inset-0" style={{ animation: 'dash-sway-b 43s ease-in-out infinite' }}>
+            <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
+              {layout.links.map(([i, j]) => (
+                <line
+                  key={`${i}-${j}`}
+                  x1={layout.nodes[i].x} y1={layout.nodes[i].y}
+                  x2={layout.nodes[j].x} y2={layout.nodes[j].y}
+                  stroke="hsl(var(--accent))" strokeOpacity={0.2} strokeWidth={0.8}
+                  vectorEffect="non-scaling-stroke"
+                />
               ))}
-            </div>
-          );
-        })}
+            </svg>
+            {layout.nodes.map((node, i) => (
+              <span
+                key={i}
+                className="absolute -translate-x-1/2 -translate-y-1/2 block rounded-full overflow-hidden
+                           border-2 border-background bg-muted shadow-[0_2px_6px_-3px_hsl(var(--overlay)/0.5)]"
+                style={{ left: `${node.x}%`, top: `${node.y}%`, width: layout.size, height: layout.size }}
+              >
+                <img
+                  src={layout.people[i].photo_url!}
+                  alt=""
+                  draggable={false}
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -213,14 +323,21 @@ export const MemberRings = memo(function MemberRings({ avatars, compact, paused 
 // --- Alumni -----------------------------------------------------------
 
 /**
- * The globe from the alumni page, a little larger than the card is tall
- * and offset just enough for the card's edge to clip it.
+ * The globe from the alumni page, larger than the card is tall and offset
+ * just enough for the card's edge to clip it.
+ *
+ * It is now impossible for this card to show nothing. The globe is built
+ * on mount and draws its sphere, grid, arcs and cities from the first
+ * frame; the world atlas is a download that adds land and borders when it
+ * arrives, is fetched at most once per session, and is retried on a
+ * second host before it is given up on. `paused` stops the loop rather
+ * than hiding the canvas, so the last frame stays on screen.
  */
 export const GlobeOrnament = memo(function GlobeOrnament({ paused }: { paused: boolean }) {
   return (
-    <div className={`absolute inset-0 overflow-hidden ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      <div className="absolute right-[-16%] top-1/2 -translate-y-1/2 aspect-square h-[116%]">
-        <MiniAlumniGlobe />
+    <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT}>
+      <div className="absolute right-[-14%] top-1/2 -translate-y-1/2 aspect-square h-[132%]">
+        <MiniAlumniGlobe paused={paused} />
       </div>
     </div>
   );
@@ -228,51 +345,76 @@ export const GlobeOrnament = memo(function GlobeOrnament({ paused }: { paused: b
 
 // --- Readings ---------------------------------------------------------
 
+/** One fluted pilaster, as drawn on the /readings case. */
+function Pilaster({ soft, width }: { soft: string; width: number }) {
+  return (
+    <span
+      className="shrink-0 flex justify-center border-x-[1.5px] self-stretch"
+      style={{ borderColor: soft, width }}
+    >
+      <span className="w-[5px] border-x" style={{ borderColor: soft }} />
+    </span>
+  );
+}
+
 /**
- * FOUR REAL BOOKS from the /readings library, standing at full height on
- * a shelf board.
+ * A SHELF OF THE /readings CASE, framed as the library page frames it.
  *
- * The two earlier crops both failed for the same reason: they framed the
- * bookcase and let the books fall where they may, so the case's header
- * or its architecture ended up the subject. This one frames the BOOKS,
- * fits them to the height available, and keeps only as much of the case
- * as places them: the board they stand on, the rule of the board above,
- * and a sliver of the fluted pilaster at the left.
+ * The crop is taken from the same architecture the reader already knows:
+ * a fluted pilaster at each side, the underside of the board above, real
+ * books standing on a real board, and the board's double stroke beneath
+ * them. What it deliberately leaves out is the panel that carries the
+ * category name, which was the largest object in the earlier crop and
+ * said nothing: this card is about the books.
+ *
+ * THE BOOKS ARE NEVER SLIVERS. Their widths are the real spine widths
+ * from the library, distributed proportionally across whatever the column
+ * gives them, and a phone shows two books rather than squeezing three
+ * into half the width.
  */
-export const LibraryCorner = memo(function LibraryCorner({ readings, animate }: {
-  readings: ReadingRow[] | null; animate: boolean;
+export const LibraryCorner = memo(function LibraryCorner({ readings, compact, animate }: {
+  readings: ReadingRow[] | null; compact: boolean; animate: boolean;
 }) {
-  const books = (readings ?? []).slice(0, 4);
   const soft = 'hsl(var(--accent-soft))';
+  const books = (readings ?? []).slice(0, compact ? 2 : 3);
   if (!books.length) return null;
 
-  // The tallest spine sets the scale, so every book fits the shelf with
-  // its head and tail bands visible whatever the collection holds.
+  // The tallest spine sets the scale, so every book stands under the board
+  // above with its head and tail bands visible.
   const tallest = books.reduce((m, r) => Math.max(m, spineGeometry(r.id).h), 1);
+  const shelfHeight = compact ? 92 : 106;
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT} aria-hidden="true">
       <div
-        className={`absolute left-[4%] right-[-6%] top-1/2 -translate-y-1/2 ${animate ? 'dash-rise' : ''}`}
+        className={`absolute left-[2%] right-[-6%] top-1/2 -translate-y-1/2 ${animate ? 'dash-rise' : ''}`}
         style={animate ? { animation: 'dash-rise 560ms cubic-bezier(.22,1,.36,1) both' } : undefined}
       >
-        {/* The underside of the board above. */}
-        <div className="h-[3px] border-t-[1.5px] opacity-70" style={{ borderColor: soft }} />
-        <div className="flex">
-          <div className="w-[7px] shrink-0 flex justify-center border-r-[1.5px] py-1 opacity-70" style={{ borderColor: soft }}>
-            <span className="h-full w-[3px] border-x" style={{ borderColor: soft }} />
-          </div>
+        {/* The underside of the board above, and its inner rule. The panel
+            that sits on top of it, and its category name, are outside the
+            crop on purpose. */}
+        <div className="border-t-[1.5px]" style={{ borderColor: soft }} />
+        <div className="mt-[3px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.55)' }} />
+
+        <div className="flex items-stretch">
+          <Pilaster soft={soft} width={compact ? 11 : 13} />
           <div className="relative flex-1 min-w-0">
-            <div className="flex items-end gap-[7px] pl-3 pr-1 h-[112px]">
+            <div
+              className="flex items-end px-2"
+              style={{ height: shelfHeight, gap: compact ? 5 : 7 }}
+            >
               {books.map((r, i) => {
                 const g = spineGeometry(r.id);
                 return (
                   <span
                     key={r.id}
-                    className="relative shrink-0 rounded-t-[3px] border-[1.5px]"
+                    className="relative min-w-0 rounded-t-[3px] border-[1.5px]"
                     style={{
-                      width: Math.round(g.w * 1.06),
-                      height: Math.round((g.h / tallest) * 104),
+                      // Real spine widths, shared out proportionally, so the
+                      // row fills the shelf exactly at any card width.
+                      flexGrow: g.w,
+                      flexBasis: 0,
+                      height: Math.round((g.h / tallest) * (shelfHeight - 6)),
                       borderColor: soft,
                       background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.14)' : 'hsl(var(--accent-soft)/0.06)',
                     }}
@@ -291,10 +433,11 @@ export const LibraryCorner = memo(function LibraryCorner({ readings, animate }: 
                 );
               })}
             </div>
-            {/* The shelf board the books stand on: two strokes, as drawn. */}
+            {/* The board the books stand on: two strokes, as drawn. */}
             <div className="border-b-2" style={{ borderColor: soft }} />
-            <div className="mt-[2px] border-b" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
+            <div className="mt-[3px] border-b" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
           </div>
+          <Pilaster soft={soft} width={compact ? 11 : 13} />
         </div>
       </div>
     </div>

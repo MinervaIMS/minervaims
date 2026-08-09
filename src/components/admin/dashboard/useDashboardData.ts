@@ -381,7 +381,16 @@ export function useDashboardData(): DashboardData {
       };
     }
 
-    // 2. Association on Display, while registration is open.
+    // 2. ASSOCIATION ON DISPLAY, WHILE REGISTRATION IS OPEN, and only
+    //    then. The day has to be an `aod_days` row with `registration_open`
+    //    set and a date that has not passed, which is the same state the
+    //    Events section writes when a senior role opens a day. When the
+    //    day passes, or the switch is turned off, this stops qualifying
+    //    and the card falls through to the next candidate on its own.
+    //
+    //    The block draws this state as a promotion rather than a notice
+    //    and composes its own sentence from `date`; the title and detail
+    //    below are the plain-language description of the state.
     const openDay = (aod ?? [])
       .filter((d) => d.registration_open && asDate(d.event_date) >= midnight)
       .sort((a, b) => asDate(a.event_date) - asDate(b.event_date))[0];
@@ -389,8 +398,8 @@ export function useDashboardData(): DashboardData {
       return {
         kind: 'aod',
         category: 'Association on Display',
-        title: 'Registration is open',
-        detail: `Stand duty on ${format(openDay.event_date)}`,
+        title: 'Association on Display',
+        detail: `Registration is open for ${format(openDay.event_date)}`,
         date: openDay.event_date,
         imageUrl: null,
         pdfUrl: null,

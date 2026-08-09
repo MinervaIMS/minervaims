@@ -33,34 +33,26 @@ import type { FundSeries } from './useDashboardData';
 // =====================================================================
 // Fund performance, in the Dashboard's smaller frame.
 // ---------------------------------------------------------------------
-// The reading is the one the public Funds Performance section already
-// established, adapted rather than copied: horizon controls that REBASE
-// the window to zero so the headline figure is the return over the period
-// on screen; angular segments, because monthly returns are discrete
-// observations; round tabular ticks; the watermark behind the plot; and
-// the signed green-and-red area when a single fund is left on the chart.
+// ONE READING, FIXED AT ONE YEAR. This card carries no period controls
+// at all: no chips, no select, nothing to set. A Dashboard card is a
+// glance, and a control that changes what a figure means turns a glance
+// into a question about which setting is on. The window is the last
+// TWELVE PUBLISHED MONTHS, rebased to zero at its first point, so the
+// figure beside each fund's name is that fund's return over exactly the
+// period on screen. Anyone who wants another period has the full Funds
+// Performance section, which is what it is for.
 //
-// What is deliberately NOT carried across is the apparatus that belongs
-// to a full page: the date-range picker, the eight-period selector and
-// the explanatory footnote. In a card a third of that height they would
-// leave the chart no room.
+// Everything else follows the public charts: angular segments, because
+// monthly returns are discrete observations; round tabular ticks; the
+// white mark behind the plot; and the signed green-and-red area when a
+// single fund is left on the chart.
 //
 // THE SERIES ENDS WHERE THE DATA ENDS, and the window is counted back
 // from the latest published month rather than from today's date.
 // =====================================================================
 
-type Horizon = '6M' | 'YTD' | '1Y' | '2Y' | '3Y' | 'MAX';
-
-const HORIZONS: { key: Horizon; months: number | null }[] = [
-  { key: '6M', months: 6 },
-  { key: 'YTD', months: null },
-  { key: '1Y', months: 12 },
-  { key: '2Y', months: 24 },
-  { key: '3Y', months: 36 },
-  { key: 'MAX', months: null },
-];
-
-const DEFAULT_HORIZON: Horizon = '2Y';
+/** The one window this card draws. Not settable, by design. */
+const WINDOW_MONTHS = 12;
 
 interface Row { order: number; label: string; date: string; [fund: string]: number | string }
 
@@ -85,7 +77,6 @@ function niceTicks(lo: number, hi: number, n = 4): number[] {
 }
 
 export function FundPerformanceBlock({ series, animate }: { series: FundSeries[] | null; animate: boolean }) {
-  const [horizon, setHorizon] = useState<Horizon>(DEFAULT_HORIZON);
   const [hidden, setHidden] = useState<string[]>([]);
 
   const bounds = useMemo(() => {
@@ -105,13 +96,8 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
   const { data, returns } = useMemo(() => {
     if (!bounds) return { data: [] as Row[], returns: {} as Record<string, number> };
 
-    let from = bounds.first;
-    if (horizon === 'YTD') {
-      from = Math.max(bounds.first, Math.floor(bounds.last / 12) * 12 - 1);
-    } else {
-      const spec = HORIZONS.find((h) => h.key === horizon)!;
-      if (spec.months) from = Math.max(bounds.first, bounds.last - spec.months);
-    }
+    // Twelve months back from the last published month, never from today.
+    const from = Math.max(bounds.first, bounds.last - WINDOW_MONTHS);
 
     const byOrder = new Map<number, Row>();
     const perFund: Record<string, number> = {};
@@ -130,17 +116,9 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
     }
 
     return { data: [...byOrder.values()].sort((a, b) => a.order - b.order), returns: perFund };
-  }, [shown, bounds, horizon]);
+  }, [shown, bounds]);
 
   const drawn = useMemo(() => shown.filter((s) => returns[s.fund] !== undefined), [shown, returns]);
-
-  const available = useMemo(() => {
-    if (!bounds) return new Set<Horizon>();
-    const span = bounds.last - bounds.first + 1;
-    const set = new Set<Horizon>(['MAX', 'YTD']);
-    HORIZONS.forEach((h) => { if (h.months && span >= h.months) set.add(h.key); });
-    return set;
-  }, [bounds]);
 
   const values = data.flatMap((r) => drawn.map((s) => r[s.fund]).filter((v): v is number => typeof v === 'number'));
   const rawLo = values.length ? Math.min(...values) : 0;
@@ -200,8 +178,19 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
     <Block
       filled
       title="Fund performance"
-      aside={
-        <span className="flex w-full sm:w-auto flex-wrap items-center gap-x-4 gap-y-1.5 justify-start sm:justify-end tabular-nums">
+      // The window is STATED, not chosen. One word on the title line
+      // replaces six chips and a select, and it says what the figures
+      // below it are the return over.
+      aside={<span style={{ color: INK }}>last 12 months</span>}
+    >
+      <div className="h-full min-h-0 flex flex-col">
+        {/* THE LEGEND IS THE READING. Each fund is one block: the line's
+            own colour as a rule, the fund's name beside it, and its
+            twelve-month return underneath in the serif, green when it is
+            positive and a light red when it is not. Two blocks side by
+            side, each with its own space, instead of a single crowded row
+            that also carried the controls. */}
+        <div className="shrink-0 flex items-start gap-6 sm:gap-9 pb-2.5">
           {drawn.map((s) => (
             <button
               key={s.fund}
@@ -212,60 +201,37 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                 h.includes(s.fund) ? h.filter((x) => x !== s.fund)
                   : drawn.length === 1 ? h : [...h, s.fund]
               ))}
-              className="inline-flex items-baseline gap-1.5 hover:opacity-80"
+              className="min-w-0 text-left hover:opacity-80 transition-opacity"
             >
-              {/* The swatch is the line, so the name never has to be
-                  matched back to the legend. */}
-              <span className="h-[3px] w-5 shrink-0 self-center rounded-full" style={{ background: colourOf(s.fund) }} />
-              <span className="text-[13px]" style={{ color: INK }}>{fundShortLabels[s.fund]}</span>
-              {/* The number is the point of this card: a size up, and in
-                  the sign colour rather than the fund colour. */}
-              <span className="font-serif text-[19px] sm:text-[22px] leading-none" style={{ color: returns[s.fund] < 0 ? LOSS : GAIN }}>
+              <span className="flex items-center gap-2">
+                {/* The swatch IS the line on the chart, at the same
+                    weight, so no name ever has to be matched back. */}
+                <span className="h-[3px] w-6 shrink-0 rounded-full" style={{ background: colourOf(s.fund) }} />
+                <span className="font-body text-[12px] sm:text-[13px] truncate" style={{ color: INK }}>
+                  {fundShortLabels[s.fund]}
+                </span>
+              </span>
+              <span
+                className="mt-1 block font-serif text-[21px] sm:text-[25px] leading-none tabular-nums"
+                style={{ color: returns[s.fund] < 0 ? LOSS : GAIN }}
+              >
                 {signed(returns[s.fund])}
               </span>
             </button>
           ))}
           {hidden.length > 0 && (
-            <button type="button" onClick={() => setHidden([])} className="text-[13px]" style={{ color: INK }}>
+            <button
+              type="button"
+              onClick={() => setHidden([])}
+              className="self-center font-body text-[12px] underline underline-offset-2"
+              style={{ color: INK }}
+            >
               show both
             </button>
           )}
-          {/* A phone gets one control instead of six: the same horizons,
-              a fraction of the width, and a 40px target. */}
-          <select
-            value={horizon}
-            onChange={(e) => setHorizon(e.target.value as Horizon)}
-            aria-label="Chart horizon"
-            className="sm:hidden ml-auto h-9 rounded-md border border-[rgba(255,255,255,0.4)] bg-transparent px-2 text-xs text-[hsl(var(--accent-foreground))]"
-          >
-            {HORIZONS.filter((h) => available.has(h.key)).map((h) => (
-              <option key={h.key} value={h.key}>{h.key}</option>
-            ))}
-          </select>
-          <span className="hidden sm:inline-flex gap-1" role="group" aria-label="Chart horizon">
-            {HORIZONS.filter((h) => available.has(h.key)).map((h) => {
-              const on = horizon === h.key;
-              return (
-                <button
-                  key={h.key}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setHorizon(h.key)}
-                  className={`h-6 min-w-[30px] px-1.5 rounded-md border text-[11px] transition-colors ${
-                    on
-                      ? 'bg-[hsl(var(--accent-foreground))] text-accent border-[hsl(var(--accent-foreground))]'
-                      : 'bg-transparent border-[rgba(255,255,255,0.35)] text-[rgba(255,255,255,0.78)] hover:border-[hsl(var(--accent-foreground))] hover:text-[hsl(var(--accent-foreground))]'
-                  }`}
-                >
-                  {h.key}
-                </button>
-              );
-            })}
-          </span>
-        </span>
-      }
-    >
-      <div className="relative h-full min-h-0">
+        </div>
+
+        <div className="relative flex-1 min-h-0">
           {/* The mark reads clearly behind the plot, as on the public chart. */}
           <img
             src={fullLogoWhite.url}
@@ -319,9 +285,10 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center font-body text-xs" style={{ color: INK }}>
-              Not enough published months to draw this window.
+              Not enough published months to draw a full year.
             </div>
           )}
+        </div>
       </div>
     </Block>
   );
