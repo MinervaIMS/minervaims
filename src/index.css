@@ -1321,7 +1321,7 @@ input[type='search']::-webkit-search-cancel-button {
 .dstack-sticky {
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   display: flex; flex-direction: column; justify-content: center;
-  padding-top: 5rem; /* clears the fixed site header */
+  padding-top: 5.5rem; /* clears the fixed site header */
   /* See .tl-sticky: horizontal gestures belong to the scroll bridge. */
   touch-action: pan-y;
   /* A sideways gesture over the stage belongs to the scroll bridge, never
