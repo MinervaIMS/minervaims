@@ -4,31 +4,23 @@ import { bindPinnedScroll } from '@/lib/pinned-scroll';
 // =====================================================================
 // ScrollStack — the scroll-driven presentation of "Our Divisions".
 // ---------------------------------------------------------------------
-// One section, two readings of the same five cards.
+// One reading at every width: a sideways run. Vertical scrolling is
+// converted into horizontal travel across the five 9:16 cards,
+// deliberately slowed, and only once the last card has been reached does
+// the page carry on downwards. The section claims a tall block of scroll
+// (its horizontal overflow times PACE) and pins itself inside it, so the
+// browser's own scrolling drives everything: no wheel hijacking, no
+// preventDefault, and a flick still behaves like a flick.
 //
-// WIDE SCREENS: a deck. Each card sticks under the pinned heading and the
-// next one rides up over it, but the card underneath is not merely
-// covered: it settles back a step, losing a little scale and light as the
-// card in front arrives. That is what makes it read as a stack rather
-// than as pages being dealt on top of one another. Sticky still does the
-// pinning, which is cheap and never jitters; a rAF-throttled pass reads
-// each card's position and adds the depth on top.
+// Phones keep the dot indicators in a row under the rail; wide screens
+// carry them as a column on the right, along the cards' long side.
 //
-// PHONES: a sideways run. Vertical scrolling is converted into horizontal
-// travel across the five cards, deliberately slowed, and only once the
-// last card has been reached does the page carry on downwards. The
-// section claims a tall block of scroll (its horizontal overflow times
-// PACE) and pins itself inside it, so the browser's own scrolling drives
-// everything: no wheel hijacking, no preventDefault, and a flick still
-// behaves like a flick.
-//
-// Under reduced motion both modes fall back to a plain, fully visible
-// list: nothing in the content depends on the animation.
+// Under reduced motion it falls back to a plain, fully visible list:
+// nothing in the content depends on the animation.
 // =====================================================================
 
 /** How much slower the sideways run is than ordinary scrolling. */
 const PACE = 1.8;
-const MOBILE_MAX_WIDTH = 767;
 
 export function ScrollStackItem({ children }: { children: ReactNode }) {
   return <div className="h-full w-full">{children}</div>;
@@ -38,9 +30,8 @@ interface Props {
   children: ReactNode;
   /** Heading pinned above the cards for the whole run of the section. */
   title?: string;
-  /** Card height on wide screens. */
-  cardClassName?: string;
 }
+
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
