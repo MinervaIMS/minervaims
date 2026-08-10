@@ -1306,27 +1306,35 @@ input[type='search']::-webkit-search-cancel-button {
 
 
 /* =====================================================================
-   Our Divisions on a phone — the sideways run.
+   Our Divisions — the sideways run, at every width.
    ---------------------------------------------------------------------
    The section takes a tall block of page and pins itself inside it, so
    scrolling down moves the five cards sideways instead. The block is
-   sized in the component (horizontal overflow x 2.4), which is what makes
+   sized in the component (horizontal overflow x PACE), which is what makes
    the travel deliberate rather than a flick past five pictures.
-   Cards are 5:7, the proportion that reads best held in one hand.
+   Cards are 9:16 throughout: on a phone they are sized by width, on wide
+   screens by height, so several are in play without overflowing the
+   pinned stage. The dot indicators sit under the rail on a phone and
+   beside it — along the cards' long side — on wide screens.
    ===================================================================== */
 .dstack-wrap { position: relative; }
 .dstack-sticky {
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   display: flex; flex-direction: column; justify-content: center;
-  padding-top: 5rem; /* clears the fixed site header */
+  padding-top: 5.5rem; /* clears the fixed site header */
   /* See .tl-sticky: horizontal gestures belong to the scroll bridge. */
   touch-action: pan-y;
+  /* A sideways gesture over the stage belongs to the scroll bridge, never
+     to the browser's swipe-to-go-back. */
+  overscroll-behavior-x: contain;
 }
 @supports (height: 100dvh) { .dstack-sticky { height: 100dvh; } }
 .dstack-h2 {
   flex: 0 0 auto; margin: 0 1.25rem 1.25rem;
   padding-bottom: .75rem; border-bottom: 1px solid hsl(var(--separator));
 }
+.dstack-stage { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.dstack-rail { flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .dstack-track {
   position: relative; display: flex; align-items: stretch; gap: 1rem;
   width: max-content; padding: 0 1.25rem; will-change: transform;
@@ -1340,9 +1348,33 @@ input[type='search']::-webkit-search-cancel-button {
 /* Layout only: the dots themselves come from the shared rule above. */
 .dstack-dots { flex: 0 0 auto; margin-top: 1.1rem; }
 
+/* ---- Wide screens ---- */
+@media (min-width: 768px) {
+  /* The content boundary of the page container, reproduced so the first card
+     opens exactly on it. The container is centred with stepped max widths and
+     a 1.5rem gutter of its own. */
+  .dstack-stage { --dstack-gutter: calc((100vw - min(100vw, 768px)) / 2 + 1.5rem); }
+  .dstack-stage { flex-direction: row; align-items: center; gap: clamp(1rem, 2vw, 1.75rem); }
+  .dstack-track { gap: clamp(1rem, 2.2vw, 2rem); padding-left: var(--dstack-gutter); padding-right: 0; }
+  .dstack-card {
+    width: auto; height: min(72svh, 760px); max-height: none;
+    aspect-ratio: 9 / 16;
+  }
+  /* Along the cards' long side: a column on the right, centred on the rail. */
+  .dstack-dots {
+    flex-direction: column; margin-top: 0;
+    margin-right: var(--dstack-gutter); gap: .5rem;
+  }
+  .dstack-dots .dstack-dot.is-on { width: 6px; height: 20px; }
+}
+@media (min-width: 1024px) { .dstack-stage { --dstack-gutter: calc((100vw - min(100vw, 1024px)) / 2 + 1.5rem); } }
+@media (min-width: 1200px) { .dstack-stage { --dstack-gutter: calc((100vw - min(100vw, 1200px)) / 2 + 1.5rem); } }
+@media (min-width: 1280px) { .dstack-stage { --dstack-gutter: calc((100vw - min(100vw, 1280px)) / 2 + 1.5rem); } }
+
 @media (prefers-reduced-motion: reduce) {
   .dstack-track { transition: none !important; }
 }
+
 
 
 /* =====================================================================
