@@ -57,6 +57,7 @@ function HorizontalRun({ items, title, reduced }: {
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const geometry = useRef({ range: 0, budget: 1, top: 0 });
@@ -65,9 +66,12 @@ function HorizontalRun({ items, title, reduced }: {
   const measure = useCallback(() => {
     const wrap = wrapRef.current;
     const sticky = stickyRef.current;
+    const rail = railRef.current;
     const track = trackRef.current;
-    if (!wrap || !sticky || !track || reduced) return;
-    const range = Math.max(0, track.scrollWidth - sticky.clientWidth);
+    if (!wrap || !sticky || !rail || !track || reduced) return;
+    // The rail, not the whole stage: on wide screens the dot column sits
+    // beside it and its width is not available to the cards.
+    const range = Math.max(0, track.scrollWidth - rail.clientWidth);
     geometry.current.range = range;
     geometry.current.budget = Math.max(1, range * PACE);
     // The block of page the section owns: one screen to stand in, plus the
@@ -75,6 +79,7 @@ function HorizontalRun({ items, title, reduced }: {
     wrap.style.height = `${sticky.offsetHeight + geometry.current.budget}px`;
     geometry.current.top = wrap.getBoundingClientRect().top + window.scrollY;
   }, [reduced]);
+
 
   const paint = useCallback(() => {
     const track = trackRef.current;
