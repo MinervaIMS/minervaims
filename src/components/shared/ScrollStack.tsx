@@ -48,26 +48,16 @@ function prefersReducedMotion(): boolean {
     : false;
 }
 
-export default function ScrollStack({ children, title, cardClassName }: Props) {
+export default function ScrollStack({ children, title }: Props) {
   const items = Children.toArray(children);
-  const height = cardClassName ?? 'h-[62vh] max-h-[520px] min-h-[360px]';
-
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth <= MOBILE_MAX_WIDTH,
-  );
   const reduced = useRef(prefersReducedMotion());
 
-  useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth <= MOBILE_MAX_WIDTH);
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  return narrow
-    ? <HorizontalRun items={items} title={title} reduced={reduced.current} />
-    : <Deck items={items} title={title} height={height} reduced={reduced.current} />;
+  // One reading at every width: the pinned sideways run. Wide screens size the
+  // 9:16 cards by height and carry the dot column on the right; phones keep the
+  // horizontal dot row beneath the rail.
+  return <HorizontalRun items={items} title={title} reduced={reduced.current} />;
 }
+
 
 // --- Wide screens: the deck -------------------------------------------
 
