@@ -134,22 +134,39 @@ function HorizontalRun({ items, title, reduced }: {
     );
   }
 
+  const goTo = (i: number) => {
+    const { budget, top } = geometry.current;
+    const target = top + budget * (i / Math.max(1, items.length - 1));
+    window.scrollTo({ top: target, behavior: 'smooth' });
+  };
+
   return (
     <div className="dstack-wrap" ref={wrapRef}>
       <div className="dstack-sticky" ref={stickyRef}>
         {title && <h2 className="dstack-h2 font-serif text-heading text-accent">{title}</h2>}
-        <div className="dstack-track" ref={trackRef}>
-          {items.map((child, i) => (
-            <div key={i} className="dstack-card">{child}</div>
-          ))}
-          <div className="dstack-tail" aria-hidden="true" />
-        </div>
-        <div className="dstack-dots" aria-hidden="true">
-          {items.map((_, i) => (
-            <span key={i} className={`dstack-dot${i === active ? ' is-on' : ''}`} />
-          ))}
+        <div className="dstack-stage">
+          <div className="dstack-rail" ref={railRef}>
+            <div className="dstack-track" ref={trackRef}>
+              {items.map((child, i) => (
+                <div key={i} className="dstack-card">{child}</div>
+              ))}
+              <div className="dstack-tail" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="dstack-dots">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goTo(i)}
+                className={`dstack-dot${i === active ? ' is-on' : ''}`}
+                aria-label={`Go to division ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
