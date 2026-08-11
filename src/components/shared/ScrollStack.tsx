@@ -86,8 +86,9 @@ function Deck({ items, title, height, narrow }: {
 
   // Cards stick just under the fixed navbar, plus the pinned heading's own
   // height, so a card's top edge stops at the heading's baseline rule
-  // instead of sliding beneath it.
-  const navbar = narrow ? '5rem' : '5.5rem';
+  // instead of sliding beneath it. Extra room is given on phones so the
+  // section title does not sit flush against the navbar.
+  const navbar = narrow ? '6.5rem' : '5.5rem';
   const headingBlock = title ? (narrow ? '4rem' : '4.75rem') : '0rem';
   const cardBase = `calc(${navbar} + ${headingBlock})`;
 
