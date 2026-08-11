@@ -138,11 +138,12 @@ const Index = () => {
         <div className="container">
           {/* TWO SENTENCES, CENTRED, AND NOTHING ELSE. */}
           <div className="mx-auto max-w-4xl text-center py-4 md:py-10">
-            <p className="font-serif text-heading md:text-display leading-snug text-accent text-balance">
+            <p className="font-serif text-heading md:text-display leading-[1.2] text-accent text-balance">
               We research <em>markets</em>, author quantitative <em>publications</em>, run virtual <em>funds</em>, while
               learning from each other and from the <em>best professionals</em> in the industry.
             </p>
-            <p className="mx-auto mt-6 md:mt-8 max-w-2xl font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
+            <div className="mx-auto mt-10 md:mt-14 w-12 border-t border-separator" />
+            <p className="mx-auto mt-10 md:mt-14 max-w-2xl font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
               Founded at Bocconi in 2019, Minerva Investment Management Society is the University's leading association
               dedicated to asset management, organised as an investment management firm, with research divisions and a
               portfolio management team accountable for the funds.
@@ -152,24 +153,19 @@ const Index = () => {
       </section>
 
 
+      {/* Alumni Testimonials */}
+      <TestimonialsSection />
+
       {/* Our Divisions (scroll-driven card stack) */}
-      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
+      <section className="pt-section-sm md:pt-section pb-section-sm md:pb-section bg-background">
         <DivisionScrollStack />
       </section>
 
       {/* Funds Performance (same chart as Portfolio Management) */}
       <FundPerformanceChart funds={['long-short', 'multi-asset']} title="Funds Performance" />
 
-
-
       {/* Alumni Ticker */}
       <AlumniTicker />
-
-
-
-
-      {/* Alumni Testimonials */}
-      <TestimonialsSection />
 
       {/* Latest Reports */}
       <ReportsSection
