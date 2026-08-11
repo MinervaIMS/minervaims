@@ -1,0 +1,1 @@
+UPDATE public.alumni SET graduation_year = 2019, updated_at = now() WHERE graduation_year = 2018;
