@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useKeyFigures } from '@/hooks/useKeyFigures';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
