@@ -117,7 +117,7 @@ export function JoinFaq() {
             <div className="relative max-w-xl">
               <Search
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent/60"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               />
               <input
                 id="join-faq-search"
@@ -126,14 +126,14 @@ export function JoinFaq() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search the questions"
                 autoComplete="off"
-                className="w-full rounded-none border border-accent/40 bg-transparent py-2.5 pl-9 pr-10 font-body text-sm text-accent transition-all duration-200 placeholder:text-accent/50 focus:border-accent focus:outline-none sm:py-2 sm:text-base [&::-webkit-search-cancel-button]:appearance-none"
+                className="w-full rounded-none border border-separator bg-background py-2.5 pl-9 pr-10 font-body text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-accent focus:outline-none sm:py-2 sm:text-base [&::-webkit-search-cancel-button]:appearance-none"
               />
               {isSearching && (
                 <button
                   type="button"
                   onClick={() => setQuery('')}
                   aria-label="Clear the search"
-                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-accent/60 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
                 >
                   <X aria-hidden="true" className="h-4 w-4" />
                 </button>
