@@ -78,38 +78,33 @@ const About = () => {
               weight gave the reader nothing to navigate by; a label in the
               margin tells them what each block is before they read it, and
               lets them read only the one they came for. */}
-          <div className="max-w-4xl text-left">
-            {/* The lead is the serif at the section's large body size, in
-                the body grey rather than the accent: it is still reading
-                copy, not a heading. */}
-            <p className="font-serif text-body-lg leading-relaxed text-muted-foreground">
+          <div className="text-left">
+            {/* The lead reads at the section heading's size, full width. */}
+            <p className="font-serif text-heading leading-snug text-muted-foreground">
               Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in
               2019, it is Bocconi's first association dedicated to asset management and the only one with
               student-managed virtual funds.
             </p>
 
-            {/* `divide-y` puts a hairline BETWEEN the blocks and nowhere
-                else, so the group reads as three parts of one thing rather
-                than three boxed panels. */}
-            <div className="mt-8 md:mt-10 divide-y divide-separator">
+            {/* The three blocks stay at their previous measure, now centred
+                in the section. */}
+            <div className="mx-auto max-w-4xl mt-8 md:mt-10 divide-y divide-separator">
               {WHAT_WE_DO.map((block) => (
                 <div
                   key={block.label}
                   className="grid gap-y-2 py-8 md:py-10 md:grid-cols-[8rem_1fr] md:gap-x-10"
                 >
-                  {/* The label sits in the margin, top aligned with the
-                      first line of its body copy, and stacks above it on a
-                      phone where there is no margin to sit in. */}
-                  <h3 className="font-serif text-small uppercase tracking-wider text-accent md:pt-1">
+                  <h3 className="font-serif text-body-lg italic tracking-wide text-accent md:pt-1">
                     {block.label}
                   </h3>
-                  <p className="font-body text-body leading-relaxed text-muted-foreground">
+                  <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
                     {block.body}
                   </p>
                 </div>
               ))}
             </div>
           </div>
+
         </div>
       </section>
 

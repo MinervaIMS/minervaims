@@ -8,6 +8,7 @@ import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
+import { FundPerformanceChart } from "@/components/shared/FundPerformanceChart";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
@@ -135,23 +136,13 @@ const Index = () => {
       {/* About Preview */}
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
-          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">About Minerva IMS</h2>
-          {/* TWO SENTENCES, CENTRED, AND NOTHING ELSE. A statement in the
-              serif, a short rule, and one supporting line a step down in
-              the body face. The three explanatory paragraphs that used to
-              sit here said in four hundred words what these two say, and
-              the alumni network they ended on has its own figure in the
-              row above and its own section below. */}
+          {/* TWO SENTENCES, CENTRED, AND NOTHING ELSE. */}
           <div className="mx-auto max-w-4xl text-center py-4 md:py-10">
-            <p className="font-serif text-subheading md:text-heading leading-snug text-accent text-balance">
-              We research markets, author quantitative publications, run virtual funds, while learning from each other
-              and from the best professionals in the industry.
+            <p className="font-serif text-heading md:text-display leading-snug text-accent text-balance">
+              We research <em>markets</em>, author quantitative <em>publications</em>, run virtual <em>funds</em>, while
+              learning from each other and from the <em>best professionals</em> in the industry.
             </p>
-            {/* The rule is short and centred: it separates the two lines
-                without drawing a second full-width line under the one the
-                heading already carries. */}
-            <hr className="mx-auto my-6 md:my-8 w-12 border-t border-separator" />
-            <p className="mx-auto max-w-2xl font-body text-small leading-relaxed text-muted-foreground">
+            <p className="mx-auto mt-6 md:mt-8 max-w-2xl font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
               Founded at Bocconi in 2019, Minerva Investment Management Society is the University's leading association
               dedicated to asset management, organised as an investment management firm, with research divisions and a
               portfolio management team accountable for the funds.
@@ -160,10 +151,16 @@ const Index = () => {
         </div>
       </section>
 
+
       {/* Our Divisions (scroll-driven card stack) */}
       <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
         <DivisionScrollStack />
       </section>
+
+      {/* Funds Performance (same chart as Portfolio Management) */}
+      <FundPerformanceChart funds={['long-short', 'multi-asset']} title="Funds Performance" />
+
+
 
       {/* Alumni Ticker */}
       <AlumniTicker />
