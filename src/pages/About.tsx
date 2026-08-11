@@ -86,10 +86,10 @@ const About = () => {
                 of about a hundred and forty characters; at this measure it
                 is closer to seventy, which is where a reader stops losing
                 their place between lines. */}
-            <p className="mx-auto max-w-[50.4rem] text-center font-serif text-heading leading-snug text-muted-foreground">
-              Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in
+            <p className="mx-auto max-w-[50.4rem] text-center font-serif text-heading leading-snug text-muted-foreground whitespace-pre-line">
+              {"\n"}Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in
               2019, it is Bocconi's first association dedicated to asset management and the only one with
-              student-managed virtual funds.
+              student-managed virtual funds.{"\n\n"}
             </p>
 
             {/* The three blocks stay at their previous measure, now centred
