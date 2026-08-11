@@ -101,9 +101,16 @@ export function AodPromoCard({ date }: { date: string | null }) {
             aria-hidden="true"
             decoding="async"
             fetchPriority="high"
-            onError={() => setPhotoFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover object-[50%_25%]"
+            onError={(e) => {
+              // WebP first for weight; the JPEG of the same crop is tried
+              // once before the card gives the purple the full width.
+              const img = e.currentTarget;
+              if (!img.src.endsWith(AOD_PHOTO_FALLBACK_SRC)) img.src = AOD_PHOTO_FALLBACK_SRC;
+              else setPhotoFailed(true);
+            }}
+            className="absolute inset-0 h-full w-full object-cover object-[50%_28%]"
           />
+
           {/* The dissolve. Two gradients rather than one rotated one, so
               each direction is exactly right at its own breakpoint. */}
           <div
