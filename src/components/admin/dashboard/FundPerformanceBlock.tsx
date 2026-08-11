@@ -276,8 +276,9 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
                   {axes}
                   <Area
                     type="linear" dataKey={drawn[0].fund}
-                    stroke={`url(#${gradientId}-stroke)`} strokeWidth={2}
-                    strokeLinejoin="miter" strokeLinecap="butt"
+                    stroke={`url(#${gradientId}-stroke)`} strokeWidth={2.4}
+                    strokeLinejoin="miter" strokeLinecap={dashOf(drawn[0].fund) ? 'round' : 'butt'}
+                    strokeDasharray={dashOf(drawn[0].fund)}
                     fill={`url(#${gradientId})`} dot={false} activeDot={{ r: 3 }}
                     isAnimationActive={false}
                   />
