@@ -95,7 +95,7 @@ export default function AdsRegister() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Ads & spending register" description="Record paid advertising - content, platform, date, amount, purpose and notes on whether it worked. Each amount is posted once to the Treasury on the date the expense was incurred. Entries can be added but not deleted."
+      <WorkspacePageHeader title="Ads & Spending Register" description="Record paid advertising - content, platform, date, amount, purpose and notes on whether it worked. Each amount is posted once to the Treasury on the date the expense was incurred. Entries can be added but not deleted."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add entry</Button>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
