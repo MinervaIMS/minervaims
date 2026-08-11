@@ -8,6 +8,7 @@ import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
 import { PageLoader } from "@/components/shared";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
+import { FundPerformanceChart } from "@/components/shared/FundPerformanceChart";
 import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
