@@ -82,8 +82,8 @@ export type Database = {
       }
       ads_spending: {
         Row: {
-          ad_date: string | null
-          amount: number | null
+          ad_date: string
+          amount: number
           campaign_purpose: string | null
           content: string
           created_at: string
@@ -94,8 +94,8 @@ export type Database = {
           treasury_entry_id: string | null
         }
         Insert: {
-          ad_date?: string | null
-          amount?: number | null
+          ad_date: string
+          amount: number
           campaign_purpose?: string | null
           content: string
           created_at?: string
@@ -106,8 +106,8 @@ export type Database = {
           treasury_entry_id?: string | null
         }
         Update: {
-          ad_date?: string | null
-          amount?: number | null
+          ad_date?: string
+          amount?: number
           campaign_purpose?: string | null
           content?: string
           created_at?: string

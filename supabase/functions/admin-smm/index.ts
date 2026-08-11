@@ -39,8 +39,8 @@ const AdSchema = z.object({
   id: z.string().uuid().optional(),
   content: z.string().min(1).max(300),
   platform: z.string().max(100).nullable().optional(),
-  ad_date: z.string().nullable().optional(),
-  amount: z.number().nullable().optional(),
+  ad_date: z.string().min(1),
+  amount: z.number().positive(),
   campaign_purpose: z.string().max(500).nullable().optional(),
   effectiveness_notes: z.string().max(2000).nullable().optional(),
 });
@@ -102,8 +102,8 @@ Deno.serve(async (req) => {
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
       const a = parsed.data;
       const payload = {
-        content: a.content, platform: a.platform ?? null, ad_date: a.ad_date || null,
-        amount: a.amount ?? null, campaign_purpose: a.campaign_purpose ?? null, effectiveness_notes: a.effectiveness_notes ?? null,
+        content: a.content, platform: a.platform ?? null, ad_date: a.ad_date,
+        amount: a.amount, campaign_purpose: a.campaign_purpose ?? null, effectiveness_notes: a.effectiveness_notes ?? null,
       };
       if (a.id) {
         // Editing never re-posts to the Treasury (the register is append-only
@@ -115,12 +115,12 @@ Deno.serve(async (req) => {
 
       // New entry: post the spend to the Treasury once, on the date incurred.
       let treasuryEntryId: string | null = null;
-      if (a.amount != null && a.amount > 0) {
-        const when = a.ad_date ? new Date(a.ad_date) : new Date();
+      {
+        const when = new Date(a.ad_date);
         const { data: entry, error: entryErr } = await supabase.from('treasury_entries').insert({
           amount: a.amount, flow: 'out',
           description: 'Advertising - social media communication',
-          source: 'ads_spending', execution_date: (a.ad_date || new Date().toISOString().slice(0, 10)),
+          source: 'ads_spending', execution_date: a.ad_date,
           academic_semester: academicSemester(when), is_auto: true, locked: true, created_by: user.id,
         }).select('id').single();
         if (entryErr) throw entryErr;
