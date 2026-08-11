@@ -217,7 +217,12 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
               <span className="flex items-center gap-2">
                 {/* The swatch IS the line on the chart, at the same
                     weight, so no name ever has to be matched back. */}
-                <span className="h-[3px] w-6 shrink-0 rounded-full" style={{ background: colourOf(s.fund) }} />
+                <span
+                  className="h-[3px] w-6 shrink-0 rounded-full"
+                  style={dashOf(s.fund)
+                    ? { background: 'transparent', borderTop: `2px dotted ${colourOf(s.fund)}` }
+                    : { background: colourOf(s.fund) }}
+                />
                 <span className="font-body text-[12px] sm:text-[13px] truncate" style={{ color: INK }}>
                   {fundShortLabels[s.fund]}
                 </span>
