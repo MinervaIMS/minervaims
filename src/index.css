@@ -432,15 +432,8 @@ button.mdot, button.rdot, button.dstack-dot {
 .rsec--navy .v3-dots .rdot { background: hsl(0 0% 100% / .34); }
 .rsec--navy .v3-dots .rdot.is-active { background: #fff; }
 .rsec--navy .v2-strip .v3-rail { padding-bottom: .5rem; }
-/* On the purple ground the card keeps the lavender at rest — the same
-   colour it used to reach only on hover — and the "+" is drawn in the
-   accent so it is legible instead of inheriting the section's white. */
-.rsec--navy .v3-card,
-.rsec--navy .v3-card:hover,
-.rsec--navy .v3-card:focus-within { background:#ece9f4; }
-.rsec--navy .v2-cta-frame,
-.rsec--navy .v2-card--cta:hover .v2-cta-frame,
-.rsec--navy .v2-card--cta:focus-visible .v2-cta-frame { background:#ece9f4; }
+/* Keep the "+" icon in the accent purple so it is legible on the grey
+   card instead of inheriting the section's white text colour. */
 .rsec--navy .v3-card .rplus { background:transparent; color:hsl(var(--accent)); }
 
 
