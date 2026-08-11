@@ -38,7 +38,9 @@ import { useState } from 'react';
  * image is ever shown. The photograph is an enrichment, not a
  * requirement.
  */
-const AOD_PHOTO_SRC = '/media/aod/association-on-display.jpg';
+const AOD_PHOTO_SRC = '/media/aod/association-on-display.webp';
+/** JPEG of the same crop, for anything that cannot decode WebP. */
+const AOD_PHOTO_FALLBACK_SRC = '/media/aod/association-on-display.jpg';
 
 /** 1st, 2nd, 3rd, 4th ... */
 function ordinal(n: number): string {
