@@ -119,19 +119,26 @@ function Deck({ items, title, height, narrow }: {
 
   useEffect(() => {
     let frame = 0;
+    const measure = () => {
+      const root = rootRef.current;
+      if (root) setColWidth(root.clientWidth);
+    };
     const onScroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => { frame = 0; paint(); });
     };
+    const onResize = () => { measure(); onScroll(); };
+    measure();
     paint();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [paint, narrow]);
+
 
   // On phones the card is a true 9:16 portrait: as tall as the space under
   // the header and heading allows, but never wider than the column, so the
