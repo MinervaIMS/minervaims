@@ -126,10 +126,27 @@ function loadWorld(): Promise<Geography> {
 }
 
 /* ---- The globe engine (canvas, d3-geo orthographic) ----------------------- */
-function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { autoRotate?: boolean; interactive?: boolean } = {}) {
+function createGlobe(
+  canvas: HTMLCanvasElement,
+  t: any,
+  world: any,
+  opts: { autoRotate?: boolean; interactive?: boolean; fps?: number; maxDpr?: number } = {},
+) {
   const ctx = canvas.getContext("2d")!;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, opts.maxDpr ?? 2);
   const interactive = opts.interactive !== false;
+  /* A FRAME BUDGET, because a frame of this globe is not cheap: every one
+     of them re-projects the whole world atlas -- sphere, graticule, the
+     merged land, the border mesh and the coastline -- through d3-geo and
+     re-strokes it on the canvas. At sixty frames a second, on the main
+     thread, beside four charts and a page that is still settling, that is
+     the single most expensive thing the Dashboard does. The ornament
+     turns slowly enough that a lower rate is indistinguishable, and the
+     rotation, the momentum and the flashes are all advanced by ELAPSED
+     TIME rather than per frame, so the globe turns at exactly the same
+     speed however many frames it is given. */
+  const minFrameMs = opts.fps && opts.fps > 0 ? 1000 / opts.fps : 0;
+  let lastDraw = 0;
 
   let rotate: [number, number] = [-EUROPE[0], -EUROPE[1] + 8];
   let zoom = 1, baseScale = 100;
@@ -246,9 +263,9 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
     }
     ctx.globalAlpha = 1;
   }
-  function maybeSpawnFlash(now: number) {
+  function maybeSpawnFlash(now: number, step = 1) {
     if (flashes.length >= 5) return;
-    if (Math.random() < 0.025) {
+    if (Math.random() < 0.025 * step) {
       const live: number[] = [];
       for (let i = 0; i < arcCache.length; i++) if (arcCache[i]) live.push(i);
       if (!live.length) return;
@@ -349,13 +366,18 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
   }
   function frame(now: number) {
     if (!running) return;
-    if (!dragging) {
-      if (Math.abs(vLon) > 0.01) { rotate[0] += vLon; vLon *= 0.93; }
-      else if (autoRotate) rotate[0] += 0.12;
-    }
-    maybeSpawnFlash(now);
-    try { render(now); } catch (e) { /* keep looping */ }
     raf = requestAnimationFrame(frame);
+    if (minFrameMs && lastDraw && now - lastDraw < minFrameMs) return;
+    // 16.7ms is one frame at sixty; every rate below is expressed against
+    // it, so nothing speeds up or slows down with the frame budget.
+    const step = lastDraw ? Math.min((now - lastDraw) / 16.7, 6) : 1;
+    lastDraw = now;
+    if (!dragging) {
+      if (Math.abs(vLon) > 0.01) { rotate[0] += vLon * step; vLon *= Math.pow(0.93, step); }
+      else if (autoRotate) rotate[0] += 0.12 * step;
+    }
+    maybeSpawnFlash(now, step);
+    try { render(now); } catch (e) { /* keep looping */ }
   }
   /* The loop is a real on/off, so a hidden tab or a reader who has asked
      for reduced motion costs nothing per frame instead of costing a full
@@ -369,6 +391,7 @@ function createGlobe(canvas: HTMLCanvasElement, t: any, world: any, opts: { auto
   function stop() {
     if (!running) return;
     running = false;
+    lastDraw = 0;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     try { render(performance.now()); } catch { /* the last frame stands */ }
@@ -489,7 +512,12 @@ export function MiniAlumniGlobe({ className = "", paused = false }: { className?
     const canvas = canvasRef.current;
     if (!canvas) return;
     let disposed = false;
-    const api = createGlobe(canvas, THEME, null, { autoRotate: true, interactive: false });
+    // The ornament is a slow, decorative turn at about 180px across: a
+    // 24fps budget and a device pixel ratio of at most 1.5 make it cost a
+    // fraction of what it did, and neither is visible at this size.
+    const api = createGlobe(canvas, THEME, null, {
+      autoRotate: true, interactive: false, fps: 24, maxDpr: 1.5,
+    });
     apiRef.current = api;
     loadWorld().then((w) => { if (!disposed) api.setWorld(w); }).catch(() => { /* the base globe stands */ });
     return () => { disposed = true; apiRef.current = null; api.destroy(); };

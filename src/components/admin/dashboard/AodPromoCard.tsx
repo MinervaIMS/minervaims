@@ -18,13 +18,15 @@ import { useState } from 'react';
 // THE PHOTOGRAPH KEEPS ITS OWN PROPORTIONS. It is never stretched: it
 // fills its frame by `object-cover` at its natural aspect ratio.
 //
-// AND IT IS ALREADY THE RIGHT SHAPE. The first version framed a 3:4
-// PORTRAIT inside a landscape panel, so `object-cover` had to throw away
-// more than half the height and it took faces with it. The file is now a
-// LANDSCAPE crop of the same photograph, 1200x710, framed on the group:
-// its 1.69 ratio is within a few per cent of the panel's, so on a wide
-// card almost the whole picture survives and every one of the seven
-// people is in shot, with the association's roll-up banner beside them.
+// AND THE PANEL IS SIZED TO THE PICTURE, which is what stops it looking
+// zoomed in. `object-cover` scales by whichever of the two ratios is
+// larger, so a panel WIDER than the photograph is the thing that crops
+// its height: at 64% of the card the panel was about 1.7 to 2.0 wide for
+// a 4:3 photograph and threw away a quarter to a third of it, heads
+// included. Narrowing the panel to 54% brings the two ratios close
+// enough that almost the whole photograph survives, and the framing
+// point is set high rather than centred so what little is lost comes off
+// the ground and not off the faces.
 // =====================================================================
 
 /**
@@ -86,7 +88,7 @@ export function AodPromoCard({ date }: { date: string | null }) {
         // CARD. Not the same composition scaled down: on a phone the
         // sentence needs the full width, so the photograph takes a band
         // and dissolves downward into the purple instead of sideways.
-        <div className="relative shrink-0 h-[36%] w-full sm:absolute sm:inset-0 sm:left-[36%] sm:h-auto">
+        <div className="relative shrink-0 h-[40%] w-full sm:absolute sm:inset-0 sm:left-[46%] sm:h-auto">
           {/* The framing point differs by breakpoint because the frame
               does. A wide card is almost exactly the crop's own shape, so
               it is centred and nothing is lost; a phone's band is much
@@ -98,7 +100,7 @@ export function AodPromoCard({ date }: { date: string | null }) {
             decoding="async"
             fetchPriority="high"
             onError={() => setPhotoFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover object-[50%_30%] sm:object-center"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_25%]"
           />
           {/* The dissolve. Two gradients rather than one rotated one, so
               each direction is exactly right at its own breakpoint. */}
@@ -108,7 +110,7 @@ export function AodPromoCard({ date }: { date: string | null }) {
           />
           <div
             aria-hidden="true"
-            className="hidden sm:block absolute inset-y-0 left-0 w-[64%] bg-gradient-to-r from-accent via-accent/65 to-transparent"
+            className="hidden sm:block absolute inset-y-0 left-0 w-[52%] bg-gradient-to-r from-accent via-accent/62 to-transparent"
           />
         </div>
       )}
@@ -121,7 +123,7 @@ export function AodPromoCard({ date }: { date: string | null }) {
           the purple with nothing anchoring either end. */}
       <div
         className={`relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden p-5 sm:p-6 sm:h-full ${
-          showPhoto ? 'sm:w-[62%]' : 'sm:w-full'
+          showPhoto ? 'sm:w-[58%]' : 'sm:w-full'
         }`}
       >
         {/* Sized so the whole sentence, the gap and the action all stand

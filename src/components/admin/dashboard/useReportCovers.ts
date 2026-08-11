@@ -26,7 +26,7 @@ import { loadPdfJs } from '@/lib/pdfjs';
 // =====================================================================
 
 /** Width in device pixels. Small: these are thumbnails behind a number. */
-const RENDER_WIDTH = 132;
+const RENDER_WIDTH = 120;
 const A4 = 1.414;
 /**
  * How long the whole page will wait for the covers. It is a backstop, not
@@ -36,6 +36,14 @@ const A4 = 1.414;
  * running animation.
  */
 const CAP_MS = 1600;
+/**
+ * How many are drawn at once. Fetching is I/O and wants to be parallel;
+ * RASTERISING is main-thread work and does not, because six page renders
+ * competing for the same thread is what makes the loader's own pulse
+ * stutter while it waits. Three keeps the network busy and leaves the
+ * thread enough room to keep painting.
+ */
+const CONCURRENCY = 3;
 
 const cache = new Map<string, string>();
 
@@ -78,7 +86,12 @@ export function useReportCovers(urls: string[] | null): { covers: string[]; read
         return;
       }
 
-      const drawn = await Promise.all(urls.map(async (url) => {
+      // A small pool rather than one big `Promise.all`: `next` hands out
+      // the queue index, so three workers walk the list together and the
+      // results still land in the archive's own order.
+      const drawn: (string | null)[] = new Array(urls.length).fill(null);
+      let next = 0;
+      const draw = async (url: string): Promise<string | null> => {
         const hit = cache.get(url);
         if (hit) return hit;
         try {
@@ -99,6 +112,12 @@ export function useReportCovers(urls: string[] | null): { covers: string[]; read
         } catch {
           // A cover that cannot be drawn is left out, never faked.
           return null;
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, urls.length) }, async () => {
+        for (let i = next++; i < urls.length; i = next++) {
+          if (!active) return;
+          drawn[i] = await draw(urls[i]);
         }
       }));
 

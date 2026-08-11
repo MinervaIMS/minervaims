@@ -30,11 +30,16 @@ function scale(rows: DivisionCount[]): { max: number; ticks: number[] } {
   return { max, ticks: Array.from({ length: max / 2 + 1 }, (_, i) => i * 2) };
 }
 
-export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, animate }: {
+/* NO PER-CHART JAVASCRIPT ANIMATION. Recharts animates by setting React
+   state on every frame, so four charts entering together re-rendered
+   four component trees sixty times a second at the exact moment the page
+   was mounting -- which is what the Dashboard's entry actually felt like.
+   The cards now enter together in CSS, on the compositor, and the charts
+   are simply drawn. */
+export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel }: {
   rows: DivisionCount[] | null;
   currentLabel: string;
   previousLabel: string;
-  animate: boolean;
 }) {
   // A step up on every label: this card was legible only with effort.
   const tickText = { fontSize: 12, fill: 'hsl(var(--foreground))', fontVariantNumeric: 'tabular-nums' as const };
@@ -91,12 +96,12 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel, ani
             <Bar
               dataKey="previous" fill="url(#dashDivPrev)" radius={[3, 3, 0, 0]}
               filter="url(#dashDivShadow)" maxBarSize={30}
-              isAnimationActive={animate} animationDuration={760} animationEasing="ease-out"
+              isAnimationActive={false}
             />
             <Bar
               dataKey="current" fill="url(#dashDivCurr)" radius={[3, 3, 0, 0]}
               filter="url(#dashDivShadow)" maxBarSize={30}
-              isAnimationActive={animate} animationDuration={760} animationBegin={160} animationEasing="ease-out"
+              isAnimationActive={false}
             />
           </BarChart>
         </ResponsiveContainer>
