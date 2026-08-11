@@ -18,11 +18,17 @@ const prefersReducedMotion = () =>
  * viewport. Heights use svh so the mobile URL bar cannot push the invitation
  * off screen.
  *
- * The words, the figures and the status rectangle are spaced by fixed steps so
- * they read as one group; the invitation zone at the foot is the elastic one,
- * which keeps the invitation deliberately clear of both the rectangle and the
- * bottom edge at any height. `figures` and `children` are passed in rather
- * than imported so this component stays layout-only.
+ * THE WHOLE HEIGHT IS SHARED, NOT SPENT AT THE FOOT. The four blocks used to
+ * be separated by fixed svh steps with a single elastic row beneath them, so
+ * every pixel a taller screen offered went to one gap: the words, the figures
+ * and the card bunched into the upper half and the lower half was empty. The
+ * gaps are now weighted elastic spacers, so a taller viewport lengthens all
+ * four of them in proportion and the composition keeps filling the stage
+ * instead of rising to the top of it. Each spacer keeps a minimum, so on a
+ * short laptop the grouping is exactly what it was.
+ *
+ * `figures` and `children` are passed in rather than imported so this
+ * component stays layout-only.
  */
 export function JoinHeroStage({
   figures,
@@ -80,19 +86,24 @@ export function JoinHeroStage({
 
       {/*
         Vertical rhythm is viewport-relative so the whole composition fits
-        100svh on a short laptop as well as a tall phone. The top inset never
-        falls below the height of the fixed header.
+        100svh on a short laptop as well as a tall phone. The padding at the
+        top is only the clearance the fixed header needs; everything past that
+        is handed to the spacers below.
 
-        The three information groups at the top — words, figures, status —
-        are spaced by fixed svh steps, so they stay read as one block and the
-        figures sit close to the payoff they qualify. All the remaining
-        height accrues to the invitation zone at the foot, which is the one
-        elastic row: it is what gives the invitation deliberate room instead
-        of leaving it stranded against the bottom edge.
+        FOUR BLOCKS, FOUR ELASTIC GAPS. Each `Gap` is a flex item with a grow
+        weight and a floor: it never falls below its minimum, and any height
+        the viewport has beyond the content is split between the four in the
+        ratio of their weights. The last gap is the widest of them so the
+        invitation still stands clear of the card above it, and the first is
+        the narrowest so the title stays the thing nearest the navbar. There
+        are no maximums on purpose: a maximum would leave slack the layout
+        could not place, which is the fault being corrected here.
       */}
-      <div className="container relative z-10 flex flex-1 flex-col pb-[3.5svh] pt-[max(92px,11.5svh)] md:h-sm:pb-[1.6svh] md:h-sm:pt-[max(88px,9svh)]">
-        {/* Title and payoff, set a little below the navbar. */}
-        <div className="mt-[1svh] md:mt-[1.5svh]">
+      <div className="container relative z-10 flex flex-1 flex-col pb-[3svh] pt-[max(92px,8svh)] md:h-sm:pb-[2.4svh] md:h-sm:pt-[max(88px,7svh)]">
+        <Gap weight={0.6} min="1.5svh" />
+
+        {/* Title and payoff: one block, so the pair is never pulled apart. */}
+        <div className="shrink-0">
           <h1 className="font-serif text-[2.5rem] leading-[1.05] text-background text-balance sm:text-hero md:text-[4.5rem] md:h-sm:text-[3.4rem]">
             {JOIN_HERO.title}
           </h1>
@@ -101,18 +112,43 @@ export function JoinHeroStage({
           </p>
         </div>
 
-        {/* Figures, held close to the payoff they qualify. */}
-        <div className="mt-[3.2svh] md:h-sm:mt-[2.4svh]">{figures}</div>
+        <Gap weight={1} min="2.4svh" />
 
-        {/* Application status, directly under the figures. */}
-        <div className="mt-[3.6svh] md:h-sm:mt-[2.6svh]">{children}</div>
+        <div className="shrink-0">{figures}</div>
 
-        {/* The elastic row: the invitation centres in whatever height is left. */}
-        <div className="flex flex-1 items-center justify-center pt-[3svh] md:h-sm:pt-[2svh]">
+        <Gap weight={1} min="2.6svh" />
+
+        <div className="shrink-0">{children}</div>
+
+        <Gap weight={1.25} min="2.6svh" />
+
+        <div className="flex shrink-0 justify-center">
           <ScrollInvitation reduced={reduced} />
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One elastic gap between two blocks of the stage.
+ *
+ * `flexGrow` is its share of whatever height the viewport has spare, so the
+ * four gaps lengthen together rather than one of them taking everything;
+ * `minHeight` is the distance it holds when there is nothing spare, which is
+ * what keeps the grouping intact on a short laptop and on a phone.
+ *
+ * Written as an inline style rather than a class because the weight is a prop:
+ * Tailwind can only generate the classes it can read in the source, so a
+ * template-built `flex-[...]` would silently produce no CSS at all.
+ */
+function Gap({ weight, min }: { weight: number; min: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none"
+      style={{ flex: `${weight} 0 0%`, minHeight: min }}
+    />
   );
 }
 

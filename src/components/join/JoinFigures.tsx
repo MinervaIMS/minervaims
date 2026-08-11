@@ -24,9 +24,12 @@ const AnimatedFigure = ({
   const animatedValue = useAnimatedCounter(value, 3200, !isLoading && value > 0);
 
   if (isLoading || value <= 0) {
+    // Sized to the type it stands in for, so the count-up arriving does not
+    // move the line: the figure is set at leading-none, so its box is exactly
+    // its font size, 1.875rem small and 4rem from md up.
     return (
       <Skeleton
-        className={`mx-auto h-10 w-20 md:h-14 md:w-24 ${dark ? 'bg-white/15' : ''}`}
+        className={`mx-auto h-8 w-20 md:h-16 md:w-24 ${dark ? 'bg-white/15' : ''}`}
       />
     );
   }
@@ -58,10 +61,20 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
               : ''
           }`}
         >
+          {/*
+            THE SAME SCALE AS THE HOMEPAGE. The dark variant used to be set a
+            step larger than the homepage band (4.5rem against 4rem, with a
+            1.1rem label against 1rem), which made the two sets of key figures
+            read as two different things on two pages of one site. Both now use
+            text-3xl / sm:text-5xl / md:text-hero for the numeral and
+            0.65rem / xs / body for the label, exactly as Index.tsx does. On a
+            short viewport the dark variant still steps down, now to the sm
+            size rather than to a bespoke one.
+          */}
           <p
             className={`font-serif leading-none md:mb-2 ${
               dark
-                ? 'text-[1.95rem] text-background sm:text-[3.35rem] md:text-[4.5rem] md:h-sm:text-[3.3rem]'
+                ? 'text-3xl text-background sm:text-5xl md:text-hero md:h-sm:text-5xl'
                 : 'text-[1.75rem] text-primary sm:text-5xl md:text-hero'
             }`}
           >
@@ -70,7 +83,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
           <p
             className={`font-body mt-2 uppercase leading-tight tracking-wider ${
               dark
-                ? 'text-[0.66rem] text-background/80 sm:text-[0.82rem] md:text-[1.1rem] md:h-sm:text-[0.85rem]'
+                ? 'text-[0.65rem] text-background/80 sm:text-xs md:text-body md:h-sm:text-sm'
                 : 'text-[0.6rem] text-muted-foreground sm:text-xs md:text-body'
             }`}
           >
