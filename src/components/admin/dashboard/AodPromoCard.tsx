@@ -38,7 +38,9 @@ import { useState } from 'react';
  * image is ever shown. The photograph is an enrichment, not a
  * requirement.
  */
-const AOD_PHOTO_SRC = '/media/aod/association-on-display.jpg';
+const AOD_PHOTO_SRC = '/media/aod/association-on-display.webp';
+/** JPEG of the same crop, for anything that cannot decode WebP. */
+const AOD_PHOTO_FALLBACK_SRC = '/media/aod/association-on-display.jpg';
 
 /** 1st, 2nd, 3rd, 4th ... */
 function ordinal(n: number): string {
@@ -88,7 +90,14 @@ export function AodPromoCard({ date }: { date: string | null }) {
         // CARD. Not the same composition scaled down: on a phone the
         // sentence needs the full width, so the photograph takes a band
         // and dissolves downward into the purple instead of sideways.
-        <div className="relative shrink-0 h-[40%] w-full sm:absolute sm:inset-0 sm:left-[46%] sm:h-auto">
+        // ON A WIDE CARD THE PANEL IS THE PHOTOGRAPH'S OWN SHAPE. The card
+        // is roughly 2.3 wide for its height, so a half-card panel filled
+        // by `object-cover` threw away two fifths of a 4:3 photograph.
+        // Giving the panel the picture's aspect ratio instead — full
+        // height, width following from it, pinned to the right edge —
+        // means `object-cover` has nothing left to crop: the whole
+        // photograph is on screen, still bleeding to the card's edge.
+        <div className="relative shrink-0 h-[40%] w-full sm:absolute sm:inset-auto sm:right-0 sm:top-0 sm:h-full sm:w-auto sm:aspect-[4/3]">
           {/* The framing point differs by breakpoint because the frame
               does. A wide card is almost exactly the crop's own shape, so
               it is centred and nothing is lost; a phone's band is much
@@ -99,9 +108,16 @@ export function AodPromoCard({ date }: { date: string | null }) {
             aria-hidden="true"
             decoding="async"
             fetchPriority="high"
-            onError={() => setPhotoFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover object-[50%_25%]"
+            onError={(e) => {
+              // WebP first for weight; the JPEG of the same crop is tried
+              // once before the card gives the purple the full width.
+              const img = e.currentTarget;
+              if (!img.src.endsWith(AOD_PHOTO_FALLBACK_SRC)) img.src = AOD_PHOTO_FALLBACK_SRC;
+              else setPhotoFailed(true);
+            }}
+            className="absolute inset-0 h-full w-full object-cover object-[50%_28%]"
           />
+
           {/* The dissolve. Two gradients rather than one rotated one, so
               each direction is exactly right at its own breakpoint. */}
           <div
