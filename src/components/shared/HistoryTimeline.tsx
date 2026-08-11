@@ -166,9 +166,24 @@ function useArchiveCovers(events: HistoryEvent[]) {
 function CountUp({ target, run }: { target: number; run: boolean }) {
   const [value, setValue] = useState(0);
   const started = useRef(false);
+  const hostRef = useRef<HTMLSpanElement>(null);
+  // The figure must not start climbing before the section is actually on
+  // screen, so the card's own reveal is paired with a visibility check.
+  const [onScreen, setOnScreen] = useState(false);
 
   useEffect(() => {
-    if (!run || started.current || target <= 0) return;
+    const el = hostRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') { setOnScreen(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setOnScreen(true); io.disconnect(); }
+    }, { threshold: 0.2 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!run || !onScreen || started.current || target <= 0) return;
     started.current = true;
     if (reducedMotion()) { setValue(target); return; }
     const t0 = performance.now();
@@ -181,9 +196,9 @@ function CountUp({ target, run }: { target: number; run: boolean }) {
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [run, target]);
+  }, [run, onScreen, target]);
 
-  return <span>{value}</span>;
+  return <span ref={hostRef}>{value}</span>;
 }
 
 // --- Media -------------------------------------------------------------
