@@ -106,7 +106,14 @@ export function Header() {
     let threshold = 0;
     let rafId = 0;
 
+    // A PAGE MAY NAME ITS OWN FLIP POINT. The header is transparent over a
+    // dark hero and solid over everything else, so what matters is where
+    // the DARK GROUND ends, not where the hero section does. On the
+    // homepage the hero also contains the white figures band, so measuring
+    // the section left the header transparent over white for a whole band.
+    // `[data-nav-flip]`, when a page provides one, is the dark part alone.
     const findHero = (): HTMLElement | null =>
+      (document.querySelector("[data-nav-flip]") as HTMLElement | null) ||
       (document.querySelector("[data-page-hero]") as HTMLElement | null) ||
       (document.querySelector("main [data-hero]") as HTMLElement | null) ||
       (document.querySelector("main > section:first-of-type") as HTMLElement | null) ||

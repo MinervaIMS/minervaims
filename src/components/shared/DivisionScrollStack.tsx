@@ -58,13 +58,29 @@ const DivisionScrollStack = () => {
               className="absolute inset-0 h-full w-full object-cover"
               loading="lazy"
             />
-            {/* Diagonal shade: darkest in the top-left corner, fading to clear
-                in the bottom-right corner, so the title stays legible. */}
+            {/* THE SHADE IS DRAWN FOR THE SHAPE IT SITS ON, and the two
+                shapes are different. A wide card puts the title and the
+                description in the top-left corner, so the shade runs on the
+                diagonal; a phone's card is a portrait with the text across
+                its whole upper half, so the shade runs top to bottom and
+                keeps far more density where the words are. Both are a good
+                deal darker than they were: at these text sizes over a
+                photograph, legibility is worth more than the last of the
+                image. */}
             <div
-              className="absolute inset-0"
+              aria-hidden="true"
+              className="absolute inset-0 md:hidden"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.72) 35%, rgba(0,0,0,0.4) 65%, rgba(0,0,0,0.12) 88%, rgba(0,0,0,0) 100%)',
+                  'linear-gradient(168deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.86) 32%, rgba(0,0,0,0.62) 58%, rgba(0,0,0,0.34) 80%, rgba(0,0,0,0.2) 100%)',
+              }}
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 hidden md:block"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.82) 35%, rgba(0,0,0,0.54) 65%, rgba(0,0,0,0.24) 88%, rgba(0,0,0,0.06) 100%)',
               }}
             />
             <div className="relative z-10 flex h-full flex-col justify-between p-6 pr-10 md:p-14 md:pr-14">

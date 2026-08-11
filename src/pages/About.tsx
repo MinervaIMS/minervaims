@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
+import { LibraryPreview } from "@/components/shared/LibraryPreview";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import aboutBgAsset from "@/assets/mims-about-us.webp.asset.json";
 
@@ -80,16 +81,22 @@ const About = () => {
               lets them read only the one they came for. */}
           <div className="text-left">
             {/* The lead reads at the section heading's size, on a measure
-                one and a half times the homepage statement's. */}
-            <p className="max-w-[84rem] font-serif text-heading leading-snug text-muted-foreground">
+                two fifths narrower than the section, centred in it. A
+                sentence set across the full width of this page is a line
+                of about a hundred and forty characters; at this measure it
+                is closer to seventy, which is where a reader stops losing
+                their place between lines. */}
+            <p className="mx-auto max-w-[50.4rem] text-center font-serif text-heading leading-snug text-muted-foreground">
               Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in
               2019, it is Bocconi's first association dedicated to asset management and the only one with
               student-managed virtual funds.
             </p>
 
             {/* The three blocks stay at their previous measure, now centred
-                in the section. */}
-            <div className="mx-auto max-w-4xl mt-8 md:mt-10 divide-y divide-separator">
+                in the section. The container carries a top rule as well as
+                the dividing ones, so the lead is separated from LEARN by
+                exactly the line that separates LEARN from MEET. */}
+            <div className="mx-auto max-w-4xl mt-8 md:mt-10 border-t border-separator divide-y divide-separator">
               {WHAT_WE_DO.map((block) => (
                 <div
                   key={block.label}
@@ -119,6 +126,13 @@ const About = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Readings Curated By Our Members
           </h2>
+          {/* THE LIBRARY, RATHER THAN A SENTENCE ABOUT IT. A bay of the
+              same case the Reading Recommendations page draws, holding the
+              association's own newest recommendations, above the sentence
+              and the way in. */}
+          <div className="mb-10 md:mb-14">
+            <LibraryPreview />
+          </div>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
               A curated set of essential finance readings, built by MIMS and shared across students, members and alumni. Explore landmark papers, technical textbooks and free-time books, each recommended with a clear rationale to accelerate learning.
