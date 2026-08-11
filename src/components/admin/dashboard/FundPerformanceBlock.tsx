@@ -17,7 +17,7 @@ import { Block } from './DashboardKit';
  */
 const FUND_COLOUR: Record<string, string> = {
   'long-short': '#ffffff',
-  'multi-asset': 'hsl(340 62% 78%)',
+  'multi-asset': 'hsl(252 38% 74%)',
 };
 const colourOf = (fund: string) => FUND_COLOUR[fund] ?? '#ffffff';
 
@@ -243,7 +243,7 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
             src={fullLogoWhite.url}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[26%] max-w-[112px] -translate-x-1/2 -translate-y-1/2 opacity-[0.3] select-none"
+            className="pointer-events-none absolute left-1/2 top-[40%] w-[26%] max-w-[112px] -translate-x-1/2 -translate-y-1/2 opacity-[0.3] select-none"
           />
           {!series ? (
             <div className="h-full w-full animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />
