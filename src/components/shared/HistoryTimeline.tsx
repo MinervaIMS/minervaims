@@ -307,7 +307,7 @@ function MilestoneCard({
         ref={(el) => registerTitle(index, el)}
         style={titleMinHeight != null ? { minHeight: titleMinHeight } : undefined}
       >
-        <Link to={event.href}>{event.title}</Link>
+        {event.title}
       </h3>
       <div className={`tl-desc${open ? ' is-open' : ''}`} id={descId}>
         <p ref={copyRef}>{text}</p>
