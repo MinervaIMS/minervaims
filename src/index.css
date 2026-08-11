@@ -1328,10 +1328,14 @@ input[type='search']::-webkit-search-cancel-button {
 /* Layout only: the dots themselves come from the shared rule above.
    Over the dark card art they read in white. */
 .dstack-dots--v { flex-direction: column; gap: .45rem; }
-.dstack-dots--v .dstack-dot { background: hsl(0 0% 100% / .38); }
+.dstack-dots--v .dstack-dot {
+  background: hsl(0 0% 100% / .38);
+  transition: height 240ms var(--ease-standard), background-color 240ms var(--ease-standard);
+}
 .dstack-dots--v .dstack-dot.is-on {
   width: 6px; height: 20px; background: #fff;
 }
+
 
 
 
