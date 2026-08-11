@@ -19,7 +19,12 @@ const FUND_COLOUR: Record<string, string> = {
   'long-short': '#ffffff',
   'multi-asset': 'hsl(252 38% 74%)',
 };
+const FUND_DASH: Record<string, string> = {
+  'long-short': '',
+  'multi-asset': '2 3',
+};
 const colourOf = (fund: string) => FUND_COLOUR[fund] ?? '#ffffff';
+const dashOf = (fund: string) => FUND_DASH[fund] ?? '';
 
 /** Everything drawn on the purple ground. */
 const ON_PURPLE = 'hsl(var(--accent-foreground))';
