@@ -425,6 +425,14 @@ button.mdot, button.rdot, button.dstack-dot {
   transition:transform var(--dur-base) var(--ease-standard); }
 .v3-card--cta:hover .v3-cta-circle { transform:scale(1.08); }
 .v3-cta-circle svg { width:1.4rem; height:1.4rem; }
+/* THE SHARED RAIL ON THE NAVY GROUND. The cards are the same light
+   objects; only what sits between and around them has to change, because
+   the section behind them is the deep purple rather than white. */
+.rsec--navy .v3-foot { border-top-color: rgba(255,255,255,.18); }
+.rsec--navy .v3-dots .rdot { background: hsl(0 0% 100% / .34); }
+.rsec--navy .v3-dots .rdot.is-active { background: #fff; }
+.rsec--navy .v2-strip .v3-rail { padding-bottom: .5rem; }
+
 .v3-card--cta .v3-cta-label { font-family:'Times New Roman','EB Garamond',Times,Georgia,serif;
   text-transform:none; letter-spacing:-.01em; color:var(--mims-ink); }
 
@@ -1114,7 +1122,11 @@ input[type='search']::-webkit-search-cancel-button {
 .tl-sticky {
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   display: flex; flex-direction: column; justify-content: center;
-  padding-top: 5rem; /* clears the fixed 84px site header */
+  /* Clears the fixed 84px site header AND leaves a band of white under
+     it. At 5rem the heading's own top edge sat level with the bottom of
+     the header, so the section opened with its title tucked against the
+     navigation instead of standing clear of it. */
+  padding-top: 9rem;
   /* Vertical panning stays with the browser; horizontal gestures are ours
      (see src/lib/pinned-scroll.ts). Without this WebKit decides the axis
      at touch-start and the sideways gesture can never be claimed. */
@@ -1285,7 +1297,7 @@ input[type='search']::-webkit-search-cancel-button {
     --tl-gutter: 1.25rem;
     --tl-media-gap: 1.5rem;
   }
-  .tl-sticky { padding-top: 4.5rem; }
+  .tl-sticky { padding-top: 7.5rem; }
   .tl-h2--pinned { margin-bottom: 1.5rem; }
   .tl-title { font-size: 1.3rem; }
   .tl-desc p { font-size: 1rem; }

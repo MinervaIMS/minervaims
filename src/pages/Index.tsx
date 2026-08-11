@@ -72,14 +72,26 @@ const Index = () => {
       </Helmet>
 
       {/* Hero Section */}
-      <section data-page-hero className="relative min-h-screen flex flex-col pt-20 md:pt-24">
-        {/* Background image - extends behind transparent header */}
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
-        <div className="absolute inset-0 hero-overlay" />
+      <section data-page-hero className="relative min-h-screen flex flex-col">
+        {/* THE DARK BLOCK, AND ONLY IT, CARRIES THE PHOTOGRAPH.
+            The image used to be `inset-0` on the whole hero, which includes
+            the white figures band beneath: `bg-center` therefore centred the
+            picture on a box whose bottom third is covered, so what a reader
+            actually saw was the top of the photograph and never its middle.
+            Bounding the image to the block it is seen in makes `bg-center`
+            mean what it says.
 
-        {/* Content */}
-        <div className="relative z-10 flex-1 flex items-center justify-center text-center px-6 py-12">
-          <div>
+            It is also the element the navbar measures. `data-nav-flip`
+            marks the end of the dark ground, so the header turns solid the
+            moment the white band reaches it rather than a whole band
+            later. */}
+        <div
+          data-nav-flip
+          className="relative flex-1 flex items-center justify-center text-center px-6 pt-20 pb-20 md:pt-24 md:pb-24"
+        >
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
+          <div className="absolute inset-0 hero-overlay" />
+          <div className="relative z-10">
             <img
               src={logoWhite}
               alt="Minerva Investment Management Society"
@@ -97,11 +109,15 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Key Figures - inside hero so it appears within initial viewport */}
+        {/* Key Figures - inside hero so it appears within initial viewport.
+            The band is a fifth shorter than it was (16/24 against 20/32),
+            and the three figures are centred in what is left: the padding
+            is symmetric and the row aligns on its centre, so the block sits
+            in the middle of the white rather than riding its top edge. */}
         <div className="relative z-10 bg-background">
-          <div className="container py-section-sm md:py-section">
+          <div className="container py-16 md:py-24">
 
-            <div className="grid grid-cols-3 gap-2 md:gap-12">
+            <div className="grid grid-cols-3 items-center gap-2 md:gap-12">
               <Link
                 to="/archive"
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
@@ -153,19 +169,27 @@ const Index = () => {
       </section>
 
 
-      {/* Alumni Testimonials */}
-      <TestimonialsSection />
-
       {/* Our Divisions (scroll-driven card stack) */}
       <section className="pt-section-sm md:pt-section pb-section-sm md:pb-section bg-background">
         <DivisionScrollStack />
       </section>
 
-      {/* Funds Performance (same chart as Portfolio Management) */}
-      <FundPerformanceChart funds={['long-short', 'multi-asset']} title="Funds Performance" />
+      {/* Funds Performance (same chart as Portfolio Management).
+          THE ONE UNEVEN BOUNDARY ON THE PAGE. The chart section opens with
+          `pt-0` because on a division or fund page it follows a block of
+          its own; here it followed a section that had already closed, so
+          this was the only join on the homepage with half the rhythm. The
+          wrapper restores it without touching the component or the other
+          pages that use it. */}
+      <div className="bg-background pt-section-sm md:pt-section">
+        <FundPerformanceChart funds={['long-short', 'multi-asset']} title="Funds Performance" />
+      </div>
 
       {/* Alumni Ticker */}
       <AlumniTicker />
+
+      {/* Alumni Testimonials, immediately above the reports they introduce */}
+      <TestimonialsSection />
 
       {/* Latest Reports */}
       <ReportsSection

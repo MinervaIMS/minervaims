@@ -176,8 +176,9 @@ const Partnerships = () => {
             Collaboration Formats
           </h2>
 
-          {/* Cards: all viewports */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Cards: all viewports. Half again the gap, so the four read as
+              four rather than as one block ruled into quarters. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {FORMATS.map((f) => (
               <article
                 key={f.title}

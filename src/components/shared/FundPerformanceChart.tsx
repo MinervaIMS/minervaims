@@ -72,6 +72,15 @@ const PERIODS: { key: PeriodKey; label: string; months: number | null; headline:
 
 const DEFAULT_PERIOD: PeriodKey = '3Y';
 
+/**
+ * The four a phone offers. Eight buttons on a 375px screen is two ragged
+ * rows of targets too small to hit and too many to choose between; these
+ * four span the same ground, and every one of them is still on the wide
+ * screen's row. Which periods EXIST is unchanged: this hides four
+ * buttons, it does not shorten the record or alter the default.
+ */
+const PHONE_PERIODS = new Set<PeriodKey>(['1Y', '3Y', 'YTD', 'MAX']);
+
 interface Observation {
   /** year * 12 + monthIndex, the sortable key. */
   order: number;
@@ -624,6 +633,8 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
                     aria-pressed={on}
                     onClick={() => { setCustom(null); setPeriod(p.key); }}
                     className={`font-body text-sm px-2 sm:px-3 h-9 border transition-colors ${
+                      PHONE_PERIODS.has(p.key) ? '' : 'hidden sm:block'
+                    } ${
                       on
                         ? 'bg-accent text-background border-accent'
                         : 'bg-background text-muted-foreground border-separator hover:border-accent hover:text-accent'

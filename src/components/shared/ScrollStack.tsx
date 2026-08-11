@@ -10,9 +10,12 @@ import { Children, ReactNode, useCallback, useEffect, useRef, useState } from 'r
 // pinning, which is cheap and never jitters; a rAF-throttled pass reads
 // each card's position and adds the depth on top.
 //
-// On phones the cards are 9:16 portraits sized to the viewport, and the
-// scroll dots run down a vertical rail on the card's right long side,
-// marking which card is currently on top.
+// On phones the cards take the FULL COLUMN WIDTH at a comfortable
+// portrait proportion rather than a strict 9:16. A 9:16 card is only as
+// wide as its height allows, so on a shorter phone it stood well inside
+// the column with empty margins on both sides and left the title and the
+// description a narrow measure. The scroll dots still run down a vertical
+// rail on the card's right long side, marking which card is on top.
 //
 // Under reduced motion the section falls back to a plain, fully visible
 // list: nothing in the content depends on the animation.
@@ -62,7 +65,7 @@ export default function ScrollStack({ children, title, cardClassName }: Props) {
         )}
         <div className="flex flex-col gap-6">
           {items.map((child, i) => (
-            <div key={i} className={`overflow-hidden ${narrow ? 'aspect-[9/16]' : height}`}>{child}</div>
+            <div key={i} className={`overflow-hidden ${narrow ? 'aspect-[1/1.45]' : height}`}>{child}</div>
           ))}
         </div>
       </div>
@@ -140,10 +143,12 @@ function Deck({ items, title, height, narrow }: {
   }, [paint, narrow]);
 
 
-  // On phones the card is a true 9:16 portrait: as tall as the space under
-  // the header and heading allows, but never wider than the column, so the
-  // whole card is in view and the proportion always holds.
-  const portraitHeight = `min(calc(100svh - 11rem), calc(${Math.round(colWidth)}px * 16 / 9))`;
+  // On phones the card is the FULL WIDTH OF THE COLUMN, and its height is
+  // whatever the space under the header and heading allows, clamped into a
+  // portrait range so it is always clearly vertical and never squat: no
+  // shorter than 1.15 times its width, no taller than 1.45 times it.
+  const w = Math.round(colWidth);
+  const portraitHeight = `clamp(${w * 1.15}px, calc(100svh - 11rem), ${w * 1.45}px)`;
 
 
   return (
@@ -183,8 +188,7 @@ function Deck({ items, title, height, narrow }: {
               ...(narrow
                 ? {
                     height: 'var(--dstack-card-h)',
-                    width: 'calc(var(--dstack-card-h) * 9 / 16)',
-                    maxWidth: '100%',
+                    width: '100%',
                   }
                 : null),
             }}

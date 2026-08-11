@@ -359,15 +359,25 @@ function PreviewLightbox({ report, onClose, useRealCover = false }: { report: Re
 
 
 // ---------- V3 — cards carousel (light bg) ----------
-function CardsVariant({
-  heading,
-  eyebrow,
-  archiveHref,
-  archiveLabel,
-  reports,
-  onPreview,
-  id,
-}: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
+
+// ---------- The rail, shared by both variants ----------
+/**
+ * The homepage's carousel of publications: a full-bleed horizontal rail of
+ * cards, each carrying its division, its title and its real first-page
+ * cover, ending on the way into the archive, with dots beneath.
+ *
+ * It is ONE component used in two places rather than two that resemble
+ * each other. The division and fund pages used to close on a different,
+ * smaller strip; the same reader meets the same object on every page that
+ * lists publications, and a fix to the scrolling, the snapping or the dots
+ * is a fix everywhere.
+ */
+function ReportRail({ reports, archiveHref, archiveLabel, onPreview }: {
+  reports: ReportItem[];
+  archiveHref: string;
+  archiveLabel: string;
+  onPreview: (r: ReportItem) => void;
+}) {
   const railRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [atStart, setAtStart] = useState(true);
@@ -402,25 +412,12 @@ function CardsVariant({
   };
 
   return (
-    <section className="rsec rsec--light" aria-labelledby={id}>
-      <div className="rwrap">
-        <div className="rhead rhead--noarchive">
-          <div>
-            {eyebrow ? <div className="reyebrow">{eyebrow}</div> : null}
-            <h2 className="rtitle" id={id}>
-              {heading}
-            </h2>
-          </div>
-        </div>
-
-        <div className="v3-rail-bleed" data-at-start={atStart} data-at-end={atEnd} style={{ WebkitMaskImage: 'none', maskImage: 'none' }}>
-          <div className="rrail-wrap">
-            <div className="v3-rail" ref={railRef} onScroll={update}>
+    <>
+      <div className="v3-rail-bleed" data-at-start={atStart} data-at-end={atEnd} style={{ WebkitMaskImage: 'none', maskImage: 'none' }}>
+        <div className="rrail-wrap">
+          <div className="v3-rail" ref={railRef} onScroll={update}>
             {reports.map((rep, i) => (
-              <div
-                key={i}
-                className="v3-card"
-              >
+              <div key={i} className="v3-card">
                 <div className="d">{rep.div}</div>
                 <div className="t">{rep.title}</div>
                 <div className="v3-coverhold">
@@ -459,25 +456,56 @@ function CardsVariant({
                 </div>
               </a>
             ) : null}
-            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="v3-foot">
+        <div className="rdots v3-dots" role="tablist" aria-label="Reports pagination">
+          {reports.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === activeIdx}
+              aria-label={`Go to report ${i + 1}`}
+              className={`rdot${i === activeIdx ? ' is-active' : ''}`}
+              onClick={() => scrollToIdx(i)}
+            />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function CardsVariant({
+  heading,
+  eyebrow,
+  archiveHref,
+  archiveLabel,
+  reports,
+  onPreview,
+  id,
+}: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
+  return (
+    <section className="rsec rsec--light" aria-labelledby={id}>
+      <div className="rwrap">
+        <div className="rhead rhead--noarchive">
+          <div>
+            {eyebrow ? <div className="reyebrow">{eyebrow}</div> : null}
+            <h2 className="rtitle" id={id}>
+              {heading}
+            </h2>
           </div>
         </div>
 
-        <div className="v3-foot">
-          <div className="rdots v3-dots" role="tablist" aria-label="Reports pagination">
-            {reports.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                role="tab"
-                aria-selected={i === activeIdx}
-                aria-label={`Go to report ${i + 1}`}
-                className={`rdot${i === activeIdx ? ' is-active' : ''}`}
-                onClick={() => scrollToIdx(i)}
-              />
-            ))}
-          </div>
-        </div>
+        <ReportRail
+          reports={reports}
+          archiveHref={archiveHref}
+          archiveLabel={archiveLabel}
+          onPreview={onPreview}
+        />
       </div>
     </section>
   );
@@ -495,37 +523,9 @@ function NavyVariant({
   useRealCover = false,
 }: Omit<ReportsSectionProps, 'variant'> & { onPreview: (r: ReportItem) => void }) {
   const featured = reports[0];
-  // Show up to 8 reports in the "Previously published" strip
+  // Show up to 8 reports in the "Previously published" carousel
   const rest = reports.slice(1, 9);
-  const railRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [showDots, setShowDots] = useState(false);
-
-  useLayoutEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const update = () => {
-      const overflowing = rail.scrollWidth - rail.clientWidth > 4;
-      setShowDots(overflowing);
-      const cardW = rail.scrollWidth / Math.max(rest.length, 1);
-      setActiveIdx(Math.round(rail.scrollLeft / Math.max(cardW, 1)));
-    };
-    update();
-    rail.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      rail.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [rest.length]);
-
-  const scrollToIdx = (i: number) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const cardW = rail.scrollWidth / Math.max(rest.length, 1);
-    rail.scrollTo({ left: cardW * i, behavior: 'smooth' });
-  };
 
   if (!featured) {
     return (
@@ -576,46 +576,16 @@ function NavyVariant({
             <div className="v2-striphead">
               <span className="lbl">Previously published</span>
             </div>
-            <div className="rrail-wrap">
-              <div className="v2-strip-rail" ref={railRef}>
-                {rest.map((rep, i) => (
-                  <button
-                    key={i}
-                    className="v2-card"
-                    onClick={() => onPreview(rep)}
-                    aria-label={`Preview report: ${rep.title}`}
-                  >
-                    <Cover report={rep} useRealCover={useRealCover} renderWidth={useRealCover ? 420 : undefined} />
-                    <div className="t">{rep.title}</div>
-                  </button>
-                ))}
-                {/* The rail ends on the way into the full archive, keeping
-                    the row's rhythm instead of a detached button above. */}
-                {archiveHref ? (
-                  <a className="v2-card v2-card--cta" href={archiveHref} aria-label={archiveLabel}>
-                    <span className="v2-cta-frame">
-                      <span className="v2-cta-circle" aria-hidden="true"><IconArrowUR /></span>
-                      <span className="v2-cta-label">{archiveLabel}</span>
-                    </span>
-                  </a>
-                ) : null}
-              </div>
-              {showDots && (
-                <div className="v2-strip-dots" role="tablist" aria-label="Reports pagination">
-                  {rest.map((_, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      role="tab"
-                      aria-selected={i === activeIdx}
-                      aria-label={`Go to report ${i + 1}`}
-                      className={`rdot${i === activeIdx ? ' is-active' : ''}`}
-                      onClick={() => scrollToIdx(i)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* THE SAME CAROUSEL THE HOMEPAGE USES. This strip used to be
+                its own smaller thing: different card, different snapping,
+                different dots. There is no reason for a reader to meet two
+                carousels of publications on one site, so there is now one. */}
+            <ReportRail
+              reports={rest}
+              archiveHref={archiveHref}
+              archiveLabel={archiveLabel}
+              onPreview={onPreview}
+            />
           </div>
         )}
       </div>
