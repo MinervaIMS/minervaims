@@ -126,14 +126,9 @@ const About = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Readings Curated By Our Members
           </h2>
-          {/* THE LIBRARY, RATHER THAN A SENTENCE ABOUT IT. A bay of the
-              same case the Reading Recommendations page draws, holding the
-              association's own newest recommendations, above the sentence
-              and the way in. */}
-          <div className="mb-10 md:mb-14">
-            <LibraryPreview />
-          </div>
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          {/* DESCRIPTION AND CTA FIRST, THEN THE LIBRARY. The sentence and
+              the way in are read before the visual bookcase is shown. */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-10 md:mb-14">
             <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
               A curated set of essential finance readings, built by MIMS and shared across students, members and alumni. Explore landmark papers, technical textbooks and free-time books, each recommended with a clear rationale to accelerate learning.
             </p>
@@ -143,6 +138,9 @@ const About = () => {
             >
               Discover Our Library
             </Link>
+          </div>
+          <div>
+            <LibraryPreview />
           </div>
         </div>
       </section>
