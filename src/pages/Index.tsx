@@ -156,6 +156,11 @@ const Index = () => {
         <DivisionScrollStack />
       </section>
 
+      {/* Funds Performance (same chart as Portfolio Management) */}
+      <FundPerformanceChart funds={['long-short', 'multi-asset']} title="Funds Performance" />
+
+
+
       {/* Alumni Ticker */}
       <AlumniTicker />
 
