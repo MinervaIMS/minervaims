@@ -63,7 +63,7 @@ const TEXT = 68;       // where the name starts, measured from the centre
 const MIN_GAP = 26;    // the least vertical distance between two labels
 const MARGIN = 15;     // how close a label may come to the top or bottom
 const GAP_DEG = 1.6;   // the hairline between two segments
-const DRAW_MS = 900;
+const DRAW_MS = 700;   // the whole ring, laid in as one stroke
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
 const px = (deg: number, r: number) => [CX + r * Math.sin(rad(deg)), CY - r * Math.cos(rad(deg))];
@@ -237,7 +237,7 @@ export function ReportsMixBlock({ shares, animate }: {
               className="dash-label"
               style={animate ? {
                 opacity: 0,
-                animation: `dash-fade 380ms ease-out ${DRAW_MS + 60 + i * 55}ms both`,
+                animation: `dash-fade 340ms ease-out ${DRAW_MS + 40 + i * 45}ms both`,
               } : undefined}
             >
               <polyline

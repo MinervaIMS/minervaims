@@ -178,10 +178,9 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
     <Block
       filled
       title="Fund performance"
-      // The window is STATED, not chosen. One word on the title line
-      // replaces six chips and a select, and it says what the figures
-      // below it are the return over.
-      aside={<span style={{ color: INK }}>last 12 months</span>}
+      // NO WINDOW LABEL EITHER. There is one window and nothing can
+      // change it, so naming it was a caption explaining a control that
+      // does not exist.
     >
       <div className="h-full min-h-0 flex flex-col">
         {/* THE LEGEND IS THE READING. Each fund is one block: the line's
@@ -237,7 +236,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
             src={fullLogoWhite.url}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[42%] max-w-[170px] -translate-x-1/2 -translate-y-1/2 opacity-[0.16] select-none"
+            className="pointer-events-none absolute left-1/2 top-1/2 w-[44%] max-w-[180px] -translate-x-1/2 -translate-y-1/2 opacity-[0.3] select-none"
           />
           {!series ? (
             <div className="h-full w-full animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />

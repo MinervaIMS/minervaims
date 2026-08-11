@@ -15,6 +15,11 @@ import { loadPdfJs } from '@/lib/pdfjs';
 // card is showing plain <img> elements: the loop is a single composited
 // transform and costs nothing per frame.
 //
+// THE SIX ARE FETCHED ALL AT ONCE. They used to be awaited one after
+// another, so the Dashboard's loader sat behind six round trips in
+// series; six parallel requests finish in roughly the time of the
+// slowest one, which is most of a second off the opening of the page.
+//
 // A cover that fails to render is simply absent. The card draws with
 // whatever came back and never shows a placeholder standing in for a
 // document that does not exist.
@@ -23,6 +28,14 @@ import { loadPdfJs } from '@/lib/pdfjs';
 /** Width in device pixels. Small: these are thumbnails behind a number. */
 const RENDER_WIDTH = 132;
 const A4 = 1.414;
+/**
+ * How long the whole page will wait for the covers. It is a backstop, not
+ * a budget: with the requests in parallel and the session cache in front
+ * of them the usual answer is far quicker. Anything still outstanding
+ * when it fires is used on the next visit rather than dropped into a
+ * running animation.
+ */
+const CAP_MS = 1600;
 
 const cache = new Map<string, string>();
 
@@ -40,26 +53,34 @@ export function useReportCovers(urls: string[] | null): { covers: string[]; read
   useEffect(() => {
     if (!urls || urls.length === 0) { setCovers([]); setReady(true); return; }
     let active = true;
-    const cap = window.setTimeout(() => { if (active) setReady(true); }, 2500);
 
-    // Anything already rendered in this session paints immediately.
-    const known = urls.map((u) => cache.get(u)).filter((v): v is string => !!v);
-    if (known.length) setCovers(known);
-    if (known.length === urls.length) setReady(true);
+    // A SECOND VISIT COSTS NOTHING. Everything already drawn in this
+    // session is in the cache, so the page opens without waiting at all.
+    const known = urls.map((u) => cache.get(u));
+    if (known.every((v): v is string => !!v)) {
+      setCovers(known as string[]);
+      setReady(true);
+      return () => { active = false; };
+    }
+
+    const cap = window.setTimeout(() => {
+      if (!active) return;
+      setCovers(urls.map((u) => cache.get(u)).filter((v): v is string => !!v));
+      setReady(true);
+    }, CAP_MS);
 
     (async () => {
       let pdfjs: Awaited<ReturnType<typeof loadPdfJs>>;
       try {
         pdfjs = await loadPdfJs();
       } catch {
-        if (active) setReady(true);
+        if (active) { window.clearTimeout(cap); setReady(true); }
         return;
       }
-      const out: string[] = [];
-      for (const url of urls) {
-        if (!active) return;
+
+      const drawn = await Promise.all(urls.map(async (url) => {
         const hit = cache.get(url);
-        if (hit) { out.push(hit); continue; }
+        if (hit) return hit;
         try {
           const pdf = await pdfjs.getDocument({ url, disableRange: true, disableStream: true }).promise;
           const page = await pdf.getPage(1);
@@ -70,18 +91,24 @@ export function useReportCovers(urls: string[] | null): { covers: string[]; read
           canvas.width = Math.max(1, Math.floor(viewport.width));
           canvas.height = Math.max(1, Math.floor(viewport.height));
           const ctx = canvas.getContext('2d');
-          if (!ctx) continue;
+          if (!ctx) return null;
           await page.render({ canvasContext: ctx, viewport }).promise;
           const data = canvas.toDataURL('image/png');
           cache.set(url, data);
-          out.push(data);
-          // Paint each cover as it arrives rather than waiting for the set.
-          if (active) setCovers([...out]);
+          return data;
         } catch {
           // A cover that cannot be drawn is left out, never faked.
+          return null;
         }
-      }
-      if (active) setReady(true);
+      }));
+
+      if (!active) return;
+      window.clearTimeout(cap);
+      // ONE PUBLICATION, in the archive's own order. Painting them as they
+      // landed changed the stack under an animation that had already
+      // started.
+      setCovers(drawn.filter((v): v is string => !!v));
+      setReady(true);
     })();
 
     return () => { active = false; window.clearTimeout(cap); };

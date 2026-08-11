@@ -63,6 +63,8 @@ interface KpiProps {
   decoration?: ReactNode;
   /** The one filled KPI, first in the row. */
   filled?: boolean;
+  /** Gives the ornament a wider column, for a composition that needs it. */
+  wideDecoration?: boolean;
   animate: boolean;
 }
 
@@ -77,7 +79,7 @@ interface KpiProps {
  * overflow, so an overlap is structurally impossible at ANY width while
  * the ornament is still cut by the card's rounded corner.
  */
-export function KpiCard({ label, value, decoration, filled = false, animate }: KpiProps) {
+export function KpiCard({ label, value, decoration, filled = false, wideDecoration = false, animate }: KpiProps) {
   const shown = useAnimatedCounter(value ?? 0, 1100, animate && value !== null);
   return (
     <div
@@ -88,14 +90,18 @@ export function KpiCard({ label, value, decoration, filled = false, animate }: K
       {/* The pair sits slightly ABOVE the card's centre: the extra bottom
           padding shortens the centring box, which lifts the label and the
           figure together without moving either off the optical middle. */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5 pl-4 pr-1 sm:pl-5 sm:pr-2 pt-4 pb-6">
-        {/* ONE TYPOGRAPHY FOR ALL FOUR LABELS: the body face, bold, one
-            size at every breakpoint, and five per cent letter spacing.
-            REPORTS, READINGS, MEMBERS and ALUMNI NETWORK are the same
-            kind of word and now look it. */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-2 pl-4 pr-1 sm:pl-5 sm:pr-2 pt-4 pb-8">
+        {/* ONE TYPOGRAPHY AND ONE POSITION FOR ALL FOUR LABELS: the body
+            face, bold, one size at every breakpoint, and TEN per cent
+            letter spacing.
+
+            ALUMNI NETWORK is the one that sets the size: at 12px with
+            this tracking it measures 129px, and the text column of a KPI
+            card is about 196px wide on the screen this Dashboard is
+            actually used on, so all four stand on one line. */}
         <span
-          className={`font-body text-[11px] font-bold uppercase tracking-[0.05em] leading-tight ${
-            filled ? 'text-accent-foreground/80' : 'text-muted-foreground'
+          className={`font-body text-[12px] font-bold uppercase tracking-[0.1em] leading-tight ${
+            filled ? 'text-accent-foreground/85' : 'text-muted-foreground'
           }`}
         >
           {label}
@@ -119,7 +125,9 @@ export function KpiCard({ label, value, decoration, filled = false, animate }: K
            `contain` seals the column off from the rest of the page, so
            nothing inside can trigger a layout or paint outside it. */
         <div
-          className="relative shrink-0 w-[42%] sm:w-[46%] overflow-hidden pointer-events-none select-none"
+          className={`relative shrink-0 overflow-hidden pointer-events-none select-none ${
+            wideDecoration ? 'w-[44%] sm:w-[52%]' : 'w-[42%] sm:w-[46%]'
+          }`}
           style={{ contain: 'layout paint style' }}
           aria-hidden="true"
         >

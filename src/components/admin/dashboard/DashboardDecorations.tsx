@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import { MiniAlumniGlobe } from '@/components/AlumniGlobe';
 import { spineGeometry } from '@/components/readings/types';
 import type { AvatarRow, ReadingRow } from './useDashboardData';
@@ -120,7 +120,11 @@ export const ReportColumns = memo(function ReportColumns({ covers, paused }: {
   return (
     <div
       className={`absolute inset-y-0 -left-1 -right-5 flex items-stretch justify-center gap-2 ${paused ? 'dash-paused' : ''}`}
-      style={FADE_LEFT}
+      // A SHORT FADE, ALWAYS. On the ordinary path the covers are ready
+      // before the loader lifts and this is imperceptible; on the rare
+      // path where a slow PDF lands after the page has opened, it is the
+      // difference between an image appearing and an image popping.
+      style={{ ...FADE_LEFT, animation: 'dash-fade 420ms ease-out both' }}
     >
       {columns.map((column, ci) => {
         // Different pitches and a different starting offset, so a cover in
@@ -209,16 +213,26 @@ function swarm(spec: {
 
 /**
  * The two swarms, generated once for the whole application rather than
- * per card, so the same people stand in the same places every time the
- * Dashboard is opened.
+ * per card, so the composition is identical on every render and can never
+ * be rebuilt underneath a running animation.
  *
  * THE NUMBERS ARE NOT TASTE, THEY ARE CLEARANCE. Positions are
  * percentages of a SQUARE box, so one per cent is the same number of
  * pixels in both directions:
  *
- *   wide   box = 1.34 x 156px card = 209px. A 31px portrait is 14.8% of
- *          it, and the minimum separation is 16.5%, which leaves 3.6px
- *          of air between the two closest people on the card.
+ *   wide   box = 1.40 x 157px card = 220px. A 31px portrait is 14.1% of
+ *          it, and the minimum separation is 16.5%, which leaves 5px of
+ *          air between the two closest people on the card.
+ *
+ *          SIXTEEN PEOPLE ACROSS THE WHOLE COLUMN, up from twelve in the
+ *          right-hand third of it. The swarm used to start at 36% of the
+ *          box, which was where the box's left edge fell on a 1440 screen
+ *          -- but the KPI card on the screen this Dashboard is used on is
+ *          414px wide, its ornament column 215px, and the box only 220,
+ *          so a third of the column was empty by construction. Starting
+ *          at 6% fills it. On a narrower screen the left of the box falls
+ *          outside the card and simply shows fewer people, at the same
+ *          size, in a column that is still completely covered.
  *   phone  box = 1.18 x 160px card = 189px. A 26px portrait is 13.8%,
  *          against a minimum separation of 15%, which leaves 2.3px.
  *
@@ -227,8 +241,8 @@ function swarm(spec: {
  * starts where the card's own mask stops fading, which on a phone is
  * much further right because the ornament column is half as wide.
  */
-const SWARM_WIDE = swarm({ count: 12, minDist: 16.5, xMin: 36, yMin: 9, yMax: 91, seed: 23, bias: 1.5 });
-const SWARM_PHONE = swarm({ count: 8, minDist: 15, xMin: 58, yMin: 8, yMax: 92, seed: 23, bias: 1.35 });
+const SWARM_WIDE = swarm({ count: 16, minDist: 16.5, xMin: 6, yMin: 14, yMax: 86, seed: 19, bias: 1.25 });
+const SWARM_PHONE = swarm({ count: 9, minDist: 15, xMin: 56, yMin: 8, yMax: 92, seed: 23, bias: 1.35 });
 
 /** Each portrait joined to its two nearest neighbours, deduplicated. */
 function web(nodes: Node[]): [number, number][] {
@@ -267,21 +281,43 @@ function web(nodes: Node[]): [number, number][] {
 export const MemberRings = memo(function MemberRings({ avatars, compact, paused }: {
   avatars: AvatarRow[] | null; compact: boolean; paused: boolean;
 }) {
+  /**
+   * A DIFFERENT FOURTEEN PEOPLE EACH TIME THE DASHBOARD IS OPENED, and the
+   * same fourteen for as long as it stays open.
+   *
+   * The association has far more members than the card has places, and
+   * showing the first fourteen of an alphabetical list would give the same
+   * people all the visibility for ever. The seed is drawn ONCE, in a state
+   * initialiser, so it is fixed for the life of this mount: the swarm can
+   * never reshuffle while somebody is looking at it, which would be a far
+   * worse fault than repetition. Opening the Dashboard again draws a new
+   * one.
+   */
+  const [seed] = useState(() => (Math.random() * 0xffffffff) >>> 0);
+
   const layout = useMemo(() => {
     const list = (avatars ?? []).filter((a) => a.photo_url);
     if (!list.length) return null;
     // A phone shows the right-hand sliver of the same square, so its swarm
     // is generated inside that sliver rather than being scaled down.
     const nodes = compact ? SWARM_PHONE : SWARM_WIDE;
-    const people = nodes.map((_, i) => list[i % list.length]);
+    // A seeded Fisher-Yates over a copy: every member has the same chance
+    // of appearing, and nobody appears twice while others are left out.
+    const bag = list.slice();
+    const rand = mulberry32(seed);
+    for (let i = bag.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rand() * (i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    const people = nodes.map((_, i) => bag[i % bag.length]);
     return { nodes, people, links: web(nodes), size: compact ? 26 : 31 };
-  }, [avatars, compact]);
+  }, [avatars, compact, seed]);
 
   if (!layout) return null;
 
   return (
     <div className={`absolute inset-0 ${paused ? 'dash-paused' : ''}`} style={FADE_LEFT}>
-      <div className={`absolute right-[-10px] top-1/2 -translate-y-1/2 aspect-square ${compact ? 'h-[118%]' : 'h-[134%]'}`}>
+      <div className={`absolute right-[-10px] top-1/2 -translate-y-1/2 aspect-square ${compact ? 'h-[118%]' : 'h-[140%]'}`}>
         {/* Two nested rigid transforms: a slow wander and a slower lean.
             Both carry the web and the portraits together. */}
         <div className="dash-swarm absolute inset-0" style={{ animation: 'dash-sway-a 31s ease-in-out infinite' }}>
@@ -323,8 +359,15 @@ export const MemberRings = memo(function MemberRings({ avatars, compact, paused 
 // --- Alumni -----------------------------------------------------------
 
 /**
- * The globe from the alumni page, larger than the card is tall and offset
- * just enough for the card's edge to clip it.
+ * The globe from the alumni page, at the scale where it READS AS A GLOBE.
+ *
+ * It was drawn at 132% of the card's height and pushed 14% off the right
+ * edge, which filled the column with a piece of sphere too large to be
+ * recognised as one: the curvature ran off all four sides at once. At
+ * 118% and a 2% overhang the disc spans the ornament column almost
+ * exactly, clipped only at the top and bottom by the card's own edges, so
+ * the rim, the land and the arcs converging on Milan are all legible and
+ * it reads as a globe at a glance without giving back the space.
  *
  * It is now impossible for this card to show nothing. The globe is built
  * on mount and draws its sphere, grid, arcs and cities from the first
@@ -336,7 +379,7 @@ export const MemberRings = memo(function MemberRings({ avatars, compact, paused 
 export const GlobeOrnament = memo(function GlobeOrnament({ paused }: { paused: boolean }) {
   return (
     <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT}>
-      <div className="absolute right-[-14%] top-1/2 -translate-y-1/2 aspect-square h-[132%]">
+      <div className="absolute right-[-2%] top-1/2 -translate-y-1/2 aspect-square h-[118%]">
         <MiniAlumniGlobe paused={paused} />
       </div>
     </div>
@@ -371,6 +414,21 @@ function Pilaster({ soft, width }: { soft: string; width: number }) {
  * from the library, distributed proportionally across whatever the column
  * gives them, and a phone shows two books rather than squeezing three
  * into half the width.
+ *
+ * IT IS A COMPLETE BAY OF THE CASE, not a piece of one. The earlier crop
+ * hung 6% off the right edge, so the right-hand pilaster was sliced down
+ * its length and the composition read as an accident rather than a
+ * choice. It now spans the ornament column exactly: a pilaster at each
+ * side, one shelf between them, cut only by the card's own rounded
+ * corner and dissolved on the inner edge by the card's mask.
+ *
+ * AND IT IS CENTRED, which it was not. The block is geometrically
+ * centred either way; what made it look low was the empty band above the
+ * shorter spines, because scaling the real heights straight from the
+ * library put a third of the shelf's height between the shortest book
+ * and the board above it. The heights keep their real ORDER and their
+ * variation, compressed into the top eighth of the shelf, so every book
+ * stands close under the board and the group reads as one object.
  */
 export const LibraryCorner = memo(function LibraryCorner({ readings, compact, animate }: {
   readings: ReadingRow[] | null; compact: boolean; animate: boolean;
@@ -379,15 +437,17 @@ export const LibraryCorner = memo(function LibraryCorner({ readings, compact, an
   const books = (readings ?? []).slice(0, compact ? 2 : 3);
   if (!books.length) return null;
 
-  // The tallest spine sets the scale, so every book stands under the board
-  // above with its head and tail bands visible.
-  const tallest = books.reduce((m, r) => Math.max(m, spineGeometry(r.id).h), 1);
-  const shelfHeight = compact ? 92 : 106;
+  // `spineGeometry` returns heights between 86 and 110. Mapped straight
+  // onto the shelf they leave a void above the short ones; mapped into
+  // the top eighth of it they still differ, visibly, without the void.
+  const shelfHeight = compact ? 108 : 118;
+  const bookHeight = (h: number) =>
+    Math.round((shelfHeight - 8) * (0.88 + 0.12 * Math.min(1, Math.max(0, (h - 86) / 24))));
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT} aria-hidden="true">
       <div
-        className={`absolute left-[2%] right-[-6%] top-1/2 -translate-y-1/2 ${animate ? 'dash-rise' : ''}`}
+        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 ${animate ? 'dash-rise' : ''}`}
         style={animate ? { animation: 'dash-rise 560ms cubic-bezier(.22,1,.36,1) both' } : undefined}
       >
         {/* The underside of the board above, and its inner rule. The panel
@@ -397,10 +457,10 @@ export const LibraryCorner = memo(function LibraryCorner({ readings, compact, an
         <div className="mt-[3px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.55)' }} />
 
         <div className="flex items-stretch">
-          <Pilaster soft={soft} width={compact ? 11 : 13} />
+          <Pilaster soft={soft} width={compact ? 8 : 10} />
           <div className="relative flex-1 min-w-0">
             <div
-              className="flex items-end px-2"
+              className={`flex items-end ${compact ? 'px-1' : 'px-1.5'}`}
               style={{ height: shelfHeight, gap: compact ? 5 : 7 }}
             >
               {books.map((r, i) => {
@@ -414,7 +474,7 @@ export const LibraryCorner = memo(function LibraryCorner({ readings, compact, an
                       // row fills the shelf exactly at any card width.
                       flexGrow: g.w,
                       flexBasis: 0,
-                      height: Math.round((g.h / tallest) * (shelfHeight - 6)),
+                      height: bookHeight(g.h),
                       borderColor: soft,
                       background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.14)' : 'hsl(var(--accent-soft)/0.06)',
                     }}
@@ -437,7 +497,7 @@ export const LibraryCorner = memo(function LibraryCorner({ readings, compact, an
             <div className="border-b-2" style={{ borderColor: soft }} />
             <div className="mt-[3px] border-b" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
           </div>
-          <Pilaster soft={soft} width={compact ? 11 : 13} />
+          <Pilaster soft={soft} width={compact ? 8 : 10} />
         </div>
       </div>
     </div>

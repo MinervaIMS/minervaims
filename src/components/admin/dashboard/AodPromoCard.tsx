@@ -16,14 +16,20 @@ import { useState } from 'react';
 // hard coded, and there is no image of text anywhere.
 //
 // THE PHOTOGRAPH KEEPS ITS OWN PROPORTIONS. It is never stretched: it
-// fills its frame by `object-cover` at its natural aspect ratio, and the
-// framing point is chosen so the whole group stays in shot with the
-// association's banner beside them.
+// fills its frame by `object-cover` at its natural aspect ratio.
+//
+// AND IT IS ALREADY THE RIGHT SHAPE. The first version framed a 3:4
+// PORTRAIT inside a landscape panel, so `object-cover` had to throw away
+// more than half the height and it took faces with it. The file is now a
+// LANDSCAPE crop of the same photograph, 1200x710, framed on the group:
+// its 1.69 ratio is within a few per cent of the panel's, so on a wide
+// card almost the whole picture survives and every one of the seven
+// people is in shot, with the association's roll-up banner beside them.
 // =====================================================================
 
 /**
- * The stand photograph. It lives in `public/`, so it is served as-is and
- * nothing has to be imported or bundled.
+ * The stand photograph, cropped to the group. It lives in `public/`, so
+ * it is served as-is and nothing has to be imported or bundled.
  *
  * IF IT IS ABSENT the card still works: the purple runs the full width,
  * the sentence and the action stay exactly where they are, and no broken
@@ -45,10 +51,10 @@ function ordinal(n: number): string {
 }
 
 /**
- * How the sentence names the day. A date is right most of the time, but
- * "on the 9th of August" on the 9th of August reads like a mistake, so
- * the two days a member is most likely to be reading this get the words
- * they would actually use.
+ * How the sentence names the day, INCLUDING its preposition, because the
+ * preposition depends on the day. "on the 14th of October" is right most
+ * of the time, but "on today" is not English, so the two days a member is
+ * most likely to be reading this get the words they would actually use.
  */
 function aodWhen(date: string): string {
   const event = new Date(date);
@@ -65,7 +71,8 @@ function aodWhen(date: string): string {
 /** The whole sentence, with the day already in it. */
 function aodSentence(date: string | null): string {
   const when = date ? aodWhen(date) : '';
-  return `Tell students what Minerva is for you at Association on Display${when ? ` ${when}` : ''}!`;
+  return `Come share what Minerva means to you at Association on Display${when ? ` ${when}` : ''}, `
+    + 'and help others discover what we\u2019re all about!';
 }
 
 export function AodPromoCard({ date }: { date: string | null }) {
@@ -80,13 +87,18 @@ export function AodPromoCard({ date }: { date: string | null }) {
         // sentence needs the full width, so the photograph takes a band
         // and dissolves downward into the purple instead of sideways.
         <div className="relative shrink-0 h-[36%] w-full sm:absolute sm:inset-0 sm:left-[36%] sm:h-auto">
+          {/* The framing point differs by breakpoint because the frame
+              does. A wide card is almost exactly the crop's own shape, so
+              it is centred and nothing is lost; a phone's band is much
+              wider than it is tall, so it is framed high, on the faces. */}
           <img
             src={AOD_PHOTO_SRC}
             alt=""
             aria-hidden="true"
             decoding="async"
+            fetchPriority="high"
             onError={() => setPhotoFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover object-[50%_43%]"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_30%] sm:object-center"
           />
           {/* The dissolve. Two gradients rather than one rotated one, so
               each direction is exactly right at its own breakpoint. */}
@@ -101,25 +113,39 @@ export function AodPromoCard({ date }: { date: string | null }) {
         </div>
       )}
 
+      {/* THE SENTENCE STARTS AT THE TOP, and the action sits at the foot,
+          which is the same skeleton the latest-report state uses: a
+          `shrink-0` line at the top, all the slack collected by `mt-auto`
+          into one band above the action, and the action itself last.
+          Centring the pair left the sentence floating in the middle of
+          the purple with nothing anchoring either end. */}
       <div
-        className={`relative z-10 flex-1 min-h-0 flex flex-col justify-center gap-4 sm:gap-5 p-5 sm:p-6 sm:h-full ${
+        className={`relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden p-5 sm:p-6 sm:h-full ${
           showPhoto ? 'sm:w-[62%]' : 'sm:w-full'
         }`}
       >
-        <h3 className="font-serif text-accent-foreground text-[21px] sm:text-[25px] xl:text-[29px] leading-[1.2] text-balance">
+        {/* Sized so the whole sentence, the gap and the action all stand
+            inside the card at every width. `min-h-0` with the column's
+            `overflow-hidden` means that if a very narrow phone ever runs
+            out of room, it is the tail of the sentence that gives way and
+            never the action. */}
+        <h3 className="min-h-0 font-serif text-accent-foreground text-[19px] sm:text-[22px] xl:text-[24px] leading-[1.22] text-balance">
           {aodSentence(date)}
         </h3>
-        {/* The site's button language: white fill, purple label, set in the
-            serif, no icon, and the full inversion on hover. */}
-        <span
-          className="inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
-                     border border-background bg-background
-                     font-serif text-[15px] text-accent whitespace-nowrap
-                     transition-colors duration-200
-                     group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
-        >
-          Register Participation
-        </span>
+        {/* The site's button language, and EXACTLY the block the report
+            state uses: same height, same padding, same serif, same
+            inversion on hover, at the same distance from the foot. */}
+        <div className="mt-auto shrink-0 pt-5">
+          <span
+            className="inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
+                       border border-background bg-background
+                       font-serif text-[15px] text-accent whitespace-nowrap
+                       transition-colors duration-200
+                       group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
+          >
+            Register Participation
+          </span>
+        </div>
       </div>
     </div>
   );

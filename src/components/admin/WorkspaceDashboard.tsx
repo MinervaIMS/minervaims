@@ -58,11 +58,18 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const ambientPaused = reduced || !visible;
 
   // ONE GATE FOR THE WHOLE PAGE. The loader holds the pane until every
-  // query has answered AND the decorative assets are drawn, so when it
-  // lifts the structure is complete, no chart is missing and no ornament
-  // pops in afterwards. The cover renderer reports ready on a cap as well
-  // as on success, so a slow PDF can never hold the Dashboard hostage.
-  if (data.loading || !coversReady) return <div className="h-full"><WorkspaceLoader /></div>;
+  // query has answered, the reader's NAME has settled and the decorative
+  // assets are drawn, so when it lifts the structure is complete, no
+  // chart is missing and nothing pops in afterwards. The cover renderer
+  // reports ready on a cap as well as on success, so a slow PDF can never
+  // hold the Dashboard hostage.
+  //
+  // The name is part of the gate because the greeting is chosen from it:
+  // without it the sentence was picked from the unnamed pool and then
+  // REPLACED a moment later, in front of the reader. Every query runs in
+  // parallel, so waiting for the name costs nothing beyond the slowest of
+  // them.
+  if (!data.greetingReady || !coversReady) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
     <div className="flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0">
@@ -85,8 +92,12 @@ export default function WorkspaceDashboard({ onNavigate }: {
           label="Readings" value={data.readings} animate={animate}
           decoration={<LibraryCorner readings={data.readingRows} compact={isPhone} animate={animate} />}
         />
+        {/* The swarm gets a wider column than the other three ornaments.
+            It is the only composition here that is a GROUP rather than a
+            single object, and a group needs room to be one: at 46% it was
+            a handful of faces in a corner. */}
         <KpiCard
-          label="Members" value={data.members} animate={animate}
+          label="Members" value={data.members} animate={animate} wideDecoration
           decoration={<MemberRings avatars={data.avatars} compact={isPhone} paused={ambientPaused} />}
         />
         <KpiCard
@@ -114,7 +125,12 @@ export default function WorkspaceDashboard({ onNavigate }: {
               animate={animate}
             />
           </div>
-          <div className="order-1 lg:order-2 h-[300px] sm:h-[320px] lg:h-auto min-h-0">
+          {/* Taller on a phone than the other cards. It is the only one
+              that carries a sentence, a picture and an action at once,
+              and the Association on Display state needs all three to
+              stand in it without the photograph being reduced to a
+              strip. */}
+          <div className="order-1 lg:order-2 h-[360px] lg:h-auto min-h-0">
             <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} />
           </div>
         </div>
