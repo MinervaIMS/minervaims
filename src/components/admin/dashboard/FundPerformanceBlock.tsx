@@ -290,8 +290,9 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
                     <Line
                       key={s.fund} type="linear" dataKey={s.fund}
                       stroke={colourOf(s.fund)}
-                      strokeWidth={s.fund === 'long-short' ? 2.4 : 2}
-                      strokeLinejoin="miter" strokeLinecap="butt"
+                      strokeWidth={2.4}
+                      strokeLinejoin="miter" strokeLinecap={dashOf(s.fund) ? 'round' : 'butt'}
+                      strokeDasharray={dashOf(s.fund)}
                       dot={false} activeDot={{ r: 3 }} connectNulls={false}
                       isAnimationActive={false}
                     />
