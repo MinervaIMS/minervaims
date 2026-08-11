@@ -131,9 +131,11 @@ function Deck({ items, title, height, narrow }: {
     };
   }, [paint, narrow]);
 
-  // On phones the card is a 9:16 portrait driven by the height available
-  // under the header and heading, so the whole card is always in view.
-  const portraitHeight = 'min(calc(100svh - 11rem), calc((100vw - 3rem) * 16 / 9))';
+  // On phones the card is a true 9:16 portrait: as tall as the space under
+  // the header and heading allows, but never wider than the column, so the
+  // whole card is in view and the proportion always holds.
+  const portraitHeight = `min(calc(100svh - 11rem), calc(${Math.round(colWidth)}px * 16 / 9))`;
+
 
   return (
     <div className="container">
