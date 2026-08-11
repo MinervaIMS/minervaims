@@ -19,7 +19,12 @@ const FUND_COLOUR: Record<string, string> = {
   'long-short': '#ffffff',
   'multi-asset': 'hsl(252 38% 74%)',
 };
+const FUND_DASH: Record<string, string> = {
+  'long-short': '',
+  'multi-asset': '2 3',
+};
 const colourOf = (fund: string) => FUND_COLOUR[fund] ?? '#ffffff';
+const dashOf = (fund: string) => FUND_DASH[fund] ?? '';
 
 /** Everything drawn on the purple ground. */
 const ON_PURPLE = 'hsl(var(--accent-foreground))';
@@ -212,7 +217,12 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
               <span className="flex items-center gap-2">
                 {/* The swatch IS the line on the chart, at the same
                     weight, so no name ever has to be matched back. */}
-                <span className="h-[3px] w-6 shrink-0 rounded-full" style={{ background: colourOf(s.fund) }} />
+                <span
+                  className="h-[3px] w-6 shrink-0 rounded-full"
+                  style={dashOf(s.fund)
+                    ? { background: 'transparent', borderTop: `2px dotted ${colourOf(s.fund)}` }
+                    : { background: colourOf(s.fund) }}
+                />
                 <span className="font-body text-[12px] sm:text-[13px] truncate" style={{ color: INK }}>
                   {fundShortLabels[s.fund]}
                 </span>
@@ -266,8 +276,9 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
                   {axes}
                   <Area
                     type="linear" dataKey={drawn[0].fund}
-                    stroke={`url(#${gradientId}-stroke)`} strokeWidth={2}
-                    strokeLinejoin="miter" strokeLinecap="butt"
+                    stroke={`url(#${gradientId}-stroke)`} strokeWidth={2.4}
+                    strokeLinejoin="miter" strokeLinecap={dashOf(drawn[0].fund) ? 'round' : 'butt'}
+                    strokeDasharray={dashOf(drawn[0].fund)}
                     fill={`url(#${gradientId})`} dot={false} activeDot={{ r: 3 }}
                     isAnimationActive={false}
                   />
@@ -279,8 +290,9 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
                     <Line
                       key={s.fund} type="linear" dataKey={s.fund}
                       stroke={colourOf(s.fund)}
-                      strokeWidth={s.fund === 'long-short' ? 2.4 : 2}
-                      strokeLinejoin="miter" strokeLinecap="butt"
+                      strokeWidth={2.4}
+                      strokeLinejoin="miter" strokeLinecap={dashOf(s.fund) ? 'round' : 'butt'}
+                      strokeDasharray={dashOf(s.fund)}
                       dot={false} activeDot={{ r: 3 }} connectNulls={false}
                       isAnimationActive={false}
                     />
