@@ -79,16 +79,13 @@ export function JoinHeroStage({
       </div>
 
       {/*
-        Vertical rhythm is viewport-relative so the whole composition fits
-        100svh on a short laptop as well as a tall phone. The top inset never
-        falls below the height of the fixed header.
-
-        The three information groups at the top — words, figures, status —
-        are spaced by fixed svh steps, so they stay read as one block and the
-        figures sit close to the payoff they qualify. All the remaining
-        height accrues to the invitation zone at the foot, which is the one
-        elastic row: it is what gives the invitation deliberate room instead
-        of leaving it stranded against the bottom edge.
+        The stage content is split into two flex groups: the compact block of
+        words, figures and status at the top, and the scroll invitation at the
+        foot. `justify-between` pushes them to opposite ends of the available
+        height, while the invitation carries a responsive bottom margin that
+        keeps it clear of the fixed cookie banner. On small screens the hero
+        is allowed to grow past 100svh so the invitation is reachable by
+        scrolling rather than squeezed under the banner.
       */}
       <div className="container relative z-10 flex flex-1 flex-col justify-between pb-6 pt-[max(92px,11.5svh)] md:h-sm:pb-5 md:h-sm:pt-[max(88px,9svh)]">
         {/*
