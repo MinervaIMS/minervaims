@@ -67,9 +67,9 @@ const DivisionScrollStack = () => {
                   'linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.72) 35%, rgba(0,0,0,0.4) 65%, rgba(0,0,0,0.12) 88%, rgba(0,0,0,0) 100%)',
               }}
             />
-            <div className="relative z-10 flex h-full flex-col justify-between p-8 md:p-14">
+            <div className="relative z-10 flex h-full flex-col justify-between p-6 pr-10 md:p-14 md:pr-14">
               <div className="max-w-xl">
-                <h3 className="font-serif text-3xl md:text-5xl text-white mb-4 md:mb-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                <h3 className="font-serif text-2xl sm:text-3xl md:text-5xl text-white mb-3 md:mb-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
                   {divisionLabels[division]}
                 </h3>
                 <p className="font-body text-body md:text-body-lg text-white/90 leading-relaxed max-w-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
@@ -79,12 +79,13 @@ const DivisionScrollStack = () => {
               <div className="flex justify-end">
                 <Link
                   to={`/divisions/${division}`}
-                  className="inline-block bg-background text-foreground font-serif text-base md:text-lg px-8 py-3 md:px-10 md:py-4 hover:opacity-90 transition-opacity"
+                  className="inline-block bg-background text-foreground font-serif text-base md:text-lg px-6 py-3 md:px-10 md:py-4 hover:opacity-90 transition-opacity"
                 >
                   Visit Division
                 </Link>
               </div>
             </div>
+
           </article>
         </ScrollStackItem>
       ))}
