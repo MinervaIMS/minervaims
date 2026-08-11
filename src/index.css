@@ -479,9 +479,9 @@ button.mdot, button.rdot, button.dstack-dot {
 .rsec--navy .rbtn.rbtn--onnavy-ghost:hover, .rsec--navy .rbtn.rbtn--onnavy-ghost:focus-visible,
 .rprev-dialog--navy .rbtn.rbtn--onnavy-ghost:hover, .rprev-dialog--navy .rbtn.rbtn--onnavy-ghost:focus-visible {
   background:#fff; color:hsl(var(--accent)); border-color:#fff; }
-.v2-strip { margin-top:clamp(2.5rem,5vw,3.75rem); padding-top:1.5rem; border-top:1px solid rgba(255,255,255,.22); }
+.v2-strip { margin-top:clamp(2.5rem,5vw,3.75rem); padding-top:1.5rem; border-top:1px solid rgba(255,255,255,.55); }
 .v2-striphead { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; gap:1rem; }
-.v2-striphead .lbl { font-size:.875rem; text-transform:uppercase; letter-spacing:.14em; color:var(--mims-light-purple); }
+.v2-striphead .lbl { font-size:.875rem; text-transform:uppercase; letter-spacing:.14em; color:#fff; }
 /* Horizontal scrolling rail with centered dots (all breakpoints) */
 .v2-strip-rail { display:flex; gap:clamp(1rem,1.8vw,1.6rem); overflow-x:auto;
   scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:none; padding-bottom:.5rem; }
