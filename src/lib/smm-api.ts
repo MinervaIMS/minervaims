@@ -39,8 +39,8 @@ export interface AdEntry {
   id: string;
   content: string;
   platform: string | null;
-  ad_date: string | null;
-  amount: number | null;
+  ad_date: string;
+  amount: number;
   campaign_purpose: string | null;
   effectiveness_notes: string | null;
   treasury_entry_id: string | null;
@@ -50,8 +50,8 @@ export interface AdInput {
   id?: string;
   content: string;
   platform?: string | null;
-  ad_date?: string | null;
-  amount?: number | null;
+  ad_date: string;
+  amount: number;
   campaign_purpose?: string | null;
   effectiveness_notes?: string | null;
 }

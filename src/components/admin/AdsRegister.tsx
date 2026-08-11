@@ -73,6 +73,9 @@ export default function AdsRegister() {
 
   const requestSave = () => {
     if (!form.content.trim()) { toast({ title: 'Describe the promoted content', variant: 'destructive' }); return; }
+    const amt = Number(form.amount);
+    if (!form.amount.trim() || !Number.isFinite(amt) || amt <= 0) { toast({ title: 'An expense amount above zero is required', variant: 'destructive' }); return; }
+    if (!form.ad_date) { toast({ title: 'The date the expense was incurred is required', variant: 'destructive' }); return; }
     if (editingId) { doSave(); return; } // editing does not touch the Treasury
     setConfirmOpen(true);
   };
@@ -82,7 +85,7 @@ export default function AdsRegister() {
     try {
       const payload: AdInput = {
         id: editingId ?? undefined, content: form.content.trim(), platform: form.platform || null,
-        ad_date: form.ad_date || null, amount: form.amount.trim() === '' ? null : Number(form.amount),
+        ad_date: form.ad_date, amount: Number(form.amount),
         campaign_purpose: form.campaign_purpose || null, effectiveness_notes: form.effectiveness_notes || null,
       };
       await saveAd(session, payload);
@@ -126,10 +129,10 @@ export default function AdsRegister() {
                   <tbody>
                     {g.rows.map((a) => (
                       <tr key={a.id} className="border-t border-separator">
-                        <td className="px-3 py-2 whitespace-nowrap">{a.ad_date ? new Date(a.ad_date).toLocaleDateString() : '-'}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{new Date(a.ad_date).toLocaleDateString()}</td>
                         <td className="px-3 py-2 text-foreground">{a.content}</td>
                         <td className="px-3 py-2">{a.platform || '-'}</td>
-                        <td className="px-3 py-2 text-right whitespace-nowrap">{a.amount != null ? eur(Number(a.amount)) : '-'}</td>
+                        <td className="px-3 py-2 text-right whitespace-nowrap">{eur(Number(a.amount))}</td>
                         <td className="px-3 py-2">{a.campaign_purpose || '-'}</td>
                         <td className="px-3 py-2 max-w-xs truncate">{a.effectiveness_notes || '-'}</td>
                         <td className="px-3 py-2 text-right"><Button variant="outline" size="icon" onClick={() => openEdit(a)}><Pencil className="h-4 w-4" /></Button></td>
@@ -175,8 +178,8 @@ export default function AdsRegister() {
             <div className="space-y-1"><Label>Content promoted *</Label><Input value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} placeholder="e.g. Recruitment reel" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label>Platform</Label><Input value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })} placeholder="e.g. Instagram" /></div>
-              <div className="space-y-1"><Label>Date incurred{editingId ? '' : ' *'}</Label><Input type="date" value={form.ad_date} disabled={!!editingId} onChange={(e) => setForm({ ...form, ad_date: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Amount (€)</Label><Input value={form.amount} disabled={!!editingId} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="e.g. 25.00" /></div>
+              <div className="space-y-1"><Label>Date incurred *</Label><Input type="date" value={form.ad_date} disabled={!!editingId} onChange={(e) => setForm({ ...form, ad_date: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Amount (€) *</Label><Input value={form.amount} disabled={!!editingId} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="e.g. 25.00" /></div>
               <div className="space-y-1"><Label>Campaign purpose</Label><Input value={form.campaign_purpose} onChange={(e) => setForm({ ...form, campaign_purpose: e.target.value })} placeholder="e.g. Applications drive" /></div>
             </div>
             <div className="space-y-1"><Label>Notes on effectiveness</Label><Textarea rows={3} value={form.effectiveness_notes} onChange={(e) => setForm({ ...form, effectiveness_notes: e.target.value })} placeholder="Did it work well, or not? What would you do differently?" /></div>
