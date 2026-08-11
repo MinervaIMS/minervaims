@@ -79,6 +79,8 @@ function Deck({ items, title, height, narrow }: {
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [colWidth, setColWidth] = useState(0);
+
   // Cards stick just under the fixed navbar, plus the pinned heading's own
   // height, so a card's top edge stops at the heading's baseline rule
   // instead of sliding beneath it.
