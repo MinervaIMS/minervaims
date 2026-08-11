@@ -43,25 +43,29 @@ const SLICE = [
 
 // The drawing's own coordinate system. One unit is one pixel at a card
 // 250 units wide; everything scales from there.
-const VB_W = 258;
-const VB_H = 180;
-const CX = 129;
-const CY = 90;
-const R = 41;          // the ring's centre line
-const THICK = 22;      // its stroke width, so it runs from 30 to 52
+// Sized to the card it actually lands in. The lower row's middle card is
+// about 443 x 294 inside its padding, an aspect of 1.51, so a viewBox at
+// 1.48 leaves almost nothing unused in either direction; and with the
+// label text one step smaller the ring can take the room that frees.
+const VB_W = 264;
+const VB_H = 178;
+const CX = 132;
+const CY = 89;
+const R = 50;          // the ring's centre line
+const THICK = 26;      // its stroke width, so it runs from 37 to 63
 const OUTER = R + THICK / 2;
 // A LEADER ALWAYS TRAVELS OUTWARD. It leaves the ring along its own
 // radius, turns after a short run, and stops at the label. The turn has
 // to happen INSIDE the anchor's distance from the centre, or a leader on
 // a near-horizontal segment doubles back on itself and reads as a stray
 // line across the card, which is exactly what the first draft did.
-const LEAD_IN = 3;     // where a leader starts, outside the ring: r = 55
-const ELBOW = 5;       // where it turns: r = 60
-const ANCHOR = 64;     // where it turns level, measured from the centre
+const LEAD_IN = 3;     // where a leader starts, outside the ring: r = 66
+const ELBOW = 5;       // where it turns: r = 71
+const ANCHOR = 76;     // where it turns level, measured from the centre
 const RUN_IN = 10;     // the horizontal run from that turn into the name
-const TEXT = 68;       // where the name starts, measured from the centre
-const MIN_GAP = 26;    // the least vertical distance between two labels
-const MARGIN = 15;     // how close a label may come to the top or bottom
+const TEXT = 80;       // where the name starts, measured from the centre
+const MIN_GAP = 25;    // the least vertical distance between two labels
+const MARGIN = 14;     // how close a label may come to the top or bottom
 const GAP_DEG = 1.6;   // the hairline between two segments
 const DRAW_MS = 700;   // the whole ring, laid in as one stroke
 
@@ -187,7 +191,7 @@ export function ReportsMixBlock({ shares, animate }: {
   }
 
   return (
-    <Block title="Reports by division">
+    <Block title="Reports by division" aside="all time">
       <div className="h-full w-full min-h-0">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -251,15 +255,15 @@ export function ReportsMixBlock({ shares, animate }: {
                 x={s.textX} y={s.textY - 1}
                 textAnchor={s.anchor}
                 className="font-body"
-                style={{ fontSize: 10.5, fill: 'hsl(var(--foreground))' }}
+                style={{ fontSize: 9.5, fill: 'hsl(var(--foreground))' }}
               >
                 {s.name}
               </text>
               <text
-                x={s.textX} y={s.textY + 11}
+                x={s.textX} y={s.textY + 10}
                 textAnchor={s.anchor}
                 className="font-body"
-                style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' }}
+                style={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' }}
               >
                 {s.percent}%
               </text>

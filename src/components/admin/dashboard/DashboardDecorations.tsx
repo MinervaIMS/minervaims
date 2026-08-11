@@ -53,10 +53,20 @@ export function DashboardMotionStyles() {
       @keyframes dash-rise { from { transform: translate3d(0,14px,0); opacity: 0; } to { transform: none; opacity: 1; } }
       @keyframes dash-draw { from { stroke-dashoffset: var(--dash-len); } to { stroke-dashoffset: 0; } }
       @keyframes dash-fade { from { opacity: 0; } to { opacity: 1; } }
+      /* THE PAGE'S ONE ENTRY. Every card uses it, staggered, so the
+         Dashboard arrives as a single considered movement instead of
+         eight components each animating themselves. It is opacity and a
+         transform, which the compositor handles without touching layout
+         or React. */
+      @keyframes dash-enter { from { opacity: 0; transform: translate3d(0,10px,0); } to { opacity: 1; transform: none; } }
+      .dash-enter { animation: dash-enter 380ms cubic-bezier(.22,1,.36,1) both; }
+      .dash-enter-soft { animation: dash-fade 320ms ease-out both; }
       .dash-col, .dash-swarm { will-change: transform; backface-visibility: hidden; }
       .dash-paused, .dash-paused * { animation-play-state: paused !important; }
       @media (prefers-reduced-motion: reduce) {
-        .dash-col, .dash-swarm, .dash-rise, .dash-arc, .dash-label { animation: none !important; }
+        .dash-col, .dash-swarm, .dash-rise, .dash-arc, .dash-label,
+        .dash-enter, .dash-enter-soft { animation: none !important; }
+        .dash-enter, .dash-enter-soft { opacity: 1 !important; transform: none !important; }
         .dash-rise { transform: none !important; opacity: 1 !important; }
         .dash-arc { stroke-dashoffset: 0 !important; }
         .dash-label { opacity: 1 !important; }
@@ -220,9 +230,12 @@ function swarm(spec: {
  * percentages of a SQUARE box, so one per cent is the same number of
  * pixels in both directions:
  *
- *   wide   box = 1.40 x 157px card = 220px. A 31px portrait is 14.1% of
- *          it, and the minimum separation is 16.5%, which leaves 5px of
- *          air between the two closest people on the card.
+ *   wide   box = 1.40 x 156px card = 218px. A 31px portrait is 14.2% of
+ *          it, and the minimum separation is 15.2%, which leaves 2.2px of
+ *          air between the two closest people on the card. TWENTY people,
+ *          up from sixteen: the floor is the portrait's own diameter plus
+ *          a hair, so the group can be packed tighter without any pair
+ *          ever touching.
  *
  *          SIXTEEN PEOPLE ACROSS THE WHOLE COLUMN, up from twelve in the
  *          right-hand third of it. The swarm used to start at 36% of the
@@ -234,15 +247,17 @@ function swarm(spec: {
  *          outside the card and simply shows fewer people, at the same
  *          size, in a column that is still completely covered.
  *   phone  box = 1.18 x 160px card = 189px. A 26px portrait is 13.8%,
- *          against a minimum separation of 15%, which leaves 2.3px.
+ *          against a minimum separation of 13.6%... which would touch, so
+ *          the phone's portraits are 25px (13.2%) and eleven of them fit
+ *          with 0.8px to spare.
  *
  * The vertical range stops short of the box's edges so no portrait is
  * lost off the top or bottom of the card, and the horizontal range
  * starts where the card's own mask stops fading, which on a phone is
  * much further right because the ornament column is half as wide.
  */
-const SWARM_WIDE = swarm({ count: 16, minDist: 16.5, xMin: 6, yMin: 14, yMax: 86, seed: 19, bias: 1.25 });
-const SWARM_PHONE = swarm({ count: 9, minDist: 15, xMin: 56, yMin: 8, yMax: 92, seed: 23, bias: 1.35 });
+const SWARM_WIDE = swarm({ count: 20, minDist: 15.2, xMin: 6, yMin: 13, yMax: 87, seed: 29, bias: 1.2 });
+const SWARM_PHONE = swarm({ count: 11, minDist: 13.6, xMin: 54, yMin: 8, yMax: 92, seed: 23, bias: 1.3 });
 
 /** Each portrait joined to its two nearest neighbours, deduplicated. */
 function web(nodes: Node[]): [number, number][] {
@@ -310,7 +325,7 @@ export const MemberRings = memo(function MemberRings({ avatars, compact, paused 
       [bag[i], bag[j]] = [bag[j], bag[i]];
     }
     const people = nodes.map((_, i) => bag[i % bag.length]);
-    return { nodes, people, links: web(nodes), size: compact ? 26 : 31 };
+    return { nodes, people, links: web(nodes), size: compact ? 25 : 31 };
   }, [avatars, compact, seed]);
 
   if (!layout) return null;
@@ -437,67 +452,83 @@ export const LibraryCorner = memo(function LibraryCorner({ readings, compact, an
   const books = (readings ?? []).slice(0, compact ? 2 : 3);
   if (!books.length) return null;
 
-  // `spineGeometry` returns heights between 86 and 110. Mapped straight
-  // onto the shelf they leave a void above the short ones; mapped into
-  // the top eighth of it they still differ, visibly, without the void.
-  const shelfHeight = compact ? 108 : 118;
-  const bookHeight = (h: number) =>
-    Math.round((shelfHeight - 8) * (0.88 + 0.12 * Math.min(1, Math.max(0, (h - 86) / 24))));
+  // `spineGeometry` returns heights between 86 and 110, expressed here as a
+  // PERCENTAGE of whatever height the shelf turns out to have. Mapped
+  // straight they leave a void above the short ones; mapped into the top
+  // eighth they still differ, visibly, without the void.
+  const bookHeight = (h: number) => 88 + 12 * Math.min(1, Math.max(0, (h - 86) / 24));
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={FADE_LEFT} aria-hidden="true">
-      <div
-        className={`absolute inset-x-0 top-1/2 -translate-y-1/2 ${animate ? 'dash-rise' : ''}`}
-        style={animate ? { animation: 'dash-rise 560ms cubic-bezier(.22,1,.36,1) both' } : undefined}
-      >
-        {/* The underside of the board above, and its inner rule. The panel
-            that sits on top of it, and its category name, are outside the
-            crop on purpose. */}
-        <div className="border-t-[1.5px]" style={{ borderColor: soft }} />
-        <div className="mt-[3px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.55)' }} />
+      {/* POSITION AND MOTION ARE ON DIFFERENT ELEMENTS, and that is the
+          whole fix. The composition used to be centred with
+          `top-1/2 -translate-y-1/2` on the same element that carried the
+          entry animation. A CSS animation on `transform` OVERRIDES the
+          class's transform, and `dash-rise` ends on `transform: none`
+          with `fill-mode: both` -- so the moment the entry finished, the
+          centring translate was thrown away and the whole case dropped by
+          half its own height, taking the feet of the books off the bottom
+          of the card. It was never a cropping problem; it was the
+          animation cancelling the centring. */}
+      <div className={`absolute inset-0 flex flex-col ${compact ? 'py-3' : 'py-3.5'}`}>
+        <div
+          className="flex-1 min-h-0 flex flex-col"
+          style={animate ? { animation: 'dash-rise 520ms cubic-bezier(.22,1,.36,1) both' } : undefined}
+        >
+          {/* The underside of the board above, and its inner rule. The
+              panel that sits on top of it, and its category name, are
+              outside the crop on purpose. */}
+          <div className="shrink-0 border-t-[1.5px]" style={{ borderColor: soft }} />
+          <div className="shrink-0 mt-[3px] border-t" style={{ borderColor: 'hsl(var(--accent-soft)/0.55)' }} />
 
-        <div className="flex items-stretch">
-          <Pilaster soft={soft} width={compact ? 8 : 10} />
-          <div className="relative flex-1 min-w-0">
-            <div
-              className={`flex items-end ${compact ? 'px-1' : 'px-1.5'}`}
-              style={{ height: shelfHeight, gap: compact ? 5 : 7 }}
-            >
-              {books.map((r, i) => {
-                const g = spineGeometry(r.id);
-                return (
-                  <span
-                    key={r.id}
-                    className="relative min-w-0 rounded-t-[3px] border-[1.5px]"
-                    style={{
-                      // Real spine widths, shared out proportionally, so the
-                      // row fills the shelf exactly at any card width.
-                      flexGrow: g.w,
-                      flexBasis: 0,
-                      height: bookHeight(g.h),
-                      borderColor: soft,
-                      background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.14)' : 'hsl(var(--accent-soft)/0.06)',
-                    }}
-                  >
-                    <span className="absolute left-[3px] right-[3px] top-2 border-t" style={{ borderColor: soft }} />
-                    <span className="absolute left-[3px] right-[3px] bottom-2 border-t" style={{ borderColor: soft }} />
-                    <span className="absolute inset-x-0 top-[14px] bottom-[14px] flex items-center justify-center overflow-hidden">
-                      <span
-                        className="max-h-full overflow-hidden whitespace-nowrap font-serif text-[9px] leading-none text-accent/85"
-                        style={{ writingMode: 'vertical-rl' }}
-                      >
-                        {r.title}
+          {/* EVERYTHING BELOW IS SIZED BY THE CARD, not by a constant. The
+              shelf takes whatever height is left and the books take a
+              percentage of it, so the composition fits exactly whatever
+              the KPI row's height happens to be and no book can ever be
+              cut off, at any breakpoint or any window height. */}
+          <div className="flex-1 min-h-0 flex items-stretch">
+            <Pilaster soft={soft} width={compact ? 8 : 10} />
+            <div className="relative flex-1 min-w-0 flex flex-col">
+              <div
+                className={`flex-1 min-h-0 flex items-end ${compact ? 'px-1' : 'px-1.5'}`}
+                style={{ gap: compact ? 5 : 7 }}
+              >
+                {books.map((r, i) => {
+                  const g = spineGeometry(r.id);
+                  return (
+                    <span
+                      key={r.id}
+                      className="relative min-w-0 rounded-t-[3px] border-[1.5px]"
+                      style={{
+                        // Real spine widths, shared out proportionally, so
+                        // the row fills the shelf exactly at any width.
+                        flexGrow: g.w,
+                        flexBasis: 0,
+                        height: `${bookHeight(g.h).toFixed(1)}%`,
+                        borderColor: soft,
+                        background: i % 2 === 0 ? 'hsl(var(--accent-soft)/0.14)' : 'hsl(var(--accent-soft)/0.06)',
+                      }}
+                    >
+                      <span className="absolute left-[3px] right-[3px] top-2 border-t" style={{ borderColor: soft }} />
+                      <span className="absolute left-[3px] right-[3px] bottom-2 border-t" style={{ borderColor: soft }} />
+                      <span className="absolute inset-x-0 top-[15%] bottom-[15%] flex items-center justify-center overflow-hidden">
+                        <span
+                          className="max-h-full overflow-hidden whitespace-nowrap font-serif text-[9px] leading-none text-accent/85"
+                          style={{ writingMode: 'vertical-rl' }}
+                        >
+                          {r.title}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                );
-              })}
+                  );
+                })}
+              </div>
+              {/* The board the books stand on: two strokes, as drawn. */}
+              <div className="shrink-0 border-b-2" style={{ borderColor: soft }} />
+              <div className="shrink-0 mt-[3px] border-b" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
             </div>
-            {/* The board the books stand on: two strokes, as drawn. */}
-            <div className="border-b-2" style={{ borderColor: soft }} />
-            <div className="mt-[3px] border-b" style={{ borderColor: 'hsl(var(--accent-soft)/0.45)' }} />
+            <Pilaster soft={soft} width={compact ? 8 : 10} />
           </div>
-          <Pilaster soft={soft} width={compact ? 8 : 10} />
         </div>
       </div>
     </div>

@@ -25,7 +25,12 @@ export function useAnimatedCounter(targetValue: number, duration: number = 1500,
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentValue = Math.round(startValue + difference * easeOut);
 
-      setDisplayValue(currentValue);
+      // ONE RENDER PER VISIBLE CHANGE, not one per frame. The figure is an
+      // integer, so most frames of a count-up land on the number already
+      // on screen; setting state for them re-rendered the card sixty times
+      // a second for nothing, on all four cards at once, during the exact
+      // moment the page is busiest.
+      setDisplayValue((prev) => (prev === currentValue ? prev : currentValue));
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);

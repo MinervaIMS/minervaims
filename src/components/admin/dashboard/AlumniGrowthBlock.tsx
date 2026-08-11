@@ -35,8 +35,14 @@ function ticksTo(peak: number, count = 4): number[] {
   return out;
 }
 
-export function AlumniGrowthBlock({ years, animate, narrow }: {
-  years: AlumniYear[] | null; animate: boolean; narrow: boolean;
+/* NO PER-CHART JAVASCRIPT ANIMATION. Recharts animates by setting React
+   state on every frame, so four charts entering together re-rendered
+   four component trees sixty times a second at the exact moment the page
+   was mounting -- which is what the Dashboard's entry actually felt like.
+   The cards now enter together in CSS, on the compositor, and the charts
+   are simply drawn. */
+export function AlumniGrowthBlock({ years, narrow }: {
+  years: AlumniYear[] | null; narrow: boolean;
 }) {
   const tickText = { fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' as const };
 
@@ -105,13 +111,13 @@ export function AlumniGrowthBlock({ years, animate, narrow }: {
           {/* Columns first, so the line is drawn over them. */}
           <Bar
             yAxisId="added" dataKey="added" fill="url(#dashAlumniBar)" radius={[3, 3, 0, 0]}
-            barSize={narrow ? 16 : 24} isAnimationActive={animate} animationDuration={760} animationEasing="ease-out"
+            barSize={narrow ? 16 : 24} isAnimationActive={false}
           />
           <Area
             yAxisId="total" type="monotone" dataKey="total"
             stroke="hsl(var(--accent))" strokeWidth={2.5} fill="url(#dashAlumniFill)"
             dot={false} activeDot={{ r: 3 }}
-            isAnimationActive={animate} animationDuration={900} animationBegin={120} animationEasing="ease-out"
+            isAnimationActive={false}
           />
         </ComposedChart>
       </ResponsiveContainer>

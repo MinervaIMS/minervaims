@@ -76,7 +76,13 @@ function niceTicks(lo: number, hi: number, n = 4): number[] {
   return out;
 }
 
-export function FundPerformanceBlock({ series, animate }: { series: FundSeries[] | null; animate: boolean }) {
+/* NO PER-CHART JAVASCRIPT ANIMATION. Recharts animates by setting React
+   state on every frame, so four charts entering together re-rendered
+   four component trees sixty times a second at the exact moment the page
+   was mounting -- which is what the Dashboard's entry actually felt like.
+   The cards now enter together in CSS, on the compositor, and the charts
+   are simply drawn. */
+export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }) {
   const [hidden, setHidden] = useState<string[]>([]);
 
   const bounds = useMemo(() => {
@@ -178,9 +184,10 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
     <Block
       filled
       title="Fund performance"
-      // NO WINDOW LABEL EITHER. There is one window and nothing can
-      // change it, so naming it was a caption explaining a control that
-      // does not exist.
+      // The window is STATED, not chosen: one caption where a selector
+      // used to be, so the two figures below it are never ambiguous about
+      // what they are the return over.
+      aside={<span style={{ color: INK }}>last 12 months</span>}
     >
       <div className="h-full min-h-0 flex flex-col">
         {/* THE LEGEND IS THE READING. Each fund is one block: the line's
@@ -236,7 +243,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
             src={fullLogoWhite.url}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 w-[44%] max-w-[180px] -translate-x-1/2 -translate-y-1/2 opacity-[0.3] select-none"
+            className="pointer-events-none absolute left-1/2 top-1/2 w-[26%] max-w-[112px] -translate-x-1/2 -translate-y-1/2 opacity-[0.3] select-none"
           />
           {!series ? (
             <div className="h-full w-full animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />
@@ -262,7 +269,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                     stroke={`url(#${gradientId}-stroke)`} strokeWidth={2}
                     strokeLinejoin="miter" strokeLinecap="butt"
                     fill={`url(#${gradientId})`} dot={false} activeDot={{ r: 3 }}
-                    isAnimationActive={animate} animationDuration={900} animationEasing="ease-out"
+                    isAnimationActive={false}
                   />
                 </AreaChart>
               ) : (
@@ -275,8 +282,7 @@ export function FundPerformanceBlock({ series, animate }: { series: FundSeries[]
                       strokeWidth={s.fund === 'long-short' ? 2.4 : 2}
                       strokeLinejoin="miter" strokeLinecap="butt"
                       dot={false} activeDot={{ r: 3 }} connectNulls={false}
-                      isAnimationActive={animate} animationDuration={900}
-                      animationBegin={i * 110} animationEasing="ease-out"
+                      isAnimationActive={false}
                     />
                   ))}
                 </LineChart>
