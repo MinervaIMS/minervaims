@@ -138,9 +138,9 @@ const Index = () => {
         <div className="container">
           {/* TWO SENTENCES, CENTRED, AND NOTHING ELSE. */}
           <div className="mx-auto max-w-4xl text-center py-4 md:py-10">
-            <p className="font-serif text-heading md:text-display leading-[1.2] text-accent text-balance">
-              We research <em>markets</em>, author quantitative <em>publications</em>, run virtual <em>funds</em>, while
-              learning from each other and from the <em>best professionals</em> in the industry.
+            <p className="font-serif text-heading md:text-display leading-[1.2] text-accent text-balance whitespace-pre-line">
+              We research <em>markets</em>, author quantitative <em>publications</em>, run virtual <em>funds</em>,&nbsp;
+              {"\n"}while learning from each other and from the <em>best professionals</em> in the industry.{"\n"}
             </p>
             <div className="mx-auto mt-10 md:mt-14 w-12 border-t border-separator" />
             <p className="mx-auto mt-10 md:mt-14 max-w-2xl font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
