@@ -174,6 +174,16 @@ const DivisionDetail = () => {
         </div>
       </section>
 
+      {/* Both live mandates on one pair of axes, directly below the funds
+          they belong to, so the two track records can be read together.
+          Either line can be switched off on the chart itself. */}
+      {isPortfolio && (
+        <FundPerformanceChart
+          funds={['long-short', 'multi-asset']}
+          title="Funds Performance"
+        />
+      )}
+
       {/* Portfolio Management: MIMS Virtual Portfolios Section */}
       {isPortfolio && (
         <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
@@ -199,16 +209,6 @@ const DivisionDetail = () => {
             </div>
           </div>
         </section>
-      )}
-
-      {/* Both live mandates on one pair of axes, directly below the funds
-          they belong to, so the two track records can be read together.
-          Either line can be switched off on the chart itself. */}
-      {isPortfolio && (
-        <FundPerformanceChart
-          funds={['long-short', 'multi-asset']}
-          title="Funds Performance"
-        />
       )}
 
       {/* Third Section: Latest Reports/Publications */}
