@@ -79,8 +79,9 @@ const About = () => {
               margin tells them what each block is before they read it, and
               lets them read only the one they came for. */}
           <div className="text-left">
-            {/* The lead reads at the section heading's size, full width. */}
-            <p className="font-serif text-heading leading-snug text-muted-foreground">
+            {/* The lead reads at the section heading's size, on a measure
+                one and a half times the homepage statement's. */}
+            <p className="max-w-[84rem] font-serif text-heading leading-snug text-muted-foreground">
               Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in
               2019, it is Bocconi's first association dedicated to asset management and the only one with
               student-managed virtual funds.
@@ -94,7 +95,7 @@ const About = () => {
                   key={block.label}
                   className="grid gap-y-2 py-8 md:py-10 md:grid-cols-[8rem_1fr] md:gap-x-10"
                 >
-                  <h3 className="font-serif text-body-lg italic tracking-wide text-accent md:pt-1">
+                  <h3 className="font-serif text-heading italic tracking-wide text-accent md:pt-1">
                     {block.label}
                   </h3>
                   <p className="font-body text-body-lg leading-relaxed text-muted-foreground">
