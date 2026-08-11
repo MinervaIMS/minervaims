@@ -24,12 +24,16 @@ export function DashboardGreeting({ userId, vars }: { userId: string; vars: Gree
   return (
     // VERTICALLY CENTRED IN THE WHITE SPACE ABOVE THE KPI ROW, which is
     // not the same as centred in this header. The band above the sentence
-    // is the content pane's own top padding (24px); the band below it is
-    // this header's padding plus the 12px grid gap. Left symmetric, the
-    // sentence sat 8px low. Reclaiming that 8px above balances the two
-    // bands exactly, and costs no height because it is taken back rather
-    // than added.
-    <header className="shrink-0 -mt-1 lg:-mt-2 pb-1">
+    // is the content pane's own top padding (24px) plus this header's;
+    // the band below it is this header's bottom padding plus the 12px
+    // grid gap that separates it from the first card. Twelve pixels more
+    // below than above therefore puts the sentence exactly in the middle
+    // of the two, and the 56px reclaimed by dropping the breadcrumb is
+    // spent here rather than banked: the sentence now has real air on
+    // both sides instead of sitting just under the chrome.
+    // The two panes pad differently (24px on a desktop, 16px on a phone),
+    // so the balance is struck separately at each breakpoint.
+    <header className="shrink-0 pt-4 pb-5 lg:pt-5 lg:pb-8">
       <h1 className="mx-auto max-w-4xl text-center font-serif text-xl sm:text-2xl xl:text-[2rem] leading-[1.15] text-accent text-balance">
         {line}
       </h1>

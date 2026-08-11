@@ -1212,23 +1212,31 @@ const MinervaWorkspace = () => {
 
           {/* Content area */}
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            {/* Breadcrumb strip */}
-            <div className="shrink-0 h-14 flex items-center gap-3 px-6">
-              {!submenuOpen && activeSection && activeSection.subItems.length > 1 && (
-                <button
-                  onClick={() => setSubmenuOpen(true)}
-                  className="h-7 w-7 flex items-center justify-center hover:bg-muted"
-                  title="Show submenu"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              )}
-              <nav className="font-body text-sm text-muted-foreground flex items-center gap-2">
-                <span>Minerva Workspace</span>
-                {activeSection && <><span>/</span><span>{activeSection.label}</span></>}
-                {activeSub && <><span>/</span><span className="text-foreground">{activeSub.label}</span></>}
-              </nav>
-            </div>
+            {/* Breadcrumb strip.
+                NOT ON THE DASHBOARD, and only there. The Dashboard is one
+                screen with no subsections, so "Minerva Workspace /
+                Dashboard" tells the reader what the highlighted item in
+                the rail beside it already says, and spends 56px of the
+                height the page is trying to fit into. Every other section
+                keeps it exactly as it was. */}
+            {activeSectionKey !== 'dashboard' && (
+              <div className="shrink-0 h-14 flex items-center gap-3 px-6">
+                {!submenuOpen && activeSection && activeSection.subItems.length > 1 && (
+                  <button
+                    onClick={() => setSubmenuOpen(true)}
+                    className="h-7 w-7 flex items-center justify-center hover:bg-muted"
+                    title="Show submenu"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                )}
+                <nav className="font-body text-sm text-muted-foreground flex items-center gap-2">
+                  <span>Minerva Workspace</span>
+                  {activeSection && <><span>/</span><span>{activeSection.label}</span></>}
+                  {activeSub && <><span>/</span><span className="text-foreground">{activeSub.label}</span></>}
+                </nav>
+              </div>
+            )}
 
             {/* Scrollable content. `relative` so the workspace loader can fill
                 and centre within exactly this pane (the portion that loads). */}
