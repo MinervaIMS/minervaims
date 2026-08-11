@@ -136,31 +136,26 @@ const Index = () => {
       <section className="py-section-sm md:py-section bg-background">
         <div className="container">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">About Minerva IMS</h2>
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="max-w-3xl">
-              <p className="font-body text-body-lg text-muted-foreground mb-6">
-                Minerva Investment Management Society (MIMS) is an association promoted and run by students of Bocconi
-                University. Founded in 2019, it operates student-managed virtual funds supported by structured research
-                and portfolio management processes. Members work across specialist research divisions and Portfolio
-                Management, producing professional-standard reports and documenting decisions through due diligence and
-                risk analysis.
-              </p>
-              <p className="font-body text-body-lg text-muted-foreground mb-6">
-                MIMS complements its investment work with a targeted programme of engagement. The Society hosts one
-                event per semester with industry professionals, alongside company visits and internal presentations
-                where teams share their work and debate key market questions. Regular division and association-wide
-                aperitivos strengthen relationships across the membership.
-              </p>
-              <p className="font-body text-body-lg text-muted-foreground">
-                MIMS has also developed an international alumni network. Former members now work across major financial centres in leading financial institutions, including investment banks, hedge funds and asset managers, as well as consultancies and top academic programmes worldwide. The organisations shown below highlight where members have gone on to pursue MSc and PhD studies and where they have built their careers, underscoring the reach and strength of a truly global, high-performing community shaped at Bocconi.
-              </p>
-            </div>
-            <Link
-              to="/people/alumni"
-              className="cta-link whitespace-nowrap shrink-0"
-            >
-              Discover Alumni Network
-            </Link>
+          {/* TWO SENTENCES, CENTRED, AND NOTHING ELSE. A statement in the
+              serif, a short rule, and one supporting line a step down in
+              the body face. The three explanatory paragraphs that used to
+              sit here said in four hundred words what these two say, and
+              the alumni network they ended on has its own figure in the
+              row above and its own section below. */}
+          <div className="mx-auto max-w-4xl text-center py-4 md:py-10">
+            <p className="font-serif text-subheading md:text-heading leading-snug text-accent text-balance">
+              We research markets, author quantitative publications, run virtual funds, while learning from each other
+              and from the best professionals in the industry.
+            </p>
+            {/* The rule is short and centred: it separates the two lines
+                without drawing a second full-width line under the one the
+                heading already carries. */}
+            <hr className="mx-auto my-6 md:my-8 w-12 border-t border-separator" />
+            <p className="mx-auto max-w-2xl font-body text-small leading-relaxed text-muted-foreground">
+              Founded at Bocconi in 2019, Minerva Investment Management Society is the University's leading association
+              dedicated to asset management, organised as an investment management firm, with research divisions and a
+              portfolio management team accountable for the funds.
+            </p>
           </div>
         </div>
       </section>
