@@ -61,7 +61,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
           <p
             className={`font-serif leading-none md:mb-2 ${
               dark
-                ? 'text-[1.95rem] text-background sm:text-[3.35rem] md:text-[4.5rem] md:h-sm:text-[3.3rem]'
+                ? 'text-3xl text-background sm:text-5xl md:text-hero'
                 : 'text-[1.75rem] text-primary sm:text-5xl md:text-hero'
             }`}
           >
@@ -70,7 +70,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
           <p
             className={`font-body mt-2 uppercase leading-tight tracking-wider ${
               dark
-                ? 'text-[0.66rem] text-background/80 sm:text-[0.82rem] md:text-[1.1rem] md:h-sm:text-[0.85rem]'
+                ? 'text-[0.65rem] text-background/80 sm:text-xs md:text-body'
                 : 'text-[0.6rem] text-muted-foreground sm:text-xs md:text-body'
             }`}
           >

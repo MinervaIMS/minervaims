@@ -61,7 +61,7 @@ export function JoinHeroStage({
   return (
     <div
       data-page-hero
-      className="relative flex min-h-[100svh] flex-col overflow-hidden"
+      className="relative flex min-h-[calc(100svh+120px)] flex-col overflow-hidden sm:min-h-[100svh]"
       style={{ backgroundColor: '#000' }}
     >
       {/*
@@ -90,25 +90,31 @@ export function JoinHeroStage({
         elastic row: it is what gives the invitation deliberate room instead
         of leaving it stranded against the bottom edge.
       */}
-      <div className="container relative z-10 flex flex-1 flex-col pb-[3.5svh] pt-[max(92px,11.5svh)] md:h-sm:pb-[1.6svh] md:h-sm:pt-[max(88px,9svh)]">
-        {/* Title and payoff, set a little below the navbar. */}
-        <div className="mt-[1svh] md:mt-[1.5svh]">
-          <h1 className="font-serif text-[2.5rem] leading-[1.05] text-background text-balance sm:text-hero md:text-[4.5rem] md:h-sm:text-[3.4rem]">
-            {JOIN_HERO.title}
-          </h1>
-          <p className="font-body mt-4 max-w-2xl text-body text-background/85 sm:text-body-lg md:mt-5 md:text-xl md:h-sm:mt-3 md:h-sm:text-body-lg">
-            {JOIN_HERO.payoff}
-          </p>
+      <div className="container relative z-10 flex flex-1 flex-col justify-between pb-6 pt-[max(92px,11.5svh)] md:h-sm:pb-5 md:h-sm:pt-[max(88px,9svh)]">
+        {/*
+          Title, payoff, figures and status rectangle are spaced as one compact
+          group near the top, with even vertical rhythm between them.
+        */}
+        <div className="flex flex-col gap-[1.6svh] sm:gap-[2.2svh] md:h-sm:gap-[1.6svh]">
+          {/* Title and payoff */}
+          <div>
+            <h1 className="font-serif text-[2.1rem] leading-[1.05] text-background text-balance sm:text-hero md:text-[4.5rem] md:h-sm:text-[3.4rem]">
+              {JOIN_HERO.title}
+            </h1>
+            <p className="font-body mt-3 max-w-2xl text-body text-background/85 sm:mt-4 sm:text-body-lg md:mt-5 md:text-xl md:h-sm:mt-3 md:h-sm:text-body-lg">
+              {JOIN_HERO.payoff}
+            </p>
+          </div>
+
+          {/* Figures */}
+          <div>{figures}</div>
+
+          {/* Application status */}
+          <div className="max-w-4xl">{children}</div>
         </div>
 
-        {/* Figures, held close to the payoff they qualify. */}
-        <div className="mt-[3.2svh] md:h-sm:mt-[2.4svh]">{figures}</div>
-
-        {/* Application status, directly under the figures. */}
-        <div className="mt-[3.6svh] md:h-sm:mt-[2.6svh]">{children}</div>
-
-        {/* The elastic row: the invitation centres in whatever height is left. */}
-        <div className="flex flex-1 items-center justify-center pt-[3svh] md:h-sm:pt-[2svh]">
+        {/* Scroll invitation sits at the foot of the stage, clear of the fixed cookie banner. */}
+        <div className="flex justify-center mb-[340px] sm:mb-[220px] md:mb-[180px] lg:mb-[160px]">
           <ScrollInvitation reduced={reduced} />
         </div>
       </div>
