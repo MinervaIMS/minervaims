@@ -153,24 +153,19 @@ const Index = () => {
       </section>
 
 
+      {/* Alumni Testimonials */}
+      <TestimonialsSection />
+
       {/* Our Divisions (scroll-driven card stack) */}
-      <section className="pt-6 md:pt-8 pb-6 md:pb-8 bg-background">
+      <section className="pt-section-sm md:pt-section pb-section-sm md:pb-section bg-background">
         <DivisionScrollStack />
       </section>
 
       {/* Funds Performance (same chart as Portfolio Management) */}
       <FundPerformanceChart funds={['long-short', 'multi-asset']} title="Funds Performance" />
 
-
-
       {/* Alumni Ticker */}
       <AlumniTicker />
-
-
-
-
-      {/* Alumni Testimonials */}
-      <TestimonialsSection />
 
       {/* Latest Reports */}
       <ReportsSection
