@@ -118,7 +118,9 @@ Deno.serve(async (req) => {
       {
         const when = new Date(a.ad_date);
         const { data: entry, error: entryErr } = await supabase.from('treasury_entries').insert({
-          amount: a.amount, flow: 'out',
+          // Ads are always a cost: store the amount as a negative (outflow)
+          // so it reduces the treasury balance.
+          amount: -Math.abs(a.amount), flow: 'out',
           description: 'Advertising - social media communication',
           source: 'ads_spending', execution_date: a.ad_date,
           academic_semester: academicSemester(when), is_auto: true, locked: true, created_by: user.id,
