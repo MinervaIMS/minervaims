@@ -126,7 +126,15 @@ export function JoinFaq() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search the questions"
                 autoComplete="off"
-                className="w-full rounded-none border border-separator bg-background py-2.5 pl-9 pr-10 font-body text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-accent focus:outline-none sm:py-2 sm:text-base [&::-webkit-search-cancel-button]:appearance-none"
+                /*
+                  transition-[border-color] rather than transition-all: with
+                  `all`, the focus outline the engine applies is animated too,
+                  so its opaque default colour faded in over 200ms and read as
+                  a dark flash across the field on every click. Only the
+                  hairline animates now, and the outline is suppressed with an
+                  explicit transparent colour so nothing can paint it.
+                */
+                className="w-full rounded-none border border-separator bg-background py-2.5 pl-9 pr-10 font-body text-sm text-foreground outline-none outline-0 outline-transparent transition-[border-color] duration-200 placeholder:text-muted-foreground focus:border-accent focus:outline-none focus-visible:outline-none sm:py-2 sm:text-base [&::-webkit-search-cancel-button]:appearance-none"
               />
               {isSearching && (
                 <button
