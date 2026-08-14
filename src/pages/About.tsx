@@ -21,16 +21,15 @@ const WHAT_WE_DO: { label: string; body: string }[] = [
     body:
       "Members research markets within specialised divisions and publish what they find: equity reports, " +
       "macroeconomic articles, investment outlooks and quantitative papers, all structured to professional " +
-      "investment-industry standards. Every piece is drafted, reviewed and defended in front of the team before " +
-      "publication. Publications carry their authors' names and are released through the Society's archive.",
+      "investment-industry standards. Publications carry their authors' names and are released through the Society's archive.",
   },
   {
     label: "Meet",
     body:
       "Work here is done in teams, under deadlines, alongside peers who are ambitious and generous with what they " +
-      "know. Members learn to operate inside a structure built like a firm, and the relationships formed in a " +
-      "division tend to outlast the academic year. Internal presentations, the annual open competition and regular " +
-      "aperitivos keep the membership close across divisions.",
+      "know. Members develop professional experience in a firm-style environment and build relationships lasting " +
+      "far beyond their time in the Society. Internal presentations, regular aperitivos, and more keep the membership " +
+      "close across divisions.",
   },
   {
     label: "Engage",
