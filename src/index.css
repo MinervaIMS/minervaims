@@ -28,6 +28,25 @@ body[data-scroll-locked] {
   padding-right: 0 !important;
 }
 
+/* AND SMOOTH SCROLLING IS OFF WHILE AN OVERLAY IS OPENING.
+   `html { scroll-behavior: smooth }` below turns EVERY programmatic scroll
+   into an animation, including the ones nobody asked for. When a Radix
+   overlay opens it focuses an item inside itself and react-remove-scroll
+   saves and restores the scroll position around the lock; with smooth
+   scrolling in force, that save/restore reads a value that is still moving
+   and writes it back, so the two fight and the page glides hundreds of
+   pixels in an arbitrary direction. Measured on the application form: 24
+   scroll events and a wandering 400 to 650px lurch on a single click, which
+   is the "the whole page moves when I open a dropdown" fault.
+   With the behaviour set to auto for the duration of the lock the same
+   click produces ZERO scroll events and ZERO net movement. Anchor links and
+   the site's own smooth scrolling are untouched: this applies only while an
+   overlay holds the page. */
+body[data-scroll-locked],
+html:has(body[data-scroll-locked]) {
+  scroll-behavior: auto !important;
+}
+
 @layer base {
   :root {
     /* Core palette - black/white/grey with deep navy accent */

@@ -80,7 +80,19 @@ export default function EventRegister() {
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <>
       <Helmet><title>Register | MIMS</title></Helmet>
-      <div className="relative min-h-screen w-full flex items-center justify-center px-4 py-12 overflow-hidden" style={{ backgroundColor: '#05030F' }}>
+      {/* THE CARD STARTS BELOW THE NAVIGATION, which it did not.
+          This shell centred the card in the viewport with 48px of padding, so
+          on any card taller than the screen - which is every event with a
+          description - the top of the card came to rest at 48px while the
+          fixed header occupies the first 84. The card was drawn over the
+          navigation and the event's own eyebrow and title sat under it.
+          The application form already solves this correctly; this is the same
+          measure: start at the top, and clear the header plus a band of space,
+          including the iOS safe area. */}
+      <div
+        className="relative min-h-screen w-full flex items-start justify-center overflow-hidden px-4 pb-12 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))]"
+        style={{ backgroundColor: '#05030F' }}
+      >
         <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
           <Beams
             beamWidth={8.4}
@@ -94,8 +106,10 @@ export default function EventRegister() {
           />
         </div>
         {/* Flat white card per the Minerva Forms design. */}
-        {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
-        <div className="relative z-[55] w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+        {/* BELOW THE OVERLAY LAYER: see Apply.tsx. At z-[55] this card painted
+            over every Radix portal (z-50), so the programme and year lists on
+            this form opened invisibly behind it. */}
+        <div className="relative z-10 w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6"><img
             src={fullLogoAsset.url}
             alt="Minerva Investment Management Society"
@@ -138,7 +152,12 @@ export default function EventRegister() {
         {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{event.place}</div>}
         {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
       </div>
-      {event.description && <p className="font-body text-sm text-foreground leading-relaxed mb-2 max-w-[470px] mx-auto text-center">{event.description}</p>}
+      {/* THE DESCRIPTION READS LEFT, not centred. Centring is right for a
+          title and for the two or three words of a status line; a paragraph
+          of a hundred and fifty words set centred gives every line a
+          different starting point, so the eye has to hunt for the next one.
+          The block stays centred in the card; only its text is aligned. */}
+      {event.description && <p className="font-body text-sm text-foreground leading-relaxed mb-2 max-w-[470px] mx-auto text-left">{event.description}</p>}
 
       <div className="max-w-[520px] mx-auto mt-7">
         <div className="pb-2 border-b border-[#D9D9D9] mb-5">
