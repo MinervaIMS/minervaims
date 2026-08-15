@@ -61,9 +61,12 @@ export function AuthLayout({
               />
             )}
           </div>
-          {/* z-[55]: while scrolling, the card passes OVER the fixed site nav bar (z-50). */}
+          {/* BELOW THE OVERLAY LAYER. Radix portals (Select, Popover, Dialog)
+              render on <body> at z-50, so a card above them hides every
+              dropdown it contains. z-10 keeps the card over its own
+              background and under both the navigation and the overlays. */}
           <div
-            className="relative z-[55] w-full max-w-md bg-background"
+            className="relative z-10 w-full max-w-md bg-background"
             style={{
               borderRadius: 0,
               padding: '38px 32px',

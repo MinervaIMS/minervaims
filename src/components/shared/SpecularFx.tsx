@@ -160,28 +160,56 @@ export function SpecularFx({
     const mesh = new Mesh(gl, { geometry, program });
     fx.appendChild(gl.canvas);
 
-    const sizeRef = { w: 1, h: 1 };
+    // The button's box in viewport coordinates, refreshed by `resize` and by
+    // scrolling rather than read on every pointer move. See `onPointerMove`.
+    const box = { left: 0, top: 0, right: 0, bottom: 0, cx: 0, cy: 0, w: 1, h: 1 };
+
     const resize = () => {
-      // getBoundingClientRect reports the VISUAL box, so inside anything that
-      // scales - a dialog animating open, for instance - it returns the
-      // mid-animation size. ResizeObserver never fires for a transform, so
-      // that wrong size used to stick: the streak was drawn for a box the
-      // button no longer had, and appeared as a bright seam inside the
-      // button instead of along its edge.
+      // THE CANVAS IS MEASURED AGAINST THE BOX IT ACTUALLY LIVES IN.
       //
-      // offsetWidth/offsetHeight are the LAYOUT size and ignore transforms.
-      // Dividing the rect by them recovers the ancestor scale, so the
-      // geometry is right during the animation and keeps sub-pixel accuracy
-      // once everything has settled.
+      // `.specular-fx` is `position: absolute; inset: -20px`, and `inset` on an
+      // absolutely positioned child resolves against its container's PADDING
+      // box. The geometry used to be derived from the button's BORDER box
+      // instead, via offsetWidth/offsetHeight. These buttons carry a 1px
+      // border, so the canvas was sized 2px wider and 2px taller than the
+      // element holding it: measured on the event form, a 558x58 button gave
+      // a 596x96 overlay box holding a 598x98 canvas.
+      //
+      // A canvas 2px too large, pinned to its box's top left, puts the drawn
+      // rectangle half a border off centre, so the specular edge fell OUTSIDE
+      // the button on two sides and INSIDE it on the other two. That is the
+      // displaced, doubled border on the Register button: the light ring and
+      // the navy fill were never concentric.
+      //
+      // Measuring the overlay's own rect and locating the button inside it
+      // makes the two agree exactly, whatever the border, the padding or the
+      // sub-pixel layout happen to be.
       const rect = btn.getBoundingClientRect();
-      const scale = btn.offsetWidth > 0 ? rect.width / btn.offsetWidth : 1;
-      const w = scale > 0.01 ? rect.width / scale : rect.width;
-      const h = scale > 0.01 ? rect.height / scale : rect.height;
-      if (w < 1 || h < 1) return; // Not laid out yet: wait for the next call.
-      sizeRef.w = w;
-      sizeRef.h = h;
-      renderer.setSize(w + PAD * 2, h + PAD * 2);
-      program.uniforms.uCenter.value = [(PAD + w / 2) * dpr, (PAD + h / 2) * dpr];
+      const overlay = fx.getBoundingClientRect();
+      // getBoundingClientRect reports the VISUAL box, so inside anything that
+      // scales - a dialog animating open - it returns the mid-animation size.
+      // offsetWidth is the LAYOUT size and ignores transforms, so their ratio
+      // recovers the ancestor scale and the geometry stays right throughout.
+      const raw = btn.offsetWidth > 0 ? rect.width / btn.offsetWidth : 1;
+      const scale = raw > 0.01 ? raw : 1;
+      const boxW = overlay.width / scale;
+      const boxH = overlay.height / scale;
+      const w = rect.width / scale;
+      const h = rect.height / scale;
+      if (w < 1 || h < 1 || boxW < 1 || boxH < 1) return; // Not laid out yet.
+
+      box.left = rect.left; box.top = rect.top;
+      box.right = rect.right; box.bottom = rect.bottom;
+      box.cx = rect.left + rect.width / 2;
+      box.cy = rect.top + rect.height / 2;
+      box.w = rect.width; box.h = rect.height;
+
+      // gl_FragCoord's origin is the BOTTOM left, so the vertical offset is
+      // measured from the bottom of the overlay up to the bottom of the button.
+      const offX = (rect.left - overlay.left) / scale;
+      const offY = (overlay.bottom - rect.bottom) / scale;
+      renderer.setSize(boxW, boxH);
+      program.uniforms.uCenter.value = [(offX + w / 2) * dpr, (offY + h / 2) * dpr];
       program.uniforms.uHalfSize.value = [(w / 2) * dpr, (h / 2) * dpr];
     };
     const ro = new ResizeObserver(resize);
@@ -199,28 +227,37 @@ export function SpecularFx({
 
     // Light angle steers toward the pointer (anywhere on the page) and falls
     // back to a slow sweep when the pointer hasn't moved yet.
+    //
+    // THE POINTER HANDLER READS NO LAYOUT. It used to call
+    // getBoundingClientRect on every pointermove, page-wide, which forces the
+    // browser to flush layout on each event: on a long form with two of these
+    // buttons that is a synchronous reflow tens of times a second for the
+    // whole time the cursor is moving, and it is a real part of why the forms
+    // felt heavy. The box is cached by `resize` and refreshed on scroll, and
+    // the handler now does arithmetic only.
     let pointerAngle: number | null = null;
     let proximityT = 0;
     const onPointerMove = (e: PointerEvent) => {
-      const rect = btn.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right);
-      const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom);
+      const dx = Math.max(box.left - e.clientX, 0, e.clientX - box.right);
+      const dy = Math.max(box.top - e.clientY, 0, e.clientY - box.bottom);
       const dist = Math.hypot(dx, dy);
       // Over the button itself the light settles on the diagonal (framing the
       // corners) and gently sways with the cursor position within the button.
       if (dist === 0) {
-        const nx = (e.clientX - cx) / (rect.width / 2);
-        const ny = (cy - e.clientY) / (rect.height / 2);
-        pointerAngle = Math.atan2(2 / rect.height, -2 / rect.width) + nx * 0.3 + ny * 0.15;
+        const nx = (e.clientX - box.cx) / (box.w / 2);
+        const ny = (box.cy - e.clientY) / (box.h / 2);
+        pointerAngle = Math.atan2(2 / box.h, -2 / box.w) + nx * 0.3 + ny * 0.15;
       } else {
-        pointerAngle = Math.atan2(cy - e.clientY, e.clientX - cx);
+        pointerAngle = Math.atan2(box.cy - e.clientY, e.clientX - box.cx);
       }
       const t = Math.max(0, 1 - dist / Math.max(propsRef.current.proximity, 1));
       proximityT = t * t * (3 - 2 * t);
     };
-    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    // Scrolling moves the button under a stationary cursor, so the cached box
+    // has to follow it. This is the only layout read tied to scrolling and it
+    // is passive, so it never blocks the scroll itself.
+    window.addEventListener('scroll', resize, { passive: true, capture: true });
 
     let angle = 2.4;
     let idleAngle = 2.4;
@@ -260,20 +297,44 @@ export function SpecularFx({
       program.uniforms.uThickness.value = p.thickness * dpr;
       renderer.render({ scene: mesh });
     };
-    raf = requestAnimationFrame(update);
+
+    // IT ONLY RENDERS WHILE IT IS ON SCREEN. The loop used to run for the
+    // life of the page: on the application form the submit button is a
+    // thousand pixels below the fold, so a WebGL context drew sixty frames a
+    // second of something nobody could see for the whole time the form was
+    // being filled in - on the event page, alongside a second WebGL context
+    // for the beams. An IntersectionObserver starts and stops it, and the
+    // clock is reset on resume so the first frame back is not a long step.
+    const start = () => {
+      if (raf) return;
+      last = performance.now();
+      raf = requestAnimationFrame(update);
+    };
+    const stop = () => {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const io = typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) start(); else stop();
+      }, { rootMargin: '120px' })
+      : null;
+    if (io) io.observe(btn); else start();
 
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
       cancelAnimationFrame(frame1);
+      io?.disconnect();
       ro.disconnect();
       host.removeEventListener('animationend', settle);
       host.removeEventListener('transitionend', settle);
       window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('scroll', resize, { capture: true } as EventListenerOptions);
       if (gl.canvas.parentNode === fx) fx.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
     // The effect binds once; live option changes flow through propsRef.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <span ref={fxRef} className="specular-fx" aria-hidden="true" />;

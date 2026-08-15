@@ -4,13 +4,29 @@ export function useAnimatedCounter(targetValue: number, duration: number = 1500,
   const [displayValue, setDisplayValue] = useState(0);
   const animationRef = useRef<number>();
   const startTimeRef = useRef<number>();
-  const hasAnimated = useRef(false);
+  /**
+   * The figure this counter has already counted up to.
+   *
+   * It used to be a plain boolean, latched on the first run and never
+   * cleared, so a figure that CHANGED after the first count-up was never
+   * shown: the card kept displaying the old number for the life of the
+   * mount, with no indication that it was stale. Remembering the target
+   * instead keeps the "count up once" behaviour for the ordinary case and
+   * still lets a genuinely new figure be counted to.
+   */
+  const animatedTo = useRef<number | null>(null);
+  /** What is on screen, readable without making the effect depend on it. */
+  const shownRef = useRef(0);
+  shownRef.current = displayValue;
 
   useEffect(() => {
-    if (!enabled || targetValue === 0 || hasAnimated.current) return;
+    if (!enabled || targetValue === 0 || animatedTo.current === targetValue) return;
 
-    hasAnimated.current = true;
-    const startValue = 0;
+    // A first arrival counts up from zero; a later change counts on from
+    // whatever is on screen, so a corrected figure moves rather than resets.
+    const startValue = animatedTo.current === null ? 0 : shownRef.current;
+    animatedTo.current = targetValue;
+    startTimeRef.current = undefined;
     const difference = targetValue - startValue;
 
     const animate = (currentTime: number) => {

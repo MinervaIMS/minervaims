@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { loadPdfJs } from '@/lib/pdfjs';
 
 // =====================================================================
@@ -47,34 +47,60 @@ const CONCURRENCY = 3;
 
 const cache = new Map<string, string>();
 
+const NONE: string[] = [];
+
 /**
- * `ready` is what the loader waits on. It turns true when the covers have
- * been drawn, when there were none to draw, or when a cap elapses, so a
- * slow or unreachable PDF can delay a decoration but can never hold the
- * whole Dashboard behind the loader.
+ * `ready` is what the loader waits on. It turns true when the covers for
+ * THE CURRENT LIST have been drawn, when there are none to draw, or when a
+ * cap elapses, so a slow or unreachable PDF can delay a decoration but can
+ * never hold the whole Dashboard behind the loader.
+ *
+ * READINESS IS A FACT ABOUT A PARTICULAR LIST, AND IT IS COMPUTED DURING
+ * RENDER. This is the whole of the Dashboard's opening fault. The hook is
+ * called with `null` on the first render, because the archive query has not
+ * answered yet; the old version treated that as "nothing to draw", set
+ * `ready` to true and never set it back to false when the real list of six
+ * PDFs arrived. So the gate in WorkspaceDashboard - which exists precisely
+ * so that the page appears complete or not at all - was already satisfied
+ * by the time the data landed. The loader lifted, the Reports card mounted
+ * with an EMPTY cover list and therefore drew nothing at all, and up to a
+ * second and a half later six covers appeared and the columns started from
+ * their first frame in front of the reader.
+ *
+ * Deriving `ready` from a stored key rather than from a separate piece of
+ * state fixes it without introducing the opposite fault: a flag reset
+ * inside an effect would leave one painted frame in which the page had
+ * already been declared ready, which is a flash of the whole Dashboard
+ * between two showings of the loader. Comparing keys during render means
+ * the answer is right in the same render that the new list arrives.
  */
 export function useReportCovers(urls: string[] | null): { covers: string[]; ready: boolean } {
   const key = (urls ?? []).join('|');
-  const [covers, setCovers] = useState<string[]>([]);
-  const [ready, setReady] = useState(false);
+  const [done, setDone] = useState<{ key: string; covers: string[] } | null>(null);
+
+  // A SECOND VISIT COSTS NOTHING, and costs no render either: everything
+  // already drawn in this session is in the module cache, so the answer is
+  // available during the first render rather than an effect later.
+  const cached = useMemo(() => {
+    if (key === '') return NONE;
+    const known = key.split('|').map((u) => cache.get(u));
+    return known.every((v): v is string => !!v) ? (known as string[]) : null;
+  }, [key]);
+
+  const ready = cached !== null || done?.key === key;
+  const covers = cached ?? (done?.key === key ? done.covers : NONE);
 
   useEffect(() => {
-    if (!urls || urls.length === 0) { setCovers([]); setReady(true); return; }
+    if (!urls || urls.length === 0) return;
+    // Already answered for this list, from the cache or from a previous run.
+    if (cache.get(urls[0]) && urls.every((u) => cache.get(u))) return;
     let active = true;
 
-    // A SECOND VISIT COSTS NOTHING. Everything already drawn in this
-    // session is in the cache, so the page opens without waiting at all.
-    const known = urls.map((u) => cache.get(u));
-    if (known.every((v): v is string => !!v)) {
-      setCovers(known as string[]);
-      setReady(true);
-      return () => { active = false; };
-    }
+    const publish = (list: string[]) => { if (active) setDone({ key, covers: list }); };
 
     const cap = window.setTimeout(() => {
       if (!active) return;
-      setCovers(urls.map((u) => cache.get(u)).filter((v): v is string => !!v));
-      setReady(true);
+      publish(urls.map((u) => cache.get(u)).filter((v): v is string => !!v));
     }, CAP_MS);
 
     (async () => {
@@ -82,7 +108,10 @@ export function useReportCovers(urls: string[] | null): { covers: string[]; read
       try {
         pdfjs = await loadPdfJs();
       } catch {
-        if (active) { window.clearTimeout(cap); setReady(true); }
+        // No renderer: the card draws without covers rather than holding the
+        // page. It still publishes, so `ready` is answered for this list.
+        window.clearTimeout(cap);
+        publish(NONE);
         return;
       }
 
@@ -126,8 +155,7 @@ export function useReportCovers(urls: string[] | null): { covers: string[]; read
       // ONE PUBLICATION, in the archive's own order. Painting them as they
       // landed changed the stack under an animation that had already
       // started.
-      setCovers(drawn.filter((v): v is string => !!v));
-      setReady(true);
+      publish(drawn.filter((v): v is string => !!v));
     })();
 
     return () => { active = false; window.clearTimeout(cap); };
