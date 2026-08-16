@@ -48,6 +48,30 @@ export default function Treasury() {
 
   const balance = useMemo(() => entries.reduce((s, e) => s + Number(e.amount), 0), [entries]);
 
+  const exportCsv = () => {
+    if (!entries.length) { toast({ title: 'Nothing to export' }); return; }
+    const rows = entries.map((e) => ({
+      execution_date: e.execution_date,
+      registration_date: e.registration_date ? new Date(e.registration_date).toISOString().slice(0, 10) : '',
+      description: e.description,
+      source: e.source || 'manual',
+      academic_semester: e.academic_semester || '',
+      flow: e.flow === 'out' ? 'Outflow' : 'Inflow',
+      amount: Number(e.amount).toFixed(2),
+      entry_type: e.is_auto ? 'automatic' : 'manual',
+    }));
+    downloadCSV(rows, [
+      { key: 'execution_date', header: 'Execution date' },
+      { key: 'registration_date', header: 'Registration date' },
+      { key: 'description', header: 'Description' },
+      { key: 'source', header: 'Source' },
+      { key: 'academic_semester', header: 'Semester' },
+      { key: 'flow', header: 'Flow' },
+      { key: 'amount', header: 'Amount (EUR)' },
+      { key: 'entry_type', header: 'Entry type' },
+    ], `minerva-treasury-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
   // Group entries by semester (each semester may have a different leadership
   // team, so the register reads semester by semester), newest first.
   const semesterGroups = useMemo(() => {
