@@ -24,8 +24,11 @@ import { useAccess } from '@/hooks/useAccess';
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Treasury() {
-  const { session } = useAuth();
+  const { session, user, roles } = useAuth();
   const { primaryRole } = useAccess();
+  // Only these roles may export the register.
+  const canExport = user?.email === 'as.minerva@unibocconi.it' ||
+    (roles || []).some((r) => ['admin', 'president', 'vice_president', 'head_of_operations'].includes(r.role as string));
   const { toast } = useToast();
   const [entries, setEntries] = useState<TreasuryEntry[]>([]);
   const [loading, setLoading] = useState(true);
