@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       const e = parsed.data;
       const signed = e.flow === 'out' ? -Math.abs(e.amount) : Math.abs(e.amount);
       const { data, error } = await supabase.from('treasury_entries').insert({
-        amount: signed, flow: e.flow, description: e.description, source: e.source ?? null,
+        amount: signed, flow: e.flow, description: e.description, source: (e.source ?? '').trim() || 'manual',
         execution_date: e.execution_date, academic_semester: academicSemester(new Date(e.execution_date)),
         is_auto: false, locked: false, created_by: user.id,
       }).select().single();

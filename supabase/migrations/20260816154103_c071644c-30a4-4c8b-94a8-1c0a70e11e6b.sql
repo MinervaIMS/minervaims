@@ -1,0 +1,2 @@
+UPDATE public.treasury_entries SET source = 'manual' WHERE is_auto = false AND (source IS NULL OR btrim(source) = '');
+UPDATE public.treasury_entries SET amount = -45 WHERE id = '0a498172-906c-4173-b0f2-746011106b61';
