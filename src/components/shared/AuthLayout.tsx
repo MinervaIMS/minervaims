@@ -61,12 +61,10 @@ export function AuthLayout({
               />
             )}
           </div>
-          {/* BELOW THE OVERLAY LAYER. Radix portals (Select, Popover, Dialog)
-              render on <body> at z-50, so a card above them hides every
-              dropdown it contains. z-10 keeps the card over its own
-              background and under both the navigation and the overlays. */}
+          {/* z-[55]: over the navigation, under the overlay layer at z-[70].
+              See the layer scale at the top of index.css. */}
           <div
-            className="relative z-10 w-full max-w-md bg-background"
+            className="relative z-[55] w-full max-w-md bg-background"
             style={{
               borderRadius: 0,
               padding: '38px 32px',

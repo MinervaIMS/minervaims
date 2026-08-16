@@ -18,6 +18,8 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 // reduced motion.
 // =====================================================================
 
+import { perfMode } from '@/lib/perf';
+
 const DotField = lazy(() => import('@/components/shared/DotField'));
 
 export function ApplyBackground() {
@@ -30,6 +32,12 @@ export function ApplyBackground() {
     apply();
     mq.addEventListener('change', apply);
     if (mq.matches) return () => mq.removeEventListener('change', apply);
+    // A WebGL particle field is the single most expensive thing on this page
+    // and the browsers embedded in other apps frequently run it without GPU
+    // rasterisation. The card, the form and the deep navy ground are the
+    // page; the field is ambience, so on those browsers it is simply never
+    // mounted. See lib/perf.ts.
+    if (perfMode() === 'lite') return () => mq.removeEventListener('change', apply);
 
     const id = window.setTimeout(() => setShow(true), 120);
     return () => {

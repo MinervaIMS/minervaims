@@ -120,6 +120,17 @@ export function RouteChrome() {
 
     root.style.backgroundColor = c.base;
     root.style.setProperty('--chrome-bottom', c.bottom);
+
+    // THE ROUTE'S OWN SURFACE, PUBLISHED FOR ANYTHING THAT HAS TO MATCH IT.
+    // The page loader is the reason this exists. It is the Suspense fallback
+    // for every lazy route, and it used to paint `bg-background`, i.e. white,
+    // whatever it was standing in for: opening /join, /apply, /auth or an
+    // event registration from anywhere on the site meant a full-screen white
+    // flash immediately before a page that is nearly black. Reading the
+    // surface the route is about to have removes the flash entirely, and
+    // `--chrome-surface` tells the loader which of the two lock-ups to draw.
+    root.style.setProperty('--chrome-base', c.base);
+    root.dataset.surface = c.base === WHITE ? 'light' : 'dark';
   }, [pathname]);
 
   return null;

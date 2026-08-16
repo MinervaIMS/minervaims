@@ -14,16 +14,47 @@ html {
   overscroll-behavior-y: none;
 }
 
+/* =====================================================================
+   THE LAYER SCALE. One place, so nothing has to guess.
+
+     10   page content that has to sit above a page background
+     50   the fixed site navigation
+     55   the form cards (application, event registration, auth), which
+          pass OVER the navigation while scrolling, by design
+     60   the full-screen mobile navigation menu
+     70   THE OVERLAY LAYER: every Radix portal - Select, Popover,
+          Dropdown, Dialog, Sheet, Tooltip, Drawer - which must cover
+          everything above, including a form card
+     100  toasts and the page loader
+
+   The forms' dropdowns used to be invisible because the overlay layer sat
+   at 50, below the cards at 55. Lowering the cards fixed the lists but put
+   the navigation over the form, which is not what the design asks for. The
+   overlay layer moved to 70 instead, so both hold at once.
+   ===================================================================== */
+
 /* When a Radix overlay (Select, Dialog, …) opens it locks page scroll and
    react-remove-scroll adds a compensating margin/padding to <body> equal to
    the scrollbar width. Because <html> above already reserves that space
    permanently via scrollbar-gutter: stable, the injected compensation is a
-   DOUBLE correction: the page shifts left when the overlay opens and shifts
-   back when it closes (the "phantom scrollbar space" glitch seen on the
-   application form). Neutralising the compensation globally makes opening a
-   dropdown a strict layout no-op on every page, current and future — the
-   gutter reservation alone keeps the width stable. */
-body[data-scroll-locked] {
+   DOUBLE correction: 15px of margin appears down the right-hand side, the
+   available width changes, and the whole page shifts. That is the "space for
+   a second scrollbar appears and the page moves" fault on the application
+   form.
+
+   THE RULE HAS TO OUT-SPECIFY THE LIBRARY, NOT JUST EXIST.
+   react-remove-scroll injects its own `body[data-scroll-locked]` rule into
+   <head> AT RUNTIME, carrying `margin-right: <gap> !important`. The previous
+   version of this rule used the SAME selector, so the two tied on
+   specificity and the later one - the library's - won every time. Measured
+   in a browser: with both rules present the computed margin-right is 15px,
+   i.e. this rule did nothing at all. Qualifying it with `html` raises the
+   specificity above the library's and it wins whatever the source order,
+   which is what makes it a fix rather than a hope.
+
+   Measured with the same test once qualified: margin-right 0, no width
+   change, no shift. */
+html body[data-scroll-locked] {
   margin-right: 0 !important;
   padding-right: 0 !important;
 }
@@ -162,10 +193,28 @@ html:has(body[data-scroll-locked]) {
     overscroll-behavior-y: none;
   }
 
-  /* Pure-black safety band over the iOS home-indicator zone. Sits behind
-     everything (z-index: -1), pointer-events: none. Guarantees the bottom
-     safe-area is the same pure black regardless of which page is showing,
-     how short it is, or what Safari's translucent URL-bar backdrop mixes. */
+  /* Safety band over the iOS home-indicator zone, so the bottom safe area
+     is one predictable colour whatever page is showing and however far it
+     is scrolled.
+
+     IT HAS TO PAINT ABOVE THE PAGE, WHICH IT DID NOT. At `z-index: -1` a
+     fixed element is drawn behind every element that has a background of
+     its own, and the site's own layout wrapper carries `bg-background`
+     across the full viewport. The band was therefore covered on every
+     single page, and what Safari actually sampled at the bottom edge was
+     whatever content happened to be scrolled to the foot of the screen: the
+     dark hero on a cold load of the homepage, a white section a moment
+     later, the black footer at the end. That is why the lower browser bar
+     kept changing colour, and why colouring it "has been tried twice".
+
+     It now sits ABOVE page content and below the navigation, the overlay
+     layer and the toasts, so the colour at the bottom edge is the one this
+     rule declares. It stays `pointer-events: none`, and it is only as tall
+     as `env(safe-area-inset-bottom)`, which is ZERO on every desktop
+     browser, on Android and on any iPhone without a home indicator: where
+     there is no safe area, this rule covers nothing at all. Where there is
+     one, the footer and the workspace shell already pad themselves by the
+     same inset, so it covers no content there either. */
   body::after {
     content: "";
     position: fixed;
@@ -174,10 +223,10 @@ html:has(body[data-scroll-locked]) {
     bottom: 0;
     height: env(safe-area-inset-bottom);
     /* Colour follows the current route: RouteChrome sets --chrome-bottom so
-       the band matches the page it sits under (black on the public site,
+       the band matches the page it sits under (white on the public site,
        white in the workspace, deep navy on auth pages). */
     background-color: var(--chrome-bottom, #000000);
-    z-index: -1;
+    z-index: 45;
     pointer-events: none;
   }
 

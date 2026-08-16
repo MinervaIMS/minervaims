@@ -1,4 +1,5 @@
 import { Children, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { useLiteMotion } from '@/hooks/usePerfMode';
 
 // =====================================================================
 // ScrollStack — the scroll-driven presentation of "Our Divisions".
@@ -83,6 +84,11 @@ function Deck({ items, title, height, narrow }: {
   const rootRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [colWidth, setColWidth] = useState(0);
+  // Read through a ref inside `paint`, which is a stable callback and must
+  // not be rebuilt (and the scroll listener with it) when the mode changes.
+  const lite = useLiteMotion();
+  const liteRef = useRef(lite);
+  liteRef.current = lite;
 
   // Cards stick just under the fixed navbar, plus the pinned heading's own
   // height, so a card's top edge stops at the heading's baseline rule
@@ -92,43 +98,79 @@ function Deck({ items, title, height, narrow }: {
   const headingBlock = title ? (narrow ? '4rem' : '4.75rem') : '0rem';
   const cardBase = `calc(${navbar} + ${headingBlock})`;
 
+  /**
+   * ALL THE READS, THEN ALL THE WRITES.
+   *
+   * This runs on every scroll frame. It used to read
+   * `getBoundingClientRect()` twice and `offsetHeight` once PER CARD and
+   * write that card's transform and filter immediately afterwards, so the
+   * loop went read, write, read, write: each read after a write forces the
+   * browser to flush the layout it has just invalidated. With five cards
+   * that is fifteen forced reflows in a single frame, sixty times a second,
+   * for the whole time the section is on screen.
+   *
+   * Chrome and Safari on a laptop absorb it. The browsers embedded in other
+   * apps do not, and this is one of the two places on the homepage where
+   * that shows up as the reported jumping. Measuring every card first and
+   * writing afterwards costs one layout per frame instead of fifteen, and
+   * looks identical.
+   *
+   * NOTHING IS WRITTEN THAT HAS NOT CHANGED. The values are rounded to the
+   * precision they are used at and compared with what the element already
+   * carries, so a frame in which nothing moved touches no style at all.
+   *
+   * AND THE FILTER IS DROPPED ON A WEAK COMPOSITOR. `filter: brightness()`
+   * promotes each card and repaints it on every frame, which is expensive
+   * exactly where the budget is smallest. In lite mode the cards keep their
+   * scale and lift, which carry the depth, and lose only the shading.
+   */
   const paint = useCallback(() => {
     const root = rootRef.current;
     if (!root) return;
     const cards = [...root.querySelectorAll<HTMLElement>('[data-stack-card]')];
+    if (!cards.length) return;
 
+    // --- reads ---
+    const tops = cards.map((c) => c.getBoundingClientRect().top);
+    const spans = cards.map((c) => c.offsetHeight || 1);
+
+    // --- writes ---
     let top = 0;
-    cards.forEach((card, i) => {
-      const next = cards[i + 1];
-      if (!next) {
-        card.style.transform = '';
-        card.style.filter = '';
-        return;
+    const lite = liteRef.current;
+    for (let i = 0; i < cards.length; i += 1) {
+      const card = cards[i];
+      if (i === cards.length - 1) {
+        if (card.style.transform) card.style.transform = '';
+        if (card.style.filter) card.style.filter = '';
+        continue;
       }
       // How far the following card has travelled over this one: 0 while it
       // is still a card away, 1 once it has fully covered it.
-      const gap = next.getBoundingClientRect().top - card.getBoundingClientRect().top;
-      const span = card.offsetHeight || 1;
-      const p = Math.max(0, Math.min(1, 1 - gap / span));
+      const p = Math.max(0, Math.min(1, 1 - (tops[i + 1] - tops[i]) / spans[i]));
       if (p > 0.5) top = i + 1;
       // Settle back by up to 6% and lose a little light. The card keeps its
       // own sticky position; this is purely the sense of depth.
-      const scale = 1 - 0.06 * p;
-      const lift = -14 * p;
-      card.style.transform = `translate3d(0, ${lift.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
-      card.style.filter = `brightness(${(1 - 0.18 * p).toFixed(3)})`;
-    });
+      const transform = `translate3d(0, ${(-14 * p).toFixed(1)}px, 0) scale(${(1 - 0.06 * p).toFixed(4)})`;
+      if (card.style.transform !== transform) card.style.transform = transform;
+      const filter = lite ? '' : `brightness(${(1 - 0.18 * p).toFixed(3)})`;
+      if (card.style.filter !== filter) card.style.filter = filter;
+    }
     setActive(top);
   }, []);
 
   useEffect(() => {
     let frame = 0;
+    // THE STACK ONLY DOES THIS WORK WHILE IT IS ON SCREEN. The listener used
+    // to run for the life of the page: on the homepage that is a layout read
+    // and a style write per card on every scroll frame of every other
+    // section, for a section the reader is nowhere near.
+    let near = true;
     const measure = () => {
       const root = rootRef.current;
       if (root) setColWidth(root.clientWidth);
     };
     const onScroll = () => {
-      if (frame) return;
+      if (frame || !near) return;
       frame = requestAnimationFrame(() => { frame = 0; paint(); });
     };
     const onResize = () => { measure(); onScroll(); };
@@ -136,9 +178,20 @@ function Deck({ items, title, height, narrow }: {
     paint();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
+
+    const root = rootRef.current;
+    const io = root && typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver((entries) => {
+        near = entries.some((e) => e.isIntersecting);
+        if (near) onScroll();
+      }, { rootMargin: '50% 0px' })
+      : null;
+    if (io && root) io.observe(root);
+
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
+      io?.disconnect();
       if (frame) cancelAnimationFrame(frame);
     };
   }, [paint, narrow]);

@@ -207,6 +207,31 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
     let lastTime = performance.now();
     let rafId    = 0;
 
+    // THE LOOP STOPS WHEN THE BAND IS NOT ON SCREEN.
+    //
+    // It used to call requestAnimationFrame for the life of the page: on the
+    // homepage the ticker sits between the funds section and the reports, so
+    // a reader at the top of the page was paying for a frame callback and a
+    // transform write sixty times a second for a band a screen and a half
+    // away. On a laptop that is invisible; in the browsers embedded inside
+    // other apps it is a share of a budget that is already too small, and it
+    // is one of the two homepage loops behind the reported stutter.
+    //
+    // The observer stops the loop entirely rather than skipping work inside
+    // it, so an off-screen ticker costs exactly nothing. The clock is reset
+    // on resume, so the band never jumps forward by the time it spent away.
+    let onScreen = true;
+    const io = typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver((entries) => {
+        const next = entries.some((e) => e.isIntersecting);
+        if (next === onScreen) return;
+        onScreen = next;
+        if (onScreen) { lastTime = performance.now(); rafId = requestAnimationFrame(tick); }
+        else if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      }, { rootMargin: '25% 0px' })
+      : null;
+    if (io && band) io.observe(band);
+
     const tick = (now: number) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
@@ -339,6 +364,7 @@ function TickerBand({ row, isMobile }: { row: Row; isMobile: boolean }) {
 
     return () => {
       cancelAnimationFrame(rafId);
+      io?.disconnect();
       band.removeEventListener('pointerdown',   onPointerDown);
       band.removeEventListener('pointermove',   onPointerMove);
       band.removeEventListener('pointerup',     stopDrag);

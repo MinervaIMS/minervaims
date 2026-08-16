@@ -37,17 +37,13 @@ function Shell({ children }: { children: React.ReactNode }) {
         <ApplyBackground />
         {/* Flat white card per the Minerva Forms design: sharp corners, hairline
             border, deep drop shadow. */}
-        {/* THE CARD SITS BELOW THE OVERLAY LAYER, and that is the whole of the
-            dropdown fault. It used to be z-[55] so that it would scroll OVER
-            the fixed navigation (z-50). Every Radix overlay - Select, Popover,
-            Dialog, Tooltip - renders into a portal on <body> at z-50, so a card
-            at 55 painted over all of them: the programme, year and division
-            lists opened, took focus, held 28 options and were completely
-            invisible behind the white card. Verified in a browser: at z-[55]
-            the open list is in the DOM and nothing is on screen; at z-10 it
-            renders and is usable. z-10 also stops the card sliding over the
-            navigation, which was never right either. */}
-        <div className="relative z-10 w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+        {/* z-[55]: the card passes OVER the fixed navigation while scrolling,
+            which is the intended behaviour for the forms.
+            The dropdowns are not hidden by it any more because the OVERLAY
+            LAYER moved above the card rather than the card below the
+            navigation: every Radix portal is now z-[70]. The whole scale is
+            written down once, at the top of index.css. */}
+        <div className="relative z-[55] w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
             <img
               src={fullLogo}
@@ -115,7 +111,7 @@ function SuccessScreen() {
       <Helmet><title>Application submitted | MIMS</title></Helmet>
       <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
         <ApplyBackground />
-        <div className="relative z-10 w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
+        <div className="relative z-[55] w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}
           <div className="absolute inset-0">
             <PixelCardSuccess />
