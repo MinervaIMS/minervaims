@@ -9,7 +9,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Lock, Loader2 } from 'lucide-react';
+import { Plus, Lock, Loader2, Download } from 'lucide-react';
+import { downloadCSV } from '@/lib/download-utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -23,8 +24,11 @@ import { useAccess } from '@/hooks/useAccess';
 const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Treasury() {
-  const { session } = useAuth();
+  const { session, user, roles } = useAuth();
   const { primaryRole } = useAccess();
+  // Only these roles may export the register.
+  const canExport = user?.email === 'as.minerva@unibocconi.it' ||
+    (roles || []).some((r) => ['admin', 'president', 'vice_president', 'head_of_operations'].includes(r.role as string));
   const { toast } = useToast();
   const [entries, setEntries] = useState<TreasuryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +47,30 @@ export default function Treasury() {
   useEffect(() => { load(); }, []);
 
   const balance = useMemo(() => entries.reduce((s, e) => s + Number(e.amount), 0), [entries]);
+
+  const exportCsv = () => {
+    if (!entries.length) { toast({ title: 'Nothing to export' }); return; }
+    const rows = entries.map((e) => ({
+      execution_date: e.execution_date,
+      registration_date: e.registration_date ? new Date(e.registration_date).toISOString().slice(0, 10) : '',
+      description: e.description,
+      source: e.source || 'manual',
+      academic_semester: e.academic_semester || '',
+      flow: e.flow === 'out' ? 'Outflow' : 'Inflow',
+      amount: Number(e.amount).toFixed(2),
+      entry_type: e.is_auto ? 'automatic' : 'manual',
+    }));
+    downloadCSV(rows, [
+      { key: 'execution_date', header: 'Execution date' },
+      { key: 'registration_date', header: 'Registration date' },
+      { key: 'description', header: 'Description' },
+      { key: 'source', header: 'Source' },
+      { key: 'academic_semester', header: 'Semester' },
+      { key: 'flow', header: 'Flow' },
+      { key: 'amount', header: 'Amount (EUR)' },
+      { key: 'entry_type', header: 'Entry type' },
+    ], `minerva-treasury-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
 
   // Group entries by semester (each semester may have a different leadership
   // team, so the register reads semester by semester), newest first.
@@ -76,7 +104,10 @@ export default function Treasury() {
   return (
     <div>
       <WorkspacePageHeader title="Treasury" description="The association's cash-flow register. Entries cannot be deleted or edited - correct a mistake by adding a correction entry."
-        actions={<Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>} />
+        actions={<div className="flex items-center gap-2">
+          {canExport && <Button variant="outline" className="font-body" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
+          <Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>
+        </div>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">Current balance <HelpDot page="ops-treasury" topic="immutability" /></div>
