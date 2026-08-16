@@ -106,10 +106,9 @@ export default function EventRegister() {
           />
         </div>
         {/* Flat white card per the Minerva Forms design. */}
-        {/* BELOW THE OVERLAY LAYER: see Apply.tsx. At z-[55] this card painted
-            over every Radix portal (z-50), so the programme and year lists on
-            this form opened invisibly behind it. */}
-        <div className="relative z-10 w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+        {/* z-[55]: over the navigation, under the overlay layer at z-[70].
+            See the layer scale at the top of index.css. */}
+        <div className="relative z-[55] w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6"><img
             src={fullLogoAsset.url}
             alt="Minerva Investment Management Society"

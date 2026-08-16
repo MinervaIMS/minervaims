@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { JOIN_HERO } from '@/lib/join-content';
 import ScrollInvitation from '@/components/join/ScrollInvitation';
+import { perfMode } from '@/lib/perf';
 
 // The particle field is the one ambient layer on the page. It is code-split so
 // the initial route bundle does not carry the canvas, and it only mounts after
@@ -47,6 +48,9 @@ export function JoinHeroStage({
     mq.addEventListener('change', apply);
 
     if (prefersReducedMotion()) return () => mq.removeEventListener('change', apply);
+    // Ambience only: skipped entirely on a browser that cannot afford a
+    // WebGL layer. See lib/perf.ts.
+    if (perfMode() === 'lite') return () => mq.removeEventListener('change', apply);
 
     // Mount the canvas once the browser is idle, after the LCP text is up.
     const idle = (window as typeof window & {

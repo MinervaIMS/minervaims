@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Triangle, Color } from 'ogl';
+import { perfMode } from '@/lib/perf';
 
 // =====================================================================
 // SpecularFx — the animated specular BORDER effect for main action
@@ -119,6 +120,9 @@ export function SpecularFx({
     const fx = fxRef.current;
     const btn = fx?.parentElement as HTMLElement | null;
     if (!fx || !btn) return;
+    // A decorative WebGL context is not worth a frame budget that is
+    // already short. The button keeps its own border, fill and hover.
+    if (perfMode() === 'lite') return;
 
     // The host button must be a positioned box for the overlay to align.
     if (getComputedStyle(btn).position === 'static') btn.style.position = 'relative';

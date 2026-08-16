@@ -6,6 +6,7 @@ import { PerspectiveCamera } from '@react-three/drei';
 import { degToRad } from 'three/src/math/MathUtils.js';
 
 import './Beams.css';
+import { perfMode } from '@/lib/perf';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extendMaterial(BaseMaterial: any, cfg: any) {
@@ -218,6 +219,15 @@ const Beams = ({
       }),
     [speed, noiseIntensity, scale]
   );
+
+  // THE BEAMS ARE AMBIENCE, AND AMBIENCE IS THE FIRST THING TO GO.
+  // This is a three.js scene rendered every frame behind the auth and event
+  // cards. The browsers embedded inside other apps run it without GPU
+  // rasterisation and it costs them most of their frame budget, which is why
+  // the same page that is effortless in Safari arrives in jumps there. On
+  // those browsers nothing is mounted and the deep navy ground the page
+  // already paints stands on its own. See lib/perf.ts.
+  if (perfMode() === 'lite') return null;
 
   return (
     <CanvasWrapper>

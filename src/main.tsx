@@ -3,6 +3,7 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { installInputZoomGuard } from "./lib/input-zoom-guard";
+import { initPerfMode } from "./lib/perf";
 
 // Auto-recover from stale chunk references after a new deploy.
 // When index.html still in the browser points at vendor/asset hashes that no
@@ -43,6 +44,12 @@ window.addEventListener("unhandledrejection", (e) => {
 // Suspend viewport scaling while a field has focus, so iOS never zooms
 // into a control and leaves the reader magnified afterwards.
 installInputZoomGuard();
+
+// Decide the motion budget BEFORE React renders, so no component ever mounts
+// an ambient WebGL layer and then discards it. See lib/perf.ts: this is what
+// keeps the in-app browsers of social media apps from stuttering through
+// animations that Safari and Chrome handle without effort.
+initPerfMode();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Application root element is missing");
