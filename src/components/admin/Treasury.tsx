@@ -104,7 +104,10 @@ export default function Treasury() {
   return (
     <div>
       <WorkspacePageHeader title="Treasury" description="The association's cash-flow register. Entries cannot be deleted or edited - correct a mistake by adding a correction entry."
-        actions={<Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>} />
+        actions={<div className="flex items-center gap-2">
+          {canExport && <Button variant="outline" className="font-body" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
+          <Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>
+        </div>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">Current balance <HelpDot page="ops-treasury" topic="immutability" /></div>
