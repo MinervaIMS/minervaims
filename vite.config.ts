@@ -28,6 +28,21 @@ export default defineConfig(({ mode }) => ({
     // crawling the application; replacing it in an open tab can split React's
     // hook dispatcher from the renderer that owns it.
     holdUntilCrawlEnd: true,
+    // Pin the React runtime and every provider that closes over it into the
+    // first optimized generation. A later re-optimization triggered by a
+    // lazily imported page can otherwise hand the tab a second React copy
+    // whose hook dispatcher is null -> "dispatcher.useState" crash.
+    include: [
+      "react",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "react-dom",
+      "react-dom/client",
+      "react-router-dom",
+      "react-helmet-async",
+      "@tanstack/react-query",
+      "@supabase/supabase-js",
+    ],
   },
   build: {
     rollupOptions: {
