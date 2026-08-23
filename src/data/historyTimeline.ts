@@ -103,11 +103,11 @@ export const HISTORY_EVENTS: HistoryEvent[] = [
   { year: 2018, minor: true },
   { year: 2019, minor: true },
   {
-    year: 2020,
+    year: 2019,
     title: 'The virtual funds go live',
     href: '/divisions/portfolio',
     description:
-      'The Long-Short Equity Fund had launched in 2019. In 2020 the Multi-Asset Global Opportunities Fund followed, investing across equities, bonds and commodities worldwide, and in the spring the Diversified Passive Selection Fund joined it, built on ETFs. Three funds, three mandates. From that year, research was judged by how the portfolios performed.',
+      'The Long-Short Equity Fund had launched in 2019. In 2019 the Multi-Asset Global Opportunities Fund followed, investing across equities, bonds and commodities worldwide, and in the spring the Diversified Passive Selection Fund joined it, built on ETFs. Three funds, three mandates. From that year, research was judged by how the portfolios performed.',
     media: {
       kind: 'pdf',
       note: 'Cover: first Multi-Asset fund report',
