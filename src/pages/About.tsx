@@ -5,6 +5,7 @@ import { OrgChart } from "@/components/shared/OrgChart";
 import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
 import { LibraryPreview } from "@/components/shared/LibraryPreview";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import aboutBgAsset from "@/assets/mims-about-us.webp.asset.json";
 
 /**
@@ -42,7 +43,11 @@ const WHAT_WE_DO: { label: string; body: string }[] = [
 
 const About = () => {
   const aboutBg = aboutBgAsset.url;
-  const imagesLoaded = useImagePreload([aboutBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([aboutBg, HERO_OVERLAY_URL]);
 
 
   if (!imagesLoaded) {

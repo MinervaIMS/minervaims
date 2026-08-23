@@ -6,6 +6,7 @@ const alumniBg = alumniBgAsset.url;
 import AlumniGlobe from '@/components/AlumniGlobe';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { normaliseCity } from '@/lib/city-format';
 import { ClearFilters } from '@/components/shared/ClearFilters';
@@ -57,7 +58,11 @@ const Alumni = () => {
   // Matches over the ENTIRE alumni base for the active filters (null while loading).
   const [totalMatches, setTotalMatches] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const imagesLoaded = useImagePreload([alumniBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([alumniBg, HERO_OVERLAY_URL]);
 
   useEffect(() => {
     (async () => {

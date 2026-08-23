@@ -7,6 +7,7 @@ import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } 
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 
 // Background images for each division
 import equityBgAsset from '@/assets/MIMS_Equity_Research.webp.asset.json';
@@ -87,7 +88,11 @@ const DivisionDetail = () => {
     ? divisionBackgrounds[division as Division] 
     : '';
   
-  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage] : []);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage, HERO_OVERLAY_URL] : []);
 
   useEffect(() => {
     if (division && divisionLabels[division as Division]) {

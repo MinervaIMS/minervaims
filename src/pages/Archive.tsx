@@ -9,6 +9,7 @@ import { ArchiveFilesList } from "@/components/shared/ArchiveFilesList";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import archiveBgAsset from "@/assets/mims-archive.webp.asset.json";
 import {
   Pagination,
@@ -40,7 +41,11 @@ const Archive = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [highlightedFileId, setHighlightedFileId] = useState<string | null>(null);
   const hasScrolledToFile = useRef(false);
-  const imagesLoaded = useImagePreload([archiveBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([archiveBg, HERO_OVERLAY_URL]);
 
 
   // Read fileId from URL params (for direct linking from carousels)

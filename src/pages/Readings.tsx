@@ -5,6 +5,7 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import { Search, ChevronDown } from 'lucide-react';
 import readingsBgAsset from '@/assets/mims-readings.webp.asset.json';
 import { readingTypeLabels, type Reading, type ReadingType } from '@/components/readings/types';
@@ -28,7 +29,11 @@ const Readings = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { user, roles } = useAuth();
   const navigate = useNavigate();
-  const imagesLoaded = useImagePreload([readingsBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([readingsBg, HERO_OVERLAY_URL]);
 
 
   // Check if user can submit readings

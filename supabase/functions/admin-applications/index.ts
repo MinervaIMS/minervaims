@@ -17,7 +17,23 @@ const corsHeaders = {
 };
 
 const FULL_ACCESS = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
-const REVIEW_ROLES = ['head_of_division', 'team_leader'];
+
+// Roles that may OPEN a candidacy: read the application, the personal details,
+// the documents and the notes, and add a note of their own. Portfolio managers
+// were missing, so every request they made was refused with 403 and the page
+// they could see in the menu did not work at all.
+const REVIEW_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager'];
+
+// Roles that review but must NEVER MOVE A CANDIDACY. They assess and comment;
+// deciding where a candidate sits in the process belongs to the people
+// accountable for the decision.
+//
+// THIS IS THE ENFORCEMENT, NOT THE HIDDEN BUTTON. The workspace already
+// declines to draw the status control for these roles, but a hidden control is
+// not a permission: the endpoint is reachable with a token. `canProgress` is
+// checked below on every action that advances, invites, transfers, offers or
+// converts, so the restriction holds however the request is made.
+const NOTES_ONLY_ROLES = ['portfolio_manager', 'team_leader'];
 const STATUSES = [
   'received', 'cv_opened', 'under_review', 'to_be_contacted', 'interview_invitation_sent',
   'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed',
@@ -76,6 +92,10 @@ Deno.serve(async (req) => {
     const reviewerDivisions = roles.filter((r) => REVIEW_ROLES.includes(r.role) && r.division).map((r) => r.division as string);
     const isReviewer = canAll || reviewerDivisions.length > 0;
     if (!isReviewer) return json({ error: 'Access denied' }, 403);
+
+    // May this caller change where a candidate sits in the process?
+    const canProgress = canAll || roleNames.some((r) => REVIEW_ROLES.includes(r) && !NOTES_ONLY_ROLES.includes(r));
+    const PROGRESS_DENIED = 'Your role can review candidates and add notes, but not change a candidate\'s progression. Ask the President, Vice President or a Head to move this candidacy.';
 
     const primaryRole = roleNames[0] || 'member';
     const inScope = (app: { first_choice: string; second_choice: string | null }) =>
@@ -151,6 +171,7 @@ Deno.serve(async (req) => {
 
     // ── update-status ────────────────────────────────────────────────────────
     if (action === 'update-status') {
+      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!STATUSES.includes(body.status)) return json({ error: 'Invalid status' }, 400);
       const { data: app } = await supabase.from('applications')
         .select('first_choice, second_choice, first_name, email, interview_division, status')
@@ -227,6 +248,7 @@ Deno.serve(async (req) => {
     // division: the candidate is re-invited (email + booking access) for the
     // new division, and the move is recorded in the activity log.
     if (action === 'transfer-division') {
+      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const target = typeof body.division === 'string' ? body.division : null;
       if (!target || !['equity', 'investment', 'macro', 'portfolio', 'quant'].includes(target)) {
@@ -313,6 +335,7 @@ Deno.serve(async (req) => {
 
     // ── send-offer (New Joiners): extend an offer to join with a 3-day window ─
     if (action === 'send-offer') {
+      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
@@ -348,6 +371,7 @@ Deno.serve(async (req) => {
 
     // ── convert-to-member (New Joiners, report 10.5) ─────────────────────────
     if (action === 'convert-to-member') {
+      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
