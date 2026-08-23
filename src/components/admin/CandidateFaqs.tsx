@@ -76,7 +76,9 @@ export default function CandidateFaqs() {
                   value={category ?? 'all'}
                   onChange={(e) => setCategory(e.target.value === 'all' ? null : e.target.value)}
                   aria-label="Filter the questions by category"
-                  className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+                  /* The same type size as the search field beside it: the Input
+                     component is `text-base md:text-sm`, a bare select is not. */
+                  className="font-body text-base md:text-sm bg-background border border-separator px-3 h-10 min-w-[200px]"
                 >
                   <option value="all">All questions</option>
                   {categories.map((c) => (

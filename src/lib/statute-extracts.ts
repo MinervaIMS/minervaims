@@ -180,6 +180,103 @@ export const MEMBERSHIP_RULES = {
     'In general: Analysts refer to their Team Leader or Portfolio Manager; these refer to the Head of Division; Heads of Division refer to the Head of Asset Management and to the Vice President; the Vice President refers to the President.',
 };
 
+// =====================================================================
+// Role progression, drawn from the statute and from nowhere else.
+// ---------------------------------------------------------------------
+// Every criterion below is a prerequisite the statute states for the
+// office it leads to: Artt. 12 and 13 (President, Vice President),
+// Art. 16 (Head of Asset Management), Art. 17 (Head of Division),
+// Art. 18 (Team Leader, also called Senior Analyst) and Art. 21 (Head of
+// Media & Communication). Nothing here is a rule invented for the
+// workspace: where the statute sets no requirement for an office, this
+// says so rather than filling the gap.
+//
+// MERIT IS STATED SEPARATELY, and deliberately so. The criteria are the
+// formal gate; passing it makes a member ELIGIBLE TO BE CONSIDERED, not
+// promoted. That distinction is the whole point of the card.
+// =====================================================================
+
+export interface PromotionPath {
+  /** The office or offices this role can progress to. */
+  next: string;
+  /** The statute's own prerequisites for that office. */
+  criteria: string[];
+  /** How the appointment is actually decided. */
+  appointment?: string;
+  /** The articles this is drawn from, quoted for the reader. */
+  articles: string;
+}
+
+/** The one sentence about merit, shown under every path. */
+export const MERIT_NOTE =
+  'Meeting these requirements makes you eligible to be considered. It does not make a promotion automatic: once the statute\u2019s criteria are met, progression is decided on merit.';
+
+/** What merit means here, in the association’s own terms. */
+export const MERIT_FACTORS = [
+  'The commitment you have shown in your current role.',
+  'Your availability and your contribution to the association.',
+  'The quality and the correctness of the work you deliver.',
+];
+
+const TO_HEAD: PromotionPath = {
+  next: 'Head of Division, or Head of Asset Management',
+  criteria: [
+    'At least one year of active participation in the association.',
+    'At least one semester of experience as Portfolio Manager or as Team Leader.',
+    'Offices are assigned to people present on campus for the greater part of the semester.',
+  ],
+  appointment:
+    'A Head of Division is chosen by their predecessor, on the opinion of the Vice President and the Head of Asset Management, with final approval by the President. The Head of Asset Management is chosen jointly by the incoming President and Vice President, on the proposal of the outgoing Heads of Division.',
+  articles: 'Artt. 16, 17',
+};
+
+const TO_PRESIDENCY: PromotionPath = {
+  next: 'President, or Vice President',
+  criteria: [
+    'At least two years of active participation in the association.',
+    'At least one semester of experience as Head of Division of a core division, or as Head of Asset Management.',
+  ],
+  appointment:
+    'The term lasts one academic semester and may be renewed consecutively only once, for a maximum of one academic year.',
+  articles: 'Artt. 12, 13',
+};
+
+export const PROMOTION_PATHS: Partial<Record<AppRole, PromotionPath>> = {
+  analyst: {
+    next: 'Team Leader, also called Senior Analyst',
+    criteria: [
+      'The office is optional: it exists in a division only if the Head of Division establishes it.',
+      'At most four Team Leaders may serve in the same division.',
+      'The term follows the term of the Head of Division.',
+    ],
+    appointment: 'Established and assigned by the Head of Division of your division.',
+    articles: 'Art. 18',
+  },
+  senior_analyst: TO_HEAD,
+  team_leader: TO_HEAD,
+  portfolio_manager: TO_HEAD,
+  head_of_division: TO_PRESIDENCY,
+  head_of_asset_management: TO_PRESIDENCY,
+  media_analyst: {
+    next: 'Head of Media & Communication',
+    criteria: [
+      'At least one semester of participated activity in the Media & Communication team of the association.',
+    ],
+    appointment:
+      'The Head of Media & Communication reports directly to the President and sits on the Board of Directors without a vote. The office may not be held together with the presidency or with the Head of Asset Management.',
+    articles: 'Art. 21',
+  },
+};
+
+/**
+ * The progression open to a role, or null where the statute defines none.
+ * Null is a real answer here: the presidency is the top of the structure,
+ * and the auxiliary heads have no office above them in the statute.
+ */
+export function promotionFor(role: AppRole): PromotionPath | null {
+  return PROMOTION_PATHS[normalizeRole(role)] ?? null;
+}
+
 export function roleGuideFor(role: AppRole): RoleGuide | null {
   return roleGuides[normalizeRole(role)] ?? null;
 }

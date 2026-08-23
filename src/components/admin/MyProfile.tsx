@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle, ScrollText, ExternalLink } from 'lucide-react';
+import {
+  Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle, ScrollText,
+  ExternalLink, TrendingUp, LifeBuoy,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { roleLabel as composeRoleLabel, divisionLabels } from '@/lib/roles';
-import { roleGuideFor, MEMBERSHIP_RULES } from '@/lib/statute-extracts';
+import {
+  roleGuideFor, MEMBERSHIP_RULES, promotionFor, MERIT_NOTE, MERIT_FACTORS,
+} from '@/lib/statute-extracts';
 import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
 import { getMyApplication, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -39,25 +44,43 @@ function Bullets({ items }: { items: string[] }) {
   );
 }
 
-/** A prominent link from the profile to the full association statute page. */
-function StatuteLink() {
+// =====================================================================
+// The profile is built from ONE card shape, used at two weights.
+// ---------------------------------------------------------------------
+// The three columns of the page differ in what they carry, not in how
+// they are drawn: the same rounded container, the same hairline, the
+// same padding and the same serif heading, so the page reads as one
+// instrument rather than as a stack of unrelated panels. Rounded
+// corners and the separator hairline are the workspace's own card, as
+// used on the Dashboard.
+// =====================================================================
+
+function ProfileCard({ title, icon, children, className = '' }: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <Card>
-      <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <ScrollText className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-          <div>
-            <div className="text-sm text-foreground font-medium">The association statute</div>
-            <p className="text-xs text-muted-foreground">Your role, rights and duties are drawn from it. Read the full, binding text any time.</p>
-          </div>
-        </div>
-        <Button asChild variant="outline" size="sm" className="shrink-0">
-          <Link to="/statute" target="_blank" rel="noopener noreferrer">
-            Open the statute <ExternalLink className="h-4 w-4 ml-2" />
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
+    <section className={`w-full rounded-xl border border-separator bg-background p-5 sm:p-6 ${className}`}>
+      <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-separator">
+        {icon}
+        <h2 className="font-serif text-xl text-accent leading-tight">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** A hairline-topped group inside a card, for its secondary sections. */
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2 pb-1.5 border-b border-separator">
+        {label}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -241,39 +264,23 @@ export default function MyProfile() {
     );
   }
 
-  // The admin user (no member record, not a candidate): minimal view.
-  if (!member) {
-    return (
-      <div>
-        <WorkspacePageHeader title="My profile" description="Your account details and current workspace role." />
-        <div className="max-w-4xl space-y-4 font-body">
-          <Field label="Email" value={email} />
-          <Field label="Role" value={roleText} />
-          {guide && (
-            <Card className="mt-6"><CardContent className="py-5">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your role</div>
-              <p className="text-sm text-foreground leading-relaxed">{guide.summary}</p>
-            </CardContent></Card>
-          )}
-          <div className="mt-6"><StatuteLink /></div>
-        </div>
-      </div>
-    );
-  }
+  // ===================================================================
+  // MEMBER PROFILE. Everything below this line is the NON-CANDIDATE
+  // page: the candidate branch above returned already, so a candidate
+  // can never reach this layout. The distinction is made on the access
+  // hook's `isCandidate`, which reads the role, not on any visual test.
+  // ===================================================================
 
-  const missingPhone = phone.trim().length < 3;
+  const missingPhone = !!member && phone.trim().length < 3;
   const missingEmail = !email;
-  const dirty = phone.trim() !== (member.phone ?? '') || (photoUrl ?? '') !== (member.photo_url ?? '');
+  const dirty = !!member && (phone.trim() !== (member.phone ?? '') || (photoUrl ?? '') !== (member.photo_url ?? ''));
+  const promotion = primaryRole ? promotionFor(primaryRole) : null;
 
-  return (
-    <div className="font-body">
-      <WorkspacePageHeader
-        title="My profile"
-        description="Your personal information. You can update your phone number and profile picture; the picture is also used on the public Members page."
-      />
-
+  // --- left column: who you are ---------------------------------------
+  const personalCard = (
+    <ProfileCard title="Personal Information" icon={<UserIcon className="h-5 w-5 text-accent shrink-0" />}>
       {(missingPhone || missingEmail) && (
-        <div className="max-w-4xl mb-6 flex items-start gap-2 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-5 flex items-start gap-2 border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>
             {missingPhone && missingEmail ? 'Please add your phone number and email address to continue.'
@@ -283,131 +290,243 @@ export default function MyProfile() {
         </div>
       )}
 
-      {/* ONE unified column: the role is an integral part of the profile,
-          so the page reads top to bottom as a single flow. Static panels,
-          hairline separations, no hover effects: the workspace design
-          rules apply. */}
-      <div className="max-w-3xl space-y-10">
-        {/* The profile itself */}
+      {member ? (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-8">
-            {/* Square photo */}
+          {/* The picture keeps its own controls, its own rules and its own
+              desktop-only editing. Nothing about how it is uploaded,
+              replaced, removed or stored changes here: only where it sits. */}
+          <div className="flex flex-col xl:flex-row gap-5">
             <div className="shrink-0">
-              <div className="w-44 aspect-square border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
-                {photoUrl ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" /> : <UserIcon className="h-14 w-14 text-muted-foreground" />}
+              <div className="w-40 xl:w-36 aspect-square rounded-lg border border-separator bg-muted/40 overflow-hidden flex items-center justify-center">
+                {photoUrl
+                  ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                  : <UserIcon className="h-12 w-12 text-muted-foreground" />}
               </div>
               <input ref={fileRef} type="file" accept="image/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
               {isDesktop && (
-                <div className="mt-3 flex flex-wrap gap-2 w-44">
-                  <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                <div className="mt-3 flex flex-wrap gap-2 w-40 xl:w-36">
+                  <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()} title="Upload a new picture">
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                   </Button>
-                  <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto}><Download className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDownloadPhoto} title="Download"><Download className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="sm" disabled={!photoUrl} onClick={handleDeletePhoto} title="Remove"><Trash2 className="h-4 w-4" /></Button>
                 </div>
               )}
             </div>
 
-            {/* Details, grouped: name+surname, email+phone, role+division */}
-            <div className="flex-1 min-w-0 space-y-5">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+            <div className="flex-1 min-w-0 space-y-4">
+              {/* NAME AND SURNAME ARE READ-ONLY, as they have always been:
+                  they come from the association register and are changed
+                  there, not here. Presenting them in a new place does not
+                  make them editable. */}
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                 <Field label="First name" value={member.first_name} />
                 <Field label="Surname" value={member.surname} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                <Field label="Email" value={email} />
-                {isDesktop ? (
-                  <div>
-                    <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
-                    <Input id="phone" className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
-                  </div>
-                ) : (
-                  <Field label="Phone number" value={phone || '-'} />
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-                <Field label="Role" value={roleText} />
-                <Field label="Division" value={divisionText} />
-              </div>
+              <Field label="Email" value={email} />
+            </div>
+          </div>
 
-              {isDesktop ? (
-                <Button onClick={handleSave} disabled={saving || !dirty}>
-                  {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
-                </Button>
-              ) : (
-                <p className="text-xs text-muted-foreground">Editing your phone number and photo is available on desktop.</p>
-              )}
+          {/* The one editable field, on the one surface that may edit it. */}
+          {isDesktop ? (
+            <div>
+              <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
+              <Input id="phone" className="mt-1.5" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
+            </div>
+          ) : (
+            <Field label="Phone number" value={phone || '-'} />
+          )}
+
+          <div className="grid grid-cols-2 gap-x-5 gap-y-4 pt-1">
+            <Field label="Role" value={roleText} />
+            <Field label="Division" value={divisionText} />
+          </div>
+
+          {isDesktop ? (
+            <Button onClick={handleSave} disabled={saving || !dirty}>
+              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save changes'}
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Editing your phone number and picture is available on desktop.
+            </p>
+          )}
+
+          <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
+            Your name, email and role come from the association register and are maintained by the
+            President or the Admin. Your picture is also used on the public Members page.
+          </p>
+        </div>
+      ) : (
+        // The association account: no member record to edit, so the card
+        // states what it knows and offers no controls that would fail.
+        <div className="space-y-4">
+          <Field label="Email" value={email} />
+          <Field label="Role" value={roleText} />
+          <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
+            This account has no member record, so there is nothing to edit here.
+          </p>
+        </div>
+      )}
+    </ProfileCard>
+  );
+
+  // --- centre column: the role, named by the role itself ---------------
+  const roleCard = (
+    <ProfileCard title={roleText}>
+      {divisionText && (
+        <div className="-mt-2 mb-4 text-xs uppercase tracking-wider text-muted-foreground">{divisionText}</div>
+      )}
+
+      {guide ? (
+        <div className="space-y-6">
+          <p className="text-sm text-foreground leading-relaxed border-l-2 border-accent bg-accent/[0.05] px-4 py-3">
+            {guide.summary}
+          </p>
+
+          <Group label="Your responsibilities"><Bullets items={guide.responsibilities} /></Group>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <Group label="You report to">
+              <p className="text-sm text-foreground/85 leading-relaxed">{guide.reportsTo}</p>
+            </Group>
+            {guide.oversees && (
+              <Group label="You coordinate">
+                <p className="text-sm text-foreground/85 leading-relaxed">{guide.oversees.join(', ')}</p>
+              </Group>
+            )}
+          </div>
+
+          <Group label="Your rights"><Bullets items={guide.rights} /></Group>
+
+          <Group label="Your duties as a member"><Bullets items={MEMBERSHIP_RULES.duties} /></Group>
+
+          <div className="space-y-3 border-t border-separator pt-5">
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">Grounds for expulsion</div>
+              <Bullets items={MEMBERSHIP_RULES.expulsion} />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Report publication and blocking</div>
+              <p className="text-sm text-foreground/80 leading-relaxed">{MEMBERSHIP_RULES.publicationControl}</p>
             </div>
           </div>
         </div>
+      ) : (
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          The statute does not define a brief for this role. The association statute remains the
+          reference for the duties and rights attached to it.
+        </p>
+      )}
+    </ProfileCard>
+  );
 
-        {/* The role brief, from "Your role" down. */}
-        {guide && (
-          <div className="space-y-7 pt-8 border-t border-separator">
-            {/* Role header band: the one tinted element of the page. */}
-            <div className="border-l-2 border-accent bg-accent/[0.05] px-5 py-4">
-              <div className="text-[11px] uppercase tracking-[0.14em] text-accent font-semibold mb-1">Your role</div>
-              <div className="font-serif text-2xl text-accent leading-tight">{roleText}</div>
-              {divisionText && <div className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{divisionText}</div>}
-              <p className="text-sm text-foreground leading-relaxed mt-3">{guide.summary}</p>
-            </div>
+  // --- right column: statute, progression, support ---------------------
+  const statuteCard = (
+    <ProfileCard title="Society Statute" icon={<ScrollText className="h-5 w-5 text-accent shrink-0" />}>
+      <p className="text-sm text-foreground/85 leading-relaxed">
+        The statute is the authoritative reference for the association&rsquo;s formal rules: roles,
+        responsibilities, governance, eligibility and the requirements for progression.
+      </p>
+      <Button asChild variant="outline" size="sm" className="mt-4 w-full sm:w-auto">
+        <Link to="/statute" target="_blank" rel="noopener noreferrer">
+          Open the statute <ExternalLink className="h-4 w-4 ml-2" />
+        </Link>
+      </Button>
+    </ProfileCard>
+  );
 
-            <section>
-              <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2 pb-1.5 border-b border-separator">Responsibilities</div>
-              <Bullets items={guide.responsibilities} />
-            </section>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <section>
-                <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1.5 pb-1.5 border-b border-separator">You report to</div>
-                <p className="text-sm text-foreground">{guide.reportsTo}</p>
-              </section>
-              {guide.oversees && (
-                <section>
-                  <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1.5 pb-1.5 border-b border-separator">You coordinate</div>
-                  <p className="text-sm text-foreground">{guide.oversees.join(', ')}</p>
-                </section>
-              )}
-            </div>
-
-            <section>
-              <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2 pb-1.5 border-b border-separator">Your rights</div>
-              <Bullets items={guide.rights} />
-            </section>
-
-            <section>
-              <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1.5 pb-1.5 border-b border-separator">Who to contact</div>
-              <p className="text-sm text-foreground">{guide.contact}</p>
-            </section>
-
-            {/* Shared membership rules */}
-            <Card><CardContent className="py-5 space-y-5">
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Your duties as a member</div>
-                <Bullets items={MEMBERSHIP_RULES.duties} />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Grounds for expulsion</div>
-                <Bullets items={MEMBERSHIP_RULES.expulsion} />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Report publication and blocking</div>
-                <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.publicationControl}</p>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Hierarchy</div>
-                <p className="text-sm text-foreground leading-relaxed">{MEMBERSHIP_RULES.hierarchyNote}</p>
-              </div>
-            </CardContent></Card>
+  const promotionCard = (
+    <ProfileCard title="Role Promotion" icon={<TrendingUp className="h-5 w-5 text-accent shrink-0" />}>
+      {promotion ? (
+        <div className="space-y-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-1">Next office</div>
+            <p className="text-sm text-foreground leading-relaxed">{promotion.next}</p>
           </div>
-        )}
+
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2">
+              What the statute requires
+            </div>
+            <Bullets items={promotion.criteria} />
+          </div>
+
+          {promotion.appointment && (
+            <p className="text-xs text-muted-foreground leading-relaxed">{promotion.appointment}</p>
+          )}
+
+          {/* FORMAL ELIGIBILITY, THEN MERIT. The two are separated on
+              purpose: the list above is the gate, this is what decides. */}
+          <div className="border-t border-separator pt-4">
+            <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2">
+              And then, merit
+            </div>
+            <p className="text-sm text-foreground/85 leading-relaxed mb-2.5">{MERIT_NOTE}</p>
+            <Bullets items={MERIT_FACTORS} />
+          </div>
+
+          <p className="text-xs text-muted-foreground border-t border-separator pt-3">
+            Source: association statute, {promotion.articles}.
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-foreground/85 leading-relaxed">
+          The statute defines no office above the one you hold. Its articles remain the reference
+          for the term of your office and for how it is renewed.
+        </p>
+      )}
+    </ProfileCard>
+  );
+
+  const contactCard = (
+    <ProfileCard title="Who to contact" icon={<LifeBuoy className="h-5 w-5 text-accent shrink-0" />}>
+      {guide ? (
+        <p className="text-sm text-foreground leading-relaxed">{guide.contact}</p>
+      ) : (
+        <p className="text-sm text-foreground leading-relaxed">
+          For any question about your role, contact the association at as.minerva@unibocconi.it.
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator mt-4 pt-3">
+        {MEMBERSHIP_RULES.hierarchyNote}
+      </p>
+    </ProfileCard>
+  );
+
+  // ===================================================================
+  // THE PAGE. Three areas on a wide screen: who you are, what your role
+  // is, and the three shorter references beside them. Below `lg` the
+  // same cards stack in the same order, at full width, so a phone reads
+  // the page top to bottom instead of scrolling a compressed grid
+  // sideways. Nothing is laid out in fixed pixels.
+  // ===================================================================
+  return (
+    <div className="font-body">
+      <WorkspacePageHeader
+        title="My profile"
+        description="Your account, your role in the association and what the statute says about both."
+      />
+
+      {/* The three areas share the row's height on a wide screen, as in the
+          reference: two tall primary cards and a column of shorter ones
+          beside them, rather than three boxes each ending where their own
+          text happens to stop. Below `lg` the grid collapses to one column
+          and every card takes its natural height. */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:items-stretch">
+        <div className="lg:col-span-4 min-w-0 flex">{personalCard}</div>
+        <div className="lg:col-span-5 min-w-0 flex">{roleCard}</div>
+        <div className="lg:col-span-3 min-w-0 space-y-4">
+          {statuteCard}
+          {promotionCard}
+          {contactCard}
+        </div>
       </div>
 
-      {/* Connection to the full statute: the closing element of the page. */}
-      <div className="mt-10">
-        <StatuteLink />
-      </div>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Activity across the workspace is recorded for accountability and security.
+      </p>
     </div>
   );
 }
