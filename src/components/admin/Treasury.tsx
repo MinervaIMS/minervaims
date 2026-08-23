@@ -25,10 +25,15 @@ const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDi
 
 export default function Treasury() {
   const { session, user, roles } = useAuth();
-  const { primaryRole } = useAccess();
+  const { primaryRole, canManage } = useAccess();
   // Only these roles may export the register.
   const canExport = user?.email === 'as.minerva@unibocconi.it' ||
     (roles || []).some((r) => ['admin', 'president', 'vice_president', 'head_of_operations'].includes(r.role as string));
+  // Reading the register is not permission to add to it. The Heads of Asset
+  // Management and of Division hold `ops-treasury` at 'view': they read every
+  // figure and every semester, and the server refuses an entry from them, so
+  // the button that would be refused is not drawn in the first place.
+  const canRecord = canManage('ops-treasury');
   const { toast } = useToast();
   const [entries, setEntries] = useState<TreasuryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,11 +108,15 @@ export default function Treasury() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Treasury" description="The association's cash-flow register. Entries cannot be deleted or edited - correct a mistake by adding a correction entry."
-        actions={<div className="flex items-center gap-2">
+      <WorkspacePageHeader
+        title="Treasury"
+        description={canRecord
+          ? "The association's cash-flow register. Entries cannot be deleted or edited - correct a mistake by adding a correction entry."
+          : "The association's cash-flow register, in full. Recording an entry is reserved for the Board and Operations; everything here is open to read."}
+        actions={(canExport || canRecord) ? <div className="flex items-center gap-2">
           {canExport && <Button variant="outline" className="font-body" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
-          <Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>
-        </div>} />
+          {canRecord && <Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>}
+        </div> : undefined} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">Current balance <HelpDot page="ops-treasury" topic="immutability" /></div>

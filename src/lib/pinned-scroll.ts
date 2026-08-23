@@ -29,12 +29,41 @@
 //     `touch-action: pan-y`, which reserves vertical panning for the
 //     browser and hands horizontal gestures to us.
 //
-// Two rules keep the bridge from ever trapping the reader:
+// THE THIRD THING, AND THE REASON THIS FILE CHANGED AGAIN: releasing
+// the gesture at the ends handed it to the browser's back-navigation.
+//
+// The bridge used to return without calling preventDefault whenever the
+// travel had no room left in the gesture's direction. On a trackpad,
+// an unclaimed horizontal gesture over a page with no horizontal
+// overflow is precisely what Safari and Chrome interpret as "go back".
+// And because the section rests at progress 0 - both when a reader
+// first arrives and every time they return to its start - the direction
+// with no room there is BACKWARDS. So pushing the cards forwards worked
+// and pushing them back towards the first division left the page.
+//
+// A horizontal gesture over a pinned rail is now always claimed. When
+// the travel has room it moves the cards; when it does not, it is
+// absorbed and nothing happens, which is what every horizontal carousel
+// does at its end. Nothing about leaving the section changes: a reader
+// leaves by scrolling VERTICALLY, and a vertical or vertical-dominant
+// gesture is never claimed - it is not even inspected. The vertical
+// component of a diagonal gesture is still passed through, so a
+// diagonal flick at the end of the rail still scrolls the page.
+//
+// This is deliberately not `overscroll-behavior-x` on the document.
+// The rails already declare it (see DivisionVideoRail.css), but that
+// property only governs an element that actually scrolls, and a pinned
+// rail travels by transform and scrolls not at all - so the browser
+// never consults it. Setting it globally would disable the back gesture
+// across the whole site, which is not ours to take away.
+//
+// Two rules still keep the bridge from ever trapping the reader:
 //
 //   * only PREDOMINANTLY horizontal gestures are claimed, so ordinary
 //     scrolling past the section is untouched;
-//   * the bridge releases at the ends, so a reader can always leave in
-//     the direction they are already going.
+//   * the bridge is only bound while the section is pinned, so the
+//     static rail keeps native horizontal scrolling and its own
+//     `overscroll-behavior-x: contain`, which does work there.
 // =====================================================================
 
 export interface PinnedScrollOptions {
@@ -132,14 +161,22 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
     // Leave anything that is not clearly a sideways gesture to the page: a
     // vertical or vertical-dominant gesture already advances the pinned
     // section natively, so intercepting it would process it twice.
-    if (Math.abs(dx) <= Math.abs(dy) || Math.abs(dx) < 2) return;
-    if (!hasRoom(dx)) return;
+    //
+    // There is no minimum size any more. A two-pixel floor sounds harmless
+    // and is not: the browser starts accumulating horizontal overscroll from
+    // the very first fraction of a pixel, so a slow sideways drag stayed
+    // under the floor all the way to a back-navigation.
+    if (dx === 0 || Math.abs(dx) <= Math.abs(dy)) return;
+    // Claimed either way. If the travel has no room in this direction the
+    // sideways component is simply absorbed - see the note at the top of the
+    // file: leaving it unclaimed is what triggered swipe-to-go-back.
     e.preventDefault();
     // Default is prevented, so nothing else will move the page. A diagonal
     // gesture therefore has to contribute both axes here or its vertical
     // component would simply be discarded. Only the sideways part is scaled
-    // to card travel; the vertical part is already page scroll.
-    push(dx * ratio() + dy);
+    // to card travel; the vertical part is already page scroll, and it is
+    // passed through even at the ends so a reader is never held in place.
+    push((hasRoom(dx) ? dx * ratio() : 0) + dy);
   };
 
   // Touch: a horizontal drag over the section moves the page by the same
@@ -174,8 +211,13 @@ export function bindPinnedScroll(el: HTMLElement, options: PinnedScrollOptions):
 
     const step = lastX - x;
     lastX = x;
-    if (!hasRoom(step)) { claimed = false; return; }
+    // THE CLAIM IS KEPT AT THE ENDS. Dropping it mid-gesture - which is what
+    // `claimed = false` did here - releases the rest of the swipe to WebKit,
+    // and a horizontal swipe it is handed halfway through is a swipe back a
+    // page. The gesture stays ours and simply stops moving anything, exactly
+    // as the wheel path now does.
     if (e.cancelable) e.preventDefault();
+    if (!hasRoom(step)) return;
     // Same one-to-one rule as the wheel: the cards keep up with the finger.
     push(step * ratio());
   };

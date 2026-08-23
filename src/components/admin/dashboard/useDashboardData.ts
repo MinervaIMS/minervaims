@@ -189,6 +189,10 @@ export function useDashboardData(): DashboardData {
           .from('archive_files')
           .select('id, title, description, file_url, division, date')
           .eq('status', 'published')
+          // A report in the recycle bin is not part of the association's
+          // output while it is there, so it leaves the dashboard's counts
+          // and returns with it if it is restored.
+          .is('deleted_at', null)
           .order('date', { ascending: false })),
         safe<{ semester_key: string; semester_label: string; members_count: number; alumni_count: number }[]>(() => supabase
           .from('semester_snapshots')

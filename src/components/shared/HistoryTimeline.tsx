@@ -127,13 +127,20 @@ function useArchiveCovers(events: HistoryEvent[]) {
           // A cover chosen by hand in the workspace wins over a description.
           if (fileId) {
             const { data } = await supabase
-              .from('archive_files').select('file_url').eq('id', fileId).maybeSingle();
+              .from('archive_files').select('file_url').eq('id', fileId)
+              // /about is a public page: a cover chosen by hand still has to
+              // be a report the public may see.
+              .eq('status', 'published').is('deleted_at', null)
+              .maybeSingle();
             if (data?.file_url) { found[year] = data.file_url; return; }
           }
           if (!lookup) return;
           let query = supabase
             .from('archive_files')
             .select('id, title, file_url, date')
+            // Public surface: published reports only, and never a deleted one.
+            .eq('status', 'published')
+            .is('deleted_at', null)
             .not('file_url', 'is', null);
           if (lookup.fund) query = query.eq('fund', lookup.fund);
           if (lookup.division) query = query.eq('division', lookup.division);

@@ -320,6 +320,35 @@ html:has(body[data-scroll-locked]) {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* ------------------------------------------------------------------
+     A card that scrolls its own contents.
+
+     Used where a fixed-height composition holds a card whose content can
+     outrun it - My Profile on a laptop, where the page itself does not
+     scroll. The bar is thin and quiet so it reads as part of the card
+     rather than as a second page scrollbar, and it appears ONLY when
+     there is something to scroll: `overflow: auto`, never `scroll`.
+     ------------------------------------------------------------------ */
+  .ws-card-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--separator)) transparent;
+  }
+  .ws-card-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .ws-card-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ws-card-scroll::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--separator));
+    border-radius: 3px;
+  }
+  .ws-card-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
 }
 
 /* ============================================================

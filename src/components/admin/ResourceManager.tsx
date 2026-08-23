@@ -24,6 +24,7 @@ import {
   MAX_FAVOURITES, MAX_SOURCES_PER_KIND, type ResourceRow, type ResourceSource,
 } from '@/lib/resources-api';
 import { downloadTitled } from '@/lib/file-download';
+import { previewLink } from '@/lib/link-label';
 
 interface Props {
   /** Resource bucket, e.g. 'reports_templates', 'smm_instagram', 'external_relations'. */
@@ -44,6 +45,15 @@ const DEFAULT_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'port
 const MAX = MAX_SOURCES_PER_KIND;
 
 interface FileEntry { value: string; label: string }
+/**
+ * A link and, optionally, what to call it.
+ *
+ * The label is almost always left blank: previewLink reads a good one out of
+ * the URL. It exists for the cases the URL cannot describe - a share link with
+ * an opaque id, an internal tool - where the person adding it knows the answer
+ * and nothing else does.
+ */
+interface LinkEntry { value: string; label: string }
 
 interface FormState {
   id: string | null;
@@ -51,7 +61,7 @@ interface FormState {
   title: string;
   description: string;
   texts: string[];
-  links: string[];
+  links: LinkEntry[];
   files: FileEntry[];
   is_favourite: boolean;
 }
@@ -125,7 +135,7 @@ export default function ResourceManager({
     setForm({
       id: r.id, division: r.division, title: r.title, description: r.description ?? '',
       texts: r.sources.filter((s) => s.kind === 'text').map((s) => s.value),
-      links: r.sources.filter((s) => s.kind === 'link').map((s) => s.value),
+      links: r.sources.filter((s) => s.kind === 'link').map((s) => ({ value: s.value, label: s.label ?? '' })),
       files: r.sources.filter((s) => s.kind === 'file').map((s) => ({ value: s.value, label: s.label || 'File' })),
       is_favourite: r.is_favourite,
     });
@@ -147,7 +157,10 @@ export default function ResourceManager({
   // each source is inferred here, so there is no manual "type" selector.
   const buildSources = (f: FormState): ResourceSource[] => [
     ...f.texts.map((t) => t.trim()).filter(Boolean).map((t) => ({ kind: 'text' as const, value: t })),
-    ...f.links.map((l) => l.trim()).filter(Boolean).map((l) => ({ kind: 'link' as const, value: l })),
+    ...f.links
+      .map((l) => ({ value: l.value.trim(), label: l.label.trim() }))
+      .filter((l) => l.value)
+      .map((l) => ({ kind: 'link' as const, value: l.value, label: l.label || null })),
     ...f.files.map((file) => ({ kind: 'file' as const, value: file.value, label: file.label })),
   ];
 
@@ -213,7 +226,7 @@ export default function ResourceManager({
 
   // ── Sub-editors for each source kind ──────────────────────────────────────
   const setTexts = (texts: string[]) => setForm((p) => ({ ...p, texts }));
-  const setLinks = (links: string[]) => setForm((p) => ({ ...p, links }));
+  const setLinks = (links: LinkEntry[]) => setForm((p) => ({ ...p, links }));
 
   const summaryIcons = (r: ResourceRow) => {
     const t = r.sources.filter((s) => s.kind === 'text').length;
@@ -244,14 +257,47 @@ export default function ResourceManager({
             <p key={`t${i}`} className="text-sm text-foreground mt-2 whitespace-pre-wrap border-l-2 border-separator pl-3">{s.value}</p>
           ))}
 
-          {/* Link + file sources */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-            {r.sources.filter((s) => s.kind === 'link').map((s, i) => (
-              <a key={`l${i}`} href={s.value} target="_blank" rel="noopener noreferrer" className="text-accent text-sm underline inline-flex items-center gap-1">
-                {s.label || 'Open link'} <ExternalLink className="h-3 w-3" />
-              </a>
-            ))}
-          </div>
+          {/* LINKS SAY WHERE THEY GO. Every link used to render the same
+              word, so a list of six was six identical labels and the only
+              way to find out what any of them was, was to open it. The
+              label is read out of the URL - the publication from the host,
+              the subject from the path - and the address is printed under
+              it so it can be checked before it is opened. Nothing about the
+              anchor changes: same href, same target, same new tab. See
+              lib/link-label.ts. */}
+          {r.sources.filter((s) => s.kind === 'link').length > 0 && (
+            <ul className="mt-2 space-y-1.5">
+              {r.sources.filter((s) => s.kind === 'link').map((s, i) => {
+                const preview = previewLink(s.value, s.label);
+                return (
+                  <li key={`l${i}`} className="flex items-start gap-2 text-sm">
+                    <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-[3px]" />
+                    <span className="min-w-0">
+                      <a
+                        href={s.value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent underline underline-offset-2 inline-flex items-baseline gap-1"
+                        title={s.value}
+                      >
+                        <span className="break-words">{preview.label}</span>
+                        <ExternalLink className="h-3 w-3 shrink-0 self-center" />
+                      </a>
+                      {/* The source, then the address. When the label already
+                          IS the source - a link whose path says nothing - the
+                          line drops to the address alone rather than printing
+                          the same name twice. */}
+                      {!preview.raw && (
+                        <span className="block text-xs text-muted-foreground truncate">
+                          {preview.label === preview.source ? preview.domain : `${preview.source} · ${preview.domain}`}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
           {/* Attachments: every file carries its own quick look and download. */}
           {r.sources.filter((s) => s.kind === 'file').length > 0 && (
@@ -358,18 +404,49 @@ export default function ResourceManager({
                 ))}
               </div>
 
-              {/* Links */}
+              {/* Links.
+                  The label is optional and the preview below each field shows
+                  what the item will read if it is left blank, so nobody has to
+                  type a name for a link that already explains itself - and the
+                  few that do not can be named on the spot. */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" />Links / repos ({form.links.filter((l) => l.trim()).length}/{MAX})</Label>
-                  {form.links.length < MAX && <Button type="button" variant="ghost" size="sm" onClick={() => setLinks([...form.links, ''])}><Plus className="h-3.5 w-3.5 mr-1" />Add link</Button>}
+                  <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" />Links / repos ({form.links.filter((l) => l.value.trim()).length}/{MAX})</Label>
+                  {form.links.length < MAX && <Button type="button" variant="ghost" size="sm" onClick={() => setLinks([...form.links, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add link</Button>}
                 </div>
-                {form.links.map((l, i) => (
-                  <div key={i} className="flex gap-2">
-                    <Input value={l} onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? e.target.value : x)))} placeholder="https://github.com/… or https://drive.google.com/…" />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => setLinks(form.links.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
+                {form.links.map((l, i) => {
+                  const preview = l.value.trim() ? previewLink(l.value, l.label) : null;
+                  return (
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex gap-2">
+                        <Input
+                          value={l.value}
+                          onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))}
+                          placeholder="https://github.com/… or https://drive.google.com/…"
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setLinks(form.links.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
+                      </div>
+                      {l.value.trim() && (
+                        <div className="pr-12 space-y-1">
+                          <Input
+                            value={l.label}
+                            onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                            placeholder={`Shown as: ${preview?.label ?? ''}`}
+                            className="h-9 text-sm"
+                            aria-label="What this link should be called (optional)"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {l.label.trim()
+                              ? 'Your own wording is used.'
+                              : preview && !preview.raw
+                                ? <>Read from the address: <span className="text-foreground">{preview.label}</span> · {preview.domain}</>
+                                : 'Add a name for this link so colleagues can tell what it is.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Files */}

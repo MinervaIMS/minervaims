@@ -77,6 +77,8 @@ export default function HistoryManagement() {
         (async () => {
           const { data } = await supabase.from('archive_files')
             .select('id, title, date')
+            // A deleted report cannot be chosen as a milestone cover.
+            .is('deleted_at', null)
             .not('file_url', 'is', null)
             .order('date', { ascending: false })
             .limit(300);

@@ -576,6 +576,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           date: string
+          deleted_at: string | null
           description: string | null
           division: string
           file_url: string
@@ -592,6 +593,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date: string
+          deleted_at?: string | null
           description?: string | null
           division: string
           file_url: string
@@ -608,6 +610,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date?: string
+          deleted_at?: string | null
           description?: string | null
           division?: string
           file_url?: string

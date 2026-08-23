@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown, Star } from 'lucide-react';
+import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown, RotateCcw } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { downloadFilesSequentially, sanitizeFilename } from '@/lib/download-utils';
@@ -29,9 +29,42 @@ interface ArchiveFile {
   fund: string | null;
   status?: string;
   project?: string | null;
-  is_favourite?: boolean;
+  /** Set while the report is in the recovery window. Null means live. */
+  deleted_at?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// =====================================================================
+// THE THREE STATES A REPORT CAN BE IN, and what each one means.
+// ---------------------------------------------------------------------
+//   Draft      Written, not yet published. Lives here, never public.
+//   Published  Live on the website.
+//   Blocked    Was published and has been withdrawn. Lives here, no
+//              longer public. This is the after-the-fact counterpart to
+//              Draft, which is the before.
+//
+// All three are held in the archive; only Published reaches the public
+// website. That was already the intention and already the data model.
+// What was missing was the enforcement: the public pages asked for every
+// report and let row-level security sort it out, and the staff read
+// policy - which a signed-in Head also matches - returns everything. So
+// drafts and blocked reports were on the public pages for exactly the
+// people least likely to notice. The public queries now name the filter
+// themselves; see the note in pages/Archive.tsx.
+//
+// Deletion is a fourth, orthogonal state: a report of any status can be
+// deleted, and it then waits RECOVERY_DAYS days to be restored or purged.
+// =====================================================================
+
+/** Must match RECOVERY_DAYS in supabase/functions/admin-files. */
+const RECOVERY_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Whole days left before a deleted report is purged; 0 means it goes today. */
+function daysLeft(deletedAt: string): number {
+  const elapsed = Date.now() - new Date(deletedAt).getTime();
+  return Math.max(0, Math.ceil((RECOVERY_DAYS * DAY_MS - elapsed) / DAY_MS));
 }
 
 interface FileManagementProps {
@@ -51,6 +84,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   // fund filter the public archive offers.
   const [fundFilter, setFundFilter] = useState<Fund | 'all'>('all');
   const [yearFilter, setYearFilter] = useState<number | 'all'>('all');
+  // Draft / Published / Blocked. The archive holds all three, so it should be
+  // possible to ask it for one of them.
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'blocked'>('all');
+  // The recovery window, folded away until it is wanted.
+  const [showDeleted, setShowDeleted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
@@ -74,25 +112,20 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const { session } = useAuth();
   const access = useAccess();
 
-  const handleToggleFavourite = async (file: ArchiveFile) => {
-    const next = !file.is_favourite;
-    if (next && files.filter((f) => f.is_favourite).length >= 5) {
-      toast({ title: 'You can pin at most 5 favourites.', variant: 'destructive' });
-      return;
-    }
-    setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, is_favourite: next } : f)));
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: { action: 'favourite', file: { id: file.id, is_favourite: next } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (error) throw error;
-      if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); fetchFiles(); }
-    } catch (e) {
-      toast({ title: 'Could not update favourite', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-      fetchFiles();
-    }
-  };
+  // FAVOURITES ARE NOT PART OF THE ARCHIVE ANY MORE.
+  //
+  // Pinning five reports to the top of a complete, filtered, paginated
+  // archive gave the list two competing orders: the one the filters and the
+  // date produce, and a private one belonging to whoever last pressed a star.
+  // The archive's job is to hold everything and let it be searched. The star
+  // control, the pinned band and the pinning sort are all gone from here.
+  //
+  // Nothing else loses favourites. The resource sections - Templates &
+  // repositories, MIMS Graphics, Instagram, LinkedIn, Other Resources - keep
+  // theirs, because a shortlist of five is exactly what a working shelf
+  // wants. Their favourites live on a different table and are untouched, and
+  // the `is_favourite` column here is left alone rather than dropped, so no
+  // existing data is destroyed by this change.
 
   const handleSetStatus = async (fileId: string, status: 'draft' | 'published' | 'blocked') => {
     try {
@@ -112,11 +145,31 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   };
 
   useEffect(() => {
-    fetchFiles();
+    // Close the window on anything already past its thirty days, then load.
+    //
+    // A recovery period that is only a filter in the interface is not a
+    // period at all: the rows and the PDFs would sit in the bucket for ever
+    // and "recoverable for 30 days" would be a claim nothing enforced. The
+    // sweep is best-effort and deliberately silent - if it fails, the list
+    // is still correct, because the window is applied here as well.
+    (async () => {
+      try {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        await supabase.functions.invoke('admin-files', {
+          body: { action: 'purge-expired' },
+          headers: { Authorization: `Bearer ${s?.access_token}` },
+        });
+      } catch { /* the list below does not depend on this */ }
+      fetchFiles();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchFiles = async () => {
     try {
+      // Staff read every report, in every state: this is the archive, and
+      // drafts, blocked reports and the recovery window are all part of it.
+      // The public pages ask a narrower question; see pages/Archive.tsx.
       const { data, error } = await supabase
         .from('archive_files')
         .select('*')
@@ -136,13 +189,79 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     }
   };
 
+  /** Put a deleted report back, exactly as it was. */
+  const handleRestore = async (file: ArchiveFile) => {
+    const previous = files;
+    setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, deleted_at: null } : f)));
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-files', {
+        body: { action: 'restore', file: { id: file.id } },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error || data?.error) {
+        setFiles(previous);
+        toast({ title: 'Could not restore', description: data?.error || 'Please try again.', variant: 'destructive' });
+        return;
+      }
+      logActivity(session, access.primaryRole, { action: 'update', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: file.id, entityName: file.title, details: { operation: 'restore' } });
+      toast({ title: 'Report restored', description: `"${file.title}" is back in the archive${file.status === 'published' ? ' and live on the website' : ''}.` });
+    } catch (e) {
+      setFiles(previous);
+      toast({ title: 'Could not restore', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    }
+  };
+
+  /** Remove a deleted report for good, before its window is up. */
+  const handlePurge = async (file: ArchiveFile) => {
+    if (!confirm(`Remove "${file.title}" permanently? This cannot be undone: the report and its PDF are deleted immediately.`)) return;
+    const previous = files;
+    setFiles((prev) => prev.filter((f) => f.id !== file.id));
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-files', {
+        body: { action: 'purge', file: { id: file.id } },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error || data?.error) {
+        setFiles(previous);
+        toast({ title: 'Could not remove', description: data?.error || 'Please try again.', variant: 'destructive' });
+        return;
+      }
+      logActivity(session, access.primaryRole, { action: 'delete', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: file.id, entityName: file.title, details: { operation: 'permanent' } });
+      toast({ title: 'Removed permanently' });
+    } catch (e) {
+      setFiles(previous);
+      toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    }
+  };
+
+  /**
+   * The reports in the recovery window, soonest to expire first.
+   *
+   * The window is applied here as well as on the server, so a report whose
+   * thirty days ran out while this tab was open stops being offered even if
+   * the sweep has not reached it yet.
+   */
+  const deletedFiles = useMemo(
+    () => files
+      .filter((f) => f.deleted_at && daysLeft(f.deleted_at) > 0)
+      .filter((f) => !allowedDivisions || allowedDivisions.includes(f.division as Division))
+      .sort((a, b) => new Date(a.deleted_at!).getTime() - new Date(b.deleted_at!).getTime()),
+    [files, allowedDivisions],
+  );
+
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
+      // A deleted report is not part of the archive while it is deleted; it
+      // has its own section below the list.
+      if (file.deleted_at) return false;
       // Allowed divisions filter (for restricted users)
       if (allowedDivisions && !allowedDivisions.includes(file.division as Division)) return false;
       // Division filter
       if (divisionFilter !== 'all' && file.division !== divisionFilter) return false;
       if (divisionFilter === 'portfolio' && fundFilter !== 'all' && file.fund !== fundFilter) return false;
+      // Status filter: the archive holds three states and it should be
+      // possible to ask for one of them, e.g. "what is still a draft?".
+      if (statusFilter !== 'all' && (file.status || 'published') !== statusFilter) return false;
       // Year filter
       if (yearFilter !== 'all') {
         const fileYear = new Date(file.date).getFullYear();
@@ -156,15 +275,15 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         if (!matchesTitle && !matchesDescription) return false;
       }
       return true;
-    })
-    // Favourites are pinned on top; otherwise keep the newest-first order.
-    .sort((a, b) => (a.is_favourite === b.is_favourite ? 0 : a.is_favourite ? -1 : 1));
-  }, [files, divisionFilter, fundFilter, yearFilter, searchQuery, allowedDivisions]);
+    });
+    // Newest first, and only that. The archive is a record, so its order is
+    // the record's own; nothing is pinned above it.
+  }, [files, divisionFilter, fundFilter, statusFilter, yearFilter, searchQuery, allowedDivisions]);
 
   const fileYears = useMemo(() => {
-    let relevantFiles = files;
+    let relevantFiles = files.filter((f) => !f.deleted_at);
     if (allowedDivisions) {
-      relevantFiles = files.filter(f => allowedDivisions.includes(f.division as Division));
+      relevantFiles = relevantFiles.filter(f => allowedDivisions.includes(f.division as Division));
     }
     const years = [...new Set(relevantFiles.map(f => new Date(f.date).getFullYear()))];
     return years.sort((a, b) => b - a);
@@ -178,7 +297,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [divisionFilter, fundFilter, yearFilter, searchQuery]);
+  }, [divisionFilter, fundFilter, statusFilter, yearFilter, searchQuery]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -453,10 +572,13 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   };
 
   const handleDelete = async (fileId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    // The prompt says what actually happens now, because what happens has
+    // changed: this is no longer the end of the report.
+    if (!confirm(`Delete this report? It comes off the website immediately and stays recoverable here for ${RECOVERY_DAYS} days.`)) return;
 
     const previousFiles = files;
-    setFiles(prev => prev.filter(f => f.id !== fileId));
+    const stamp = new Date().toISOString();
+    setFiles(prev => prev.map(f => (f.id === fileId ? { ...f, deleted_at: stamp } : f)));
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -473,7 +595,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
       const target = previousFiles.find((f) => f.id === fileId);
       logActivity(session, access.primaryRole, { action: 'delete', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: fileId, entityName: target?.title ?? null });
-      toast({ title: "Success", description: "File deleted successfully" });
+      toast({ title: 'Report deleted', description: `It is off the website and can be restored from Recently deleted for ${RECOVERY_DAYS} days.` });
+      // Show the reader where it went, the first time.
+      setShowDeleted(true);
     } catch (error) {
       console.error('Delete error:', error);
       setFiles(previousFiles);
@@ -780,6 +904,21 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
+
+          {/* Status filter, in the same standard filter format as the rest.
+              "Which of ours are still drafts" and "what have we withdrawn"
+              are questions the archive should be able to answer directly. */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published' | 'blocked')}
+            aria-label="Filter by publication status"
+            className="font-body bg-background border border-separator px-3 h-10 min-w-[190px]"
+          >
+            <option value="all">All statuses</option>
+            <option value="published">Published (public)</option>
+            <option value="draft">Draft (not public)</option>
+            <option value="blocked">Blocked (not public)</option>
+          </select>
         </div>
       </div>
 
@@ -834,9 +973,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                     </time>
                     <h3 className="font-serif text-base leading-snug md:text-subheading mt-1.5 md:mt-2 mb-1.5 md:mb-2">
                       {file.title}
+                      {/* The badge says what the state MEANS for the public
+                          website, which is the only thing anyone reading this
+                          list wants to know from it. "draft" and "blocked"
+                          named the state without saying its consequence. */}
                       {file.status && file.status !== 'published' && (
-                        <span className={`ml-3 align-middle text-xs uppercase tracking-wider font-body px-2 py-0.5 border ${file.status === 'blocked' ? 'text-destructive border-destructive/40' : 'text-amber-700 border-amber-700/40'}`}>
-                          {file.status}
+                        <span
+                          title={file.status === 'blocked'
+                            ? 'Withdrawn after publication. It stays in this archive and is not shown anywhere on the public website.'
+                            : 'Not yet published. It stays in this archive and is not shown anywhere on the public website.'}
+                          className={`ml-3 align-middle text-xs uppercase tracking-wider font-body px-2 py-0.5 border ${file.status === 'blocked' ? 'text-destructive border-destructive/40' : 'text-amber-700 border-amber-700/40'}`}
+                        >
+                          {file.status === 'blocked' ? 'Blocked · not public' : 'Draft · not public'}
                         </span>
                       )}
                     </h3>
@@ -898,17 +1046,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                         Unblock
                       </Button>
                     )}
+                    {/* A published report can be sent back to Draft as well as
+                        blocked; without this the only way out of Published was
+                        Block, which carries a different meaning. */}
+                    {access.isFullAccess && file.status === 'published' && (
+                      <Button variant="outline" size="sm" className="font-body" title="Unpublish and hold it as a draft" onClick={() => handleSetStatus(file.id, 'draft')}>
+                        Unpublish
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="icon"
-                      title={file.is_favourite ? 'Unpin favourite' : 'Pin as favourite'}
-                      onClick={() => handleToggleFavourite(file)}
-                    >
-                      <Star className={`h-4 w-4 ${file.is_favourite ? 'fill-accent text-accent' : ''}`} />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
+                      title="Edit this report"
                       onClick={() => openEditDialog(file)}
                     >
                       <Edit className="h-4 w-4" />
@@ -977,6 +1126,78 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             </nav>
           )}
         </>
+      )}
+
+      {/* =================================================================
+          RECENTLY DELETED.
+          -----------------------------------------------------------------
+          Deliberately the same list, in the same place, in the same visual
+          language - a disclosure at the foot of the archive rather than a
+          separate administration screen somewhere else. A deleted report is
+          still one of these reports; it is simply on its way out, and the
+          only new things it needs to say are how long is left and how to
+          bring it back.
+
+          The row is folded away when there is nothing in it, so an archive
+          with no deletions looks exactly as it did before.
+          ================================================================= */}
+      {deletedFiles.length > 0 && (
+        <section className="mt-10 border-t border-separator pt-6" aria-labelledby="archive-deleted-heading">
+          <button
+            type="button"
+            onClick={() => setShowDeleted((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 text-left"
+            aria-expanded={showDeleted}
+          >
+            <span className="min-w-0">
+              <span id="archive-deleted-heading" className="font-serif text-subheading text-accent block">
+                Recently deleted ({deletedFiles.length})
+              </span>
+              <span className="font-body text-sm text-muted-foreground">
+                Deleted reports are off the public website but kept here for {RECOVERY_DAYS} days, then removed permanently. Restoring one brings it back exactly as it was.
+              </span>
+            </span>
+            {showDeleted
+              ? <ChevronUp className="h-5 w-5 shrink-0 text-muted-foreground" />
+              : <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground" />}
+          </button>
+
+          {showDeleted && (
+            <ul className="mt-5 space-y-3">
+              {deletedFiles.map((file) => {
+                const left = daysLeft(file.deleted_at!);
+                // The last few days are the ones worth noticing.
+                const urgent = left <= 5;
+                return (
+                  <li key={file.id} className="flex flex-col gap-3 border border-separator px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-serif text-base leading-snug text-foreground truncate">{file.title}</p>
+                      <p className="font-body text-xs text-muted-foreground mt-0.5">
+                        {divisionLabels[file.division as Division]} · {formatDate(file.date)}
+                        {file.status && file.status !== 'published' && ` · was ${file.status}`}
+                      </p>
+                      <p className={`font-body text-xs mt-1 ${urgent ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        Deleted {formatDate(file.deleted_at!)} · {left === 1 ? '1 day left to restore it' : `${left} days left to restore it`}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button variant="outline" size="sm" className="font-body" onClick={() => handleRestore(file)}>
+                        <RotateCcw className="h-4 w-4 mr-1.5" />Restore
+                      </Button>
+                      {/* Permanent removal is reserved for the roles that may
+                          block a report, and the server checks it again. */}
+                      {access.isFullAccess && (
+                        <Button variant="destructive" size="sm" className="font-body" onClick={() => handlePurge(file)}>
+                          Delete permanently
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       )}
     </div>
   );

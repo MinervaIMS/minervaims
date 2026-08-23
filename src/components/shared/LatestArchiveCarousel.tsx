@@ -39,6 +39,9 @@ export function LatestArchiveCarousel({ files: propFiles }: LatestArchiveCarouse
       const { data, error } = await supabase
         .from('archive_files')
         .select('id, title, file_url, date, division')
+        // Public surface: published reports only, and never a deleted one.
+        .eq('status', 'published')
+        .is('deleted_at', null)
         .order('date', { ascending: false })
         .limit(15);
 

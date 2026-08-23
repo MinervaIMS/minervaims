@@ -109,6 +109,9 @@ const DivisionDetail = () => {
         .from('archive_files')
         .select('id, title, description, file_url, date, division, fund')
         .eq('division', division)
+        // Public surface: published reports only, and never a deleted one.
+        .eq('status', 'published')
+        .is('deleted_at', null)
         .order('date', { ascending: false })
         .limit(9);
 

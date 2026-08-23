@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AuthLayout from '@/components/shared/AuthLayout';
-import { AuthButton, AUTH_TOKENS, AuthSteps } from '@/components/shared/AuthUI';
+import { AuthButton, AUTH_TOKENS, EmailDeliverySteps } from '@/components/shared/AuthUI';
 
 const RESEND_SECONDS = 45;
 
@@ -53,12 +53,9 @@ export default function ApplicationCheckEmail() {
         Confirming your email is required to send your application.
       </p>
 
-      <AuthSteps
-        items={[
-          'It can take a minute or two to arrive.',
-          'No email? Check your spam or promotions folder.',
-        ]}
-      />
+      {/* The delivery guidance, shared with /check-email so the two screens
+          cannot drift apart. See EmailDeliverySteps in AuthUI. */}
+      <EmailDeliverySteps />
 
       <AuthButton onClick={resend} disabled={seconds > 0 || isSending || !email}>
         {seconds > 0

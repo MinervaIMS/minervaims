@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import logoColorAsset from '@/assets/logo-color-loader.webp.asset.json';
 import logoWhiteAsset from '@/assets/logo-white-loader.webp.asset.json';
+import { pulsePhaseStyle } from '@/lib/loader-pulse';
 
 // =====================================================================
 // PageLoader — the Suspense fallback for every lazy route.
@@ -56,18 +57,29 @@ export function PageLoader() {
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{ backgroundColor: 'var(--chrome-base, hsl(var(--background)))' }}
     >
-      <div
-        className={`animate-pulse transition-opacity duration-200 ${showMark ? 'opacity-100' : 'opacity-0'}`}
-      >
-        <img
-          src={dark ? logoWhiteAsset.url : logoColorAsset.url}
-          alt="Loading"
-          width={65}
-          height={48}
-          className="h-12 w-auto"
-          decoding="sync"
-          fetchPriority="high"
-        />
+      {/* TWO ELEMENTS, TWO JOBS. They used to be one, and that is why the
+          grace period above never worked: a running CSS animation writes the
+          property it animates, so `animate-pulse` overrode the `opacity-0`
+          the fade started from. The mark was therefore drawn at full opacity
+          from the first frame - the 160ms delay changed nothing, and every
+          quick navigation blinked a logo, which is what the delay exists to
+          prevent.
+
+          The outer element owns the fade in and nothing else. The inner one
+          owns the pulse and nothing else. Neither can now overwrite the
+          other, and the phase carries across mounts. */}
+      <div className={`transition-opacity duration-200 ${showMark ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="animate-markPulse" style={pulsePhaseStyle()}>
+          <img
+            src={dark ? logoWhiteAsset.url : logoColorAsset.url}
+            alt="Loading"
+            width={65}
+            height={48}
+            className="h-12 w-auto"
+            decoding="sync"
+            fetchPriority="high"
+          />
+        </div>
       </div>
     </div>
   );

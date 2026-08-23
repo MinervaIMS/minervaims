@@ -15,7 +15,28 @@ const corsHeaders = {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
-const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
+// =====================================================================
+// WHO MAY READ, AND WHO MAY WRITE, ARE TWO DIFFERENT QUESTIONS.
+// ---------------------------------------------------------------------
+// One list used to answer both, and `list` was gated on it. The Head of
+// Division is not on that list, so every attempt to READ the register
+// came back 403; the workspace caught the error, showed a toast and left
+// the table empty. The page loaded, the figures did not - which is
+// exactly the fault reported: an empty Treasury for a role that is
+// supposed to see it.
+//
+// The client matrix has always said what the answer should be:
+// `ops-treasury` is 'view' for the two research Heads and 'manage' for
+// the Board and Operations. These two lists now say the same thing, so
+// the interface and the server cannot disagree.
+//
+// READ is deliberately wider than MANAGE: consulting the association's
+// cash position is part of leading a research area. Recording a movement
+// is not - that belongs to the Board and to Operations, and the register
+// is append-only for them too.
+// =====================================================================
+const READ = ['admin', 'president', 'vice_president', 'head_of_operations', 'head_of_asset_management', 'head_of_division'];
+const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations'];
 
 const EntrySchema = z.object({
   amount: z.number().positive('Amount must be greater than zero'),
@@ -40,10 +61,12 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
     const roles = (roleRows || []).map((r: any) => r.role);
-    const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
-    // Treasury holds financial data: every action, including reading the list,
-    // requires management access - not just any signed-in user.
-    if (!canManage) return json({ error: 'Access denied' }, 403);
+    const isOwner = user.email === 'as.minerva@unibocconi.it';
+    const canRead = isOwner || roles.some((r: string) => READ.includes(r));
+    const canManage = isOwner || roles.some((r: string) => MANAGE.includes(r));
+    // Treasury holds financial data: it is never open to any signed-in user.
+    // Reading requires a role on READ; recording requires one on MANAGE.
+    if (!canRead) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
@@ -55,6 +78,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'add') {
+      // Reading the register is not permission to add to it.
+      if (!canManage) return json({ error: 'Recording an entry is reserved for the Board and Operations.' }, 403);
       const parsed = EntrySchema.safeParse(body.entry);
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
       const e = parsed.data;
