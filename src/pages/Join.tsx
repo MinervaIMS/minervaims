@@ -84,7 +84,7 @@ const Join = () => {
           rhythm at both ends of that join would put sixteen rems between two
           blocks that belong together. This is the same measure the Admissions
           section already uses where it continues from the block above it. */}
-      <section aria-labelledby="join-society-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
+      <section aria-labelledby="join-society-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-society-heading"
