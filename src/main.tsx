@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
@@ -12,8 +13,8 @@ import { initPerfMode } from "./lib/perf";
 const RELOAD_KEY = "__module_reload_attempted__";
 const RELOAD_PARAM = "module-reload";
 const MAX_RELOADS = 2;
-const isRecoverableModuleError = (msg: unknown) => {
-  if (typeof msg !== "string") return false;
+const isRecoverableModuleError = (value: unknown) => {
+  const msg = typeof value === "string" ? value : "";
   return (
     msg.includes("Importing a module script failed") ||
     msg.includes("Failed to fetch dynamically imported module") ||
@@ -54,13 +55,41 @@ const tryReload = () => {
   }
 };
 window.addEventListener("error", (e) => {
-  if (isRecoverableModuleError(e.message)) tryReload();
+  const details = `${e.message ?? ""}\n${e.error?.stack ?? ""}`;
+  if (isRecoverableModuleError(details)) tryReload();
 });
 window.addEventListener("unhandledrejection", (e) => {
   const reason = e.reason;
-  const msg = typeof reason === "string" ? reason : reason?.message;
-  if (isRecoverableModuleError(msg)) tryReload();
+  const details = typeof reason === "string"
+    ? reason
+    : `${reason?.message ?? ""}\n${reason?.stack ?? ""}`;
+  if (isRecoverableModuleError(details)) tryReload();
 });
+
+interface ModuleRecoveryBoundaryProps {
+  children: ReactNode;
+}
+
+class ModuleRecoveryBoundary extends Component<ModuleRecoveryBoundaryProps> {
+  componentDidMount() {
+    // This lifecycle runs only after React has committed successfully. The
+    // static loader already inside #root must not be mistaken for a commit.
+    sessionStorage.removeItem(RELOAD_KEY);
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(RELOAD_PARAM)) return;
+    url.searchParams.delete(RELOAD_PARAM);
+    window.history.replaceState(window.history.state, "", url);
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    const details = `${error.message}\n${error.stack ?? ""}\n${info.componentStack ?? ""}`;
+    if (isRecoverableModuleError(details)) tryReload();
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
 
 
 // Suspend viewport scaling while a field has focus, so iOS never zooms
@@ -77,19 +106,9 @@ const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Application root element is missing");
 
 createRoot(rootElement).render(
-  <HelmetProvider>
-    <App />
-  </HelmetProvider>
+  <ModuleRecoveryBoundary>
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
+  </ModuleRecoveryBoundary>
 );
-
-// Only clear the one-shot recovery guard after React has committed content.
-// The browser load event alone is not sufficient because it also fires when
-// React crashes before its first commit.
-window.setTimeout(() => {
-  if (!rootElement.hasChildNodes()) return;
-  sessionStorage.removeItem(RELOAD_KEY);
-  const url = new URL(window.location.href);
-  if (!url.searchParams.has(RELOAD_PARAM)) return;
-  url.searchParams.delete(RELOAD_PARAM);
-  window.history.replaceState(window.history.state, "", url);
-}, 2000);
