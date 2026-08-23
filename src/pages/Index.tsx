@@ -94,7 +94,7 @@ const Index = () => {
       </Helmet>
 
       {/* Hero Section */}
-      <section data-page-hero className="relative min-h-screen flex flex-col">
+      <section data-page-hero className="relative min-h-[80svh] flex flex-col">
         {/* THE DARK BLOCK, AND ONLY IT, CARRIES THE PHOTOGRAPH.
             The image used to be `inset-0` on the whole hero, which includes
             the white figures band beneath: `bg-center` therefore centred the
