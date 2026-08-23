@@ -201,18 +201,12 @@ const Events = () => {
             Minerva Events, bridging the gap between academia and industry
           </h2>
           <p className="font-body text-body-lg text-muted-foreground mb-4 max-w-4xl">
-            Beyond research and portfolio management, MIMS delivers a year-round programme designed to develop technical
-            judgement and long-term connections across the membership. Each semester, the Society hosts one flagship
-            event with industry professionals, offering direct exposure to real-world investment processes. We
-            complement this with company visits and internal forums where each team presents its work to the full
-            Society, followed by structured discussions and debates to challenge assumptions and improve
-            decision-making.
+            <div className="font-body text-body-lg text-muted-foreground max-w-4xl">
+              Minerva delivers a year-round programme designed to develop technical judgement and long-term connections. Each semester, the Society hosts flagship events with industry professionals, alongside&nbsp;company visits and internal gatherings where each team presents its work.
+            </div>
           </p>
           <p className="font-body text-body-lg text-muted-foreground max-w-4xl">
-            To strengthen cohesion, MIMS also organises division-only and association-wide aperitivos, creating
-            consistent touchpoints between members. Finally, frequent alumni calls give current members direct access to
-            a truly international network, enabling candid Q&A on academic choices, recruitment pathways, and the
-            realities of roles across banks, boutiques, hedge funds and asset managers.
+            Frequent alumni calls give current members direct access to a truly international network, enabling candid Q&A on academic choices, recruitment pathways, and the realities of roles across banks, asset managers, academia and economic research.
           </p>
         </div>
       </section>
