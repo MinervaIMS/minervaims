@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccess } from '@/hooks/useAccess';
 import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download, Search } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { downloadCSV } from '@/lib/download-utils';
@@ -79,9 +80,18 @@ interface SortableReadingItemProps {
   reading: Reading;
   onEdit: (reading: Reading) => void;
   onDelete: (id: string) => void;
+  /**
+   * False for the roles that may only CONSULT this library.
+   *
+   * Curating the readings and reading them are two different permissions,
+   * and the matrix has always distinguished them: the page simply never
+   * asked. A viewer now gets the list and nothing that writes to it, so
+   * no control is offered that the server would refuse anyway.
+   */
+  canManage: boolean;
 }
 
-function SortableReadingItem({ reading, onEdit, onDelete }: SortableReadingItemProps) {
+function SortableReadingItem({ reading, onEdit, onDelete, canManage }: SortableReadingItemProps) {
   const {
     attributes,
     listeners,
@@ -103,13 +113,16 @@ function SortableReadingItem({ reading, onEdit, onDelete }: SortableReadingItemP
       style={style}
       className="flex items-start gap-4 p-4 bg-background border border-separator rounded-lg"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
-      >
-        <GripVertical className="h-5 w-5" />
-      </button>
+      {/* Reordering is a write too: a viewer gets no handle to drag. */}
+      {canManage && (
+        <button
+          {...attributes}
+          {...listeners}
+          className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+        >
+          <GripVertical className="h-5 w-5" />
+        </button>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-muted-foreground">
@@ -126,19 +139,31 @@ function SortableReadingItem({ reading, onEdit, onDelete }: SortableReadingItemP
           Recommended by {reading.contributor_name} {reading.contributor_surname}, {reading.contributor_role}
         </p>
       </div>
-      <div className="flex gap-2 shrink-0">
-        <Button variant="outline" size="icon" onClick={() => onEdit(reading)}>
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button variant="destructive" size="icon" onClick={() => onDelete(reading.id)}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+      {canManage && (
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" size="icon" onClick={() => onEdit(reading)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="destructive" size="icon" onClick={() => onDelete(reading.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 const ReadingsManagement = () => {
+  /**
+   * CURATING AND CONSULTING ARE TWO PERMISSIONS.
+   *
+   * The access matrix has always graded this subsection (some roles hold
+   * it at `manage`, others only at `view`), but the page offered the same
+   * create, edit, delete and reorder controls to everyone who could open
+   * it, and the edge function then refused the write. A viewer now reads
+   * the library and is offered nothing that writes to it.
+   */
+  const canManage = useAccess().canManage('website-readings');
   const [readings, setReadings] = useState<Reading[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -489,12 +514,14 @@ const ReadingsManagement = () => {
             </AlertDialogContent>
           </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog} className="font-body">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Reading
-              </Button>
-            </DialogTrigger>
+            {canManage && (
+              <DialogTrigger asChild>
+                <Button onClick={openCreateDialog} className="font-body">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Reading
+                </Button>
+              </DialogTrigger>
+            )}
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -645,6 +672,7 @@ const ReadingsManagement = () => {
                     reading={reading}
                     onEdit={openEditDialog}
                     onDelete={handleDelete}
+                    canManage={canManage}
                   />
                 ))}
               </div>

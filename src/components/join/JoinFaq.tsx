@@ -132,7 +132,11 @@ export function JoinFaq() {
                     setCategory(event.target.value === 'all' ? null : event.target.value)
                   }
                   aria-label="Filter the questions by category"
-                  className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
+                  /* THE SAME TYPE SIZE AS THE SEARCH FIELD BESIDE IT. A bare
+                     select has no size of its own and inherits the page, while
+                     the Input component carries `text-base md:text-sm`, so the
+                     two controls sat on one row at two different sizes. */
+                  className="font-body text-base md:text-sm bg-background border border-separator px-3 h-10 min-w-[200px]"
                 >
                   <option value="all">All questions</option>
                   {categories.map((c) => (
