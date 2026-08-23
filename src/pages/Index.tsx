@@ -13,6 +13,7 @@ import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,7 +37,14 @@ const Index = () => {
   const { settings: appSettings } = useApplicationSettings();
   const [carouselFiles, setCarouselFiles] = useState<ArchiveFile[]>([]);
   const [isCarouselLoading, setIsCarouselLoading] = useState(true);
-  const imagesLoaded = useImagePreload([homepageBg, logoWhite]);
+  // BOTH LAYERS OF THE HERO, NOT ONE OF THEM.
+  // The dark wash over the photograph is a second downloaded image (see
+  // lib/hero-overlay.ts), and it used to be absent from this list. So the
+  // photograph was fetched from mount while the overlay was not started
+  // until the hero rendered: the picture was GUARANTEED to be ready first,
+  // and the reader met the bright, unshaded image before the wash arrived.
+  // Preloading them together is what makes the hero one state instead of two.
+  const imagesLoaded = useImagePreload([homepageBg, HERO_OVERLAY_URL, logoWhite]);
 
 
   useEffect(() => {
@@ -60,8 +68,22 @@ const Index = () => {
     }
   };
 
-  // Only block on data loading, not images - let hero render immediately for better LCP
-  if (isKeyFiguresLoading || isCarouselLoading) {
+  // ONE GATE, AND THE HERO IS COMPLETE WHEN IT LIFTS.
+  //
+  // This used to wait on the data alone, with a comment about letting the
+  // hero render immediately for a better LCP. In practice the opposite
+  // happened: the hero rendered, and what it rendered was an unfinished
+  // composition that then changed brightness in front of the reader. An LCP
+  // measured against a picture the design never intended to show is not a
+  // faster page, it is an earlier wrong one.
+  //
+  // `imagesLoaded` was already being computed here and simply never used.
+  // Adding it to the gate costs nothing on the ordinary path, because the two
+  // Supabase queries above are almost always the slower half, and it cannot
+  // strand anybody: the preload hook gives up after its own cap and reports
+  // ready regardless. This is the site's existing loader, unchanged; no new
+  // loading system is introduced.
+  if (isKeyFiguresLoading || isCarouselLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 
@@ -110,12 +132,22 @@ const Index = () => {
         </div>
 
         {/* Key Figures - inside hero so it appears within initial viewport.
-            The band is a fifth shorter than it was (16/24 against 20/32),
-            and the three figures are centred in what is left: the padding
-            is symmetric and the row aligns on its centre, so the block sits
-            in the middle of the white rather than riding its top edge. */}
+            The three figures are centred in the band: the padding is
+            SYMMETRIC and the row aligns on its centre, so the block sits in
+            the middle of the white rather than riding its top edge. That is
+            also why re-centring them needs no separate change - it follows
+            from the padding staying equal top and bottom.
+
+            A FIFTH TALLER ON A PHONE, AND ONLY ON A PHONE. Measured at
+            390x844 the band was 231px: 64px of padding at each end around a
+            103px row, which is 27% of the hero. 87px at each end around the
+            same row is 277px, a 19.9% increase, and the photograph above
+            gives up exactly those 46px because it is the flexible element in
+            a full-height column. From `md` upwards the padding is 96px as
+            before, so the desktop composition - 344px of white over a 556px
+            photograph at 1440x900 - is untouched. */}
         <div className="relative z-10 bg-background">
-          <div className="container py-16 md:py-24">
+          <div className="container py-[5.4375rem] md:py-24">
 
             <div className="grid grid-cols-3 items-center gap-2 md:gap-12">
               <Link
