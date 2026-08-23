@@ -72,7 +72,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
   return (
     <div
       data-page-hero
-      className="relative overflow-hidden"
+      className="relative flex flex-col overflow-hidden"
       style={{ backgroundColor: '#000' }}
     >
       {/*
@@ -96,7 +96,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
         band is exactly as tall as what it holds, which is what makes it read
         as an introduction rather than as a screen.
       */}
-      <div className="container relative z-10 pb-20 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-32 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
+      <div className="container relative z-10 flex flex-1 flex-col pb-28 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-44 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
         {/* Title and payoff carry the same type as PageIntroduction, so the
             opening of /join reads as a member of the same family as the fund
             and division pages rather than as its own thing. */}
@@ -112,7 +112,9 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
             means" rather than as a separate band that happens to share a
             background. The space beneath them, before the white begins, is
             the page's own rhythm rather than a leftover. */}
-        <div className="mt-10 md:mt-12">{figures}</div>
+        <div className="flex flex-1 flex-col items-center justify-center">
+          {figures}
+        </div>
       </div>
     </div>
   );
