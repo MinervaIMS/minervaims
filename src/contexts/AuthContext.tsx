@@ -40,9 +40,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Safe fallback used during Fast Refresh/HMR transient states so a hot reload
+ *  of a consumer does not crash the whole tree before the provider remounts. */
+const authContextFallback: AuthContextType = {
+  user: null,
+  session: null,
+  profile: null,
+  roles: [],
+  rolesLoaded: false,
+  memberPhotoUrl: null,
+  isLoading: true,
+  isAdmin: false,
+  isSessionExpired: false,
+  signIn: async () => ({ error: null }),
+  signUp: async () => ({ error: null }),
+  signOut: async () => {},
+  refreshProfile: async () => {},
+  refreshSession: async () => false,
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
+    if (import.meta.env.DEV) {
+      return authContextFallback;
+    }
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
