@@ -20,7 +20,7 @@
  * Variables: {firstName} {memberCount} {alumniCount} {reportsThisSemester}
  *            {reportsAllTime} {readingsCount} {semesterLabel} {semesterOrdinal}
  *
- * {semesterOrdinal} counts the society's semesters since Fall 2019. It is
+ * {semesterOrdinal} counts the society's semesters since Fall 2017. It is
  * deliberately about Minerva, not about the reader.
  *
  * UK English. No em dashes.
@@ -127,7 +127,7 @@ export const PERIOD_LINES: Record<number, Record<Half, string[]>> = {
       '{firstName}, the FT before the first lecture. Worth restarting the habit early.',
       'First briefs land soon. Worth being ready, {firstName}.',
       'Our {semesterOrdinal} semester is under way.',
-      "{reportsAllTime} reports since 2019. Let's add properly to that this semester.",
+      "{reportsAllTime} reports since 2017. Let's add properly to that this semester.",
       "{firstName}, we're the ones who explain Minerva best. Association on Display is our chance.",
       "Back in Milan, back to it. Let's make this our best semester yet.",
     ],

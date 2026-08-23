@@ -350,7 +350,7 @@ export const GUIDE: GuideEntry[] = [
     topics: [{ id: 'linking', title: 'Linking to alumni records', body: 'Each testimonial should be linked to its alumni record so the homepage can show the current company automatically. A warning appears when the link or the company is missing.' }] },
   {
     key: 'website-history', section: 'Website', label: 'History',
-    purpose: 'The "Our History" timeline on the About page: one key event per year, from the founding in 2019 to today.',
+    purpose: 'The "Our History" timeline on the About page: one key event per year, from the founding in 2017 to today.',
     view: ['Read the timeline year by year and see which years carry a key event.'],
     manage: ['Record, edit or clear the key event of any past year, and choose the report cover, figure or image that goes with it.'],
     warnings: ['A key event cannot be recorded for a future year, and a year can hold only one.'],

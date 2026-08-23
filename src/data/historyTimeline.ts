@@ -1,9 +1,19 @@
 // =====================================================================
 // historyTimeline — the Society's story, as shown in "Our History".
 // ---------------------------------------------------------------------
-// Eight entries, 2019 to 2026. Two of them are quiet years: they carry no
+// Ten entries, 2017 to 2026. Four of them are quiet years: they carry no
 // copy and render as a smaller outlined circle, which keeps the rail
-// continuous instead of jumping from 2021 to 2023.
+// continuous instead of jumping from one milestone to the next.
+//
+// THE SOCIETY WAS FOUNDED IN 2017. The timeline was built on 2019, which
+// was wrong; the founding entry has moved to the year it belongs to and
+// its copy says 2017. 2018 and 2019 are now quiet years, drawn exactly as
+// 2022 and 2025 already are: the rail shows that time passed without
+// claiming anything happened in it. NOTHING WAS INVENTED to fill them.
+//
+// Everything after the founding is untouched. The funds still go live in
+// 2020, and the 2020 entry still records that the Long-Short Equity Fund
+// had launched in 2019, because it did.
 //
 // Nothing here hardcodes a file id. A milestone that shows a report cover
 // describes WHICH report it wants (the first Multi-Asset fund report, the
@@ -77,13 +87,21 @@ export const HISTORY_ALUMNI_FALLBACK = 100;
 
 export const HISTORY_EVENTS: HistoryEvent[] = [
   {
-    year: 2019,
+    year: 2017,
     title: 'From the idea of five students, Minerva is founded',
     href: '/people/alumni#founders',
     description:
-      'In 2019 five students founded a society Bocconi did not have: one devoted entirely to asset management. They built it like the firms they hoped to join, with a board of eight and five divisions. Research was written to feed portfolio decisions, not to sit in a drawer. Minerva has grown since, but it still works that way.',
-    media: { kind: 'photo', src: '/history/2019-founding-cohort.jpg', alt: 'The founding cohort, 2019', note: 'The founding cohort, 2019' },
+      'In 2017 five students founded a society Bocconi did not have: one devoted entirely to asset management. They built it like the firms they hoped to join, with a board of eight and five divisions. Research was written to feed portfolio decisions, not to sit in a drawer. Minerva has grown since, but it still works that way.',
+    // The file name still carries the old year. It is an internal path, not
+    // anything a reader sees, and renaming it means moving the photograph
+    // itself; the caption, which IS read, is correct.
+    media: { kind: 'photo', src: '/history/2019-founding-cohort.jpg', alt: 'The founding cohort, 2017', note: 'The founding cohort, 2017' },
   },
+  // Two quiet years between the founding and the first milestone already on
+  // the rail. They are the same marker 2022 and 2025 use, and they say only
+  // what is true: time passed.
+  { year: 2018, minor: true },
+  { year: 2019, minor: true },
   {
     year: 2020,
     title: 'The virtual funds go live',
@@ -135,7 +153,7 @@ export const HISTORY_EVENTS: HistoryEvent[] = [
     title: 'The founders return to Bocconi',
     href: '/events',
     description:
-      'In the first half of 2026, across four public events and five alumni calls, Minerva welcomed its founders back to Bocconi. They had described a society much like this one back in 2019, at a point when there was very little evidence it would work. Most of the members who came to listen had never met them. All of them had been living inside the idea for years.',
+      'In the first half of 2026, across four public events and five alumni calls, Minerva welcomed its founders back to Bocconi. They had described a society much like this one back in 2017, at a point when there was very little evidence it would work. Most of the members who came to listen had never met them. All of them had been living inside the idea for years.',
     media: { kind: 'photo', src: '/history/2026-founders-return.jpg', alt: 'The founders back at Bocconi, 2026', note: 'The founders back at Bocconi, 2026' },
   },
 ];

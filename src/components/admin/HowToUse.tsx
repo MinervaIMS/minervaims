@@ -29,7 +29,7 @@ const AT_A_GLANCE = [
 // What changed recently, so returning members catch up at a glance.
 const RECENT_IMPROVEMENTS = [
   'A search bar sits in the workspace header, on desktop and on a phone. Ctrl K, Cmd K or the / key opens it from anywhere. It searches every subsection AND every help topic your role can reach, so a page you have never opened is one or two letters away. Nothing you cannot access is ever in the results.',
-  'Website, History is new: it holds the "Our History" timeline shown on the About page, one key event per year from 2019 onwards. A year with no event stays on the rail as a quiet marker, and future years are never offered.',
+  'Website, History is new: it holds the "Our History" timeline shown on the About page, one key event per year from 2017 onwards. A year with no event stays on the rail as a quiet marker, and future years are never offered.',
   'Every filtered list can be cleared in one press. The button appears only when something is filtered and says how many filters are on.',
   'People, Members carries a Public column stating who the website shows, filterable like any other column. People, Alumni reads as cards on a phone, and turning a page returns you to the top of the list.',
   'Fund performances feed a real chart on the public fund pages and on the Portfolio Management page: a period selector from six months to inception opening on three years, a date range built from the months actually published, the return over the period on screen coloured by sign, and the curve extending on its own as each month is published. On Portfolio Management either mandate can be switched off, and with one line left the chart shades green above zero and red below.',

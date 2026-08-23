@@ -87,7 +87,7 @@ const About = () => {
                 their place between lines. */}
             <p className="mx-auto max-w-[50.4rem] text-center font-serif text-heading leading-snug text-muted-foreground whitespace-pre-line">
               {" "}Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in
-              2019, it's Bocconi's first association dedicated to asset management and the only one with
+              2017, it's Bocconi's first association dedicated to asset management and the only one with
               student-managed virtual funds.{"  "}
             </p>
 

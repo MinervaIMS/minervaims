@@ -23,7 +23,7 @@ import {
 // eagerly keeps the section heights reserved from first paint and avoids the
 // large layout shift a Suspense swap would otherwise introduce.
 const META_DESCRIPTION =
-  'Admissions to Minerva Investment Management Society, the Bocconi student society founded in 2019 and dedicated to asset management. Five core research divisions, two student-managed funds, one intake each academic semester.';
+  'Admissions to Minerva Investment Management Society, the Bocconi student society founded in 2017 and dedicated to asset management. Five core research divisions, two student-managed funds, one intake each academic semester.';
 
 const Join = () => {
   const { settings, isLoading } = useApplicationSettings();
@@ -47,7 +47,7 @@ const Join = () => {
             '@type': 'Organization',
             name: 'Minerva Investment Management Society',
             alternateName: 'MIMS',
-            foundingDate: '2019',
+            foundingDate: '2017',
             description: META_DESCRIPTION,
             url: 'https://minervaims.org/join',
             parentOrganization: { '@type': 'CollegeOrUniversity', name: 'Bocconi University' },
@@ -84,7 +84,7 @@ const Join = () => {
           rhythm at both ends of that join would put sixteen rems between two
           blocks that belong together. This is the same measure the Admissions
           section already uses where it continues from the block above it. */}
-      <section aria-labelledby="join-society-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
+      <section aria-labelledby="join-society-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-society-heading"
