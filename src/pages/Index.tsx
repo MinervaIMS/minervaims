@@ -160,7 +160,7 @@ const Index = () => {
             </p>
             <div className="mx-auto mt-10 md:mt-14 w-12 border-t border-separator" />
             <p className="mx-auto mt-10 md:mt-14 max-w-2xl font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
-              Founded at Bocconi in 2019, Minerva Investment Management Society is the University's leading association
+              Founded at Bocconi in 2017, Minerva Investment Management Society is the University's leading association
               dedicated to asset management, organised as an investment management firm, with research divisions and a
               portfolio management team accountable for the funds.
             </p>

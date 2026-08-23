@@ -30,7 +30,7 @@ function json(body: unknown, status = 200) {
 
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 
-const FOUNDED = 2019;
+const FOUNDED = 2017;
 
 const EventSchema = z.object({
   year: z.number().int(),

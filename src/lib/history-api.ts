@@ -27,8 +27,15 @@ export interface HistoryEventRow {
 
 export type HistoryEventInput = Omit<HistoryEventRow, never>;
 
-/** The year the Society was founded: the timeline cannot start earlier. */
-export const HISTORY_FIRST_YEAR = 2019;
+/**
+ * The year the Society was founded: the timeline cannot start earlier.
+ *
+ * MINERVA WAS FOUNDED IN 2017, not 2019. The whole project was built on the
+ * later date; this constant is the one the rail, the workspace's year list
+ * and the edge function's guard all read, so correcting it here moves every
+ * one of them together.
+ */
+export const HISTORY_FIRST_YEAR = 2017;
 
 export const EMPTY_HISTORY_EVENT = (year: number): HistoryEventInput => ({
   year,

@@ -28,8 +28,17 @@ import { semesterOrdinal, type GreetingVars } from './greetings';
 //    through the monotonic `sort` the semester model already defines.
 // =====================================================================
 
-/** The society was born in Fall 2019: semester number 1. */
-const FOUNDING_SORT = 2019 * 2 + 1;
+/**
+ * The society was born in FALL 2017: semester number 1.
+ *
+ * `sort` is the semester model's own monotonic index, `year * 2` for spring
+ * and `year * 2 + 1` for autumn, so subtracting the founding semester's sort
+ * and adding one gives the ordinal directly: Autumn 2017 is 1, Spring 2018
+ * is 2, Autumn 2018 is 3, Spring 2019 is 4, and so on for ever. Nothing is
+ * hard-coded: correcting the founding semester is the whole change, and
+ * every future semester keeps counting itself.
+ */
+const FOUNDING_SORT = 2017 * 2 + 1;
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

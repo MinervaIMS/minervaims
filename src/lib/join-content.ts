@@ -18,7 +18,7 @@ export const JOIN_HERO = {
 
 export const JOIN_SOCIETY = {
   heading: 'Minerva Investment Management Society',
-  lead: 'Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in 2019, it is Bocconi’s first association dedicated to asset management.',
+  lead: 'Minerva Investment Management Society is promoted and run by students of Bocconi University. Founded in 2017, it is Bocconi’s first association dedicated to asset management.',
   statements: [
     {
       figure: '5',
