@@ -96,7 +96,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
         band is exactly as tall as what it holds, which is what makes it read
         as an introduction rather than as a screen.
       */}
-      <div className="container relative z-10 pb-16 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-24 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
+      <div className="container relative z-10 pb-20 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-32 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
         {/* Title and payoff carry the same type as PageIntroduction, so the
             opening of /join reads as a member of the same family as the fund
             and division pages rather than as its own thing. */}
