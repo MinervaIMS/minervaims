@@ -23,12 +23,16 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
-  listApplications, getApplication, signDocumentUrl, bulkDocumentUrls,
+  listApplications, signDocumentUrl, bulkDocumentUrls,
   updateApplicationStatus, addApplicationNote, transferApplicationDivision,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
   isLockedStatus, allowedNextStatuses,
-  type ApplicationRow, type ApplicationNote, type ApplicationStatus,
+  type ApplicationRow, type ApplicationStatus,
 } from '@/lib/applications-api';
+import { openReportInTab } from '@/lib/open-report';
+import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
+import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
+import { documentTitle } from '@/components/admin/recruiting/document-title';
 import { listSlots } from '@/lib/interviews-api';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
@@ -72,13 +76,13 @@ export default function CandidatesManagement() {
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<{ application: ApplicationRow; notes: ApplicationNote[] } | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [answerPreviewUrl, setAnswerPreviewUrl] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
+  // Opening a candidate is the workspace's most repeated interaction, so it
+  // has its own hook: one round trip to readable, the two documents signed in
+  // parallel behind it, and every candidate opened in this session remembered.
+  const {
+    openId, detail, cvUrl, answerUrl, loading: detailLoading, docsLoading,
+    open: openCandidate, close: closeCandidate, refresh: refreshCandidate, patch: patchCandidate,
+  } = useCandidateDetail(session);
   const [pendingStatus, setPendingStatus] = useState<{ id: string; status: ApplicationStatus } | null>(null);
   const [inviteDivision, setInviteDivision] = useState<OrgDivision | null>(null);
 
@@ -128,32 +132,26 @@ export default function CandidatesManagement() {
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
 
-  const openDetail = async (id: string) => {
-    setOpenId(id); setDetail(null); setPreviewUrl(null); setAnswerPreviewUrl(null); setDetailLoading(true);
-    try {
-      const d = await getApplication(session, id);
-      setDetail(d);
-      // Preview both documents inline (opening the CV also advances the status
-      // on first view). The answer preview is best-effort.
-      const url = await signDocumentUrl(session, id, 'cv', 'preview');
-      setPreviewUrl(url);
-      try { setAnswerPreviewUrl(await signDocumentUrl(session, id, 'answer', 'preview')); } catch { /* no answer */ }
-      load(); // refresh list (status may have changed to cv_opened)
-    } catch (e) {
-      toast({ title: 'Could not open candidate', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { setDetailLoading(false); }
+  // THE LIST IS NO LONGER REFETCHED WHEN A CANDIDATE IS OPENED. Opening a CV
+  // advances the status to "CV opened" server-side, and that new status comes
+  // back inside the same response, so the one row that changed is patched in
+  // place. Reloading every application in the semester to learn one field is
+  // what made the table flash its loader every time a candidate was opened.
+  const openDetail = (id: string) => {
+    openCandidate(id, (fresh) => {
+      setApps((prev) => prev.map((a) => (a.id === fresh.id
+        ? { ...a, status: fresh.status, cv_viewed_at: fresh.cv_viewed_at, note_count: a.note_count }
+        : a)));
+    });
   };
 
-  const download = async (id: string, kind: 'cv' | 'answer') => {
+  // Documents open in a tab that says whose they are, through the same wrapper
+  // the site already uses for reports.
+  const openDoc = async (a: { id: string; first_name: string; surname: string }, kind: 'cv' | 'answer') => {
     try {
-      const url = await signDocumentUrl(session, id, kind, 'download');
-      triggerDownloads([{ name: `${kind}.pdf`, url }]);
-    } catch (e) { toast({ title: 'Download failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-  };
-
-  const openDoc = async (id: string, kind: 'cv' | 'answer') => {
-    try { window.open(await signDocumentUrl(session, id, kind, 'preview'), '_blank'); }
-    catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+      const url = await signDocumentUrl(session, a.id, kind, 'preview');
+      openReportInTab(documentTitle(a, kind), url);
+    } catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   const changeStatus = async (id: string, status: ApplicationStatus, division?: OrgDivision | null) => {
@@ -162,7 +160,7 @@ export default function CandidatesManagement() {
       const who = apps.find((x) => x.id === id);
       logActivity(session, primaryRole, { action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application', entityId: id, entityName: who ? `${who.first_name} ${who.surname}` : id, details: { status } });
       setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status, interview_division: division ?? a.interview_division } : a)));
-      if (detail?.application.id === id) setDetail({ ...detail, application: { ...detail.application, status, interview_division: division ?? detail.application.interview_division } });
+      patchCandidate(id, { status, ...(division ? { interview_division: division } : {}) });
       toast({ title: 'Status updated' });
     } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
@@ -215,24 +213,25 @@ export default function CandidatesManagement() {
       logActivity(session, primaryRole, { action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application', entityId: detail.application.id, entityName: `${detail.application.first_name} ${detail.application.surname}`, details: { division_transfer_to: transferTarget } });
       toast({ title: 'Division transfer started', description: `${detail.application.first_name} has been re-invited to interview with ${divisionLabels[transferTarget]}.` });
       setTransferConfirm(false); setTransferTarget('');
-      setDetail(await getApplication(session, detail.application.id));
-      load();
+      const fresh = await refreshCandidate(detail.application.id);
+      setApps((prev) => prev.map((a) => (a.id === fresh.application.id ? { ...a, ...fresh.application } : a)));
     } catch (e) {
       toast({ title: 'Could not transfer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
     } finally { setTransferring(false); }
   };
 
-  const addNote = async () => {
-    if (!openId || !noteText.trim()) return;
-    setSavingNote(true);
-    try {
-      await addApplicationNote(session, openId, noteText.trim());
-      logActivity(session, primaryRole, { action: 'create', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application_note', entityId: openId, entityName: detail ? `${detail.application.first_name} ${detail.application.surname}` : openId });
-      setNoteText('');
-      setDetail(await getApplication(session, openId));
-      load();
-    } catch (e) { toast({ title: 'Could not add note', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-    finally { setSavingNote(false); }
+  // The note is written, then the ONE candidate is re-read and its row's note
+  // count adjusted. The list is left alone.
+  const addNote = async (body: string) => {
+    if (!openId) return;
+    await addApplicationNote(session, openId, body);
+    logActivity(session, primaryRole, { action: 'create', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application_note', entityId: openId, entityName: detail ? `${detail.application.first_name} ${detail.application.surname}` : openId });
+  };
+
+  const afterNote = async () => {
+    if (!openId) return;
+    const fresh = await refreshCandidate(openId);
+    setApps((prev) => prev.map((a) => (a.id === openId ? { ...a, note_count: fresh.notes.length } : a)));
   };
 
   const bulkDownload = async (kind: 'cv' | 'answer') => {
@@ -357,12 +356,12 @@ export default function CandidatesManagement() {
                     <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(a.status)}`}>{STATUS_LABELS[a.status]}</span>
                   </td>
                   <td className="px-3 py-2 text-center">
-                    <button type="button" title="Preview CV" onClick={() => openDoc(a.id, 'cv')} className="text-muted-foreground hover:text-accent transition-colors">
+                    <button type="button" title="Preview CV" onClick={() => openDoc(a, 'cv')} className="text-muted-foreground hover:text-accent transition-colors">
                       <Eye className="h-4 w-4 inline" />
                     </button>
                   </td>
                   <td className="px-3 py-2 text-center">
-                    <button type="button" title="Preview submitted work" onClick={() => openDoc(a.id, 'answer')} className="text-muted-foreground hover:text-accent transition-colors">
+                    <button type="button" title="Preview submitted work" onClick={() => openDoc(a, 'answer')} className="text-muted-foreground hover:text-accent transition-colors">
                       <Eye className="h-4 w-4 inline" />
                     </button>
                   </td>
@@ -376,8 +375,12 @@ export default function CandidatesManagement() {
       )}
       <p className="font-body text-xs text-muted-foreground mt-3">Showing {rows.length} of {apps.length} application{apps.length !== 1 ? 's' : ''}.</p>
 
-      {/* Candidate detail */}
-      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) { setOpenId(null); setDetail(null); setPreviewUrl(null); setAnswerPreviewUrl(null); } }}>
+      {/* Candidate detail.
+          THE PROFILE IS SHARED WITH OFFERS. Everything that describes the
+          candidate - identity, application, documents, notes - is one
+          component now; what stays here is only what MOVES a candidacy: the
+          status control and the division transfer. */}
+      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) closeCandidate(); }}>
         <DialogContent className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">
@@ -385,142 +388,85 @@ export default function CandidatesManagement() {
             </DialogTitle>
           </DialogHeader>
           {detailLoading || !detail ? <WorkspaceLoader inline /> : (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 font-body">
-              {/* Left: details + prominent status + notes */}
-              <div className="space-y-5">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <Info label="Email" value={detail.application.email} />
-                  <Info label="Phone" value={detail.application.phone} />
-                  <Info label="Bocconi ID" value={detail.application.bocconi_id} />
-                  <Info label="Academic year" value={ACADEMIC_YEAR_LABELS[detail.application.academic_year]} />
-                  <Info label="Programme" value={detail.application.degree_course} />
-                  <Info label="LinkedIn" value={detail.application.linkedin_url || '-'} link={detail.application.linkedin_url || undefined} />
-                  <Info label="First choice" value={divisionLabels[detail.application.first_choice]} />
-                  <Info label="Second choice" value={detail.application.second_choice ? divisionLabels[detail.application.second_choice] : '-'} />
-                  <Info label="Submitted" value={new Date(detail.application.created_at).toLocaleString()} />
-                  {detail.application.interview_division && (
-                    <Info label="Interview division" value={divisionLabels[detail.application.interview_division]} />
-                  )}
+            <CandidateProfile
+              session={session}
+              detail={detail}
+              cvUrl={cvUrl}
+              answerUrl={answerUrl}
+              docsLoading={docsLoading}
+              canAddNotes={canAddNotes}
+              addNote={addNote}
+              onNoteAdded={afterNote}
+              onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}
+            >
+              {/* Prominent status control */}
+              <div className="border border-accent/30 bg-accent/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs uppercase tracking-wider text-accent font-semibold inline-flex items-center gap-1.5">Candidate status <HelpDot page="applications-screening" topic="status" /></div>
+                  <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
                 </div>
-
-                {/* Prominent status control */}
-                <div className="border border-accent/30 bg-accent/5 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-wider text-accent font-semibold inline-flex items-center gap-1.5">Candidate status <HelpDot page="applications-screening" topic="status" /></div>
-                    <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
-                  </div>
-                  {!canChangeStatus ? (
-                    <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                      You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
-                    </p>
-                  ) : isLockedStatus(detail.application.status) ? (
-                    <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                      This is an offer outcome, managed automatically by the offer process (New Joiners) and the applicant’s response. It cannot be changed here.
-                    </p>
-                  ) : (
-                    <>
-                      <Select
-                        key={detail.application.status}
-                        value={undefined}
-                        onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}
-                      >
-                        <SelectTrigger className="font-body"><SelectValue placeholder="Advance to…" /></SelectTrigger>
-                        <SelectContent>
-                          {allowedNextStatuses(detail.application.status).map((o) => (
-                            <SelectItem key={o.value} value={o.value}>
-                              {o.label}{o.effect === 'action' ? '  ·  sends an email / action' : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        A candidacy only moves <strong>forward</strong>: once a stage is reached it cannot be taken back, so only later stages are offered here. Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking). Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
-                      </p>
-                    </>
-                  )}
-                  {detail.application.status === 'accepted' && (
-                    <p className="text-xs text-amber-700 border-t border-amber-200 pt-2">
-                      “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until a member gives final approval in <strong>New Joiners</strong>. Only then are they told they passed the selection.
-                    </p>
-                  )}
-                </div>
-
-                {/* Division transfer: the one sanctioned exception to forward-only
-                    progress, available once the interview has been completed. */}
-                {canChangeStatus && ['interview_completed', 'accepted'].includes(detail.application.status) && (
-                  <div className="border border-separator p-3 space-y-2">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Consider for another division</div>
-                    <p className="text-xs text-muted-foreground">
-                      If the interview showed this candidate fits a different division better, transfer them:
-                      they are re-invited to interview with the new division (email plus booking access), and the
-                      move is recorded. Their progress so far is never lowered in any other way.
-                    </p>
-                    <div className="flex gap-2">
-                      <Select value={transferTarget || undefined} onValueChange={(v) => setTransferTarget(v as OrgDivision)}>
-                        <SelectTrigger className="font-body flex-1"><SelectValue placeholder="New division…" /></SelectTrigger>
-                        <SelectContent>
-                          {CORE.filter((d) => d !== (detail.application.interview_division || detail.application.first_choice)).map((d) => (
-                            <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="outline" size="sm" className="h-10" disabled={!transferTarget || transferring} onClick={() => setTransferConfirm(true)}>
-                        Transfer
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'cv')}><Download className="h-4 w-4 mr-2" />Download CV</Button>
-                  <Button variant="outline" size="sm" onClick={() => download(detail.application.id, 'answer')}><Download className="h-4 w-4 mr-2" />Download work</Button>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Notes (shared with reviewers)</div>
-                  <p className="text-xs text-muted-foreground bg-muted/50 border border-separator p-2">
-                    Please remember these notes are visible to <strong>all members with access to this area</strong>. Write only technical, formal and relevant comments for evaluating the candidate. Do not include unpleasant or inappropriate remarks.
+                {!canChangeStatus ? (
+                  <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                    You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
                   </p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {detail.notes.length === 0 && <p className="text-sm text-muted-foreground">No notes yet.</p>}
-                    {detail.notes.map((n) => (
-                      <div key={n.id} className="text-sm border border-separator p-2">
-                        <div className="text-xs text-muted-foreground mb-1">{n.author_name} · {new Date(n.created_at).toLocaleDateString()}</div>
-                        {n.body}
-                      </div>
-                    ))}
-                  </div>
-                  {canAddNotes && <>
-                    <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a technical, formal note…" rows={2} />
-                    <Button size="sm" onClick={addNote} disabled={savingNote || !noteText.trim()}>
-                      {savingNote ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Add note
+                ) : isLockedStatus(detail.application.status) ? (
+                  <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                    This is an offer outcome, managed automatically by the offer process (New Joiners) and the applicant’s response. It cannot be changed here.
+                  </p>
+                ) : (
+                  <>
+                    <Select
+                      key={detail.application.status}
+                      value={undefined}
+                      onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}
+                    >
+                      <SelectTrigger className="font-body"><SelectValue placeholder="Advance to…" /></SelectTrigger>
+                      <SelectContent>
+                        {allowedNextStatuses(detail.application.status).map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}{o.effect === 'action' ? '  ·  sends an email / action' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      A candidacy only moves <strong>forward</strong>: once a stage is reached it cannot be taken back, so only later stages are offered here. Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking). Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
+                    </p>
+                  </>
+                )}
+                {detail.application.status === 'accepted' && (
+                  <p className="text-xs text-amber-700 border-t border-amber-200 pt-2">
+                    “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until the president sends the final offers to <strong>New Joiners</strong>. Only then are they told they passed the selection.
+                  </p>
+                )}
+              </div>
+
+              {/* Division transfer: the one sanctioned exception to forward-only
+                  progress, available once the interview has been completed. */}
+              {canChangeStatus && ['interview_completed', 'accepted'].includes(detail.application.status) && (
+                <div className="border border-separator p-3 space-y-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Consider for another division</div>
+                  <p className="text-xs text-muted-foreground">
+                    If the interview showed this candidate fits a different division better, transfer them:
+                    they are re-invited to interview with the new division (email plus booking access), and the
+                    move is recorded. Their progress so far is never lowered in any other way.
+                  </p>
+                  <div className="flex gap-2">
+                    <Select value={transferTarget || undefined} onValueChange={(v) => setTransferTarget(v as OrgDivision)}>
+                      <SelectTrigger className="font-body flex-1"><SelectValue placeholder="New division…" /></SelectTrigger>
+                      <SelectContent>
+                        {CORE.filter((d) => d !== (detail.application.interview_division || detail.application.first_choice)).map((d) => (
+                          <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" className="h-10" disabled={!transferTarget || transferring} onClick={() => setTransferConfirm(true)}>
+                      Transfer
                     </Button>
-                  </>}
+                  </div>
                 </div>
-              </div>
-
-              {/* Centre: CV preview */}
-              <div className="min-h-[400px]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">CV preview</div>
-                  <button type="button" onClick={() => openDoc(detail.application.id, 'cv')} className="text-xs text-accent hover:underline inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />Open</button>
-                </div>
-                {previewUrl
-                  ? <iframe title="CV" src={previewUrl} className="w-full h-[72vh] border border-separator" />
-                  : <div className="h-[72vh] border border-separator flex items-center justify-center text-muted-foreground text-sm">No CV uploaded</div>}
-              </div>
-
-              {/* Right: submitted work preview */}
-              <div className="min-h-[400px]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Submitted work preview</div>
-                  <button type="button" onClick={() => openDoc(detail.application.id, 'answer')} className="text-xs text-accent hover:underline inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />Open</button>
-                </div>
-                {answerPreviewUrl
-                  ? <iframe title="Submitted work" src={answerPreviewUrl} className="w-full h-[72vh] border border-separator" />
-                  : <div className="h-[72vh] border border-separator flex items-center justify-center text-muted-foreground text-sm">No document uploaded</div>}
-              </div>
-            </div>
+              )}
+            </CandidateProfile>
           )}
         </DialogContent>
       </Dialog>
@@ -590,12 +536,3 @@ export default function CandidatesManagement() {
   );
 }
 
-function Info({ label, value, link }: { label: string; value: string; link?: string }) {
-  return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      {link ? <a href={link} target="_blank" rel="noopener noreferrer" className="text-accent underline break-all">{value}</a>
-            : <div className="text-foreground break-words">{value}</div>}
-    </div>
-  );
-}

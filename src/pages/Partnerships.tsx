@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import milanBgAsset from "@/assets/MIMS_Milan_Background-v2.webp.asset.json";
 
 interface Format {
@@ -99,7 +100,11 @@ const ROW_LABELS: { key: keyof Format; label: string }[] = [
 
 const Partnerships = () => {
   const milanBg = milanBgAsset.url;
-  const imagesLoaded = useImagePreload([milanBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([milanBg, HERO_OVERLAY_URL]);
 
   if (!imagesLoaded) {
     return <PageLoader />;

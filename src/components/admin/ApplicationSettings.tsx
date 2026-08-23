@@ -11,6 +11,7 @@ import { Save, Loader2 } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import logoWhite from '@/assets/logo-white.svg';
+import { JOIN_STATUS_COPY } from '@/lib/join-content';
 
 // timestamptz <-> datetime-local helpers
 const toLocal = (iso: string | null | undefined) => {
@@ -171,30 +172,45 @@ const ApplicationSettings = () => {
             </p>
           </div>
 
-          {/* Join page hero mock */}
+          {/* Join page mock.
+              MIRRORS WHAT /join ACTUALLY DOES NOW. The band this used to draw
+              belonged to the old landing page: a dark stage holding the
+              application state, with copy that no longer exists anywhere. The
+              page has since been rebuilt, and the application state moved OUT
+              of the dark introduction and onto the first white section, in the
+              accent rectangle the closing block already used. The mock is that
+              rectangle: the same serif heading, the same sentence from
+              JOIN_STATUS_COPY, the same white button, on white. If the real
+              component changes again, the strings below are the ones to check
+              against src/components/join/ApplicationCta.tsx. */}
           <div className="border border-separator rounded-lg overflow-hidden">
-            <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Join page (/join) hero band</div>
-            <div className="p-5" style={{ backgroundColor: '#0b0720' }}>
-              {previewOpen ? (
-                <>
-                  <div className="font-serif text-background text-base leading-tight">Prepare a strong application, then apply.</div>
-                  <div className="font-body text-background/70 text-xs mt-2">Applications for {form.semester_label || '<semester label>'} are open. Submit the form with your CV, motivation letter and written answer.</div>
-                  <span className="inline-block mt-3 px-4 py-2 bg-background text-foreground font-serif text-xs">Submit Application Form →</span>
-                </>
-              ) : (
-                <>
-                  <div className="font-serif text-background text-base leading-tight">Applications are closed. Start preparing now.</div>
-                  <div className="font-body text-background/70 text-xs mt-2">Use the roadmap below to guide your journey. The next intake will be announced at the start of the upcoming semester.</div>
-                </>
-              )}
+            <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Join page (/join), first white section</div>
+            <div className="p-4 bg-background">
+              <div className="bg-accent text-background p-4">
+                <div className="font-serif text-lg leading-tight">
+                  {previewOpen ? JOIN_STATUS_COPY.openHeading : JOIN_STATUS_COPY.closedHeading}
+                </div>
+                <div className="font-body text-background/85 text-xs mt-2">
+                  {previewOpen
+                    ? `Applications for ${form.semester_label || '<semester label>'} are open until the closing time above.`
+                    : JOIN_STATUS_COPY.closedBodyTop}
+                </div>
+                <span className="inline-block mt-3 border border-background bg-background px-4 py-2 font-serif text-xs text-accent">
+                  {previewOpen ? JOIN_STATUS_COPY.applyLabel : JOIN_STATUS_COPY.archiveLabel}
+                </span>
+              </div>
             </div>
             <p className="px-3 py-2 text-xs text-muted-foreground">
               {previewOpen
-                ? <>The band invites applications and links to the <span className="text-foreground font-medium">/apply</span> form.</>
-                : <>The band explains applications are closed and points to the preparation roadmap, without an apply button.</>}
+                ? <>The rectangle sits directly under the dark introduction and its button leads to the <span className="text-foreground font-medium">/apply</span> form. The deadline sentence is built from the closing time.</>
+                : <>The same rectangle explains that admissions open each semester, and its button sends the reader to the research archive instead.</>}
             </p>
           </div>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          The dark introduction at the top of <span className="text-foreground">/join</span> - the title, the payoff and the live key figures - does not change with the application window. The same rectangle also closes the page, so both states appear twice.
+        </p>
 
         <p className="text-xs text-muted-foreground">
           These states switch automatically at the scheduled open and close times, with no manual publishing needed. The <span className="text-foreground">/apply</span> form itself only accepts submissions while the window is open.

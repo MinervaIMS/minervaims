@@ -16,7 +16,9 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
-import { listApplications, sendOffer, type ApplicationRow } from '@/lib/applications-api';
+import { listApplications, sendOffer, addApplicationNote, type ApplicationRow } from '@/lib/applications-api';
+import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
+import { CandidateProfile, CandidateStage } from '@/components/admin/recruiting/CandidateProfile';
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 
 const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
@@ -40,6 +42,20 @@ export default function NewJoiners() {
   // Some roles may open this page only to understand the offer flow; every
   // action is disabled for them (see the role permissions matrix).
   const canSendOffers = canManage('applications-joiners');
+  // THE SAME CANDIDATE, READ THE SAME WAY. Preparing an offer means knowing
+  // how the person reached this stage, and that used to mean leaving Offers,
+  // going back to Candidate Screening and finding them again. The profile,
+  // the documents and the screening notes are the same component and the same
+  // hook here as there, so there is one source and one behaviour rather than
+  // a second, competing candidate view.
+  const {
+    openId, detail, cvUrl, answerUrl, loading: detailLoading, docsLoading,
+    open: openCandidate, close: closeCandidate, refresh: refreshCandidate,
+  } = useCandidateDetail(session);
+  const { hasSpecial } = useAccess();
+  // Notes are part of assessing a candidate, so anyone who may comment during
+  // screening may comment here too. The offer itself is a separate permission.
+  const canAddNotes = canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only');
   const { confirm: confirmEmail, dialog: emailDialog } = useEmailConfirm();
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,12 +183,14 @@ export default function NewJoiners() {
                     <td className="px-3 py-2">{a.email}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">
-                      {st.canOffer && canSendOffers && !viewingArchived && (
-                        <Button size="sm" onClick={() => openOffer(a)}>
-                          <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
-                        </Button>
-                      )}
-                      {st.canOffer && !canSendOffers && <span className="text-xs text-muted-foreground">-</span>}
+                      <div className="inline-flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openCandidate(a.id)}>Open</Button>
+                        {st.canOffer && canSendOffers && !viewingArchived && (
+                          <Button size="sm" onClick={() => openOffer(a)}>
+                            <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -181,6 +199,46 @@ export default function NewJoiners() {
           </table>
         </div>
       )}
+
+      {/* The candidate, in full, without leaving Offers. */}
+      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) closeCandidate(); }}>
+        <DialogContent className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">
+              {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
+            </DialogTitle>
+            <DialogDescription className="font-body">
+              The same information the reviewers saw during screening, including their notes. Progression is not changed from here.
+            </DialogDescription>
+          </DialogHeader>
+          {detailLoading || !detail ? <WorkspaceLoader inline /> : (
+            <CandidateProfile
+              session={session}
+              detail={detail}
+              cvUrl={cvUrl}
+              answerUrl={answerUrl}
+              docsLoading={docsLoading}
+              canAddNotes={canAddNotes && !viewingArchived}
+              addNote={async (b) => { await addApplicationNote(session, detail.application.id, b); }}
+              onNoteAdded={async () => { await refreshCandidate(detail.application.id); }}
+              onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}
+            >
+              <CandidateStage status={detail.application.status} />
+              <div className="border border-separator p-3 space-y-1">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Offer</div>
+                <span className={`inline-block px-2 py-0.5 text-xs border ${offerState(detail.application).tone}`}>
+                  {offerState(detail.application).label}
+                </span>
+                {detail.application.offer_role && (
+                  <p className="text-xs text-muted-foreground">
+                    Offered as {composeRoleLabel(detail.application.offer_role as AppRole, (detail.application.offer_division as OrgDivision) || null)}.
+                  </p>
+                )}
+              </div>
+            </CandidateProfile>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
         <DialogContent className="max-w-md">

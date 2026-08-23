@@ -97,7 +97,10 @@ export const STATUS_FLOW: ApplicationStatus[] = [
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   received: 'Application received', cv_opened: 'CV opened', under_review: 'Under review',
-  to_be_contacted: 'To be contacted', interview_invitation_sent: 'Interview invitation sent',
+  // The KEY stays `to_be_contacted`: it is stored on every application row,
+  // referenced by the edge function's STATUSES list and used for ordering the
+  // workflow. Only the words a reviewer reads change.
+  to_be_contacted: 'To be invited', interview_invitation_sent: 'Interview invitation sent',
   waiting_interview_confirmation: 'Waiting for interview confirmation', interview_confirmed: 'Interview confirmed',
   interview_completed: 'Interview completed', accepted: 'Accepted', rejected: 'Rejected',
   offer_accepted: 'Offer accepted', offer_declined: 'Offer declined', joined: 'Joined',

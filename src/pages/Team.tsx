@@ -6,6 +6,7 @@ import { OrgChart } from '@/components/shared/OrgChart';
 import { supabase } from '@/integrations/supabase/client';
 import { Division } from '@/lib/types';
 import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import teamBgAsset from '@/assets/mims-members.webp.asset.json';
 
 interface DbTeamMember {
@@ -29,7 +30,11 @@ const Team = () => {
   // Which team the directory is showing, so the chart below opens on it.
   const [activeTab, setActiveTab] = useState<string>(divisionParam ?? 'executive');
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const imagesLoaded = useImagePreload([teamBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([teamBg, HERO_OVERLAY_URL]);
 
 
   useEffect(() => {

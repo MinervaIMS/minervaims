@@ -8,6 +8,7 @@ import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/compone
 import { supabase } from '@/integrations/supabase/client';
 import { formatFundValue } from '@/lib/funds-api';
 import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 
 // Background images for funds
 import longShortBgAsset from '@/assets/MIMS_Long_Short_Fund.webp.asset.json';
@@ -79,7 +80,11 @@ const FundDetail = () => {
     ? fundBackgrounds[fund as Fund] 
     : '';
   
-  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage] : []);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage, HERO_OVERLAY_URL] : []);
 
   useEffect(() => {
     if (fund && fundLabels[fund as Fund]) {

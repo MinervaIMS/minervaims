@@ -12,6 +12,7 @@ import {
 
 const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].endsWith(".pdf");
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import eventsBgAsset from "@/assets/MIMS_Events.webp.asset.json";
 
 interface DbEvent {
@@ -71,7 +72,11 @@ const Events = () => {
   const [eventEmail, setEventEmail] = useState('');
   const { toast } = useToast();
   const eventsBg = eventsBgAsset.url;
-  const imagesLoaded = useImagePreload([eventsBg]);
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload([eventsBg, HERO_OVERLAY_URL]);
 
   useEffect(() => {
     const fetchEvents = async () => {
