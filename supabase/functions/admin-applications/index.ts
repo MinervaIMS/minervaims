@@ -34,6 +34,19 @@ const REVIEW_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager'];
 // checked below on every action that advances, invites, transfers, offers or
 // converts, so the restriction holds however the request is made.
 const NOTES_ONLY_ROLES = ['portfolio_manager', 'team_leader'];
+const OFFER_ROLES = ['admin', 'president'];
+
+// SENDING AN OFFER IS THE PRESIDENT'S AND THE ADMIN'S, AND NOBODY ELSE'S.
+// The workspace has always said so: only `admin` and `president` hold full
+// access in the client matrix, the Offers page draws no Send button for
+// anyone else and tells them the action is "reserved for the President and
+// Admin". The server did not agree. `send-offer` was guarded by
+// `canAll || reviewerDivisions.length > 0`, and `canAll` also includes the
+// Vice President and the Head of Asset Management, so those two could send
+// any offer, and a divisional reviewer could send one for their own
+// division, simply by calling the endpoint with their own token.
+// `convert-to-member` completes the same act - it turns an applicant into a
+// member - so it is held to the same rule.
 const STATUSES = [
   'received', 'cv_opened', 'under_review', 'to_be_contacted', 'interview_invitation_sent',
   'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed',
@@ -95,6 +108,8 @@ Deno.serve(async (req) => {
 
     // May this caller change where a candidate sits in the process?
     const canProgress = canAll || roleNames.some((r) => REVIEW_ROLES.includes(r) && !NOTES_ONLY_ROLES.includes(r));
+    const canOffer = isAdminEmail || roleNames.some((r) => OFFER_ROLES.includes(r));
+    const OFFER_DENIED = 'Sending an offer is reserved for the President and the Admin.';
     const PROGRESS_DENIED = 'Your role can review candidates and add notes, but not change a candidate\'s progression. Ask the President, Vice President or a Head to move this candidacy.';
 
     const primaryRole = roleNames[0] || 'member';
@@ -335,7 +350,7 @@ Deno.serve(async (req) => {
 
     // ── send-offer (New Joiners): extend an offer to join with a 3-day window ─
     if (action === 'send-offer') {
-      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
+      if (!canOffer) return json({ error: OFFER_DENIED }, 403);
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
@@ -371,7 +386,7 @@ Deno.serve(async (req) => {
 
     // ── convert-to-member (New Joiners, report 10.5) ─────────────────────────
     if (action === 'convert-to-member') {
-      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
+      if (!canOffer) return json({ error: OFFER_DENIED }, 403);
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);

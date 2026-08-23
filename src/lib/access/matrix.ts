@@ -48,6 +48,10 @@ export const CANDIDATE_RESOURCES: Record<ResourceKey, AccessLevel> = {
   'my-role': 'view',
   'applications-status': 'view',
   'applications-interview-calendar': 'view',
+  // The admissions FAQ, inside the workspace. Candidate-only by construction:
+  // it appears in no other role's grants and in no other navigation, so
+  // `canView('applications-faqs')` is false for every member role.
+  'applications-faqs': 'view',
 };
 
 type RoleGrants = Record<ResourceKey, AccessLevel>;
@@ -106,7 +110,7 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     rule: 'offers_readonly',
     resource: 'applications-joiners',
     roles: ['vice_president', 'head_of_asset_management', 'head_of_division', 'portfolio_manager', 'team_leader'],
-    label: 'View-only: can open Offers to understand the process, but cannot perform any action.',
+    label: 'View-only: can open Offers to understand the process, but cannot perform any action. Sending, resending and editing an offer is reserved for the President and the Admin, on the server as well as in the interface.',
   },
   {
     rule: 'candidates_all_divisions',

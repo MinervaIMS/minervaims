@@ -5,21 +5,43 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { FileText, PartyPopper, Loader2, Eye, Download } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { divisionLabels } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { getMyApplication, candidateStatus, acceptOffer, declineOffer, signMyDocument, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
-import type { Session } from '@supabase/supabase-js';
+import { getMyApplication, candidateStatus, acceptOffer, declineOffer, type ApplicationRow } from '@/lib/applications-api';
 
 // Four candidate-facing stages, mirroring "The Application Journey" on /join.
+//
+// EACH ONE NOW SAYS WHAT IT MEANS FOR THE CANDIDATE, in one sentence and one
+// short note: what is happening, and whether anything is expected of them.
+// The wording follows the recruiting workflow the workspace actually runs -
+// review, invitation, interview, outcome - rather than describing a different
+// process. It stays deliberately short: this page is a status, not a guide,
+// and the FAQs section answers everything beyond it.
 const STEPS = [
-  { t: 'Application received', d: 'We have received your application and documents.' },
-  { t: 'Application under review', d: 'Our reviewers are evaluating your CV and written answer.' },
-  { t: 'Interview stage', d: 'You have been invited to interview. Book your slot in the Interview Calendar.' },
-  { t: 'Outcome', d: 'The final outcome of your application.' },
+  {
+    t: 'Application received',
+    d: 'Your form, your CV and your written answer are with us.',
+    n: 'Nothing is expected from you at this point.',
+  },
+  {
+    t: 'Application under review',
+    d: 'Reviewers from the divisions you chose are reading what you submitted.',
+    n: 'They share notes internally before any decision is taken.',
+  },
+  {
+    t: 'Interview stage',
+    d: 'You have been invited to interview.',
+    n: 'Book a slot in the Interview Calendar. It shows the division that invited you.',
+  },
+  {
+    t: 'Outcome',
+    d: 'The decision on your application.',
+    n: 'If you are selected, your offer appears on this page with the role, the division and the date to reply by.',
+  },
 ];
 
 export default function ApplicationStatus() {
@@ -90,169 +112,119 @@ export default function ApplicationStatus() {
 
   const statusLabel = offerLive ? 'You have received an offer to join'
     : internalAccepted ? 'Application under review' : cs.label;
+  // Is there anything to put beside the progression?
+  const hasSideCard = offerLive || app.status === 'joined';
 
   return (
     <div>
       <WorkspacePageHeader title="Application status" description={`Your application for ${app.semester_label}.`} />
 
-      <div className="max-w-2xl space-y-8 font-body">
-        <div>
-          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Current status</div>
-          <div className={`text-2xl font-serif ${rejected ? 'text-muted-foreground' : 'text-accent'}`}>{statusLabel}</div>
-        </div>
+      {/* TWO HALVES ON A WIDE SCREEN, ONE COLUMN ON A NARROW ONE.
+          The progression is the page; the offer, when there is one, is the
+          news, so it sits beside it rather than on top of it. On a phone the
+          two stack with THE OFFER FIRST, because a candidate opening this
+          page with an offer waiting should meet it without scrolling, and a
+          phone has no "beside".
+          With no offer the grid collapses to a single column, so nothing is
+          left holding an empty half. */}
+      <div className={`font-body ${hasSideCard ? 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start' : 'max-w-2xl'}`}>
+        {hasSideCard && (
+          <div className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4">
+            {offerLive && (
+              <Card className="border-accent/40 bg-accent/5">
+                <CardContent className="py-6">
+                  <div className="text-xs uppercase tracking-wider text-accent font-semibold">Your offer</div>
+                  <h2 className="mt-1 font-serif text-xl text-accent">
+                    An offer to join Minerva
+                  </h2>
+                  <p className="mt-3 text-sm text-foreground">
+                    You have been offered a place{app.offer_division ? ` in ${divisionLabels[app.offer_division]}` : ''}.
+                  </p>
+                  {app.offer_deadline && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Please respond by <strong>{new Date(app.offer_deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. Accepting turns your account into a member and unlocks your full profile.
+                    </p>
+                  )}
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Accept your offer to join?</AlertDialogTitle>
+                          <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone. It can take a few minutes for your account to be upgraded and your new role to appear. If it has not updated straight away, please be patient and come back shortly.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Not yet</AlertDialogCancel>
+                          <AlertDialogAction onClick={doAccept}>Accept and join</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" disabled={busy}>Decline</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Decline the offer?</AlertDialogTitle>
+                          <AlertDialogDescription>You are declining your offer to join Minerva IMS. This cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Keep it</AlertDialogCancel>
+                          <AlertDialogAction onClick={doDecline}>Decline offer</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Live offer to join */}
-        {offerLive && (
-          <Card className="border-accent/40 bg-accent/5">
-            <CardContent className="py-6">
-              <div className="flex items-center gap-2 text-accent mb-2">
-                <PartyPopper className="h-5 w-5" />
-                <span className="font-serif text-lg">Congratulations, you have an offer to join!</span>
-              </div>
-              <p className="text-sm text-foreground mb-1">
-                You have been offered a place{app.offer_division ? ` in ${divisionLabels[app.offer_division]}` : ''}.
-              </p>
-              {app.offer_deadline && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  Please respond by <strong>{new Date(app.offer_deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. Accepting turns your account into a member and unlocks your full profile.
-                </p>
-              )}
-              <div className="flex gap-3">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Accept your offer to join?</AlertDialogTitle>
-                      <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone. It can take a few minutes for your account to be upgraded and your new role to appear. If it has not updated straight away, please be patient and come back shortly.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Not yet</AlertDialogCancel>
-                      <AlertDialogAction onClick={doAccept}>Accept and join</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" disabled={busy}>Decline</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Decline the offer?</AlertDialogTitle>
-                      <AlertDialogDescription>You are declining your offer to join Minerva IMS. This cannot be undone.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep it</AlertDialogCancel>
-                      <AlertDialogAction onClick={doDecline}>Decline offer</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {app.status === 'joined' && (
-          <Card className="border-emerald-200 bg-emerald-50">
-            <CardContent className="py-5">
-              <p className="text-sm text-emerald-800">Welcome to Minerva IMS! Head to <strong>My Profile</strong> to add your photo and complete your member details.</p>
-              <p className="text-xs text-emerald-700 mt-2">Your account is being upgraded to your new role. If the workspace still shows the applicant view, please be patient; it can take a few minutes. Refresh or come back shortly and your full member workspace will appear.</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Animated journey: only the reached steps light up. */}
-        <div ref={rootRef} className="journey">
-          {STEPS.map((s, i) => {
-            const lit = i < litCount;
-            const outcomeStep = i === 3;
-            const label = outcomeStep && rejected ? 'Not selected' : s.t;
-            return (
-              <div key={s.t} className={`jstep${lit ? ' lit' : ''}`}>
-                <div className="jrail">
-                  <div className="jdot">{i + 1}</div>
-                  <div className="jline" aria-hidden><div className="fill" style={lit ? { height: 'calc(100% + 2.5rem)' } : undefined} /></div>
-                </div>
-                <div>
-                  <h3 className="jt-t">{label}</h3>
-                  <div className="jt-d">{s.d}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Submitted documents: preview / download only (read-only). */}
-        <div className="pt-2 border-t border-separator">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Your submitted documents</div>
-          <div className="space-y-2">
-            <DocRow label="Curriculum Vitae (CV)" kind="cv" present={!!app.cv_path} session={session} />
-            <DocRow label="Written answer" kind="answer" present={!!app.answer_path} session={session} />
+            {app.status === 'joined' && (
+              <Card className="border-emerald-200 bg-emerald-50">
+                <CardContent className="py-5">
+                  <p className="text-sm text-emerald-800">Welcome to Minerva IMS! Head to <strong>My Profile</strong> to add your photo and complete your member details.</p>
+                  <p className="mt-2 text-xs text-emerald-700">Your account is being upgraded to your new role. If the workspace still shows the applicant view, please be patient; it can take a few minutes. Refresh or come back shortly and your full member workspace will appear.</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">You can preview and download what you submitted, but these documents cannot be changed or replaced.</p>
-        </div>
+        )}
 
-        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-separator">
-          <Field label="Programme" value={app.degree_course || '-'} />
-          <Field label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
-          <Field label="First choice" value={divisionLabels[app.first_choice]} />
-          <Field label="Second choice" value={app.second_choice ? divisionLabels[app.second_choice] : '-'} />
-          <Field label="Submitted" value={new Date(app.created_at).toLocaleString()} />
-        </div>
+        <div className={`space-y-8 ${hasSideCard ? 'order-2 lg:order-1' : ''}`}>
+          <div>
+            <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Current status</div>
+            <div className={`font-serif text-2xl ${rejected ? 'text-muted-foreground' : 'text-accent'}`}>{statusLabel}</div>
+          </div>
 
-        <p className="text-xs text-muted-foreground">
-          Your submitted application and documents cannot be edited. If you need a correction, contact the association.
-        </p>
+          {/* Animated journey: only the reached steps light up. */}
+          <div ref={rootRef} className="journey">
+            {STEPS.map((s, i) => {
+              const lit = i < litCount;
+              const outcomeStep = i === 3;
+              const label = outcomeStep && rejected ? 'Not selected' : s.t;
+              return (
+                <div key={s.t} className={`jstep${lit ? ' lit' : ''}`}>
+                  <div className="jrail">
+                    <div className="jdot">{i + 1}</div>
+                    <div className="jline" aria-hidden><div className="fill" style={lit ? { height: 'calc(100% + var(--jstep-gap))' } : undefined} /></div>
+                  </div>
+                  <div>
+                    <h3 className="jt-t">{label}</h3>
+                    <div className="jt-d">{s.d}</div>
+                    <div className="jt-n">{s.n}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            What you submitted - your details, your division preferences and your documents - is in <strong>My Profile</strong>.
+          </p>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function DocRow({ label, kind, present, session }: { label: string; kind: 'cv' | 'answer'; present: boolean; session: Session | null }) {
-  const { toast } = useToast();
-  const [busy, setBusy] = useState<'preview' | 'download' | null>(null);
-
-  const open = async (mode: 'preview' | 'download') => {
-    setBusy(mode);
-    try {
-      const url = await signMyDocument(session, kind, mode);
-      if (mode === 'download') {
-        const a = document.createElement('a');
-        a.href = url; a.rel = 'noopener';
-        document.body.appendChild(a); a.click(); a.remove();
-      } else {
-        window.open(url, '_blank', 'noopener');
-      }
-    } catch (e) {
-      toast({ title: 'Could not open the document', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { setBusy(null); }
-  };
-
-  return (
-    <div className="flex items-center justify-between border border-separator px-3 py-2 text-sm gap-3">
-      <span className="flex items-center gap-2 text-foreground min-w-0"><FileText className="h-4 w-4 text-accent shrink-0" /><span className="truncate">{label}</span></span>
-      {present ? (
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => open('preview')}>
-            {busy === 'preview' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Eye className="h-3.5 w-3.5 mr-1" />Preview</>}
-          </Button>
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => open('download')}>
-            {busy === 'download' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Download className="h-3.5 w-3.5 mr-1" />Download</>}
-          </Button>
-        </div>
-      ) : (
-        <span className="text-xs px-2 py-0.5 border bg-muted text-muted-foreground border-separator shrink-0">Not provided</span>
-      )}
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-      <div className="text-foreground">{value}</div>
     </div>
   );
 }
