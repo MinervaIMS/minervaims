@@ -72,7 +72,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
   return (
     <div
       data-page-hero
-      className="relative flex min-h-[65svh] flex-col overflow-hidden md:min-h-[75svh]"
+      className="relative flex min-h-[52svh] flex-col overflow-hidden md:min-h-[60svh]"
       style={{ backgroundColor: '#000' }}
     >
       {/*
