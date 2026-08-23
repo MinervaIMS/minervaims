@@ -112,7 +112,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
             means" rather than as a separate band that happens to share a
             background. The space beneath them, before the white begins, is
             the page's own rhythm rather than a leftover. */}
-        <div className="flex flex-1 flex-col items-center justify-end pb-4 md:pb-6">
+        <div className="flex flex-1 flex-col items-center justify-end pb-2 md:pb-6">
           {figures}
         </div>
       </div>
