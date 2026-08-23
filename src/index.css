@@ -686,14 +686,21 @@ button.mdot, button.rdot, button.dstack-dot {
    Ported from "Join MIMS — V2 Push It" reference. Lights up on
    scroll via an IntersectionObserver in ApplicationJourney.tsx.
    ============================================================ */
-.journey { position: relative; max-width: 54rem; }
+/* THE STEP GAP IS ONE NUMBER. The spine's fill has to travel exactly from
+   one dot to the next, and the component sets that length inline; both now
+   read this variable, so the spacing can be changed here and the animation
+   cannot fall out of step with it.
+   The stages are further apart than they were - 3.4rem against 2.5 - which
+   is what gives each one room to carry its own short explanation without the
+   four running together. */
+.journey { position: relative; max-width: 54rem; --jstep-gap: 3.4rem; }
 
 .jstep {
   position: relative;
   display: grid;
   grid-template-columns: 60px 1fr;
-  gap: 1.4rem;
-  padding-bottom: 2.5rem;
+  gap: 1.75rem;
+  padding-bottom: var(--jstep-gap);
 }
 .jstep:last-child { padding-bottom: 0; }
 
@@ -725,7 +732,7 @@ button.mdot, button.rdot, button.dstack-dot {
 .jline {
   position: absolute;
   top: 60px;
-  bottom: -2.5rem;
+  bottom: calc(var(--jstep-gap) * -1);
   left: 50%;
   width: 2px;
   background: hsl(var(--separator));
@@ -747,6 +754,18 @@ button.mdot, button.rdot, button.dstack-dot {
   color: hsl(var(--foreground));
   margin: .7rem 0 .5rem;
 }
+/* The one-line note under each stage: what it means for the candidate.
+   Quieter and smaller than the stage's own sentence, so the four titles stay
+   the thing the eye follows down the spine. */
+.jt-n {
+  font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif;
+  font-size: .9rem;
+  line-height: 1.55;
+  color: hsl(var(--muted-foreground) / 0.85);
+  margin-top: .35rem;
+  max-width: 46ch;
+}
+
 .jt-d {
   font-family: 'Calibri', 'Carlito', Arial, Helvetica, sans-serif;
   font-size: 1.05rem;
@@ -803,9 +822,13 @@ button.mdot, button.rdot, button.dstack-dot {
 
 /* Tighten the spine column on narrow phones so the dot doesn't crowd the copy. */
 @media (max-width: 380px) {
-  .jstep { grid-template-columns: 48px 1fr; gap: 1rem; }
+  /* A phone keeps the extra breathing room but not all of it: the column is
+     narrower, so the same gap would read as four separate cards. */
+  .journey { --jstep-gap: 2.6rem; }
+  .jstep { grid-template-columns: 48px 1fr; gap: 1.15rem; }
   .jdot { width: 48px; height: 48px; font-size: 1.2rem; }
   .jline { top: 48px; }
+  .jt-n { font-size: .85rem; }
 }
 
 /* Respect reduced-motion preferences — show the spine fully lit on load. */

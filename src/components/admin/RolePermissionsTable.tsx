@@ -19,7 +19,12 @@ const SECTIONS: { section: string; items: { key: ResourceKey; label: string }[] 
   { section: 'Recruiting', items: [
     { key: 'applications-website', label: 'Application page' }, { key: 'applications-screening', label: 'Candidates screening' },
     { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-joiners', label: 'Offers' },
-    { key: 'applications-form', label: 'Form & Questions' } ] },
+    { key: 'applications-form', label: 'Form & Questions' },
+    // The two applicant-facing pages. They were missing from this table
+    // entirely, so the one column the table exists to explain - what an
+    // Applicant can reach - was incomplete.
+    { key: 'applications-status', label: 'Application status (applicant)' },
+    { key: 'applications-faqs', label: 'FAQs (applicant)' } ] },
   { section: 'Events', items: [
     { key: 'events-create', label: 'Create event' }, { key: 'events-forms', label: 'Registration forms' },
     { key: 'events-attendance', label: 'Attendance' }, { key: 'events-archive', label: 'Event archive' },

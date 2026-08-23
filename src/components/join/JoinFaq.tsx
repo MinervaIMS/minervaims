@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useJoinFaqs } from '@/hooks/useJoinFaqs';
 import { JOIN_FAQ_HEADING } from '@/lib/join-content';
+import { faqCategories, filterFaqGroups, countFaqEntries } from '@/lib/faq-filter';
 
 /**
  * Four FAQ groups driven by the join_faqs table.
@@ -44,40 +46,22 @@ export function JoinFaq() {
    * would filter the list and still leave every answer shut.
    */
   const [openIds, setOpenIds] = useState<string[]>([]);
+  /** null means every category. The four are the data's own groups. */
+  const [category, setCategory] = useState<string | null>(null);
 
-  /**
-   * Every whitespace-separated word must appear somewhere in the entry. That
-   * makes the field order-independent, so "deadline application" finds the same
-   * entry as "application deadline", which is how people actually type into a
-   * search box.
-   */
-  const terms = useMemo(
-    () => query.toLowerCase().split(/\s+/).filter(Boolean),
-    [query],
+  // Search and category are one question, answered in one place, so the
+  // public page and the candidate workspace can never disagree about which
+  // entries match. See lib/faq-filter.ts.
+  const categories = useMemo(() => faqCategories(groups), [groups]);
+  const visibleGroups = useMemo(
+    () => filterFaqGroups(groups, query, category),
+    [groups, query, category],
   );
 
-  /**
-   * The groups as displayed: filtered, with the empty ones dropped. With no
-   * search running this is the original array, by identity, so an idle field
-   * costs nothing and cannot re-render anything downstream.
-   */
-  const visibleGroups = useMemo(() => {
-    if (terms.length === 0) return groups;
-    return groups
-      .map((group) => ({
-        ...group,
-        entries: group.entries.filter((entry) => {
-          const haystack =
-            `${entry.question} ${entry.answer} ${entry.linkLabel ?? ''}`.toLowerCase();
-          return terms.every((term) => haystack.includes(term));
-        }),
-      }))
-      .filter((group) => group.entries.length > 0);
-  }, [groups, terms]);
-
-  const resultCount = visibleGroups.reduce((n, group) => n + group.entries.length, 0);
-  const isSearching = terms.length > 0;
-  const noResults = isSearching && !isLoading && resultCount === 0;
+  const resultCount = countFaqEntries(visibleGroups);
+  const isSearching = query.trim().length > 0;
+  const isFiltered = isSearching || category !== null;
+  const noResults = isFiltered && !isLoading && resultCount === 0;
   const isEmpty = !isLoading && groups.length === 0;
 
   /**
@@ -105,54 +89,66 @@ export function JoinFaq() {
         </h2>
 
         {/*
-          The field carries the same treatment as the one on the readings page:
-          square corners, a hairline in accent, the glyph inside the field on
-          the left. It is only offered once there is something to search.
+          THE SITE'S STANDARD FILTER ROW, as on Archive and Readings: flat
+          corners, the body font, no labels above the fields, the search taking
+          whatever width is left and the category beside it as a select.
+
+          The categories used to be chips. Chips are a second grammar for the
+          same job the rest of the site already does with a select, and on a
+          phone four of them wrapped to two or three lines above the questions.
+          One row, one grammar, one line of height. It is only offered once
+          there is something to search.
         */}
         {!isLoading && groups.length > 0 && (
           <div className="mb-10 md:mb-14">
             <label htmlFor="join-faq-search" className="sr-only">
               Search the questions
             </label>
-            <div className="relative max-w-xl">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <input
-                id="join-faq-search"
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search the questions"
-                autoComplete="off"
-                /*
-                  transition-[border-color] rather than transition-all: with
-                  `all`, the focus outline the engine applies is animated too,
-                  so its opaque default colour faded in over 200ms and read as
-                  a dark flash across the field on every click. Only the
-                  hairline animates now, and the outline is suppressed with an
-                  explicit transparent colour so nothing can paint it.
-                */
-                className="w-full rounded-none border border-separator bg-background py-2.5 pl-9 pr-10 font-body text-sm text-foreground outline-none outline-0 outline-transparent transition-[border-color] duration-200 placeholder:text-muted-foreground focus:border-accent focus:outline-none focus-visible:outline-none sm:py-2 sm:text-base [&::-webkit-search-cancel-button]:appearance-none"
-              />
-              {isSearching && (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  aria-label="Clear the search"
-                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+              {/* Search */}
+              <div className="flex-1 min-w-[200px] relative">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  id="join-faq-search"
+                  type="text"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search the questions"
+                  autoComplete="off"
+                  className="pl-10 font-body h-10 rounded-none border-separator"
+                />
+              </div>
+
+              {/* Category filter. The options are the groups the data already
+                  has, in the order it gives them, so nothing here invents a
+                  taxonomy; "All questions" is first and is the way back. */}
+              {categories.length > 1 && (
+                <select
+                  value={category ?? 'all'}
+                  onChange={(event) =>
+                    setCategory(event.target.value === 'all' ? null : event.target.value)
+                  }
+                  aria-label="Filter the questions by category"
+                  className="font-body bg-background border border-separator px-3 h-10 min-w-[200px]"
                 >
-                  <X aria-hidden="true" className="h-4 w-4" />
-                </button>
+                  <option value="all">All questions</option>
+                  {categories.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
             {/* Announced to a screen reader on every keystroke; the sighted
                 reader has the filtered list itself. */}
             <p className="sr-only" role="status" aria-live="polite">
-              {isSearching
-                ? `${resultCount} ${resultCount === 1 ? 'question' : 'questions'} match your search.`
+              {isFiltered
+                ? `${resultCount} ${resultCount === 1 ? 'question' : 'questions'} shown.`
                 : ''}
             </p>
           </div>
@@ -238,11 +234,11 @@ export function JoinFaq() {
         {noResults && (
           <div className="bg-background p-6 md:p-10">
             <p className="font-body text-body text-muted-foreground md:text-body-lg">
-              No question matches that search.
+              No question matches that search{category ? ' in this category' : ''}.
             </p>
             <button
               type="button"
-              onClick={() => setQuery('')}
+              onClick={() => { setQuery(''); setCategory(null); }}
               className="mt-4 font-serif text-base text-accent underline-offset-4 hover:underline md:text-lg"
             >
               Show every question

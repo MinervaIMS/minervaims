@@ -28,6 +28,7 @@ import MyProfile from '@/components/admin/MyProfile';
 import ContactPrompt from '@/components/admin/ContactPrompt';
 import CandidatesManagement from '@/components/admin/CandidatesManagement';
 import NewJoiners from '@/components/admin/NewJoiners';
+import CandidateFaqs from '@/components/admin/CandidateFaqs';
 import FormSettings from '@/components/admin/FormSettings';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import InterviewCalendar from '@/components/admin/InterviewCalendar';
@@ -229,6 +230,9 @@ function filterNav(permissions: Permissions): NavSection[] {
 // Candidates are hard-isolated: they may only ever reach their own profile and
 // their application status. This is enforced here, plus by the render guard
 // below, plus by row-level security in the database (defence in depth).
+// The candidate's whole workspace. It exists ONLY here: none of these keys
+// appears in the member navigation, and `applications-faqs` is granted only by
+// CANDIDATE_RESOURCES, so no member role can view it however it is reached.
 const CANDIDATE_NAV: NavSection[] = [
   { key: 'my-role', label: 'My Profile', Icon: UserIcon, subItems: [] },
   {
@@ -238,6 +242,7 @@ const CANDIDATE_NAV: NavSection[] = [
       { key: 'applications-interview-calendar', label: 'Interview Calendar' },
     ],
   },
+  { key: 'applications-faqs', label: 'FAQs', Icon: HelpCircle, subItems: [] },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -699,6 +704,7 @@ const MinervaWorkspace = () => {
     if (isCandidate) {
       if (activeSubKey === 'applications-status') return <ApplicationStatus />;
       if (activeSubKey === 'applications-interview-calendar') return <InterviewCalendarCandidate />;
+      if (activeSectionKey === 'applications-faqs') return <CandidateFaqs />;
       return <MyProfile />;
     }
     if (activeSectionKey === 'my-role') return <MyProfile />;

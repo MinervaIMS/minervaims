@@ -11,10 +11,11 @@ import { useAccess } from '@/hooks/useAccess';
 import { roleLabel as composeRoleLabel, divisionLabels } from '@/lib/roles';
 import { roleGuideFor, MEMBERSHIP_RULES } from '@/lib/statute-extracts';
 import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
-import { getMyApplication, type ApplicationRow } from '@/lib/applications-api';
+import { getMyApplication, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { CandidateDocRow } from '@/components/admin/recruiting/CandidateDocRow';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -160,28 +161,79 @@ export default function MyProfile() {
   }
 
   // Candidate profile: no member record yet, populated from the application.
+  //
+  // THIS IS WHERE AN APPLICANT'S OWN SUBMISSION LIVES NOW. The documents and
+  // the division preferences used to sit inside Applications, Status, which is
+  // the page about what happens NEXT; what a candidate SENT belongs to their
+  // profile. Status keeps the process, this page keeps the submission, and
+  // neither repeats the other.
+  //
+  // Three plain groups, in the order a candidate thinks about them: who they
+  // are, what they asked for, and what they attached. Everything is read from
+  // their own application - `getMyApplication` resolves it from the session
+  // and takes no id - so no candidate can address another's record.
   if (isCandidate) {
+    const app = candidateApp;
     return (
       <div>
-        <WorkspacePageHeader title="My profile" description="Your applicant account. These details come from your application and cannot be edited here." />
-        <div className="max-w-4xl font-body">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-            <Field label="First name" value={candidateApp?.first_name ?? ''} />
-            <Field label="Surname" value={candidateApp?.surname ?? ''} />
-            <Field label="Email" value={candidateApp?.email || email} />
-            <Field label="Phone number" value={candidateApp?.phone ?? ''} />
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">LinkedIn</div>
-              {candidateApp?.linkedin_url
-                ? <a href={candidateApp.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-accent underline break-all text-sm">{candidateApp.linkedin_url}</a>
-                : <div className="text-foreground text-sm">Not set</div>}
+        <WorkspacePageHeader
+          title="My profile"
+          description={app?.semester_label
+            ? `Your application for ${app.semester_label}. These details come from the form you submitted and cannot be edited here.`
+            : 'Your applicant account. These details come from your application and cannot be edited here.'}
+        />
+        <div className="max-w-4xl space-y-6 font-body">
+          {/* 1. Who you are. */}
+          <section>
+            <h2 className="mb-3 border-b border-separator pb-2 font-serif text-lg text-accent">Your details</h2>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+              <Field label="First name" value={app?.first_name ?? ''} />
+              <Field label="Surname" value={app?.surname ?? ''} />
+              <Field label="Email" value={app?.email || email} />
+              <Field label="Phone number" value={app?.phone ?? ''} />
+              <Field label="Bocconi ID" value={app?.bocconi_id ?? ''} />
+              <Field label="Role" value="Applicant" />
+              <div className="sm:col-span-2">
+                <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">LinkedIn</div>
+                {app?.linkedin_url
+                  ? <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent underline">{app.linkedin_url}</a>
+                  : <div className="text-sm text-foreground">Not set</div>}
+              </div>
             </div>
-            <Field label="Role" value="Applicant" />
-          </div>
-          <Card className="mt-6"><CardContent className="py-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">You are an applicant</div>
-            <p className="text-sm text-foreground leading-relaxed">
-              Follow your application in <strong>Applications → Status</strong>. If you are invited to interview, you will be able to book a slot in <strong>Applications → Interview Calendar</strong>. Once you accept an offer to join, this page becomes your full member profile.
+          </section>
+
+          {/* 2. What you asked for. Every value is shown in the words the
+                 website uses, never as a stored key. */}
+          <section>
+            <h2 className="mb-3 border-b border-separator pb-2 font-serif text-lg text-accent">Your application</h2>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+              <Field label="Programme" value={app?.degree_course ?? ''} />
+              <Field label="Academic year" value={app ? ACADEMIC_YEAR_LABELS[app.academic_year] : ''} />
+              <Field label="First choice division" value={app ? divisionLabels[app.first_choice] : ''} />
+              <Field label="Second choice division" value={app?.second_choice ? divisionLabels[app.second_choice] : 'None'} />
+              {app?.interview_division && (
+                <Field label="Interview division" value={divisionLabels[app.interview_division]} />
+              )}
+              <Field label="Submitted" value={app ? new Date(app.created_at).toLocaleString() : ''} />
+            </div>
+          </section>
+
+          {/* 3. What you attached. */}
+          <section>
+            <h2 className="mb-3 border-b border-separator pb-2 font-serif text-lg text-accent">Your documents</h2>
+            <div className="space-y-2">
+              <CandidateDocRow label="Curriculum Vitae (CV)" kind="cv" present={!!app?.cv_path} session={session} />
+              <CandidateDocRow label="Written answer" kind="answer" present={!!app?.answer_path} session={session} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              You can preview and download what you submitted. Your application and its documents cannot be changed or replaced; if you need a correction, contact the association.
+            </p>
+          </section>
+
+          <Card><CardContent className="py-5">
+            <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">You are an applicant</div>
+            <p className="text-sm leading-relaxed text-foreground">
+              Follow your application in <strong>My Application → Status</strong>. If you are invited to interview, you will be able to book a slot in <strong>My Application → Interview Calendar</strong>. Questions about the process are answered in <strong>FAQs</strong>. Once you accept an offer to join, this page becomes your full member profile.
             </p>
           </CardContent></Card>
         </div>
