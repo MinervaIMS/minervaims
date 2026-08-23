@@ -24,11 +24,16 @@ export default defineConfig(({ mode }) => ({
     // as a scan entry so Vite discovers their dependencies before serving the
     // first request instead of re-optimizing (and replacing React) mid-render.
     entries: ["index.html", "src/**/*.{ts,tsx}"],
+    // Pin React into the first dependency generation. Without this a later
+    // discovery can re-optimize React while react-dom keeps the old chunk,
+    // which splits the hook dispatcher ("dispatcher.useState is null").
+    include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime"],
     // Do not publish an initial dependency generation while Vite is still
     // crawling the application; replacing it in an open tab can split React's
     // hook dispatcher from the renderer that owns it.
     holdUntilCrawlEnd: true,
   },
+
   build: {
     rollupOptions: {
       output: {
