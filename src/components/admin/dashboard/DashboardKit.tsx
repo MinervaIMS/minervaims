@@ -66,6 +66,14 @@ interface KpiProps {
   /** Gives the ornament a wider column, for a composition that needs it. */
   wideDecoration?: boolean;
   animate: boolean;
+  /**
+   * Where this figure leads. `null` when the reader's role cannot open
+   * that subsection, which leaves the card inert rather than promising a
+   * destination it would be refused.
+   */
+  onOpen?: (() => void) | null;
+  /** The destination, named for the tooltip and for a screen reader. */
+  destination?: string;
 }
 
 /**
@@ -79,13 +87,46 @@ interface KpiProps {
  * overflow, so an overlap is structurally impossible at ANY width while
  * the ornament is still cut by the card's rounded corner.
  */
-export function KpiCard({ label, value, decoration, filled = false, wideDecoration = false, animate }: KpiProps) {
+export function KpiCard({
+  label, value, decoration, filled = false, wideDecoration = false, animate,
+  onOpen = null, destination,
+}: KpiProps) {
   const shown = useAnimatedCounter(value ?? 0, 1100, animate && value !== null);
+  /*
+   * THE WHOLE CARD IS THE CONTROL, and it is a BUTTON AT EVERY RENDER,
+   * enabled or not.
+   *
+   * Swapping the element between a div and a button once a role settles
+   * would replace the node, and replacing the node restarts the CSS entry
+   * on its wrapper AND the ornament's own long animation from its first
+   * frame: the report columns would jump back to the top, the swarm would
+   * resnap. Rendering the button always and only toggling `disabled`
+   * keeps the element, and therefore every animation on and inside it,
+   * exactly where it was.
+   *
+   * Hover moves NOTHING. The card's border changes colour and that is
+   * all: no scale, no lift, no shadow that grows the box. A transform on
+   * this element would re-rasterise the dozen report covers and forty
+   * portraits underneath it for the length of the transition, which is
+   * the one thing these ornaments cannot afford.
+   */
+  const openable = typeof onOpen === 'function';
   return (
-    <div
-      className={`h-full min-h-0 flex overflow-hidden rounded-xl border ${
+    <button
+      type="button"
+      disabled={!openable}
+      onClick={openable ? onOpen : undefined}
+      title={openable && destination ? `Open ${destination}` : undefined}
+      aria-label={openable && destination
+        ? `${label}: ${value === null ? 'unavailable' : value}. Open ${destination}.`
+        : undefined}
+      className={`h-full min-h-0 w-full flex overflow-hidden rounded-xl border text-left appearance-none transition-colors duration-200 outline-none ${
         filled ? 'bg-accent text-accent-foreground border-accent' : 'bg-background border-separator'
-      }`}
+      } ${openable
+        ? `cursor-pointer ${filled
+          ? 'hover:border-accent-foreground/45 focus-visible:border-accent-foreground/70'
+          : 'hover:border-accent/60 focus-visible:border-accent'}`
+        : 'cursor-default'}`}
     >
       {/* The pair sits slightly ABOVE the card's centre: the extra bottom
           padding shortens the centring box, which lifts the label and the
@@ -134,6 +175,6 @@ export function KpiCard({ label, value, decoration, filled = false, wideDecorati
           {decoration}
         </div>
       )}
-    </div>
+    </button>
   );
 }

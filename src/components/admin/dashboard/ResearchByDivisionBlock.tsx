@@ -1,5 +1,6 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Block } from './DashboardKit';
+import { useChartEntry } from './motion';
 import type { DivisionCount } from './useDashboardData';
 
 // =====================================================================
@@ -41,6 +42,11 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel }: {
   currentLabel: string;
   previousLabel: string;
 }) {
+  /* This card keeps its columns undrawn, as designed: only the two
+     charts that were asked for animate. The stage is used here purely
+     for its FIRST HALF, so this chart is also mounted into a settled
+     cell instead of measuring zero and resizing a frame later. */
+  const chart = useChartEntry(false, 0);
   // A step up on every label: this card was legible only with effort.
   const tickText = { fontSize: 12, fill: 'hsl(var(--foreground))', fontVariantNumeric: 'tabular-nums' as const };
   const valueText = { ...tickText, fill: 'hsl(var(--muted-foreground))' };
@@ -48,7 +54,8 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel }: {
 
   return (
     <Block title="Research by division" aside={<span className="text-[12px]">{`${currentLabel} vs ${previousLabel}`}</span>}>
-      {rows ? (
+      <div ref={chart.ref} className="h-full w-full min-h-0">
+      {rows && chart.ready ? (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} margin={{ top: 10, right: 6, bottom: 0, left: 0 }} barCategoryGap="20%" barGap={4}>
             <defs>
@@ -108,6 +115,7 @@ export function ResearchByDivisionBlock({ rows, currentLabel, previousLabel }: {
       ) : (
         <div className="h-full w-full animate-pulse rounded-lg bg-muted/40" />
       )}
+      </div>
     </Block>
   );
 }
