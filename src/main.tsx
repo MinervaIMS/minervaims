@@ -11,6 +11,7 @@ import { initPerfMode } from "./lib/perf";
 // failed". Reload once to fetch the new index.html and chunk hashes.
 const RELOAD_KEY = "__module_reload_attempted__";
 const RELOAD_PARAM = "module-reload";
+const MAX_RELOADS = 2;
 const isRecoverableModuleError = (msg: unknown) => {
   if (typeof msg !== "string") return false;
   return (
@@ -22,15 +23,35 @@ const isRecoverableModuleError = (msg: unknown) => {
     // optimized-dependency generation while react-dom has already updated.
     // Hooks then reach the inactive singleton dispatcher and the app blanks.
     msg.includes("dispatcher.useState") ||
+    msg.includes("useState") ||
     msg.includes("Invalid hook call")
   );
 };
+let reloading = false;
 const tryReload = () => {
-  if (sessionStorage.getItem(RELOAD_KEY)) return;
-  sessionStorage.setItem(RELOAD_KEY, "1");
-  const url = new URL(window.location.href);
-  url.searchParams.set(RELOAD_PARAM, Date.now().toString());
-  window.location.replace(url);
+  if (reloading) return;
+  const attempts = Number(sessionStorage.getItem(RELOAD_KEY) ?? "0");
+  if (attempts >= MAX_RELOADS) return;
+  reloading = true;
+  sessionStorage.setItem(RELOAD_KEY, String(attempts + 1));
+  const finish = () => {
+    const url = new URL(window.location.href);
+    // A fresh query string forces a network fetch of index.html, which in turn
+    // hands the tab the module URLs of the current dependency generation
+    // instead of the cached ones that reference a dead React copy.
+    url.searchParams.set(RELOAD_PARAM, Date.now().toString());
+    window.location.replace(url.toString());
+  };
+  // Drop any service-worker/HTTP cache copies of the stale module graph first.
+  if (typeof caches !== "undefined" && caches.keys) {
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .catch(() => undefined)
+      .finally(finish);
+  } else {
+    finish();
+  }
 };
 window.addEventListener("error", (e) => {
   if (isRecoverableModuleError(e.message)) tryReload();
@@ -40,6 +61,7 @@ window.addEventListener("unhandledrejection", (e) => {
   const msg = typeof reason === "string" ? reason : reason?.message;
   if (isRecoverableModuleError(msg)) tryReload();
 });
+
 
 // Suspend viewport scaling while a field has focus, so iOS never zooms
 // into a control and leaves the reader magnified afterwards.
