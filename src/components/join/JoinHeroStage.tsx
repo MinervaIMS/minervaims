@@ -72,7 +72,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
   return (
     <div
       data-page-hero
-      className="relative flex flex-col overflow-hidden"
+      className="relative flex min-h-[65svh] flex-col overflow-hidden md:min-h-[75svh]"
       style={{ backgroundColor: '#000' }}
     >
       {/*
@@ -92,11 +92,11 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
       {/*
         The top inset clears the fixed header, which is 84px plus the iOS
         status bar, and then adds the band of space the fund pages leave above
-        their own titles. There is no viewport unit in this block at all: the
-        band is exactly as tall as what it holds, which is what makes it read
-        as an introduction rather than as a screen.
+        their own titles. The band now has a minimum height so the key figures
+        can be vertically centered in the remaining dark space between the
+        subtitle and the white section below.
       */}
-      <div className="container relative z-10 flex flex-1 flex-col pb-40 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-64 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
+      <div className="container relative z-10 flex flex-1 flex-col pb-16 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-24 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
         {/* Title and payoff carry the same type as PageIntroduction, so the
             opening of /join reads as a member of the same family as the fund
             and division pages rather than as its own thing. */}
