@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // =====================================================================
 // The Dashboard's three motion facts, in one place.
@@ -68,6 +68,85 @@ export function useEntered(delay = 0): boolean {
     return () => window.clearTimeout(id);
   }, [delay]);
   return entered;
+}
+
+/**
+ * THE STAGE A CHART ENTERS ON.
+ *
+ * Two problems are solved here, and they are the reason the Dashboard's
+ * chart animations were switched off rather than tuned:
+ *
+ *  * A CHART MUST NOT ANIMATE FROM A BOX IT IS ABOUT TO LOSE.
+ *    `ResponsiveContainer` measures its parent on mount. Mounted in the
+ *    same frame as the page, it can measure zero, draw once at the wrong
+ *    size and then resize when the flex row settles: the chart visibly
+ *    snaps, and an animation started in that first frame plays out of the
+ *    wrong geometry. `ready` turns true in a LAYOUT effect, before the
+ *    browser paints, and only once the box actually has a size, so the
+ *    chart is mounted into a settled cell and its first measurement is
+ *    also its final one. Nothing is painted twice and nothing is delayed
+ *    by a frame the reader could see.
+ *
+ *  * AN ENTRY ANIMATION HAPPENS ONCE, NOT ON EVERY RENDER.
+ *    Recharts re-animates whenever it re-renders with new data, so
+ *    hiding a fund, a window resize or any unrelated state change used to
+ *    replay the whole introduction. `entering` is true from the chart's
+ *    first render, and is switched off for good once the sequence has had
+ *    time to finish, so every later render draws the final state directly.
+ *
+ * `hold` is the whole span the chart's own animation occupies, measured
+ * from mount: the card's stagger, the pause before the series starts, and
+ * the draw itself.
+ */
+export function useChartEntry(animate: boolean, hold: number): {
+  ref: React.RefObject<HTMLDivElement>;
+  ready: boolean;
+  entering: boolean;
+} {
+  const ref = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+  const [entering, setEntering] = useState(false);
+  /** Latched, so a remeasure or a prop change can never rearm the entry. */
+  const played = useRef(false);
+
+  // NO DEPENDENCY LIST, DELIBERATELY. The element this measures may not
+  // exist on the first render: a block that has no data yet renders a
+  // message or a skeleton instead, and mounts its chart cell only when
+  // the data arrives. An effect keyed on anything else would have run
+  // once, found no element, and never looked again, leaving that chart
+  // permanently unmounted. Once `ready` is true this returns immediately,
+  // so the cost is one measurement per render until the cell exists.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || ready) return;
+    // A cell narrower or shorter than this is not a laid-out chart cell.
+    const settled = () => {
+      const r = el.getBoundingClientRect();
+      return r.width > 16 && r.height > 16;
+    };
+    const arm = () => {
+      setReady(true);
+      if (animate && !played.current) {
+        played.current = true;
+        setEntering(true);
+      }
+    };
+    if (settled()) { arm(); return; }
+    // The cell is not laid out yet (a hidden ancestor, a font still
+    // settling). Watch it rather than guessing at a delay.
+    if (typeof ResizeObserver !== 'function') { arm(); return; }
+    const ro = new ResizeObserver(() => { if (settled()) { ro.disconnect(); arm(); } });
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
+  useEffect(() => {
+    if (!entering) return;
+    const id = window.setTimeout(() => setEntering(false), hold);
+    return () => window.clearTimeout(id);
+  }, [entering, hold]);
+
+  return { ref, ready, entering };
 }
 
 /**

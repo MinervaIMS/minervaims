@@ -1,4 +1,7 @@
+import { useCallback, useMemo } from 'react';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { useAccess } from '@/hooks/useAccess';
+import type { ResourceKey } from '@/lib/access/matrix';
 import { useDashboardData } from '@/components/admin/dashboard/useDashboardData';
 import { KpiCard } from '@/components/admin/dashboard/DashboardKit';
 import { useMediaMatch, usePageVisible, useReducedMotion } from '@/components/admin/dashboard/motion';
@@ -38,6 +41,26 @@ import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
 // comparison line competing with its own figure.
 // =====================================================================
 
+/**
+ * WHERE EACH KPI LEADS.
+ *
+ * The four figures at the top are the four things a member most often
+ * arrives wanting, so the whole card is the way into the subsection that
+ * holds them. The destinations are the workspace's own nav keys and the
+ * card opens them through the workspace's own navigation, exactly as the
+ * side nav and the Current update card do: no route, no reload, no
+ * second navigation system to keep in step with the first.
+ */
+const KPI_TARGETS = [
+  { section: 'reports', sub: 'reports-archive', name: 'Report Archive' },
+  { section: 'website', sub: 'website-readings', name: 'Readings' },
+  { section: 'people', sub: 'people-members', name: 'Members' },
+  { section: 'people', sub: 'people-alumni', name: 'Alumni' },
+] as const;
+
+/** The stagger between one card's entry and the next. One place. */
+const STAGGER_MS = 45;
+
 export default function WorkspaceDashboard({ onNavigate }: {
   onNavigate?: (section: string, sub: string | null) => void;
 }) {
@@ -57,7 +80,30 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const animate = !reduced;
   const ambientPaused = reduced || !visible;
   /** The stagger. One place, so the sequence is obvious and orderable. */
-  const enter = (i: number) => ({ animationDelay: `${i * 45}ms` });
+  const enter = (i: number) => ({ animationDelay: `${i * STAGGER_MS}ms` });
+  /**
+   * The same stagger, handed to the two charts that draw themselves in.
+   * Each adds its own short pause on top, so a series starts while its
+   * card is still settling rather than after it: the frame of the chart
+   * is on screen from the first frame, and the line arrives into it.
+   */
+  const chartDelay = (i: number) => (animate ? i * STAGGER_MS : 0);
+
+  // A KPI opens its subsection only if this role may actually see it:
+  // `null` leaves the card inert rather than offering a destination the
+  // workspace would refuse. Memoised so the four handlers keep their
+  // identity across the counter's renders and never re-render a card.
+  const access = useAccess();
+  const openTarget = useCallback((i: number) => {
+    const t = KPI_TARGETS[i];
+    onNavigate?.(t.section, t.sub);
+  }, [onNavigate]);
+  const openers = useMemo(
+    () => KPI_TARGETS.map((t, i) => (
+      onNavigate && access.canView(t.sub as ResourceKey) ? () => openTarget(i) : null
+    )),
+    [onNavigate, access, openTarget],
+  );
 
   // ONE GATE FOR THE WHOLE PAGE. The loader holds the pane until every
   // query has answered, the reader's NAME has settled and the decorative
@@ -94,12 +140,14 @@ export default function WorkspaceDashboard({ onNavigate }: {
         <div className="dash-enter-soft min-h-0" style={enter(0)}>
           <KpiCard
             label="Reports" value={data.reportsAllTime} filled animate={animate}
+            onOpen={openers[0]} destination={KPI_TARGETS[0].name}
             decoration={<ReportColumns covers={covers} paused={ambientPaused} />}
           />
         </div>
         <div className="dash-enter-soft min-h-0" style={enter(1)}>
           <KpiCard
             label="Readings" value={data.readings} animate={animate}
+            onOpen={openers[1]} destination={KPI_TARGETS[1].name}
             decoration={<LibraryCorner readings={data.readingRows} compact={isPhone} animate={animate} />}
           />
         </div>
@@ -110,12 +158,14 @@ export default function WorkspaceDashboard({ onNavigate }: {
         <div className="dash-enter-soft min-h-0" style={enter(2)}>
           <KpiCard
             label="Members" value={data.members} animate={animate} wideDecoration
+            onOpen={openers[2]} destination={KPI_TARGETS[2].name}
             decoration={<MemberRings avatars={data.avatars} compact={isPhone} paused={ambientPaused} />}
           />
         </div>
         <div className="dash-enter-soft min-h-0" style={enter(3)}>
           <KpiCard
             label="Alumni Network" value={data.alumni} animate={animate}
+            onOpen={openers[3]} destination={KPI_TARGETS[3].name}
             decoration={<GlobeOrnament paused={ambientPaused} />}
           />
         </div>
@@ -154,13 +204,13 @@ export default function WorkspaceDashboard({ onNavigate }: {
             urgent. */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[35fr_25fr_40fr] gap-3">
           <div className="dash-enter h-[300px] lg:h-auto min-h-0" style={enter(6)}>
-            <FundPerformanceBlock series={data.fundSeries} />
+            <FundPerformanceBlock series={data.fundSeries} animate={animate} enterDelay={chartDelay(6)} />
           </div>
           <div className="dash-enter order-3 lg:order-none h-[300px] lg:h-auto min-h-0" style={enter(7)}>
             <ReportsMixBlock shares={data.divisionShares} animate={animate} />
           </div>
           <div className="dash-enter h-[288px] lg:h-auto min-h-0" style={enter(8)}>
-            <AlumniGrowthBlock years={data.alumniYears} narrow={!isDesktop} />
+            <AlumniGrowthBlock years={data.alumniYears} narrow={!isDesktop} animate={animate} enterDelay={chartDelay(8)} />
           </div>
         </div>
       </div>

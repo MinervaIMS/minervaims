@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useChartEntry } from './motion';
 import {
   Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -81,14 +82,41 @@ function niceTicks(lo: number, hi: number, n = 4): number[] {
   return out;
 }
 
-/* NO PER-CHART JAVASCRIPT ANIMATION. Recharts animates by setting React
-   state on every frame, so four charts entering together re-rendered
-   four component trees sixty times a second at the exact moment the page
-   was mounting -- which is what the Dashboard's entry actually felt like.
-   The cards now enter together in CSS, on the compositor, and the charts
-   are simply drawn. */
-export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }) {
-  const [hidden, setHidden] = useState<string[]>([]);
+/* THE ENTRY, RESTORED AND COORDINATED.
+   The line draws itself in once, and the reason it can do that without
+   the stutter it used to cause is that it no longer competes with
+   anything. It starts only when the card's own cell has a settled size
+   (`useChartEntry` mounts the chart in a layout effect, so its first
+   measurement is also its final one), it waits for the card's CSS entry
+   to have carried the card into place, and it is switched off for good
+   once it has played: choosing a fund, resizing the window or any
+   unrelated render afterwards draws the final state directly instead of
+   replaying the introduction.
+   The FRAME IS NEVER EMPTY while this happens: axes, grid, legend, the
+   zero line and the watermark are all drawn immediately, and it is only
+   the series itself that arrives. */
+/** How long after mount the series starts drawing, past the card's entry. */
+const DRAW_BEGIN = 200;
+const DRAW_MS = 900;
+
+export function FundPerformanceBlock({ series, animate = true, enterDelay = 0 }: {
+  series: FundSeries[] | null;
+  animate?: boolean;
+  /** The card's own stagger, so the draw follows its arrival. */
+  enterDelay?: number;
+}) {
+  /*
+   * ONE FUND SELECTED, NOT ONE FUND HIDDEN.
+   *
+   * Clicking a fund used to REMOVE it, which read backwards: the reader
+   * points at the Multi Asset Fund and the Multi Asset Fund is what
+   * disappears. The state is now the fund the reader asked to SEE, so a
+   * click means "show me this one" and leaves that fund on the chart
+   * alone. Clicking it a second time, like the "show both" link beside
+   * it, returns to the standard two-fund reading.
+   */
+  const [only, setOnly] = useState<string | null>(null);
+  const chart = useChartEntry(animate, enterDelay + DRAW_BEGIN + DRAW_MS + 250);
 
   const bounds = useMemo(() => {
     const all = (series ?? []).flatMap((s) => s.points);
@@ -100,9 +128,9 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
   }, [series]);
 
   const shown = useMemo(() => {
-    const list = (series ?? []).filter((s) => !hidden.includes(s.fund));
+    const list = (series ?? []).filter((s) => !only || s.fund === only);
     return list.length ? list : (series ?? []);
-  }, [series, hidden]);
+  }, [series, only]);
 
   const { data, returns } = useMemo(() => {
     if (!bounds) return { data: [] as Row[], returns: {} as Record<string, number> };
@@ -206,12 +234,11 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
             <button
               key={s.fund}
               type="button"
-              aria-pressed={!hidden.includes(s.fund)}
-              title={drawn.length === 1 ? 'One fund always stays on the chart' : `Hide ${fundShortLabels[s.fund]}`}
-              onClick={() => setHidden((h) => (
-                h.includes(s.fund) ? h.filter((x) => x !== s.fund)
-                  : drawn.length === 1 ? h : [...h, s.fund]
-              ))}
+              aria-pressed={only === s.fund}
+              title={only === s.fund
+                ? 'Show both funds'
+                : `Show only ${fundShortLabels[s.fund]}`}
+              onClick={() => setOnly((cur) => (cur === s.fund ? null : s.fund))}
               className="min-w-0 text-left hover:opacity-80 transition-opacity"
             >
               <span className="flex items-center gap-2">
@@ -235,10 +262,10 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
               </span>
             </button>
           ))}
-          {hidden.length > 0 && (
+          {only && (
             <button
               type="button"
-              onClick={() => setHidden([])}
+              onClick={() => setOnly(null)}
               className="self-center font-body text-[12px] underline underline-offset-2"
               style={{ color: INK }}
             >
@@ -247,7 +274,7 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
           )}
         </div>
 
-        <div className="relative flex-1 min-h-0">
+        <div ref={chart.ref} className="relative flex-1 min-h-0">
           {/* The mark reads clearly behind the plot, as on the public chart. */}
           <img
             src={fullLogoWhite.url}
@@ -257,7 +284,7 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
           />
           {!series ? (
             <div className="h-full w-full animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />
-          ) : data.length >= 2 ? (
+          ) : data.length >= 2 ? (chart.ready && (
             <ResponsiveContainer width="100%" height="100%">
               {single ? (
                 <AreaChart data={data} margin={{ top: 6, right: 0, bottom: 0, left: -26 }}>
@@ -280,7 +307,10 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
                     strokeLinejoin="miter" strokeLinecap={dashOf(drawn[0].fund) ? 'round' : 'butt'}
                     strokeDasharray={dashOf(drawn[0].fund)}
                     fill={`url(#${gradientId})`} dot={false} activeDot={{ r: 3 }}
-                    isAnimationActive={false}
+                    isAnimationActive={chart.entering}
+                    animationBegin={enterDelay + DRAW_BEGIN}
+                    animationDuration={DRAW_MS}
+                    animationEasing="ease-out"
                   />
                 </AreaChart>
               ) : (
@@ -294,13 +324,19 @@ export function FundPerformanceBlock({ series }: { series: FundSeries[] | null }
                       strokeLinejoin="miter" strokeLinecap={dashOf(s.fund) ? 'round' : 'butt'}
                       strokeDasharray={dashOf(s.fund)}
                       dot={false} activeDot={{ r: 3 }} connectNulls={false}
-                      isAnimationActive={false}
+                      isAnimationActive={chart.entering}
+                      /* The second line follows the first by a beat, so
+                         the two are read as two rather than as one
+                         thickening stroke. */
+                      animationBegin={enterDelay + DRAW_BEGIN + i * 120}
+                      animationDuration={DRAW_MS}
+                      animationEasing="ease-out"
                     />
                   ))}
                 </LineChart>
               )}
             </ResponsiveContainer>
-          ) : (
+          )) : (
             <div className="h-full flex items-center justify-center font-body text-xs" style={{ color: INK }}>
               Not enough published months to draw a full year.
             </div>
