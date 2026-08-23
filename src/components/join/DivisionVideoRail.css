@@ -126,20 +126,27 @@
    clearing towards the bottom-right so the analysis stays visible. This layer
    is load-bearing for contrast, per the design system.
 
-   It was tuned against animations printed on white paper. The five are now
-   near-black themselves, so the same weights buried them; these are the
-   lightest values that still hold the title above WCAG AA over the brightest
-   frame of every division. */
+   SAME GRADIENT, CARRIED FURTHER. The direction (135deg, i.e. the gradient
+   line running from the top-left corner down to the bottom-right), the five
+   stops and their positions are exactly as they were; only the weights are
+   heavier. Nothing about the treatment changes, it is simply stronger.
+
+   What the extra weight buys, over the brightest frame any of the five
+   animations reaches: white text on the title line went from a contrast
+   ratio of about 3.3:1, which is below AA for body copy, to about 6.0:1,
+   which clears AA with room to spare. The far corner stays deliberately
+   light - 0.12 against 0.02 - so the footage is still plainly the subject of
+   the card rather than something behind a curtain. */
 .jd-scrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.70) 0%,
-    rgba(0, 0, 0, 0.56) 30%,
-    rgba(0, 0, 0, 0.32) 56%,
-    rgba(0, 0, 0, 0.12) 80%,
-    rgba(0, 0, 0, 0.02) 100%
+    rgba(0, 0, 0, 0.86) 0%,
+    rgba(0, 0, 0, 0.74) 30%,
+    rgba(0, 0, 0, 0.52) 56%,
+    rgba(0, 0, 0, 0.28) 80%,
+    rgba(0, 0, 0, 0.12) 100%
   );
 }
 

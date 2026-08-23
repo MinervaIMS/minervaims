@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { JOIN_DIVISIONS, type JoinDivision } from '@/lib/join-content';
 import { bindPinnedScroll } from '@/lib/pinned-scroll';
 import './DivisionVideoRail.css';
@@ -20,12 +20,20 @@ import { clsx } from 'clsx';
 // =====================================================================
 
 /**
- * Horizontal travel relative to page scrolling. Just above 1:1, so the cards
- * track the gesture almost exactly and the section never feels like it is
- * holding the reader back. Earlier values (2.4, then 1.8) stretched the travel
- * far enough that the sequence read as resistance rather than pacing.
+ * Horizontal travel relative to page scrolling, and now EXACTLY 1:1.
+ *
+ * The section reserves `overflow x SCROLL_PACING` pixels of vertical scroll
+ * and spends them moving the track `overflow` pixels sideways, so the pacing
+ * is the reciprocal of the speed the reader feels: at 1.15 a hundred pixels
+ * of gesture produced eighty-seven pixels of travel, and every one of those
+ * missing thirteen pixels reads as the section holding on. At 1.0 the cards
+ * move exactly as far as the page would have moved, which is the only ratio
+ * that cannot feel either slow or hurried, because it is not a ratio at all.
+ *
+ * The values before this were 2.4, then 1.8, then 1.15. This is where that
+ * sequence was always going.
  */
-const SCROLL_PACING = 1.15;
+const SCROLL_PACING = 1;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
@@ -53,7 +61,15 @@ const canPlayVideo = () => {
   );
 };
 
-function DivisionCard({
+/**
+ * Memoised on its four primitive props.
+ *
+ * The track's transform no longer goes through React, but `activeIndex` still
+ * does, four times across the section. Without this, each of those four
+ * changes re-rendered all five cards and their <video> elements; with it, only
+ * the two whose `active` actually flipped are touched.
+ */
+const DivisionCard = memo(function DivisionCard({
   division,
   index,
   active,
@@ -125,11 +141,13 @@ function DivisionCard({
       </div>
     </article>
   );
-}
+});
 
 export function DivisionVideoRail() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
+  /** The sticky stage. Its own height is the exact vertical travel available. */
+  const pinRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   /** The page container, measured so the rail can respect its content edges. */
   const boundsRef = useRef<HTMLDivElement | null>(null);
@@ -137,9 +155,9 @@ export function DivisionVideoRail() {
   const [pinDistance, setPinDistance] = useState(0);
   const [overflow, setOverflow] = useState(0);
   const [edgePad, setEdgePad] = useState(24);
-  const [progress, setProgress] = useState(0);
-  // The scroll bridge reads progress synchronously during a gesture,
-  // where React state would always be a render behind.
+  // Progress is NOT React state: it drives a transform on every frame of a
+  // gesture, and a render per frame is exactly what made the section heavy.
+  // The scroll bridge reads it synchronously for the same reason.
   const progressRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   // Resolved during the first render so the reserved height is correct from
@@ -200,16 +218,47 @@ export function DivisionVideoRail() {
   }, [measure]);
 
   // Drive horizontal travel from the pinned wrapper's scroll progress.
+  //
+  // THE TRANSFORM IS WRITTEN STRAIGHT TO THE NODE, NOT THROUGH REACT.
+  // This is the whole of the heaviness. `progress` used to be React state,
+  // set on every scroll frame and read back in the JSX to build the track's
+  // inline transform. So each frame of the gesture scheduled a render of the
+  // section, reconciled five cards with their posters and video elements, and
+  // only then committed the transform: the cards were always a render behind
+  // the gesture, and under any load at all they were several. That lag is
+  // what reads as resistance, as weight, and as the cards moving more slowly
+  // than the scroll suggests, quite apart from the pacing ratio.
+  //
+  // Written directly, the transform lands in the same frame the scroll event
+  // arrived in, which is what makes the movement feel attached to the hand.
+  // React is left with the one thing that genuinely changes rarely - which
+  // card is active, four times across the whole section - and is told even
+  // that only when the answer differs.
   useEffect(() => {
     if (!pinned || overflow <= 0) {
       progressRef.current = 0;
-      setProgress(0);
+      const track = trackRef.current;
+      if (track) track.style.transform = '';
       return;
     }
     const section = sectionRef.current;
     if (!section) return;
 
     let frame = 0;
+    let lastIndex = -1;
+    const paint = (p: number) => {
+      const track = trackRef.current;
+      if (track) track.style.transform = `translate3d(${-(p * overflow).toFixed(2)}px,0,0)`;
+      const index = Math.min(
+        JOIN_DIVISIONS.length - 1,
+        Math.round(p * (JOIN_DIVISIONS.length - 1)),
+      );
+      if (index !== lastIndex) {
+        lastIndex = index;
+        setActiveIndex(index);
+      }
+    };
+
     const update = () => {
       frame = 0;
       // Travel is expressed purely as a transform; any residual scrollLeft on
@@ -217,16 +266,23 @@ export function DivisionVideoRail() {
       const rail = railRef.current;
       if (rail && rail.scrollLeft !== 0) rail.scrollLeft = 0;
       const rect = section.getBoundingClientRect();
-      const total = section.offsetHeight - window.innerHeight;
+      // THE TRAVEL IS MEASURED, NOT ASSUMED. The pinned stage is `100svh` and
+      // `window.innerHeight` is the LARGE viewport, so on a phone with a
+      // retractable URL bar the two differ by the height of that bar. Taking
+      // the difference against `window.innerHeight` therefore mapped the
+      // gesture onto a distance the section does not actually have, and the
+      // last card never quite arrived. The stage's own height is exact at
+      // every viewport and on every engine.
+      const stage = pinRef.current?.offsetHeight ?? window.innerHeight;
+      const total = section.offsetHeight - stage;
       if (total <= 0) {
         progressRef.current = 0;
-        setProgress(0);
+        paint(0);
         return;
       }
       const p = Math.min(1, Math.max(0, -rect.top / total));
       progressRef.current = p;
-      setProgress(p);
-      setActiveIndex(Math.min(JOIN_DIVISIONS.length - 1, Math.round(p * (JOIN_DIVISIONS.length - 1))));
+      paint(p);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
@@ -300,8 +356,6 @@ export function DivisionVideoRail() {
     }
   };
 
-  const translate = pinned ? -(progress * overflow) : 0;
-
   return (
     <section
       ref={sectionRef}
@@ -309,7 +363,7 @@ export function DivisionVideoRail() {
       className="bg-background"
       style={pinned && overflow > 0 ? { height: `calc(100svh + ${pinDistance}px)` } : undefined}
     >
-      <div className={pinned && overflow > 0 ? 'jd-pin' : ''}>
+      <div ref={pinRef} className={pinned && overflow > 0 ? 'jd-pin' : ''}>
         <div className="container" ref={boundsRef}>
           <h2
             id="join-divisions-heading"
@@ -335,9 +389,6 @@ export function DivisionVideoRail() {
               // the left content boundary and closes on the right one.
               paddingLeft: edgePad,
               paddingRight: edgePad,
-              ...(pinned && overflow > 0
-                ? { transform: `translate3d(${translate}px,0,0)` }
-                : null),
             }}
           >
             {JOIN_DIVISIONS.map((division, i) => (
