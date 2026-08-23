@@ -41,6 +41,9 @@ export function DivisionArchiveCarousel({ division, files: propFiles }: Division
         .from('archive_files')
         .select('id, title, file_url, date, division')
         .eq('division', division)
+        // Public surface: published reports only, and never a deleted one.
+        .eq('status', 'published')
+        .is('deleted_at', null)
         .order('date', { ascending: false })
         .limit(8);
 

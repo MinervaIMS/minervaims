@@ -40,11 +40,35 @@ const FileMetadataSchema = z.object({
   project: z.string().max(200).nullable().optional()
 })
 
-const ActionSchema = z.enum(['create', 'update', 'delete', 'upload', 'set-status', 'favourite'])
+const ActionSchema = z.enum([
+  'create', 'update', 'delete', 'upload', 'set-status', 'favourite',
+  // Deleting a report is reversible for a month. See RECOVERY_DAYS below.
+  'restore', 'purge', 'purge-expired',
+])
 
 const DeleteFileSchema = z.object({
   id: z.string().uuid('Invalid file ID')
 })
+
+// =====================================================================
+// THE RECOVERY WINDOW.
+// ---------------------------------------------------------------------
+// `delete` used to remove the row and the stored PDF in the same call.
+// One mis-click and a report, its title, its division, its date and its
+// file were gone with nothing to appeal to.
+//
+// A deletion now stamps `deleted_at` and leaves everything else exactly
+// as it was - the row, the file in storage, and every reference to
+// either. For thirty days the report can be restored by clearing that
+// stamp, and it comes back complete because nothing was taken away.
+// After thirty days it is purged for real, file included.
+//
+// The number lives here and is sent to the client with every list, so
+// the interface counts down from the same figure the server enforces
+// rather than from a second copy of it.
+// =====================================================================
+const RECOVERY_DAYS = 30
+const RECOVERY_MS = RECOVERY_DAYS * 24 * 60 * 60 * 1000
 
 // Rate limiting
 interface RateLimitRecord {
@@ -78,6 +102,27 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
     remaining: maxRequests - record.count, 
     resetAt: record.resetAt 
   }
+}
+
+/**
+ * Remove a report for good: the stored PDF first, then the row.
+ *
+ * That order matters. If the row went first and the storage call then
+ * failed, the object would be left behind with nothing pointing at it and
+ * nothing to find it by. A failed storage removal is logged and the row is
+ * still taken, because a report nobody can reach is the outcome asked for.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function purgeReport(supabase: any, id: string, fileUrl: string | null) {
+  if (fileUrl && fileUrl.includes('archive-files')) {
+    try {
+      const parts = fileUrl.split('/archive-files/')
+      if (parts.length > 1) await supabase.storage.from('archive-files').remove([parts[1]])
+    } catch (storageError) {
+      console.warn('Could not delete file from storage:', storageError)
+    }
+  }
+  await supabase.from('archive_files').delete().eq('id', id)
 }
 
 // Activity logging helper
@@ -567,13 +612,13 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Get file info first to check division and delete from storage
+        // Get file info first to check division
         const { data: fileData } = await supabase
           .from('archive_files')
           .select('file_url, division, title')
           .eq('id', deleteResult.data.id)
           .maybeSingle()
-        
+
         // Check division restriction for non-full-access users
         if (allowedDivisions && fileData && !allowedDivisions.includes(fileData.division)) {
           return new Response(
@@ -582,11 +627,17 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Delete from database
+        // SOFT DELETE. The row stays, the PDF stays in storage, and the
+        // report simply stops being live: the public policy excludes
+        // `deleted_at is not null`, and the workspace archive moves it to
+        // Recently deleted. Nothing is destroyed until the window expires,
+        // which is what makes `restore` able to give the report back whole.
+        const deletedAt = new Date().toISOString()
         const { error } = await supabase
           .from('archive_files')
-          .delete()
+          .update({ deleted_at: deletedAt })
           .eq('id', deleteResult.data.id)
+          .is('deleted_at', null)
 
         if (error) {
           console.error('Delete file error:', error)
@@ -594,19 +645,6 @@ Deno.serve(async (req) => {
             JSON.stringify({ error: 'Failed to delete file' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
-        }
-
-        // Try to delete from storage if it's in our bucket
-        if (fileData?.file_url && fileData.file_url.includes('archive-files')) {
-          try {
-            const urlParts = fileData.file_url.split('/archive-files/')
-            if (urlParts.length > 1) {
-              const filePath = urlParts[1]
-              await supabase.storage.from('archive-files').remove([filePath])
-            }
-          } catch (storageError) {
-            console.warn('Could not delete file from storage:', storageError)
-          }
         }
 
         // Log activity
@@ -620,14 +658,129 @@ Deno.serve(async (req) => {
           'file',
           deleteResult.data.id,
           fileData?.title || 'Unknown file',
-          { division: fileData?.division }
+          { division: fileData?.division, recoverable_until: new Date(Date.now() + RECOVERY_MS).toISOString() }
         );
 
-        console.log('File deleted:', deleteResult.data.id)
+        console.log('File moved to the recovery window:', deleteResult.data.id)
         return new Response(
-          JSON.stringify({ success: true }),
+          JSON.stringify({ success: true, deleted_at: deletedAt, recovery_days: RECOVERY_DAYS }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      }
+
+      case 'restore': {
+        // Put a deleted report back. Everything it had is still there, so
+        // there is nothing to rebuild: the stamp is cleared and the report
+        // returns to the status it held when it was deleted - a draft comes
+        // back a draft, a published report comes back published.
+        const parsed = DeleteFileSchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(JSON.stringify({ error: 'Invalid file ID' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const { data: existing } = await supabase
+          .from('archive_files')
+          .select('division, title, deleted_at')
+          .eq('id', parsed.data.id)
+          .maybeSingle()
+
+        if (!existing || !existing.deleted_at) {
+          return new Response(JSON.stringify({ error: 'That report is not in the recovery window.' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        if (allowedDivisions && !allowedDivisions.includes(existing.division)) {
+          return new Response(JSON.stringify({ error: 'You can only restore reports from your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        // Expired is expired, whatever the interface still shows. A stale tab
+        // must not be able to resurrect a report the window has closed on.
+        if (Date.now() - new Date(existing.deleted_at).getTime() > RECOVERY_MS) {
+          return new Response(JSON.stringify({ error: `The ${RECOVERY_DAYS}-day recovery period for that report has ended.` }),
+            { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const { error } = await supabase.from('archive_files')
+          .update({ deleted_at: null }).eq('id', parsed.data.id)
+        if (error) {
+          return new Response(JSON.stringify({ error: 'Failed to restore the report' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        await logActivity(supabase, user.id, user.email || 'unknown', userRoleNames[0] || 'member',
+          'update', 'file', parsed.data.id, existing.title || 'Unknown file', { division: existing.division, operation: 'restore' })
+
+        return new Response(JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'purge': {
+        // Delete a report permanently, before its window is up, because
+        // somebody has decided it should not exist. Reserved for the roles
+        // that may block a report: an irreversible action is a senior one.
+        const parsed = DeleteFileSchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(JSON.stringify({ error: 'Invalid file ID' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        if (!canBlock) {
+          return new Response(JSON.stringify({ error: 'Deleting a report permanently is reserved for senior roles.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const { data: existing } = await supabase
+          .from('archive_files')
+          .select('file_url, division, title, deleted_at')
+          .eq('id', parsed.data.id)
+          .maybeSingle()
+
+        if (!existing) {
+          return new Response(JSON.stringify({ error: 'Report not found' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        // A live report is deleted first, and only then permanently. This is
+        // the second step of a deletion, never a shortcut past the first.
+        if (!existing.deleted_at) {
+          return new Response(JSON.stringify({ error: 'Delete the report first; it can then be removed permanently.' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        if (allowedDivisions && !allowedDivisions.includes(existing.division)) {
+          return new Response(JSON.stringify({ error: 'You can only remove reports from your division' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        await purgeReport(supabase, parsed.data.id, existing.file_url)
+        await logActivity(supabase, user.id, user.email || 'unknown', userRoleNames[0] || 'member',
+          'delete', 'file', parsed.data.id, existing.title || 'Unknown file', { division: existing.division, operation: 'permanent' })
+
+        return new Response(JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'purge-expired': {
+        // Close the window on anything past thirty days.
+        //
+        // THIS IS WHY THE PERIOD IS REAL RATHER THAN DECORATIVE. Without a
+        // sweep, a "30-day recovery" is only a filter in the interface and
+        // the rows and files accumulate for ever. The workspace archive
+        // calls this once when it opens, which is often enough for a set
+        // this size and needs no scheduler; a nightly pg_cron job could
+        // replace the call without changing anything else here.
+        const cutoff = new Date(Date.now() - RECOVERY_MS).toISOString()
+        const { data: expired } = await supabase
+          .from('archive_files')
+          .select('id, file_url')
+          .not('deleted_at', 'is', null)
+          .lt('deleted_at', cutoff)
+          .limit(50)
+
+        let purged = 0
+        for (const row of expired || []) {
+          await purgeReport(supabase, row.id, row.file_url)
+          purged += 1
+        }
+        return new Response(JSON.stringify({ success: true, purged, recovery_days: RECOVERY_DAYS }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       default:

@@ -1,5 +1,6 @@
 import logoColorAsset from '@/assets/logo-color-loader.webp.asset.json';
 import logoWhiteAsset from '@/assets/logo-white-loader.webp.asset.json';
+import { pulsePhaseStyle } from '@/lib/loader-pulse';
 
 /**
  * Loading indicator for the workspace.
@@ -14,7 +15,10 @@ import logoWhiteAsset from '@/assets/logo-white-loader.webp.asset.json';
  */
 export function WorkspaceLoader({ className, inline = false }: { className?: string; inline?: boolean }) {
   const logo = (
-    <div className="animate-pulse">
+    // The same slow breath as the public page loader, on the same clock and
+    // in the same phase: moving between subsections mounts this repeatedly,
+    // and a restart per subsection is what made it look hurried.
+    <div className="animate-markPulse" style={pulsePhaseStyle()}>
       <img
         src={logoColorAsset.url} alt="Loading…" width={65} height={48}
         className="h-10 w-auto dark:hidden" decoding="sync"

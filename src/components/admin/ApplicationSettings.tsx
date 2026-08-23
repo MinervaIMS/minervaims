@@ -11,7 +11,8 @@ import { Save, Loader2 } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import logoWhite from '@/assets/logo-white.svg';
-import { JOIN_STATUS_COPY } from '@/lib/join-content';
+import { JOIN_STATUS_COPY, formatDeadlineSentence } from '@/lib/join-content';
+import { ApplicationsOpenLabel } from '@/components/shared/ApplicationsOpenLabel';
 
 // timestamptz <-> datetime-local helpers
 const toLocal = (iso: string | null | undefined) => {
@@ -159,15 +160,21 @@ const ApplicationSettings = () => {
             <div className="px-3 py-2 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">Homepage hero</div>
             <div className="p-6 text-center" style={{ backgroundColor: '#0b0720' }}>
               <img src={logoWhite} alt="" className="h-9 mx-auto opacity-95" />
+              {/* THE SAME COMPONENT THE HOMEPAGE RENDERS, at the mock's size.
+                  The label used to be typed out here as a second copy, which
+                  is how a preview quietly stops matching the page it claims
+                  to preview. See components/shared/ApplicationsOpenLabel.tsx. */}
               {previewOpen ? (
-                <span className="inline-block mt-5 px-6 py-2 bg-background text-foreground font-serif text-sm">APPLY NOW</span>
+                <span className="inline-block mt-5 px-6 py-2 bg-background text-foreground font-serif text-sm">
+                  <ApplicationsOpenLabel />
+                </span>
               ) : (
                 <div className="mt-5 h-[36px]" aria-hidden />
               )}
             </div>
             <p className="px-3 py-2 text-xs text-muted-foreground">
               {previewOpen
-                ? <>An <span className="text-foreground font-medium">APPLY NOW</span> button appears under the logo, linking to the Join page.</>
+                ? <>An <span className="text-foreground font-medium"><ApplicationsOpenLabel /></span> button appears under the logo, linking to the Join page.</>
                 : <>No button; the hero shows the logo only.</>}
             </p>
           </div>
@@ -190,9 +197,18 @@ const ApplicationSettings = () => {
                 <div className="font-serif text-lg leading-tight">
                   {previewOpen ? JOIN_STATUS_COPY.openHeading : JOIN_STATUS_COPY.closedHeading}
                 </div>
+                {/* THE SENTENCE THE PAGE WILL ACTUALLY PRINT. This was a
+                    paraphrase - "open until the closing time above" - while
+                    /join builds the sentence from the closing date through
+                    formatDeadlineSentence. An administrator setting a window
+                    should see the date they are about to publish, so the
+                    mock now calls the same builder with the same inputs. */}
                 <div className="font-body text-background/85 text-xs mt-2">
                   {previewOpen
-                    ? `Applications for ${form.semester_label || '<semester label>'} are open until the closing time above.`
+                    ? formatDeadlineSentence(
+                        form.semester_label || 'the coming semester',
+                        form.end_local ? new Date(form.end_local) : null,
+                      )
                     : JOIN_STATUS_COPY.closedBodyTop}
                 </div>
                 <span className="inline-block mt-3 border border-background bg-background px-4 py-2 font-serif text-xs text-accent">

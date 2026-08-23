@@ -12,6 +12,24 @@ import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { CalendarLegend, type LegendItem } from '@/components/admin/CalendarLegend';
+
+/**
+ * The colour key. Every entry, colour and phrase is exactly what the
+ * permanent band above the grid used to print; only its placement changed.
+ */
+const CALENDAR_LEGEND: LegendItem[] = [
+  { swatch: 'bg-accent/20', label: 'Event' },
+  { swatch: 'bg-amber-200', label: 'Association on Display' },
+  { swatch: 'bg-emerald-200', label: 'Alumni call' },
+  { swatch: 'bg-blue-200', label: 'Applications' },
+  { swatch: 'bg-rose-200', label: 'Membership fee' },
+  { swatch: 'bg-violet-200', label: 'Custom entry' },
+  { swatch: 'bg-indigo-200', label: 'CASA Committee meetings (board only)' },
+  { swatch: 'bg-fuchsia-200', label: 'CASA request deadline (board only)' },
+  { swatch: 'bg-red-200', label: 'Italian public holiday: no events accepted' },
+  { swatch: 'bg-muted border border-separator', label: 'Exam session break: no events accepted' },
+];
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listEvents, registerForEvent, myEventRegistrationIds, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
 import {
@@ -267,32 +285,31 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
       <WorkspacePageHeader
         title="Calendar"
         description={`Association events, Association on Display, alumni calls, application periods and the membership fee deadline. Scroll to move through the months. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
-        actions={canEdit ? (
+        /* ONE CONTROL GROUP, AT THE TOP.
+           "Jump to today" used to sit on a row of its own between the header
+           and the colour key, adrift from the two buttons it belongs with;
+           the key then took a further two wrapped lines before the calendar
+           began. Both now sit in the header's action row with Exam sessions
+           and Add entry, so everything that acts on this calendar is in one
+           place and the grid starts higher up the screen.
+
+           Today and the key are offered to everyone. Only the two editing
+           buttons depend on `canEdit`, exactly as before. */
+        actions={
           <>
-            <Button variant="outline" className="font-body" onClick={() => setExamDialogOpen(true)}>
-              <CalendarClock className="h-4 w-4 mr-2" />Exam sessions
-            </Button>
-            <Button className="font-body" onClick={() => setEntryForm(emptyEntry(ymd(new Date())))}><Plus className="h-4 w-4 mr-2" />Add entry</Button>
+            <Button variant="outline" size="sm" className="font-body h-9" onClick={jumpToToday}>Jump to today</Button>
+            <CalendarLegend items={CALENDAR_LEGEND} />
+            {canEdit && (
+              <>
+                <Button variant="outline" className="font-body h-9" onClick={() => setExamDialogOpen(true)}>
+                  <CalendarClock className="h-4 w-4 mr-2" />Exam sessions
+                </Button>
+                <Button className="font-body h-9" onClick={() => setEntryForm(emptyEntry(ymd(new Date())))}><Plus className="h-4 w-4 mr-2" />Add entry</Button>
+              </>
+            )}
           </>
-        ) : undefined}
+        }
       />
-
-      <div className="flex items-center justify-end mb-3">
-        <Button variant="outline" size="sm" onClick={jumpToToday}>Jump to today</Button>
-      </div>
-
-      <div className="flex flex-wrap gap-4 mb-3 text-xs text-muted-foreground font-body">
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-accent/20 mr-1 align-middle" />Event</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-amber-200 mr-1 align-middle" />Association on Display</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-emerald-200 mr-1 align-middle" />Alumni call</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-blue-200 mr-1 align-middle" />Applications</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-rose-200 mr-1 align-middle" />Membership fee</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-violet-200 mr-1 align-middle" />Custom entry</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-indigo-200 mr-1 align-middle" />CASA Committee meetings (board only)</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-fuchsia-200 mr-1 align-middle" />CASA request deadline (board only)</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-red-200 mr-1 align-middle" />Italian public holiday: no events accepted</span>
-        <span><span className="inline-block w-3 h-3 rounded-sm bg-muted border border-separator mr-1 align-middle" />Exam session break: no events accepted</span>
-      </div>
 
       <div ref={scrollRef} className="max-h-[72vh] overflow-y-auto border border-separator">
         {months.map(({ year, month }) => (

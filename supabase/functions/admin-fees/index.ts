@@ -15,7 +15,12 @@ const corsHeaders = {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
-const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
+// Membership Fees is closed to the two research Heads. Removing the
+// subsection from their navigation is not enough on its own: the endpoint is
+// the thing that actually holds the data, so the Head of Asset Management
+// comes off this list as well. The Head of Division was never on it.
+// Fees remain open to the Board and to Operations, who administer them.
+const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations'];
 
 function academicSemester(d: Date): string {
   const m = d.getMonth() + 1; const y = d.getFullYear();

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AuthLayout from '@/components/shared/AuthLayout';
-import { AuthButton, AUTH_TOKENS, AuthLink } from '@/components/shared/AuthUI';
+import { AuthButton, AUTH_TOKENS, AuthLink, EmailDeliverySteps } from '@/components/shared/AuthUI';
 
 const RESEND_SECONDS = 45;
 
@@ -52,43 +52,11 @@ const CheckEmail = () => {
   return (
     <AuthLayout title="Check Your Email" cardTitle="Check Your Email" cardSubtitle={subtitle}>
 
-      <ol
-        className="font-body mb-6"
-        style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', color: AUTH_TOKENS.MUTED }}
-      >
-        {['It can take a minute or two to arrive.', 'No email? Check your spam or promotions folder.'].map(
-          (s, i) => (
-            <li
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '28px 1fr',
-                gap: '12px',
-                marginBottom: '12px',
-                fontSize: '13.5px',
-                lineHeight: 1.55,
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                  border: `1px solid ${AUTH_TOKENS.NAVY}`,
-                  color: AUTH_TOKENS.NAVY,
-                  fontFamily: "'Times New Roman', Times, Georgia, serif",
-                  fontSize: '13px',
-                }}
-              >
-                {i + 1}
-              </span>
-              <span>{s}</span>
-            </li>
-          ),
-        )}
-      </ol>
+      {/* The same guidance, in the same words, as the application flow: both
+          screens wait on the same provider, so both state the same window and
+          emphasise the same two things. This page used to hand-roll its own
+          copy of the numbered list; it now shares the component. */}
+      <EmailDeliverySteps />
 
       <AuthButton onClick={resend} disabled={seconds > 0 || isSending}>
         {seconds > 0 ? `Resend Email In ${seconds}s` : isSending ? 'Sending…' : 'Resend Email'}

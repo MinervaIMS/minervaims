@@ -108,6 +108,24 @@ export default {
           to: { opacity: "1" },
         },
         /*
+          The lock-up on the page and workspace loaders.
+
+          Tailwind's own `animate-pulse` is 2s and dips to 0.5, which is a
+          skeleton-shimmer rhythm: brisk, and meant to suggest that something
+          is being filled in. The loading mark is not a skeleton, it is the
+          association's lock-up held on an empty page, and it should breathe.
+          2.8s is the clock the /join scroll cue already runs on, and 0.55 is
+          a shallower dip - the mark stays clearly present at the bottom of
+          the breath instead of half vanishing.
+
+          The phase is set per mount from lib/loader-pulse.ts, so consecutive
+          loaders continue one cycle rather than each restarting it.
+        */
+        "markPulse": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.55" },
+        },
+        /*
           /join scroll invitation. Three layers on one 2.8s clock, so the
           composition reads as a single continuous descent rather than three
           separate loops:
@@ -142,6 +160,7 @@ export default {
         "testimonial-in-left": "testimonial-in-left 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "testimonial-in-right": "testimonial-in-right 1.5s cubic-bezier(0.22, 1, 0.36, 1)",
         "fadeIn": "fadeIn 700ms ease-out forwards",
+        "markPulse": "markPulse 2800ms cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "cueTrail": "cueTrail 2.8s cubic-bezier(0.5, 0, 0.3, 1) infinite",
         "cueChevron": "cueChevron 2.8s cubic-bezier(0.5, 0, 0.3, 1) infinite",
         "cueRule": "cueRule 2.8s ease-in-out infinite",

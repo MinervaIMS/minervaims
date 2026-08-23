@@ -14,6 +14,14 @@ import { useAccess } from '@/hooks/useAccess';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { CalendarLegend, type LegendItem } from '@/components/admin/CalendarLegend';
+
+/** The same three platforms and colours the permanent band used to print. */
+const EDITORIAL_LEGEND: LegendItem[] = [
+  { swatch: 'bg-pink-200', label: 'Instagram' },
+  { swatch: 'bg-blue-200', label: 'LinkedIn' },
+  { swatch: 'bg-muted', label: 'Other' },
+];
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listEditorial, saveEditorial, deleteEditorial,
@@ -121,17 +129,18 @@ export default function EditorialCalendar() {
 
   return (
     <div>
+      {/* The colour key moves up beside Add item and folds away, exactly as on
+          the main Calendar. Same three platforms, same three colours. */}
       <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
-        actions={isDesktop ? <Button className="font-body" onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" />Add item</Button> : undefined} />
+        actions={
+          <>
+            <CalendarLegend items={EDITORIAL_LEGEND} />
+            {isDesktop && <Button className="font-body h-9" onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" />Add item</Button>}
+          </>
+        } />
 
       {loading ? <WorkspaceLoader /> : (
         <>
-          <div className="flex flex-wrap gap-4 mb-3 text-xs text-muted-foreground font-body">
-            <span><span className="inline-block w-3 h-3 rounded-sm bg-pink-200 mr-1 align-middle" />Instagram</span>
-            <span><span className="inline-block w-3 h-3 rounded-sm bg-blue-200 mr-1 align-middle" />LinkedIn</span>
-            <span><span className="inline-block w-3 h-3 rounded-sm bg-muted mr-1 align-middle" />Other</span>
-          </div>
-
           <div className="max-h-[68vh] overflow-y-auto border border-separator">
             {months.map(({ year, month }) => (
               <section key={monthKey(year, month)} id={monthKey(year, month)} className="border-b border-separator last:border-b-0">

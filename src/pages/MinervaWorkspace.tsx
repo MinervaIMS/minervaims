@@ -324,6 +324,32 @@ const MinervaWorkspace = () => {
     if (first.subItems.length === 0) setSubmenuOpen(false);
   }, [visibleNav, activeSectionKey, searchParams]);
 
+  // A request to open a named section, from somewhere that cannot reach this
+  // state directly. The help drawer's "How to use" link is the first caller:
+  // it renders under HelpProvider, far below this component, so it asks
+  // through an event rather than threading a callback down the tree - the
+  // same idiom the workspace search already uses for help topics.
+  //
+  // THE REQUEST IS CHECKED, NOT OBEYED: the target must be a section this
+  // viewer's role actually has in `visibleNav`, so an event can never open a
+  // section the navigation would not offer.
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const detail = (e as CustomEvent<{ section?: string; sub?: string }>).detail;
+      if (!detail?.section) return;
+      const target = visibleNav.find((s) => s.key === detail.section);
+      if (!target) return;
+      setActiveSectionKey(target.key);
+      const sub = detail.sub && target.subItems.some((si) => si.key === detail.sub)
+        ? detail.sub
+        : target.subItems[0]?.key ?? null;
+      setActiveSubKey(sub);
+      if (target.subItems.length === 0) setSubmenuOpen(false);
+    };
+    window.addEventListener('minerva:navigate', onNavigate);
+    return () => window.removeEventListener('minerva:navigate', onNavigate);
+  }, [visibleNav]);
+
   // Auto-collapse main nav rail when a submenu panel is shown, except on the
   // very first visit of the session — where the expanded rail stays visible
   // until the user interacts with it.

@@ -109,7 +109,19 @@ function SuccessScreen() {
   return (
     <>
       <Helmet><title>Application submitted | MIMS</title></Helmet>
-      <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
+      {/* CENTRED IN THE SPACE THE PAGE ACTUALLY HAS, not pinned under the
+          navigation. `items-start` put the card's top edge at exactly the
+          padding line, a hand's width below the header, with the rest of the
+          viewport empty beneath it - so on a laptop the card read as hanging
+          off the navbar rather than sitting on the page.
+
+          This is the measure AuthLayout already uses for every other card of
+          this kind (sign in, check your email, reset password): centre on the
+          cross axis, and let the top padding stand as the minimum clearance
+          from the header so a tall card still starts below it rather than
+          under it. Nothing else about the card, the content or the field
+          behind it changes. */}
+      <div className="min-h-screen w-full relative flex items-center justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12 lg:pb-[7.5vh]">
         <ApplyBackground />
         <div className="relative z-[55] w-full max-w-md overflow-hidden bg-white rounded-lg shadow-2xl border border-separator">
           {/* Animation fills the entire card, behind the content. */}

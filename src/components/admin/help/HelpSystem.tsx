@@ -218,8 +218,36 @@ function HelpPanel() {
                 </section>
               )}
 
+              {/* "How to use" was styled as a link and did nothing. It now
+                  goes where it says it goes.
+
+                  The panel lives under HelpProvider, several levels away
+                  from the state that decides which section the workspace is
+                  showing, so it ASKS rather than reaching across the tree -
+                  the same idiom the workspace search already uses to open a
+                  help topic from the header. The shells listen for
+                  `minerva:navigate` and move; see MinervaWorkspace and
+                  MobileWorkspaceShell.
+
+                  It is only offered to someone whose role can actually open
+                  that section, so the link cannot lead to a refusal. */}
               <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
-                Need the full picture? The <span className="text-foreground">How to use</span> section holds your complete role-based manual. Actions in the workspace are logged for accountability and security.
+                Need the full picture? The{' '}
+                {access.canView('welcome') ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeHelp();
+                      window.dispatchEvent(new CustomEvent('minerva:navigate', { detail: { section: 'welcome' } }));
+                    }}
+                    className="text-accent underline underline-offset-2 hover:text-accent/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                  >
+                    How to use
+                  </button>
+                ) : (
+                  <span className="text-foreground">How to use</span>
+                )}{' '}
+                section holds your complete role-based manual. Actions in the workspace are logged for accountability and security.
               </p>
             </div>
           </div>

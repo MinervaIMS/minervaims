@@ -67,8 +67,8 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   admin: FULL,
   president: FULL,
   vice_president: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-website': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'people-members': 'manage', 'people-alumni': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'manage', 'website-testimonials': 'manage', 'website-history': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view', 'settings-users': 'view', 'settings-roles': 'view', 'settings-activity': 'view' },
-  head_of_asset_management: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-ig': 'view', 'smm-li': 'view', 'smm-graphics': 'view', 'smm-other': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'view', 'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view', 'website-readings': 'manage' },
-  head_of_division: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'ops-fee': 'view', 'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view', 'website-readings': 'manage' },
+  head_of_asset_management: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-ig': 'view', 'smm-li': 'view', 'smm-graphics': 'view', 'smm-other': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view', 'website-readings': 'manage' },
+  head_of_division: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'applications-form': 'manage', 'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view', 'website-readings': 'manage' },
   portfolio_manager: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'manage', 'reports-funds': 'manage', 'applications-screening': 'view', 'applications-interview-calendar': 'view', 'applications-joiners': 'view', 'events-archive': 'view', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'manage' },
   team_leader: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'manage', 'applications-screening': 'view', 'applications-interview-calendar': 'view', 'applications-joiners': 'view', 'events-archive': 'view', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'manage' },
   senior_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'manage', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'view' },
@@ -95,7 +95,11 @@ export type SpecialRule =
   | 'candidates_all_divisions'
   // Candidate screening: may view candidates and add notes, but may NOT
   // change a candidate's status.
-  | 'candidates_notes_only';
+  | 'candidates_notes_only'
+  // Treasury: the register is READABLE in full, but no entry can be added.
+  // The two research Heads consult the association's position; recording a
+  // movement belongs to the Board and to Operations.
+  | 'treasury_readonly';
 
 export interface SpecialEntry {
   rule: SpecialRule;
@@ -123,6 +127,12 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     resource: 'applications-screening',
     roles: ['portfolio_manager', 'team_leader'],
     label: 'May view candidates and add notes, but cannot change a candidate\'s status.',
+  },
+  {
+    rule: 'treasury_readonly',
+    resource: 'ops-treasury',
+    roles: ['head_of_asset_management', 'head_of_division'],
+    label: 'Reads the whole cash-flow register, including the balance and every semester, but cannot record an entry or export the register. Membership Fees is a separate subsection and is not open to these roles.',
   },
 ];
 

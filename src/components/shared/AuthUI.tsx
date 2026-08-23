@@ -287,4 +287,43 @@ export function AuthSteps({ items }: StepsProps) {
   );
 }
 
+/* ---------------- Emphasis inside a step ---------------- */
+/**
+ * The one or two words in a step that a worried reader needs to see without
+ * reading the sentence.
+ *
+ * Steps are set in the muted grey, which is right for a supporting line and
+ * wrong for the fact that carries it: a person who has not received the email
+ * is scanning for "how long" and "where else to look". This lifts those words
+ * to the ink colour at a heavier weight, which is enough to be found at a
+ * glance and not enough to break the paragraph.
+ */
+export function AuthEmphasis({ children }: { children: ReactNode }) {
+  return <strong style={{ color: INK, fontWeight: 600 }}>{children}</strong>;
+}
+
+/**
+ * The delivery-delay guidance shown on every "confirm your email" screen.
+ *
+ * ONE DEFINITION, BOTH SCREENS. The application flow and the account flow
+ * send the same message through the same provider and wait exactly as long,
+ * so they say the same thing in the same words; keeping the sentences here
+ * means they cannot drift apart later.
+ *
+ * "A minute or two" was optimistic, and somebody who has waited three minutes
+ * with an empty inbox concludes the form is broken and starts again. The
+ * window is stated honestly, and the two words that answer the worry - how
+ * long, and where else to look - are the ones set in ink.
+ */
+export function EmailDeliverySteps() {
+  return (
+    <AuthSteps
+      items={[
+        <>Please allow up to <AuthEmphasis>five minutes</AuthEmphasis> for the email to arrive. A delay does not mean anything has gone wrong.</>,
+        <>No email? Check your <AuthEmphasis>spam</AuthEmphasis> or promotions folder before asking for another one.</>,
+      ]}
+    />
+  );
+}
+
 export const AUTH_TOKENS = { NAVY, INK, HAIRLINE, MUTED, ERROR, GREY };

@@ -102,6 +102,9 @@ const FundDetail = () => {
           .from('archive_files')
           .select('id, title, description, file_url, date, division, fund')
           .eq('fund', fund)
+          // Public surface: published reports only, and never a deleted one.
+          .eq('status', 'published')
+          .is('deleted_at', null)
           .order('date', { ascending: false })
           .limit(9),
         // Performance matrix is only shown for the two active funds.

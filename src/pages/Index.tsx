@@ -16,6 +16,7 @@ import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { ApplicationsOpenLabel } from "@/components/shared/ApplicationsOpenLabel";
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -56,6 +57,9 @@ const Index = () => {
       const { data, error } = await supabase
         .from('archive_files')
         .select('id, title, description, file_url, date, division, fund')
+        // Public surface: published reports only, and never a deleted one.
+        .eq('status', 'published')
+        .is('deleted_at', null)
         .order('date', { ascending: false })
         .limit(12);
 
@@ -125,7 +129,10 @@ const Index = () => {
                 to="/join"
                 className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"
               >
-                APPLY NOW
+                {/* Wording and weighting come from the shared label, which the
+                    Recruiting preview renders too. See
+                    components/shared/ApplicationsOpenLabel.tsx. */}
+                <ApplicationsOpenLabel />
               </Link>
             )}
           </div>

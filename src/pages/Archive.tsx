@@ -117,7 +117,19 @@ const Archive = () => {
 
   const fetchFiles = async () => {
     try {
-      const { data, error } = await supabase.from("archive_files").select("*").order("date", { ascending: false });
+      // PUBLISHED, AND NOT DELETED. The row-level policy already says this
+      // for a signed-out visitor, but a signed-in staff member ALSO matches
+      // the staff read policy, and the two are OR-ed - so a Head browsing the
+      // public archive was shown drafts and blocked reports as though they
+      // were live, and could not tell the difference. The public pages now
+      // state the filter themselves, so /archive shows the same thing to
+      // everybody regardless of who is signed in.
+      const { data, error } = await supabase
+        .from("archive_files")
+        .select("*")
+        .eq("status", "published")
+        .is("deleted_at", null)
+        .order("date", { ascending: false });
 
       if (error) throw error;
       setFiles(data || []);

@@ -64,7 +64,12 @@ export function useKeyFigures() {
         // The alumni table is no longer publicly readable in full; the total
         // comes from the public counting RPC instead.
         const [reportsRes, membersRes, alumniRes] = await Promise.all([
-          supabase.from('archive_files').select('id', { count: 'exact', head: true }),
+          // The published count, stated explicitly. Without the filter this
+          // counted whatever the viewer's policies allowed, so the homepage
+          // figure went up for a signed-in staff member (drafts and blocked
+          // reports included) and back down for everybody else.
+          supabase.from('archive_files').select('id', { count: 'exact', head: true })
+            .eq('status', 'published').is('deleted_at', null),
           supabase.from('team_members').select('id', { count: 'exact', head: true }),
           supabase.rpc('public_alumni_filter_count'),
         ]);
