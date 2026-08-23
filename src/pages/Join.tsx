@@ -55,18 +55,36 @@ const Join = () => {
         </script>
       </Helmet>
 
-      {/* Hero, figures, status and the scroll cue all share one full-height dark stage. */}
-      <JoinHeroStage figures={<JoinFigures tone="dark" />}>
-        <ApplicationCta
-          {...status}
-          tone="light"
-          closedBody={JOIN_STATUS_COPY.closedBodyTop}
-          headingId="join-status-heading"
-        />
-      </JoinHeroStage>
+      {/* The dark introduction: title, payoff and the live key figures. */}
+      <JoinHeroStage figures={<JoinFigures tone="dark" />} />
 
-      {/* 01 The Society */}
-      <section aria-labelledby="join-society-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
+      {/* APPLICATIONS, FIRST THING ON THE WHITE PAGE.
+          This used to sit inside the dark stage, under the figures, in the
+          light variant. A candidate arriving on /join is here to find out
+          whether they can apply, so it is now the first thing the white page
+          says - and it says it in the SAME language the closing block at the
+          foot of the page already uses: the accent rectangle, its heading,
+          its sentence and its white button. One component, one visual system,
+          two placements. The state is still read from application_settings,
+          so open and closed behave exactly as they did. */}
+      <section aria-labelledby="join-status-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
+        <div className="container">
+          <ApplicationCta
+            {...status}
+            tone="dark"
+            closedBody={JOIN_STATUS_COPY.closedBodyTop}
+            headingId="join-status-heading"
+          />
+        </div>
+      </section>
+
+      {/* 01 The Society.
+          Half rhythm on top: the applications block above is a section in its
+          own right and has already opened the white page, so counting a full
+          rhythm at both ends of that join would put sixteen rems between two
+          blocks that belong together. This is the same measure the Admissions
+          section already uses where it continues from the block above it. */}
+      <section aria-labelledby="join-society-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-society-heading"
