@@ -74,8 +74,8 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
           <p
             className={`font-serif leading-none md:mb-2 ${
               dark
-                ? 'text-3xl text-background sm:text-5xl md:text-hero md:h-sm:text-5xl'
-                : 'text-[1.75rem] text-primary sm:text-5xl md:text-hero'
+                ? 'text-[2.25rem] text-background sm:text-5xl md:text-hero md:h-sm:text-5xl'
+                : 'text-[2rem] text-primary sm:text-5xl md:text-hero'
             }`}
           >
             <AnimatedFigure value={item.value} isLoading={isLoading} dark={dark} />
@@ -83,8 +83,8 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
           <p
             className={`font-body mt-2 uppercase leading-tight tracking-wider ${
               dark
-                ? 'text-[0.65rem] text-background/80 sm:text-xs md:text-body md:h-sm:text-sm'
-                : 'text-[0.6rem] text-muted-foreground sm:text-xs md:text-body'
+                ? 'text-[0.7rem] text-background/80 sm:text-xs md:text-body md:h-sm:text-sm'
+                : 'text-[0.65rem] text-muted-foreground sm:text-xs md:text-body'
             }`}
           >
             {item.label}
