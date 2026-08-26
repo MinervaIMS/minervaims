@@ -72,7 +72,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
   return (
     <div
       data-page-hero
-      className="relative flex min-h-[52svh] flex-col overflow-hidden md:min-h-[60svh]"
+      className="relative flex min-h-[60svh] flex-col overflow-hidden md:min-h-[66svh]"
       style={{ backgroundColor: '#000' }}
     >
       {/*
@@ -96,7 +96,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
         can be vertically centered in the remaining dark space between the
         subtitle and the white section below.
       */}
-      <div className="container relative z-10 flex flex-1 flex-col pb-16 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-24 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
+      <div className="container relative z-10 flex flex-1 flex-col pb-12 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-14 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
         {/* Title and payoff carry the same type as PageIntroduction, so the
             opening of /join reads as a member of the same family as the fund
             and division pages rather than as its own thing. */}
@@ -107,12 +107,23 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
           {JOIN_HERO.payoff}
         </p>
 
-        {/* THE FIGURES BELONG TO THE INTRODUCTION. They sit under the payoff
-            they qualify, at a distance that reads as "and here is what that
-            means" rather than as a separate band that happens to share a
-            background. The space beneath them, before the white begins, is
-            the page's own rhythm rather than a leftover. */}
-        <div className="flex flex-1 flex-col items-center justify-end pb-2 md:pb-6">
+        {/* THE FIGURES BELONG TO THE INTRODUCTION, but they sat closer to
+            the payoff than to the foot of the band: about 70px of dark
+            above them and about 165px below, on a 690px hero. The eye read
+            them as an appendix to the subtitle with a large empty margin
+            underneath, rather than as the floor of the introduction.
+
+            The slack is now collected ABOVE them instead. `justify-end`
+            already pushed them down; what was working against it was 96px
+            of padding at the foot of the band plus another 24 of their own.
+            The foot keeps a deliberate 48 to 56, the figures take whatever
+            height is left, and the distance from the payoff grows by
+            exactly what the foot gave up.
+
+            `mt-10` is a floor, not a gap: on a short viewport where there
+            is no slack to collect, it guarantees the separation from the
+            payoff that the whole change is for. */}
+        <div className="mt-10 flex flex-1 flex-col items-center justify-end md:mt-14">
           {figures}
         </div>
       </div>

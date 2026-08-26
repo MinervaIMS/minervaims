@@ -26,9 +26,12 @@ import { CandidateDocRow } from '@/components/admin/recruiting/CandidateDocRow';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    // `min-w-0` and `break-words` together: an email address is one unbroken
+    // token, and without both of them it sets the card's minimum width and
+    // everything else is pushed out of the frame with it.
+    <div className="min-w-0">
       <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-      <div className="text-foreground text-sm">{value || 'Not set'}</div>
+      <div className="text-foreground text-sm break-words">{value || 'Not set'}</div>
     </div>
   );
 }
@@ -57,8 +60,10 @@ function Bullets({ items }: { items: string[] }) {
 // used on the Dashboard.
 // =====================================================================
 
-function ProfileCard({ title, subtitle, action, children, className = '', scrollBody = false }: {
+function ProfileCard({ title, titleItalic = false, subtitle, action, children, className = '', scrollBody = false }: {
   title: string;
+  /** Set the heading in italic. Used where the title is a person's role. */
+  titleItalic?: boolean;
   /**
    * The line that qualifies the title - a division, an organ, a body.
    *
@@ -103,7 +108,10 @@ function ProfileCard({ title, subtitle, action, children, className = '', scroll
           the top of the card however short the card becomes. */}
       <div className="mb-4 pb-3 border-b border-separator shrink-0">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-serif text-xl text-accent leading-tight min-w-0">{title}</h2>
+          {/* `titleItalic` is for the card whose heading is a ROLE rather than
+              a section name: "President" is the person's title, and a title
+              is set in italic. The other cards keep the upright serif. */}
+          <h2 className={`font-serif text-xl text-accent leading-tight min-w-0 ${titleItalic ? 'italic' : ''}`}>{title}</h2>
           {action && <div className="shrink-0">{action}</div>}
         </div>
         {subtitle && (
@@ -426,7 +434,7 @@ export default function MyProfile() {
   const roleCard = (
     // The central card: the one most likely to outrun its share of a laptop
     // screen, because a Head's responsibilities and guidance run long.
-    <ProfileCard title={roleText} subtitle={divisionText || undefined} scrollBody>
+    <ProfileCard title={roleText} titleItalic subtitle={divisionText || undefined} scrollBody>
       {guide ? (
         <div className="space-y-6">
           <p className="text-sm text-foreground leading-relaxed border-l-2 border-accent bg-accent/[0.05] px-4 py-3">

@@ -94,9 +94,17 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   // Both arrangements are built from the same five constants, so the phone
   // and the desktop cannot drift apart in what they say.
   // ---------------------------------------------------------------------
-  const cover = (size: string) => (
+  // `fit` names WHICH AXIS THE BOX CONSTRAINS, and it has to be given
+  // rather than inferred: on a phone the row has a fixed height and the
+  // cover takes it (`h-full`); on a desktop the column has a fixed width
+  // and the cover takes that (`w-full`). Setting both and letting `max-*`
+  // decide produces a box that is neither - 210 by 370 rather than 210 by
+  // 297 - because the cap wins over the aspect ratio.
+  const cover = (size: string, fit: 'h-full' | 'w-full') => (
     <div className={`shrink-0 flex items-center justify-center ${size}`}>
       {update.imageUrl ? (
+        // A poster has intrinsic proportions, so `object-contain` inside the
+        // box is enough: it fits, centred, undistorted.
         <img
           src={update.imageUrl}
           alt=""
@@ -105,12 +113,22 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
           className="max-h-full max-w-full w-auto h-auto object-contain rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]"
         />
       ) : (
-        <PdfThumbnail
-          url={update.pdfUrl!}
-          alt=""
-          renderWidth={200}
-          className="max-h-full max-w-full w-auto h-auto object-contain rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]"
-        />
+        // A PDF THUMBNAIL HAS NO INTRINSIC SIZE, and that is what broke the
+        // phone card. PdfThumbnail does not measure its container: it sets
+        // the canvas to `renderWidth` by the A4 ratio, in device pixels, and
+        // the canvas is `w-full h-full` of a wrapper that was being given
+        // `w-auto h-auto` with `max-*` caps. An automatically sized box round
+        // a canvas whose intrinsic width is 400 physical pixels on a retina
+        // phone is not a 100px cover; it filled the card and pushed the title
+        // and the button out of it.
+        //
+        // The box is now DEFINITE: the height it is given, and a width in the
+        // page's own proportions. Nothing about it can depend on what the
+        // canvas turns out to measure, so the composition holds whether the
+        // PDF renders, fails or has not arrived yet.
+        <div className={`${fit} aspect-[1/1.4142] max-h-full max-w-full overflow-hidden rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]`}>
+          <PdfThumbnail url={update.pdfUrl!} alt="" renderWidth={200} className="w-full h-full" />
+        </div>
       )}
     </div>
   );
@@ -154,7 +172,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
           {/* A fixed HEIGHT here rather than a width: whatever the cover's
               proportions, the row is the same depth, so the text beside it
               always starts and ends in the same place. */}
-          {hasImage && cover('h-[8.25rem] w-[6.25rem]')}
+          {hasImage && cover('h-[8.5rem] w-[6.05rem]', 'h-full')}
           <div className="min-w-0 flex-1">
             {title('text-[21px] line-clamp-3')}
             {when('mt-2 block text-[13px]')}
@@ -174,7 +192,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
         {/* A fixed WIDTH and a free height: the picture decides its own
             proportions inside the column and is centred in what it leaves,
             so a portrait poster and an A4 cover both fit undistorted. */}
-        {hasImage && cover('w-[38%] max-w-[210px]')}
+        {hasImage && cover('w-[38%] max-w-[210px]', 'w-full')}
 
         {/* THE CONTENT COLUMN IS ALIGNED TO THE COVER, top and bottom.
             The title's first line starts at the top edge of the cover; the

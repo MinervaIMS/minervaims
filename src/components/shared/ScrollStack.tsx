@@ -34,6 +34,14 @@ interface Props {
   title?: string;
   /** Card height on wide screens. */
   cardClassName?: string;
+  /**
+   * Which card is on top, reported as it changes.
+   *
+   * Added for the /join deck, whose cards carry video: only the card in
+   * front should be playing, and the deck is the only thing that knows
+   * which that is. The homepage passes nothing and is unaffected.
+   */
+  onActiveChange?: (index: number) => void;
 }
 
 function prefersReducedMotion(): boolean {
@@ -42,7 +50,7 @@ function prefersReducedMotion(): boolean {
     : false;
 }
 
-export default function ScrollStack({ children, title, cardClassName }: Props) {
+export default function ScrollStack({ children, title, cardClassName, onActiveChange }: Props) {
   const items = Children.toArray(children);
   const height = cardClassName ?? 'h-[62vh] max-h-[520px] min-h-[360px]';
 
@@ -73,16 +81,22 @@ export default function ScrollStack({ children, title, cardClassName }: Props) {
     );
   }
 
-  return <Deck items={items} title={title} height={height} narrow={narrow} />;
+  return <Deck items={items} title={title} height={height} narrow={narrow} onActiveChange={onActiveChange} />;
 }
 
 // --- The deck ---------------------------------------------------------
 
-function Deck({ items, title, height, narrow }: {
+function Deck({ items, title, height, narrow, onActiveChange }: {
   items: ReactNode[]; title?: string; height: string; narrow: boolean;
+  onActiveChange?: (index: number) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  // Held in a ref so `paint` stays a stable callback: rebuilding it would
+  // tear down and re-add the scroll listener on every render.
+  const onActiveRef = useRef(onActiveChange);
+  onActiveRef.current = onActiveChange;
+  useEffect(() => { onActiveRef.current?.(active); }, [active]);
   const [colWidth, setColWidth] = useState(0);
   // Read through a ref inside `paint`, which is a stable callback and must
   // not be rebuilt (and the scroll listener with it) when the mode changes.
