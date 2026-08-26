@@ -332,6 +332,16 @@ html:has(body[data-scroll-locked]) {
      ------------------------------------------------------------------ */
   .ws-card-scroll {
     overflow-y: auto;
+    /* THE SIDEWAYS AXIS MUST BE NAMED, and this is the whole of the bug it
+       fixes. CSS does not allow one axis to be `visible` while the other is
+       not: declaring `overflow-y: auto` on its own silently computes
+       `overflow-x` to `auto` as well. So the moment anything inside was wider
+       than the card - a long email address, a wide label row - the card
+       gained a horizontal scrollbar and its contents could be dragged
+       sideways, cutting the first characters off every line.
+
+       A card is a fixed frame. It scrolls down; it does not slide. */
+    overflow-x: hidden;
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--separator)) transparent;
@@ -1230,34 +1240,63 @@ input[type='search']::-webkit-search-cancel-button {
    content, so the section padding would be counted twice and open a band
    of empty page before and after it that no other section has. The
    vertical fallback is an ordinary block and keeps the standard rhythm. */
-.tl-section--pinned { padding: 0; }
-@media (min-width: 768px) { .tl-section--pinned { padding: 0; } }
+.tl-section--rail { padding: 0; }
 .tl-h2 {
   font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
   font-size: clamp(1.625rem, 4.5vw + .5rem, 2rem); line-height: 1.2; letter-spacing: -.01em;
   font-weight: 400; color: hsl(var(--accent));
   padding-bottom: .75rem; border-bottom: 1px solid hsl(var(--separator)); margin: 0;
 }
-.tl-h2--pinned { flex: 0 0 auto; margin: 0 var(--tl-gutter) 2.25rem; }
+.tl-h2--rail { flex: 0 0 auto; margin: 0 var(--tl-gutter) 2.25rem; }
 .tl-h2--flow { max-width: 1280px; margin: 0 auto 2rem; padding-left: 1.5rem; padding-right: 1.5rem; }
 
 /* pinned horizontal layout --------------------------------------------- */
 .tl-wrap { position: relative; }
-.tl-sticky {
-  position: sticky; top: 0; height: 100vh; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: center;
-  /* Clears the fixed 84px site header AND leaves a band of white under
-     it. At 5rem the heading's own top edge sat level with the bottom of
-     the header, so the section opened with its title tucked against the
-     navigation instead of standing clear of it. */
-  padding-top: 9rem;
-  /* Vertical panning stays with the browser; horizontal gestures are ours
-     (see src/lib/pinned-scroll.ts). Without this WebKit decides the axis
-     at touch-start and the sideways gesture can never be claimed. */
-  touch-action: pan-y;
+/* =====================================================================
+   THE TIMELINE IS AN ORDINARY BLOCK CONTAINING AN ORDINARY SCROLLER.
+   ---------------------------------------------------------------------
+   `.tl-sticky` used to be `position: sticky; top: 0; height: 100vh;
+   overflow: hidden`, sitting inside a wrapper whose height JavaScript set
+   to several viewports. That is what pinned the reader: the page had to
+   be scrolled through the whole reserved height before Our History would
+   let go, and the horizontal travel was a transform driven by how far
+   down that height the reader had come.
+
+   None of that is left. The band is a normal section with normal
+   padding, and the years live in a horizontally scrollable element.
+   Every horizontal interaction the platform offers now works by itself -
+   a swipe, a two-finger trackpad gesture, shift-wheel, dragging the bar,
+   the arrow keys once it has focus - because the browser is doing it
+   rather than being talked out of it.
+   ===================================================================== */
+.tl-band {
+  display: flex; flex-direction: column;
+  padding: 6rem 0 4rem;
 }
-@supports (height: 100dvh) { .tl-sticky { height: 100dvh; } }
-.tl-track { position: relative; width: max-content; padding: 0 var(--tl-gutter); will-change: transform; }
+.tl-scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* The sideways axis belongs to this element and stops here: neither the
+     page behind it nor the browser's history gesture is reachable from a
+     swipe that runs off the end of the years. */
+  overscroll-behavior-x: contain;
+  /* Vertical panning stays with the page, so a reader scrolling down
+     THROUGH the section is never captured by it. */
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--separator)) transparent;
+}
+.tl-scroller::-webkit-scrollbar { height: 8px; }
+.tl-scroller::-webkit-scrollbar-track { background: transparent; }
+.tl-scroller::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--separator)); border-radius: 4px;
+}
+.tl-scroller:focus-visible {
+  outline: 2px solid hsl(var(--accent)); outline-offset: 4px;
+}
+
+.tl-track { position: relative; width: max-content; padding: 0 var(--tl-gutter); }
 
 .tl-rail {
   position: absolute; left: 0; width: 0; height: 2px; overflow: hidden;
@@ -1421,8 +1460,8 @@ input[type='search']::-webkit-search-cancel-button {
     --tl-gutter: 1.25rem;
     --tl-media-gap: 1.5rem;
   }
-  .tl-sticky { padding-top: 7.5rem; }
-  .tl-h2--pinned { margin-bottom: 1.5rem; }
+  .tl-band { padding: 4rem 0 2.5rem; }
+  .tl-h2--rail { margin-bottom: 1.5rem; }
   .tl-title { font-size: 1.3rem; }
   .tl-desc p { font-size: 1rem; }
   .tl-media--photo { height: min(210px, max(120px, calc(var(--tl-cardh) - 250px))); }

@@ -9,6 +9,29 @@ import linkedinIcon from '@/assets/linkedin-black.svg';
 import instagramIcon from '@/assets/instagram-black.svg';
 import { useToast } from '@/hooks/use-toast';
 
+// =====================================================================
+// WHAT IS NAVIGATION AND WHAT IS SMALL PRINT.
+// ---------------------------------------------------------------------
+// The footer used to carry a fifth column headed "Legal", holding six
+// links at the same size, in the same serif heading, with the same
+// vertical rhythm as Divisions and Funds. Two things were wrong with
+// that. A policy page is not a destination anybody sets out for, so it
+// was drawing the eye at the weight of a section of the site; and two of
+// those six links are not policies at all.
+//
+// The four genuine policies are now a compact strip at the very foot,
+// beside the copyright: small, secondary and still perfectly findable.
+// The other two are navigation and are treated as such:
+//
+//   Society Statute is the association's constitution - the document the
+//   whole governance of Minerva rests on, and the one a member or an
+//   applicant might actually go looking for. It joins Explore.
+//
+//   Sitemap is a map OF the site. It is a utility, not a policy, so it
+//   sits with the copyright at the foot rather than under a heading that
+//   claims it is a legal notice.
+// =====================================================================
+
 const exploreLinks = [
   { label: 'About', href: '/about' },
   { label: 'Events', href: '/events' },
@@ -17,6 +40,7 @@ const exploreLinks = [
   { label: 'Join Us', href: '/join' },
   { label: 'Report Archive', href: '/archive' },
   { label: 'Readings', href: '/readings' },
+  { label: 'Society Statute', href: '/statute' },
 ];
 
 const divisionLinks = [
@@ -39,12 +63,12 @@ const peopleLinks = [
   { label: 'Alumni', href: '/people/alumni' },
 ];
 
-const legalLinks = [
+/** The four genuine policies, for the compact strip at the foot. */
+const policyLinks = [
   { label: 'Terms of Use', href: '/terms-of-use' },
   { label: 'Privacy Policy', href: '/privacy-policy' },
   { label: 'Cookie Policy', href: '/cookie-policy' },
   { label: 'Disclaimer', href: '/disclaimer' },
-  { label: 'Society Statute', href: '/statute' },
   { label: 'Sitemap', href: '/sitemap' },
 ];
 
@@ -193,30 +217,60 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom: 5 link columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
+        {/* FOUR COLUMNS, NOT FIVE, and the width redistributed rather than
+            simply left as a gap. Funds carries the longest labels ("Multi
+            Asset Global Opportunities"), so it takes the widest share;
+            People has two links and takes the narrowest. On a phone the
+            two short columns pair on one row instead of each taking a
+            full-width block of their own. */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[1.05fr_1.15fr_1.35fr_0.75fr] lg:gap-x-10 mb-14">
           <LinkColumn title="Explore" links={exploreLinks} />
           <LinkColumn title="Divisions" links={divisionLinks} />
           <LinkColumn title="Funds" links={fundLinks} />
-
           <LinkColumn title="People" links={peopleLinks} />
-
-          <LinkColumn title="Legal" links={legalLinks} />
         </div>
 
-        {/* Builder Credit and Copyright */}
-        <div className="border-t border-background/20 pt-10 sm:pt-12 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 px-2 sm:px-4">
-          <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
-            © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
-          </p>
-          <a
-            href="https://www.linkedin.com/in/riccardo-colombo01/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-body text-xs md:text-small text-background/60 underline hover:text-background transition-colors"
-          >
-            Website built for Minerva IMS.
-          </a>
+        {/* =============================================================
+            THE SMALL PRINT: policies, copyright and attribution, on one
+            hairline-topped band.
+
+            The three used to be two separate things - a Legal column up
+            in the navigation and a copyright row down here - which meant
+            the least important links on the page were also among the
+            most prominent. They are now one band, in the same small
+            type, reading left to right: who owns the site, what governs
+            it, who built it.
+
+            On a phone the policies wrap onto as many lines as they need
+            and the copyright sits under them. Each link keeps a 44px
+            tap target through its vertical padding without the band
+            growing tall, because the padding is shared with the row gap.
+            ============================================================= */}
+        <div className="border-t border-background/20 pt-8">
+          <nav aria-label="Legal and site information" className="flex flex-wrap items-center gap-x-6 gap-y-1">
+            {policyLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="font-body text-xs md:text-small text-background/60 py-2 hover:text-background hover:underline transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
+              © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
+            </p>
+            <a
+              href="https://www.linkedin.com/in/riccardo-colombo01/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-body text-xs md:text-small text-background/60 underline hover:text-background transition-colors"
+            >
+              Website built for Minerva IMS.
+            </a>
+          </div>
         </div>
       </div>
     </footer>

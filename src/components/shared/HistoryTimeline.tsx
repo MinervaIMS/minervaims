@@ -5,45 +5,61 @@ import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import {
   HISTORY_ALUMNI_FALLBACK,
   HISTORY_EVENTS,
-  HISTORY_SCROLL_PACE,
   HistoryEvent,
   HistoryMedia,
   isQuietYear,
 } from '@/data/historyTimeline';
 import { listHistoryEvents, type HistoryEventRow } from '@/lib/history-api';
-import { bindPinnedScroll } from '@/lib/pinned-scroll';
 
 // =====================================================================
 // HistoryTimeline — "Our History" on /about.
 // ---------------------------------------------------------------------
-// The section pins to the screen and the years travel sideways as the
-// page is scrolled: the rail fills behind them, each circle lights the
-// moment it is reached, and every card rises into place with its media
-// trailing a beat behind. It is the same reading gesture as the Join
-// page's Application Journey, turned into a decade of the Society.
+// A decade of the Society on a horizontal rail: the line fills behind
+// the years, each circle lights as its column arrives, and every card
+// rises into place with its media a beat behind.
+//
+// THE SECTION NO LONGER TAKES THE PAGE'S SCROLLING. It used to reserve
+// several viewports of height, stick itself to the top of the window and
+// convert vertical scrolling into horizontal travel, which meant a
+// reader could not get past Our History without playing all of it
+// through. The years now live in an ordinary horizontally scrollable
+// element: the page scrolls down as a page should, and the timeline is
+// there to be pushed sideways by anyone who wants to. Exploring it is
+// optional, and a single quiet nudge when it first appears is what says
+// so - see the invitation effect below.
 //
 // Card reveals are read from getBoundingClientRect rather than an
-// IntersectionObserver: the track moves by transform, so the observer
-// would report every card as visible from the start.
+// IntersectionObserver, because a card can move either by the page
+// scrolling or by the rail scrolling and both have to count.
 //
-// Below 768px wide, under 680px tall, or with reduced motion, the same
-// eight entries are laid out as a vertical spine. The height rule is not
-// cosmetic: a pinned card needs roughly 371px of content inside
-// calc(100dvh - 19rem), so a shorter viewport would clip the media frame.
+// Under 560px tall, or with reduced motion, the same entries are laid
+// out as a vertical spine instead.
 // =====================================================================
 
 /**
- * A pinned card needs roughly this much room for its title, copy, toggle
- * and media frame. Below it the media would be clipped, so the vertical
- * spine takes over. Width is deliberately NOT a condition: the sideways
- * run is the point of the section and a phone gets it too, with narrower
- * columns and a smaller dot (see the .tl-* mobile block in index.css).
+ * Below this viewport height the section falls back to the vertical list.
+ *
+ * A card needs room for a title, a paragraph and an image; on a short
+ * window the horizontal rail would show them cropped, and a stacked list
+ * reads better than a squeezed row. (The constant kept its name from the
+ * pinned era; the threshold it sets is unchanged.)
  */
 const PINNED_MIN_HEIGHT = 560;
 /** Body copy taller than three lines earns a "Read more" control. */
 const COLLAPSED_COPY_PX = 84;
 
-type Mode = 'pinned' | 'vertical';
+/**
+ * 'rail' is the horizontal timeline; 'vertical' is the stacked list used
+ * under reduced motion and on viewports too short to read a card in.
+ *
+ * IT USED TO BE CALLED 'pinned', AND IT USED TO PIN. The section reserved
+ * several viewports of height, stuck itself to the top of the screen and
+ * converted the page's vertical scrolling into horizontal travel, so a
+ * reader could not pass Our History without playing the whole of it
+ * through. The name is changed with the behaviour so that nothing here
+ * still claims to pin.
+ */
+type Mode = 'rail' | 'vertical';
 
 function reducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -343,15 +359,16 @@ export function HistoryTimeline() {
   const alumniTotal = counts.alumni > 0 ? counts.alumni : HISTORY_ALUMNI_FALLBACK;
 
   const [mode, setMode] = useState<Mode>(() => {
-    if (typeof window === 'undefined') return 'pinned';
-    return reducedMotion() || window.innerHeight < PINNED_MIN_HEIGHT ? 'vertical' : 'pinned';
+    if (typeof window === 'undefined') return 'rail';
+    return reducedMotion() || window.innerHeight < PINNED_MIN_HEIGHT ? 'vertical' : 'rail';
   });
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [lit, setLit] = useState<Set<number>>(new Set());
   const [titleMinHeight, setTitleMinHeight] = useState<number | null>(null);
 
   const wrapRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
+  /** The horizontal scroll container. The reader drives this directly. */
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
@@ -360,7 +377,7 @@ export function HistoryTimeline() {
   const vlistRef = useRef<HTMLOListElement>(null);
   const titleRefs = useRef<Map<number, HTMLHeadingElement>>(new Map());
 
-  const geometry = useRef({ thresholds: [] as number[], range: 0, budget: 1, wrapTop: 0, pinned: false });
+  const geometry = useRef({ thresholds: [] as number[], range: 0, scrollable: false });
   const progressRef = useRef(0);
 
   const registerTitle = useCallback((index: number, el: HTMLHeadingElement | null) => {
@@ -377,7 +394,7 @@ export function HistoryTimeline() {
   useEffect(() => {
     const decide = () => {
       const next: Mode =
-        reducedMotion() || window.innerHeight < PINNED_MIN_HEIGHT ? 'vertical' : 'pinned';
+        reducedMotion() || window.innerHeight < PINNED_MIN_HEIGHT ? 'vertical' : 'rail';
       setMode((prev) => (prev === next ? prev : next));
     };
     decide();
@@ -415,11 +432,10 @@ export function HistoryTimeline() {
   const measure = useCallback(() => {
     const list = listRef.current;
     const track = trackRef.current;
-    const sticky = stickyRef.current;
-    const wrap = wrapRef.current;
+    const scroller = scrollerRef.current;
     const rail = railRef.current;
     const cont = contRef.current;
-    if (!list || !track || !sticky || !wrap || !rail || !cont) return;
+    if (!list || !track || !scroller || !rail || !cont) return;
 
     const items = [...list.querySelectorAll<HTMLLIElement>('li[data-ev]')];
     if (!items.length) return;
@@ -442,7 +458,10 @@ export function HistoryTimeline() {
     const lastItem = items[items.length - 1];
     const gutter = parseFloat(getComputedStyle(track).paddingLeft) || 0;
     const contentEnd = lastItem.offsetLeft + lastItem.offsetWidth + gutter;
-    const range = Math.max(0, Math.min(track.scrollWidth, contentEnd) - sticky.clientWidth);
+    // THE RANGE IS THE SCROLLER'S OWN, because the reader now moves the
+    // scroller rather than the page: how far it can travel is simply how
+    // much wider its content is than itself.
+    const range = Math.max(0, Math.min(track.scrollWidth, contentEnd) - scroller.clientWidth);
 
     // A year lights when ITS COLUMN ARRIVES, which has to be measured in
     // the same units as the translate. The thresholds used to be the dot
@@ -459,36 +478,29 @@ export function HistoryTimeline() {
       return Math.max(0, Math.min(1, trigger));
     });
     geometry.current.range = range;
-    geometry.current.pinned = range > 8;
-    if (geometry.current.pinned) {
-      geometry.current.budget = Math.max(1, range * HISTORY_SCROLL_PACE);
-      wrap.style.height = `${sticky.offsetHeight + geometry.current.budget}px`;
-      sticky.style.position = 'sticky';
-      sticky.style.height = '';
-      sticky.style.padding = '';
-    } else {
-      // Everything already fits: show it in place rather than pinning.
-      geometry.current.budget = 1;
-      wrap.style.height = 'auto';
-      sticky.style.position = 'static';
-      sticky.style.height = 'auto';
-      sticky.style.padding = '9rem 0 3rem';
-    }
-    geometry.current.wrapTop = wrap.getBoundingClientRect().top + window.scrollY;
+    geometry.current.scrollable = range > 8;
+    // NOTHING IS WRITTEN TO THE LAYOUT HERE ANY MORE. This function used to
+    // reserve several viewports of page height on the wrapper and switch the
+    // inner block between `sticky` and `static`; the section is now an
+    // ordinary block containing an ordinary horizontal scroller, and its
+    // height is simply the height of its content.
   }, []);
 
   const paint = useCallback(() => {
     const track = trackRef.current;
     const fill = fillRef.current;
     const list = listRef.current;
-    const { thresholds, pinned, range, budget, wrapTop } = geometry.current;
-    if (!track || !fill || !list || !thresholds.length) return;
+    const scroller = scrollerRef.current;
+    const { thresholds, scrollable, range } = geometry.current;
+    if (!track || !fill || !list || !scroller || !thresholds.length) return;
 
-    let p = 1;
-    if (pinned) p = Math.max(0, Math.min(1, (window.scrollY - wrapTop) / budget));
+    // Progress is READ from the scroller instead of being imposed on the
+    // page. The track carries no transform at all now: the browser moves it,
+    // natively, which is why a swipe, a trackpad gesture, shift-wheel, a
+    // dragged scrollbar and a keyboard arrow all work without a line of code
+    // for any of them.
+    const p = scrollable && range > 0 ? Math.max(0, Math.min(1, scroller.scrollLeft / range)) : 1;
     progressRef.current = p;
-
-    track.style.transform = `translate3d(${-p * (pinned ? range : 0)}px,0,0)`;
     fill.style.width = `${p * 100}%`;
 
     setLit((prev) => {
@@ -509,11 +521,16 @@ export function HistoryTimeline() {
   }, [reveal]);
 
   useEffect(() => {
-    if (mode !== 'pinned') return;
+    if (mode !== 'rail') return;
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
     measure();
     paint();
     let scrollFrame = 0;
     let resizeFrame = 0;
+    // THE SCROLLER'S OWN EVENT, not the window's. The section no longer has
+    // any interest in where the page is: it only needs to know how far the
+    // reader has moved the timeline.
     const onScroll = () => {
       if (scrollFrame) return;
       scrollFrame = requestAnimationFrame(() => { scrollFrame = 0; paint(); });
@@ -522,33 +539,107 @@ export function HistoryTimeline() {
       if (resizeFrame) return;
       resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; measure(); paint(); });
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
+    scroller.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
-    // A sideways gesture over the pinned run advances it too, so reaching
-    // for the direction the years are travelling in actually works.
-    const unbind = wrapRef.current
-      ? bindPinnedScroll(wrapRef.current, {
-          progress: () => progressRef.current,
-          enabled: () => geometry.current.pinned,
-        })
-      : undefined;
+    // Cards are revealed as they come into view, which depends on the page's
+    // position as well as the rail's, so the window is still watched for
+    // that one purpose - passively, and reading nothing it does not need.
+    window.addEventListener('scroll', onScroll, { passive: true });
     if (typeof document !== 'undefined' && document.fonts?.ready) {
       document.fonts.ready.then(() => { measure(); paint(); }).catch(() => undefined);
     }
     return () => {
+      scroller.removeEventListener('scroll', onScroll);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
-      unbind?.();
       if (scrollFrame) cancelAnimationFrame(scrollFrame);
       if (resizeFrame) cancelAnimationFrame(resizeFrame);
     };
   }, [mode, measure, paint, titleMinHeight, covers, alumniTotal]);
 
-  // Release the height the pinned layout claimed when switching away.
+  // =====================================================================
+  // THE ONE-TIME INVITATION.
+  // ---------------------------------------------------------------------
+  // The forced journey did at least make the horizontal dimension
+  // impossible to miss. Without it, a reader arriving at a row of cards
+  // that happens to continue past the right edge may never think to push
+  // it. So the first time the section is seen, the rail moves a little
+  // way and comes back: far enough to show that it can, slow enough to
+  // read as deliberate, and once only.
+  //
+  // It is abandoned the instant the reader touches the rail themselves,
+  // so it can never fight a real gesture, and it is skipped entirely
+  // under reduced motion - where the section is the vertical list anyway.
+  // =====================================================================
+  const nudged = useRef(false);
+  /** Cancels the invitation if it is still running. Set by the effect below. */
+  const stopNudge = useRef<(() => void) | null>(null);
   useEffect(() => {
-    if (mode === 'pinned') return;
-    if (wrapRef.current) wrapRef.current.style.height = '';
-  }, [mode]);
+    if (mode !== 'rail' || nudged.current) return;
+    const scroller = scrollerRef.current;
+    if (!scroller || reducedMotion()) return;
+
+    let raf = 0;
+    let cancelled = false;
+    const stop = () => { cancelled = true; if (raf) cancelAnimationFrame(raf); };
+    // Anything that moves the rail deliberately - a click on a year, a
+    // gesture - can stop the invitation mid-flight. Without this the
+    // animation would keep writing scrollLeft over the top of a jump the
+    // reader had just asked for.
+    stopNudge.current = stop;
+
+    const run = () => {
+      if (nudged.current || !geometry.current.scrollable) return;
+      nudged.current = true;
+      const distance = Math.min(72, geometry.current.range);
+      if (distance < 8) return;
+      const OUT = 620;
+      const HOLD = 260;
+      const BACK = 520;
+      const total = OUT + HOLD + BACK;
+      const start = performance.now();
+      // A gentle out and back. `easeInOutSine` on both halves keeps it from
+      // reading as a bounce.
+      const ease = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2;
+      const step = (now: number) => {
+        if (cancelled) return;
+        const t = now - start;
+        if (t >= total) { scroller.scrollLeft = 0; return; }
+        let x: number;
+        if (t < OUT) x = ease(t / OUT) * distance;
+        else if (t < OUT + HOLD) x = distance;
+        else x = distance * (1 - ease((t - OUT - HOLD) / BACK));
+        scroller.scrollLeft = x;
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+
+    // Only once the section is actually on screen, and only after the
+    // measurements it depends on have been taken.
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        window.setTimeout(run, 420);
+      }
+    }, { threshold: 0.35 });
+    io.observe(scroller);
+
+    // Any real interaction wins immediately.
+    const claim = () => { nudged.current = true; stop(); };
+    scroller.addEventListener('pointerdown', claim, { passive: true });
+    scroller.addEventListener('wheel', claim, { passive: true });
+    scroller.addEventListener('touchstart', claim, { passive: true });
+
+    return () => {
+      io.disconnect();
+      stop();
+      stopNudge.current = null;
+      scroller.removeEventListener('pointerdown', claim);
+      scroller.removeEventListener('wheel', claim);
+      scroller.removeEventListener('touchstart', claim);
+    };
+  }, [mode, covers, alumniTotal]);
 
   // --- Vertical controller -----------------------------------------------
 
@@ -590,9 +681,15 @@ export function HistoryTimeline() {
       if (li) window.scrollTo({ top: li.getBoundingClientRect().top + window.scrollY - 120, behavior: smooth });
       return;
     }
-    const { pinned, thresholds, wrapTop, budget } = geometry.current;
-    if (!pinned || !thresholds.length) return;
-    window.scrollTo({ top: wrapTop + thresholds[index] * budget, behavior: smooth });
+    // Clicking a year moves THE RAIL, not the page. It used to scroll the
+    // window to the point in the reserved height that corresponded to that
+    // year, which is meaningless now that the section reserves none.
+    const scroller = scrollerRef.current;
+    const { scrollable, thresholds, range } = geometry.current;
+    if (!scroller || !scrollable || !thresholds.length) return;
+    nudged.current = true;
+    stopNudge.current?.();
+    scroller.scrollTo({ left: thresholds[index] * range, behavior: smooth });
   }, [mode]);
 
   // --- Render ------------------------------------------------------------
@@ -644,10 +741,23 @@ export function HistoryTimeline() {
   }
 
   return (
-    <section id="our-history" className="tl tl-section tl-section--pinned" aria-label={heading}>
+    <section id="our-history" className="tl tl-section tl-section--rail" aria-label={heading}>
       <div className="tl-wrap" ref={wrapRef}>
-        <div className="tl-sticky" ref={stickyRef}>
-          <h2 className="tl-h2 tl-h2--pinned">{heading}</h2>
+        <div className="tl-band">
+          {/* The heading stays OUTSIDE the scroller, so it keeps the page's
+              gutter and does not travel sideways with the years. */}
+          <h2 className="tl-h2 tl-h2--rail">{heading}</h2>
+          {/* The scroll container. Everything horizontal belongs to this
+              element and nothing above it: the page itself never gains a
+              sideways scrollbar, and `overscroll-behavior-x: contain` stops
+              a swipe at either end turning into the browser's back gesture. */}
+          <div
+            className="tl-scroller"
+            ref={scrollerRef}
+            tabIndex={0}
+            role="group"
+            aria-label="Timeline, scroll sideways to move through the years"
+          >
           <div className="tl-track" ref={trackRef}>
             <div className="tl-rail" ref={railRef} aria-hidden="true">
               <div className="tl-fill" ref={fillRef} />
@@ -692,6 +802,7 @@ export function HistoryTimeline() {
               })}
               <li className="tl-tail" aria-hidden="true" />
             </ol>
+          </div>
           </div>
         </div>
       </div>

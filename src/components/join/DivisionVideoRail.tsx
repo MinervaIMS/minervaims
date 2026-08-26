@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { JOIN_DIVISIONS, type JoinDivision } from '@/lib/join-content';
 import { bindPinnedScroll } from '@/lib/pinned-scroll';
+import ScrollStack, { ScrollStackItem } from '@/components/shared/ScrollStack';
 import './DivisionVideoRail.css';
 import { clsx } from 'clsx';
 
@@ -51,6 +52,14 @@ const canPin = () => {
   if (prefersReducedMotion()) return false;
   return (navigator.hardwareConcurrency ?? 4) >= 4;
 };
+
+/**
+ * The phone breakpoint, matching the homepage deck's own (`MOBILE_MAX_WIDTH`
+ * in ScrollStack). Below it this section is the deck; above it, the pinned
+ * rail, unchanged.
+ */
+const NARROW_MAX_WIDTH = 767;
+const isNarrow = () => typeof window !== 'undefined' && window.innerWidth <= NARROW_MAX_WIDTH;
 
 const canPlayVideo = () => {
   if (typeof window === 'undefined') return false;
@@ -143,6 +152,108 @@ const DivisionCard = memo(function DivisionCard({
   );
 });
 
+/**
+ * The phone card: the homepage's composition, with /join's own content.
+ *
+ * WHY THE PHONE GETS A DIFFERENT COMPONENT AT ALL. The pinned rail below is
+ * a good desktop interaction and a poor phone one: it converts vertical
+ * scrolling into horizontal travel, which on a touch device means the reader
+ * cannot pass the section without playing it through, and a sideways swipe
+ * near its ends competes with the browser's own back gesture. The homepage
+ * solved the same problem for the same five divisions with a sticky deck
+ * driven by ORDINARY vertical scrolling: nothing is intercepted, nothing is
+ * pinned in place, and the reader can simply keep going.
+ *
+ * So the phone adopts that interaction wholesale - the deck, the card
+ * progression, the recede-and-cover animation, the dot rail, the reduced
+ * motion fallback - and keeps everything that makes this section /join's:
+ * the division's own wording and its own cinemagraph. The homepage's static
+ * photographs and its homepage copy are not borrowed.
+ */
+const JoinStackCard = memo(function JoinStackCard({ division, active, canPlay }: {
+  division: JoinDivision;
+  active: boolean;
+  canPlay: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // ONLY THE CARD IN FRONT PLAYS. Five cinemagraphs decoding at once on a
+  // phone is the thing to avoid here; the card element itself is never
+  // remounted by the deck, so pausing and resuming does not reload anything
+  // and the frame on screen never blinks.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !canPlay) return;
+    if (active) {
+      const p = el.play();
+      if (p && typeof p.catch === 'function') p.catch(() => undefined);
+    } else {
+      el.pause();
+    }
+  }, [active, canPlay]);
+
+  return (
+    <article className="relative h-full w-full" aria-labelledby={`jds-title-${division.key}`}>
+      <img
+        src={division.poster}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+      {canPlay && (
+        <video
+          ref={videoRef}
+          className="absolute inset-0 h-full w-full object-cover"
+          src={division.video}
+          poster={division.poster}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      )}
+      {/* The homepage's phone scrim: top to bottom, heaviest where the
+          words are. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(168deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.86) 32%, rgba(0,0,0,0.62) 58%, rgba(0,0,0,0.34) 80%, rgba(0,0,0,0.2) 100%)',
+        }}
+      />
+      <div className="relative z-10 flex h-full flex-col justify-start p-6 pr-10">
+        <h3
+          id={`jds-title-${division.key}`}
+          className="font-serif text-2xl sm:text-3xl text-white mb-3 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+        >
+          {division.name}
+        </h3>
+        <p className="font-body text-body text-white/90 leading-relaxed max-w-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+          {division.description}
+        </p>
+      </div>
+    </article>
+  );
+});
+
+/** The phone composition: the homepage deck, carrying the /join cards. */
+function DivisionDeck({ canPlay }: { canPlay: boolean }) {
+  const [active, setActive] = useState(0);
+  return (
+    <ScrollStack title="Our divisions" onActiveChange={setActive}>
+      {JOIN_DIVISIONS.map((division, i) => (
+        <ScrollStackItem key={division.key}>
+          <JoinStackCard division={division} active={i === active} canPlay={canPlay} />
+        </ScrollStackItem>
+      ))}
+    </ScrollStack>
+  );
+}
+
 export function DivisionVideoRail() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -166,8 +277,11 @@ export function DivisionVideoRail() {
   const [reduced, setReduced] = useState(prefersReducedMotion);
   const [canPlay, setCanPlay] = useState(canPlayVideo);
   const [pinned, setPinned] = useState(canPin);
+  // Resolved during the first render, like the others, so the section never
+  // renders one composition and then swaps to the other.
+  const [narrow, setNarrow] = useState(isNarrow);
 
-  // Follow later changes to the motion preference.
+  // Follow later changes to the motion preference, and to the width.
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const apply = () => {
@@ -175,8 +289,13 @@ export function DivisionVideoRail() {
       setPinned(canPin());
       setCanPlay(canPlayVideo());
     };
+    const onResize = () => setNarrow(isNarrow());
     motion.addEventListener('change', apply);
-    return () => motion.removeEventListener('change', apply);
+    window.addEventListener('resize', onResize);
+    return () => {
+      motion.removeEventListener('change', apply);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   const measure = useCallback(() => {
@@ -235,7 +354,7 @@ export function DivisionVideoRail() {
   // card is active, four times across the whole section - and is told even
   // that only when the answer differs.
   useEffect(() => {
-    if (!pinned || overflow <= 0) {
+    if (narrow || !pinned || overflow <= 0) {
       progressRef.current = 0;
       const track = trackRef.current;
       if (track) track.style.transform = '';
@@ -308,12 +427,12 @@ export function DivisionVideoRail() {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, [pinned, overflow]);
+  }, [pinned, overflow, narrow]);
 
   // Static path: track the nearest card from native horizontal scrolling so the
   // dot indicator and video playback still follow the reader.
   useEffect(() => {
-    if (pinned) return;
+    if (pinned || narrow) return;
     const rail = railRef.current;
     if (!rail) return;
     let frame = 0;
@@ -331,7 +450,7 @@ export function DivisionVideoRail() {
       if (frame) cancelAnimationFrame(frame);
       rail.removeEventListener('scroll', onScroll);
     };
-  }, [pinned]);
+  }, [pinned, narrow]);
 
   // Keyboard: the rail is focusable and the arrow keys step one card at a
   // time, in whichever mode the section is running.
@@ -355,6 +474,23 @@ export function DivisionVideoRail() {
       step(-1);
     }
   };
+
+  // THE PHONE TAKES THE HOMEPAGE'S DECK, and takes it early: this returns
+  // before any of the pinned rail's geometry, listeners or reserved height
+  // exist, so none of that machinery runs on a phone at all. The deck brings
+  // its own heading, its own dot rail and its own reduced-motion fallback.
+  //
+  // The desktop path below is untouched.
+  //
+  // No `aria-labelledby` on the section below: the deck renders its own
+  // heading and nothing there carries the id the pinned rail uses.
+  if (narrow) {
+    return (
+      <section aria-label="Our divisions" className="bg-background">
+        <DivisionDeck canPlay={canPlay} />
+      </section>
+    );
+  }
 
   return (
     <section

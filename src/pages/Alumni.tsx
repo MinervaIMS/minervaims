@@ -262,9 +262,23 @@ const Alumni = () => {
           </div>
         </div>
 
+        {/* THE DIRECTORY BEGINS HERE, and until now nothing said so. The
+            founders above are six named people in a card grid; below is
+            every alumnus the association has, behind three filters. On a
+            phone, where the two are separated by a scroll rather than by
+            being visible at once, the second simply began with a row of
+            dropdowns and no explanation of what they filtered.
+
+            The site's standard section heading: serif, accent, hairline
+            under it. No descriptive copy - the list underneath is the
+            description. */}
+        <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+          Alumni
+        </h2>
+
         {/* Filters: options span the ENTIRE alumni base; no labels, body font,
             flat corners, and the bar scrolls with the page (not sticky). */}
-        <div className="py-4 mb-4 border-b border-separator">
+        <div className="pb-4 mb-4 border-b border-separator">
           {/* The three filters share the row edge to edge, so they line up with
               the alumni entries listed underneath instead of trailing off
               into empty space. */}
