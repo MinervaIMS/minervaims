@@ -200,10 +200,14 @@ const Events = () => {
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Minerva Events, bridging the gap between academia and industry
           </h2>
+          {/* ONE PARAGRAPH, NOT A DIV INSIDE A P. The two elements carried the
+              same four classes, so this rendered as a paragraph inside a
+              paragraph. HTML does not allow that: the parser closes the outer
+              <p> the moment it meets the <div>, which left an EMPTY paragraph
+              in the document still carrying `mb-4`, and put a stray 16px of
+              space above this text that nothing in the source accounted for. */}
           <p className="font-body text-body-lg text-muted-foreground mb-4 max-w-4xl">
-            <div className="font-body text-body-lg text-muted-foreground max-w-4xl">
-              Minerva delivers a year-round programme designed to develop technical judgement and long-term connections. Each semester, the Society hosts flagship events with industry professionals, alongside&nbsp;company visits and internal gatherings where each team presents its work.
-            </div>
+            Minerva delivers a year-round programme designed to develop technical judgement and long-term connections. Each semester, the Society hosts flagship events with industry professionals, alongside&nbsp;company visits and internal gatherings where each team presents its work.
           </p>
           <p className="font-body text-body-lg text-muted-foreground max-w-4xl">
             Frequent alumni calls give current members direct access to a truly international network, enabling candid Q&A on academic choices, recruitment pathways, and the realities of roles across banks, asset managers, academia and economic research.

@@ -25,22 +25,51 @@ import { useToast } from '@/hooks/use-toast';
 //
 //   Society Statute is the association's constitution - the document the
 //   whole governance of Minerva rests on, and the one a member or an
-//   applicant might actually go looking for. It joins Explore.
+//   applicant might actually go looking for. It is navigation.
 //
 //   Sitemap is a map OF the site. It is a utility, not a policy, so it
 //   sits with the copyright at the foot rather than under a heading that
 //   claims it is a legal notice.
+//
+// ---------------------------------------------------------------------
+// TEN LINKS, TWO COLUMNS, FIVE AND FIVE.
+//
+// Those ten used to be split eight and two: an "Explore" column that ran
+// to eight entries beside a "People" column that held Members and Alumni
+// and then stopped. The row was visibly lopsided - one column reached
+// the foot of the block and the other ended a third of the way down -
+// and "Explore" had stopped meaning anything, because a heading that
+// covers the constitution, the report archive and the contact page is
+// not a category, it is a leftovers bin.
+//
+// The same ten links now divide on a real distinction, and divide evenly
+// as a consequence rather than by being counted out:
+//
+//   The Society - what Minerva is and who is in it. About, the two
+//   membership pages, the statute it runs on, and how to reach it.
+//
+//   Explore - what Minerva publishes and does, and how to take part.
+//   Events, the report archive, the readings, the partnerships and the
+//   application page.
+//
+// Nothing is added and nothing is dropped: every one of the ten routes
+// below is one of the ten that were there before.
 // =====================================================================
 
-const exploreLinks = [
+const societyLinks = [
   { label: 'About', href: '/about' },
-  { label: 'Events', href: '/events' },
+  { label: 'Members', href: '/people/members' },
+  { label: 'Alumni', href: '/people/alumni' },
+  { label: 'Society Statute', href: '/statute' },
   { label: 'Contacts', href: '/contacts' },
-  { label: 'Partnerships', href: '/partnerships' },
-  { label: 'Join Us', href: '/join' },
+];
+
+const exploreLinks = [
+  { label: 'Events', href: '/events' },
   { label: 'Report Archive', href: '/archive' },
   { label: 'Readings', href: '/readings' },
-  { label: 'Society Statute', href: '/statute' },
+  { label: 'Partnerships', href: '/partnerships' },
+  { label: 'Join Us', href: '/join' },
 ];
 
 const divisionLinks = [
@@ -56,11 +85,6 @@ const fundLinks = [
   { label: 'Multi Asset Global Opportunities', href: '/funds/multi-asset' },
   { label: 'Diversified Passive Selection', href: '/funds/dps' },
   { label: 'Italian Equity PIR', href: '/funds/pir' },
-];
-
-const peopleLinks = [
-  { label: 'Members', href: '/people/members' },
-  { label: 'Alumni', href: '/people/alumni' },
 ];
 
 /** The four genuine policies, for the compact strip at the foot. */
@@ -217,17 +241,25 @@ export function Footer() {
           </div>
         </div>
 
-        {/* FOUR COLUMNS, NOT FIVE, and the width redistributed rather than
-            simply left as a gap. Funds carries the longest labels ("Multi
-            Asset Global Opportunities"), so it takes the widest share;
-            People has two links and takes the narrowest. On a phone the
-            two short columns pair on one row instead of each taking a
-            full-width block of their own. */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[1.05fr_1.15fr_1.35fr_0.75fr] lg:gap-x-10 mb-14">
-          <LinkColumn title="Explore" links={exploreLinks} />
+        {/* FOUR COLUMNS OF 5, 5, 4 AND 5. The block is now square: no
+            column ends a third of the way up the one beside it, and the
+            hairline band below meets four columns of nearly equal depth
+            rather than a staircase.
+
+            The widths still follow the labels rather than the counts.
+            Funds carries "Multi Asset Global Opportunities" and takes the
+            widest share; Divisions carries "Quantitative Research" and
+            takes the next; the two link columns are the same width as
+            each other because their longest labels are the same length,
+            which is also what makes the row read as symmetrical.
+
+            On a phone this is two columns of two, and 5/5/4/5 pairs
+            evenly there as well. */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[1fr_1.15fr_1.4fr_1fr] lg:gap-x-10 mb-14">
+          <LinkColumn title="The Society" links={societyLinks} />
           <LinkColumn title="Divisions" links={divisionLinks} />
           <LinkColumn title="Funds" links={fundLinks} />
-          <LinkColumn title="People" links={peopleLinks} />
+          <LinkColumn title="Explore" links={exploreLinks} />
         </div>
 
         {/* =============================================================

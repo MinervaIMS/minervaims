@@ -61,6 +61,47 @@ const canPin = () => {
 const NARROW_MAX_WIDTH = 767;
 const isNarrow = () => typeof window !== 'undefined' && window.innerWidth <= NARROW_MAX_WIDTH;
 
+/**
+ * The cinemagraphs run at double speed, on every device and in both
+ * compositions.
+ *
+ * WHY IT IS NOT SIMPLY `el.playbackRate = 2` NEXT TO `el.play()`. The media
+ * element resets `playbackRate` to `defaultPlaybackRate` every time it runs
+ * the resource selection algorithm, which is to say on mount, on any change
+ * of source, and after some recoveries from a stalled network. Setting only
+ * the current rate therefore holds until the first time the browser reloads
+ * the clip, and then silently drops back to 1x - which is exactly the kind of
+ * intermittent, device-dependent behaviour that is impossible to reproduce.
+ *
+ * `defaultPlaybackRate` is the value the element restores TO, so setting both
+ * makes double speed the element's resting state rather than a property that
+ * has to be re-applied. The listeners are belt and braces for the engines
+ * that reset the rate on `loadeddata` regardless: they cost nothing, they are
+ * removed with the effect, and they mean the rate cannot be lost by a pause,
+ * a resume, or a card leaving and re-entering the deck.
+ */
+const VIDEO_RATE = 2;
+
+function useDoubleSpeed(ref: React.RefObject<HTMLVideoElement | null>, enabled: boolean) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return;
+    const apply = () => {
+      el.defaultPlaybackRate = VIDEO_RATE;
+      if (el.playbackRate !== VIDEO_RATE) el.playbackRate = VIDEO_RATE;
+    };
+    apply();
+    el.addEventListener('loadedmetadata', apply);
+    el.addEventListener('loadeddata', apply);
+    el.addEventListener('play', apply);
+    return () => {
+      el.removeEventListener('loadedmetadata', apply);
+      el.removeEventListener('loadeddata', apply);
+      el.removeEventListener('play', apply);
+    };
+  }, [ref, enabled]);
+}
+
 const canPlayVideo = () => {
   if (typeof window === 'undefined') return false;
   if (prefersReducedMotion()) return false;
@@ -91,6 +132,8 @@ const DivisionCard = memo(function DivisionCard({
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [ready, setReady] = useState(false);
+
+  useDoubleSpeed(videoRef, canPlay);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -176,6 +219,8 @@ const JoinStackCard = memo(function JoinStackCard({ division, active, canPlay }:
   canPlay: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useDoubleSpeed(videoRef, canPlay);
 
   // ONLY THE CARD IN FRONT PLAYS. Five cinemagraphs decoding at once on a
   // phone is the thing to avoid here; the card element itself is never

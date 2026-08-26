@@ -17,6 +17,7 @@ import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { ApplicationsOpenLabel } from "@/components/shared/ApplicationsOpenLabel";
+import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -122,7 +123,7 @@ const Index = () => {
               src={logoWhite}
               alt="Minerva Investment Management Society"
               className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
-              fetchPriority="high"
+              {...HIGH_FETCH_PRIORITY}
             />
             {appSettings.applicationsOpen && (
               <Link

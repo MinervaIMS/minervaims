@@ -707,7 +707,13 @@ export function HistoryTimeline() {
           {events.map((event, i) => {
             const quiet = isQuietYear(event);
             return (
-              <li key={event.year} className="tl-vitem" data-ev={i} data-minor={quiet ? 1 : 0}>
+              // KEYED BY YEAR AND POSITION, NOT BY YEAR. The history holds two
+              // 2019 entries - the quiet year and the milestone - so a bare year
+              // key was a DUPLICATE key: React warns that children may be
+              // "duplicated and/or omitted", and the two entries share one
+              // reconciliation identity, so the reveal state of one can be
+              // applied to the other. The pair is unique.
+              <li key={`${event.year}-${i}`} className="tl-vitem" data-ev={i} data-minor={quiet ? 1 : 0}>
                 <div className="tl-vrailcell">
                   <button
                     type="button"
@@ -773,7 +779,9 @@ export function HistoryTimeline() {
               {events.map((event, i) => {
                 const quiet = isQuietYear(event);
                 return (
-                  <li key={event.year} className="tl-item" data-ev={i} data-minor={quiet ? 1 : 0}>
+                  // Year and position, for the reason given on the vertical
+                  // list above: two entries share the year 2019.
+                  <li key={`${event.year}-${i}`} className="tl-item" data-ev={i} data-minor={quiet ? 1 : 0}>
                     <div className="tl-dotcell">
                       <button
                         type="button"

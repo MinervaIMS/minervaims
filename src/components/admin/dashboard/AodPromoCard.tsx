@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
 
 // =====================================================================
 // Association on Display, as the Dashboard's current happening.
@@ -107,7 +108,7 @@ export function AodPromoCard({ date }: { date: string | null }) {
             alt=""
             aria-hidden="true"
             decoding="async"
-            fetchPriority="high"
+            {...HIGH_FETCH_PRIORITY}
             onError={(e) => {
               // WebP first for weight; the JPEG of the same crop is tried
               // once before the card gives the purple the full width.

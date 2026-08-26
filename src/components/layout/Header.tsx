@@ -179,8 +179,10 @@ export function Header() {
   }, [mobileOpen]);
 
   if (location.pathname.startsWith("/admin")) return null;
-  if (pageLoading) return null;
 
+  // These three depend on nothing but the path, and are read by the loading
+  // branch below as well as by the header itself, so they are resolved before
+  // it rather than after.
   const pathname = location.pathname;
   const hasHero =
     HERO_ROUTES_EXACT.has(pathname) ||
@@ -188,6 +190,33 @@ export function Header() {
   const isCardRoute =
     CARD_ROUTES_EXACT.has(pathname) ||
     CARD_ROUTE_PATTERNS.some((re) => re.test(pathname));
+
+  // =====================================================================
+  // WHILE A ROUTE LOADS, THE HEADER STILL HOLDS ITS SPACE.
+  // ---------------------------------------------------------------------
+  // The bar itself is `position: fixed`, so hiding it moves nothing. What
+  // does move is the SPACER below - the 84px block this component renders
+  // in the flow on every route without a hero, so that page content starts
+  // beneath the bar rather than under it.
+  //
+  // `return null` took that spacer away too. So the moment a Suspense
+  // fallback appeared, <main> rose by 84px, and the moment the page
+  // arrived it dropped back: two layout shifts of 0.058 each, on entering
+  // and on leaving every loading state, on every route that has a spacer.
+  // Nobody sees it, because the loader's overlay is opaque, and the
+  // browser records it all the same.
+  //
+  // Returning the spacer alone keeps the behaviour that made this branch
+  // exist - no navigation drawn over a loader, no scroll handling, no
+  // dropdown state - and costs one empty div. Hero and card routes have no
+  // spacer to preserve and still return nothing at all.
+  // =====================================================================
+  if (pageLoading) {
+    return hasHero || isCardRoute
+      ? null
+      : <div aria-hidden="true" style={{ height: "calc(84px + env(safe-area-inset-top))" }} />;
+  }
+
   const transparent = ((hasHero && !scrolled) || isCardRoute) && !mobileOpen;
 
   const isActive = (to?: string) => {

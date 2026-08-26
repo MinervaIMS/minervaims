@@ -100,11 +100,53 @@ function normalizeMonths(m: unknown): string[] {
   return Array.from({ length: 12 }, (_, i) => arr[i] ?? '');
 }
 
-export async function listFundYears(): Promise<FundYear[]> {
-  const { data, error } = await sb.from('fund_performance_years').select('*').order('year', { ascending: true });
-  if (error) throw new Error(error.message);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return ((data || []) as any[]).map((r) => ({ ...r, months: normalizeMonths(r.months) })) as FundYear[];
+// =====================================================================
+// ONE READ OF THE PERFORMANCE TABLE PER PAGE, however many things ask.
+// ---------------------------------------------------------------------
+// A fund page asked for these rows twice: the page itself queried the
+// table for its own matrix, and the chart it renders called this function
+// for the whole table and filtered client-side. Two requests, for the
+// same rows, in the same second - one of them selecting every column of
+// every fund.
+//
+// A single in-flight promise, held for a few seconds after it settles, is
+// enough to collapse them: whoever asks first performs the read, everyone
+// asking while it is in the air receives the same promise, and a caller
+// arriving a moment later - a chart mounting after the page's own fetch,
+// a Suspense boundary resolving - gets the settled result without a
+// second round trip.
+//
+// The window is deliberately short. This is request coalescing, not a
+// cache: it exists to stop one page load asking twice, and a reader who
+// returns to the page a minute later still gets fresh figures. A failed
+// read is not held at all, so an error is never remembered.
+//
+// `refreshFundYears()` drops it outright, which is what the workspace
+// editor needs after it has written a row.
+// =====================================================================
+
+const FUND_YEARS_TTL_MS = 5000;
+let fundYearsInFlight: Promise<FundYear[]> | null = null;
+let fundYearsAt = 0;
+
+/** Forget any coalesced read. Call after writing to the table. */
+export function refreshFundYears(): void {
+  fundYearsInFlight = null;
+  fundYearsAt = 0;
+}
+
+export function listFundYears(): Promise<FundYear[]> {
+  if (fundYearsInFlight && Date.now() - fundYearsAt < FUND_YEARS_TTL_MS) return fundYearsInFlight;
+  fundYearsAt = Date.now();
+  fundYearsInFlight = (async () => {
+    const { data, error } = await sb.from('fund_performance_years').select('*').order('year', { ascending: true });
+    if (error) throw new Error(error.message);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return ((data || []) as any[]).map((r) => ({ ...r, months: normalizeMonths(r.months) })) as FundYear[];
+  })();
+  // A rejected read must not be handed to the next caller.
+  fundYearsInFlight.catch(() => { refreshFundYears(); });
+  return fundYearsInFlight;
 }
 
 async function invoke(session: Session | null, body: Record<string, unknown>) {
@@ -116,9 +158,17 @@ async function invoke(session: Session | null, body: Record<string, unknown>) {
   return data;
 }
 
-export function upsertFundYear(session: Session | null, year: FundYearInput) {
-  return invoke(session, { action: 'upsert', year });
+// Both writers drop the coalesced read before returning, so the caller's
+// own reload after a save cannot be answered from a read that predates it.
+// Putting it here rather than at the call sites means a future writer
+// cannot forget: there is no path that writes the table without clearing.
+export async function upsertFundYear(session: Session | null, year: FundYearInput) {
+  const res = await invoke(session, { action: 'upsert', year });
+  refreshFundYears();
+  return res;
 }
-export function deleteFundYear(session: Session | null, id: string) {
-  return invoke(session, { action: 'delete', id });
+export async function deleteFundYear(session: Session | null, id: string) {
+  const res = await invoke(session, { action: 'delete', id });
+  refreshFundYears();
+  return res;
 }
