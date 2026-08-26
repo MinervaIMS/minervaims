@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import logoColorAsset from '@/assets/logo-color-loader.webp.asset.json';
 import logoWhiteAsset from '@/assets/logo-white-loader.webp.asset.json';
 import { pulsePhaseStyle } from '@/lib/loader-pulse';
+import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
 
 // =====================================================================
 // PageLoader — the Suspense fallback for every lazy route.
@@ -53,6 +54,31 @@ export function PageLoader() {
   }, []);
 
   return (
+    // =================================================================
+    // THE FALLBACK RESERVES A SCREEN OF HEIGHT, and that is the whole of
+    // this outer element.
+    //
+    // The overlay below is `position: fixed`, so it takes no space in the
+    // flow. While a route's chunk was in the air, the page's main region
+    // was therefore EMPTY, and the footer - which the Layout renders
+    // beneath it - rose to sit directly under the header, filling the
+    // viewport behind the overlay. When the real page arrived, the footer
+    // dropped back down. The reader never saw it, because the overlay
+    // covers the screen; the browser recorded it all the same, as a
+    // layout shift of 0.94 on EVERY navigation to a lazy route, which is
+    // to say on every route but the homepage. That is a "poor" Cumulative
+    // Layout Shift by any measure, and it was the site's entire CLS.
+    //
+    // One screen of reserved height keeps the footer below the fold for
+    // as long as the loader is up, so nothing that is on screen moves
+    // when the page replaces it. Nothing here is visible: it is an empty
+    // box behind an opaque overlay, and it unmounts with the loader.
+    //
+    // `svh` rather than `vh`: on iOS `vh` is the LARGE viewport, which
+    // would reserve more height than the screen has and reintroduce a
+    // shift of its own in the other direction.
+    // =================================================================
+    <div className="min-h-[100svh]">
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{ backgroundColor: 'var(--chrome-base, hsl(var(--background)))' }}
@@ -77,10 +103,11 @@ export function PageLoader() {
             height={48}
             className="h-12 w-auto"
             decoding="sync"
-            fetchPriority="high"
+            {...HIGH_FETCH_PRIORITY}
           />
         </div>
       </div>
+    </div>
     </div>
   );
 }

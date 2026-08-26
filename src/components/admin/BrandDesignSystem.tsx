@@ -353,8 +353,7 @@ export default function BrandDesignSystem() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           <Swatch name="Void" hex="#05030F" note="Animated backdrops" dark />
           <Swatch name="Deep navy" hex="#150B33" note="Division pages" dark />
-          <Swatch name="Navy" hex="#1F0F4D" note="The accent" dark />
-          <Swatch name="Alumni navy" hex="#241068" note="Alumni accent" dark />
+          <Swatch name="Navy" hex="#1F0F4D" note="The accent, everywhere" dark />
           <Swatch name="Mid purple" hex="#7E5BC2" note="Dot field, chart 3" />
           <Swatch name="Light purple" hex="#AFA2D2" note="Text on navy, chart 2" />
           <Swatch name="Tint" hex="#ECE9F4" note="The hover tint" />
@@ -368,10 +367,15 @@ export default function BrandDesignSystem() {
         </div>
         <p className="mt-4">
           Each signal has a pale wash for callout backgrounds. Chart palette, ordered:{' '}
-          <code>--chart-1</code> … <code>--chart-6</code> = navy, light purple, mid purple, grey, alumni navy, pale
-          lavender. Take them in sequence; never reorder for variety. Page-scoped accents{' '}
-          <code>.mims-theme-alumni</code> and <code>.mims-theme-division</code> swap <code>--accent</code> for those
-          page families; everything else inherits unchanged.
+          <code>--chart-1</code> … <code>--chart-6</code> = navy, light purple, mid purple, grey, deep navy, pale
+          lavender. Take them in sequence; never reorder for variety.
+        </p>
+        <p className="mt-4">
+          <span className="font-serif text-accent">There is one accent, and the Alumni page uses it too.</span> The
+          ramp above once carried a second navy for that page. Two purples four degrees of hue apart do not read as a
+          pairing, they read as a mistake, so the page-scoped accent now resolves to <code>#1F0F4D</code> like
+          everything else. Division pages keep <code>deep navy</code>, which is a background rather than an accent and
+          is far enough away to be a deliberate choice.
         </p>
       </Section>
 

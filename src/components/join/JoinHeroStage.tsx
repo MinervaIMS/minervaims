@@ -72,7 +72,7 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
   return (
     <div
       data-page-hero
-      className="relative flex min-h-[60svh] flex-col overflow-hidden md:min-h-[66svh]"
+      className="relative flex min-h-[52svh] flex-col overflow-hidden md:min-h-[60svh]"
       style={{ backgroundColor: '#000' }}
     >
       {/*
@@ -92,11 +92,22 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
       {/*
         The top inset clears the fixed header, which is 84px plus the iOS
         status bar, and then adds the band of space the fund pages leave above
-        their own titles. The band now has a minimum height so the key figures
-        can be vertically centered in the remaining dark space between the
-        subtitle and the white section below.
+        their own titles.
+
+        THE BAND IS BACK TO ITS ORIGINAL DEPTH: 52svh, and 60svh from md up.
+        It had been raised to 60/66 to open room beneath the payoff, which
+        made /join's opening taller than every other page's for no reason
+        the reader could see. The figures are positioned within the band
+        instead, which is where the problem actually was.
+
+        NO BOTTOM PADDING HERE. It moved onto the figures' own box, as `py`,
+        so that the space above them and the space below them come from the
+        same declaration and are therefore equal by construction. Leaving it
+        on the container would have added its 64 or 96 pixels to the lower
+        gap only, and centring inside a box that is padded on one side is
+        not centring at all.
       */}
-      <div className="container relative z-10 flex flex-1 flex-col pb-12 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pb-14 md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
+      <div className="container relative z-10 flex flex-1 flex-col pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.10))] md:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.14))]">
         {/* Title and payoff carry the same type as PageIntroduction, so the
             opening of /join reads as a member of the same family as the fund
             and division pages rather than as its own thing. */}
@@ -107,23 +118,19 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
           {JOIN_HERO.payoff}
         </p>
 
-        {/* THE FIGURES BELONG TO THE INTRODUCTION, but they sat closer to
-            the payoff than to the foot of the band: about 70px of dark
-            above them and about 165px below, on a 690px hero. The eye read
-            them as an appendix to the subtitle with a large empty margin
-            underneath, rather than as the floor of the introduction.
+        {/* THE FIGURES SIT IN THE MIDDLE OF THE DARK BELOW THE PAYOFF.
 
-            The slack is now collected ABOVE them instead. `justify-end`
-            already pushed them down; what was working against it was 96px
-            of padding at the foot of the band plus another 24 of their own.
-            The foot keeps a deliberate 48 to 56, the figures take whatever
-            height is left, and the distance from the payoff grows by
-            exactly what the foot gave up.
+            This box is the whole of the space between the bottom of the
+            payoff and the bottom of the band. `flex-1` makes it take that
+            space, `justify-center` puts the figures at its centre, and the
+            `py` is what guarantees a minimum margin on BOTH sides when the
+            viewport is short enough that there is no slack left to share -
+            padding is inside the box, so it is subtracted before the free
+            space is halved and the two gaps stay equal at every height.
 
-            `mt-10` is a floor, not a gap: on a short viewport where there
-            is no slack to collect, it guarantees the separation from the
-            payoff that the whole change is for. */}
-        <div className="mt-10 flex flex-1 flex-col items-center justify-end md:mt-14">
+            Nothing else here sets a bottom margin or padding. That is the
+            point: one declaration owns both gaps, so they cannot drift. */}
+        <div className="flex flex-1 flex-col items-center justify-center py-10 md:py-14">
           {figures}
         </div>
       </div>

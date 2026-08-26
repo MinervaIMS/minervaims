@@ -23,7 +23,9 @@ import Index from "./pages/Index";
 const About = lazy(() => import("./pages/About"));
 const DivisionDetail = lazy(() => import("./pages/DivisionDetail"));
 const FundDetail = lazy(() => import("./pages/FundDetail"));
-const MembersIndex = lazy(() => import("./pages/MembersIndex"));
+// `./pages/MembersIndex` is no longer imported: /people is now a route-level
+// redirect (see the route below). The file is left in place and is simply not
+// bundled, since nothing references it.
 const Team = lazy(() => import("./pages/Team"));
 const Alumni = lazy(() => import("./pages/Alumni"));
 const Events = lazy(() => import("./pages/Events"));
@@ -56,6 +58,25 @@ const PayoffLab = lazy(() => import("./pages/PayoffLab"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
+
+/**
+ * A redirect that holds a screen of height for the one frame it exists.
+ *
+ * `<Navigate>` performs its navigation in an effect, so the frame before that
+ * effect runs renders NOTHING: the main region is empty, and the black footer
+ * rises to fill the viewport before being pushed back down. On /people that
+ * measured as a layout shift of 0.51, on a URL whose entire purpose is to send
+ * the reader somewhere else.
+ *
+ * The spacer is the same one the page loader uses, for the same reason, and it
+ * is gone in the next frame along with the redirect itself.
+ */
+const RouteRedirect = ({ to }: { to: string }) => (
+  <>
+    <div className="min-h-[100svh]" aria-hidden="true" />
+    <Navigate to={to} replace />
+  </>
+);
 
 const DESKTOP_MIN = 1024;
 
@@ -90,13 +111,35 @@ const App = () => {
                 <Route path="/about" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="about"><About /></PageVisibilityGate></Suspense>} />
                 <Route path="/divisions/:division" element={<Suspense fallback={<PageLoader />}><ParamVisibilityGate prefix="division" param="division"><DivisionDetail /></ParamVisibilityGate></Suspense>} />
                 <Route path="/funds/:fund" element={<Suspense fallback={<PageLoader />}><ParamVisibilityGate prefix="fund" param="fund"><FundDetail /></ParamVisibilityGate></Suspense>} />
-                <Route path="/people" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="members-index"><MembersIndex /></PageVisibilityGate></Suspense>} />
+                {/* =====================================================
+                    /people REDIRECTS AT THE ROUTE, NOT THROUGH A PAGE.
+
+                    It used to be a lazy route: a chunk was fetched, a
+                    PageLoader was mounted, a PageVisibilityGate queried the
+                    database, and the component that finally rendered was a
+                    one-line <Navigate> to /people/members - at which point
+                    the whole sequence ran again for the real page.
+
+                    The cost was not theoretical. Between the two cycles the
+                    main region was empty for a frame, so the black footer
+                    rose into the viewport and dropped out again: a layout
+                    shift of 0.51, twice, on a URL that exists only to point
+                    somewhere else. The visibility gate on "members-index"
+                    was equally hollow, since nobody can see a page that
+                    navigates away on its first render, and /people/members
+                    carries its own gate.
+
+                    Declared here it is what it always was - an alias -
+                    resolved before anything renders. This is the same form
+                    the three legacy redirects below already use.
+                    ===================================================== */}
+                <Route path="/people" element={<RouteRedirect to="/people/members" />} />
                 <Route path="/people/members" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="team"><Team /></PageVisibilityGate></Suspense>} />
                 <Route path="/people/alumni" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="alumni"><Alumni /></PageVisibilityGate></Suspense>} />
                 {/* Legacy redirects */}
-                <Route path="/members" element={<Navigate to="/people" replace />} />
-                <Route path="/members/team" element={<Navigate to="/people/members" replace />} />
-                <Route path="/members/alumni" element={<Navigate to="/people/alumni" replace />} />
+                <Route path="/members" element={<RouteRedirect to="/people/members" />} />
+                <Route path="/members/team" element={<RouteRedirect to="/people/members" />} />
+                <Route path="/members/alumni" element={<RouteRedirect to="/people/alumni" />} />
                 <Route path="/events" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="events"><Events /></PageVisibilityGate></Suspense>} />
                 <Route path="/join" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="join"><Join /></PageVisibilityGate></Suspense>} />
                 <Route path="/apply" element={<Suspense fallback={<PageLoader />}><Apply /></Suspense>} />

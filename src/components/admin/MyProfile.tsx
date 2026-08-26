@@ -373,24 +373,74 @@ export default function MyProfile() {
               )}
             </div>
 
-            <div className="flex-1 min-w-0 space-y-4">
-              {/* NAME AND SURNAME ARE READ-ONLY, as they have always been:
-                  they come from the association register and are changed
-                  there, not here. Presenting them in a new place does not
-                  make them editable. */}
-              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                <Field label="First name" value={member.first_name} />
-                <Field label="Surname" value={member.surname} />
-              </div>
-              <Field label="Email" value={email} />
+            {/* NAME AND SURNAME ARE READ-ONLY, as they have always been:
+                they come from the association register and are changed
+                there, not here. Presenting them in a new place does not
+                make them editable.
+
+                THEY ARE STACKED, NOT SIDE BY SIDE. Beside the photograph
+                this column is only as wide as the card minus 164px, which
+                on a 1280 or 1440 screen is about 145 to 190px; halving
+                that gave each name roughly 62px, and at 62px the WORDS OF
+                THE LABEL wrapped - "FIRST NAME" arrived as two lines above
+                a one-word value. One field per line uses the whole of the
+                narrow column and cannot wrap at any card width.
+
+                `xl:justify-center` sets the pair against the middle of the
+                portrait rather than its top edge, so the space the picture
+                is taller by falls evenly above and below the name instead
+                of collecting underneath it as a void. */}
+            <div className="flex-1 min-w-0 space-y-4 xl:flex xl:flex-col xl:justify-center xl:gap-4 xl:space-y-0">
+              <Field label="First name" value={member.first_name} />
+              <Field label="Surname" value={member.surname} />
             </div>
           </div>
 
-          {/* The one editable field, on the one surface that may edit it. */}
+          {/* =========================================================
+              EMAIL AND PHONE RUN THE FULL WIDTH OF THE CARD.
+
+              The email address used to sit in the narrow column beside
+              the photograph, and an address is a single unbroken token:
+              at 1440 it had 193px to fit 32 characters and broke across
+              two lines, splitting the domain in the middle. There is no
+              width at which that column is reliably wide enough, because
+              its width is the card's minus the picture's.
+
+              Below the picture it has the card's whole measure - 337px at
+              1920, 359 at 1440, 311 at 1280 - and sets on one line at all
+              three. The wrapping guard on `Field` stays as the last
+              resort for an unusually long address.
+              ========================================================= */}
+          <Field label="Email" value={email} />
+
+          {/* The one editable field, on the one surface that may edit it.
+
+              ITS LABEL IS NOW THE SAME LABEL AS EVERY OTHER ROW'S. It read
+              "PHONE NUMBER (REQUIRED)" in a component whose own line-height
+              is `none`, so it was both the longest label in the card and
+              the only one sitting on a different baseline - which is what
+              made this one row look bolted on rather than part of the
+              sequence. The word "required" is still there, in the hint
+              beneath, where an instruction belongs. */}
           {isDesktop ? (
-            <div>
-              <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Phone number (required)</Label>
-              <Input id="phone" className="mt-1.5" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. +39 333 000 0000" />
+            <div className="min-w-0">
+              <Label
+                htmlFor="phone"
+                className="mb-1 block text-xs font-normal uppercase leading-normal tracking-wider text-muted-foreground"
+              >
+                Phone number
+              </Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g. +39 333 000 0000"
+                aria-describedby="phone-hint"
+                className="h-9 text-sm"
+              />
+              <p id="phone-hint" className="mt-1.5 text-xs text-muted-foreground">
+                Required. The association uses it to reach you.
+              </p>
             </div>
           ) : (
             <Field label="Phone number" value={phone || '-'} />
@@ -458,10 +508,18 @@ export default function MyProfile() {
 
           <Group label="Your duties as a member"><Bullets items={MEMBERSHIP_RULES.duties} /></Group>
 
-          <div className="space-y-3 border-t border-separator pt-5">
+          <div className="space-y-4 border-t border-separator pt-5">
             <div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">Grounds for expulsion</div>
               <Bullets items={MEMBERSHIP_RULES.expulsion} />
+              {/* The grounds without the procedure read far harsher than the
+                  statute is: there is a warning and thirty days to put it
+                  right before anything is resolved. */}
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{MEMBERSHIP_RULES.expulsionProcedure}</p>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Taking a semester of leave</div>
+              <p className="text-sm text-foreground/80 leading-relaxed">{MEMBERSHIP_RULES.leave}</p>
             </div>
             <div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Report publication and blocking</div>

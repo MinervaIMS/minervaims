@@ -157,11 +157,23 @@ html:has(body[data-scroll-locked]) {
   }
 }
 
-/* Page-scoped accent overrides */
+/* Page-scoped accent overrides.
+
+   THE ALUMNI PAGE NO LONGER HAS AN ACCENT OF ITS OWN. It carried a second
+   purple - documented in the design system as "alumni navy" and written
+   here as `258 75% 22%` - which is the identity's one accent seen at a
+   slightly different hue and lightness. At that distance the two do
+   not read as a deliberate pairing, they read as an inconsistency: the
+   Alumni page's headings, links and rules were simply a different colour
+   from the same elements everywhere else on the site.
+
+   The class is kept rather than deleted so `Alumni.tsx` needs no change and
+   nothing that inherits from it can break; it now resolves to the brand
+   accent, which is what every other page uses. */
 .theme-alumni-accent {
-  --accent: 258 75% 22%;
+  --accent: 252 68% 18%;
   --accent-foreground: 0 0% 100%;
-  --ring: 258 75% 22%;
+  --ring: 252 68% 18%;
 }
 .theme-division-accent {
   --accent: 259 71% 14%;
@@ -1219,8 +1231,14 @@ input[type='search']::-webkit-search-cancel-button {
    content is presented as a vertical spine instead.
    ===================================================================== */
 .tl {
-  --tl-dot: 80px;                /* milestone year circle              */
-  --tl-minor-dot: 50px;          /* quiet-year circle (0.62 x dot)     */
+  /* The two circles are the timeline's hierarchy, and the gap between them
+     is what makes a milestone read as one at a glance. 80/50 put them at
+     0.62; 88/45 puts them at 0.51, so a year that carries a key event is
+     now visibly the larger mark and a quiet year is visibly punctuation.
+     The rail, the card grid and the minor column all derive from these two
+     numbers, so nothing else has to move. */
+  --tl-dot: 88px;                /* milestone year circle              */
+  --tl-minor-dot: 45px;          /* quiet-year circle (0.51 x dot)     */
   --tl-card: 400px;              /* milestone column width             */
   --tl-gap: 3rem;                /* space between columns              */
   --tl-railtop: 2.5rem;          /* space above the rail               */
@@ -1341,7 +1359,15 @@ input[type='search']::-webkit-search-cancel-button {
   font-family: 'EB Garamond', 'Times New Roman', Times, Georgia, serif;
   width: var(--tl-dot); height: var(--tl-dot);
   border: 1.5px solid hsl(var(--accent)); color: hsl(var(--accent));
-  font-size: calc(var(--tl-dot) / 40 * 1rem);
+  /* THIS WAS `calc(var(--tl-dot) / 40 * 1rem)`, WHICH IS NOT A VALID LENGTH.
+     `--tl-dot` is a length, so the division yields a length, and multiplying
+     a length by another length is invalid arithmetic: the whole declaration
+     was dropped and the year inherited 1rem. The visible consequence was
+     that a milestone year was set SMALLER than a quiet year beside it -
+     16px inside an 80px circle against 19.2px inside a 50px one - which is
+     the hierarchy this section is built on, inverted. Stated as a plain
+     length it cannot fail. */
+  font-size: 2.1rem;
   transition: background-color .55s ease, color .55s ease, box-shadow .55s ease, border-color .55s ease;
 }
 .tl-dot.is-lit {
@@ -1350,7 +1376,7 @@ input[type='search']::-webkit-search-cancel-button {
 }
 .tl-dot--minor {
   width: var(--tl-minor-dot); height: var(--tl-minor-dot);
-  border: 1px solid hsl(var(--separator)); color: hsl(var(--muted-foreground)); font-size: 1.2rem;
+  border: 1px solid hsl(var(--separator)); color: hsl(var(--muted-foreground)); font-size: 1.1rem;
 }
 .tl-dot--minor.is-lit {
   background: hsl(var(--background)); color: hsl(var(--accent));
@@ -1426,12 +1452,16 @@ input[type='search']::-webkit-search-cancel-button {
 
 /* vertical fallback (narrow, short, or reduced motion) ------------------- */
 .tl-vlist { max-width: 54rem; margin: .5rem 0 0; padding: 0 1.5rem; list-style: none; position: relative; }
-.tl-vitem { position: relative; display: grid; grid-template-columns: 68px 1fr; gap: 1.4rem; padding-bottom: 2.5rem; }
+/* The vertical fallback carries the same hierarchy as the rail: the
+   milestone circle grows, the quiet one shrinks, and the minor dot's
+   `margin-top` is half the difference so its centre still lands on the
+   spine ((74 - 45) / 2 = 14.5). */
+.tl-vitem { position: relative; display: grid; grid-template-columns: 74px 1fr; gap: 1.4rem; padding-bottom: 2.5rem; }
 .tl-vrailcell { position: relative; display: flex; justify-content: center; }
-.tl-vdot { width: 68px; height: 68px; font-size: 1.36rem; }
-.tl-vdot.tl-dot--minor { width: 50px; height: 50px; margin-top: 9px; font-size: 1.16rem; }
+.tl-vdot { width: 74px; height: 74px; font-size: 1.48rem; }
+.tl-vdot.tl-dot--minor { width: 45px; height: 45px; margin-top: 14.5px; font-size: 1.06rem; }
 .tl-vrail {
-  position: absolute; left: 50%; top: 68px; bottom: -2.5rem; width: 2px;
+  position: absolute; left: 50%; top: 74px; bottom: -2.5rem; width: 2px;
   background: hsl(var(--separator)); transform: translateX(-50%); overflow: hidden;
 }
 .tl-vitem[data-minor='1'] .tl-vrail { top: 62px; width: 1px; }
@@ -1451,8 +1481,8 @@ input[type='search']::-webkit-search-cancel-button {
 /* Phones run the same horizontal timeline, at phone proportions. */
 @media (max-width: 767px) {
   .tl {
-    --tl-dot: 62px;
-    --tl-minor-dot: 40px;
+    --tl-dot: 68px;
+    --tl-minor-dot: 36px;
     --tl-card: 78vw;
     --tl-gap: 1.75rem;
     --tl-railtop: 1.75rem;
@@ -1468,9 +1498,16 @@ input[type='search']::-webkit-search-cancel-button {
   .tl-media--pdf { height: min(240px, max(140px, calc(var(--tl-cardh) - 250px))); }
   .tl-tail { width: 40vw; }
   .tl-cont-line { width: 190px; }
-  /* A year with no key event is punctuation on a phone, not a milestone. */
-  .tl { --tl-minor-dot: 32px; }
-  .tl-dot--minor { font-size: .95rem; }
+  /* A year with no key event is punctuation on a phone, not a milestone.
+     Both rules are scoped to `.tl-dotcell`, which exists only in the
+     horizontal rail: the vertical fallback keeps its own sizes and is not
+     reached by a bare `.tl-dot` selector appearing later in the file. */
+  .tl { --tl-minor-dot: 30px; }
+  .tl-dotcell .tl-dot { font-size: 1.6rem; }
+  /* .78rem, not .88: at 32px and .95rem the four digits filled 95% of the
+     circle and all but touched its border. Text and circle now sit at the
+     same 0.86 ratio the desktop rail uses. */
+  .tl-dotcell .tl-dot--minor { font-size: .78rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

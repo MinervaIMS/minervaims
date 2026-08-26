@@ -6,7 +6,7 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
-import { formatFundValue } from '@/lib/funds-api';
+import { formatFundValue, listFundYears } from '@/lib/funds-api';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 
@@ -97,7 +97,7 @@ const FundDetail = () => {
   const fetchFiles = async () => {
     setIsDataLoading(true);
     try {
-      const [filesRes, perfRes] = await Promise.all([
+      const [filesRes, perfRows] = await Promise.all([
         supabase
           .from('archive_files')
           .select('id, title, description, file_url, date, division, fund')
@@ -107,31 +107,32 @@ const FundDetail = () => {
           .is('deleted_at', null)
           .order('date', { ascending: false })
           .limit(9),
+        // THE SAME READ THE CHART MAKES, so the page performs it once.
+        //
+        // This used to be its own query against `fund_performance_years`,
+        // running beside the one `FundPerformanceChart` issues from the very
+        // same page: two requests, for the same rows, a few milliseconds
+        // apart. `listFundYears` coalesces concurrent callers, so both now
+        // wait on one round trip, and the ordering, the filtering and the
+        // twelve-month normalisation are done in one place instead of two.
+        //
         // Performance matrix is only shown for the two active funds.
         (fund === 'long-short' || fund === 'multi-asset')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? (supabase as any)
-              .from('fund_performance_years')
-              .select('year, itd, months, ytd, vol, sharpe')
-              .eq('fund', fund)
-              .order('year', { ascending: true })
-          : Promise.resolve({ data: [], error: null }),
+          ? listFundYears().then((rows) => rows.filter((r) => r.fund === fund)).catch(() => [])
+          : Promise.resolve([]),
       ]);
 
       if (filesRes.error) throw filesRes.error;
       setFiles(filesRes.data || []);
 
-      if (!perfRes.error && Array.isArray(perfRes.data)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setPerfRows((perfRes.data as any[]).map((r) => ({
-          year: r.year,
-          itd: r.itd ?? '',
-          months: Array.from({ length: 12 }, (_, i) => (Array.isArray(r.months) ? (r.months[i] ?? '') : '')),
-          ytd: r.ytd ?? '',
-          vol: r.vol ?? '',
-          sharpe: r.sharpe ?? '',
-        })));
-      }
+      setPerfRows(perfRows.map((r) => ({
+        year: r.year,
+        itd: r.itd ?? '',
+        months: Array.from({ length: 12 }, (_, i) => (Array.isArray(r.months) ? (r.months[i] ?? '') : '')),
+        ytd: r.ytd ?? '',
+        vol: r.vol ?? '',
+        sharpe: r.sharpe ?? '',
+      })));
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
