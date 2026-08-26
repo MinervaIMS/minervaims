@@ -14,12 +14,59 @@ import ctaLion from '@/assets/brand/cta-lion.png.asset.json';
  * substance is authoritative but the layout is a workspace reference sheet.
  */
 
+/**
+ * One numbered chapter of the design system.
+ *
+ * The `id` is what the contents rail at the top of the page scrolls to, and
+ * it is derived from the title rather than hand-written, so a chapter that is
+ * renamed or replaced cannot leave a dead link behind it.
+ */
+const slug = (title: string) =>
+  `ds-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-12">
+  <section id={slug(title)} className="mb-12 scroll-mt-4">
     <h2 className="font-serif text-heading text-accent mb-6 pb-3 border-b border-separator">{title}</h2>
     <div className="space-y-4 font-body text-body text-foreground">{children}</div>
   </section>
 );
+
+/**
+ * The chapters, in order.
+ *
+ * THIS IS THE LIST TO EDIT when the design system is republished: it drives
+ * the contents rail, and each entry must match a `<Section title>` below.
+ */
+const CHAPTERS = [
+  '1. Identity',
+  '2. Audience: three concentric circles',
+  '3. Voice and copy',
+  '4. Colour palette',
+  '5. Typography',
+  '6. Design tokens',
+  '7. Logo usage',
+  '8. Imagery and layout',
+  '9. Iconography',
+  '10. Components',
+  '11. Backgrounds and surfaces',
+  '12. Cheat-sheet',
+];
+
+/**
+ * WHICH VERSION THIS PAGE IS SHOWING.
+ *
+ * A reference that does not say what it is a reference TO cannot be trusted
+ * as current: a reader has no way to tell a page that was updated last week
+ * from one that has quietly been left behind for a year. The stamp is one
+ * line, and it is the first thing under the heading.
+ *
+ * Update BOTH fields whenever the design-system bundle is republished.
+ */
+const DESIGN_SYSTEM = {
+  version: 'Minerva IMS Design System',
+  edition: '2026 edition',
+  updated: 'August 2026',
+};
 
 const Swatch = ({ name, hex, note, dark }: { name: string; hex: string; note?: string; dark?: boolean }) => (
   <div className="border border-separator">
@@ -48,6 +95,26 @@ export default function BrandDesignSystem() {
         title="Brand & Design"
         description="The association's visual identity: fonts, colours, logo usage, spacing, motion, iconography and tone-of-voice rules. This page mirrors the Minerva IMS Design System bundle: treat it as the source of truth for on-brand output."
       />
+
+      {/* Provenance, then a way in. The page is ten chapters long and used to
+          open straight into the first of them, so finding the colour palette
+          meant scrolling past the audience and the voice every time. */}
+      <div className="mb-10 font-body">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">
+          {DESIGN_SYSTEM.version} · {DESIGN_SYSTEM.edition} · updated {DESIGN_SYSTEM.updated}
+        </p>
+        <nav aria-label="Design system contents" className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+          {CHAPTERS.map((c) => (
+            <a
+              key={c}
+              href={`#${slug(c)}`}
+              className="text-sm text-accent underline-offset-4 hover:underline"
+            >
+              {c}
+            </a>
+          ))}
+        </nav>
+      </div>
 
       {/* 1. Identity */}
       <Section title="1. Identity">
@@ -270,8 +337,119 @@ export default function BrandDesignSystem() {
         </ul>
       </Section>
 
-      {/* 10. Cheat-sheet */}
-      <Section title="10. Cheat-sheet">
+      {/* 10. Components */}
+      <Section title="10. Components">
+        <p>
+          Every component below is one that exists in the product today; the values are the ones the
+          code actually uses, not aspirations. Where a class name is given it is the single definition
+          the whole site shares.
+        </p>
+
+        <h3 className="font-serif text-subheading text-accent mt-6 mb-3">Buttons</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="border border-separator p-5">
+            <span className="cta-link">Primary</span>
+            <div className="font-body text-small text-muted-foreground mt-3">
+              <code className="text-accent">.cta-link</code> — white ground, accent border, serif at 18px,
+              10/4 padding. Fills accent on hover in 200ms and takes the elevated shadow.
+            </div>
+          </div>
+          <div className="border border-separator p-5">
+            <span className="cta-link-invert">Primary, filled</span>
+            <div className="font-body text-small text-muted-foreground mt-3">
+              <code className="text-accent">.cta-link-invert</code> — the same geometry with the fill
+              reversed, for a button that has to carry primary weight on a light surface. Inverts to white
+              on hover.
+            </div>
+          </div>
+        </div>
+        <ul className="list-disc pl-6 space-y-1.5 mt-4">
+          <li>In the workspace the shadcn <code className="text-accent">Button</code> carries the same
+            language: the default and outline variants are white with an accent border and invert on hover.</li>
+          <li>A filled purple action uses <code className="text-accent">bg-accent</code> with{' '}
+            <code className="text-accent">text-accent-foreground</code>: the mobile header, the help panel's
+            title band, active toggles and the My Profile statute action.</li>
+          <li>Heights: 40px default, 36px small, 44px large. Radius 6px in the workspace, 0 on the public site.</li>
+        </ul>
+
+        <h3 className="font-serif text-subheading text-accent mt-8 mb-3">Cards</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-separator bg-background p-5">
+            <div className="font-serif text-body text-accent">Workspace card</div>
+            <div className="font-body text-small text-muted-foreground mt-1">
+              <code className="text-accent">rounded-xl border border-separator</code>, 20–24px padding, a
+              hairline under the heading. Used by the Dashboard and My Profile.
+            </div>
+          </div>
+          <div className="border border-separator bg-background p-5">
+            <div className="font-serif text-body text-accent">Public card</div>
+            <div className="font-body text-small text-muted-foreground mt-1">
+              Square corners. Fills accent on hover and lifts <code>translateY(-4px)</code>; the v3 carousel
+              uses the pale lavender tint instead of a full fill.
+            </div>
+          </div>
+        </div>
+
+        <h3 className="font-serif text-subheading text-accent mt-8 mb-3">Indicators and navigation</h3>
+        <div className="border border-separator p-5 flex flex-wrap items-center gap-8">
+          <div>
+            <div className="mdots"><span className="mdot is-on" /><span className="mdot" /><span className="mdot" /></div>
+            <div className="font-body text-small text-muted-foreground mt-2">
+              Carousel dots: 6px circles at 28% accent; the active one stretches to a 20px lozenge in
+              240ms. White on a dark ground.
+            </div>
+          </div>
+          <div>
+            <span className="rarrow inline-flex items-center justify-center">→</span>
+            <div className="font-body text-small text-muted-foreground mt-2">
+              Carousel arrow: 2.6rem circle, hairline border, fills accent on hover.
+            </div>
+          </div>
+        </div>
+        <ul className="list-disc pl-6 space-y-1.5 mt-4">
+          <li>Header: 84px fixed, transparent over a photographic hero and solid white once the dark ground
+            ends. The flip point is the element marked <code className="text-accent">data-nav-flip</code>.</li>
+          <li>The mobile breakpoint for the public header is 880px; the workspace switches to its mobile
+            shell below <code>lg</code> (1024px).</li>
+        </ul>
+
+        <h3 className="font-serif text-subheading text-accent mt-8 mb-3">Media and data visualisation</h3>
+        <ul className="list-disc pl-6 space-y-1.5">
+          <li>Report covers keep their own proportions: they are given a box and fitted inside it with
+            <code className="text-accent"> object-contain</code>, never cropped or stretched.</li>
+          <li>Charts use the accent for the primary series and the light purple for the secondary; grids are
+            hairlines, never boxes. Counters animate up on first view.</li>
+          <li>Every loading mark breathes on one 2.8s cycle shared across mounts.</li>
+        </ul>
+      </Section>
+
+      {/* 11. Backgrounds */}
+      <Section title="11. Backgrounds and surfaces">
+        <p>
+          Four ambient treatments, each with one job. None of them is decorative filler: a surface is either
+          flat or it is one of these.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {[
+            ['Photographic hero', 'A full-bleed photograph with the dark-purple wash composited over it as a separate layer. Both are preloaded together so the hero arrives as one state rather than two.'],
+            ['Beams', 'The WebGL field behind sign-in, the utility pages and event registration. Deep navy ground, light-purple beams at low noise.'],
+            ['Particle field', 'The /join and application backdrop, so the recruiting page and the form it leads to read as one journey.'],
+            ['Flat', 'White, or the single grey surface. Body sections are one or the other. No gradients in chrome, no textures, no patterns.'],
+          ].map(([k, v]) => (
+            <div key={k} className="border border-separator p-4">
+              <div className="font-serif text-body text-accent">{k}</div>
+              <div className="font-body text-small text-muted-foreground mt-1">{v}</div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-small text-muted-foreground">
+          Surfaces carry structure through hairlines rather than boxes: a 1px separator under a heading does
+          the work a bordered panel would otherwise do.
+        </p>
+      </Section>
+
+      {/* 12. Cheat-sheet */}
+      <Section title="12. Cheat-sheet">
         <ul className="list-disc pl-6 space-y-1">
           <li>One deep navy accent. White page. Hairlines, not boxes.</li>
           <li>Serif headings, sans body. Tight tracking. Big hero type.</li>

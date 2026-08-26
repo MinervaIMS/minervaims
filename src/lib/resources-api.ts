@@ -9,13 +9,22 @@ import type { OrgDivision } from '@/lib/roles';
 
 export type ResourceType = 'text' | 'file' | 'link' | 'code' | 'other';
 
-/** A single source inside an item. Its kind is inferred from the field used. */
-export type ResourceSourceKind = 'text' | 'link' | 'file';
+/**
+ * A single source inside an item. Its kind is inferred from the field used.
+ *
+ * `phone` and `email` join the three original kinds rather than being a
+ * separate mechanism: an item that holds a contact is still an item, and the
+ * whole point of the sources array is that one item can carry a mixture. They
+ * are stored, validated, counted and rendered by exactly the same machinery,
+ * so nothing that already works with text, links and files needed changing to
+ * accommodate them.
+ */
+export type ResourceSourceKind = 'text' | 'link' | 'file' | 'phone' | 'email';
 export interface ResourceSource {
   kind: ResourceSourceKind;
-  /** Text body, URL, or stored file object-path. */
+  /** Text body, URL, stored file object-path, telephone number or address. */
   value: string;
-  /** Optional label — e.g. the original file name or a link title. */
+  /** Optional label — e.g. the original file name, a link title, "Office". */
   label?: string | null;
 }
 
@@ -53,12 +62,30 @@ export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
 };
 
 export const SOURCE_KIND_LABELS: Record<ResourceSourceKind, string> = {
-  text: 'Text', link: 'Link', file: 'File',
+  text: 'Text', link: 'Link', file: 'File', phone: 'Telephone', email: 'Email',
 };
 
 export const MAX_FAVOURITES = 5;
-/** Per-item cap for each source kind, and the overall minimum. */
-export const MAX_SOURCES_PER_KIND = 5;
+
+/**
+ * The per-item cap for each kind.
+ *
+ * ONE TABLE, READ BY BOTH SIDES. This used to be a single number for every
+ * kind, which is why raising the file limit meant raising all of them. The
+ * caps now differ by kind, and `supabase/functions/admin-resources` holds the
+ * same table and enforces it - a limit that only the interface knows about is
+ * a suggestion, not a limit.
+ */
+export const SOURCE_LIMITS: Record<ResourceSourceKind, number> = {
+  text: 5,
+  link: 5,
+  file: 8,
+  phone: 3,
+  email: 3,
+};
+
+/** The most sources one item can hold, if every kind were filled. */
+export const MAX_SOURCES_PER_ITEM = Object.values(SOURCE_LIMITS).reduce((a, b) => a + b, 0);
 export const MIN_SOURCES_PER_ITEM = 1;
 
 /** Count sources of a given kind. */

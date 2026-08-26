@@ -76,77 +76,126 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   // edge to edge instead of the text-and-preview layout. Everything about
   // it is still live: it only appears while a day's registration is open,
   // and the day is in the sentence.
+  // ---------------------------------------------------------------------
+  // The pieces, defined once and composed twice.
+  //
+  // A PHONE IS NOT A NARROW DESKTOP. The desktop card is a cover beside a
+  // column of text, which is right at 400px of width and wrong at 300: the
+  // cover took 38% of the card, the title wrapped to two lines in what was
+  // left, the description was cut mid-word ("Minerva Investment..."), and
+  // `mt-auto` then dropped the button into a band of empty purple below.
+  //
+  // The phone gets its own arrangement instead: a compact top row where the
+  // cover sits beside the title and the date, the description underneath at
+  // the FULL width of the card, and the action anchored across the foot.
+  // The description gains about a hundred points of measure that way, which
+  // is the difference between two truncated lines and two whole ones.
+  //
+  // Both arrangements are built from the same five constants, so the phone
+  // and the desktop cannot drift apart in what they say.
+  // ---------------------------------------------------------------------
+  const cover = (size: string) => (
+    <div className={`shrink-0 flex items-center justify-center ${size}`}>
+      {update.imageUrl ? (
+        <img
+          src={update.imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="max-h-full max-w-full w-auto h-auto object-contain rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]"
+        />
+      ) : (
+        <PdfThumbnail
+          url={update.pdfUrl!}
+          alt=""
+          renderWidth={200}
+          className="max-h-full max-w-full w-auto h-auto object-contain rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]"
+        />
+      )}
+    </div>
+  );
+
+  const title = (cls: string) => (
+    <h3 className={`shrink-0 font-serif leading-[1.16] ${cls}`}>{update.title}</h3>
+  );
+  const detail = (cls: string) => (update.detail ? (
+    <p className={`min-h-0 overflow-hidden leading-[1.45] text-accent-foreground/80 ${cls}`}>{update.detail}</p>
+  ) : null);
+  const when = (cls: string) => (update.date ? (
+    <span className={`shrink-0 text-accent-foreground/70 ${cls}`}>{formatDate(update.date)}</span>
+  ) : null);
+  // The site's button language: white fill and purple label, and on hover the
+  // full inversion to the deep purple with a white border. No icon: the
+  // site's buttons do not carry one.
+  const cta = (cls: string) => (
+    <span
+      className={`inline-flex items-center justify-center h-11 px-6 rounded-md
+                  border border-background bg-background
+                  font-serif text-[15px] text-accent whitespace-nowrap
+                  transition-colors duration-200
+                  group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background ${cls}`}
+    >
+      {target.label}
+    </span>
+  );
+
+  // ASSOCIATION ON DISPLAY TAKES THE WHOLE CARD. It is the one state that
+  // is a promotion rather than a notice, so it gets its own composition
+  // edge to edge instead of the text-and-preview layout. Everything about
+  // it is still live: it only appears while a day's registration is open,
+  // and the day is in the sentence.
   const body = update.kind === 'aod' ? (
     <AodPromoCard date={update.date} />
   ) : (
-    <div className={`h-full w-full p-5 sm:p-6 font-body flex ${hasImage ? 'gap-5 sm:gap-6' : ''} text-left`}>
-      {hasImage && (
-        // A fixed WIDTH and a free height: the picture decides its own
-        // proportions inside the column and is centred in what it leaves,
-        // so a portrait poster and an A4 cover both fit undistorted.
-        <div className="shrink-0 w-[38%] max-w-[210px] flex items-center justify-center">
-          {update.imageUrl ? (
-            <img
-              src={update.imageUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="max-h-full max-w-full w-auto h-auto object-contain rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]"
-            />
-          ) : (
-            <PdfThumbnail
-              url={update.pdfUrl!}
-              alt=""
-              renderWidth={200}
-              className="max-h-full max-w-full w-auto h-auto object-contain rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]"
-            />
-          )}
+    <>
+      {/* ---- Phone: cover beside the title, then the full-width text ---- */}
+      <div className="sm:hidden h-full w-full p-5 font-body flex flex-col text-left">
+        <div className={`flex items-start ${hasImage ? 'gap-4' : ''}`}>
+          {/* A fixed HEIGHT here rather than a width: whatever the cover's
+              proportions, the row is the same depth, so the text beside it
+              always starts and ends in the same place. */}
+          {hasImage && cover('h-[8.25rem] w-[6.25rem]')}
+          <div className="min-w-0 flex-1">
+            {title('text-[21px] line-clamp-3')}
+            {when('mt-2 block text-[13px]')}
+          </div>
         </div>
-      )}
 
-      {/* THE CONTENT COLUMN IS ALIGNED TO THE COVER, top and bottom.
-          The title's first line starts at the top edge of the cover; the
-          description and the date follow it immediately, keeping their
-          own spacing; the slack is collected by `mt-auto` into one wide
-          band of purple ABOVE the action; and the action itself sits at
-          the foot of the column, level with the bottom of the cover.
-          Centring the group is what left the title low, the button
-          crowding the date, and a band of unused purple underneath.
+        {/* THE FULL WIDTH OF THE CARD, not what is left beside a cover. */}
+        {detail('mt-3.5 text-[13px] line-clamp-3')}
 
-          IT HOLDS AT EVERY CARD HEIGHT. The title, the date and the
-          action are `shrink-0`, so none of them can ever be squeezed or
-          clipped; the description is the one flexible element, and on a
-          short window it gives up its second line rather than pushing
-          anything out of the card. */}
-      <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
-        {/* No category heading. The report, the event or the reminder IS
-            the content; a label above it saying so spends a line to
-            repeat what the next line already says. */}
-        <h3 className="shrink-0 font-serif text-[22px] sm:text-[24px] leading-[1.16] line-clamp-2">{update.title}</h3>
-        {update.detail && (
-          <p className="mt-3 min-h-0 overflow-hidden text-[13px] sm:text-sm leading-[1.45] text-accent-foreground/80 line-clamp-2">
-            {update.detail}
-          </p>
-        )}
-        {update.date && (
-          <span className="mt-2.5 shrink-0 text-[13px] text-accent-foreground/70">{formatDate(update.date)}</span>
-        )}
-        {/* The site's button language: white fill and purple label, and
-            on hover the full inversion to the deep purple with a white
-            border. No icon: the site's buttons do not carry one. */}
-        <div className="mt-auto shrink-0 pt-5">
-          <span
-            className="inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
-                       border border-background bg-background
-                       font-serif text-[15px] text-accent whitespace-nowrap
-                       transition-colors duration-200
-                       group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
-          >
-            {target.label}
-          </span>
+        {/* Anchored across the foot: a full-width bar reads as the card's
+            action, where a small button floating in purple did not. */}
+        <div className="mt-auto shrink-0 pt-4">{cta('w-full')}</div>
+      </div>
+
+      {/* ---- Tablet and desktop: unchanged ----------------------------- */}
+      <div className={`hidden sm:flex h-full w-full p-5 sm:p-6 font-body ${hasImage ? 'gap-5 sm:gap-6' : ''} text-left`}>
+        {/* A fixed WIDTH and a free height: the picture decides its own
+            proportions inside the column and is centred in what it leaves,
+            so a portrait poster and an A4 cover both fit undistorted. */}
+        {hasImage && cover('w-[38%] max-w-[210px]')}
+
+        {/* THE CONTENT COLUMN IS ALIGNED TO THE COVER, top and bottom.
+            The title's first line starts at the top edge of the cover; the
+            description and the date follow it immediately, keeping their
+            own spacing; the slack is collected by `mt-auto` into one wide
+            band of purple ABOVE the action; and the action itself sits at
+            the foot of the column, level with the bottom of the cover.
+
+            IT HOLDS AT EVERY CARD HEIGHT. The title, the date and the
+            action are `shrink-0`, so none of them can ever be squeezed or
+            clipped; the description is the one flexible element, and on a
+            short window it gives up its second line rather than pushing
+            anything out of the card. */}
+        <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
+          {title('text-[24px] line-clamp-2')}
+          {detail('mt-3 text-sm line-clamp-2')}
+          {when('mt-2.5 block text-[13px]')}
+          <div className="mt-auto shrink-0 pt-5">{cta('w-fit')}</div>
         </div>
       </div>
-    </div>
+    </>
   );
 
   // The card does not lighten on hover. The purple is the brand's, and
