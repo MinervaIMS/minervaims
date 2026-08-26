@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader2, Upload, Star, X, Eye, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader2, Upload, Star, X, Eye, Download, Phone, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
@@ -21,7 +21,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite, signResourceFile,
-  MAX_FAVOURITES, MAX_SOURCES_PER_KIND, type ResourceRow, type ResourceSource,
+  MAX_FAVOURITES, SOURCE_LIMITS, type ResourceRow, type ResourceSource,
 } from '@/lib/resources-api';
 import { downloadTitled } from '@/lib/file-download';
 import { previewLink } from '@/lib/link-label';
@@ -42,7 +42,12 @@ interface Props {
 }
 
 const DEFAULT_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'none'];
-const MAX = MAX_SOURCES_PER_KIND;
+// Per-kind caps, read from the one table the server enforces.
+const MAX_TEXTS = SOURCE_LIMITS.text;
+const MAX_LINKS = SOURCE_LIMITS.link;
+const MAX_FILES = SOURCE_LIMITS.file;
+const MAX_PHONES = SOURCE_LIMITS.phone;
+const MAX_EMAILS = SOURCE_LIMITS.email;
 
 interface FileEntry { value: string; label: string }
 /**
@@ -54,6 +59,8 @@ interface FileEntry { value: string; label: string }
  * and nothing else does.
  */
 interface LinkEntry { value: string; label: string }
+/** A telephone number or an address, with an optional note of whose it is. */
+interface ContactEntry { value: string; label: string }
 
 interface FormState {
   id: string | null;
@@ -63,12 +70,53 @@ interface FormState {
   texts: string[];
   links: LinkEntry[];
   files: FileEntry[];
+  phones: ContactEntry[];
+  emails: ContactEntry[];
   is_favourite: boolean;
 }
 
 const emptyForm = (division: OrgDivision): FormState => ({
-  id: null, division, title: '', description: '', texts: [''], links: [], files: [], is_favourite: false,
+  id: null, division, title: '', description: '', texts: [''], links: [], files: [],
+  phones: [], emails: [], is_favourite: false,
 });
+
+/**
+ * One telephone number or email address, with an optional note of whose it is.
+ *
+ * The note is the second field on the row rather than a line beneath it: a
+ * contact is naturally two short things side by side, and stacking them would
+ * have repeated the mistake the link editor is being corrected for.
+ */
+function ContactRow({ entry, valuePlaceholder, labelPlaceholder, inputMode, onChange, onRemove }: {
+  entry: ContactEntry;
+  valuePlaceholder: string;
+  labelPlaceholder: string;
+  inputMode: 'tel' | 'email';
+  onChange: (next: ContactEntry) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex gap-2 min-w-0">
+      <Input
+        className="min-w-0 flex-[3]"
+        type={inputMode === 'email' ? 'email' : 'tel'}
+        inputMode={inputMode}
+        value={entry.value}
+        onChange={(e) => onChange({ ...entry, value: e.target.value })}
+        placeholder={valuePlaceholder}
+        aria-label={inputMode === 'email' ? 'Email address' : 'Telephone number'}
+      />
+      <Input
+        className="min-w-0 flex-[2] text-sm"
+        value={entry.label}
+        onChange={(e) => onChange({ ...entry, label: e.target.value })}
+        placeholder={labelPlaceholder}
+        aria-label="Whose it is (optional)"
+      />
+      <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={onRemove}><X className="h-4 w-4" /></Button>
+    </div>
+  );
+}
 
 export default function ResourceManager({
   category, title, description, divisions = DEFAULT_DIVISIONS,
@@ -106,6 +154,9 @@ export default function ResourceManager({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm(createDefault));
+  // Which link row has its name field open. Only one at a time: the field is
+  // an override, not part of filling the row in.
+  const [namingLink, setNamingLink] = useState<number | null>(null);
 
   const showDivisions = (lockedToOwn ? viewable : divisions).filter((d) => d !== 'none');
 
@@ -130,20 +181,23 @@ export default function ResourceManager({
   const rest = useMemo(() => visible.filter((i) => !i.is_favourite), [visible]);
   const favouriteCount = items.filter((i) => i.is_favourite).length;
 
-  const openCreate = () => { setForm(emptyForm(createDefault)); setDialogOpen(true); };
+  const openCreate = () => { setForm(emptyForm(createDefault)); setNamingLink(null); setDialogOpen(true); };
   const openEdit = (r: ResourceRow) => {
     setForm({
       id: r.id, division: r.division, title: r.title, description: r.description ?? '',
       texts: r.sources.filter((s) => s.kind === 'text').map((s) => s.value),
       links: r.sources.filter((s) => s.kind === 'link').map((s) => ({ value: s.value, label: s.label ?? '' })),
       files: r.sources.filter((s) => s.kind === 'file').map((s) => ({ value: s.value, label: s.label || 'File' })),
+      phones: r.sources.filter((s) => s.kind === 'phone').map((s) => ({ value: s.value, label: s.label ?? '' })),
+      emails: r.sources.filter((s) => s.kind === 'email').map((s) => ({ value: s.value, label: s.label ?? '' })),
       is_favourite: r.is_favourite,
     });
+    setNamingLink(null);
     setDialogOpen(true);
   };
 
   const handleUpload = async (file: File) => {
-    if (form.files.length >= MAX) { toast({ title: `At most ${MAX} files per item.`, variant: 'destructive' }); return; }
+    if (form.files.length >= MAX_FILES) { toast({ title: `At most ${MAX_FILES} files per item.`, variant: 'destructive' }); return; }
     setUploading(true);
     try {
       const url = await uploadResourceFile(session, file);
@@ -162,13 +216,21 @@ export default function ResourceManager({
       .filter((l) => l.value)
       .map((l) => ({ kind: 'link' as const, value: l.value, label: l.label || null })),
     ...f.files.map((file) => ({ kind: 'file' as const, value: file.value, label: file.label })),
+    ...f.phones
+      .map((c) => ({ value: c.value.trim(), label: c.label.trim() }))
+      .filter((c) => c.value)
+      .map((c) => ({ kind: 'phone' as const, value: c.value, label: c.label || null })),
+    ...f.emails
+      .map((c) => ({ value: c.value.trim(), label: c.label.trim() }))
+      .filter((c) => c.value)
+      .map((c) => ({ kind: 'email' as const, value: c.value, label: c.label || null })),
   ];
 
   const save = async () => {
     const sources = buildSources(form);
     if (!form.title.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
     if (!form.description.trim()) { toast({ title: 'A description is required', variant: 'destructive' }); return; }
-    if (sources.length < 1) { toast({ title: 'Add at least one text, link or file', variant: 'destructive' }); return; }
+    if (sources.length < 1) { toast({ title: 'Add at least one text, link, file, telephone number or email address', variant: 'destructive' }); return; }
     setSaving(true);
     try {
       logActivity(session, primaryRole, { action: form.id ? 'update' : 'create', section: 'Workspace', subsection: title, entityType: 'resource', entityName: form.title });
@@ -227,16 +289,22 @@ export default function ResourceManager({
   // ── Sub-editors for each source kind ──────────────────────────────────────
   const setTexts = (texts: string[]) => setForm((p) => ({ ...p, texts }));
   const setLinks = (links: LinkEntry[]) => setForm((p) => ({ ...p, links }));
+  const setPhones = (phones: ContactEntry[]) => setForm((p) => ({ ...p, phones }));
+  const setEmails = (emails: ContactEntry[]) => setForm((p) => ({ ...p, emails }));
 
   const summaryIcons = (r: ResourceRow) => {
     const t = r.sources.filter((s) => s.kind === 'text').length;
     const l = r.sources.filter((s) => s.kind === 'link').length;
     const f = r.sources.filter((s) => s.kind === 'file').length;
+    const ph = r.sources.filter((s) => s.kind === 'phone').length;
+    const em = r.sources.filter((s) => s.kind === 'email').length;
     return (
       <span className="text-xs text-muted-foreground inline-flex items-center gap-2">
         {t > 0 && <span className="inline-flex items-center gap-0.5"><StickyNote className="h-3.5 w-3.5" />{t}</span>}
         {l > 0 && <span className="inline-flex items-center gap-0.5"><Link2 className="h-3.5 w-3.5" />{l}</span>}
         {f > 0 && <span className="inline-flex items-center gap-0.5"><FileText className="h-3.5 w-3.5" />{f}</span>}
+        {ph > 0 && <span className="inline-flex items-center gap-0.5"><Phone className="h-3.5 w-3.5" />{ph}</span>}
+        {em > 0 && <span className="inline-flex items-center gap-0.5"><Mail className="h-3.5 w-3.5" />{em}</span>}
       </span>
     );
   };
@@ -321,6 +389,31 @@ export default function ResourceManager({
             </ul>
           )}
 
+          {/* CONTACTS ARE LIVE, not printed. A telephone number on a phone
+              and an address anywhere are both one tap from doing what they
+              are for, so they carry `tel:` and `mailto:` rather than sitting
+              as text somebody has to copy. The optional note ("Office",
+              "Head of Operations") is what makes three numbers on one item
+              tell you which is which. */}
+          {(r.sources.some((s) => s.kind === 'phone') || r.sources.some((s) => s.kind === 'email')) && (
+            <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
+              {r.sources.filter((s) => s.kind === 'phone').map((s, i) => (
+                <li key={`p${i}`} className="flex items-center gap-1.5 text-sm min-w-0">
+                  <Phone aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <a href={`tel:${s.value.replace(/[^\d+]/g, '')}`} className="text-accent underline underline-offset-2 truncate">{s.value}</a>
+                  {s.label && <span className="text-xs text-muted-foreground truncate">· {s.label}</span>}
+                </li>
+              ))}
+              {r.sources.filter((s) => s.kind === 'email').map((s, i) => (
+                <li key={`e${i}`} className="flex items-center gap-1.5 text-sm min-w-0">
+                  <Mail aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <a href={`mailto:${s.value}`} className="text-accent underline underline-offset-2 truncate">{s.value}</a>
+                  {s.label && <span className="text-xs text-muted-foreground truncate">· {s.label}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="text-xs text-muted-foreground mt-2">
             {r.author_name || 'Unknown'}{r.author_role ? `, ${r.author_role}` : ''} · {new Date(r.created_at).toLocaleDateString()}
           </div>
@@ -371,111 +464,210 @@ export default function ResourceManager({
         </div>
       )}
 
+      {/* =================================================================
+          THE ITEM EDITOR.
+          -----------------------------------------------------------------
+          It was a 512px column on a 1440px screen, and everything in it
+          suffered for that: a file called "Relazione su attivita ed
+          iniziative Minerva Investment Management Society.pdf" had nowhere
+          to go, the source rows stacked into a very tall scroll, and the
+          dialog grew a horizontal scrollbar of its own.
+
+          It is now a two-column composition on a laptop. The width is not
+          spent on making the same column wider - the left side carries what
+          the item IS (division, title, description) and the right side
+          carries what it CONTAINS, so both are visible at once and the
+          dialog is shorter as well as wider. `min-w-0` runs the whole way
+          down both columns, which is what actually stops a long filename
+          pushing the dialog sideways.
+
+          It is deliberately not full-screen: 64rem on a wide display, and
+          `min(96vw, ...)` so it never exceeds the viewport. Below `lg` it
+          collapses to the single column it always was.
+          ================================================================= */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-serif">{form.id ? 'Edit item' : 'Add item'}</DialogTitle></DialogHeader>
-          <div className="space-y-4 font-body">
-            {createDivisions.length > 1 && (
-              <div className="space-y-1">
-                <Label>Division</Label>
-                <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{createDivisions.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? 'General' : divisionLabels[d]}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity DCF model template" /></div>
-            <div className="space-y-1"><Label>Description *</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is it and when to use it?" /></div>
+        <DialogContent className="w-[min(96vw,64rem)] max-w-[min(96vw,64rem)] max-h-[92vh] flex flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-separator">
+            <DialogTitle className="font-serif">{form.id ? 'Edit item' : 'Add item'}</DialogTitle>
+          </DialogHeader>
 
-            <div className="rounded-md border border-separator p-3 space-y-4">
-              <p className="text-xs text-muted-foreground">Add any mix of texts, links and files (up to {MAX} of each, at least one in total). The type is detected from what you fill in.</p>
+          {/* Only this middle band scrolls, so Save and Cancel stay put and
+              the header stays legible however long the item becomes. */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 font-body">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,10fr)] gap-6">
 
-              {/* Texts */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-1.5"><StickyNote className="h-4 w-4" />Texts ({form.texts.filter((t) => t.trim()).length}/{MAX})</Label>
-                  {form.texts.length < MAX && <Button type="button" variant="ghost" size="sm" onClick={() => setTexts([...form.texts, ''])}><Plus className="h-3.5 w-3.5 mr-1" />Add text</Button>}
-                </div>
-                {form.texts.map((t, i) => (
-                  <div key={i} className="flex gap-2">
-                    <Textarea rows={2} value={t} onChange={(e) => setTexts(form.texts.map((x, j) => (j === i ? e.target.value : x)))} placeholder="Write the note or content here." />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => setTexts(form.texts.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
+              {/* ---- What the item is ---------------------------------- */}
+              <div className="min-w-0 space-y-4">
+                {createDivisions.length > 1 && (
+                  <div className="space-y-1">
+                    <Label>Division</Label>
+                    <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{createDivisions.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? 'General' : divisionLabels[d]}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
-                ))}
+                )}
+                <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity DCF model template" /></div>
+                <div className="space-y-1">
+                  <Label>Description *</Label>
+                  <Textarea rows={5} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is it and when to use it?" />
+                </div>
+
+                {/* Texts sit with the description: they are prose too. */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="flex items-center gap-1.5"><StickyNote className="h-4 w-4" />Texts ({form.texts.filter((t) => t.trim()).length}/{MAX_TEXTS})</Label>
+                    {form.texts.length < MAX_TEXTS && <Button type="button" variant="ghost" size="sm" onClick={() => setTexts([...form.texts, ''])}><Plus className="h-3.5 w-3.5 mr-1" />Add text</Button>}
+                  </div>
+                  {form.texts.map((t, i) => (
+                    <div key={i} className="flex gap-2 min-w-0">
+                      <Textarea rows={2} className="min-w-0" value={t} onChange={(e) => setTexts(form.texts.map((x, j) => (j === i ? e.target.value : x)))} placeholder="Write the note or content here." />
+                      <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => setTexts(form.texts.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Links.
-                  The label is optional and the preview below each field shows
-                  what the item will read if it is left blank, so nobody has to
-                  type a name for a link that already explains itself - and the
-                  few that do not can be named on the spot. */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" />Links / repos ({form.links.filter((l) => l.value.trim()).length}/{MAX})</Label>
-                  {form.links.length < MAX && <Button type="button" variant="ghost" size="sm" onClick={() => setLinks([...form.links, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add link</Button>}
-                </div>
-                {form.links.map((l, i) => {
-                  const preview = l.value.trim() ? previewLink(l.value, l.label) : null;
-                  return (
-                    <div key={i} className="space-y-1.5">
-                      <div className="flex gap-2">
-                        <Input
-                          value={l.value}
-                          onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))}
-                          placeholder="https://github.com/… or https://drive.google.com/…"
-                        />
-                        <Button type="button" variant="ghost" size="icon" onClick={() => setLinks(form.links.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
-                      </div>
-                      {l.value.trim() && (
-                        <div className="pr-12 space-y-1">
+              {/* ---- What the item contains ---------------------------- */}
+              <div className="min-w-0 rounded-md border border-separator p-4 space-y-5">
+                <p className="text-xs text-muted-foreground">
+                  Any mix of links, files, telephone numbers and email addresses, plus the texts on the left.
+                  At least one in total; nothing here is required on its own.
+                </p>
+
+                {/* Links.
+                    THE GENERATED NAME IS NOT A SECOND FIELD. It used to be a
+                    full-width input directly under the URL, with its own
+                    explanatory line beneath - three boxed rows for one link,
+                    which read as two links half-filled in. It is now one
+                    quiet line stating what the item will read, with a Rename
+                    control that reveals the input only when somebody actually
+                    wants to override it. The naming itself is unchanged. */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" />Links / repos ({form.links.filter((l) => l.value.trim()).length}/{MAX_LINKS})</Label>
+                    {form.links.length < MAX_LINKS && <Button type="button" variant="ghost" size="sm" onClick={() => setLinks([...form.links, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add link</Button>}
+                  </div>
+                  {form.links.map((l, i) => {
+                    const preview = l.value.trim() ? previewLink(l.value, l.label) : null;
+                    const naming = namingLink === i || l.label.trim().length > 0;
+                    return (
+                      <div key={i} className="min-w-0 space-y-1.5">
+                        <div className="flex gap-2 min-w-0">
                           <Input
-                            value={l.label}
-                            onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-                            placeholder={`Shown as: ${preview?.label ?? ''}`}
-                            className="h-9 text-sm"
-                            aria-label="What this link should be called (optional)"
+                            className="min-w-0"
+                            value={l.value}
+                            onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))}
+                            placeholder="https://github.com/… or https://drive.google.com/…"
+                            aria-label="Link address"
                           />
-                          <p className="text-xs text-muted-foreground">
-                            {l.label.trim()
-                              ? 'Your own wording is used.'
-                              : preview && !preview.raw
-                                ? <>Read from the address: <span className="text-foreground">{preview.label}</span> · {preview.domain}</>
-                                : 'Add a name for this link so colleagues can tell what it is.'}
-                          </p>
+                          <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => { setLinks(form.links.filter((_, j) => j !== i)); setNamingLink(null); }}><X className="h-4 w-4" /></Button>
                         </div>
+
+                        {preview && (
+                          <div className="pr-11 min-w-0">
+                            {naming ? (
+                              <Input
+                                autoFocus={namingLink === i}
+                                value={l.label}
+                                onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                                onBlur={() => setNamingLink(null)}
+                                placeholder={preview.label}
+                                className="h-8 text-sm"
+                                aria-label="What this link should be called"
+                              />
+                            ) : (
+                              <p className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                                <span className="truncate">
+                                  Will show as <span className="text-foreground">{preview.label}</span>
+                                  {!preview.raw && preview.label !== preview.source && ` · ${preview.source}`}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setNamingLink(i)}
+                                  className="shrink-0 text-accent underline underline-offset-2 hover:text-accent/80"
+                                >
+                                  Rename
+                                </button>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Files */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Files ({form.files.length}/{MAX_FILES})</Label>
+                    <div>
+                      <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
+                      {form.files.length < MAX_FILES && (
+                        <Button type="button" variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                          {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Uploading</> : <><Upload className="h-3.5 w-3.5 mr-1" />Add file</>}
+                        </Button>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Files */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Files ({form.files.length}/{MAX})</Label>
-                  <div>
-                    <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-                    {form.files.length < MAX && (
-                      <Button type="button" variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                        {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Uploading</> : <><Upload className="h-3.5 w-3.5 mr-1" />Add file</>}
-                      </Button>
-                    )}
                   </div>
+                  {form.files.map((f, i) => (
+                    // `min-w-0` on the row AND `break-words` on the name: a
+                    // long filename now wraps inside the dialog instead of
+                    // widening it. This is what produced the sideways bar.
+                    <div key={i} className="flex items-start gap-2 text-sm min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <span className="min-w-0 flex-1 break-words leading-snug" title={f.label}>{f.label}</span>
+                      <Button type="button" variant="ghost" size="icon" className="shrink-0 -mt-1" onClick={() => setForm((p) => ({ ...p, files: p.files.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
                 </div>
-                {form.files.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate flex-1">{f.label}</span>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => setForm((p) => ({ ...p, files: p.files.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
+
+                {/* Telephone numbers */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="flex items-center gap-1.5"><Phone className="h-4 w-4" />Telephone ({form.phones.filter((c) => c.value.trim()).length}/{MAX_PHONES})</Label>
+                    {form.phones.length < MAX_PHONES && <Button type="button" variant="ghost" size="sm" onClick={() => setPhones([...form.phones, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add number</Button>}
                   </div>
-                ))}
+                  {form.phones.map((c, i) => (
+                    <ContactRow
+                      key={i}
+                      entry={c}
+                      valuePlaceholder="+39 02 5836 …"
+                      labelPlaceholder="Whose number (optional)"
+                      inputMode="tel"
+                      onChange={(next) => setPhones(form.phones.map((x, j) => (j === i ? next : x)))}
+                      onRemove={() => setPhones(form.phones.filter((_, j) => j !== i))}
+                    />
+                  ))}
+                </div>
+
+                {/* Email addresses */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="flex items-center gap-1.5"><Mail className="h-4 w-4" />Email ({form.emails.filter((c) => c.value.trim()).length}/{MAX_EMAILS})</Label>
+                    {form.emails.length < MAX_EMAILS && <Button type="button" variant="ghost" size="sm" onClick={() => setEmails([...form.emails, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add address</Button>}
+                  </div>
+                  {form.emails.map((c, i) => (
+                    <ContactRow
+                      key={i}
+                      entry={c}
+                      valuePlaceholder="name@unibocconi.it"
+                      labelPlaceholder="Whose address (optional)"
+                      inputMode="email"
+                      onChange={(next) => setEmails(form.emails.map((x, j) => (j === i ? next : x)))}
+                      onRemove={() => setEmails(form.emails.filter((_, j) => j !== i))}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex gap-3 pt-1">
-              <Button className="flex-1" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            </div>
+          {/* The action bar never scrolls away. */}
+          <div className="shrink-0 flex gap-3 px-6 py-4 border-t border-separator bg-background">
+            <Button className="flex-1 sm:flex-none sm:min-w-[10rem]" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
           </div>
         </DialogContent>
       </Dialog>

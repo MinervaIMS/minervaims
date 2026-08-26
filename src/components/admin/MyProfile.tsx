@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+// ScrollText, TrendingUp and LifeBuoy have gone with the card headings they
+// decorated; UserIcon stays because it is the empty state of the photograph,
+// which is a picture rather than an ornament.
 import {
-  Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle, ScrollText,
-  ExternalLink, TrendingUp, LifeBuoy,
+  Loader2, Upload, Download, Trash2, User as UserIcon, AlertCircle, ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,9 +57,25 @@ function Bullets({ items }: { items: string[] }) {
 // used on the Dashboard.
 // =====================================================================
 
-function ProfileCard({ title, icon, children, className = '', scrollBody = false }: {
+function ProfileCard({ title, subtitle, action, children, className = '', scrollBody = false }: {
   title: string;
-  icon?: React.ReactNode;
+  /**
+   * The line that qualifies the title - a division, an organ, a body.
+   *
+   * IT BELONGS TO THE HEADER, NOT TO THE BODY, and that is the whole reason
+   * this prop exists. The role card used to print its division as the first
+   * line INSIDE the scrolling body, pulled up with a negative margin to sit
+   * close to the heading. A negative margin inside an `overflow: auto` box is
+   * simply outside the box: the top of the word was clipped by the scroll
+   * container, so "BOARD" arrived as a row of half-letters under the rule.
+   *
+   * Here it is part of the fixed header block. It cannot be clipped, it does
+   * not scroll away, and it works for any role and any division without the
+   * geometry having to be tuned for a particular word.
+   */
+  subtitle?: string;
+  /** A single action, aligned to the right of the heading. */
+  action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   /**
@@ -80,9 +98,17 @@ function ProfileCard({ title, icon, children, className = '', scrollBody = false
         scrollBody ? 'flex flex-col lg:min-h-0' : ''
       } ${className}`}
     >
-      <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-separator shrink-0">
-        {icon}
-        <h2 className="font-serif text-xl text-accent leading-tight">{title}</h2>
+      {/* The header block: title, its qualifier and one action. `shrink-0`
+          keeps it out of the flex distribution, so it is a fixed anchor at
+          the top of the card however short the card becomes. */}
+      <div className="mb-4 pb-3 border-b border-separator shrink-0">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-serif text-xl text-accent leading-tight min-w-0">{title}</h2>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+        {subtitle && (
+          <div className="mt-1.5 text-xs uppercase tracking-wider text-muted-foreground">{subtitle}</div>
+        )}
       </div>
       {scrollBody ? (
         // `-mr-2 pr-2` keeps the thin bar clear of the text without moving the
@@ -302,7 +328,7 @@ export default function MyProfile() {
 
   // --- left column: who you are ---------------------------------------
   const personalCard = (
-    <ProfileCard title="Personal Information" icon={<UserIcon className="h-5 w-5 text-accent shrink-0" />} scrollBody>
+    <ProfileCard title="Personal Information" scrollBody>
       {(missingPhone || missingEmail) && (
         <div className="mb-5 flex items-start gap-2 border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -400,11 +426,7 @@ export default function MyProfile() {
   const roleCard = (
     // The central card: the one most likely to outrun its share of a laptop
     // screen, because a Head's responsibilities and guidance run long.
-    <ProfileCard title={roleText} scrollBody>
-      {divisionText && (
-        <div className="-mt-2 mb-4 text-xs uppercase tracking-wider text-muted-foreground">{divisionText}</div>
-      )}
-
+    <ProfileCard title={roleText} subtitle={divisionText || undefined} scrollBody>
       {guide ? (
         <div className="space-y-6">
           <p className="text-sm text-foreground leading-relaxed border-l-2 border-accent bg-accent/[0.05] px-4 py-3">
@@ -450,23 +472,50 @@ export default function MyProfile() {
 
   // --- right column: statute, progression, support ---------------------
   const statuteCard = (
-    <ProfileCard title="Society Statute" icon={<ScrollText className="h-5 w-5 text-accent shrink-0" />} scrollBody>
+    // THE ACTION SITS BESIDE THE TITLE. It used to be an outline button at the
+    // foot of the paragraph, which put the one thing this card exists for
+    // below the explanation of why it exists, and gave it the weight of a
+    // secondary control. In the header it is the first thing the eye reaches
+    // after the heading, and it costs the body no height at all.
+    //
+    // THE FILLED PAIRING, WHICH IS NOT THE BUTTON'S DEFAULT. The shadcn
+    // `default` variant in this project is white with an accent border and
+    // fills on hover, so asking for "the deep purple button" by leaving the
+    // variant alone would have produced a white one. `bg-accent` with
+    // `text-accent-foreground` is the workspace's own filled pairing - the
+    // mobile header, the help drawer's title band and every active toggle
+    // use exactly these two tokens - and the hover inverts to the resting
+    // state of the outline button, which is the site's button language.
+    // No new variant, no new class: the same `<Button>`, in the palette the
+    // workspace already owns.
+    <ProfileCard
+      title="Society Statute"
+      scrollBody
+      className="lg:shrink-0"
+      action={
+        <Button
+          asChild
+          size="sm"
+          className="font-body bg-accent text-accent-foreground border border-accent hover:bg-background hover:text-accent"
+        >
+          <Link to="/statute" target="_blank" rel="noopener noreferrer">
+            Open the statute <ExternalLink className="h-4 w-4 ml-1.5" />
+          </Link>
+        </Button>
+      }
+    >
       <p className="text-sm text-foreground/85 leading-relaxed">
         The statute is the authoritative reference for the association&rsquo;s formal rules: roles,
-        responsibilities, governance, eligibility and the requirements for progression.
+        responsibilities, governance, eligibility and the requirements for progression. It is the
+        document every rule on this page is drawn from.
       </p>
-      <Button asChild variant="outline" size="sm" className="mt-4 w-full sm:w-auto">
-        <Link to="/statute" target="_blank" rel="noopener noreferrer">
-          Open the statute <ExternalLink className="h-4 w-4 ml-2" />
-        </Link>
-      </Button>
     </ProfileCard>
   );
 
   const promotionCard = (
     // Criteria, appointment note and statute references: the tallest of the
     // three cards in the right-hand column, and the other one that scrolls.
-    <ProfileCard title="Role Promotion" icon={<TrendingUp className="h-5 w-5 text-accent shrink-0" />} scrollBody className="lg:flex-1 lg:min-h-[9rem]">
+    <ProfileCard title="Role Promotion" scrollBody className="lg:flex-1 lg:min-h-[12rem]">
       {promotion ? (
         <div className="space-y-4">
           <div>
@@ -500,26 +549,26 @@ export default function MyProfile() {
           </p>
         </div>
       ) : (
-        <p className="text-sm text-foreground/85 leading-relaxed">
-          The statute defines no office above the one you hold. Its articles remain the reference
-          for the term of your office and for how it is renewed.
-        </p>
+        // THE TOP OF THE STRUCTURE STILL HAS SOMETHING TO READ. For a
+        // President or an Admin there is no next office, and the card used to
+        // be a single sentence stretched over a column's worth of height.
+        // What the statute says about the office instead is how it is judged,
+        // which is the same three factors that decide every progression - so
+        // the card carries them rather than empty space. MERIT_NOTE stays out
+        // of this branch: it is explicitly about promotion, and there is none.
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/85 leading-relaxed">
+            The statute defines no office above the one you hold. Its articles remain the reference
+            for the term of your office and for how it is renewed.
+          </p>
+          <div className="border-t border-separator pt-4">
+            <div className="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2">
+              How the office is judged
+            </div>
+            <Bullets items={MERIT_FACTORS} />
+          </div>
+        </div>
       )}
-    </ProfileCard>
-  );
-
-  const contactCard = (
-    <ProfileCard title="Who to contact" icon={<LifeBuoy className="h-5 w-5 text-accent shrink-0" />} scrollBody>
-      {guide ? (
-        <p className="text-sm text-foreground leading-relaxed">{guide.contact}</p>
-      ) : (
-        <p className="text-sm text-foreground leading-relaxed">
-          For any question about your role, contact the association at as.minerva@unibocconi.it.
-        </p>
-      )}
-      <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator mt-4 pt-3">
-        {MEMBERSHIP_RULES.hierarchyNote}
-      </p>
     </ProfileCard>
   );
 
@@ -549,39 +598,37 @@ export default function MyProfile() {
   // ===================================================================
   return (
     <div className="font-body lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-      <div className="shrink-0">
-        <WorkspacePageHeader
-          title="My profile"
-          description="Your account, your role in the association and what the statute says about both."
-        />
-      </div>
+      {/* NO PAGE HEADER. The title said "My profile" on a page reached by
+          clicking My profile, under a breadcrumb that already reads
+          Minerva Workspace / My Profile, above a subtitle describing what
+          the three cards below it plainly are. Three lines and a rule, at
+          the top of a composition whose whole difficulty is that it has to
+          fit the screen. The breadcrumb belongs to the workspace shell and
+          stays; the cards are now the first thing on the page. */}
 
-      {/* The three areas share the row's height on a wide screen, as in the
-          reference: two tall primary cards and a column of shorter ones
-          beside them, rather than three boxes each ending where their own
-          text happens to stop. Below `lg` the grid collapses to one column
-          and every card takes its natural height. */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:min-h-0 lg:flex-1 lg:items-stretch">
-        <div className="lg:col-span-4 min-w-0 flex lg:min-h-0">{personalCard}</div>
-        <div className="lg:col-span-5 min-w-0 flex lg:min-h-0">{roleCard}</div>
-        {/* All three cards in this column take their natural height while
-            there is room, and give it up in proportion when there is not -
-            each scrolling its own body rather than lengthening the page.
+      {/* 30 / 40 / 20 in twelve columns is not expressible, so the grid is
+          TEN columns: 3 / 4 / 3 is exactly 30 / 40 / 30. The left and right
+          columns are equal, and the centre - which carries by far the most
+          text - takes the extra tenth from each of them.
 
-            Role Promotion is the one with `flex-1`, so spare space goes to
-            it, and it keeps a floor of 9rem so the other two can never
-            squeeze it to nothing on a short screen. Without that floor a
-            column whose fixed cards already exceed the height would push
-            the grid taller than the pane, which is the one thing this
-            layout exists to prevent. */}
+          Below `lg` this collapses to one column and every card takes its
+          natural height, as before. */}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 lg:min-h-0 lg:flex-1 lg:items-stretch">
+        <div className="lg:col-span-3 min-w-0 flex lg:min-h-0">{personalCard}</div>
+        <div className="lg:col-span-4 min-w-0 flex lg:min-h-0">{roleCard}</div>
+        {/* Two cards now, not three. Society Statute is a paragraph and a
+            button and keeps its natural height; Role Promotion takes
+            EVERYTHING that is left, so the column is filled to the bottom
+            rather than stopping where the third card used to begin. Its
+            floor of 12rem means a very tall statute card can never squeeze
+            it away on a short screen. */}
         <div className="lg:col-span-3 min-w-0 space-y-4 lg:flex lg:flex-col lg:space-y-0 lg:gap-4 lg:min-h-0">
           {statuteCard}
           {promotionCard}
-          {contactCard}
         </div>
       </div>
 
-      <p className="mt-6 shrink-0 text-center text-xs text-muted-foreground lg:mt-3">
+      <p className="mt-4 shrink-0 text-center text-xs text-muted-foreground lg:mt-3">
         Activity across the workspace is recorded for accountability and security.
       </p>
     </div>

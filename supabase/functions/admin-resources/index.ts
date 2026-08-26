@@ -14,7 +14,7 @@ const corsHeaders = {
 };
 
 const SourceSchema = z.object({
-  kind: z.enum(['text', 'link', 'file']),
+  kind: z.enum(['text', 'link', 'file', 'phone', 'email']),
   value: z.string().min(1).max(10000),
   label: z.string().max(300).nullable().optional(),
 });
@@ -25,12 +25,22 @@ const ResourceSchema = z.object({
   division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations', 'board', 'none']),
   title: z.string().min(1).max(200).trim(),
   description: z.string().max(2000).nullable().optional(),
-  sources: z.array(SourceSchema).min(1).max(15),
+  // The ceiling is the sum of the per-kind caps below, so a legitimate item
+  // that fills every kind is never rejected by the array length before the
+  // per-kind rule has had a chance to speak.
+  sources: z.array(SourceSchema).min(1).max(24),
   is_favourite: z.boolean().optional(),
 });
 
 const MAX_FAVOURITES = 5;
-const MAX_PER_KIND = 5;
+
+// THE SAME TABLE THE CLIENT HOLDS in src/lib/resources-api.ts. Files rose
+// from 5 to 8; telephone numbers and email addresses are capped at 3, which
+// is what a contact realistically needs and low enough that the list stays
+// readable inside a card.
+const KIND_LIMITS: Record<string, number> = {
+  text: 5, link: 5, file: 8, phone: 3, email: 3,
+};
 
 // Derive the legacy single columns (kept for backward compatibility) and a
 // representative `type` from the multi-source array.
@@ -39,9 +49,14 @@ function deriveLegacy(sources: { kind: string; value: string }[]) {
   const body = first('text');
   const link_url = first('link');
   const file_url = first('file');
-  const type = sources.length > 1 && new Set(sources.map((s) => s.kind)).size > 1
+  // The legacy `type` column predates phone and email and its consumers only
+  // understand the original vocabulary, so anything outside it is recorded as
+  // 'other' rather than writing a value the client cannot type.
+  const single = sources[0]?.kind ?? 'text';
+  const type = (sources.length > 1 && new Set(sources.map((s) => s.kind)).size > 1)
+    || !['text', 'link', 'file'].includes(single)
     ? 'other'
-    : (sources[0]?.kind ?? 'text');
+    : single;
   return { body, link_url, file_url, type };
 }
 
@@ -193,11 +208,15 @@ Deno.serve(async (req) => {
     if (!inScope(r.division)) return json({ error: 'You can only manage resources in your division' }, 403);
 
     // Enforce the per-kind caps and the minimum-one-source rule server-side.
-    const counts = { text: 0, link: 0, file: 0 } as Record<string, number>;
+    const counts: Record<string, number> = {};
     for (const s of r.sources) counts[s.kind] = (counts[s.kind] ?? 0) + 1;
-    if (r.sources.length < 1) return json({ error: 'Add at least one text, link or file.' }, 400);
-    for (const k of ['text', 'link', 'file']) {
-      if ((counts[k] ?? 0) > MAX_PER_KIND) return json({ error: `At most ${MAX_PER_KIND} ${k}s per item.` }, 400);
+    if (r.sources.length < 1) return json({ error: 'Add at least one text, link, file, telephone number or email address.' }, 400);
+    for (const [kind, limit] of Object.entries(KIND_LIMITS)) {
+      if ((counts[kind] ?? 0) > limit) {
+        const noun = kind === 'phone' ? 'telephone numbers'
+          : kind === 'email' ? 'email addresses' : `${kind}s`;
+        return json({ error: `At most ${limit} ${noun} per item.` }, 400);
+      }
     }
     if (!r.description || !r.description.trim()) return json({ error: 'A description is required.' }, 400);
 
