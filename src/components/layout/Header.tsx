@@ -9,6 +9,7 @@ import { Menu, X } from "lucide-react";
 import logoColor from "@/assets/logo-color.svg";
 import logoWhite from "@/assets/logo-white.svg";
 import { useAuth } from "@/contexts/AuthContext";
+import { WORKSPACE_BASE, LEGACY_WORKSPACE_BASE } from "@/lib/workspace-base";
 
 type NavItem = {
   label: string;
@@ -178,7 +179,7 @@ export function Header() {
     };
   }, [mobileOpen]);
 
-  if (location.pathname.startsWith("/admin")) return null;
+  if (location.pathname.startsWith(WORKSPACE_BASE) || location.pathname.startsWith(LEGACY_WORKSPACE_BASE)) return null;
 
   // These three depend on nothing but the path, and are read by the loading
   // branch below as well as by the header itself, so they are resolved before
@@ -491,7 +492,7 @@ export function Header() {
         <div className="border-t border-[#E0E0E0] shrink-0">
           {accountUser ? (
             <Link
-              to="/admin"
+              to={WORKSPACE_BASE}
               className="flex items-center gap-3 px-6 py-4 font-serif text-[17px] text-[#1F0F4D] hover:bg-[#F2F2F2] active:bg-[#F2F2F2]"
             >
               <Avatar user={accountUser} transparent={false} />
@@ -537,7 +538,7 @@ function Account({
 
   return (
     <Link
-      to="/admin"
+      to={WORKSPACE_BASE}
       className="group inline-flex items-center gap-3 outline-none focus:outline-none"
       style={linkStyle}
     >

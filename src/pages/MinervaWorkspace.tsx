@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,6 +66,12 @@ import HistoryManagement from '@/components/admin/HistoryManagement';
 import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { WorkspaceAccessNotice } from '@/components/admin/WorkspaceAccessNotice';
+import {
+  NAV, CANDIDATE_NAV, filterNav, workspacePath, parseWorkspaceUrl,
+  resolveWorkspaceTarget, WORKSPACE_BASE,
+  type NavSection,
+} from '@/lib/workspace-nav';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
@@ -102,148 +108,13 @@ interface DbEvent {
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Navigation model
+// ------------------------------------------------------------------------------
+// NAV, CANDIDATE_NAV, filterNav and the two navigation types have moved to
+// `@/lib/workspace-nav`, unchanged apart from the `slug` each entry now
+// carries. They live there because the URL helpers need the same structure
+// and other pages build links into the workspace without importing this
+// (very large) module. Every internal `key` is byte-for-byte what it was.
 // ──────────────────────────────────────────────────────────────────────────────
-
-type SubItem = {
-  key: string;
-  label: string;
-  /** Permission predicate. If omitted, always available to anyone with hasAnyAccess. */
-  allowed?: (p: Permissions) => boolean;
-};
-
-type NavSection = {
-  key: string;
-  label: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  subItems: SubItem[];
-};
-
-// Workspace navigation. Internal `key`s are intentionally unchanged (they drive
-// routing, permissions and render cases); only labels, grouping and order are
-// reorganised. NOTE: "Calendar" and "People" are kept even though they were not
-// in the requested 10-section list, because removing them would remove real
-// functionality (the shared calendar; members/advisors/alumni management).
-const NAV: NavSection[] = [
-  {
-    key: 'dashboard', label: 'Dashboard', Icon: BarChart3,
-    subItems: [],
-  },
-  {
-    key: 'my-role', label: 'My Profile', Icon: UserIcon,
-    subItems: [],
-  },
-  {
-    key: 'calendar', label: 'Calendar', Icon: CalendarDays,
-    subItems: [],
-  },
-  {
-    key: 'reports', label: 'Reports', Icon: FileBarChart2,
-    subItems: [
-      { key: 'reports-upload', label: 'Upload Report', allowed: (p) => p.can('reports-upload') },
-      { key: 'reports-archive', label: 'Report Archive', allowed: (p) => p.can('reports-archive') },
-      { key: 'reports-templates', label: 'Templates & Repositories', allowed: (p) => p.can('reports-templates') },
-      { key: 'reports-funds', label: 'Fund Performances', allowed: (p) => p.can('reports-funds') },
-    ],
-  },
-  {
-    key: 'applications', label: 'Recruiting', Icon: ClipboardList,
-    subItems: [
-      { key: 'applications-website', label: 'Application Page', allowed: (p) => p.can('applications-website') },
-      { key: 'applications-screening', label: 'Candidates Screening', allowed: (p) => p.can('applications-screening') },
-      { key: 'applications-interview-calendar', label: 'Interview Calendar', allowed: (p) => p.can('applications-interview-calendar') },
-      { key: 'applications-joiners', label: 'Offers', allowed: (p) => p.can('applications-joiners') },
-      { key: 'applications-form', label: 'Form & Questions', allowed: (p) => p.can('applications-form') },
-    ],
-  },
-  {
-    key: 'events', label: 'Events', Icon: Presentation,
-    subItems: [
-      { key: 'events-create', label: 'Create Event', allowed: (p) => p.can('events-create') },
-      { key: 'events-forms', label: 'Registration Forms', allowed: (p) => p.can('events-forms') },
-      { key: 'events-attendance', label: 'Attendance', allowed: (p) => p.can('events-attendance') },
-      { key: 'events-archive', label: 'Event Archive', allowed: (p) => p.can('events-archive') },
-      { key: 'events-alumni-calls', label: 'Alumni Calls', allowed: (p) => p.can('events-alumni-calls') },
-      { key: 'events-on-display', label: 'Association On Display', allowed: (p) => p.can('events-on-display') },
-    ],
-  },
-  {
-    key: 'people', label: 'People', Icon: UsersIcon,
-    subItems: [
-      { key: 'people-members', label: 'Members', allowed: (p) => p.can('people-members') },
-      { key: 'people-alumni', label: 'Alumni', allowed: (p) => p.can('people-alumni') },
-    ],
-  },
-  {
-    key: 'smm', label: 'Social Media', Icon: ImageIcon,
-    subItems: [
-      { key: 'smm-editorial', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
-      { key: 'smm-ig', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
-      { key: 'smm-li', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
-      { key: 'smm-graphics', label: 'MIMS Graphics', allowed: (p) => p.can('smm-graphics') },
-      { key: 'smm-other', label: 'Other Resources', allowed: (p) => p.can('smm-other') },
-      { key: 'smm-brand', label: 'Design System', allowed: (p) => p.can('smm-brand') },
-      { key: 'smm-ads', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
-    ],
-  },
-  {
-    key: 'operations', label: 'Operations', Icon: Star,
-    subItems: [
-      { key: 'ops-fee', label: 'Membership Fees', allowed: (p) => p.can('ops-fee') },
-      { key: 'ops-treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
-      { key: 'ops-external', label: 'External Relations', allowed: (p) => p.can('ops-external') },
-      { key: 'ops-docs', label: 'Statute & Documents', allowed: (p) => p.can('ops-docs') },
-    ],
-  },
-
-  {
-    key: 'website', label: 'Website', Icon: LayoutTemplate,
-    subItems: [
-      { key: 'website-pages', label: 'Pages', allowed: (p) => p.can('website-pages') },
-      { key: 'website-readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
-      { key: 'website-testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
-      { key: 'website-history', label: 'History', allowed: (p) => p.can('website-history') },
-      { key: 'ops-newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
-      { key: 'ops-auto-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
-    ],
-  },
-
-  {
-    key: 'settings', label: 'Settings', Icon: SettingsIcon,
-    subItems: [
-      { key: 'settings-users', label: 'Users', allowed: (p) => p.can('settings-users') },
-      { key: 'settings-roles', label: 'Role Permissions', allowed: (p) => p.can('settings-roles') },
-      { key: 'settings-activity', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
-    ],
-  },
-  {
-    key: 'welcome', label: 'How To Use', Icon: HelpCircle,
-    subItems: [],
-  },
-];
-
-function filterNav(permissions: Permissions): NavSection[] {
-  return NAV
-    .map((s) => ({ ...s, subItems: s.subItems.filter((si) => !si.allowed || si.allowed(permissions)) }))
-    .filter((s) => s.key === 'my-role' || s.key === 'welcome' || s.key === 'dashboard' || s.key === 'calendar' || s.subItems.length > 0);
-}
-
-// Candidates are hard-isolated: they may only ever reach their own profile and
-// their application status. This is enforced here, plus by the render guard
-// below, plus by row-level security in the database (defence in depth).
-// The candidate's whole workspace. It exists ONLY here: none of these keys
-// appears in the member navigation, and `applications-faqs` is granted only by
-// CANDIDATE_RESOURCES, so no member role can view it however it is reached.
-const CANDIDATE_NAV: NavSection[] = [
-  { key: 'my-role', label: 'My Profile', Icon: UserIcon, subItems: [] },
-  {
-    key: 'applications', label: 'My Application', Icon: ClipboardList,
-    subItems: [
-      { key: 'applications-status', label: 'Status' },
-      { key: 'applications-interview-calendar', label: 'Interview Calendar' },
-    ],
-  },
-  { key: 'applications-faqs', label: 'FAQs', Icon: HelpCircle, subItems: [] },
-];
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Component
@@ -283,8 +154,98 @@ const MinervaWorkspace = () => {
     return true;
   });
   const [submenuOpen, setSubmenuOpen] = useState(true);
-  const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
-  const [activeSubKey, setActiveSubKey] = useState<string | null>(null);
+
+  const visibleNav = useMemo(
+    () => (isCandidate ? CANDIDATE_NAV : filterNav(permissions)),
+    [permissions, isCandidate],
+  );
+
+  // ══════════════════════════════════════════════════════════════════════
+  // THE ADDRESS BAR IS THE STATE.
+  // ----------------------------------------------------------------------
+  // Where the reader is used to be two pieces of React state, and the URL
+  // was `/admin` wherever they happened to be. So nothing could be linked
+  // to, nothing could be bookmarked, the back button left the workspace
+  // altogether, and a reload always returned to the Dashboard.
+  //
+  // The two values are now DERIVED FROM THE PATH rather than stored beside
+  // it. That direction matters: with state and URL as two copies of one
+  // fact, every navigation has to write both and every arrival has to
+  // reconcile them, which is where the loops and the flicker live. With
+  // one source, the browser's own history is the mechanism - back and
+  // forward simply work, and there is nothing to keep in step.
+  //
+  // `activeSectionKey` and `activeSubKey` keep their names and their
+  // meaning, so the several hundred lines below that read them - the
+  // render switch, the breadcrumb, the rail, the mobile shell, the help
+  // button - are untouched. What changed is that they are now `const`.
+  // ══════════════════════════════════════════════════════════════════════
+  const location = useLocation();
+  const { sectionSlug, subSlug } = useMemo(
+    () => parseWorkspaceUrl(location.pathname),
+    [location.pathname],
+  );
+  const resolution = useMemo(
+    () => resolveWorkspaceTarget(visibleNav, sectionSlug, subSlug),
+    [visibleNav, sectionSlug, subSlug],
+  );
+  const activeSectionKey = resolution.status === 'ok' ? resolution.sectionKey : null;
+  const activeSubKey = resolution.status === 'ok' ? resolution.subKey : null;
+
+  /**
+   * Go somewhere in the workspace.
+   *
+   * The single replacement for every `setActiveSectionKey(...)` +
+   * `setActiveSubKey(...)` pair that used to be scattered through this
+   * file. Callers pass exactly what they passed before - the internal
+   * keys - and the URL is built from them here, in one place.
+   */
+  const goTo = useCallback(
+    (sectionKey: string, subKey: string | null, opts?: { replace?: boolean }) => {
+      navigate(workspacePath(sectionKey, subKey), { replace: opts?.replace ?? false });
+    },
+    [navigate],
+  );
+
+  /** Where a reader lands when the URL names nothing they can open. */
+  const homePath = useMemo(() => {
+    const first = visibleNav[0];
+    return first ? workspacePath(first.key, first.subItems[0]?.key ?? null) : WORKSPACE_BASE;
+  }, [visibleNav]);
+
+  // ----------------------------------------------------------------------
+  // Canonicalisation: bare `/workspace` opens the first section the viewer
+  // has, and `/workspace/reports` fills in the subsection the rail would
+  // have selected, so the address always names exactly what is on screen.
+  //
+  // IT WAITS FOR THE ROLES. `visibleNav` is empty until they arrive, and
+  // redirecting before then would send every deep link to the Dashboard on
+  // a cold load - which is the one thing this whole change exists to stop.
+  // ----------------------------------------------------------------------
+  const navReady = !authLoading && (rolesLoaded || isCandidate);
+  useEffect(() => {
+    if (!navReady || visibleNav.length === 0) return;
+    if (resolution.status === 'empty') {
+      navigate(homePath, { replace: true });
+      return;
+    }
+    if (resolution.status === 'ok') {
+      const canonical = workspacePath(resolution.sectionKey, resolution.subKey);
+      if (canonical !== location.pathname) navigate(canonical, { replace: true });
+    }
+  }, [navReady, visibleNav.length, resolution, homePath, location.pathname, navigate]);
+
+  // The submenu panel's opening rule on ARRIVAL, which used to live in the
+  // initial-selection effect: a section with no subsections has no panel to
+  // show. It runs once per landing rather than on every navigation, so a
+  // reader who collapses the panel by hand keeps it collapsed.
+  const arrivedRef = useRef(false);
+  useEffect(() => {
+    if (arrivedRef.current || resolution.status !== 'ok') return;
+    arrivedRef.current = true;
+    const section = visibleNav.find((s) => s.key === resolution.sectionKey);
+    if (section && section.subItems.length === 0) setSubmenuOpen(false);
+  }, [resolution, visibleNav]);
 
   // Every subsection opens from its very top: the content pane scrolls back
   // to zero whenever the visited page changes (the mobile shell does the
@@ -292,37 +253,6 @@ const MinervaWorkspace = () => {
   useEffect(() => {
     document.getElementById('ws-content')?.scrollTo({ top: 0 });
   }, [activeSectionKey, activeSubKey]);
-
-  const visibleNav = useMemo(
-    () => (isCandidate ? CANDIDATE_NAV : filterNav(permissions)),
-    [permissions, isCandidate],
-  );
-
-  // Set initial active section/sub-item. Deep links are supported:
-  // /admin?section=<key>&sub=<key> opens straight on that subsection
-  // (only if the viewer's role can actually see it in the navigation).
-  const [searchParams] = useSearchParams();
-  useEffect(() => {
-    if (activeSectionKey || visibleNav.length === 0) return;
-    const wantSub = searchParams.get('sub');
-    const wantSection = searchParams.get('section');
-    if (wantSub || wantSection) {
-      const target = visibleNav.find(
-        (s) => (wantSub && s.subItems.some((si) => si.key === wantSub)) || s.key === wantSection,
-      );
-      if (target) {
-        setActiveSectionKey(target.key);
-        const sub = target.subItems.find((si) => si.key === wantSub) ?? target.subItems[0] ?? null;
-        setActiveSubKey(sub?.key ?? null);
-        if (target.subItems.length === 0) setSubmenuOpen(false);
-        return;
-      }
-    }
-    const first = visibleNav[0];
-    setActiveSectionKey(first.key);
-    setActiveSubKey(first.subItems[0]?.key ?? null);
-    if (first.subItems.length === 0) setSubmenuOpen(false);
-  }, [visibleNav, activeSectionKey, searchParams]);
 
   // A request to open a named section, from somewhere that cannot reach this
   // state directly. The help drawer's "How to use" link is the first caller:
@@ -339,16 +269,15 @@ const MinervaWorkspace = () => {
       if (!detail?.section) return;
       const target = visibleNav.find((s) => s.key === detail.section);
       if (!target) return;
-      setActiveSectionKey(target.key);
       const sub = detail.sub && target.subItems.some((si) => si.key === detail.sub)
         ? detail.sub
         : target.subItems[0]?.key ?? null;
-      setActiveSubKey(sub);
       if (target.subItems.length === 0) setSubmenuOpen(false);
+      goTo(target.key, sub);
     };
     window.addEventListener('minerva:navigate', onNavigate);
     return () => window.removeEventListener('minerva:navigate', onNavigate);
-  }, [visibleNav]);
+  }, [visibleNav, goTo]);
 
   // Auto-collapse main nav rail when a submenu panel is shown, except on the
   // very first visit of the session — where the expanded rail stays visible
@@ -383,7 +312,7 @@ const MinervaWorkspace = () => {
   useEffect(() => {
     if (isSessionExpired) {
       toast({ title: 'Session Expired', description: 'Your session has expired. Please log in again.', variant: 'destructive' });
-      signOut().then(() => navigate('/auth', { state: { from: '/admin', sessionExpired: true } }));
+      signOut().then(() => navigate('/auth', { state: { from: WORKSPACE_BASE, sessionExpired: true } }));
     }
   }, [isSessionExpired, signOut, navigate, toast]);
 
@@ -391,7 +320,7 @@ const MinervaWorkspace = () => {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        navigate('/auth', { state: { from: '/admin' } });
+        navigate('/auth', { state: { from: WORKSPACE_BASE } });
         return;
       }
       const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
@@ -682,17 +611,29 @@ const MinervaWorkspace = () => {
   const activeSection = visibleNav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
 
+  // THE TITLE NAMES THE PAGE, now that the page has an address. Every
+  // subsection used to be "Workspace | MIMS", which meant a browser tab and,
+  // more to the point, a BOOKMARK of one of these new URLs carried no
+  // indication of what it pointed at. The breadcrumb's own words are reused,
+  // so the tab and the page always agree.
+  const documentTitle = activeSub
+    ? `${activeSub.label} | Workspace | MIMS`
+    : activeSection
+      ? `${activeSection.label} | Workspace | MIMS`
+      : 'Workspace | MIMS';
+
   const handleNavClick = (section: NavSection) => {
-    setActiveSectionKey(section.key);
+    // The panel rule is unchanged; only the destination is now expressed as
+    // a URL rather than as two setState calls.
     if (section.subItems.length === 0) {
       setSubmenuOpen(false);
-      setActiveSubKey(null);
+      goTo(section.key, null);
     } else if (section.subItems.length > 1) {
       setSubmenuOpen(true);
-      setActiveSubKey(section.subItems[0].key);
+      goTo(section.key, section.subItems[0].key);
     } else {
       setSubmenuOpen(false);
-      setActiveSubKey(section.subItems[0].key);
+      goTo(section.key, section.subItems[0].key);
     }
   };
 
@@ -717,8 +658,7 @@ const MinervaWorkspace = () => {
     const section = NAV.find((s) => s.subItems.some((si) => si.key === target.key))
       ?? NAV.find((s) => s.key === target.key);
     if (!section) return;
-    setActiveSectionKey(section.key);
-    setActiveSubKey(section.subItems.some((si) => si.key === target.key) ? target.key : null);
+    goTo(section.key, section.subItems.some((si) => si.key === target.key) ? target.key : null);
     // A search result opens the subsection and nothing else. It used to
     // slide the help panel open too whenever the hit came from a help
     // topic, which arrived over the page the reader had just asked for.
@@ -726,6 +666,30 @@ const MinervaWorkspace = () => {
   };
 
   const renderContent = () => {
+    // ══════════════════════════════════════════════════════════════════
+    // THE URL NAMES SOMETHING THIS READER CANNOT OPEN.
+    //
+    // This is checked FIRST, before every other branch including the
+    // candidate guard below, because those branches all read
+    // `activeSectionKey` and `activeSubKey` - and both are null unless the
+    // resolution succeeded. Without this, an applicant following a link to
+    // Settings would silently be shown their own profile instead of being
+    // told why they cannot open it.
+    //
+    // While the roles are still arriving there is no verdict to give, so
+    // the workspace's own loader stands in rather than a notice that might
+    // be wrong for a moment.
+    // ══════════════════════════════════════════════════════════════════
+    if (resolution.status !== 'ok') {
+      if (!navReady || resolution.status === 'empty') return <WorkspaceLoader />;
+      return (
+        <WorkspaceAccessNotice
+          kind={resolution.status === 'forbidden' ? 'forbidden' : 'unknown'}
+          label={resolution.status === 'forbidden' ? resolution.label : undefined}
+          onBack={() => navigate(homePath, { replace: true })}
+        />
+      );
+    }
     // Hard guard: a candidate can only ever render their profile or status.
     if (isCandidate) {
       if (activeSubKey === 'applications-status') return <ApplicationStatus />;
@@ -738,10 +702,10 @@ const MinervaWorkspace = () => {
       return <HowToUse />;
     }
     if (activeSectionKey === 'dashboard') {
-      return <WorkspaceDashboard onNavigate={(section, sub) => { setActiveSectionKey(section); setActiveSubKey(sub); }} />;
+      return <WorkspaceDashboard onNavigate={(section, sub) => goTo(section, sub)} />;
     }
     if (activeSectionKey === 'calendar' && !activeSubKey) {
-      return <WorkspaceCalendar onNavigate={(section, sub) => { setActiveSectionKey(section); setActiveSubKey(sub); }} />;
+      return <WorkspaceCalendar onNavigate={(section, sub) => goTo(section, sub)} />;
     }
     if (!activeSubKey) return null;
     switch (activeSubKey) {
@@ -1089,14 +1053,14 @@ const MinervaWorkspace = () => {
     return (
       <>
         <Helmet>
-          <title>Workspace | MIMS</title>
+          <title>{documentTitle}</title>
         </Helmet>
         <MobileWorkspaceShell
           nav={visibleNav}
           activeSectionKey={activeSectionKey}
           activeSubKey={activeSubKey}
           onSearch={openSearchTarget}
-          onNavigate={(sectionKey, subKey) => { setActiveSectionKey(sectionKey); setActiveSubKey(subKey); }}
+          onNavigate={(sectionKey, subKey) => goTo(sectionKey, subKey)}
           roleLabel={roleLabel}
           email={user.email ?? ''}
           onWebsite={() => navigate('/')}
@@ -1111,10 +1075,10 @@ const MinervaWorkspace = () => {
   return (
     <>
     <Helmet>
-      <title>Workspace | MIMS</title>
+      <title>{documentTitle}</title>
     </Helmet>
     <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden`}>
-      <ContactPrompt onGoToProfile={() => { setActiveSectionKey('my-role'); setActiveSubKey(null); }} />
+      <ContactPrompt onGoToProfile={() => goTo('my-role', null)} />
       {/* Nav column */}
       <aside
         className="minerva-nav flex flex-col bg-accent text-accent-foreground transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 overflow-hidden"
@@ -1227,7 +1191,7 @@ const MinervaWorkspace = () => {
                     return (
                       <button
                         key={si.key}
-                        onClick={() => setActiveSubKey(si.key)}
+                        onClick={() => activeSection && goTo(activeSection.key, si.key)}
                         className={`w-full text-left px-4 h-11 flex items-center transition-colors text-[17px] ${
                           isActive ? 'text-accent font-medium bg-[#ece9f4]' : 'text-foreground hover:bg-background/60'
                         }`}
@@ -1276,7 +1240,9 @@ const MinervaWorkspace = () => {
               <HelpProvider>
                 {renderContent()}
                 {/* Contextual help entry point for the page being viewed. */}
-                {!isCandidate && <PageHelpButton page={activeSubKey ?? activeSectionKey ?? ''} />}
+                {!isCandidate && resolution.status === 'ok' && (
+                  <PageHelpButton page={activeSubKey ?? activeSectionKey ?? ''} />
+                )}
               </HelpProvider>
             </div>
           </div>

@@ -21,6 +21,7 @@ import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import PixelCardSuccess from '@/components/shared/PixelCardSuccess';
 import { SpecularFx } from '@/components/shared/SpecularFx';
+import { WORKSPACE_BASE } from '@/lib/workspace-base';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
@@ -142,7 +143,7 @@ function SuccessScreen() {
             <p className="font-body text-sm text-muted-foreground mb-7">
               You are now an applicant. Follow your application and, once invited, book your interview from your workspace.
             </p>
-            <AuthButton onClick={() => navigate('/admin')}>Go To Your Workspace</AuthButton>
+            <AuthButton onClick={() => navigate(WORKSPACE_BASE)}>Go To Your Workspace</AuthButton>
           </div>
         </div>
       </div>
@@ -297,7 +298,7 @@ export default function Apply() {
     return <Shell>
       <h1 className="font-serif text-3xl text-accent text-center mb-3">Application received</h1>
       <p className="font-body text-muted-foreground text-center mb-6">You have already submitted an application for {settings.semesterLabel}. Applications cannot be edited after submission.</p>
-      <div className="text-center"><Button asChild className="font-body"><Link to="/admin">View status</Link></Button></div>
+      <div className="text-center"><Button asChild className="font-body"><Link to={WORKSPACE_BASE}>View status</Link></Button></div>
     </Shell>;
   }
 

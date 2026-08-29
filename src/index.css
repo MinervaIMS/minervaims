@@ -965,7 +965,7 @@ button.mdot, button.rdot, button.dstack-dot {
 }
 
 /* =====================================================================
-   Minerva Workspace overrides (only inside /admin, scoped by .ws-flat
+   Minerva Workspace overrides (only inside /workspace, scoped by .ws-flat
    on the shell and .ws-active on <html>).
    ===================================================================== */
 
