@@ -21,16 +21,40 @@ const EmailVerification = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const email = params.get('email') ?? '';
-  const expired = params.get('status') === 'expired';
+  const tokenHash = params.get('token_hash');
+  const [expired, setExpired] = useState(params.get('status') === 'expired');
+  const [verifying, setVerifying] = useState(!!tokenHash);
 
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const [isSending, setIsSending] = useState(false);
+
+  // Confirmation links are redeemed here, in the browser, so that mail-security
+  // scanners which merely open the link cannot consume the one-time token.
+  useEffect(() => {
+    if (!tokenHash) return;
+    let active = true;
+    const type = (params.get('type') ?? 'signup') as 'signup' | 'invite' | 'email_change';
+    const next = params.get('next') || '/';
+    supabase.auth.verifyOtp({ type, token_hash: tokenHash }).then(({ data, error }) => {
+      if (!active) return;
+      if (error || !data.session) {
+        setExpired(true);
+        setVerifying(false);
+        return;
+      }
+      navigate(next, { replace: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [tokenHash, params, navigate]);
 
   useEffect(() => {
     if (seconds <= 0) return;
     const t = window.setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => window.clearTimeout(t);
   }, [seconds]);
+
 
   const resend = async () => {
     if (seconds > 0 || !email) return;
@@ -43,20 +67,39 @@ const EmailVerification = () => {
     }
   };
 
-  if (expired) {
+  if (verifying) {
     return (
       <AuthLayout
-        title="Verification Link Expired"
-        cardTitle="Verification Link Expired"
-        cardSubtitle="This link is no longer valid. We can send a fresh verification email to your address."
+        title="Confirming Your Email"
+        cardTitle="Confirming Your Email"
+        cardSubtitle="One moment — we are confirming your address."
       >
-        <AuthErrorBanner>This verification link has expired.</AuthErrorBanner>
-        <AuthButton onClick={resend} disabled={seconds > 0 || isSending || !email}>
-          {seconds > 0 ? `Send A New Link In ${seconds}s` : 'Send A New Link'}
-        </AuthButton>
+        <p className="font-body text-center" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
+          Please keep this page open.
+        </p>
       </AuthLayout>
     );
   }
+
+  if (expired) {
+    return (
+      <AuthLayout
+        title="Verification Link No Longer Valid"
+        cardTitle="Verification Link No Longer Valid"
+        cardSubtitle="This link has already been used or has expired. We can send a fresh verification email to your address."
+      >
+        <AuthErrorBanner>This verification link has already been used or has expired.</AuthErrorBanner>
+        {email ? (
+          <AuthButton onClick={resend} disabled={seconds > 0 || isSending}>
+            {seconds > 0 ? `Send A New Link In ${seconds}s` : 'Send A New Link'}
+          </AuthButton>
+        ) : (
+          <AuthButton onClick={() => navigate('/auth')}>Back To Sign-In</AuthButton>
+        )}
+      </AuthLayout>
+    );
+  }
+
 
   return (
     <AuthLayout

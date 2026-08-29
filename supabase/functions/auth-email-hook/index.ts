@@ -64,6 +64,57 @@ async function handlePreview(req: Request): Promise<Response> {
   })
 }
 
+const DEFAULT_APP_ORIGIN = 'https://minervaims.org'
+
+// ---------------------------------------------------------------------------
+// Email link scanners (Microsoft Defender / Safe Links on studbocconi.it, and
+// most corporate mail filters) OPEN every link in a message to inspect it.
+// The auth server's /auth/v1/verify endpoint is a one-time GET: that scan
+// consumes the token, so by the time the student clicks, the link is already
+// spent and the app can only say "invalid or has expired".
+//
+// So we never mail the verify endpoint. We mail one of OUR pages carrying the
+// token hash. Opening that page does nothing by itself — the token is redeemed
+// only when the page calls verifyOtp (a POST from the browser), which a link
+// scanner never performs.
+// ---------------------------------------------------------------------------
+function appHostedLink(verifyUrl: string | undefined, actionType: string): string | undefined {
+  if (!verifyUrl) return verifyUrl
+  // magiclink / reauthentication keep the platform's own handling.
+  const landing = actionType === 'recovery'
+    ? '/reset-password'
+    : (actionType === 'signup' || actionType === 'invite' || actionType === 'email_change')
+      ? '/verify-email'
+      : null
+  if (!landing) return verifyUrl
+
+  try {
+    const url = new URL(verifyUrl)
+    const tokenHash = url.searchParams.get('token') || url.searchParams.get('token_hash')
+    const type = url.searchParams.get('type') || actionType
+    const redirectTo = url.searchParams.get('redirect_to')
+    if (!tokenHash) return verifyUrl
+
+    let origin = DEFAULT_APP_ORIGIN
+    let next = ''
+    if (redirectTo) {
+      try {
+        const dest = new URL(redirectTo)
+        origin = dest.origin
+        next = `${dest.pathname}${dest.search}`
+      } catch { /* keep defaults */ }
+    }
+
+    const link = new URL(landing, origin)
+    link.searchParams.set('token_hash', tokenHash)
+    link.searchParams.set('type', type)
+    if (next && next !== '/') link.searchParams.set('next', next)
+    return link.toString()
+  } catch {
+    return verifyUrl
+  }
+}
+
 async function handleWebhook(req: Request): Promise<Response> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   if (!apiKey) {
@@ -117,7 +168,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   console.log('Received auth event', { emailType, email: payload.data.email, run_id })
 
   const rendered = renderAuthEmail(emailType, {
-    confirmationUrl: payload.data.url,
+    confirmationUrl: appHostedLink(payload.data.url, emailType),
     token: payload.data.token,
     oldEmail: payload.data.old_email,
     newEmail: payload.data.new_email,
