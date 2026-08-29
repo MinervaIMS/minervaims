@@ -716,7 +716,7 @@ const MinervaWorkspace = () => {
       case 'reports-templates':
         return <ResourceManager
           category="reports_templates"
-          title="Templates & repositories"
+          title="Templates & Repositories"
           description="Useful division material: text, files, links and code repositories. Star up to five favourites to pin them on top; each item shows who added it and when."
           restrictDivisions={access.allowedDivisions}
           canViewOtherDivisions={access.canViewOtherDivisions}
