@@ -67,20 +67,39 @@ const EmailVerification = () => {
     }
   };
 
-  if (expired) {
+  if (verifying) {
     return (
       <AuthLayout
-        title="Verification Link Expired"
-        cardTitle="Verification Link Expired"
-        cardSubtitle="This link is no longer valid. We can send a fresh verification email to your address."
+        title="Confirming Your Email"
+        cardTitle="Confirming Your Email"
+        cardSubtitle="One moment — we are confirming your address."
       >
-        <AuthErrorBanner>This verification link has expired.</AuthErrorBanner>
-        <AuthButton onClick={resend} disabled={seconds > 0 || isSending || !email}>
-          {seconds > 0 ? `Send A New Link In ${seconds}s` : 'Send A New Link'}
-        </AuthButton>
+        <p className="font-body text-center" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
+          Please keep this page open.
+        </p>
       </AuthLayout>
     );
   }
+
+  if (expired) {
+    return (
+      <AuthLayout
+        title="Verification Link No Longer Valid"
+        cardTitle="Verification Link No Longer Valid"
+        cardSubtitle="This link has already been used or has expired. We can send a fresh verification email to your address."
+      >
+        <AuthErrorBanner>This verification link has already been used or has expired.</AuthErrorBanner>
+        {email ? (
+          <AuthButton onClick={resend} disabled={seconds > 0 || isSending}>
+            {seconds > 0 ? `Send A New Link In ${seconds}s` : 'Send A New Link'}
+          </AuthButton>
+        ) : (
+          <AuthButton onClick={() => navigate('/auth')}>Back To Sign-In</AuthButton>
+        )}
+      </AuthLayout>
+    );
+  }
+
 
   return (
     <AuthLayout
