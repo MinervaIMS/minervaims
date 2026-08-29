@@ -118,9 +118,10 @@ const ResetPassword = () => {
       cardTitle="Set A New Password"
       cardSubtitle="Choose a strong password you don't use elsewhere."
     >
-      {!ready && (
+      {!ready && !checking && (
         <AuthErrorBanner>
-          This reset link is invalid or has expired. <Link to="/forgot-password" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>Request a new one</Link>.
+          {linkError ?? 'This reset link is invalid or has expired.'}{' '}
+          <Link to="/forgot-password" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>Send me a new link</Link>.
         </AuthErrorBanner>
       )}
       {banner && <AuthErrorBanner>{banner}</AuthErrorBanner>}
