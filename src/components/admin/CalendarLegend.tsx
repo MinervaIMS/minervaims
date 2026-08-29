@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Palette } from 'lucide-react';
+import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 
 // =====================================================================
 // CalendarLegend — the colour key, folded away until it is asked for.
@@ -19,7 +19,20 @@ import { ChevronDown, ChevronUp, Palette } from 'lucide-react';
 // The open state is per calendar and per visit. Deliberately not
 // remembered: it is a reference, consulted and then closed, and a key
 // that silently reopens itself is back to occupying the screen.
-// =====================================================================
+//
+// ---------------------------------------------------------------------
+// THE CONTROL ASKS THE READER'S QUESTION, it does not name the object.
+//
+// It used to read "Colour key" beside a palette icon. "Colour key" is
+// the name of the thing behind the button, which is only useful to
+// somebody who already knows what is behind the button; a reader looking
+// at a grid of coloured blocks and wondering what they mean does not
+// think "I need the colour key", they think "what do these colours
+// mean?". So the button asks that, and the panel it opens answers it in
+// the same words. The question mark replaces the palette for the same
+// reason: it says there is an explanation here, where a palette says
+// there are colours here, which the reader can already see.
+// ---------------------------------------------------------------------
 
 export interface LegendItem {
   /** Tailwind classes for the swatch: background, and a border where needed. */
@@ -55,8 +68,8 @@ export function CalendarLegend({ items, className = '' }: { items: LegendItem[];
         aria-controls="calendar-legend-panel"
         className="inline-flex h-9 items-center gap-2 border border-separator bg-background px-3 font-body text-sm text-foreground transition-colors hover:border-accent hover:text-accent"
       >
-        <Palette aria-hidden className="h-4 w-4" />
-        Colour key
+        <HelpCircle aria-hidden className="h-4 w-4" />
+        What do the colours mean?
         {open ? <ChevronUp aria-hidden className="h-4 w-4" /> : <ChevronDown aria-hidden className="h-4 w-4" />}
       </button>
 
@@ -71,6 +84,7 @@ export function CalendarLegend({ items, className = '' }: { items: LegendItem[];
           className="absolute right-0 top-full z-30 mt-2 w-[min(78vw,30rem)] border border-separator bg-background p-3 shadow-elevated"
         >
           <p className="font-body text-xs uppercase tracking-wider text-muted-foreground mb-2">What the colours mean</p>
+          <p className="font-body text-xs text-muted-foreground mb-2.5 -mt-1">Each block on the calendar is coloured by what it is.</p>
           <div className="flex flex-col gap-1.5 font-body text-xs text-foreground/85">
             {items.map((item) => (
               <span key={item.label} className="inline-flex items-start">

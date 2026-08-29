@@ -23,6 +23,33 @@ import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 
 const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
 
+// =====================================================================
+// THE DIVISION A CANDIDATE WAS SELECTED FOR - not the two they asked for.
+// ---------------------------------------------------------------------
+// The column used to read "Preference" and print both choices, e.g.
+// "Equity Research / Macro Research". By the time a candidacy reaches
+// Offers the preferences have been settled: the person was interviewed
+// by one division and it is that division that decided to take them.
+// Printing the original pair here asks the reader to work out which of
+// the two actually happened, and a candidate transferred after interview
+// is shown neither.
+//
+// So the column reads DIVISION and prints the one the offer concerns, in
+// the same precedence the offer dialog itself uses:
+//
+//   offer_division    - the division on an offer already prepared or sent
+//   interview_division - otherwise, the division of the LAST interview,
+//                        which is what a post-interview transfer updates
+//   first_choice      - and only if no interview was ever recorded
+//
+// Because it is the same precedence, the column and the dialog can never
+// disagree, and changing the division in the confirmation pop-up (still
+// possible, and still the only place it can be changed) is reflected here
+// as soon as the offer is saved.
+// =====================================================================
+const selectedDivision = (a: ApplicationRow): OrgDivision =>
+  (a.offer_division as OrgDivision) || a.interview_division || a.first_choice;
+
 // Human-readable state of the offer for a candidate row.
 function offerState(a: ApplicationRow): { label: string; tone: string; canOffer: boolean; resend: boolean } {
   if (a.status === 'joined') return { label: 'Joined', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', canOffer: false, resend: false };
@@ -97,7 +124,7 @@ export default function NewJoiners() {
   const openOffer = (a: ApplicationRow) => {
     setTarget(a);
     setRole((a.offer_role as AppRole) || 'analyst');
-    setDivision((a.offer_division as OrgDivision) || a.interview_division || a.first_choice);
+    setDivision(selectedDivision(a));
     setFeeDue(a.offer_fee_due !== false);
   };
 
@@ -167,7 +194,7 @@ export default function NewJoiners() {
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
-                <th className="px-3 py-2 font-normal">Preference</th>
+                <th className="px-3 py-2 font-normal">Division</th>
                 <th className="px-3 py-2 font-normal">Email</th>
                 <th className="px-3 py-2 font-normal"><span className="inline-flex items-center gap-1.5">Offer <HelpDot page="applications-joiners" topic="offer-flow" /></span></th>
                 <th className="px-3 py-2 font-normal text-right">Action</th>
@@ -179,7 +206,7 @@ export default function NewJoiners() {
                 return (
                   <tr key={a.id} className="border-t border-separator">
                     <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}</td>
-                    <td className="px-3 py-2">{divisionLabels[a.first_choice]}{a.second_choice ? ` / ${divisionLabels[a.second_choice]}` : ''}</td>
+                    <td className="px-3 py-2">{divisionLabels[selectedDivision(a)]}</td>
                     <td className="px-3 py-2">{a.email}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">

@@ -186,11 +186,61 @@ export const CANDIDATE_NAV: NavSection[] = [
     key: 'applications', slug: 'applications', label: 'My Application', Icon: ClipboardList,
     subItems: [
       { key: 'applications-status', slug: 'status', label: 'Status' },
-      { key: 'applications-interview-calendar', slug: 'interview-calendar', label: 'Interview Calendar' },
+      { key: 'applications-interview', slug: 'interview', label: 'Interview' },
+      { key: 'applications-offer', slug: 'offer', label: 'Offer' },
     ],
   },
   { key: 'applications-faqs', slug: 'faqs', label: 'FAQs', Icon: HelpCircle, subItems: [] },
 ];
+
+// =====================================================================
+// A NAVIGATION THAT FOLLOWS THE APPLICATION.
+// ---------------------------------------------------------------------
+// An applicant used to be shown "Interview Calendar" from the moment
+// they submitted the form, and it said, for most of the process, that
+// they had not been invited yet. A permanent link to an empty page is a
+// question the applicant keeps asking and the workspace keeps declining
+// to answer, and it made the rail look like a form with a section left
+// blank rather than a journey with stages still to come.
+//
+// The two conditional sections now appear when they have content:
+//
+//   Interview - once a division has invited them; it holds the booking,
+//               the confirmed slot and the rules around it.
+//   Offer     - once an offer has actually been sent; it holds the
+//               offer, the deadline and the accept/decline decision.
+//
+// Status and FAQs are unconditional, because both say something useful
+// from the first day. `my-role` is unconditional for the same reason.
+//
+// THE FILTER IS NOT A PERMISSION. Access is decided by
+// CANDIDATE_RESOURCES in the access matrix and again by row-level
+// security; this only decides what is worth OFFERING. An applicant who
+// types the Offer address before an offer exists is told the page has
+// nothing on it yet, which is true, rather than that they may not open
+// it, which would not be.
+// =====================================================================
+
+export interface CandidateJourney {
+  /** A division has invited this applicant to interview. */
+  invited: boolean;
+  /** An offer has been sent to this applicant. */
+  offered: boolean;
+}
+
+export function candidateNav(journey: CandidateJourney): NavSection[] {
+  return CANDIDATE_NAV.map((section) => {
+    if (section.key !== 'applications') return section;
+    return {
+      ...section,
+      subItems: section.subItems.filter((si) => {
+        if (si.key === 'applications-interview') return journey.invited;
+        if (si.key === 'applications-offer') return journey.offered;
+        return true;
+      }),
+    };
+  });
+}
 
 // =====================================================================
 // URLs

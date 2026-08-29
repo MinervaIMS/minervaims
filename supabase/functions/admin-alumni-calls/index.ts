@@ -29,8 +29,62 @@ const CallSchema = z.object({
   planned_date: z.string().nullable().optional(),
   status: z.enum(['planned', 'invited', 'accepted', 'completed', 'declined']).optional(),
   notes: z.string().max(2000).nullable().optional(),
+  poster_url: z.string().max(2000).nullable().optional(),
   participants: z.array(ParticipantSchema).min(2, 'A call needs at least 2 alumni').max(5, 'A call can have at most 5 alumni'),
 });
+
+// =====================================================================
+// A PUBLISHED ALUMNI CALL IS AN EVENT.
+// ---------------------------------------------------------------------
+// `alumni_call` has always been a valid `events.event_type`, and the
+// public Events page, its archive filters, its poster lightbox and the
+// Alumni page's carousel all read `events`. Rather than teach every one
+// of those about a second table with its own row-level security, a call
+// that is ready to be announced - it has a poster and a date - is
+// MIRRORED into `events`, and the mirror is owned entirely by this
+// function, so the two cannot be edited into disagreement.
+//
+// The link is `alumni_calls.event_id`. Removing the poster, or the date,
+// unpublishes the call: the mirrored event is deleted and the link
+// cleared. Deleting the call deletes it too.
+// =====================================================================
+
+const DIVISION_LABELS: Record<string, string> = {
+  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
+  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
+  media: 'Media and Communication', operations: 'Operations', board: 'Board', none: '',
+};
+
+interface MirrorCall {
+  division?: string | null;
+  planned_date?: string | null;
+  notes?: string | null;
+  poster_url?: string | null;
+  participants: { alumnus_name: string; former_role?: string | null }[];
+}
+
+/** The event row a published call becomes. */
+function eventPayload(c: MirrorCall) {
+  const divisionLabel = c.division ? (DIVISION_LABELS[c.division] ?? '') : '';
+  return {
+    // The title the posters themselves use, qualified by the division that
+    // organised it so five calls in one semester are told apart in a list.
+    title: divisionLabel ? `Alumni Call: ${divisionLabel}` : 'Alumni Call',
+    date: c.planned_date,
+    place: 'Online',
+    event_type: 'alumni_call',
+    division: c.division && c.division !== 'none' ? c.division : null,
+    online: true,
+    // Each guest as "Name - former role", which is exactly how the public
+    // event row already prints a guest list.
+    guest: c.participants.map((p) => (p.former_role ? `${p.alumnus_name} - ${p.former_role}` : p.alumnus_name)),
+    description: c.notes ?? null,
+    poster_url: c.poster_url ?? null,
+    show_on_website: true,
+    registration_enabled: false,
+    in_archive: false,
+  };
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -59,8 +113,13 @@ Deno.serve(async (req) => {
       return json({ calls: withParts });
     }
     if (action === 'delete') {
+      // The mirrored public event goes with it. Read the link first: the
+      // row is about to stop existing, and an orphaned event would keep
+      // announcing a call that the association has removed.
+      const { data: existing } = await supabase.from('alumni_calls').select('event_id').eq('id', body.id).maybeSingle();
       const { error } = await supabase.from('alumni_calls').delete().eq('id', body.id);
       if (error) throw error;
+      if (existing?.event_id) await supabase.from('events').delete().eq('id', existing.event_id);
       return json({ success: true });
     }
 
@@ -87,6 +146,7 @@ Deno.serve(async (req) => {
     const payload = {
       division: c.division ?? null, planned_date: c.planned_date || null,
       status: c.status ?? 'planned', notes: c.notes ?? null,
+      poster_url: c.poster_url || null,
     };
 
     const writeParticipants = async (callId: string) => {
@@ -96,11 +156,41 @@ Deno.serve(async (req) => {
       );
     };
 
+    /**
+     * Bring the public event into line with the call.
+     *
+     * Publishable means a poster AND a date: without a date the event has
+     * nowhere to sit on a timeline, and without a poster the call is still
+     * a plan. Anything else unpublishes.
+     */
+    const syncEvent = async (callId: string, currentEventId: string | null) => {
+      const publishable = !!c.poster_url && !!c.planned_date;
+      if (!publishable) {
+        if (currentEventId) {
+          await supabase.from('events').delete().eq('id', currentEventId);
+          await supabase.from('alumni_calls').update({ event_id: null }).eq('id', callId);
+        }
+        return;
+      }
+      const ev = eventPayload(c);
+      if (currentEventId) {
+        const { error } = await supabase.from('events').update(ev).eq('id', currentEventId);
+        // A mirrored event deleted by hand from Event archive leaves a stale
+        // link. Falling through to an insert re-creates it rather than
+        // failing the save of the call itself.
+        if (!error) return;
+      }
+      const { data: created, error: insErr } = await supabase.from('events').insert(ev).select('id').single();
+      if (insErr) throw insErr;
+      await supabase.from('alumni_calls').update({ event_id: created.id }).eq('id', callId);
+    };
+
     if (action === 'create') {
       const { data, error } = await supabase.from('alumni_calls')
         .insert({ ...payload, organiser_name: organiser, created_by: user.id }).select().single();
       if (error) throw error;
       await writeParticipants(data.id);
+      await syncEvent(data.id, null);
       return json({ success: true, call: data });
     }
     if (action === 'update') {
@@ -108,6 +198,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabase.from('alumni_calls').update(payload).eq('id', c.id).select().single();
       if (error) throw error;
       await writeParticipants(c.id);
+      await syncEvent(c.id, data.event_id ?? null);
       return json({ success: true, call: data });
     }
     return json({ error: 'Invalid action' }, 400);

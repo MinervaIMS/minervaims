@@ -117,7 +117,11 @@ export function CandidateProfile({
 
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => downloadDoc('cv')}><Download className="h-4 w-4 mr-2" />Download CV</Button>
-          <Button variant="outline" size="sm" onClick={() => downloadDoc('answer')}><Download className="h-4 w-4 mr-2" />Download work</Button>
+          {/* "Download answer", not "Download work": the file is the
+              applicant's answer to the written question set by the division,
+              and "work" reads as though the society were downloading a
+              portfolio of past employment. */}
+          <Button variant="outline" size="sm" onClick={() => downloadDoc('answer')}><Download className="h-4 w-4 mr-2" />Download answer</Button>
         </div>
 
         <div className="space-y-2">

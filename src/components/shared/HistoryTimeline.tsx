@@ -558,19 +558,43 @@ export function HistoryTimeline() {
   }, [mode, measure, paint, titleMinHeight, covers, alumniTotal]);
 
   // =====================================================================
-  // THE ONE-TIME INVITATION.
+  // THE INVITATION: THE RAIL SETS OFF BY ITSELF, AND STOPS WHERE IT IS.
   // ---------------------------------------------------------------------
   // The forced journey did at least make the horizontal dimension
   // impossible to miss. Without it, a reader arriving at a row of cards
   // that happens to continue past the right edge may never think to push
-  // it. So the first time the section is seen, the rail moves a little
-  // way and comes back: far enough to show that it can, slow enough to
-  // read as deliberate, and once only.
+  // it - and the grey scrollbar that used to hint at it has been removed,
+  // because on this page it read as a second, thicker rule under the one
+  // rule the section is built on.
   //
-  // It is abandoned the instant the reader touches the rail themselves,
-  // so it can never fight a real gesture, and it is skipped entirely
-  // under reduced motion - where the section is the vertical list anyway.
+  // WHAT REPLACES IT IS MOVEMENT. The first time the section is seen the
+  // rail sets off forward on its own, slowly, and carries on for a few
+  // seconds. Motion is the one signal nobody misses, and unlike a bar it
+  // shows what the gesture DOES rather than that one is possible.
+  //
+  // IT DOES NOT COME BACK. It used to travel 72px out and return to zero,
+  // which is a flinch: it says something can move, then undoes it, and a
+  // reader who reached for the rail mid-flight had it snatched back to the
+  // start under their hand. The drift now simply stops wherever it has
+  // reached, and the reader continues from exactly there - which is what
+  // makes an interruption feel like taking the wheel rather than losing a
+  // page's place.
+  //
+  // IT YIELDS INSTANTLY. A pointer, a wheel, a touch or a key on the
+  // scroller ends it on the spot, as does clicking a year. It never fights
+  // a real gesture, it runs once per visit, and under reduced motion it
+  // does not run at all.
   // =====================================================================
+
+  /** Cruising speed of the drift, in pixels per second. Slow and readable. */
+  const DRIFT_SPEED = 55;
+  /** How long the whole drift lasts, easing included. */
+  const DRIFT_MS = 7000;
+  /** How long it spends easing in, and again easing out. */
+  const DRIFT_EASE_MS = 900;
+  /** And never past this share of the rail: it is an invitation, not a tour. */
+  const DRIFT_MAX_FRACTION = 0.4;
+
   const nudged = useRef(false);
   /** Cancels the invitation if it is still running. Set by the effect below. */
   const stopNudge = useRef<(() => void) | null>(null);
@@ -591,25 +615,54 @@ export function HistoryTimeline() {
     const run = () => {
       if (nudged.current || !geometry.current.scrollable) return;
       nudged.current = true;
-      const distance = Math.min(72, geometry.current.range);
-      if (distance < 8) return;
-      const OUT = 620;
-      const HOLD = 260;
-      const BACK = 520;
-      const total = OUT + HOLD + BACK;
+      // At cruising speed the drift would cover this much; it is capped so
+      // that on a short timeline the invitation cannot become the tour.
+      const cruiseMs = DRIFT_MS - DRIFT_EASE_MS;
+      const distance = Math.min(
+        geometry.current.range * DRIFT_MAX_FRACTION,
+        (DRIFT_SPEED * cruiseMs) / 1000,
+      );
+      if (distance < 24) return;
+
       const start = performance.now();
-      // A gentle out and back. `easeInOutSine` on both halves keeps it from
-      // reading as a bounce.
-      const ease = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2;
+      const from = scroller.scrollLeft;
+
+      // ---------------------------------------------------------------
+      // A TRAPEZOID OF SPEED, INTEGRATED.
+      //
+      // Speed rises on a half-cosine over the first DRIFT_EASE_MS, holds,
+      // and falls the same way at the end - so the rail neither jerks into
+      // motion nor stops dead. What is written to `scrollLeft` is the
+      // DISTANCE covered by that speed, which is its integral; writing the
+      // speed curve itself would ease the wrong quantity and the drift
+      // would visibly lurch where the phases meet.
+      //
+      // `ramp(x)` is the area under the rising half-cosine from 0 to x,
+      // and by symmetry the area still to cover in the last x milliseconds.
+      // Both phases are expressed with it, which is why they agree exactly
+      // at the joins rather than to within a rounding error.
+      // ---------------------------------------------------------------
+      const E = DRIFT_EASE_MS;
+      const ramp = (x: number) => 0.5 * x - (E / (2 * Math.PI)) * Math.sin((Math.PI * x) / E);
+      // Fraction of the distance covered per millisecond while cruising.
+      // The two half-ramps together are worth exactly one full E of cruise,
+      // so the whole run is cruiseMs long in cruising terms.
+      const perMs = 1 / cruiseMs;
+      const easeFraction = (t: number) => {
+        if (t <= E) return perMs * ramp(t);
+        if (t >= DRIFT_MS - E) return 1 - perMs * ramp(DRIFT_MS - t);
+        return perMs * (E / 2 + (t - E));
+      };
+
       const step = (now: number) => {
         if (cancelled) return;
         const t = now - start;
-        if (t >= total) { scroller.scrollLeft = 0; return; }
-        let x: number;
-        if (t < OUT) x = ease(t / OUT) * distance;
-        else if (t < OUT + HOLD) x = distance;
-        else x = distance * (1 - ease((t - OUT - HOLD) / BACK));
-        scroller.scrollLeft = x;
+        if (t >= DRIFT_MS) return;               // stops exactly where it is
+        const next = from + distance * easeFraction(t);
+        // Reaching the end of the rail is an ending too: there is nothing
+        // further to invite the reader towards.
+        if (next >= geometry.current.range) { scroller.scrollLeft = geometry.current.range; return; }
+        scroller.scrollLeft = next;
         raf = requestAnimationFrame(step);
       };
       raf = requestAnimationFrame(step);
@@ -625,11 +678,14 @@ export function HistoryTimeline() {
     }, { threshold: 0.35 });
     io.observe(scroller);
 
-    // Any real interaction wins immediately.
+    // Any real interaction wins immediately, and the rail keeps whatever
+    // position the drift had reached: `stop` cancels the frame loop and
+    // writes nothing, so the browser carries on from there.
     const claim = () => { nudged.current = true; stop(); };
     scroller.addEventListener('pointerdown', claim, { passive: true });
     scroller.addEventListener('wheel', claim, { passive: true });
     scroller.addEventListener('touchstart', claim, { passive: true });
+    scroller.addEventListener('keydown', claim);
 
     return () => {
       io.disconnect();
@@ -638,6 +694,7 @@ export function HistoryTimeline() {
       scroller.removeEventListener('pointerdown', claim);
       scroller.removeEventListener('wheel', claim);
       scroller.removeEventListener('touchstart', claim);
+      scroller.removeEventListener('keydown', claim);
     };
   }, [mode, covers, alumniTotal]);
 

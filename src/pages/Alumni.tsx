@@ -10,6 +10,7 @@ import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { normaliseCity } from '@/lib/city-format';
 import { ClearFilters } from '@/components/shared/ClearFilters';
+import { AlumniCallsCarousel } from '@/components/alumni/AlumniCallsCarousel';
 import {
   Pagination,
   PaginationContent,
@@ -261,6 +262,11 @@ const Alumni = () => {
             ))}
           </div>
         </div>
+
+        {/* Between the founders and the directory: the network in action.
+            The section removes itself when there is no call with a poster
+            to show, so the page never carries an empty shelf. */}
+        <AlumniCallsCarousel />
 
         {/* THE DIRECTORY BEGINS HERE, and until now nothing said so. The
             founders above are six named people in a card grid; below is

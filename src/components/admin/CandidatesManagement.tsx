@@ -37,6 +37,9 @@ import { listSlots } from '@/lib/interviews-api';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
+/** Sentinel used by the second-choice filter for applicants who named none. */
+const NO_SECOND_CHOICE = '__none__';
+
 // Statuses whose selection sends an automatic email to the candidate — these
 // require an explicit confirmation before they are applied (report item 12).
 const EMAIL_ON_STATUS: Record<string, string> = {
@@ -71,7 +74,24 @@ export default function CandidatesManagement() {
   const canAddNotes = (canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only')) && !viewingArchived;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [divFilter, setDivFilter] = useState<string[]>([]);
+  // =================================================================
+  // TWO CHOICES, TWO COLUMNS, TWO FILTERS.
+  // -----------------------------------------------------------------
+  // The register used to carry one column headed "1st / 2nd choice",
+  // printing "Equity Research / Macro Research" in a single cell behind
+  // a single filter. Reviewing is done one division at a time, and that
+  // column could not answer the only question a reviewer asks of it:
+  // who put US first. Ticking "Equity Research" returned everyone who
+  // named Equity anywhere, first choice and fallback together, and the
+  // cell gave no way to tell the two apart at a glance.
+  //
+  // They are now two columns with a filter each, so first and second
+  // choice can be narrowed independently - and combined, which is what
+  // makes the pair useful: first choice Equity AND second choice Macro
+  // is a question the old column could not express at all.
+  // =================================================================
+  const [firstChoiceFilter, setFirstChoiceFilter] = useState<string[]>([]);
+  const [secondChoiceFilter, setSecondChoiceFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -110,9 +130,10 @@ export default function CandidatesManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (divFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const activeFilterCount = (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
-    setDivFilter([]);
+    setFirstChoiceFilter([]);
+    setSecondChoiceFilter([]);
     setStatusFilter([]);
     setYearFilter([]);
     setSearch('');
@@ -122,13 +143,18 @@ export default function CandidatesManagement() {
     const q = search.trim().toLowerCase();
     return apps
       .filter((a) => semesterOf(a.created_at).key === semKey)
-      .filter((a) => divFilter.length === 0 || divFilter.includes(a.first_choice) || (a.second_choice ? divFilter.includes(a.second_choice) : false))
+      .filter((a) => firstChoiceFilter.length === 0 || firstChoiceFilter.includes(a.first_choice))
+      // NO_SECOND_CHOICE is a real value to filter on, not an absence: the
+      // Media and Operations applicants name one division and stop, and
+      // "who applied to one division only" is a question worth asking.
+      .filter((a) => secondChoiceFilter.length === 0 || secondChoiceFilter.includes(a.second_choice ?? NO_SECOND_CHOICE))
       .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, divFilter, statusFilter, yearFilter, semKey]);
+  }, [apps, search, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, semKey]);
 
   const divOptions = CORE.map((d) => ({ value: d, label: divisionLabels[d] }));
+  const secondChoiceOptions = [...divOptions, { value: NO_SECOND_CHOICE, label: 'No second choice' }];
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
 
@@ -331,7 +357,8 @@ export default function CandidatesManagement() {
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
-                <th className="px-3 py-2 font-normal"><ColumnFilter label="1st / 2nd choice" options={divOptions} selected={divFilter} onChange={setDivFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="First choice" options={divOptions} selected={firstChoiceFilter} onChange={setFirstChoiceFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Second choice" options={secondChoiceOptions} selected={secondChoiceFilter} onChange={setSecondChoiceFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
                 <th className="px-3 py-2 font-normal">Programme</th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
@@ -349,7 +376,10 @@ export default function CandidatesManagement() {
                     {!a.cv_viewed_at && <span className="ml-2 align-middle inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">new</span>}
                     <div className="text-xs text-muted-foreground">{a.email}</div>
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">{divisionLabels[a.first_choice]}{a.second_choice ? ` / ${divisionLabels[a.second_choice]}` : ''}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{divisionLabels[a.first_choice]}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {a.second_choice ? divisionLabels[a.second_choice] : <span className="text-muted-foreground">-</span>}
+                  </td>
                   <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year]}</td>
                   <td className="px-3 py-2 whitespace-nowrap max-w-[14rem] truncate" title={a.degree_course}>{a.degree_course}</td>
                   <td className="px-3 py-2 whitespace-nowrap">

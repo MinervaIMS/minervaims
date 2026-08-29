@@ -47,6 +47,16 @@ export const BASELINE_RESOURCES: ResourceKey[] = ['my-role', 'welcome', 'dashboa
 export const CANDIDATE_RESOURCES: Record<ResourceKey, AccessLevel> = {
   'my-role': 'view',
   'applications-status': 'view',
+  // The applicant's two conditional pages. WHETHER THEY ARE OFFERED is
+  // decided by `candidateNav` from the application row (invited to
+  // interview / offer sent); whether they may be OPENED at all is decided
+  // here. The two are deliberately different questions: a page that has
+  // nothing on it yet says so, which is true, rather than refusing the
+  // applicant access to their own application, which would not be.
+  'applications-interview': 'view',
+  'applications-offer': 'view',
+  // The address the Interview page used to have. Kept so an old link or
+  // bookmark still resolves; the workspace redirects it to the new one.
   'applications-interview-calendar': 'view',
   // The admissions FAQ, inside the workspace. Candidate-only by construction:
   // it appears in no other role's grants and in no other navigation, so
@@ -73,7 +83,13 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   team_leader: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'manage', 'applications-screening': 'view', 'applications-interview-calendar': 'view', 'applications-joiners': 'view', 'events-archive': 'view', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'manage' },
   senior_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'manage', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'view' },
   analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'reports-archive': 'view', 'reports-templates': 'view', 'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'view' },
-  head_of_media: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage' },
+  // The Head of Media manages External relations and Statute & documents.
+  // Those two subsections hold the partnership contacts and the signed
+  // agreements the media output is built on: an announcement of a
+  // partnership cannot be drafted from a summary of it. The Media Analyst
+  // is deliberately NOT granted either - the analyst produces the posts,
+  // the Head holds the counterpart relationships and the paperwork.
+  head_of_media: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage' },
   media_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-on-display': 'view', 'smm-editorial': 'view', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view' },
   head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-on-display': 'manage', 'people-members': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view' },
   advisor: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'people-members': 'view', 'people-alumni': 'view' },

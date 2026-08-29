@@ -231,9 +231,14 @@ function HelpPanel() {
 
                   It is only offered to someone whose role can actually open
                   that section, so the link cannot lead to a refusal. */}
-              <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
-                Need the full picture? The{' '}
-                {access.canView('welcome') ? (
+              {/* AND FOR SOMEBODY WITH NO MANUAL, A DIFFERENT SENTENCE.
+                  An applicant has no "How to use" section: pointing them at
+                  one, even as plain text rather than a link, describes a
+                  workspace they cannot see. They are sent to their own FAQs
+                  instead, which is the page that actually answers them. */}
+              {access.canView('welcome') ? (
+                <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
+                  Need the full picture? The{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -243,12 +248,29 @@ function HelpPanel() {
                     className="text-accent underline underline-offset-2 hover:text-accent/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
                   >
                     How to use
-                  </button>
-                ) : (
-                  <span className="text-foreground">How to use</span>
-                )}{' '}
-                section holds your complete role-based manual. Actions in the workspace are logged for accountability and security.
-              </p>
+                  </button>{' '}
+                  section holds your complete role-based manual. Actions in the workspace are logged for accountability and security.
+                </p>
+              ) : access.isCandidate ? (
+                <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
+                  Still unsure? The{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeHelp();
+                      window.dispatchEvent(new CustomEvent('minerva:navigate', { detail: { section: 'applications-faqs' } }));
+                    }}
+                    className="text-accent underline underline-offset-2 hover:text-accent/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                  >
+                    FAQs
+                  </button>{' '}
+                  section answers the questions applicants ask most often. If yours is not there, write to the association: asking never counts against an application.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
+                  Actions in the workspace are logged for accountability and security.
+                </p>
+              )}
             </div>
           </div>
         )}

@@ -22,7 +22,7 @@ export const BOCCONI_PROGRAMMES: ProgrammeGroup[] = [
       'Economic and Social Sciences (BESS)',
       'International Politics and Government (BIG)',
       'Economics and Management for Arts, Culture and Communication (CLEACC)',
-      'Mathematical and Computing Sciences for Artificial Intelligence',
+      'Mathematical and Computing Sciences for Artificial Intelligence (BAI)',
       'World Bachelor in Business (WBB)',
     ],
   },

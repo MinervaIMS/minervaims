@@ -33,6 +33,7 @@ import FormSettings from '@/components/admin/FormSettings';
 import ApplicationStatus from '@/components/admin/ApplicationStatus';
 import InterviewCalendar from '@/components/admin/InterviewCalendar';
 import InterviewCalendarCandidate from '@/components/admin/InterviewCalendarCandidate';
+import CandidateOffer from '@/components/admin/CandidateOffer';
 import ReportUpload from '@/components/admin/ReportUpload';
 import ResourceManager from '@/components/admin/ResourceManager';
 import FundsPerformances from '@/components/admin/FundsPerformances';
@@ -58,6 +59,7 @@ import HowToUse from '@/components/admin/HowToUse';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
+import { helpPageKey } from '@/lib/workspace-guide';
 import ApplicationSettings from '@/components/admin/ApplicationSettings';
 import ReadingsManagement from '@/components/admin/ReadingsManagement';
 import ActivityManagement from '@/components/admin/ActivityManagement';
@@ -70,7 +72,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { WorkspaceAccessNotice } from '@/components/admin/WorkspaceAccessNotice';
 import {
-  NAV, CANDIDATE_NAV, filterNav, workspacePath, parseWorkspaceUrl,
+  NAV, candidateNav, filterNav, workspacePath, parseWorkspaceUrl,
   resolveWorkspaceTarget, WORKSPACE_BASE,
   type NavSection,
 } from '@/lib/workspace-nav';
@@ -78,6 +80,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { useAccess } from '@/hooks/useAccess';
+import { useMyApplication, resetMyApplication } from '@/hooks/useMyApplication';
+import { isInvitedToInterview, hasOffer } from '@/lib/applications-api';
 import { primaryAssignment, roleLabel as composeRoleLabel } from '@/lib/roles';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
@@ -157,9 +161,26 @@ const MinervaWorkspace = () => {
   });
   const [submenuOpen, setSubmenuOpen] = useState(true);
 
+  // ══════════════════════════════════════════════════════════════════════
+  // AN APPLICANT'S NAVIGATION FOLLOWS THEIR APPLICATION.
+  // ----------------------------------------------------------------------
+  // Interview appears once a division has invited them; Offer appears once
+  // an offer has been sent. Both facts live on one row, which is fetched
+  // ONCE per session and shared with the three pages that also read it
+  // (Status, Interview, Offer) - see `useMyApplication`.
+  //
+  // `enabled` is `isCandidate`, so a member's workspace makes no request
+  // at all: nothing in a member's navigation depends on an application.
+  // ══════════════════════════════════════════════════════════════════════
+  const { application: myApplication, loading: applicationLoading } = useMyApplication(isCandidate);
+  const journey = useMemo(
+    () => ({ invited: isInvitedToInterview(myApplication), offered: hasOffer(myApplication) }),
+    [myApplication],
+  );
+
   const visibleNav = useMemo(
-    () => (isCandidate ? CANDIDATE_NAV : filterNav(permissions)),
-    [permissions, isCandidate],
+    () => (isCandidate ? candidateNav(journey) : filterNav(permissions)),
+    [permissions, isCandidate, journey],
   );
 
   // ══════════════════════════════════════════════════════════════════════
@@ -224,7 +245,12 @@ const MinervaWorkspace = () => {
   // redirecting before then would send every deep link to the Dashboard on
   // a cold load - which is the one thing this whole change exists to stop.
   // ----------------------------------------------------------------------
-  const navReady = !authLoading && (rolesLoaded || isCandidate);
+  //
+  // AND FOR AN APPLICANT IT ALSO WAITS FOR THE APPLICATION ROW. Two of
+  // their four sections exist only once the row says so, so redirecting
+  // before it arrives would bounce a direct link to Offer back to the
+  // profile - the same cold-load bug, one level down.
+  const navReady = !authLoading && (rolesLoaded || isCandidate) && !(isCandidate && applicationLoading);
   useEffect(() => {
     if (!navReady || visibleNav.length === 0) return;
     if (resolution.status === 'empty') {
@@ -236,6 +262,23 @@ const MinervaWorkspace = () => {
       if (canonical !== location.pathname) navigate(canonical, { replace: true });
     }
   }, [navReady, visibleNav.length, resolution, homePath, location.pathname, navigate]);
+
+  // ----------------------------------------------------------------------
+  // The applicant's "Interview Calendar" is now "Interview", and lives at
+  // .../applications/interview. Anything still pointing at the old address
+  // - a bookmark, a link in an older email - is sent to the new one rather
+  // than met with "not available for your role", which would be both
+  // alarming and untrue. Where they have not been invited there is no
+  // Interview section to send them to, so Status is the honest landing.
+  // ----------------------------------------------------------------------
+  useEffect(() => {
+    if (!isCandidate || !navReady) return;
+    if (sectionSlug !== 'applications' || subSlug !== 'interview-calendar') return;
+    navigate(
+      workspacePath('applications', journey.invited ? 'applications-interview' : 'applications-status'),
+      { replace: true },
+    );
+  }, [isCandidate, navReady, sectionSlug, subSlug, journey.invited, navigate]);
 
   // The submenu panel's opening rule on ARRIVAL, which used to live in the
   // initial-selection effect: a section with no subsections has no panel to
@@ -314,6 +357,7 @@ const MinervaWorkspace = () => {
   useEffect(() => {
     if (isSessionExpired) {
       toast({ title: 'Session Expired', description: 'Your session has expired. Please log in again.', variant: 'destructive' });
+      resetMyApplication();
       signOut().then(() => navigate('/auth', { state: { from: WORKSPACE_BASE, sessionExpired: true } }));
     }
   }, [isSessionExpired, signOut, navigate, toast]);
@@ -692,10 +736,17 @@ const MinervaWorkspace = () => {
         />
       );
     }
-    // Hard guard: a candidate can only ever render their profile or status.
+    // Hard guard: an applicant can only ever render their own four pages.
     if (isCandidate) {
-      if (activeSubKey === 'applications-status') return <ApplicationStatus />;
-      if (activeSubKey === 'applications-interview-calendar') return <InterviewCalendarCandidate />;
+      if (activeSubKey === 'applications-status') {
+        return <ApplicationStatus onOpenOffer={() => goTo('applications', 'applications-offer')} />;
+      }
+      // Both the new key and the address it replaced, so the page renders
+      // even in the tick before the redirect above has run.
+      if (activeSubKey === 'applications-interview' || activeSubKey === 'applications-interview-calendar') {
+        return <InterviewCalendarCandidate />;
+      }
+      if (activeSubKey === 'applications-offer') return <CandidateOffer />;
       if (activeSectionKey === 'applications-faqs') return <CandidateFaqs />;
       return <MyProfile />;
     }
@@ -1070,7 +1121,7 @@ const MinervaWorkspace = () => {
           roleLabel={roleLabel}
           email={user.email ?? ''}
           onWebsite={() => navigate('/')}
-          onSignOut={async () => { await signOut(); navigate('/'); }}
+          onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
         >
           {renderContent()}
         </MobileWorkspaceShell>
@@ -1163,7 +1214,7 @@ const MinervaWorkspace = () => {
             <Button
               variant="outline"
               className="text-base"
-              onClick={async () => { await signOut(); navigate('/'); }}
+              onClick={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <LogOut className="h-4 w-4 mr-2" />Log Out
@@ -1245,9 +1296,19 @@ const MinervaWorkspace = () => {
             <div id="ws-content" className="flex-1 overflow-y-auto px-6 py-6 relative">
               <HelpProvider>
                 {renderContent()}
-                {/* Contextual help entry point for the page being viewed. */}
-                {!isCandidate && resolution.status === 'ok' && (
-                  <PageHelpButton page={activeSubKey ?? activeSectionKey ?? ''} />
+                {/* CONTEXTUAL HELP, ON EVERY PAGE INCLUDING AN APPLICANT'S.
+                    The floating question mark used to be withheld from
+                    applicants, which is exactly backwards: a member has a
+                    role, a manual and colleagues to ask, while an applicant
+                    is a stranger to the association meeting a workspace for
+                    the first time and with a place at stake. Their four
+                    pages now carry the same button and the same sliding
+                    panel, reading guide entries written for them.
+                    `helpPageKey` is what routes to those entries: My
+                    Profile is one page for two very different readers, and
+                    a member's help for it is wrong for an applicant. */}
+                {resolution.status === 'ok' && (
+                  <PageHelpButton page={helpPageKey(activeSubKey ?? activeSectionKey ?? '', isCandidate)} />
                 )}
               </HelpProvider>
             </div>

@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState, useCallback, FormEvent } from "react";
 import { Helmet } from "react-helmet-async";
-import { Calendar, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, MapPin, X, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
+import { Input } from "@/components/ui/input";
+import { ClearFilters } from "@/components/shared/ClearFilters";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/events-api";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -26,6 +29,8 @@ interface DbEvent {
   poster_url?: string | null;
   start_at?: string | null;
   registration_enabled?: boolean | null;
+  /** Conference, workshop, alumni call and so on. Drives the type filter. */
+  event_type?: string | null;
 }
 
 /**
@@ -127,15 +132,76 @@ const Events = () => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [events]);
 
-  // Posters carousel for the lightbox: only events that have a poster, in display order.
+  // ===================================================================
+  // A PAST-EVENTS SECTION THAT CAN BE SEARCHED.
+  // -------------------------------------------------------------------
+  // The list was a chronological run of every event the association has
+  // ever held, ten to a page, and the only way to a specific one was to
+  // page through the lot. Somebody who remembers "the Goldman Sachs
+  // talk" or wants "the alumni calls" had no way to say so.
+  //
+  // The same three controls the report Archive uses, in the same order
+  // and the same shapes, because they are the same job: a search over
+  // the words, a filter over the kind of thing, and a filter over the
+  // year. Learning them once should be enough for both pages.
+  //
+  // Every option offered is derived from THE EVENTS THAT EXIST, so the
+  // type list holds only types the association has actually held and the
+  // year list only years it actually ran events in. A filter that can
+  // return nothing is a filter that should not have been offered.
+  // ===================================================================
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
+
+  const availableTypes = useMemo(() => {
+    const seen = new Set<string>();
+    for (const e of pastEvents) if (e.event_type) seen.add(e.event_type);
+    return Array.from(seen)
+      .map((t) => ({ value: t, label: EVENT_TYPE_LABELS[t as EventType] ?? t }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [pastEvents]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const e of pastEvents) years.add(new Date(e.date).getFullYear());
+    return Array.from(years).sort((a, b) => b - a);
+  }, [pastEvents]);
+
+  const filteredEvents = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return pastEvents.filter((e) => {
+      if (typeFilter !== "all" && e.event_type !== typeFilter) return false;
+      if (yearFilter !== "all" && new Date(e.date).getFullYear().toString() !== yearFilter) return false;
+      if (!q) return true;
+      // The words a visitor would actually remember: the title, where it
+      // was, who spoke and what it was about.
+      const haystack = [
+        e.title, e.place, e.description ?? "", e.moderator ?? "",
+        ...(e.guest ?? []),
+      ].join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [pastEvents, searchQuery, typeFilter, yearFilter]);
+
+  const activeFilterCount =
+    (typeFilter !== "all" ? 1 : 0) + (yearFilter !== "all" ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
+
+  // Narrowing the list must not leave the reader on a page that no longer
+  // exists, staring at an empty section that in fact has results.
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, typeFilter, yearFilter]);
+
+  // Posters carousel for the lightbox: only events that have a poster, and
+  // only within what is currently on screen, so the arrows walk the list
+  // the reader is actually looking at.
   const posterEvents = useMemo(
-    () => pastEvents.filter((e) => !!e.poster_url),
-    [pastEvents],
+    () => filteredEvents.filter((e) => !!e.poster_url),
+    [filteredEvents],
   );
 
-  const totalPages = Math.max(1, Math.ceil(pastEvents.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedEvents = pastEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedEvents = filteredEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -289,6 +355,78 @@ const Events = () => {
             </p>
           ) : (
             <>
+              {/* THE SAME FILTER ROW AS /archive: flat corners, the body
+                  font, no labels above the fields, the search taking
+                  whatever width is left. */}
+              <div className="py-4 mb-4">
+                <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+                  <div className="flex-1 min-w-[200px] relative">
+                    <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search by title, guest, place or description"
+                      aria-label="Search past events"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 font-body h-10 rounded-none"
+                    />
+                  </div>
+
+                  {availableTypes.length > 1 && (
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      aria-label="Filter past events by type"
+                      className="font-body text-base md:text-sm bg-background border border-separator px-3 h-10 min-w-[200px]"
+                    >
+                      <option value="all">All event types</option>
+                      {availableTypes.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {availableYears.length > 1 && (
+                    <select
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      aria-label="Filter past events by year"
+                      className="font-body text-base md:text-sm bg-background border border-separator px-3 h-10 min-w-[120px]"
+                    >
+                      <option value="all">All years</option>
+                      {availableYears.map((y) => (
+                        <option key={y} value={y.toString()}>{y}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  <ClearFilters
+                    count={activeFilterCount}
+                    onClear={() => { setSearchQuery(""); setTypeFilter("all"); setYearFilter("all"); }}
+                  />
+                </div>
+
+                <p className="sr-only" role="status" aria-live="polite">
+                  {activeFilterCount > 0
+                    ? `${filteredEvents.length} ${filteredEvents.length === 1 ? "event" : "events"} shown.`
+                    : ""}
+                </p>
+              </div>
+
+              {filteredEvents.length === 0 ? (
+                <div className="py-12 text-center">
+                  <p className="font-body text-body text-muted-foreground">
+                    No past event matches what you are looking for.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(""); setTypeFilter("all"); setYearFilter("all"); }}
+                    className="mt-3 font-body text-sm text-accent underline underline-offset-4 hover:opacity-80 transition-opacity"
+                  >
+                    Show every past event
+                  </button>
+                </div>
+              ) : (
               <div>
                 {paginatedEvents.map((event) => (
                   <PastEventRow
@@ -298,8 +436,9 @@ const Events = () => {
                   />
                 ))}
               </div>
+              )}
 
-              {totalPages > 1 && (
+              {totalPages > 1 && filteredEvents.length > 0 && (
                 <Pagination className="mt-10 overflow-x-auto">
                   <PaginationContent className="flex-wrap justify-center gap-1">
                     <PaginationItem>

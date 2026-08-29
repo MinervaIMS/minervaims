@@ -30,10 +30,17 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'applications-website', label: 'Application page' }, { key: 'applications-screening', label: 'Candidates screening' },
     { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-joiners', label: 'Offers' },
     { key: 'applications-form', label: 'Form & Questions' },
-    // The two applicant-facing pages. They were missing from this table
+    // The applicant-facing pages. They were missing from this table
     // entirely, so the one column the table exists to explain - what an
     // Applicant can reach - was incomplete.
+    //
+    // Interview and Offer are CONDITIONAL for the applicant: they are
+    // listed here because they exist, and an applicant may open both, but
+    // they only appear in an applicant's own menu once a division has
+    // invited them and once an offer has been sent respectively.
     { key: 'applications-status', label: 'Application status (applicant)' },
+    { key: 'applications-interview', label: 'Interview (applicant)' },
+    { key: 'applications-offer', label: 'Offer (applicant)' },
     { key: 'applications-faqs', label: 'FAQs (applicant)' } ] },
   { section: 'Events', items: [
     { key: 'events-create', label: 'Create event' }, { key: 'events-forms', label: 'Registration forms' },

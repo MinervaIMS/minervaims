@@ -14,7 +14,6 @@ import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
-import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { ApplicationsOpenLabel } from "@/components/shared/ApplicationsOpenLabel";
 import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
@@ -23,11 +22,43 @@ interface ArchiveFile extends ArchiveFileRow {
   id: string;
 }
 
+/**
+ * One of the three key figures.
+ *
+ * TWO THINGS USED TO PRODUCE A ZERO ON THE HOMEPAGE.
+ *
+ * The count-up only runs against a real value, but the component was
+ * called with `isLoading={false}` regardless, so from the first paint
+ * until the figures arrived - and FOREVER if the request failed - the
+ * page announced "0+ Research Reports". It now takes the hook's real
+ * loading state, and treats a zero as "not here yet" in its own right,
+ * because zero is never a true answer for any of these three.
+ *
+ * A SPAN, NOT A `<Skeleton>`, WHICH IS A DIV. The placeholder stands
+ * inside the `<p>` that carries the numeral's typography, and a `<div>`
+ * is not valid inside a `<p>`: the parser closes the paragraph early and
+ * lets the placeholder out of it, so during loading the figure's box sat
+ * outside the type context it is measured against. It is a span carrying
+ * the same pulse `Skeleton` uses. (The same fault was fixed on /join; see
+ * JoinFigures.)
+ *
+ * IT IS SIZED IN `em`, so it tracks the type it stands in for at every
+ * breakpoint by itself. A fixed height would have to be restated for each
+ * of the three sizes the numeral takes - 2.25rem on a phone, 3rem, 4rem -
+ * and would move the line the moment any of them changed. One line box
+ * high and about four digits wide, whatever those happen to be.
+ */
 const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
   const animatedValue = useAnimatedCounter(value, 3200, !isLoading && value > 0);
 
-  if (isLoading) {
-    return <Skeleton className="h-16 w-24 mx-auto" />;
+  if (isLoading || value <= 0) {
+    return (
+      <span
+        aria-hidden="true"
+        className="mx-auto block animate-pulse rounded-md bg-muted"
+        style={{ height: '1.2em', width: '2.2em' }}
+      />
+    );
   }
 
   return <>{animatedValue}+</>;
@@ -157,13 +188,22 @@ const Index = () => {
         <div className="relative z-10 bg-background">
           <div className="container py-[5.4375rem] md:py-24">
 
-            <div className="grid grid-cols-3 items-center gap-2 md:gap-12">
+            {/* ALIGNED BY THE NUMERALS, NOT BY THE MIDDLE OF EACH CELL.
+                With `items-center`, a cell whose label wraps onto a second
+                line is taller than its neighbours and its contents are
+                centred against theirs - so on a narrow screen, where
+                "Research Reports" wraps and "Alumni Network" does not, the
+                three figures sat at three different heights. `items-start`
+                puts the three numerals on one line, which is what the row
+                is for, and lets the labels below run to whatever depth they
+                need. On a desktop no label wraps, so nothing changes. */}
+            <div className="grid grid-cols-3 items-start gap-2 md:gap-12">
               <Link
                 to="/archive"
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
               >
-                <p className="font-serif text-3xl sm:text-5xl md:text-hero text-primary mb-1 md:mb-2">
-                  <AnimatedFigure value={counts.reports} isLoading={false} />
+                <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
+                  <AnimatedFigure value={counts.reports} isLoading={isKeyFiguresLoading} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
               </Link>
@@ -171,14 +211,14 @@ const Index = () => {
                 to="/people/members"
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
               >
-                <p className="font-serif text-3xl sm:text-5xl md:text-hero text-primary mb-1 md:mb-2">
-                  <AnimatedFigure value={counts.members} isLoading={false} />
+                <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
+                  <AnimatedFigure value={counts.members} isLoading={isKeyFiguresLoading} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
               </Link>
               <Link to="/people/alumni" className="text-center py-4 md:py-6 hover:opacity-80 transition-opacity">
-                <p className="font-serif text-3xl sm:text-5xl md:text-hero text-primary mb-1 md:mb-2">
-                  <AnimatedFigure value={counts.alumni} isLoading={false} />
+                <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
+                  <AnimatedFigure value={counts.alumni} isLoading={isKeyFiguresLoading} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
               </Link>
