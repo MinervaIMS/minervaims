@@ -131,7 +131,7 @@ export default function EditorialCalendar() {
     <div>
       {/* The colour key moves up beside Add item and folds away, exactly as on
           the main Calendar. Same three platforms, same three colours. */}
-      <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
+      <WorkspacePageHeader title="Editorial Calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
         actions={
           <>
             <CalendarLegend items={EDITORIAL_LEGEND} />
