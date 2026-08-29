@@ -117,7 +117,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   console.log('Received auth event', { emailType, email: payload.data.email, run_id })
 
   const rendered = renderAuthEmail(emailType, {
-    confirmationUrl: payload.data.url,
+    confirmationUrl: appHostedLink(payload.data.url, emailType),
     token: payload.data.token,
     oldEmail: payload.data.old_email,
     newEmail: payload.data.new_email,
