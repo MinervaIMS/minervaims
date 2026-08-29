@@ -20,14 +20,17 @@ import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import PixelCardSuccess from '@/components/shared/PixelCardSuccess';
-import { SpecularFx } from '@/components/shared/SpecularFx';
 import { WORKSPACE_BASE } from '@/lib/workspace-base';
 import {
   listQuestions, getMyApplication, submitApplication,
-  ACADEMIC_YEAR_LABELS, type AcademicYear, type ApplicationQuestion,
+  ACADEMIC_YEAR_LABELS, APPLY_DIVISIONS, RANKED_APPLY_DIVISIONS,
+  applyDivisionLabel, hasWrittenAnswer, hasSecondChoice,
+  type AcademicYear, type ApplicationQuestion,
 } from '@/lib/applications-api';
 
-const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+// The divisions an applicant may choose now live in `applications-api`,
+// with the rules that go with them (which are ranked, which set a
+// written question). See APPLY_DIVISIONS.
 const STUD_EMAIL = /@studbocconi\.it$/i;
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -187,6 +190,9 @@ export default function Apply() {
     })();
   }, [user]);
 
+  /** Whether this application needs a written answer at all. */
+  const needsAnswer = hasWrittenAnswer(f.first_choice);
+
   const questionFor = useMemo(
     () => (f.first_choice ? questions.find((q) => q.division === f.first_choice)?.question : ''),
     [questions, f.first_choice],
@@ -200,7 +206,10 @@ export default function Apply() {
     if (password.length < 8) { toast({ title: 'Choose a password of at least 8 characters', variant: 'destructive' }); return; }
     if (password !== confirm) { toast({ title: 'The two passwords do not match', variant: 'destructive' }); return; }
     if (!cv) { toast({ title: 'Please attach your CV (PDF)', variant: 'destructive' }); return; }
-    if (!answer) { toast({ title: 'Please attach your written answer (PDF)', variant: 'destructive' }); return; }
+    // The written answer is required only where the division sets a
+    // question. Media and Operations does not, so an applicant to it is
+    // never asked for a document that does not exist.
+    if (hasWrittenAnswer(f.first_choice) && !answer) { toast({ title: 'Please attach your written answer (PDF)', variant: 'destructive' }); return; }
     if (!consent) { toast({ title: 'Please confirm the consent statement to continue', variant: 'destructive' }); return; }
 
     setSubmitting(true);
@@ -370,31 +379,57 @@ export default function Apply() {
         </div>
 
         <SectionKicker>Division preferences</SectionKicker>
+        {/* SIX OPTIONS, AND ONE OF THEM BEHAVES DIFFERENTLY. Media and
+            Operations is recruited jointly and is not one of the five
+            research divisions a candidate ranks, so choosing it removes
+            the second choice AND the written answer rather than leaving
+            two controls on screen that do not apply to it. The rules come
+            from `applications-api`, so the form asks rather than
+            decides. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="First-choice division *">
-            <Select value={f.first_choice} onValueChange={(v) => setF({ ...f, first_choice: v as OrgDivision })}>
+            <Select
+              value={f.first_choice}
+              onValueChange={(v) => {
+                const first = v as OrgDivision;
+                // Switching to a division with no second choice clears any
+                // second choice already made, so nothing unreachable is
+                // ever submitted.
+                setF({ ...f, first_choice: first, second_choice: hasSecondChoice(first) ? f.second_choice : '' });
+                if (!hasWrittenAnswer(first)) setAnswer(null);
+              }}
+            >
               <SelectTrigger><SelectValue placeholder="Choose a division" /></SelectTrigger>
-              <SelectContent>{CORE.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
+              <SelectContent>{APPLY_DIVISIONS.map((d) => <SelectItem key={d} value={d}>{applyDivisionLabel(d)}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="Second-choice division (optional)">
-            <Select value={f.second_choice} onValueChange={(v) => setF({ ...f, second_choice: v as OrgDivision })}>
-              <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
-              <SelectContent>{CORE.filter((d) => d !== f.first_choice).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
+          {hasSecondChoice(f.first_choice) && (
+            <Field label="Second-choice division (optional)">
+              <Select value={f.second_choice} onValueChange={(v) => setF({ ...f, second_choice: v as OrgDivision })}>
+                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                <SelectContent>{RANKED_APPLY_DIVISIONS.filter((d) => d !== f.first_choice).map((d) => <SelectItem key={d} value={d}>{applyDivisionLabel(d)}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+          )}
         </div>
 
         {/* Division question */}
         <div className="mt-4">
-          {f.first_choice ? (
+          {!f.first_choice ? (
+            <p className="text-xs text-muted-foreground">Select your first-choice division to see its written question.</p>
+          ) : hasWrittenAnswer(f.first_choice) ? (
             <div className="border border-accent/30 bg-accent/5 p-4">
-              <div className="text-xs uppercase tracking-[0.08em] font-semibold text-accent mb-1.5">Written question ({divisionLabels[f.first_choice]})</div>
+              <div className="text-xs uppercase tracking-[0.08em] font-semibold text-accent mb-1.5">Written question ({applyDivisionLabel(f.first_choice)})</div>
               <p className="text-sm text-foreground leading-relaxed">{questionFor || 'The question for this division will be published shortly.'}</p>
               <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. You may also answer additional divisions. If you do, combine everything into the same PDF.</p>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">Select your first-choice division to see its written question.</p>
+            <div className="border border-accent/30 bg-accent/5 p-4">
+              <div className="text-xs uppercase tracking-[0.08em] font-semibold text-accent mb-1.5">No written question ({applyDivisionLabel(f.first_choice)})</div>
+              <p className="text-sm text-foreground leading-relaxed">
+                This division does not set a written question. Your CV is the only document you need to attach.
+              </p>
+            </div>
           )}
         </div>
 
@@ -403,12 +438,14 @@ export default function Apply() {
         <div className="border border-[#D9D9D9] px-4 py-3.5 space-y-1.5 mb-4">
           <p className="text-[13px] font-semibold text-foreground">Document guidelines</p>
           <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">CV</strong>: one page, finance-style layout, your most recent version. PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_CV.pdf</code>.</p>
-          <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">Written answer</strong>: a single PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_Answer.pdf</code>. Place any charts/tables in an appendix after the first page.</p>
+          {needsAnswer && (
+            <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">Written answer</strong>: a single PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_Answer.pdf</code>. Place any charts/tables in an appendix after the first page.</p>
+          )}
         </div>
 
         <div className="space-y-4">
           <FilePicker label="CV (PDF) *" file={cv} onChange={setCv} />
-          <FilePicker label="Written answer (PDF) *" file={answer} onChange={setAnswer} />
+          {needsAnswer && <FilePicker label="Written answer (PDF) *" file={answer} onChange={setAnswer} />}
         </div>
 
         {/* GDPR consent */}
@@ -430,7 +467,6 @@ export default function Apply() {
               : 'border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent disabled:opacity-70'
           }`}
         >
-          {!readOnly && <SpecularFx />}
           <span className="relative z-[2]">
             {submitting ? (
               <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Submitting</span>

@@ -57,11 +57,13 @@ export const MOBILE_POLICY: Record<string, MobilePolicy> = {
   'website-readings': 'view',
   'website-testimonials': 'no',
   'website-history': 'no',
+  'website-faqs': 'no',
   'ops-newsletter': 'no',
   'ops-auto-emails': 'no',
   // Settings
   'settings-users': 'no',
   'settings-roles': 'no',
+  'settings-mobile': 'no',
   'settings-activity': 'no',
 };
 

@@ -6,8 +6,15 @@ import { Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import {
+  Pagination, PaginationContent, PaginationEllipsis, PaginationItem,
+  PaginationLink, PaginationNext, PaginationPrevious,
+} from '@/components/ui/pagination';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { getAutoEmails, type AutoTemplate, type EmailLogRow } from '@/lib/ops-api';
+
+/** Rows a page in the sent register: the workspace's own figure. */
+const LOG_PER_PAGE = 25;
 
 export default function AutoEmails() {
   const { session } = useAuth();
@@ -17,6 +24,7 @@ export default function AutoEmails() {
   const [log, setLog] = useState<EmailLogRow[]>([]);
   const [preview, setPreview] = useState<AutoTemplate | null>(null);
   const [q, setQ] = useState('');
+  const [logPage, setLogPage] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -44,6 +52,34 @@ export default function AutoEmails() {
         (t.subject || '').toLowerCase().includes(s),
     );
   }, [templates, q]);
+
+  // Twenty-five rows a page, which is what the Activity log and the
+  // Alumni register use, so a member moving between them meets one
+  // pagination rather than three.
+  const logTotalPages = Math.ceil(log.length / LOG_PER_PAGE);
+  const pagedLog = useMemo(
+    () => log.slice((logPage - 1) * LOG_PER_PAGE, (logPage - 1) * LOG_PER_PAGE + LOG_PER_PAGE),
+    [log, logPage],
+  );
+  // A reload that shortens the register must not leave the reader on a
+  // page that no longer exists.
+  useEffect(() => {
+    if (logPage > 1 && logPage > logTotalPages) setLogPage(Math.max(1, logTotalPages));
+  }, [logPage, logTotalPages]);
+
+  const logPageNumbers = (): (number | 'ellipsis')[] => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (logTotalPages <= 7) {
+      for (let i = 1; i <= logTotalPages; i += 1) pages.push(i);
+      return pages;
+    }
+    pages.push(1);
+    if (logPage > 3) pages.push('ellipsis');
+    for (let i = Math.max(2, logPage - 1); i <= Math.min(logTotalPages - 1, logPage + 1); i += 1) pages.push(i);
+    if (logPage < logTotalPages - 2) pages.push('ellipsis');
+    pages.push(logTotalPages);
+    return pages;
+  };
 
   if (loading)
     return (
@@ -127,7 +163,22 @@ export default function AutoEmails() {
       </div>
 
       <div>
-        <h2 className="font-serif text-xl text-accent mb-3">Sent register</h2>
+        {/* The register is a log, and a log grows without limit: every
+            automatic email the system has ever sent was rendered as one
+            more row, so the page became a single scroll thousands of rows
+            long and the browser laid out every one of them. It is paged
+            now, in the workspace's own pagination - the same component,
+            the same twenty-five rows, the same ellipsis behaviour as the
+            Activity log and the Alumni register. */}
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-serif text-xl text-accent">Sent register</h2>
+          {log.length > 0 && (
+            <span className="font-body text-sm text-muted-foreground">
+              {log.length === 1 ? '1 email' : `${log.length} emails`}
+              {logTotalPages > 1 && ` · page ${logPage} of ${logTotalPages}`}
+            </span>
+          )}
+        </div>
         {log.length === 0 ? (
           <p className="font-body text-sm text-muted-foreground">No automatic emails recorded yet.</p>
         ) : (
@@ -142,7 +193,7 @@ export default function AutoEmails() {
                 </tr>
               </thead>
               <tbody>
-                {log.map((l) => (
+                {pagedLog.map((l) => (
                   <tr key={l.id} className="border-t border-separator">
                     <td className="px-3 py-2 whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</td>
                     <td className="px-3 py-2">{l.template_name}</td>
@@ -162,6 +213,44 @@ export default function AutoEmails() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {logTotalPages > 1 && (
+          <div className="mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => logPage > 1 && setLogPage(logPage - 1)}
+                    className={logPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {logPageNumbers().map((page, idx) =>
+                  page === 'ellipsis' ? (
+                    <PaginationItem key={`ellipsis-${idx}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setLogPage(page)}
+                        isActive={logPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => logPage < logTotalPages && setLogPage(logPage + 1)}
+                    className={logPage === logTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </div>

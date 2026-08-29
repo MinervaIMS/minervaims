@@ -1,6 +1,5 @@
 import { ButtonHTMLAttributes, forwardRef, InputHTMLAttributes, ReactNode, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { SpecularFx } from '@/components/shared/SpecularFx';
 
 /* ---------------- Tokens (mirror prompt) ---------------- */
 const NAVY = '#1F0F4D';
@@ -194,8 +193,20 @@ export function AuthButton({
         rest.onMouseLeave?.(e);
       }}
     >
-      {/* Primary actions carry the specular border animation. */}
-      {variant === 'primary' && !disabled && <SpecularFx />}
+      {/* NO SPECULAR BORDER. The primary action used to carry an animated
+          WebGL streak that traced its outline, and the outline it traced was
+          a ROUNDED rectangle: `sdRoundedRect` with a non-zero radius, over a
+          button whose own corners are square, on a canvas inset by -20px so
+          it painted twenty pixels PAST every edge. At each corner the two
+          shapes disagreed, and the mismatch showed as a dark navy wedge
+          sitting outside the button on the white card - most visibly on
+          "Sign In", which is the first thing anybody signing in looks at.
+
+          The animation is gone rather than re-fitted. It was decoration on
+          the one control a visitor must be able to trust, it cost a WebGL
+          context on three separate pages, and the button already has the
+          site's own language: navy fill, square corners, an inversion on
+          hover. Nothing about that changes here. */}
       <span style={{ position: 'relative', zIndex: 2 }}>{children}</span>
     </button>
   );

@@ -25,7 +25,8 @@ const EDITORIAL_LEGEND: LegendItem[] = [
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listEditorial, saveEditorial, deleteEditorial,
-  FORMAT_LABELS, ED_STATUS_LABELS,
+  FORMAT_LABELS, FORMAT_SHORT_LABELS, FORMATS_BY_PLATFORM, PLATFORM_LABELS, formatForPlatform, platformForFormat,
+  ED_STATUS_LABELS,
   type EditorialItem, type EditorialInput, type EditorialFormat, type EditorialPlatform, type EditorialStatus,
 } from '@/lib/smm-api';
 
@@ -90,7 +91,12 @@ export default function EditorialCalendar() {
   const openCreate = (date?: string) => { setEditingId(null); setForm({ ...EMPTY, scheduled_date: date ?? '' }); setDialogOpen(true); };
   const openEdit = (i: EditorialItem) => {
     setEditingId(i.id);
-    setForm({ id: i.id, title: i.title, platform: i.platform, format: i.format, scheduled_date: i.scheduled_date ?? '', responsible_person: i.responsible_person ?? '', status: i.status, paid: i.paid, notes: i.notes ?? '' });
+    // A row saved before the two controls agreed can hold a pair that
+    // no longer exists - LinkedIn with an Instagram reel. Opening it
+    // shows the platform the FORMAT belongs to, so the editor is
+    // never in a state its own controls cannot express.
+    const platform = FORMATS_BY_PLATFORM[i.platform].includes(i.format) ? i.platform : platformForFormat(i.format);
+    setForm({ id: i.id, title: i.title, platform, format: i.format, scheduled_date: i.scheduled_date ?? '', responsible_person: i.responsible_person ?? '', status: i.status, paid: i.paid, notes: i.notes ?? '' });
     setDialogOpen(true);
   };
 
@@ -131,7 +137,7 @@ export default function EditorialCalendar() {
     <div>
       {/* The colour key moves up beside Add item and folds away, exactly as on
           the main Calendar. Same three platforms, same three colours. */}
-      <WorkspacePageHeader title="Editorial Calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
+      <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
         actions={
           <>
             <CalendarLegend items={EDITORIAL_LEGEND} />
@@ -191,21 +197,66 @@ export default function EditorialCalendar() {
           <DialogHeader><DialogTitle className="font-serif">{editingId ? 'Edit item' : 'Add item'}</DialogTitle></DialogHeader>
           <div className="space-y-3 font-body">
             <div className="space-y-1"><Label>What to promote *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest speaker event teaser" /></div>
+            {/* ==========================================================
+                WHERE IT GOES, AND WHAT IT IS. One row, two segmented
+                controls, and the second is the first's own list.
+
+                Two dropdowns over the same five formats meant reading
+                "LinkedIn" and then "LinkedIn post", and offering
+                "Instagram reel" while LinkedIn was selected. Here the
+                platform is picked from three visible options rather than
+                from a menu that has to be opened, and the formats shown
+                are that platform's, named without repeating it: Story,
+                Post, Reel. Changing the platform repairs the format
+                (`formatForPlatform`), so an item that says LinkedIn can
+                no longer be a reel.
+
+                The stored values are exactly what they were. A platform
+                with one format shows that one option, disabled-looking
+                but still the true answer, which is more honest than a
+                dropdown that opens to a single line.
+                ========================================================== */}
+            <div className="space-y-1">
+              <Label>Where it goes</Label>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(PLATFORM_LABELS) as EditorialPlatform[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setForm({ ...form, platform: p, format: formatForPlatform(p, form.format) })}
+                    aria-pressed={form.platform === p}
+                    className={`h-9 px-4 border font-body text-sm transition-colors ${
+                      form.platform === p
+                        ? 'border-accent bg-accent text-accent-foreground'
+                        : 'border-separator bg-background text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {PLATFORM_LABELS[p]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Format</Label>
+              <div className="flex flex-wrap gap-2">
+                {FORMATS_BY_PLATFORM[form.platform].map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setForm({ ...form, format: f })}
+                    aria-pressed={form.format === f}
+                    className={`h-9 px-4 border font-body text-sm transition-colors ${
+                      form.format === f
+                        ? 'border-accent bg-accent text-accent-foreground'
+                        : 'border-separator bg-background text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {FORMAT_SHORT_LABELS[f]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Platform</Label>
-                <Select value={form.platform} onValueChange={(v) => setForm({ ...form, platform: v as EditorialPlatform })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="instagram">Instagram</SelectItem><SelectItem value="linkedin">LinkedIn</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Format</Label>
-                <Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v as EditorialFormat })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{(Object.keys(FORMAT_LABELS) as EditorialFormat[]).map((f) => <SelectItem key={f} value={f}>{FORMAT_LABELS[f]}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
               <div className="space-y-1"><Label>Scheduled date</Label><Input type="date" value={form.scheduled_date ?? ''} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} /></div>
               <div className="space-y-1"><Label>Responsible</Label><Input value={form.responsible_person ?? ''} onChange={(e) => setForm({ ...form, responsible_person: e.target.value })} placeholder="e.g. Jane Smith" /></div>
               <div className="space-y-1">

@@ -41,6 +41,21 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview', renderW
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  // ===================================================================
+  // THE PREVIEW IS THE SHAPE OF THE DOCUMENT, not the shape of A4.
+  // -------------------------------------------------------------------
+  // Both the frame and the canvas used to be A4 whatever the file was.
+  // A page that is not A4 - a landscape one-pager, a deck, a US Letter
+  // cover - was drawn scaled to fit and CENTRED IN WHITE inside a tall
+  // portrait box, so the cover appeared as a small strip surrounded by
+  // blank paper that is not in the document at all.
+  //
+  // The first page's own viewport gives its true ratio, and it is used
+  // for both. A4 remains the value until the page has been read, which
+  // is what keeps the common case - every report the Society publishes -
+  // from shifting at all: it starts A4 and stays A4.
+  // ===================================================================
+  const [ratio, setRatio] = useState(A4_ASPECT_RATIO);
 
   // Only load PDF when component is visible (IntersectionObserver)
   useEffect(() => {
@@ -90,14 +105,21 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview', renderW
         if (cancelled) return;
 
         // Use fixed dimensions to avoid reading clientWidth (prevents forced reflow)
-        const containerWidth = renderWidth;
-        const containerHeight = containerWidth * A4_ASPECT_RATIO;
-
         const viewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(
-          containerWidth / viewport.width,
-          containerHeight / viewport.height
-        );
+        // Guarded: a malformed page reporting a zero dimension must not
+        // produce a zero-height box or a division by zero below.
+        const pageRatio = viewport.width > 0 && viewport.height > 0
+          ? viewport.height / viewport.width
+          : A4_ASPECT_RATIO;
+        if (!cancelled) setRatio(pageRatio);
+
+        const containerWidth = renderWidth;
+        const containerHeight = containerWidth * pageRatio;
+
+        // ONE SCALE, NOT THE SMALLER OF TWO. The canvas is now the page's
+        // own shape, so the page fills it exactly and there is no letterbox
+        // to centre it in.
+        const scale = containerWidth / viewport.width;
 
         const scaledViewport = page.getViewport({ scale });
 
@@ -161,7 +183,7 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview', renderW
     <div 
       ref={containerRef} 
       className={`relative overflow-hidden ${className}`}
-      style={{ aspectRatio: `1 / ${A4_ASPECT_RATIO}`, contain: 'layout paint' }}
+      style={{ aspectRatio: `1 / ${ratio}`, contain: 'layout paint' }}
     >
       {loading && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-background animate-pulse">
@@ -174,9 +196,26 @@ export function PdfThumbnail({ url, className = '', alt = 'PDF Preview', renderW
           <span className="text-muted-foreground text-xs text-center px-2">Preview unavailable</span>
         </div>
       )}
-      <canvas 
-        ref={canvasRef} 
-        className={`w-full h-full ${loading || error ? 'opacity-0' : 'opacity-100'}`}
+      {/* `object-contain` IS THE SECOND HALF OF THE FIX, and it is needed
+          because an aspect ratio is not a guarantee.
+
+          The frame above asks for the page's shape, and gets it wherever
+          it is free to take it. Where the caller caps BOTH axes - the
+          Dashboard's cover sits in a box with a width and a height, so
+          that the text beside it cannot be pushed out - the cap wins over
+          the ratio, and the frame is whatever the caller allowed. Without
+          this the canvas would be stretched to fill that frame, which is
+          the distortion the ratio was meant to prevent.
+
+          A canvas is a replaced element with the intrinsic dimensions of
+          its bitmap, so `object-contain` applies to it exactly as it does
+          to an image: the page is scaled to fit and centred, whole and in
+          proportion, whatever shape the frame turns out to be. For an A4
+          cover in an A4 frame - which is every report the Society
+          publishes - the two agree and this changes nothing at all. */}
+      <canvas
+        ref={canvasRef}
+        className={`w-full h-full object-contain ${loading || error ? 'opacity-0' : 'opacity-100'}`}
         title={alt}
       />
     </div>

@@ -7,7 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
-import type { OrgDivision } from '@/lib/roles';
+import { divisionLabels, type OrgDivision } from '@/lib/roles';
 
 export type AcademicYear = 'bachelor_1' | 'bachelor_2' | 'bachelor_3' | 'master_1' | 'master_2' | 'exchange';
 
@@ -67,6 +67,52 @@ export const ACADEMIC_YEAR_LABELS: Record<AcademicYear, string> = {
 // Colour classes per status for the reviewer table / detail (report item 15).
 // Grouped: neutral (early), amber (interview in progress / caution), green
 // (positive outcomes), red (negative outcomes).
+// =====================================================================
+// THE DIVISIONS AN APPLICANT MAY CHOOSE, and what they are called here.
+// ---------------------------------------------------------------------
+// The five core research divisions, plus Media and Operations, which the
+// Society recruits for jointly: one intake, one team, one choice on the
+// form.
+//
+// IT IS STORED AS `media`, which is an existing value of the
+// `org_division` enum, so nothing in the database, in the edge functions
+// or in the interview scheduling has to change to accept it. Only the
+// NAME differs on the applicant's side, because "Media and Operations"
+// is what the Society calls the intake even though the register keeps
+// the two divisions separately for members.
+//
+// TWO THINGS ARE TRUE OF IT AND OF NOTHING ELSE ON THE FORM: there is no
+// written question to answer, and there is no second choice to make.
+// Both follow from the same fact - it is not one of the five research
+// divisions a candidate ranks - and both are declared here rather than
+// spelled out as conditions in the form, so the form reads the rule
+// instead of restating it.
+// =====================================================================
+
+/** In the order the form offers them. */
+export const APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media'];
+
+/** The five a candidate may rank. Media and Operations is not ranked. */
+export const RANKED_APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+
+/** Divisions whose applicants attach no written answer. */
+export const NO_WRITTEN_ANSWER_DIVISIONS: OrgDivision[] = ['media'];
+
+export const hasWrittenAnswer = (division: OrgDivision | '' | null | undefined): boolean =>
+  !!division && !NO_WRITTEN_ANSWER_DIVISIONS.includes(division);
+
+export const hasSecondChoice = (division: OrgDivision | '' | null | undefined): boolean =>
+  !!division && RANKED_APPLY_DIVISIONS.includes(division);
+
+/**
+ * The division's name as an APPLICANT sees it. Everywhere else - the
+ * register, the workspace, a member's own profile - keeps `divisionLabels`,
+ * which is the association's own naming for its divisions.
+ */
+export function applyDivisionLabel(division: OrgDivision): string {
+  return division === 'media' ? 'Media and Operations' : divisionLabels[division];
+}
+
 export const STATUS_COLORS: Record<ApplicationStatus, string> = {
   received: 'bg-muted text-muted-foreground border-separator',
   cv_opened: 'bg-muted text-muted-foreground border-separator',

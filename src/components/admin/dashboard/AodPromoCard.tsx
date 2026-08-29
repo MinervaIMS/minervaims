@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useLayoutEffect, useRef } from 'react';
 import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
 
 // =====================================================================
@@ -80,9 +80,80 @@ function aodSentence(date: string | null): string {
     + 'and help others discover what we\u2019re all about!';
 }
 
+/** The action's own height (h-11) plus the gap above it (pt-5). */
+const ACTION_BLOCK_PX = 44 + 20;
+
 export function AodPromoCard({ date }: { date: string | null }) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = !photoFailed;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // WHEN THE SENTENCE AND THE ACTION CANNOT BOTH FIT, THE ACTION MOVES.
+  // -------------------------------------------------------------------
+  // The two used to be stacked in one column: the sentence at the top,
+  // the action pushed to the foot by `mt-auto`. On a short card that
+  // column ran out of height, and because the heading carried `min-h-0`
+  // its BOX shrank while its TEXT kept flowing - so the last line of the
+  // sentence was painted straight over the white button.
+  //
+  // Two changes, and they do different jobs. The heading now clips its
+  // own overflow, so text can never be drawn over the action whatever
+  // happens. And when there is genuinely not enough height for both, the
+  // action leaves the column and sits over the photograph on the right,
+  // which gives the sentence the whole column and puts the button on the
+  // one part of the card that has room to spare.
+  //
+  // THE MEASUREMENT CANNOT OSCILLATE. What is compared is the sentence's
+  // natural height plus a CONSTANT for the action against the column's
+  // own height. The column's height does not change when the action
+  // leaves it, and the sentence's width does not either, so the answer is
+  // stable: there is no state in which moving the button makes it fit and
+  // fitting moves it back.
+  // ═══════════════════════════════════════════════════════════════════
+  const columnRef = useRef<HTMLDivElement>(null);
+  const sentenceRef = useRef<HTMLHeadingElement>(null);
+  const [actionOnPhoto, setActionOnPhoto] = useState(false);
+
+  useLayoutEffect(() => {
+    const column = columnRef.current;
+    const sentence = sentenceRef.current;
+    if (!column || !sentence) return;
+
+    const measure = () => {
+      // Only on a wide card: below `sm` the photograph is a band across
+      // the top, so there is no right-hand side to move the action to.
+      const wide = window.matchMedia('(min-width: 640px)').matches;
+      if (!wide) { setActionOnPhoto(false); return; }
+      const style = getComputedStyle(column);
+      const inner = column.clientHeight
+        - parseFloat(style.paddingTop || '0')
+        - parseFloat(style.paddingBottom || '0');
+      if (inner <= 0) return;
+      setActionOnPhoto(sentence.scrollHeight + ACTION_BLOCK_PX > inner);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(column);
+    ro.observe(sentence);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [date, showPhoto]);
+
+  const action = (
+    <span
+      className="inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
+                 border border-background bg-background
+                 font-serif text-[15px] text-accent whitespace-nowrap
+                 transition-colors duration-200
+                 group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
+    >
+      Register Participation
+    </span>
+  );
 
   return (
     <div className="relative h-full w-full flex flex-col sm:block text-left">
@@ -139,33 +210,42 @@ export function AodPromoCard({ date }: { date: string | null }) {
           Centring the pair left the sentence floating in the middle of
           the purple with nothing anchoring either end. */}
       <div
+        ref={columnRef}
         className={`relative z-10 flex-1 min-h-0 flex flex-col overflow-hidden p-5 sm:p-6 sm:h-full ${
           showPhoto ? 'sm:w-[58%]' : 'sm:w-full'
         }`}
       >
-        {/* Sized so the whole sentence, the gap and the action all stand
-            inside the card at every width. `min-h-0` with the column's
-            `overflow-hidden` means that if a very narrow phone ever runs
-            out of room, it is the tail of the sentence that gives way and
-            never the action. */}
-        <h3 className="min-h-0 font-serif text-accent-foreground text-[19px] sm:text-[22px] xl:text-[24px] leading-[1.22] text-balance">
+        {/* `overflow-hidden` HERE, not only on the column. A heading that is
+            allowed to shrink below its content still PAINTS that content,
+            and the thing directly beneath it is the action - which is how
+            the last line of the sentence came to be drawn across the white
+            button. Clipping its own box means the tail of a sentence can
+            give way, quietly, and the action is never touched. */}
+        <h3
+          ref={sentenceRef}
+          className="min-h-0 overflow-hidden font-serif text-accent-foreground text-[19px] sm:text-[22px] xl:text-[24px] leading-[1.22] text-balance"
+        >
           {aodSentence(date)}
         </h3>
         {/* The site's button language, and EXACTLY the block the report
             state uses: same height, same padding, same serif, same
-            inversion on hover, at the same distance from the foot. */}
-        <div className="mt-auto shrink-0 pt-5">
-          <span
-            className="inline-flex w-fit items-center justify-center h-11 px-6 rounded-md
-                       border border-background bg-background
-                       font-serif text-[15px] text-accent whitespace-nowrap
-                       transition-colors duration-200
-                       group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-background"
-          >
-            Register Participation
-          </span>
-        </div>
+            inversion on hover, at the same distance from the foot. It is
+            rendered here only while there is room for it; otherwise it is
+            the copy over the photograph below. */}
+        {!actionOnPhoto && <div className="mt-auto shrink-0 pt-5">{action}</div>}
       </div>
+
+      {/* THE ACTION, OVER THE PHOTOGRAPH. Only when the sentence needs the
+          whole column, and only on a wide card, where the picture is the
+          right-hand panel. It is pinned to the panel's bottom-right corner,
+          inside the same padding the column uses, and it keeps every one of
+          the button's own styles including the hover inversion - it is the
+          same element, in a different place. */}
+      {actionOnPhoto && (
+        <div className="pointer-events-none absolute bottom-6 right-6 z-20 hidden sm:block">
+          {action}
+        </div>
+      )}
     </div>
   );
 }
