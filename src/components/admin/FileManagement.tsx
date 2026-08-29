@@ -661,7 +661,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     <div id="files-section">
       {/* Header */}
       <WorkspacePageHeader
-        title="Reports archive"
+        title="Reports Archive"
         description="Browse, search and download every published report. Filter by division, year, fund or free-text search."
         actions={<>
 
