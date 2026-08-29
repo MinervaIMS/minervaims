@@ -1,78 +1,28 @@
-# Why non-auth emails never arrive
+# Tom Petit — sign-up email report
 
-## The error
+## What the records show
 
-Every app email (application received, interview invitation, offer, rejection, welcome…) fails with the same provider response:
+- Account created 27 Aug, 15:46:44 UTC. The confirmation email was queued and accepted by the mail provider at 15:46:46 (logged as `signup` / `sent`, no error).
+- The email address was confirmed at 15:47:20 — 36 seconds later — and a session was created at the same moment. Confirmation only happens when the link in that email is opened, so at least one delivery reached a mailbox or scanner.
+- His roster record was claimed successfully: account approved, workspace role Head of Investment Research (Investment division), profile row present.
+- He is not on the suppression list, and no failed or dead-lettered email exists for his address.
 
-```text
-Email API error: 404 {"type":"run_not_found","title":"Run not found or expired"}
-```
+So nothing is broken on his account: he can sign in normally at `/auth` with the password he chose. If he does not remember it, "Forgot password" works (recovery emails to `@studbocconi.it` were accepted and sent as recently as 27 Aug for another member).
 
-It is retried 5 times, then dead-lettered. The queue currently holds 16 permanently failed app emails. Sign-up, login and password-reset emails are unaffected — they are sent on a different path.
+The plausible explanation for "no email received" is delivery filtering on the university mailbox (spam/quarantine) or the message arriving after he had already given up, since the provider accepted it and the link was subsequently opened. Per-message delivery events are not surfaced to the app, so we cannot prove inbox placement from here.
 
-## Root cause (confirmed)
+## Proposed work
 
-Auth emails and app emails are enqueued by two different pieces of code:
-
-- Auth emails come from the auth webhook, which receives a **real `run_id`** issued by the email service and passes it through. The service recognises it, so the send succeeds.
-- App emails are enqueued by the database helper `enqueue_app_email`, which **fabricates a random `run_id`** (`gen_random_uuid()`). No such run exists on the email service, so every send is rejected with `run_not_found`.
-
-Two secondary defects in the same helper would block sending even after the `run_id` is fixed:
-
-- No `idempotency_key` — required for the service to create the run inline for an app email, and what prevents duplicate sends on retry.
-- No `unsubscribe_token` — app emails are rejected without one, and no suppression check is performed, so unsubscribed or bounced addresses would still be attempted.
-
-Separately: the templates `ws_*` (workspace notices, fee collection, role assignment, expulsion, deadlines, AoD, alumni call) and `newsletter_*` are marked connected but **nothing in the app ever triggers them** — they can only be authored, not sent.
-
-## Fix
-
-1. Rewrite `enqueue_app_email` so the queue payload matches what the sender expects:
-   - drop `run_id` entirely (the service creates the run from `purpose: transactional` + idempotency key),
-   - add a deterministic `idempotency_key` (template key + recipient + message id),
-   - look up or create the recipient's row in the unsubscribe-token table and include the token,
-   - skip and log as `suppressed` when the recipient is on the suppression list,
-   - keep the existing pending log row and HTML wrapper unchanged.
-2. Re-trigger the 16 dead-lettered messages? They are stale recruitment mails from 23 August; recommendation is to leave them and not resend. Confirm if you want any resent.
-3. Verify end-to-end by sending one app email to an address you own and checking it moves from `pending` to `sent`.
-4. Harden the offer deadline job (see next section).
-5. Optional follow-up (separate step, not in this fix): wire trigger points for the workspace and newsletter templates that currently have no sender.
-
-## Offer reminder / offer expired vs. a candidate who accepts in time
-
-Checked the hourly deadline job and the acceptance path:
-
-- Both the reminder loop and the expiry loop only consider applications whose status is still `accepted` with an outstanding offer.
-- Accepting sets the status to `joined` (candidate accepts) or `joined` via conversion (President/Admin), and declining sets `offer_declined`.
-
-So a candidate who accepts in time is already excluded from both emails — the behaviour you asked for is the intended one. Two residual weaknesses to close in the same migration:
-
-- The reminder is enqueued first and the "reminder sent" flag is written afterwards, so two overlapping runs of the job could both pick the same row and send two reminders. Fix: claim the row with a single conditional `UPDATE ... WHERE status = 'accepted' AND offer_reminder_sent_at IS NULL ... RETURNING`, and only enqueue for rows actually claimed.
-- Same for expiry: flip the status to `offer_declined` with a conditional update that returns the row, and enqueue "offer expired" only for rows the update actually changed.
-- Remaining window: an email already sitting in the queue when the candidate accepts still goes out. The queue drains within seconds, so this is a seconds-wide window; closing it fully is not worth extra machinery, and it will be noted rather than engineered around.
-
-
-
-## Which automatic emails are triggered, and when
-
-Recruitment (all through `enqueue_app_email`):
-
-| Email | Trigger |
-| --- | --- |
-| Application received | Application submitted (once per candidate) |
-| Interview invitation | Status set to "interview invitation sent", and on division transfer |
-| Interview booking confirmation | Candidate books an interview slot |
-| Rejection (pre-interview) | Status set to rejected before any interview stage |
-| Rejection (after interview) | Status set to rejected after an interview stage |
-| Offer to join | President/Admin sends the offer |
-| Offer reminder | Hourly job, 2 days after an unaccepted offer |
-| Offer expired | Hourly job, 3 days after an unaccepted offer |
-| Offer accepted / welcome | Candidate accepts, or is converted to member |
-
-Authentication (working today, separate path): confirm e-mail on sign-up, password reset, magic link, invitation, e-mail change, re-authentication code.
-
-Defined but never triggered: fee collection and membership reminders, complete-your-profile, role assignment, expulsion and expulsion alert, deadline overdue, internal event, Association on Display, alumni call, general communication, all three newsletters, event registration confirmation, membership confirmation, candidate status update.
+1. **Immediate, no code:** ask him to check spam/quarantine for a message from `noreply@minervaims.org`, then simply sign in — his account is already active and confirmed.
+2. **Add a self-service recovery path on the pending/auth screens** so this never becomes a support ticket:
+   - "Resend verification email" button (rate-limited, disabled for already-confirmed accounts, with a clear "already verified — sign in" state).
+   - "Check again" button on the pending-approval screen that re-runs roster redemption on demand instead of only on page load.
+3. **Show a precise state instead of a spinner** when redemption cannot apply a role, so a user is never left on "loading your workspace".
+4. **Deliverability note in the sign-up confirmation screen**: tell the user the message can land in the Bocconi spam/quarantine folder and name the exact sender address to whitelist.
 
 ## Technical notes
 
-- Single change: a migration replacing `public.enqueue_app_email(text, text, jsonb)`. No Edge Function redeploy is required, since the queue worker already reads `idempotency_key` and `unsubscribe_token` from the payload and treats a missing `run_id` as "create inline".
-- Grants stay as they are: execute reserved for `service_role`.
+- Files touched: `src/pages/Auth.tsx`, `src/pages/PendingApproval.tsx` (UI states, resend/check-again actions).
+- Resend uses the existing auth path (`supabase.auth.resend({ type: 'signup' })`) — no new email infrastructure; auth emails already flow through the working queue.
+- Check-again calls the existing `claim_member_account()` function; no schema change required.
+- No change to the app-email queue, which was repaired separately today.
