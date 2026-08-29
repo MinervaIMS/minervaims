@@ -248,7 +248,7 @@ export default function CandidatesManagement() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Candidates screening"
+        title="Candidates Screening"
         description="Review applications: open profiles, preview and download CVs and written answers, track status and share notes. Downloads follow the active filters."
         actions={
           <>
