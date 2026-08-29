@@ -1,29 +1,62 @@
-# Member account redeem: state of the flow and the gaps to close
+# Why non-auth emails never arrive
 
-## Short answer
+## The error
 
-The core mechanism works. What is not fully solid is the edge handling around it: a wrong email address, an unverified address, and a couple of role cases leave the person stranded on the holding page with no way forward except email.
+Every app email (application received, interview invitation, offer, rejection, welcome…) fails with the same provider response:
 
-## What is verified working today
+```text
+Email API error: 404 {"type":"run_not_found","title":"Run not found or expired"}
+```
 
-- Both database triggers on the auth table are installed and enabled: one fires when an account is created already-confirmed, one when the email gets confirmed. Both call the linking function.
-- The linking function is server-side only, matches strictly on the confirmed email, refuses to run for unconfirmed addresses, claims the roster row atomically (so two people can never take the same profile), applies the stored role and division to workspace access, and writes an activity-log entry.
-- The manual wrapper a signed-in user can call for their own account is granted to signed-in users only, and is safe to call repeatedly.
-- Roster state: 80 member rows are still unclaimed, all with an email set, all on the university student domain; 79 carry the "to redeem" status.
-- Every role present on those unclaimed rows (analyst, division heads, portfolio manager, head of operations, head of media, advisor) maps to a role that has workspace access, so a successful redeem does land the person in the workspace.
+It is retried 5 times, then dead-lettered. The queue currently holds 16 permanently failed app emails. Sign-up, login and password-reset emails are unaffected — they are sent on a different path.
 
-## Gaps to fix
+## Root cause (confirmed)
 
-1. **Email mismatch is a dead end.** Registration currently accepts any email domain (the university-domain check is commented out for testing), while every roster email is a student-domain address. Someone registering with a personal address gets "no match" and sees only a mailto line. Fix: on the sign-up screen, state plainly that members must register with the exact address the association holds for them; on the holding page, offer a "try a different email address" route (sign out and register again) next to the contact link.
+Auth emails and app emails are enqueued by two different pieces of code:
 
-2. **No retry on the holding page.** The redeem call runs once per page load and then never again, so "unconfirmed email" and "no match" are terminal until a manual reload. Fix: add an explicit "Check again" action that re-runs the redeem, plus a resend-verification action in the unconfirmed case.
+- Auth emails come from the auth webhook, which receives a **real `run_id`** issued by the email service and passes it through. The service recognises it, so the send succeeds.
+- App emails are enqueued by the database helper `enqueue_app_email`, which **fabricates a random `run_id`** (`gen_random_uuid()`). No such run exists on the email service, so every send is rejected with `run_not_found`.
 
-3. **Two role cases can loop forever.** The linking function skips applying the role when the roster role is member, pending, candidate or admin. In those cases the account keeps its default "pending" role, the page reports "linked — loading your workspace" and then never leaves. Fix: treat a claimed-but-role-less account as a genuine waiting state (show the awaiting-approval text, not "loading"), and handle a roster row marked admin explicitly rather than silently ignoring it.
+Two secondary defects in the same helper would block sending even after the `run_id` is fixed:
 
-4. **Status field not updated on all paths.** The claim sets the member row to approved, which is right; the plan keeps that, and additionally makes the workspace guard rely on the role rather than the loading state so no path depends on client-side timing.
+- No `idempotency_key` — required for the service to create the run inline for an app email, and what prevents duplicate sends on retry.
+- No `unsubscribe_token` — app emails are rejected without one, and no suppression check is performed, so unsubscribed or bounced addresses would still be attempted.
+
+Separately: the templates `ws_*` (workspace notices, fee collection, role assignment, expulsion, deadlines, AoD, alumni call) and `newsletter_*` are marked connected but **nothing in the app ever triggers them** — they can only be authored, not sent.
+
+## Fix
+
+1. Rewrite `enqueue_app_email` so the queue payload matches what the sender expects:
+   - drop `run_id` entirely (the service creates the run from `purpose: transactional` + idempotency key),
+   - add a deterministic `idempotency_key` (template key + recipient + message id),
+   - look up or create the recipient's row in the unsubscribe-token table and include the token,
+   - skip and log as `suppressed` when the recipient is on the suppression list,
+   - keep the existing pending log row and HTML wrapper unchanged.
+2. Re-trigger the 16 dead-lettered messages? They are stale recruitment mails from 23 August; recommendation is to leave them and not resend. Confirm if you want any resent.
+3. Verify end-to-end by sending one app email to an address you own and checking it moves from `pending` to `sent`.
+4. Optional follow-up (separate step, not in this fix): wire trigger points for the workspace and newsletter templates that currently have no sender.
+
+## Which automatic emails are triggered, and when
+
+Recruitment (all through `enqueue_app_email`):
+
+| Email | Trigger |
+| --- | --- |
+| Application received | Application submitted (once per candidate) |
+| Interview invitation | Status set to "interview invitation sent", and on division transfer |
+| Interview booking confirmation | Candidate books an interview slot |
+| Rejection (pre-interview) | Status set to rejected before any interview stage |
+| Rejection (after interview) | Status set to rejected after an interview stage |
+| Offer to join | President/Admin sends the offer |
+| Offer reminder | Hourly job, 2 days after an unaccepted offer |
+| Offer expired | Hourly job, 3 days after an unaccepted offer |
+| Offer accepted / welcome | Candidate accepts, or is converted to member |
+
+Authentication (working today, separate path): confirm e-mail on sign-up, password reset, magic link, invitation, e-mail change, re-authentication code.
+
+Defined but never triggered: fee collection and membership reminders, complete-your-profile, role assignment, expulsion and expulsion alert, deadline overdue, internal event, Association on Display, alumni call, general communication, all three newsletters, event registration confirmation, membership confirmation, candidate status update.
 
 ## Technical notes
 
-- Changes are confined to `src/pages/PendingApproval.tsx` (retry action, correct state for claimed-without-role, resend verification, change-email route), `src/pages/Auth.tsx` (sign-up hint about the registered address), and one migration to `public.link_member_account` for the role cases in gap 3.
-- No change to the trigger wiring, the grants, or the atomic claim guard — those are correct as they stand.
-- The university-domain restriction stays disabled unless you want it switched back on; say so and it goes into the same change.
+- Single change: a migration replacing `public.enqueue_app_email(text, text, jsonb)`. No Edge Function redeploy is required, since the queue worker already reads `idempotency_key` and `unsubscribe_token` from the payload and treats a missing `run_id` as "create inline".
+- Grants stay as they are: execute reserved for `service_role`.
