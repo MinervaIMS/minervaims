@@ -87,7 +87,7 @@ const ApplicationSettings = () => {
   };
 
   if (loading) {
-    return <div><WorkspacePageHeader title="Application page" description="Control the public application area of the website." /><WorkspaceLoader /></div>;
+    return <div><WorkspacePageHeader title="Application Page" description="Control the public application area of the website." /><WorkspaceLoader /></div>;
   }
 
   const state = windowState(form.start_local, form.end_local);
@@ -99,7 +99,7 @@ const ApplicationSettings = () => {
   return (
     <div>
       <WorkspacePageHeader
-        title="Application page"
+        title="Application Page"
         description="Applications open and close automatically by schedule. Set the recruitment window and the semester label; the public Join page and the application form follow this schedule."
       />
 
