@@ -34,7 +34,23 @@ Separately: the templates `ws_*` (workspace notices, fee collection, role assign
    - keep the existing pending log row and HTML wrapper unchanged.
 2. Re-trigger the 16 dead-lettered messages? They are stale recruitment mails from 23 August; recommendation is to leave them and not resend. Confirm if you want any resent.
 3. Verify end-to-end by sending one app email to an address you own and checking it moves from `pending` to `sent`.
-4. Optional follow-up (separate step, not in this fix): wire trigger points for the workspace and newsletter templates that currently have no sender.
+4. Harden the offer deadline job (see next section).
+5. Optional follow-up (separate step, not in this fix): wire trigger points for the workspace and newsletter templates that currently have no sender.
+
+## Offer reminder / offer expired vs. a candidate who accepts in time
+
+Checked the hourly deadline job and the acceptance path:
+
+- Both the reminder loop and the expiry loop only consider applications whose status is still `accepted` with an outstanding offer.
+- Accepting sets the status to `joined` (candidate accepts) or `joined` via conversion (President/Admin), and declining sets `offer_declined`.
+
+So a candidate who accepts in time is already excluded from both emails — the behaviour you asked for is the intended one. Two residual weaknesses to close in the same migration:
+
+- The reminder is enqueued first and the "reminder sent" flag is written afterwards, so two overlapping runs of the job could both pick the same row and send two reminders. Fix: claim the row with a single conditional `UPDATE ... WHERE status = 'accepted' AND offer_reminder_sent_at IS NULL ... RETURNING`, and only enqueue for rows actually claimed.
+- Same for expiry: flip the status to `offer_declined` with a conditional update that returns the row, and enqueue "offer expired" only for rows the update actually changed.
+- Remaining window: an email already sitting in the queue when the candidate accepts still goes out. The queue drains within seconds, so this is a seconds-wide window; closing it fully is not worth extra machinery, and it will be noted rather than engineered around.
+
+
 
 ## Which automatic emails are triggered, and when
 
