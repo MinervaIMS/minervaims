@@ -291,7 +291,7 @@ export default function ActivityManagement() {
     return (
       <div>
         <WorkspacePageHeader
-          title="Activity log"
+          title="Activity Log"
           description="Every meaningful action in the workspace is recorded here for accountability and security."
         />
         <WorkspaceLoader />
@@ -302,7 +302,7 @@ export default function ActivityManagement() {
   return (
     <div id="activity-section">
       <WorkspacePageHeader
-        title="Activity log"
+        title="Activity Log"
         description="Every meaningful action in the workspace is recorded here for accountability and security: who did what, where, to which item, and when, with the role they held at that exact moment. Entries never change retroactively."
         actions={
           <AlertDialog>
