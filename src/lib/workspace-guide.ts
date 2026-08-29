@@ -427,6 +427,138 @@ export const GUIDE: GuideEntry[] = [
       { id: 'filters', title: 'Filtering and export', body: 'Combine the action, user, section and date filters to investigate a specific question, then export the filtered result to CSV if you need to share or archive it.' },
     ],
   },
+  // ===================================================================
+  // THE APPLICANT'S OWN HELP.
+  // -------------------------------------------------------------------
+  // The four pages an applicant can reach had no help at all: the
+  // floating question mark was withheld from them, which is backwards.
+  // A member holds a role, has a manual generated for it and colleagues
+  // to ask; an applicant is a stranger to the association, meeting this
+  // workspace once, with a place in it at stake.
+  //
+  // These entries are written for that reader. They say what the page
+  // is, what is expected of them and what is not, and they are careful
+  // never to promise an outcome. Every `manage` list is empty, because
+  // an applicant manages nothing: the help panel would otherwise print
+  // "reserved for managing roles", which on these pages would read as a
+  // door being closed in their face.
+  // ===================================================================
+  {
+    key: 'candidate-my-role', section: 'My Application', label: 'My profile',
+    purpose: 'What you told us in your application form, exactly as we hold it: your name, your contact details, your programme and year, and the divisions you applied to.',
+    view: [
+      'Check that your details are the ones you intended to submit.',
+      'See which division you named first and, if you named one, which you named second.',
+    ],
+    manage: [],
+    warnings: [
+      'These details cannot be edited after the application form is submitted, so that every candidacy is judged on what was actually submitted, by the deadline, and nobody can revise an application while it is being read.',
+      'If something is genuinely wrong, for example a mistyped email address or telephone number, write to the association rather than trying to change it here.',
+    ],
+    topics: [
+      { id: 'why-locked', title: 'Why nothing here can be changed', body: 'Every applicant is assessed on the same thing: the form, the CV and the written answer as they stood when the window closed. Allowing edits afterwards would mean two candidates being read at different moments were not read on the same terms.' },
+      { id: 'after-joining', title: 'After you join', body: 'If you accept an offer, this page becomes your member profile: you will be able to add a photograph and keep your own contact details up to date from that moment on.' },
+    ],
+  },
+  {
+    key: 'applications-status', section: 'My Application', label: 'Status',
+    purpose: 'Where your application has reached, in the four stages every candidacy passes through: received, under review, interview, and the outcome.',
+    view: [
+      'Read the stage your application has reached and what, if anything, is expected of you at it.',
+      'See when a new section appears in your menu: Interview once a division invites you, Offer if you are selected.',
+    ],
+    manage: [],
+    warnings: [
+      'The stages only ever move forward. A stage that has been reached is never taken back.',
+      'This page is not updated on a fixed schedule. It changes when the reviewers reach your application, which depends on how many were submitted in the same window.',
+    ],
+    topics: [
+      { id: 'stages', title: 'The four stages', body: 'Received means your form, CV and written answer are with us. Under review means reviewers from the divisions you chose are reading them. Interview means a division has invited you and the Interview section has appeared in your menu. Outcome is the decision on your application.' },
+      { id: 'waiting', title: 'How long each stage takes', body: 'Reviewing takes as long as the volume of applications requires, and every division works through its own candidates. There is nothing you need to do while your application is under review, and writing to ask for an update does not move it forward.' },
+      { id: 'no-news', title: 'If the outcome is not what you hoped', body: 'A candidacy that is not taken forward is marked "Not selected" here, and you receive an email. It carries no judgement about you beyond this particular window, and applying again in a later semester is both permitted and common.' },
+    ],
+  },
+  {
+    key: 'applications-interview', section: 'My Application', label: 'Interview',
+    purpose: 'Your interview: the division that invited you, the slots it has opened, and once you have booked, the confirmed time and the link to join.',
+    view: [
+      'Choose one of the available slots. Booking it confirms your interview immediately; no further confirmation is sent.',
+      'Read the confirmed date, time, division and examiner, and open the meeting link when it is time.',
+      'Cancel your slot up to 90 minutes before it begins and choose another, if any remain.',
+    ],
+    manage: [],
+    warnings: [
+      'Please book within 72 hours of receiving your invitation email.',
+      'Slots are shared with every candidate invited by the same division and are taken in the order they are booked. Booking early is worth more than booking at the perfect time.',
+      'A cancelled interview cannot always be rescheduled: if no slots remain when you cancel, none can be created for you.',
+    ],
+    topics: [
+      { id: 'which-division', title: 'Which division is interviewing you', body: 'The page names it. It is the division that decided to take your application forward, which may be your first choice or your second. You see only that division\'s slots.' },
+      { id: 'booking', title: 'Booking a slot', body: 'Each slot holds one candidate. The moment you book, the slot is yours and disappears from every other candidate\'s list, so there is no queue and no confirmation to wait for.' },
+      { id: 'meeting-link', title: 'The meeting link', body: 'Where the interview is held online, the link appears on this page with your confirmed booking. If it is not there yet, a member of the association will add it before the interview; check this page again on the day.' },
+      { id: 'on-the-day', title: 'On the day', body: 'A delay of five to ten minutes can happen if a previous interview overruns; please stay in the meeting. If you cannot attend at all, cancel from this page rather than simply not appearing.' },
+    ],
+  },
+  {
+    key: 'applications-offer', section: 'My Application', label: 'Offer',
+    purpose: 'Your offer to join the association: the role, the division, the date by which you must reply, and the decision itself.',
+    view: [
+      'Read the terms of the offer: the role you are offered, the division it is in and the deadline.',
+      'Accept the offer, which turns your account into a member account, or decline it.',
+    ],
+    manage: [],
+    warnings: [
+      'Accepting and declining are both final and neither can be undone from this page.',
+      'An offer that is not answered by its deadline lapses. A reminder email is sent before that happens.',
+      'After accepting, it can take a few minutes for your account to be upgraded and the member workspace to appear. This is normal.',
+    ],
+    topics: [
+      { id: 'terms', title: 'What the offer says', body: 'The role is the position you are offered, and the division is the one that selected you, which may be your first choice or your second. Both were decided by the people who interviewed you.' },
+      { id: 'deadline', title: 'The deadline', body: 'You have three days from the moment the offer is sent, with a reminder email after two. The deadline exists because a place you do not take can be offered to somebody else, and only while the intake is still being formed.' },
+      { id: 'accepting', title: 'What happens when you accept', body: 'Your account becomes a member account: My Profile becomes editable, and the member workspace, with the calendar, the report archive and the rest, opens to you. You will also be told what is expected of you in your first weeks.' },
+      { id: 'declining', title: 'Declining', body: 'Declining is recorded and cannot be reversed here. It does not prevent you applying again in a later semester. If you decline by mistake, write to the association immediately.' },
+    ],
+  },
+  {
+    key: 'applications-faqs', section: 'My Application', label: 'FAQs',
+    purpose: 'The questions we are asked most often about applying and about joining, with the answers we give. They are the same answers published on the public Join page.',
+    view: [
+      'Search the questions, or narrow them to one category, and open any question to read its answer.',
+    ],
+    manage: [],
+    warnings: [
+      'If your question is not answered here, write to the association rather than guessing. Nothing you ask counts against your application.',
+    ],
+    topics: [
+      { id: 'same-answers', title: 'Where these answers come from', body: 'They are maintained by the association and published in one place, so what you read here is exactly what is published on the public site. An answer corrected there is corrected here at the same moment.' },
+      { id: 'searching', title: 'Finding a question', body: 'The search field matches the words of both the question and its answer, so searching for a term such as "deadline" or "fee" finds the questions that discuss it even where the word is not in the title.' },
+    ],
+  },
 ];
 
 export const guideFor = (key: string): GuideEntry | undefined => GUIDE.find((g) => g.key === key);
+
+// =====================================================================
+// ONE PAGE, TWO READERS.
+// ---------------------------------------------------------------------
+// My Profile is rendered for members and for applicants alike, under the
+// one key `my-role`. Its help cannot be: a member reads about where
+// their role comes from and how to change their photograph, and neither
+// sentence is true for an applicant, whose page is a locked record of a
+// form they have already submitted.
+//
+// So the applicant is routed to their own entry. Every other applicant
+// page has a key of its own already and needs no translation.
+// =====================================================================
+const CANDIDATE_GUIDE_KEYS: Record<string, string> = {
+  'my-role': 'candidate-my-role',
+  // The address the Interview page used to occupy, so the help panel is
+  // right even in the tick before the workspace redirects it.
+  'applications-interview-calendar': 'applications-interview',
+};
+
+/** The guide key for a page, as the reader in front of it should read it. */
+export function helpPageKey(pageKey: string, isCandidate: boolean): string {
+  if (!isCandidate) return pageKey;
+  return CANDIDATE_GUIDE_KEYS[pageKey] ?? pageKey;
+}

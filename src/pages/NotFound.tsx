@@ -13,14 +13,21 @@ const NotFound = () => {
     // up the screen. 60% of the viewport is not a composition, it is a
     // leftover.
     //
-    // `100svh` minus the 84px the header spacer occupies is exactly the
-    // space this page actually has, so the footer sits at the fold rather
-    // than above it, and the generous vertical padding gives the three
-    // elements room to be a group instead of a stack. `svh` rather than
-    // `vh` because on iOS `vh` is the LARGE viewport, which would push
-    // the button under the browser's own toolbar.
+    // `100svh` minus the 84px the header spacer occupies is the space
+    // this page actually has, so the footer sits at the fold rather than
+    // above it. `svh` rather than `vh` because on iOS `vh` is the LARGE
+    // viewport, which would push the button under the browser's toolbar.
+    //
+    // AND THE PADDING IS THE FLOOR, not decoration. On a wide, short
+    // laptop the group very nearly fills the height it is given, so
+    // centring it leaves almost nothing between the button and the black
+    // footer - which is what made the composition look pressed. The
+    // padding guarantees a band of air above the logo and below the
+    // button at every viewport, and where the group and its padding
+    // together exceed the screen, the PAGE grows instead of the gap
+    // closing.
     // =================================================================
-    <div className="flex min-h-[calc(100svh-84px)] items-center justify-center py-20 sm:py-24">
+    <div className="flex min-h-[calc(100svh-84px)] items-center justify-center py-24 sm:py-32 lg:py-40">
       <Helmet>
         <title>Page Not Found | MIMS</title>
       </Helmet>

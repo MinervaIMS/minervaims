@@ -187,6 +187,55 @@ export const MANUAL_STATUSES: { value: ApplicationStatus; label: string; effect:
   { value: 'rejected', label: STATUS_LABELS.rejected, effect: 'action' },
 ];
 
+// =====================================================================
+// THE APPLICANT'S JOURNEY, as their own workspace sees it.
+// ---------------------------------------------------------------------
+// The applicant workspace shows a section only once it has something in
+// it: Interview appears when a division has invited them, Offer appears
+// when an offer has been sent. Both questions are answered here, once,
+// so the navigation and the pages themselves cannot disagree about
+// whether a stage has been reached.
+//
+// Both are deliberately answered from FACTS ON THE ROW rather than from
+// the status alone. `interview_division` is written when the invitation
+// is sent and is never cleared, so a candidate who has since been
+// interviewed, transferred, accepted or rejected still keeps the record
+// of the interview they sat. `offer_sent_at` works the same way: an
+// offer that was declined or that expired still happened, and hiding the
+// page would leave the applicant unable to see what they replied to.
+// =====================================================================
+
+/** Statuses that mean an interview has been offered, sat or is pending. */
+const INTERVIEW_STATUSES: ApplicationStatus[] = [
+  'interview_invitation_sent', 'waiting_interview_confirmation',
+  'interview_confirmed', 'interview_completed',
+];
+
+/** Has a division invited this applicant to interview? */
+export function isInvitedToInterview(a: Pick<ApplicationRow, 'status' | 'interview_division'> | null): boolean {
+  if (!a) return false;
+  return !!a.interview_division || INTERVIEW_STATUSES.includes(a.status);
+}
+
+/**
+ * Has an offer been sent to this applicant?
+ *
+ * `offer_sent_at` is the only trustworthy signal. The status `accepted`
+ * on its own is an INTERNAL decision that the applicant must not see
+ * until the President actually sends the offers, so it is not enough.
+ */
+export function hasOffer(a: Pick<ApplicationRow, 'status' | 'offer_sent_at'> | null): boolean {
+  if (!a) return false;
+  return !!a.offer_sent_at || a.status === 'offer_accepted' || a.status === 'joined';
+}
+
+/** An offer that is sent, not yet answered and not yet expired. */
+export function isOfferLive(a: ApplicationRow | null): boolean {
+  if (!a) return false;
+  return a.status === 'accepted' && !!a.offer_sent_at
+    && (!a.offer_deadline || new Date(a.offer_deadline) > new Date());
+}
+
 // Simplified candidate-facing status (report 10.3).
 export function candidateStatus(s: ApplicationStatus): { label: string; step: number } {
   switch (s) {

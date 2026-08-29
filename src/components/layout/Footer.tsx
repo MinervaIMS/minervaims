@@ -279,29 +279,36 @@ export function Footer() {
             growing tall, because the padding is shared with the row gap.
             ============================================================= */}
         <div className="border-t border-background/20 pt-8">
-          <nav aria-label="Legal and site information" className="flex flex-wrap items-center gap-x-6 gap-y-1">
-            {policyLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="font-body text-xs md:text-small text-background/60 py-2 hover:text-background hover:underline transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {/* ONE ROW: WHO OWNS THE SITE, THEN WHAT GOVERNS IT.
+
+              The band used to be two rows - the policies on their own line,
+              then the copyright with an external attribution link opposite
+              it. The attribution is gone, and the policies have taken the
+              place it held: the copyright sits left, the five policy links
+              sit right, and the band is a line shorter for it.
+
+              On a phone the two stack and the policies wrap over as many
+              lines as they need. Each link keeps its 44px tap target
+              through the vertical padding, which is shared with the row
+              gap so the band does not grow tall. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             <p className="font-body text-xs md:text-small text-background/60 leading-[1.4]">
               © {new Date().getFullYear()} Minerva Investment Management Society (MIMS). All rights reserved.
             </p>
-            <a
-              href="https://www.linkedin.com/in/riccardo-colombo01/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-body text-xs md:text-small text-background/60 underline hover:text-background transition-colors"
+            <nav
+              aria-label="Legal and site information"
+              className="flex flex-wrap items-center gap-x-6 gap-y-1 sm:justify-end"
             >
-              Website built for Minerva IMS.
-            </a>
+              {policyLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="font-body text-xs md:text-small text-background/60 py-2 hover:text-background hover:underline transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </div>

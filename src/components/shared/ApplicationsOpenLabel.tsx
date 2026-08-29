@@ -7,10 +7,13 @@
 // did not already know they could do. "Applications are open" is a
 // statement of fact, and the fact is the news.
 //
-// ONLY THE INITIAL OF EACH WORD IS BOLD. Three heavier letters across
-// three words give the phrase a rhythm at a glance while the sentence
-// itself stays in the serif's normal weight, so the button reads as a
-// line of type rather than as a shout.
+// ONE WEIGHT, THROUGHOUT. The initial of each word used to be set at
+// 700 while the rest of the word stayed at the serif's normal weight -
+// three heavier letters meant as a rhythm. In practice it does not read
+// as a rhythm: at the size the button uses, three letters in a different
+// weight from the letters beside them read as a rendering fault, as
+// though the font had failed to load for part of the phrase. A statement
+// of fact is best set as one.
 //
 // IT LIVES HERE BECAUSE TWO PLACES DRAW IT. The homepage draws the real
 // button; Workspace, Recruiting, Application Page draws a preview of it
@@ -20,28 +23,18 @@
 // the preview cannot drift from the page it previews.
 // =====================================================================
 
-/** The words of the label, in order. The single source of the wording. */
-const APPLICATIONS_OPEN_WORDS = ['Applications', 'are', 'open'] as const;
+/** The wording, in one place, for the two surfaces that draw it. */
+const APPLICATIONS_OPEN_TEXT = 'Applications are open';
 
 /**
- * The label, with each word's first letter set at a heavier weight.
+ * The label, as one line of type in the weight its container sets.
  *
- * The bold letters are rendered inside the same text flow rather than as
- * separate positioned spans, so the phrase wraps, selects, and is read aloud
- * by a screen reader exactly as the plain sentence "Applications are open".
+ * It is a single text node, so it wraps, selects and is read aloud exactly
+ * as the sentence it is - and it inherits the button's own typography
+ * rather than overriding part of it.
  */
 export function ApplicationsOpenLabel({ className = '' }: { className?: string }) {
-  return (
-    <span className={className}>
-      {APPLICATIONS_OPEN_WORDS.map((word, i) => (
-        <span key={word}>
-          {i > 0 && ' '}
-          <span style={{ fontWeight: 700 }}>{word.charAt(0)}</span>
-          {word.slice(1)}
-        </span>
-      ))}
-    </span>
-  );
+  return <span className={className}>{APPLICATIONS_OPEN_TEXT}</span>;
 }
 
 export default ApplicationsOpenLabel;

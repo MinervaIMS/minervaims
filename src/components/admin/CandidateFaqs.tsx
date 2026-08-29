@@ -46,7 +46,24 @@ export default function CandidateFaqs() {
       {isLoading ? <WorkspaceLoader /> : groups.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No questions have been published yet.</p></CardContent></Card>
       ) : (
-        <div className="font-body">
+        // =============================================================
+        // ONE MEASURE, AND IT IS A READING MEASURE.
+        //
+        // The FAQ used to run the full width of the workspace content
+        // area, which on a desktop is well over a thousand pixels: a
+        // two-clause answer became one line of a hundred and forty
+        // characters, and the eye has to travel the whole width and find
+        // its way back to a line start that is nowhere near where it
+        // started. Typographic convention puts a comfortable line at
+        // sixty to eighty characters, and 42rem is about eighty at the
+        // size this text is set.
+        //
+        // The cap is on the whole column, filters included, so the search
+        // field, the category select, the group headings and the
+        // questions all share one left and one right edge instead of the
+        // text sitting in a narrow band inside a wide one.
+        // =============================================================
+        <div className="font-body max-w-2xl">
           {/* THE SAME FILTER ROW THE PUBLIC SITE USES on Archive, Readings and
               the /join FAQ: flat corners, the body font, no labels above the
               fields, the search taking whatever width is left and the category
@@ -107,19 +124,44 @@ export default function CandidateFaqs() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-8">
               {visible.map((group) => (
                 <section key={group.key} aria-labelledby={`faq-${group.key}`}>
-                  <h2 id={`faq-${group.key}`} className="mb-2 border-b border-separator pb-2 font-serif text-lg text-accent">
+                  {/* The group name is a label, not a headline: small caps
+                      in the body font, so the QUESTIONS are the largest
+                      type in the column and the eye lands on them first.
+                      It used to be set in the serif at text-lg, a step
+                      ABOVE the questions it introduced. */}
+                  <h2
+                    id={`faq-${group.key}`}
+                    className="mb-1 text-xs uppercase tracking-[0.12em] text-muted-foreground"
+                  >
                     {group.label}
                   </h2>
-                  <Accordion type="multiple" className="w-full">
+                  <Accordion type="multiple" className="w-full border-t border-separator">
                     {group.entries.map((entry) => (
                       <AccordionItem key={entry.id} value={entry.id} className="border-separator">
-                        <AccordionTrigger className="py-4 text-left font-serif text-base leading-snug text-foreground hover:text-accent hover:no-underline [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-accent">
+                        {/* THE QUESTION READS AS A QUESTION.
+                            - items-start, so on a question that wraps the
+                              chevron stays beside the FIRST line rather
+                              than floating down to the vertical middle of
+                              a two-line block;
+                            - gap-6, so the chevron never touches the last
+                              word;
+                            - leading-normal rather than leading-snug,
+                              because a wrapped question set tight reads as
+                              one long phrase;
+                            - and the open question takes the accent
+                              colour, so it is obvious which of several
+                              expanded answers belongs to which question. */}
+                        <AccordionTrigger className="items-start gap-6 py-4 text-left font-serif text-base leading-normal text-foreground transition-colors hover:text-accent hover:no-underline data-[state=open]:text-accent [&>svg]:mt-1 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-accent">
                           {entry.question}
                         </AccordionTrigger>
-                        <AccordionContent className="pb-4">
+                        {/* The answer is indented to sit under the question
+                            it answers and away from the group's left rule,
+                            which is what separates an answer from the next
+                            question at a glance. */}
+                        <AccordionContent className="pb-5 pl-4 border-l-2 border-accent/20 ml-px">
                           <p className="text-sm leading-relaxed text-muted-foreground">{entry.answer}</p>
                           {entry.linkLabel && entry.linkHref && (
                             <Link

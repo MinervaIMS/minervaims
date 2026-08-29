@@ -330,7 +330,18 @@ export function OrgChart({ initialFocus = null, showCta = true }: OrgChartProps 
       // structure fits VERTICALLY at a legible size, centred on the spine,
       // and the reader drags sideways to reach the outer divisions. That
       // is the same gesture the diagram already teaches on the desktop.
-      const s = Math.max(0.5, Math.min(0.95, (f.h - 44) / 520));
+      //
+      // A STEP FURTHER OUT THAN IT WAS. On a typical phone the old figures
+      // resolved to the 0.95 ceiling, which is all but full size: the frame
+      // held a narrow slice of the spine and gave no sense that anything
+      // stood either side of it, so the chart looked cropped rather than
+      // pannable. Dividing the same height by 640 rather than 520, under a
+      // 0.82 ceiling, is about a sixth further out: the neighbouring
+      // branches now show at the edges, which is what says the diagram
+      // continues, and the labels are still comfortably legible at four
+      // fifths of the size they were drawn at. Nothing here touches the
+      // desktop path below.
+      const s = Math.max(0.46, Math.min(0.82, (f.h - 44) / 640));
       return { tx: f.w / 2 - s * 860, ty: f.h / 2 - s * 250, s };
     }
     const s = Math.min(SMIN, (f.w - 56) / 1096, (f.h - 56) / 476);

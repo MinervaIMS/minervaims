@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { divisionLabels } from '@/lib/roles';
+import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
@@ -18,11 +18,42 @@ import { logActivity } from '@/lib/activity-log';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { useAccess } from '@/hooks/useAccess';
 
-// A slot counts as "covered" once at least this many people are registered.
-const MIN_COVER = 3;
-// Distinct divisions represented in a slot (members with no division don't count).
-const divisionsInSlot = (people: AodSignup[]) =>
-  new Set(people.map((p) => p.division).filter((d) => d && d !== 'none')).size;
+// =====================================================================
+// WHEN A SLOT COUNTS AS COVERED, and there are two ways to be.
+// ---------------------------------------------------------------------
+// It used to be one: three people on the slot. Three people from the same
+// division is a stand that can answer questions about that division and
+// no other, which is not what the stand is for; and on the busiest slots
+// three is far below what the stand actually needs.
+//
+// So a slot is covered when EITHER
+//
+//   * more than eight people have registered for it - enough that the
+//     stand is staffed whoever happens not to arrive; or
+//   * all five core divisions are represented on it - so whatever a
+//     visitor asks about, somebody there does that.
+//
+// Two independent routes, because they answer two different worries:
+// the first is about numbers, the second about breadth. A slot that
+// satisfies either is covered, and the badge says which.
+// =====================================================================
+
+/** Registrations above which a slot is covered on numbers alone. */
+const COVER_BY_HEADCOUNT = 8;
+
+/** The five research divisions. One person from each also covers a slot. */
+const CORE_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+/** How many of the five core divisions are represented on a slot. */
+const coreDivisionsInSlot = (people: AodSignup[]) =>
+  new Set(
+    people
+      .map((p) => p.division)
+      .filter((d): d is OrgDivision => !!d && (CORE_DIVISIONS as string[]).includes(d)),
+  ).size;
+
+/** The rule itself, in one place, so every reader of it agrees. */
+const isSlotCovered = (people: AodSignup[]) =>
+  people.length > COVER_BY_HEADCOUNT || coreDivisionsInSlot(people) === CORE_DIVISIONS.length;
 
 export default function AssociationOnDisplay() {
   const { session, user } = useAuth();
@@ -55,7 +86,8 @@ export default function AssociationOnDisplay() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const upcomingDays = useMemo(() => days.filter((d) => d.event_date >= todayStr).sort((a, b) => a.event_date.localeCompare(b.event_date)), [days, todayStr]);
   const pastDays = useMemo(() => days.filter((d) => d.event_date < todayStr).sort((a, b) => b.event_date.localeCompare(a.event_date)), [days, todayStr]);
-  const coverageCount = (dayId: string) => AOD_SLOTS.filter((s) => signups.filter((su) => su.day_id === dayId && su.slot_time === s).length >= MIN_COVER).length;
+  const coverageCount = (dayId: string) =>
+    AOD_SLOTS.filter((s) => isSlotCovered(signups.filter((su) => su.day_id === dayId && su.slot_time === s))).length;
 
   const handleSignup = async (dayId: string, slot: string) => {
     setBusySlot(`${dayId}-${slot}`);
@@ -142,13 +174,13 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
   onSignup: (slot: string) => void; onRemove: (id: string) => void;
   onToggleOpen: (open: boolean) => void; onDelete: () => void;
 }) {
-  const coverage = useMemo(() => AOD_SLOTS.filter((s) => signupsFor(s).length >= MIN_COVER).length, [signupsFor]);
+  const coverage = useMemo(() => AOD_SLOTS.filter((s) => isSlotCovered(signupsFor(s))).length, [signupsFor]);
   return (
     <div className="border border-separator">
       <div className="flex items-center justify-between px-4 py-3 bg-muted/40 font-body">
         <div>
           <div className="font-serif text-lg text-accent">{new Date(`${day.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (a slot needs {MIN_COVER} people) <HelpDot page="events-on-display" topic="coverage" /> · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
+          <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (more than {COVER_BY_HEADCOUNT} people, or all {CORE_DIVISIONS.length} core divisions) <HelpDot page="events-on-display" topic="coverage" /> · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
         </div>
         {isSenior && (
           <div className="flex items-center gap-3">
@@ -162,14 +194,18 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
         {AOD_SLOTS.map((slot) => {
           const people = signupsFor(slot);
           const mine = people.find((p) => p.user_id === userId);
-          const covered = people.length >= MIN_COVER;
-          const divCount = divisionsInSlot(people);
+          const divCount = coreDivisionsInSlot(people);
+          const covered = isSlotCovered(people);
           return (
             <div key={slot} className={`bg-background p-3 font-body border-l-2 ${covered ? 'border-emerald-500' : 'border-amber-500'}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-foreground">{slot}</span>
                 <span className={`text-[11px] px-1.5 py-0.5 rounded ${covered ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                  {covered ? 'Covered' : `${people.length}/${MIN_COVER}`}
+                  {/* Not covered? Say how far along BOTH routes it is, so the
+                      reader can see which one is within reach. */}
+                  {covered
+                    ? 'Covered'
+                    : `${people.length} · ${divCount}/${CORE_DIVISIONS.length} div.`}
                 </span>
               </div>
               {/* Registration button: clear, full-width, for everyone. */}

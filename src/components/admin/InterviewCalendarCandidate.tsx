@@ -80,14 +80,14 @@ export default function InterviewCalendarCandidate() {
   };
 
   if (loading) {
-    return <div><WorkspacePageHeader title="Interview Calendar" description="Book your interview slot." /><WorkspaceLoader /></div>;
+    return <div><WorkspacePageHeader title="Interview" description="Your interview: book your slot, then everything you need on the day." /><WorkspaceLoader /></div>;
   }
 
   // Not invited yet.
   if (!ctx?.invited || !ctx.division) {
     return (
       <div>
-        <WorkspacePageHeader title="Interview Calendar" description="Book your interview slot." />
+        <WorkspacePageHeader title="Interview" description="Your interview: book your slot, then everything you need on the day." />
         <Card>
           <CardContent className="py-12 text-center max-w-xl mx-auto">
             <CalendarClock className="h-10 w-10 mx-auto mb-4 text-muted-foreground/60" />
@@ -107,7 +107,7 @@ export default function InterviewCalendarCandidate() {
     const s = ctx.booking.slot;
     return (
       <div>
-        <WorkspacePageHeader title="Interview Calendar" description={`Your ${divisionName} interview.`} />
+        <WorkspacePageHeader title="Interview" description={`Your ${divisionName} interview.`} />
         <Card className="max-w-2xl">
           <CardContent className="pt-6 font-body">
             <div className="flex items-center gap-2 text-accent mb-4">
@@ -163,7 +163,7 @@ export default function InterviewCalendarCandidate() {
   return (
     <div>
       <WorkspacePageHeader
-        title="Interview Calendar"
+        title="Interview"
         description={`You have been invited to interview with ${divisionName}. Choose an available slot below; your booking confirms your interview.`}
       />
       {available.length === 0 ? (

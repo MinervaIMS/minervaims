@@ -1302,14 +1302,24 @@ input[type='search']::-webkit-search-cancel-button {
      THROUGH the section is never captured by it. */
   touch-action: pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--separator)) transparent;
+  /* =====================================================================
+     NO SCROLLBAR UNDER THE YEARS.
+     ---------------------------------------------------------------------
+     A grey bar ran the full width beneath the timeline, which on a page
+     built out of hairlines and one accent colour read as a second, thicker
+     rule competing with the rail itself - and it appeared only on the
+     platforms that draw persistent scrollbars, so the section looked
+     different on Windows from how it looks on a Mac.
+     The affordance it provided is replaced by MOVEMENT: the rail drifts
+     forward once when the section is first seen, which says "this goes
+     sideways" more clearly than a bar the eye reads as a border. Every
+     way of scrolling it still works, untouched: a swipe, a two-finger
+     trackpad gesture, shift-wheel, the arrow keys once it has focus.
+     ===================================================================== */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.tl-scroller::-webkit-scrollbar { height: 8px; }
-.tl-scroller::-webkit-scrollbar-track { background: transparent; }
-.tl-scroller::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--separator)); border-radius: 4px;
-}
+.tl-scroller::-webkit-scrollbar { height: 0; width: 0; display: none; }
 .tl-scroller:focus-visible {
   outline: 2px solid hsl(var(--accent)); outline-offset: 4px;
 }
@@ -1366,8 +1376,15 @@ input[type='search']::-webkit-search-cancel-button {
      that a milestone year was set SMALLER than a quiet year beside it -
      16px inside an 80px circle against 19.2px inside a 50px one - which is
      the hierarchy this section is built on, inverted. Stated as a plain
-     length it cannot fail. */
-  font-size: 2.1rem;
+     length it cannot fail.
+
+     AND IT IS A LABEL, NOT A HEADLINE. At 2.1rem the four digits very
+     nearly filled the circle they sit in, so the ring read as a tight
+     collar around the year rather than as a marker on a line. A step down
+     to 1.85rem restores the ring of space that makes it a point on the
+     timeline, and the hierarchy over a quiet year is untouched: the
+     milestone is still set larger, in a larger circle. */
+  font-size: 1.85rem;
   transition: background-color .55s ease, color .55s ease, box-shadow .55s ease, border-color .55s ease;
 }
 .tl-dot.is-lit {
@@ -1503,7 +1520,10 @@ input[type='search']::-webkit-search-cancel-button {
      horizontal rail: the vertical fallback keeps its own sizes and is not
      reached by a bare `.tl-dot` selector appearing later in the file. */
   .tl { --tl-minor-dot: 30px; }
-  .tl-dotcell .tl-dot { font-size: 1.6rem; }
+  /* Stepped down with the desktop size above, and by the same proportion,
+     so a phone and a laptop show the same relationship between the year
+     and the ring around it. */
+  .tl-dotcell .tl-dot { font-size: 1.4rem; }
   /* .78rem, not .88: at 32px and .95rem the four digits filled 95% of the
      circle and all but touched its border. Text and circle now sit at the
      same 0.86 ratio the desktop rail uses. */
