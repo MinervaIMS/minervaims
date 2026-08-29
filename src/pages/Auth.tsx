@@ -133,7 +133,7 @@ const Auth = () => {
       <AuthLayout
         title="Create Your Account"
         cardTitle="Create Your Account"
-        cardSubtitle={"Access the Minerva Workspace.\u00a0\nFrom application to membership, everything starts here.\n"}
+        cardSubtitle={"Access the Minerva Workspace.\u00a0 From application to membership. "}
       >
         <form onSubmit={submitSignup} noValidate>
           <div className="grid grid-cols-2 gap-3.5">
@@ -258,7 +258,7 @@ const Auth = () => {
   }
 
   return (
-    <AuthLayout title="Sign In" cardTitle="Welcome Back" cardSubtitle={"Access the Minerva Workspace.\u00a0\nFrom application to membership, everything starts here.\n"}>
+    <AuthLayout title="Sign In" cardTitle="Welcome Back" cardSubtitle={"Access the Minerva Workspace.\u00a0 From application to membership. "}>
       <form onSubmit={submitLogin} noValidate>
         {loginErr && <AuthErrorBanner>{loginErr}</AuthErrorBanner>}
         <AuthField
