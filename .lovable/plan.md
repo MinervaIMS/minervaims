@@ -1,28 +1,37 @@
-# Tom Petit — sign-up email report
+# Why selection-process emails don't look like the "App emails" layouts
 
-## What the records show
+## What's happening
 
-- Account created 27 Aug, 15:46:44 UTC. The confirmation email was queued and accepted by the mail provider at 15:46:46 (logged as `signup` / `sent`, no error).
-- The email address was confirmed at 15:47:20 — 36 seconds later — and a session was created at the same moment. Confirmation only happens when the link in that email is opened, so at least one delivery reached a mailbox or scanner.
-- His roster record was claimed successfully: account approved, workspace role Head of Investment Research (Investment division), profile row present.
-- He is not on the suppression list, and no failed or dead-lettered email exists for his address.
+There are two different sources of email content, and they have drifted apart:
 
-So nothing is broken on his account: he can sign in normally at `/auth` with the password he chose. If he does not remember it, "Forgot password" works (recovery emails to `@studbocconi.it` were accepted and sent as recently as 27 Aug for another member).
+- The **App emails screen** renders the branded templates that live **in the codebase** (full Minerva layout: purple bar, logo lockup, EB Garamond headline, legal footer). The workspace list even overlays the code version on top of whatever is stored, so the preview always looks correct.
+- The **actual sending path** does not use those. When the system enqueues a recruitment email it reads subject and body from the **database table of email templates**, then wraps it in a small generic shell (plain purple header strip, one-line footer).
 
-The plausible explanation for "no email received" is delivery filtering on the university mailbox (spam/quarantine) or the message arriving after he had already given up, since the provider accepted it and the link was subsequently opened. Per-message delivery events are not surfaced to the app, so we cannot prove inbox placement from here.
+The stored rows for the keys used during selection are old, short snippets — for example the "application received" row is 426 characters of bare `<p>` paragraphs, versus 7,800+ characters for the branded code template. Same for interview invitation (310), interview booking confirmation (1,517), offer to join (339), offer reminder (292), offer expired (215), welcome/acceptance (335), and both rejections (277 / 347). Those are what candidates receive.
 
-## Proposed work
+Second, related problem: **key mismatch**. The triggers fire keys that have no branded code template, while the branded templates sit under different keys:
 
-1. **Immediate, no code:** ask him to check spam/quarantine for a message from `noreply@minervaims.org`, then simply sign in — his account is already active and confirmed.
-2. **Add a self-service recovery path on the pending/auth screens** so this never becomes a support ticket:
-   - "Resend verification email" button (rate-limited, disabled for already-confirmed accounts, with a clear "already verified — sign in" state).
-   - "Check again" button on the pending-approval screen that re-runs roster redemption on demand instead of only on page load.
-3. **Show a precise state instead of a spinner** when redemption cannot apply a role, so a user is never left on "loading your workspace".
-4. **Deliverability note in the sign-up confirmation screen**: tell the user the message can land in the Bocconi spam/quarantine folder and name the exact sender address to whitelist.
+```text
+trigger fires                  branded template exists as
+rejection_no_interview     ->  rejection_pre_interview
+rejection_after_interview  ->  rejection_post_interview
+offer_accepted_confirmation->  acceptance_received
+offer_reminder             ->  acceptance_reminder
+```
+
+So even after refreshing the stored bodies, four steps of the funnel would still send the old snippets.
+
+## The fix
+
+1. **Make the code templates the single source of truth at send time.** Sync the branded bodies and subjects from the code template set into the database rows, so the queue reads exactly what the App emails screen shows. Add this as an idempotent sync that runs whenever the workspace email screen loads (and once via migration), so future template edits in code propagate automatically instead of drifting again.
+2. **Align the trigger keys** with the branded template keys (the four mappings above), keeping the old rows as inactive aliases so nothing in the history breaks.
+3. **Stop double-wrapping.** The branded templates are complete HTML documents; the enqueue routine must send them as-is (only substituting variables and the unsubscribe link) instead of injecting them into the generic purple shell. The responsive/link normalisation already used for previews is applied on the same path so preview and delivery match byte for byte.
+4. **Verify** with an end-to-end send per selection step: application received, interview invitation, interview booking confirmation, offer to join, offer reminder, offer expired, acceptance/welcome, rejection pre-interview, rejection post-interview — checking each queued message's stored HTML is the branded document and each reaches `sent`.
 
 ## Technical notes
 
-- Files touched: `src/pages/Auth.tsx`, `src/pages/PendingApproval.tsx` (UI states, resend/check-again actions).
-- Resend uses the existing auth path (`supabase.auth.resend({ type: 'signup' })`) — no new email infrastructure; auth emails already flow through the working queue.
-- Check-again calls the existing `claim_member_account()` function; no schema change required.
-- No change to the app-email queue, which was repaired separately today.
+- `public.enqueue_app_email` currently: selects `subject, body, connected` from `auto_email_templates`, substitutes `{{vars}}`, then concatenates a hardcoded wrapper. The wrapper concatenation is removed; the substituted body becomes the payload `html`, with plaintext derived from it as today. Suppression, unsubscribe-token issuance, `email_send_log` row and `enqueue_email` call stay unchanged.
+- Template bodies come from `supabase/functions/_shared/transactional-emails.ts`, passed through `normalizeEmailLinks` + `withResponsiveShell` (the same pipeline `admin-auto-emails` uses for display) before being written into the table by the sync.
+- Sync lives in `admin-auto-emails` (`list` action already merges code over DB — it will now also persist), plus a one-off migration so the current rows are corrected immediately without waiting for an admin to open the screen.
+- Trigger key changes touch `applicant-notify`, `admin-applications`, `admin-interviews`, and the deadline-processing routine that fires reminder/expiry.
+- Affected functions redeployed: `admin-auto-emails`, `admin-applications`, `admin-interviews`, `applicant-notify`.
