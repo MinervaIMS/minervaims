@@ -91,7 +91,7 @@ export default function AlumniCalls() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Alumni calls" description="Each alumni call is an initiative grouping 2 to 5 alumni, organised by a division on a date. Alumni are verified against the alumni directory; the organiser is recorded automatically."
+      <WorkspacePageHeader title="Alumni Calls" description="Each alumni call is an initiative grouping 2 to 5 alumni, organised by a division on a date. Alumni are verified against the alumni directory; the organiser is recorded automatically."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add call</Button>} />
 
       {loading ? <WorkspaceLoader /> : calls.length === 0 ? (
