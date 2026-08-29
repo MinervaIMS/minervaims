@@ -16,6 +16,11 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const STATUS_URL = 'https://minervaims.org/admin';
+const DIV_LABELS: Record<string, string> = {
+  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
+  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
+  media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
+};
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
@@ -74,8 +79,12 @@ Deno.serve(async (req) => {
 
       try {
         await supabase.rpc('enqueue_app_email', {
-          p_key: 'offer_accepted_confirmation', p_to: app.email,
-          p_vars: { first_name: app.first_name, status_url: STATUS_URL },
+          p_key: 'acceptance_received', p_to: app.email,
+          p_vars: {
+            first_name: app.first_name,
+            division_name: DIV_LABELS[division] || division,
+            status_url: STATUS_URL,
+          },
         });
       } catch (e) { console.error('welcome email enqueue failed', e); }
       return json({ success: true });
@@ -111,7 +120,11 @@ Deno.serve(async (req) => {
     await supabase.from('applications').update({ received_email_sent_at: new Date().toISOString() }).eq('id', app.id);
     await supabase.rpc('enqueue_app_email', {
       p_key: 'application_received', p_to: app.email,
-      p_vars: { first_name: app.first_name, status_url: STATUS_URL },
+      p_vars: {
+        first_name: app.first_name,
+        division_name: DIV_LABELS[app.first_choice] || app.first_choice,
+        status_url: STATUS_URL,
+      },
     });
     return json({ success: true });
   } catch (error) {

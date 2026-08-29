@@ -237,13 +237,22 @@ Deno.serve(async (req) => {
         if (body.status === 'interview_invitation_sent' && previousStatus !== 'interview_invitation_sent') {
           await supabase.rpc('enqueue_app_email', {
             p_key: 'interview_invitation', p_to: app.email,
-            p_vars: { first_name: app.first_name, division: DIV_LABELS[invitedDivision || ''] || '', status_url: STATUS_URL },
+            p_vars: {
+              first_name: app.first_name,
+              division_name: DIV_LABELS[invitedDivision || ''] || '',
+              division_slug: invitedDivision || '',
+              status_url: STATUS_URL,
+            },
           });
         } else if (body.status === 'rejected' && previousStatus !== 'rejected') {
           const afterInterview = INTERVIEW_STAGES.includes(previousStatus) || !!app.interview_division;
           await supabase.rpc('enqueue_app_email', {
-            p_key: afterInterview ? 'rejection_after_interview' : 'rejection_no_interview',
-            p_to: app.email, p_vars: { first_name: app.first_name },
+            p_key: afterInterview ? 'rejection_post_interview' : 'rejection_pre_interview',
+            p_to: app.email,
+            p_vars: {
+              first_name: app.first_name,
+              division_name: DIV_LABELS[(app.interview_division || app.first_choice) as string] || '',
+            },
           });
         } else if (body.status === 'offer_accepted' && previousStatus !== 'offer_accepted') {
           await supabase.rpc('enqueue_app_email', {
@@ -294,7 +303,12 @@ Deno.serve(async (req) => {
       try {
         await supabase.rpc('enqueue_app_email', {
           p_key: 'interview_invitation', p_to: app.email,
-          p_vars: { first_name: app.first_name, division: DIV_LABELS[target] || '', status_url: STATUS_URL },
+          p_vars: {
+            first_name: app.first_name,
+            division_name: DIV_LABELS[target] || '',
+            division_slug: target,
+            status_url: STATUS_URL,
+          },
         });
       } catch (e) { console.error('transfer email enqueue failed', e); }
 
@@ -378,7 +392,13 @@ Deno.serve(async (req) => {
       try {
         await supabase.rpc('enqueue_app_email', {
           p_key: 'offer_to_join', p_to: app.email,
-          p_vars: { first_name: app.first_name, division: DIV_LABELS[division] || '', status_url: STATUS_URL, deadline: deadlineLabel },
+          p_vars: {
+            first_name: app.first_name,
+            division_name: DIV_LABELS[division] || '',
+            acceptance_deadline: deadlineLabel,
+            status_url: STATUS_URL,
+            deadline: deadlineLabel,
+          },
         });
       } catch (e) { console.error('offer email enqueue failed', e); }
       return json({ success: true });
@@ -423,8 +443,12 @@ Deno.serve(async (req) => {
       // is prompted to complete their member profile (report item 18.6).
       try {
         await supabase.rpc('enqueue_app_email', {
-          p_key: 'offer_accepted_confirmation', p_to: app.email,
-          p_vars: { first_name: app.first_name, status_url: STATUS_URL },
+          p_key: 'acceptance_received', p_to: app.email,
+          p_vars: {
+            first_name: app.first_name,
+            division_name: DIV_LABELS[(app.offer_division || app.interview_division || app.first_choice) as string] || '',
+            status_url: STATUS_URL,
+          },
         });
       } catch (e) { console.error('welcome email enqueue failed', e); }
 
