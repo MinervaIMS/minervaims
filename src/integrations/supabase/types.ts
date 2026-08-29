@@ -216,11 +216,13 @@ export type Database = {
           current_company: string | null
           current_position: string | null
           division: Database["public"]["Enums"]["org_division"] | null
+          event_id: string | null
           former_role: string | null
           id: string
           notes: string | null
           organiser_name: string | null
           planned_date: string | null
+          poster_url: string | null
           responsible_person: string | null
           status: string
           updated_at: string
@@ -232,11 +234,13 @@ export type Database = {
           current_company?: string | null
           current_position?: string | null
           division?: Database["public"]["Enums"]["org_division"] | null
+          event_id?: string | null
           former_role?: string | null
           id?: string
           notes?: string | null
           organiser_name?: string | null
           planned_date?: string | null
+          poster_url?: string | null
           responsible_person?: string | null
           status?: string
           updated_at?: string
@@ -248,16 +252,26 @@ export type Database = {
           current_company?: string | null
           current_position?: string | null
           division?: Database["public"]["Enums"]["org_division"] | null
+          event_id?: string | null
           former_role?: string | null
           id?: string
           notes?: string | null
           organiser_name?: string | null
           planned_date?: string | null
+          poster_url?: string | null
           responsible_person?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "alumni_calls_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alumni_contacts: {
         Row: {
