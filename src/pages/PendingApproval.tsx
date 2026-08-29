@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AuthLayout from '@/components/shared/AuthLayout';
 import { AuthButton, AUTH_TOKENS } from '@/components/shared/AuthUI';
+import { WORKSPACE_BASE } from '@/lib/workspace-base';
 
 type RedeemState = 'checking' | 'linked' | 'no_match' | 'email_in_use' | 'email_unconfirmed' | 'waiting';
 
@@ -22,13 +23,13 @@ const PendingApproval = () => {
     if (!user) { navigate('/auth', { replace: true }); return; }
     if (!rolesLoaded) return;
     const hasNonMemberRole = roles.some((r) => r.role !== 'member' && r.role !== 'pending');
-    if (hasNonMemberRole) { navigate('/admin', { replace: true }); return; }
+    if (hasNonMemberRole) { navigate(WORKSPACE_BASE, { replace: true }); return; }
     // Safety net: if this "member-only" user has an application row, they are
     // actually a candidate whose role hasn't hydrated locally. Refresh and go.
     (async () => {
       const { data: app } = await supabase
         .from('applications').select('id').eq('user_id', user.id).maybeSingle();
-      if (app) { await refreshProfile(); navigate('/admin', { replace: true }); return; }
+      if (app) { await refreshProfile(); navigate(WORKSPACE_BASE, { replace: true }); return; }
 
       // Account redeem: if this login's (verified) email belongs to an
       // existing member profile, claim it now. The claim_member_account()

@@ -30,7 +30,10 @@
       (function () {
         try {
           var path = location.pathname || '/';
-          var workspace = path.indexOf('/admin') === 0;
+          // Both addresses: /workspace is where it lives, /admin is the
+          // redirect, and the purple band must be right on the very first
+          // frame of either.
+          var workspace = path.indexOf('/workspace') === 0 || path.indexOf('/admin') === 0;
           var root = document.documentElement;
           root.setAttribute('data-route', workspace ? 'workspace' : 'public');
           // The purple band over the top safe area is painted by CSS from

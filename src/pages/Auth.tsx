@@ -13,6 +13,7 @@ import {
   AUTH_TOKENS,
 } from '@/components/shared/AuthUI';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
+import { WORKSPACE_BASE } from '@/lib/workspace-base';
 
 const emailSchema = z.string().email('Please enter a valid email address.');
 const passwordSchema = z.string().min(8, 'Use at least 8 characters.');
@@ -46,7 +47,7 @@ const Auth = () => {
   const { user, isLoading, signIn, signUp } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && user) navigate('/admin', { replace: true });
+    if (!isLoading && user) navigate(WORKSPACE_BASE, { replace: true });
   }, [user, isLoading, navigate]);
 
   /* -------- Login -------- */

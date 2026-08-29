@@ -9,6 +9,7 @@ import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import { Search, ChevronDown } from 'lucide-react';
 import readingsBgAsset from '@/assets/mims-readings.webp.asset.json';
 import { readingTypeLabels, type Reading, type ReadingType } from '@/components/readings/types';
+import { workspacePath } from '@/lib/workspace-nav';
 
 // The bookcase (and its GSAP choreography) loads in its own chunk so the
 // page's first paint stays light.
@@ -63,7 +64,7 @@ const Readings = () => {
     if (canSubmit) {
       // Deep link into the workspace subsection that actually holds this
       // library: Website > Readings, where a recommendation is added.
-      navigate('/admin?section=website&sub=website-readings');
+      navigate(workspacePath('website', 'website-readings'));
     }
   };
 

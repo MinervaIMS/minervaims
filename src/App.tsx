@@ -56,6 +56,10 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const MinervaWorkspace = lazy(() => import("./pages/MinervaWorkspace"));
 const PayoffLab = lazy(() => import("./pages/PayoffLab"));
 const PendingApproval = lazy(() => import("./pages/PendingApproval"));
+// Reached by almost nobody, and it needs the whole workspace navigation to
+// translate the old `?section=…&sub=…` links: lazy, so that tree stays out
+// of the bundle every public visitor downloads.
+const LegacyWorkspaceRedirect = lazy(() => import("./pages/LegacyWorkspaceRedirect"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60 * 1000 } } });
 
@@ -165,7 +169,28 @@ const App = () => {
                 <Route path="/session-expired" element={<Suspense fallback={<PageLoader />}><SessionExpired /></Suspense>} />
                 <Route path="/access-denied" element={<Suspense fallback={<PageLoader />}><AccessDenied /></Suspense>} />
                 <Route path="/lab" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="lab"><PayoffLab /></PageVisibilityGate></Suspense>} />
-                <Route path="/admin" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
+                {/* =====================================================
+                    THE WORKSPACE IS ONE ROUTE, WITH A SPLAT.
+
+                    Not three routes for `/workspace`, `/workspace/:section`
+                    and `/workspace/:section/:sub`: those are three distinct
+                    route elements, and moving between them would UNMOUNT
+                    and REMOUNT the whole workspace on every click in the
+                    navigation. Every fetch would run again, every open
+                    dialog would close, every scroll position would reset.
+
+                    With one splat route the element is the same at every
+                    depth, so the router only updates the location and the
+                    workspace re-renders. The path is read inside, from
+                    `useLocation`.
+                    ===================================================== */}
+                <Route path="/workspace/*" element={<Suspense fallback={<PageLoader />}><MinervaWorkspace /></Suspense>} />
+                {/* The workspace used to live at /admin, and links to it
+                    are in emails already sent. Every one of them still
+                    works: `LegacyWorkspaceRedirect` translates the old
+                    `?section=…&sub=…` query into the new path. */}
+                <Route path="/admin" element={<Suspense fallback={<PageLoader />}><LegacyWorkspaceRedirect /></Suspense>} />
+                <Route path="/admin/*" element={<Suspense fallback={<PageLoader />}><LegacyWorkspaceRedirect /></Suspense>} />
                 <Route path="/pending-approval" element={<Suspense fallback={<PageLoader />}><PendingApproval /></Suspense>} />
                 <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
               </Route>
