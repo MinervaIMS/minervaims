@@ -256,8 +256,12 @@ Deno.serve(async (req) => {
           });
         } else if (body.status === 'offer_accepted' && previousStatus !== 'offer_accepted') {
           await supabase.rpc('enqueue_app_email', {
-            p_key: 'offer_accepted_confirmation', p_to: app.email,
-            p_vars: { first_name: app.first_name, status_url: STATUS_URL },
+            p_key: 'acceptance_received', p_to: app.email,
+            p_vars: {
+              first_name: app.first_name,
+              division_name: DIV_LABELS[(app.offer_division || app.interview_division || app.first_choice) as string] || '',
+              status_url: STATUS_URL,
+            },
           });
         }
       } catch (e) { console.error('status email enqueue failed', e); }
