@@ -21,16 +21,40 @@ const EmailVerification = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const email = params.get('email') ?? '';
-  const expired = params.get('status') === 'expired';
+  const tokenHash = params.get('token_hash');
+  const [expired, setExpired] = useState(params.get('status') === 'expired');
+  const [verifying, setVerifying] = useState(!!tokenHash);
 
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const [isSending, setIsSending] = useState(false);
+
+  // Confirmation links are redeemed here, in the browser, so that mail-security
+  // scanners which merely open the link cannot consume the one-time token.
+  useEffect(() => {
+    if (!tokenHash) return;
+    let active = true;
+    const type = (params.get('type') ?? 'signup') as 'signup' | 'invite' | 'email_change';
+    const next = params.get('next') || '/';
+    supabase.auth.verifyOtp({ type, token_hash: tokenHash }).then(({ data, error }) => {
+      if (!active) return;
+      if (error || !data.session) {
+        setExpired(true);
+        setVerifying(false);
+        return;
+      }
+      navigate(next, { replace: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [tokenHash, params, navigate]);
 
   useEffect(() => {
     if (seconds <= 0) return;
     const t = window.setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => window.clearTimeout(t);
   }, [seconds]);
+
 
   const resend = async () => {
     if (seconds > 0 || !email) return;
