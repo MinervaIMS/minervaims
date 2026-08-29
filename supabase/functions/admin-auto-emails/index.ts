@@ -104,6 +104,21 @@ Deno.serve(async (req) => {
           schedule_description: row?.schedule_description ?? null,
         };
       });
+      // Keep the database rows in sync with the code templates: the send path
+      // (enqueue_app_email) reads subject/body from this table, so any drift
+      // means candidates receive an older layout than the one previewed here.
+      try {
+        const stored = new Map((templates || []).map((t: any) => [t.key, t]));
+        for (const t of codeTemplates) {
+          const row = stored.get(t.key) as any | undefined;
+          if (!row) continue;
+          if (row.subject === t.subject && row.body === t.body) continue;
+          await supabase.from('auto_email_templates')
+            .update({ name: t.name, subject: t.subject, body: t.body })
+            .eq('key', t.key);
+        }
+      } catch (e) { console.error('template sync failed', e); }
+
       const mergedTemplates = [...codeTemplates, ...rowsByKey.values()].sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
       let log: any[] = [];
       try {
