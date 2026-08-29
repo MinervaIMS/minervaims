@@ -74,7 +74,7 @@ export default function AssociationOnDisplay() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Association on Display" description="Organise stand coverage. The stand runs 10:00–19:00 in 30-minute slots; multiple people can take the same slot. Senior roles open or close a day; everyone else can register or de-register up to 48 hours before." />
+      <WorkspacePageHeader title="Association On Display" description="Organise stand coverage. The stand runs 10:00–19:00 in 30-minute slots; multiple people can take the same slot. Senior roles open or close a day; everyone else can register or de-register up to 48 hours before." />
 
       {isSenior && (
         <div className="flex gap-2 mb-6 font-body">
