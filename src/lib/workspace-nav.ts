@@ -147,6 +147,7 @@ export const NAV: NavSection[] = [
       { key: 'website-readings', slug: 'readings', label: 'Readings', allowed: (p) => p.can('website-readings') },
       { key: 'website-testimonials', slug: 'testimonials', label: 'Testimonials', allowed: (p) => p.can('website-testimonials') },
       { key: 'website-history', slug: 'history', label: 'History', allowed: (p) => p.can('website-history') },
+      { key: 'website-faqs', slug: 'faqs', label: 'FAQs', allowed: (p) => p.can('website-faqs') },
       { key: 'ops-newsletter', slug: 'newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
       { key: 'ops-auto-emails', slug: 'automatic-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
     ],
@@ -157,6 +158,7 @@ export const NAV: NavSection[] = [
     subItems: [
       { key: 'settings-users', slug: 'users', label: 'Users', allowed: (p) => p.can('settings-users') },
       { key: 'settings-roles', slug: 'role-permissions', label: 'Role Permissions', allowed: (p) => p.can('settings-roles') },
+      { key: 'settings-mobile', slug: 'mobile-view', label: 'Mobile View', allowed: (p) => p.can('settings-mobile') },
       { key: 'settings-activity', slug: 'activity-log', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
     ],
   },

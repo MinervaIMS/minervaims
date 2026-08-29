@@ -361,6 +361,19 @@ export const GUIDE: GuideEntry[] = [
       { id: 'live-figure', title: 'The live alumni total', body: 'Writing [n] anywhere in a description inserts the current number of alumni when the page is read, so a sentence about the size of the network stays true without anyone editing it.' },
     ]
   },
+  {
+    key: 'website-faqs', section: 'Website', label: 'FAQs',
+    purpose: 'The admissions questions, in four categories, shown at the foot of the public Join page and in the applicants\u2019 own FAQs page inside the workspace.',
+    view: ['Read every question, including the ones currently hidden from the public.'],
+    manage: ['Add, edit, remove, reorder and recategorise questions, and publish or hide them.'],
+    warnings: ['A question is published to two surfaces at once: the public Join page and the applicants\u2019 FAQs. There is no separate copy for either.'],
+    topics: [
+      { id: 'categories', title: 'The four categories', body: 'Eligibility, The process, Preparing and Membership. They are the categories the two surfaces already group by and the chips a reader filters with, so a question belongs to exactly one of them. Moving a question to another category places it at the end of that category.' },
+      { id: 'publishing', title: 'Hidden rather than deleted', body: 'Switching Published off takes a question off both surfaces and keeps it here, greyed. That is what to use for a question that is only relevant during an intake; deleting is permanent and cannot be undone.' },
+      { id: 'links', title: 'The optional link', body: 'A question may carry one link beneath its answer. It is a pair: a label and an address, both or neither. The address has to be a page of this website starting with a slash, because it is rendered as an internal link and an external one would not work.' },
+      { id: 'order', title: 'The order readers see', body: 'The arrows move a question within its category, and the order set here is the order both the public page and the applicants\u2019 page use. Put the question most people ask first.' },
+    ],
+  },
   { key: 'ops-newsletter', section: 'Website', label: 'Newsletter', purpose: 'Newsletter subscribers and sending.', view: ['Consult subscribers.'], manage: ['Manage subscribers and sends.'],
     topics: [{ id: 'consent', title: 'Subscriber consent', body: 'Subscribers joined through the website form and consented to updates. Every message must keep the unsubscribe link intact, and unsubscribed addresses are never contacted again.' }] },
   {
@@ -391,6 +404,16 @@ export const GUIDE: GuideEntry[] = [
     manage: [],
     topics: [
       { id: 'levels', title: 'Reading the table', body: 'Full means the role can create, edit and remove in that subsection. View means it can open the page and use light actions such as registering or downloading. A dash means the subsection is hidden for that role.' },
+    ],
+  },
+  {
+    key: 'settings-mobile', section: 'Settings', label: 'Mobile view',
+    purpose: 'What each part of the workspace offers on a phone, generated from the live mobile rules so it always matches the real behaviour.',
+    view: ['Consult the table.'],
+    manage: [],
+    topics: [
+      { id: 'levels', title: 'Reading the table', body: 'Full means the subsection works on a phone exactly as on a computer, within your role. Read only means it opens but every editing control is withheld, for everybody. Desktop only means it is listed in the navigation and asks to be opened on a computer.' },
+      { id: 'cap', title: 'A cap, never a grant', body: 'The mobile rule can only take away what a role already has. It cannot open a page a role cannot open, and it applies to everyone including the President. It engages below 1024 pixels wide, which is the same threshold that switches the workspace to its mobile shell.' },
     ],
   },
   {

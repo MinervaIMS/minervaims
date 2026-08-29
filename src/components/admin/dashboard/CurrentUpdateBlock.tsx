@@ -122,13 +122,26 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
         // phone is not a 100px cover; it filled the card and pushed the title
         // and the button out of it.
         //
-        // The box is now DEFINITE: the height it is given, and a width in the
-        // page's own proportions. Nothing about it can depend on what the
-        // canvas turns out to measure, so the composition holds whether the
-        // PDF renders, fails or has not arrived yet.
-        <div className={`${fit} aspect-[1/1.4142] max-h-full max-w-full overflow-hidden rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]`}>
-          <PdfThumbnail url={update.pdfUrl!} alt="" renderWidth={200} className="w-full h-full" />
-        </div>
+        // The box is now DEFINITE: the constrained axis is the one it is
+        // given, and the other follows from the PAGE'S OWN RATIO, which
+        // `PdfThumbnail` sets on itself as an inline `aspect-ratio` (A4
+        // until the first page has been read, then whatever the document
+        // actually is). Nothing here depends on what the canvas turns out
+        // to measure, so the composition holds whether the PDF renders,
+        // fails or has not arrived yet.
+        //
+        // The extra wrapper this used to have is gone. It forced
+        // `aspect-[1/1.4142]`, which meant a cover that is not A4 was
+        // squeezed into an A4 frame - the very thing this is meant to
+        // prevent. The thumbnail IS the box now; the two `max-*` caps stay,
+        // because a cap beats an aspect ratio and that is what keeps a wide
+        // cover inside the card rather than pushing the text out of it.
+        <PdfThumbnail
+          url={update.pdfUrl!}
+          alt=""
+          renderWidth={200}
+          className={`${fit} max-h-full max-w-full rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]`}
+        />
       )}
     </div>
   );

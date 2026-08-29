@@ -373,14 +373,30 @@ export default function ResourceManager({
               {r.sources.filter((s) => s.kind === 'file').map((s, i) => (
                 <li key={`f${i}`} className="flex items-center gap-2 flex-wrap text-sm">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-foreground truncate max-w-[16rem]">{s.label || `File ${i + 1}`}</span>
+                  {/* THE NAME TAKES THE WIDTH THE ROW ACTUALLY HAS.
+                      It was capped at `max-w-[16rem]`, so "Statuto Minerva
+                      Investment Management Society.pdf" was cut to
+                      "Statuto Minerva Investment Managem…" on a card 700px
+                      wide with 400 of them empty. A fixed cap cannot know
+                      how much room a row has; `flex-1` with `min-w-0` is
+                      exactly the measurement it was standing in for, so
+                      the name now runs to the full width available and is
+                      shortened only when it genuinely will not fit. The
+                      `title` puts the whole name one hover away for the
+                      handful of cases where it still has to be. */}
+                  <span
+                    className="min-w-0 flex-1 truncate text-foreground"
+                    title={s.label || `File ${i + 1}`}
+                  >
+                    {s.label || `File ${i + 1}`}
+                  </span>
                   <button type="button" onClick={() => previewFile(s.value, s.label || `File ${i + 1}`)}
-                    className="text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
+                    className="shrink-0 text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
                     disabled={previewBusy === s.value}>
                     {previewBusy === s.value ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}Preview
                   </button>
                   <button type="button" onClick={() => downloadFile(s.value, s.label || `File ${i + 1}`)}
-                    className="text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
+                    className="shrink-0 text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
                     disabled={downloadBusy === s.value}>
                     {downloadBusy === s.value ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}Download
                   </button>

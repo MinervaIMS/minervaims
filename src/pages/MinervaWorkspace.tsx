@@ -52,6 +52,8 @@ import { PageLoader } from '@/components/shared/PageLoader';
 import AlumniManagement from '@/components/admin/AlumniManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import RolePermissionsTable from '@/components/admin/RolePermissionsTable';
+import MobileViewTable from '@/components/admin/MobileViewTable';
+import JoinFaqsManagement from '@/components/admin/JoinFaqsManagement';
 import HowToUse from '@/components/admin/HowToUse';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
@@ -716,7 +718,7 @@ const MinervaWorkspace = () => {
       case 'reports-templates':
         return <ResourceManager
           category="reports_templates"
-          title="Templates & Repositories"
+          title="Templates & repositories"
           description="Useful division material: text, files, links and code repositories. Star up to five favourites to pin them on top; each item shows who added it and when."
           restrictDivisions={access.allowedDivisions}
           canViewOtherDivisions={access.canViewOtherDivisions}
@@ -793,6 +795,10 @@ const MinervaWorkspace = () => {
         return <NewsletterManagement />;
       case 'website-pages':
         return <PagesVisibilityManagement />;
+      case 'website-faqs':
+        return <JoinFaqsManagement />;
+      case 'settings-mobile':
+        return <MobileViewTable />;
 
 
 

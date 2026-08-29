@@ -15,7 +15,6 @@ import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
 import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
 import Beams from '@/components/shared/Beams';
-import { SpecularFx } from '@/components/shared/SpecularFx';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -240,14 +239,15 @@ export default function EventRegister() {
             </Label>
           </div>
 
-          {/* Serif register button per the design: navy that inverts on hover,
-              with the animated specular border. */}
+          {/* Serif register button per the design: navy that inverts on
+              hover. The animated specular border it used to carry is gone:
+              its rounded-rectangle outline did not match the button's square
+              corners and showed as a wedge outside each one. */}
           <button
             type="submit"
             disabled={submitting}
             className="relative w-full mt-1 py-3.5 font-serif text-lg border border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent transition-colors duration-200 disabled:opacity-70"
           >
-            <SpecularFx />
             <span className="relative z-[2]">
               {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Registering</span> : 'Register'}
             </span>
