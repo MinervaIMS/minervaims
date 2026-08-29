@@ -57,7 +57,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
   const items = [
     { to: '/people/members', value: counts.members, label: 'Active Members' },
     { to: '/archive', value: counts.reports, label: 'Published Reports' },
-    { to: '/people/alumni', value: counts.alumni, label: 'Alumni' },
+    { to: '/people/alumni', value: counts.alumni, label: 'ALUMNI NETWORK' },
   ];
 
   return (
