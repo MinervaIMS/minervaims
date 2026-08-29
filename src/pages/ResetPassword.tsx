@@ -23,21 +23,67 @@ const ResetPassword = () => {
   const [banner, setBanner] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Supabase v2 places tokens in URL hash on recovery links; client auto-detects them.
-    // Confirm a session is available to proceed.
+    // The emailed link carries a token hash and is redeemed HERE, in the
+    // browser, with verifyOtp (a POST). Link scanners that merely open the
+    // page cannot consume the token. Older links still arrive with the token
+    // in the URL hash, which the auth client picks up on its own — for those
+    // we wait for the auth client to settle instead of judging on first read,
+    // so a slow connection never turns a valid link into "expired".
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    const tokenHash = searchParams.get('token_hash');
+
+    const finish = (ok: boolean, message?: string) => {
       if (!active) return;
-      const hashType = window.location.hash.includes('type=recovery');
-      const queryType = searchParams.get('type') === 'recovery';
-      setReady(!!data.session || hashType || queryType);
+      setReady(ok);
+      setLinkError(ok ? null : message ?? null);
+      setChecking(false);
+    };
+
+    if (tokenHash) {
+      supabase.auth
+        .verifyOtp({ type: 'recovery', token_hash: tokenHash })
+        .then(({ data, error }) => {
+          if (error || !data.session) {
+            finish(
+              false,
+              'This reset link has already been used or is no longer valid.',
+            );
+            return;
+          }
+          finish(true);
+        });
+      return () => {
+        active = false;
+      };
+    }
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) finish(true);
     });
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) finish(true);
+    });
+
+    // Give the auth client time to process a hash-based recovery link before
+    // deciding the link is bad.
+    const timer = window.setTimeout(() => {
+      const hashType = window.location.hash.includes('type=recovery');
+      finish(hashType, hashType ? undefined : 'This reset link is invalid or has expired.');
+      if (hashType) return;
+    }, 2500);
+
     return () => {
       active = false;
+      sub.subscription.unsubscribe();
+      window.clearTimeout(timer);
     };
   }, [searchParams]);
+
 
   const matches = password.length > 0 && password === confirm;
   const valid = passwordSchema.safeParse(password).success && matches;
