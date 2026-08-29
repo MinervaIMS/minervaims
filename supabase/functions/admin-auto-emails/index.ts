@@ -108,14 +108,14 @@ Deno.serve(async (req) => {
       // (enqueue_app_email) reads subject/body from this table, so any drift
       // means candidates receive an older layout than the one previewed here.
       try {
-        const syncRows = codeTemplates
-          .filter((t: any) => !String(t.id).startsWith('code-'))
-          .map((t: any) => ({ key: t.key, name: t.name, subject: t.subject, body: t.body }));
-        for (const row of syncRows) {
+        const stored = new Map((templates || []).map((t: any) => [t.key, t]));
+        for (const t of codeTemplates) {
+          const row = stored.get(t.key) as any | undefined;
+          if (!row) continue;
+          if (row.subject === t.subject && row.body === t.body) continue;
           await supabase.from('auto_email_templates')
-            .update({ name: row.name, subject: row.subject, body: row.body })
-            .eq('key', row.key)
-            .or(`subject.neq.${JSON.stringify(row.subject)},body.neq.${JSON.stringify(row.body)}`);
+            .update({ name: t.name, subject: t.subject, body: t.body })
+            .eq('key', t.key);
         }
       } catch (e) { console.error('template sync failed', e); }
 
