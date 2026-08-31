@@ -392,13 +392,25 @@ const MinervaWorkspace = () => {
           })();
           return;
         }
+        // ARRIVING STRAIGHT FROM EMAIL CONFIRMATION, ROLES GET ONE MORE READ.
+        // The session is seconds old here, and a role list fetched while the
+        // access token was still being attached can come back short. Throwing a
+        // Head of Division out to the public homepage on the strength of that
+        // read was exactly the reported bug, so the first denial after a
+        // confirmation only triggers a refresh; the next render decides.
+        if (justConfirmed && !confirmRetryDone.current) {
+          confirmRetryDone.current = true;
+          refreshProfile();
+          return;
+        }
         toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
       if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile]);
+  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile, justConfirmed]);
+
 
   const fetchEvents = async () => {
     try {
