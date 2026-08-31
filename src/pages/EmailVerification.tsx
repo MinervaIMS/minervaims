@@ -234,6 +234,26 @@ const EmailVerification = () => {
 
   const hasLink = !!link.tokenHash;
 
+  // A link that has already done its job: nothing left to do, and nothing wrong.
+  if (alreadyConfirmed) {
+    return (
+      <AuthLayout
+        title="Email Already Confirmed"
+        cardTitle="Email Already Confirmed"
+        cardSubtitle="This address has been confirmed. There is nothing further to do here."
+      >
+        <p
+          className="font-body"
+          style={{ fontSize: '14px', lineHeight: 1.6, color: AUTH_TOKENS.INK, margin: '0 0 24px' }}
+        >
+          Each confirmation link works once. Yours was used successfully, so your account is
+          active — sign in to open the Minerva Workspace.
+        </p>
+        <AuthButton onClick={() => navigate('/auth', { replace: true })}>Continue To Sign In</AuthButton>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout
       title={hasLink ? 'Confirm Your Email' : 'One More Step'}
@@ -245,6 +265,7 @@ const EmailVerification = () => {
       }
     >
       {failure && <AuthErrorBanner>{failure}</AuthErrorBanner>}
+
 
       {!hasLink && !useCode && (
         <ol
