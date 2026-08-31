@@ -170,9 +170,10 @@ const EmailVerification = () => {
         token_hash: link.tokenHash,
       });
       if (error || !data.session) {
-        setFailure(describeTokenError(error?.message, 'verification'));
+        await describeSpentLink(link.tokenHash, describeTokenError(error?.message, 'verification'));
         return;
       }
+
       await finishSuccess(data.session.user.id);
     } finally {
       setIsVerifying(false);
