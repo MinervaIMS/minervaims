@@ -137,8 +137,8 @@ async function resolveFirstName(supabase: any, email: string): Promise<string> {
   if (!lower) return ''
   try {
     const { data: profile } = await supabase
-      .from('profiles').select('first_name, name').ilike('email', lower).maybeSingle()
-    const fromProfile = (profile?.first_name || profile?.name || '').trim()
+      .from('profiles').select('full_name').ilike('email', lower).maybeSingle()
+    const fromProfile = (profile?.full_name || '').trim()
     if (fromProfile) return fromProfile.split(' ')[0]
   } catch (_e) { /* table shape may differ; fall through */ }
   try {
