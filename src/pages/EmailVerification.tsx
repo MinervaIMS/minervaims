@@ -54,6 +54,11 @@ const EmailVerification = () => {
       : null,
   );
   const [isVerifying, setIsVerifying] = useState(false);
+  // Set when the server recognises this spent link as one of ours, belonging to
+  // an address that is already confirmed. A second click is then a reassurance,
+  // not an error.
+  const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
+
 
   const [useCode, setUseCode] = useState(false);
   const [code, setCode] = useState('');
