@@ -660,7 +660,14 @@ const MinervaWorkspace = () => {
     );
   }
 
+  // A SIGNED-IN READER WHOSE ROLES HAVE NOT ARRIVED SEES A LOADER, NOT A BLANK
+  // PAGE. Returning null here used to leave a white screen for the moment
+  // between session and roles — indistinguishable, to someone who has just
+  // confirmed their email, from being dumped somewhere unexpected.
+  if (user && !rolesLoaded && !isCandidate) return <PageLoader />;
+
   if (!user || (!permissions.hasAnyAccess && !isCandidate)) return null;
+
 
   const primaryRoleAssignment = primaryAssignment(
     roles.map((r) => ({ role: r.role, division: r.division ?? null })),
