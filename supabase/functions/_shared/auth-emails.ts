@@ -379,12 +379,13 @@ export function substitute(template: string, vars: Record<string, unknown>, rawK
 
 export function renderAuthEmail(
   action: string,
-  props: { confirmationUrl?: string; token?: string; oldEmail?: string; newEmail?: string },
+  props: { confirmationUrl?: string; token?: string; oldEmail?: string; newEmail?: string; firstName?: string },
 ): { html: string; text: string; subject: string } | null {
   const html = AUTH_HTML[action];
   const subject = normalizeEmailSubject(AUTH_SUBJECTS[action]);
   if (!html || !subject) return null;
   const substituted = withResponsiveShell(normalizeEmailLinks(substitute(html, {
+    first_name: (props.firstName ?? '').trim() || 'User',
     confirmation_url: props.confirmationUrl ?? '',
     token: props.token ?? '',
     old_email: props.oldEmail ?? '',
