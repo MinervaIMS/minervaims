@@ -120,7 +120,7 @@ const EmailVerification = () => {
         setFailure(describeTokenError(error?.message, 'verification'));
         return;
       }
-      finishSuccess();
+      await finishSuccess(data.session.user.id);
     } finally {
       setIsVerifying(false);
     }
@@ -155,7 +155,7 @@ const EmailVerification = () => {
         return;
       }
 
-      finishSuccess();
+      await finishSuccess(data.session.user.id);
     } finally {
       setIsVerifying(false);
     }
@@ -261,7 +261,7 @@ const EmailVerification = () => {
               setFieldErr((p) => ({ ...p, code: undefined }));
             }}
             error={fieldErr.code}
-            hint="The code printed under the button in the confirmation email."
+            hint="The six-digit code from a Minerva verification email, if you have one."
             disabled={isVerifying}
           />
           <AuthButton onClick={confirmWithCode} disabled={isVerifying}>
