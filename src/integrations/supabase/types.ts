@@ -639,6 +639,33 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_link_receipts: {
+        Row: {
+          action_type: string
+          created_at: string
+          email: string | null
+          expires_at: string
+          token_sha256: string
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          email?: string | null
+          expires_at: string
+          token_sha256: string
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          token_sha256?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       auto_email_templates: {
         Row: {
           body: string
