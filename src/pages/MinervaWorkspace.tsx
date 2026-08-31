@@ -204,10 +204,15 @@ const MinervaWorkspace = () => {
   // button - are untouched. What changed is that they are now `const`.
   // ══════════════════════════════════════════════════════════════════════
   const location = useLocation();
+  // Set by the email-confirmation page when it sends a brand-new session here.
+  // The gate below is fractionally more patient in that case.
+  const justConfirmed = (location.state as { justConfirmed?: boolean } | null)?.justConfirmed === true;
+  const confirmRetryDone = useRef(false);
   const { sectionSlug, subSlug } = useMemo(
     () => parseWorkspaceUrl(location.pathname),
     [location.pathname],
   );
+
   const resolution = useMemo(
     () => resolveWorkspaceTarget(visibleNav, sectionSlug, subSlug),
     [visibleNav, sectionSlug, subSlug],
