@@ -1,50 +1,57 @@
-# Permanently prevent email scanners from consuming auth links
+# Permanently prevent auth links from being spent before the user acts
 
-## Confirmed cause
+## Step 1 - Confirm which agent redeems the token (do this first)
 
-The emails now point to Minerva-hosted pages instead of directly to the auth verification endpoint, but both destination pages immediately redeem the one-time token in a React `useEffect`:
+Two explanations produce the identical screenshot:
 
-- `/verify-email` automatically calls `verifyOtp` as soon as the page loads.
-- `/reset-password` automatically calls `verifyOtp` as soon as the page loads.
+- a JavaScript-executing Safe Links / Defender detonation sandbox loads the page and the mount-time `verifyOtp` fires;
+- the user burns their own token, because auto-redeem-on-mount also runs on remount, back-navigation, bfcache restore, or a refresh.
 
-This still fails when Microsoft Defender/Safe Links uses a browser-capable scanner that loads the page and executes JavaScript. The scanner reaches the Minerva page, the page performs the token-consuming POST automatically, and the user's later visit receives the “already used or expired” result shown in the screenshot.
+Read the auth logs for one failed attempt and inspect the IP and user agent of the request that actually redeemed the token. A Microsoft-owned range with a bot agent means Safe Links; the student's own address means remounting. The distinction decides how much weight the one-time-code fallback carries: the button gate fully cures the remount case, while a real detonation sandbox leaves residual risk.
 
-## Implementation
+Record the finding before writing any client code.
 
-1. **Turn both auth links into a true two-step flow**
-   - On page load, read the token but do not verify it.
-   - Remove the token from the visible address bar immediately and retain it only for the current browser tab.
-   - Show a clear confirmation screen with an explicit `Confirm Email` or `Continue To Password Reset` button.
-   - Call `verifyOtp` only from that button's click handler, which Safe Links does not trigger during URL inspection.
+## Step 2 - Audit every template's link before touching React
 
-2. **Preserve recovery and verification behavior**
-   - After a successful recovery confirmation, reveal the existing new-password form and update the password through the recovery session.
-   - After successful email confirmation, continue to the intended same-origin destination.
-   - Keep support for older hash/session-based links without automatically redeeming new token-hash links.
+This is load-bearing, not conditional. Any action type still emitting the platform confirmation URL points at the auth server's `verify` endpoint, where a plain GET redeems the token server-side and no client change can help.
 
-3. **Improve failure recovery**
-   - Keep used/expired errors distinct from the initial confirmation state.
-   - Password-reset failures link directly to requesting a new reset.
-   - Verification failures provide a fresh-email path that collects the address when it is not available, rather than leaving only “Back To Sign-In”.
-   - Prevent duplicate clicks while verification is in progress.
+Already confirmed from the code: the hook rewrites recovery, signup, invite, and email change into Minerva-hosted paths, but returns the raw `verify` URL unchanged for **magic link** and **reauthentication**.
 
-4. **Apply the protection consistently**
-   - Use the same explicit-user-action rule for signup, invitation, email-change confirmation, and password recovery links.
-   - Keep the current branded email layouts and scanner-safe Minerva-hosted URLs unchanged.
+Audit and fix all of them - signup, invite, magic link, email change (both the old and new address variants), recovery - so each carries the token hash plus our own path. Redeploy the auth email function as part of this step, not conditionally.
+
+## Step 3 - Token capture that survives a refresh
+
+Write the token hash and action type to `sessionStorage` first, then strip the query with `history.replaceState`, and read from `sessionStorage` on mount. Holding it only in a React ref means a refresh on the confirmation screen loses it permanently and the student needs a new email, which on mobile would happen constantly.
+
+The stripping stays for tidiness, not as a security claim: Safe Links has already logged the full URL and browsers do not leak query strings cross-origin by default. Refresh survival is the real requirement. Clear the stored token once it is successfully redeemed.
+
+## Step 4 - Recovery becomes a single step
+
+Do not verify on arrival. Show the new-password fields immediately, and have one submit handler run the token verification and the password update back to back. The token then dies only on a real completion, so someone who opens the link, gets distracted and closes the tab loses nothing, and one screen disappears from the flow.
+
+## Step 5 - Email confirmation behind an explicit action
+
+Signup, invitation and email change keep a confirmation screen with a single button, and redemption happens only in that click handler - never in a mount effect. Guard against double clicks, distinguish "already used" from "expired", and offer a resend that collects the address when it is not in the URL, instead of leaving only "Back To Sign-In".
+
+## Step 6 - One-time code as the fallback that cannot be pre-consumed
+
+A sandbox that clicks buttons defeats every button-gated version of this. The platform exposes a six-digit code alongside the hash, and the branded templates already render it.
+
+Accept that code on the same page: a short input under the primary action, verified with the address plus code. Nothing can type it on the student's behalf. If Step 1 confirms Safe Links is genuinely detonating links, make the code the primary instruction for `studbocconi.it` recipients, with the button as secondary.
 
 ## Technical details
 
-- Update `src/pages/EmailVerification.tsx` and `src/pages/ResetPassword.tsx`; no database migration is required.
-- Token redemption remains a browser-side `verifyOtp` POST, but it moves from mount-time effects into button handlers.
-- Validate any `next` destination as a same-origin path before navigation.
-- Clear token-bearing query parameters with `history.replaceState` after capture to reduce accidental disclosure and prevent refresh-driven duplicate redemption.
-- The token remains single-use; the change ensures only an intentional user action uses it.
+- Files: the auth email hook and its link builder (all action types), `src/pages/ResetPassword.tsx`, `src/pages/EmailVerification.tsx`. No database migration.
+- Redemption stays a browser-side POST, moved out of mount effects into submit and click handlers.
+- Validate any onward destination as a same-origin path before navigating.
+- Also raise the auth link lifetime so a message delayed in a university queue is still usable; if that setting is not reachable from here, state so plainly rather than leaving it silently unchanged.
 
 ## Verification
 
-- Request fresh signup and recovery emails.
-- Fetch each emailed Minerva URL and load it in a JavaScript-enabled browser without pressing the confirmation button; confirm the token remains usable.
-- Open the same URL as the user, press the button, and confirm signup or password reset succeeds.
-- Confirm a second redemption shows the correct used/expired state.
-- Confirm legacy recovery links still work and both mobile and desktop layouts remain intact.
-- Typecheck, build, deploy the affected auth-email function only if its generated URLs require adjustment, and test the live flow.
+- Step 1 evidence recorded: the redeeming IP and agent for a real failure.
+- Every action type's emailed URL points at a Minerva path carrying a token hash - checked by reading one real message per type.
+- Load an emailed URL in a JavaScript-enabled browser without submitting: the token must still work afterwards.
+- Complete signup and password reset as a normal user, then confirm a second use shows the correct used or expired state.
+- Refresh the confirmation screen and confirm the flow still completes.
+- Enter the six-digit code instead of using the link and confirm both flows complete.
+- Typecheck, build, redeploy the auth email function, and exercise the live flow.
