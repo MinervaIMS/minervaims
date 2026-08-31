@@ -80,13 +80,19 @@ const DEFAULT_APP_ORIGIN = 'https://minervaims.org'
 // ---------------------------------------------------------------------------
 function appHostedLink(verifyUrl: string | undefined, actionType: string): string | undefined {
   if (!verifyUrl) return verifyUrl
-  // magiclink / reauthentication keep the platform's own handling.
+  // EVERY action type that carries a clickable link must land on one of our own
+  // pages. Leaving even one pointing at /auth/v1/verify would keep that flow
+  // broken, because a plain GET there redeems the token server-side and no
+  // amount of client-side care can help. `reauthentication` has no link at all
+  // (it is code-only), so it never reaches this function with a URL.
   const landing = actionType === 'recovery'
     ? '/reset-password'
-    : (actionType === 'signup' || actionType === 'invite' || actionType === 'email_change')
+    : (actionType === 'signup' || actionType === 'invite' || actionType === 'email_change' ||
+       actionType === 'magiclink' || actionType === 'email')
       ? '/verify-email'
       : null
   if (!landing) return verifyUrl
+
 
   try {
     const url = new URL(verifyUrl)
