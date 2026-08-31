@@ -266,6 +266,8 @@ async function handleWebhook(req: Request): Promise<Response> {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const firstName = await resolveFirstName(supabase, payload.data.email)
 
+  await recordLinkReceipt(supabase, payload.data.url, emailType, payload.data.email)
+
   const rendered = renderAuthEmail(emailType, {
     firstName,
     confirmationUrl: appHostedLink(payload.data.url, emailType),
@@ -273,6 +275,7 @@ async function handleWebhook(req: Request): Promise<Response> {
     oldEmail: payload.data.old_email,
     newEmail: payload.data.new_email,
   })
+
   if (!rendered) {
     console.error('Unknown email type', { emailType, run_id })
     return new Response(JSON.stringify({ error: `Unknown email type: ${emailType}` }), {
