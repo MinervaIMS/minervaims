@@ -76,10 +76,35 @@ const EmailVerification = () => {
     return () => window.clearTimeout(t);
   }, [seconds]);
 
-  const finishSuccess = () => {
+  /**
+   * Where a freshly confirmed account belongs.
+   *
+   * A member (anyone holding a role) lands on the Workspace dashboard; an
+   * applicant, who holds no role, lands on the status page of their
+   * application - the one thing they came to see. An explicit `next` from the
+   * link still wins, because it was chosen deliberately.
+   */
+  const finishSuccess = async (userId: string) => {
     clearAuthLink();
-    navigate(safeNextPath(link.next), { replace: true });
+    const next = safeNextPath(link.next);
+    if (next !== '/') {
+      navigate(next, { replace: true });
+      return;
+    }
+    let landing = '/workspace/applications/status';
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .limit(1);
+      if (data && data.length > 0) landing = '/workspace/dashboard';
+    } catch {
+      /* the workspace itself re-resolves the landing page if this fails */
+    }
+    navigate(landing, { replace: true });
   };
+
 
   const confirmWithLink = async () => {
     if (isVerifying || !link.tokenHash) return;
@@ -95,7 +120,7 @@ const EmailVerification = () => {
         setFailure(describeTokenError(error?.message, 'verification'));
         return;
       }
-      finishSuccess();
+      await finishSuccess(data.session.user.id);
     } finally {
       setIsVerifying(false);
     }
@@ -130,7 +155,7 @@ const EmailVerification = () => {
         return;
       }
 
-      finishSuccess();
+      await finishSuccess(data.session.user.id);
     } finally {
       setIsVerifying(false);
     }
@@ -236,7 +261,7 @@ const EmailVerification = () => {
               setFieldErr((p) => ({ ...p, code: undefined }));
             }}
             error={fieldErr.code}
-            hint="The code printed under the button in the confirmation email."
+            hint="The six-digit code from a Minerva verification email, if you have one."
             disabled={isVerifying}
           />
           <AuthButton onClick={confirmWithCode} disabled={isVerifying}>
