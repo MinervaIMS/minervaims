@@ -112,8 +112,16 @@ const EmailVerification = () => {
     setIsVerifying(true);
     setFailure(null);
     try {
+      const codeType: 'signup' | 'invite' | 'magiclink' | 'email_change' =
+        link.type === 'invite'
+          ? 'invite'
+          : link.type === 'magiclink'
+            ? 'magiclink'
+            : link.type === 'email_change'
+              ? 'email_change'
+              : 'signup';
       const { data, error } = await supabase.auth.verifyOtp({
-        type: (link.type === 'invite' ? 'invite' : 'signup') as 'signup' | 'invite',
+        type: codeType,
         email: email.trim(),
         token: code.trim(),
       });
@@ -121,6 +129,7 @@ const EmailVerification = () => {
         setFailure('That code is not valid or has expired. Check the most recent email, or request a new one.');
         return;
       }
+
       finishSuccess();
     } finally {
       setIsVerifying(false);
