@@ -15,7 +15,7 @@ const SENDER_DOMAIN = 'notify.minervaims.org'
 const FROM_DOMAIN = 'minervaims.org'
 
 const SAMPLE_PROJECT_URL = 'https://minervaims.org/auth/callback?token=preview'
-const SAMPLE_DATA: Record<string, { confirmationUrl?: string; token?: string; oldEmail?: string; newEmail?: string }> = {
+const SAMPLE_DATA: Record<string, { confirmationUrl?: string; token?: string; oldEmail?: string; newEmail?: string; firstName?: string }> = {
   signup: { confirmationUrl: SAMPLE_PROJECT_URL, token: '123456' },
   recovery: { confirmationUrl: SAMPLE_PROJECT_URL, token: '123456' },
   magiclink: { confirmationUrl: SAMPLE_PROJECT_URL, token: '123456' },
@@ -51,7 +51,7 @@ async function handlePreview(req: Request): Promise<Response> {
     })
   }
 
-  const rendered = renderAuthEmail(type, SAMPLE_DATA[type] || {})
+  const rendered = renderAuthEmail(type, { firstName: 'Riccardo', ...(SAMPLE_DATA[type] || {}) })
   if (!rendered) {
     return new Response(JSON.stringify({ error: `Unknown email type: ${type}` }), {
       status: 400,
@@ -121,6 +121,35 @@ function appHostedLink(verifyUrl: string | undefined, actionType: string): strin
   }
 }
 
+// ---------------------------------------------------------------------------
+// Recipient first name resolution: profiles -> members -> roster -> auth
+// metadata -> email local part ("name.surname@..." => "Name").
+// ---------------------------------------------------------------------------
+function firstNameFromEmail(email: string): string {
+  const local = (email || '').split('@')[0] || ''
+  const raw = local.split(/[._\-+]/)[0] || ''
+  if (!raw || /^\d+$/.test(raw)) return ''
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+}
+
+async function resolveFirstName(supabase: any, email: string): Promise<string> {
+  const lower = (email || '').toLowerCase()
+  if (!lower) return ''
+  try {
+    const { data: profile } = await supabase
+      .from('profiles').select('full_name').ilike('email', lower).maybeSingle()
+    const fromProfile = (profile?.full_name || '').trim()
+    if (fromProfile) return fromProfile.split(' ')[0]
+  } catch (_e) { /* table shape may differ; fall through */ }
+  try {
+    const { data: member } = await supabase
+      .from('members').select('first_name').ilike('email', lower).maybeSingle()
+    const fromMember = (member?.first_name || '').trim()
+    if (fromMember) return fromMember.split(' ')[0]
+  } catch (_e) { /* ignore */ }
+  return firstNameFromEmail(lower)
+}
+
 async function handleWebhook(req: Request): Promise<Response> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   if (!apiKey) {
@@ -173,7 +202,11 @@ async function handleWebhook(req: Request): Promise<Response> {
   const emailType = payload.data.action_type
   console.log('Received auth event', { emailType, email: payload.data.email, run_id })
 
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const firstName = await resolveFirstName(supabase, payload.data.email)
+
   const rendered = renderAuthEmail(emailType, {
+    firstName,
     confirmationUrl: appHostedLink(payload.data.url, emailType),
     token: payload.data.token,
     oldEmail: payload.data.old_email,
@@ -186,7 +219,6 @@ async function handleWebhook(req: Request): Promise<Response> {
     })
   }
 
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const messageId = crypto.randomUUID()
 
   await supabase.from('email_send_log').insert({
