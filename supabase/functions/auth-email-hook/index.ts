@@ -122,6 +122,67 @@ function appHostedLink(verifyUrl: string | undefined, actionType: string): strin
 }
 
 // ---------------------------------------------------------------------------
+// A receipt for every link we mail.
+//
+// One-time tokens cannot be made reusable, so instead we remember that WE
+// issued this one. When a student clicks the same link a second or third time,
+// the verification page asks `auth-link-status` about it and can say "already
+// confirmed" rather than "invalid or expired". Only a SHA-256 of the token hash
+// is stored — the receipt can recognise a link, never reconstruct one.
+// ---------------------------------------------------------------------------
+const RECEIPT_TTL_HOURS = 24
+
+function tokenHashFrom(verifyUrl: string | undefined): string | null {
+  if (!verifyUrl) return null
+  try {
+    const url = new URL(verifyUrl)
+    return url.searchParams.get('token') || url.searchParams.get('token_hash')
+  } catch {
+    return null
+  }
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function recordLinkReceipt(
+  supabase: any,
+  verifyUrl: string | undefined,
+  actionType: string,
+  email: string,
+): Promise<void> {
+  const tokenHash = tokenHashFrom(verifyUrl)
+  if (!tokenHash) return
+  try {
+    const lower = (email || '').toLowerCase()
+    const { data: profile } = await supabase
+      .from('profiles').select('id').ilike('email', lower).maybeSingle()
+    await supabase.from('auth_link_receipts').upsert({
+      token_sha256: await sha256Hex(tokenHash),
+      user_id: profile?.id ?? null,
+      email: lower || null,
+      action_type: actionType,
+      expires_at: new Date(Date.now() + RECEIPT_TTL_HOURS * 3600 * 1000).toISOString(),
+    }, { onConflict: 'token_sha256' })
+    // Housekeeping: receipts are only useful while a link could still be
+    // clicked, so anything a week past its expiry is removed on the way past.
+    await supabase
+      .from('auth_link_receipts')
+      .delete()
+      .lt('expires_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+  } catch (e) {
+    // A missing receipt only costs the friendlier wording on a repeat click.
+    console.error('Failed to record auth link receipt', { message: (e as Error).message })
+  }
+}
+
+
+
+// ---------------------------------------------------------------------------
 // Recipient first name resolution: profiles -> members -> roster -> auth
 // metadata -> email local part ("name.surname@..." => "Name").
 // ---------------------------------------------------------------------------
@@ -205,6 +266,8 @@ async function handleWebhook(req: Request): Promise<Response> {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const firstName = await resolveFirstName(supabase, payload.data.email)
 
+  await recordLinkReceipt(supabase, payload.data.url, emailType, payload.data.email)
+
   const rendered = renderAuthEmail(emailType, {
     firstName,
     confirmationUrl: appHostedLink(payload.data.url, emailType),
@@ -212,6 +275,7 @@ async function handleWebhook(req: Request): Promise<Response> {
     oldEmail: payload.data.old_email,
     newEmail: payload.data.new_email,
   })
+
   if (!rendered) {
     console.error('Unknown email type', { emailType, run_id })
     return new Response(JSON.stringify({ error: `Unknown email type: ${emailType}` }), {

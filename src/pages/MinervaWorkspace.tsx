@@ -204,10 +204,15 @@ const MinervaWorkspace = () => {
   // button - are untouched. What changed is that they are now `const`.
   // ══════════════════════════════════════════════════════════════════════
   const location = useLocation();
+  // Set by the email-confirmation page when it sends a brand-new session here.
+  // The gate below is fractionally more patient in that case.
+  const justConfirmed = (location.state as { justConfirmed?: boolean } | null)?.justConfirmed === true;
+  const confirmRetryDone = useRef(false);
   const { sectionSlug, subSlug } = useMemo(
     () => parseWorkspaceUrl(location.pathname),
     [location.pathname],
   );
+
   const resolution = useMemo(
     () => resolveWorkspaceTarget(visibleNav, sectionSlug, subSlug),
     [visibleNav, sectionSlug, subSlug],
@@ -392,13 +397,25 @@ const MinervaWorkspace = () => {
           })();
           return;
         }
+        // ARRIVING STRAIGHT FROM EMAIL CONFIRMATION, ROLES GET ONE MORE READ.
+        // The session is seconds old here, and a role list fetched while the
+        // access token was still being attached can come back short. Throwing a
+        // Head of Division out to the public homepage on the strength of that
+        // read was exactly the reported bug, so the first denial after a
+        // confirmation only triggers a refresh; the next render decides.
+        if (justConfirmed && !confirmRetryDone.current) {
+          confirmRetryDone.current = true;
+          refreshProfile();
+          return;
+        }
         toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
       if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile]);
+  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile, justConfirmed]);
+
 
   const fetchEvents = async () => {
     try {
@@ -643,7 +660,14 @@ const MinervaWorkspace = () => {
     );
   }
 
+  // A SIGNED-IN READER WHOSE ROLES HAVE NOT ARRIVED SEES A LOADER, NOT A BLANK
+  // PAGE. Returning null here used to leave a white screen for the moment
+  // between session and roles — indistinguishable, to someone who has just
+  // confirmed their email, from being dumped somewhere unexpected.
+  if (user && !rolesLoaded && !isCandidate) return <PageLoader />;
+
   if (!user || (!permissions.hasAnyAccess && !isCandidate)) return null;
+
 
   const primaryRoleAssignment = primaryAssignment(
     roles.map((r) => ({ role: r.role, division: r.division ?? null })),

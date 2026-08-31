@@ -54,6 +54,11 @@ const EmailVerification = () => {
       : null,
   );
   const [isVerifying, setIsVerifying] = useState(false);
+  // Set when the server recognises this spent link as one of ours, belonging to
+  // an address that is already confirmed. A second click is then a reassurance,
+  // not an error.
+  const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
+
 
   const [useCode, setUseCode] = useState(false);
   const [code, setCode] = useState('');
@@ -83,27 +88,75 @@ const EmailVerification = () => {
    * applicant, who holds no role, lands on the status page of their
    * application - the one thing they came to see. An explicit `next` from the
    * link still wins, because it was chosen deliberately.
+   *
+   * THE ROLE READ IS RETRIED. It runs milliseconds after the session was
+   * minted, and a read that comes back empty because the token was not yet
+   * attached would send a Head of Division to the applicant status page. When
+   * it is still inconclusive, the landing is the bare `/workspace`, which the
+   * workspace itself canonicalises to the first section the viewer can open -
+   * never a guess that could be wrong.
    */
   const finishSuccess = async (userId: string) => {
     clearAuthLink();
     const next = safeNextPath(link.next);
     if (next !== '/') {
-      navigate(next, { replace: true });
+      navigate(next, { replace: true, state: { justConfirmed: true } });
       return;
     }
-    let landing = '/workspace/applications/status';
-    try {
-      const { data } = await supabase
+
+    let hasRole = false;
+    let readSucceeded = false;
+    for (let attempt = 0; attempt < 3 && !hasRole; attempt += 1) {
+      const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .limit(1);
-      if (data && data.length > 0) landing = '/workspace/dashboard';
-    } catch {
-      /* the workspace itself re-resolves the landing page if this fails */
+      if (!error) {
+        readSucceeded = true;
+        hasRole = !!data && data.length > 0;
+      }
+      if (!hasRole) await new Promise((r) => setTimeout(r, 250));
     }
-    navigate(landing, { replace: true });
+
+    let landing = '/workspace';
+    if (hasRole) {
+      landing = '/workspace/dashboard';
+    } else if (readSucceeded) {
+      // No role at all: an applicant, provided they really have an application
+      // on file. If they don't, the workspace decides where they belong.
+      const { data: app } = await supabase
+        .from('applications').select('id').eq('user_id', userId).limit(1);
+      if (app && app.length > 0) landing = '/workspace/applications/status';
+    }
+    navigate(landing, { replace: true, state: { justConfirmed: true } });
   };
+
+  /**
+   * A second click on a link that already did its job.
+   *
+   * Tokens are single-use and cannot be made otherwise, so the honest kindness
+   * is to recognise the situation: we ask the server whether this exact link
+   * was one we issued and whether the account is now confirmed. If so the page
+   * says "already confirmed" with a way onwards, instead of accusing a student
+   * of holding an invalid link they used correctly.
+   */
+  const describeSpentLink = async (tokenHash: string, fallback: string) => {
+    try {
+      const { data } = await supabase.functions.invoke('auth-link-status', {
+        body: { token_hash: tokenHash },
+      });
+      if (data?.status === 'already_confirmed') {
+        setAlreadyConfirmed(true);
+        setFailure(null);
+        return;
+      }
+    } catch {
+      /* fall through to the plain message */
+    }
+    setFailure(fallback);
+  };
+
 
 
   const confirmWithLink = async () => {
@@ -117,9 +170,10 @@ const EmailVerification = () => {
         token_hash: link.tokenHash,
       });
       if (error || !data.session) {
-        setFailure(describeTokenError(error?.message, 'verification'));
+        await describeSpentLink(link.tokenHash, describeTokenError(error?.message, 'verification'));
         return;
       }
+
       await finishSuccess(data.session.user.id);
     } finally {
       setIsVerifying(false);
@@ -180,6 +234,26 @@ const EmailVerification = () => {
 
   const hasLink = !!link.tokenHash;
 
+  // A link that has already done its job: nothing left to do, and nothing wrong.
+  if (alreadyConfirmed) {
+    return (
+      <AuthLayout
+        title="Email Already Confirmed"
+        cardTitle="Email Already Confirmed"
+        cardSubtitle="This address has been confirmed. There is nothing further to do here."
+      >
+        <p
+          className="font-body"
+          style={{ fontSize: '14px', lineHeight: 1.6, color: AUTH_TOKENS.INK, margin: '0 0 24px' }}
+        >
+          Each confirmation link works once. Yours was used successfully, so your account is
+          active — sign in to open the Minerva Workspace.
+        </p>
+        <AuthButton onClick={() => navigate('/auth', { replace: true })}>Continue To Sign In</AuthButton>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout
       title={hasLink ? 'Confirm Your Email' : 'One More Step'}
@@ -191,6 +265,7 @@ const EmailVerification = () => {
       }
     >
       {failure && <AuthErrorBanner>{failure}</AuthErrorBanner>}
+
 
       {!hasLink && !useCode && (
         <ol
