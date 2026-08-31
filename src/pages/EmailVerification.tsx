@@ -1,53 +1,74 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import AuthLayout from '@/components/shared/AuthLayout';
 import {
   AuthButton,
   AuthErrorBanner,
+  AuthField,
   AUTH_TOKENS,
   AuthLink,
 } from '@/components/shared/AuthUI';
+import {
+  captureAuthLink,
+  clearAuthLink,
+  describeTokenError,
+  safeNextPath,
+  type CapturedAuthLink,
+} from '@/lib/auth-link';
 
 const RESEND_SECONDS = 45;
+const emailSchema = z.string().email('Please enter a valid email address.');
+
+type OtpType = 'signup' | 'invite' | 'email_change' | 'email' | 'magiclink';
 
 const STEPS = [
   <>Open the message from Minerva IMS in your inbox.</>,
-  <>Click <strong style={{ color: AUTH_TOKENS.INK, fontWeight: 600 }}>Verify email</strong> to confirm it's you.</>,
-  <>Return here and continue to the Workspace.</>,
+  <>Return to this page and press <strong style={{ color: AUTH_TOKENS.INK, fontWeight: 600 }}>Confirm My Email</strong>.</>,
+  <>Continue to the Workspace.</>,
 ];
 
+/**
+ * Confirmation happens ONLY from the button below, never on mount.
+ *
+ * Mail-security scanners open every link in a message, and the JavaScript
+ * capable ones execute the page: a redemption inside a mount effect is spent
+ * before the student ever clicks. The same effect also re-fires on remount,
+ * back-navigation, bfcache restore and refresh, so it let users burn their own
+ * token. The token is captured (and kept for this tab, so a refresh is safe)
+ * but redeemed exclusively in a click handler.
+ *
+ * The six-digit code from the same email is accepted as a fallback, since a
+ * detonation sandbox that clicks buttons cannot type a code.
+ */
 const EmailVerification = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const email = params.get('email') ?? '';
-  const tokenHash = params.get('token_hash');
-  const [expired, setExpired] = useState(params.get('status') === 'expired');
-  const [verifying, setVerifying] = useState(!!tokenHash);
+
+  const [link, setLink] = useState<CapturedAuthLink>({});
+  const [email, setEmail] = useState(params.get('email') ?? '');
+  const [failure, setFailure] = useState<string | null>(
+    params.get('status') === 'expired'
+      ? 'This verification link has already been used or has expired.'
+      : null,
+  );
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const [useCode, setUseCode] = useState(false);
+  const [code, setCode] = useState('');
+  const [fieldErr, setFieldErr] = useState<{ email?: string; code?: string }>({});
 
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const [isSending, setIsSending] = useState(false);
 
-  // Confirmation links are redeemed here, in the browser, so that mail-security
-  // scanners which merely open the link cannot consume the one-time token.
   useEffect(() => {
-    if (!tokenHash) return;
-    let active = true;
-    const type = (params.get('type') ?? 'signup') as 'signup' | 'invite' | 'email_change';
-    const next = params.get('next') || '/';
-    supabase.auth.verifyOtp({ type, token_hash: tokenHash }).then(({ data, error }) => {
-      if (!active) return;
-      if (error || !data.session) {
-        setExpired(true);
-        setVerifying(false);
-        return;
-      }
-      navigate(next, { replace: true });
-    });
-    return () => {
-      active = false;
-    };
-  }, [tokenHash, params, navigate]);
+    const captured = captureAuthLink(params);
+    setLink(captured);
+    if (captured.email) setEmail((e) => e || captured.email!);
+    // Runs once: capture before anything else rewrites the URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -55,110 +76,190 @@ const EmailVerification = () => {
     return () => window.clearTimeout(t);
   }, [seconds]);
 
+  const finishSuccess = () => {
+    clearAuthLink();
+    navigate(safeNextPath(link.next), { replace: true });
+  };
+
+  const confirmWithLink = async () => {
+    if (isVerifying || !link.tokenHash) return;
+    setIsVerifying(true);
+    setFailure(null);
+    try {
+      const type = ((link.type ?? 'signup') as OtpType);
+      const { data, error } = await supabase.auth.verifyOtp({
+        type: type === 'email_change' ? 'email_change' : type,
+        token_hash: link.tokenHash,
+      });
+      if (error || !data.session) {
+        setFailure(describeTokenError(error?.message, 'verification'));
+        return;
+      }
+      finishSuccess();
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const confirmWithCode = async () => {
+    if (isVerifying) return;
+    const next: typeof fieldErr = {};
+    if (!emailSchema.safeParse(email).success) next.email = 'Please enter a valid email address.';
+    if (!/^\d{6}$/.test(code.trim())) next.code = 'Enter the six-digit code from the email.';
+    setFieldErr(next);
+    if (Object.keys(next).length > 0) return;
+
+    setIsVerifying(true);
+    setFailure(null);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        type: (link.type === 'invite' ? 'invite' : 'signup') as 'signup' | 'invite',
+        email: email.trim(),
+        token: code.trim(),
+      });
+      if (error || !data.session) {
+        setFailure('That code is not valid or has expired. Check the most recent email, or request a new one.');
+        return;
+      }
+      finishSuccess();
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const resend = async () => {
-    if (seconds > 0 || !email) return;
+    if (seconds > 0 || isSending) return;
+    if (!emailSchema.safeParse(email).success) {
+      setFieldErr((p) => ({ ...p, email: 'Enter your email so we can send a new link.' }));
+      setUseCode(true);
+      return;
+    }
     setIsSending(true);
     try {
-      await supabase.auth.resend({ type: 'signup', email });
+      await supabase.auth.resend({ type: 'signup', email: email.trim() });
       setSeconds(RESEND_SECONDS);
+      setFailure(null);
     } finally {
       setIsSending(false);
     }
   };
 
-  if (verifying) {
-    return (
-      <AuthLayout
-        title="Confirming Your Email"
-        cardTitle="Confirming Your Email"
-        cardSubtitle="One moment — we are confirming your address."
-      >
-        <p className="font-body text-center" style={{ fontSize: '13.5px', color: AUTH_TOKENS.MUTED }}>
-          Please keep this page open.
-        </p>
-      </AuthLayout>
-    );
-  }
-
-  if (expired) {
-    return (
-      <AuthLayout
-        title="Verification Link No Longer Valid"
-        cardTitle="Verification Link No Longer Valid"
-        cardSubtitle="This link has already been used or has expired. We can send a fresh verification email to your address."
-      >
-        <AuthErrorBanner>This verification link has already been used or has expired.</AuthErrorBanner>
-        {email ? (
-          <AuthButton onClick={resend} disabled={seconds > 0 || isSending}>
-            {seconds > 0 ? `Send A New Link In ${seconds}s` : 'Send A New Link'}
-          </AuthButton>
-        ) : (
-          <AuthButton onClick={() => navigate('/auth')}>Back To Sign-In</AuthButton>
-        )}
-      </AuthLayout>
-    );
-  }
-
+  const hasLink = !!link.tokenHash;
 
   return (
     <AuthLayout
-      title="One More Step"
-      cardTitle="One More Step"
-      cardSubtitle="We verify every member's email to keep the Workspace secure."
+      title={hasLink ? 'Confirm Your Email' : 'One More Step'}
+      cardTitle={hasLink ? 'Confirm Your Email' : 'One More Step'}
+      cardSubtitle={
+        hasLink
+          ? 'Press the button below to confirm your address and activate your account.'
+          : "We verify every member's email to keep the Workspace secure."
+      }
     >
-      <ol
-        className="font-body"
-        style={{
-          listStyle: 'none',
-          padding: 0,
-          margin: '0 0 24px',
-          borderTop: `1px solid ${AUTH_TOKENS.HAIRLINE}`,
-        }}
-      >
-        {STEPS.map((s, i) => (
-          <li
-            key={i}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '32px 1fr',
-              gap: '16px',
-              alignItems: 'start',
-              padding: '18px 0',
-              borderBottom: `1px solid ${AUTH_TOKENS.HAIRLINE}`,
-              fontSize: '14px',
-              lineHeight: 1.55,
-              color: AUTH_TOKENS.INK,
-            }}
-          >
-            <span
+      {failure && <AuthErrorBanner>{failure}</AuthErrorBanner>}
+
+      {!hasLink && !useCode && (
+        <ol
+          className="font-body"
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: '0 0 24px',
+            borderTop: `1px solid ${AUTH_TOKENS.HAIRLINE}`,
+          }}
+        >
+          {STEPS.map((s, i) => (
+            <li
+              key={i}
               style={{
-                fontFamily: "'Times New Roman', Times, Georgia, serif",
-                fontSize: '17px',
-                color: AUTH_TOKENS.NAVY,
-                lineHeight: 1.4,
+                display: 'grid',
+                gridTemplateColumns: '32px 1fr',
+                gap: '16px',
+                alignItems: 'start',
+                padding: '18px 0',
+                borderBottom: `1px solid ${AUTH_TOKENS.HAIRLINE}`,
+                fontSize: '14px',
+                lineHeight: 1.55,
+                color: AUTH_TOKENS.INK,
               }}
             >
-              {i + 1}
-            </span>
-            <span style={{ color: AUTH_TOKENS.INK }}>{s}</span>
-          </li>
-        ))}
-      </ol>
+              <span
+                style={{
+                  fontFamily: "'Times New Roman', Times, Georgia, serif",
+                  fontSize: '17px',
+                  color: AUTH_TOKENS.NAVY,
+                  lineHeight: 1.4,
+                }}
+              >
+                {i + 1}
+              </span>
+              <span style={{ color: AUTH_TOKENS.INK }}>{s}</span>
+            </li>
+          ))}
+        </ol>
+      )}
 
-      <AuthButton onClick={() => navigate('/auth')}>Continue</AuthButton>
+      {useCode && (
+        <>
+          <AuthField
+            id="email"
+            type="email"
+            label="Your email"
+            placeholder="name.surname@studbocconi.it"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setFieldErr((p) => ({ ...p, email: undefined }));
+            }}
+            error={fieldErr.email}
+            autoComplete="email"
+            disabled={isVerifying}
+          />
+          <AuthField
+            id="code"
+            label="Six-digit code"
+            placeholder="000000"
+            inputMode="numeric"
+            maxLength={6}
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.replace(/\D/g, ''));
+              setFieldErr((p) => ({ ...p, code: undefined }));
+            }}
+            error={fieldErr.code}
+            hint="The code printed under the button in the confirmation email."
+            disabled={isVerifying}
+          />
+          <AuthButton onClick={confirmWithCode} disabled={isVerifying}>
+            {isVerifying ? 'Confirming…' : 'Confirm With Code'}
+          </AuthButton>
+        </>
+      )}
 
-      <p
-        className="font-body text-center mt-5"
-        style={{ fontSize: '13px', color: AUTH_TOKENS.MUTED }}
-      >
+      {!useCode && hasLink && (
+        <AuthButton onClick={confirmWithLink} disabled={isVerifying}>
+          {isVerifying ? 'Confirming…' : 'Confirm My Email'}
+        </AuthButton>
+      )}
+
+      {!useCode && !hasLink && (
+        <AuthButton onClick={() => navigate('/auth')}>Continue</AuthButton>
+      )}
+
+      <p className="font-body text-center mt-5" style={{ fontSize: '13px', color: AUTH_TOKENS.MUTED }}>
+        <AuthLink onClick={() => setUseCode((v) => !v)} disabled={isVerifying}>
+          {useCode ? 'Use the link from the email instead' : 'Use the six-digit code from the email instead'}
+        </AuthLink>
+      </p>
+
+      <p className="font-body text-center mt-2" style={{ fontSize: '13px', color: AUTH_TOKENS.MUTED }}>
         {seconds > 0 ? (
-          `Resend available in ${seconds}s`
+          `A new email can be requested in ${seconds}s`
         ) : (
           <>
             Didn't receive it?{' '}
-            <AuthLink onClick={resend} disabled={isSending || !email}>
-              Resend email
+            <AuthLink onClick={resend} disabled={isSending}>
+              Send a new email
             </AuthLink>
           </>
         )}
