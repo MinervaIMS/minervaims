@@ -94,13 +94,13 @@ export const JOIN_JOURNEY = {
     {
       n: 2,
       title: 'Submit your application',
-      body: 'Complete the online form by expressing your preference for a first-choice and a second-choice division and uploading your two documents, correctly formatted and named. Make sure your account is created and verified to track your application status. Applications are reviewed on a rolling basis, so submitting earlier in the intake window may work in your favour.',
+      body: 'Complete the online form by expressing your preference for a first-choice and a second-choice division and uploading your two documents, correctly formatted and named. Make sure your Minerva account is created and verified to track your application status. Applications are reviewed on a rolling basis, so submitting earlier in the intake window may work in your favour.',
       files: [],
     },
     {
       n: 3,
       title: 'Interview',
-      body: 'Candidates who pass the initial screening are invited to interview with current members of the Society. The interview is conducted entirely in English. It assesses your technical knowledge relevant to the division applied for, calibrated to your year and course of study; your awareness of current market news and data, as a direct indicator of the time you dedicate to following markets; and your motivation for applying to Minerva specifically.',
+      body: 'Candidates who pass the initial screening are invited to interview with current members of the Society. It assesses your technical knowledge relevant to the division applied for, calibrated to your year and course of study, your awareness of current market news and data, and your motivation for applying to Minerva specifically.',
       files: [],
     },
     {
