@@ -114,7 +114,7 @@ export const JOIN_JOURNEY = {
 
 export const JOIN_WRITTEN = {
   heading: 'Craft your Application',
-  lead: 'Each application requires the answer to one of the written question below.',
+  lead: 'Answer the written question for your first-choice division. Maximum O page, plus an Appendix of up to two pages for any charts and tables. Minimum 10pt fontx.',
   divisions: [
     { key: 'equity', name: 'Equity Research' },
     { key: 'investment', name: 'Investment Research' },
