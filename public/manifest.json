@@ -1,7 +1,7 @@
 {
   "name": "Minerva Investment Management Society",
   "short_name": "MIMS",
-  "description": "Student-run investment research society at Università Bocconi",
+  "description": "Student-run investment research and portfolio management society at Universita Bocconi. Five research divisions, two student-managed funds and a public research archive.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1F0F4D",
@@ -9,7 +9,7 @@
   "icons": [
     {
       "src": "/favicon.png",
-      "sizes": "180x180",
+      "sizes": "512x512",
       "type": "image/png"
     },
     {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBgAsset from '@/assets/MIMS_Alumni_Background-v2.webp.asset.json';
 const alumniBg = alumniBgAsset.url;
@@ -192,9 +192,7 @@ const Alumni = () => {
 
   return (
     <div className="theme-alumni-accent">
-      <Helmet>
-        <title>Alumni | MIMS</title>
-      </Helmet>
+      <Seo page="/people/alumni" />
       <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${alumniBg})` }} />
         <div className="absolute inset-0 hero-overlay" />

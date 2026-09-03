@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Seo } from '@/components/shared/Seo';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -74,9 +74,7 @@ const Readings = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Readings | MIMS</title>
-      </Helmet>
+      <Seo page="/readings" />
       {/* First Section: Title with Background */}
       <div data-page-hero className="relative">
         <div 

@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Helmet } from "react-helmet-async";
+import { Seo } from '@/components/shared/Seo';
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
@@ -112,13 +112,7 @@ const Partnerships = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Partnerships | MIMS</title>
-        <meta
-          name="description"
-          content="Structured formats for collaboration between Minerva Investment Management Society and financial institutions, asset managers, advisory firms, and corporates."
-        />
-      </Helmet>
+      <Seo page="/partnerships" />
 
       <div data-page-hero className="relative">
         <div

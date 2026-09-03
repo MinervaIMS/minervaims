@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Minerva Investment Management Society | MIMS</title>
-    <meta name="description" content="Minerva Investment Management Society is the leading student association at Bocconi University for investment research and portfolio management.">
+    <meta data-rh="true" name="description" content="Minerva Investment Management Society is the Bocconi University student society for investment research and portfolio management: five research divisions, two student-managed funds and published research.">
     <meta name="author" content="Minerva Investment Management Society" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://bocconi-connect-core.lovable.app" />
+    <meta data-rh="true" name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link data-rh="true" rel="canonical" href="https://minervaims.org/" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
@@ -77,33 +77,254 @@
 
     
     
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://bocconi-connect-core.lovable.app" />
-    <meta property="og:image" content="https://bocconi-connect-core.lovable.app/og-image.png" />
+    <meta data-rh="true" property="og:type" content="website" />
+    <meta data-rh="true" property="og:url" content="https://minervaims.org/" />
+    <meta data-rh="true" property="og:site_name" content="Minerva Investment Management Society" />
+    <meta data-rh="true" property="og:locale" content="en_GB" />
+    <meta data-rh="true" property="og:image" content="https://minervaims.org/og-image.png" />
+    <!--
+      THE DECLARED SIZE IS THE FILE'S ACTUAL SIZE. og-image.png is
+      1200x1200; these tags said 1200x630. Consumers that lay out a
+      preview from the declared dimensions rather than by measuring the
+      file - LinkedIn and X among them - were reserving a 2:1 box for a
+      square image, which is what produces a preview with the top and
+      bottom of the artwork cut off. Stating the truth is the fix. A
+      purpose-made 1200x630 image would frame better still on the
+      platforms that prefer that ratio; until there is one, this is
+      accurate.
+    -->
     <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:height" content="1200" />
+    <meta property="og:image:type" content="image/png" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@MIMS" />
-    <meta name="twitter:image" content="https://bocconi-connect-core.lovable.app/og-image.png" />
+    <meta data-rh="true" name="twitter:card" content="summary_large_image" />
+    <meta data-rh="true" name="twitter:site" content="@MIMS" />
+    <meta data-rh="true" name="twitter:image" content="https://minervaims.org/og-image.png" />
 
+    <!--
+      THE ASSOCIATION, STATED AS FACTS.
+      This is the site-wide identity: who Minerva is, where it sits, which
+      divisions and funds it runs. It is deliberately STATIC rather than
+      rendered by React, so that a crawler which does not execute
+      JavaScript still receives it, and it carries no data-rh attribute so
+      the per-page structured data added by the Seo component sits beside
+      it rather than replacing it. Page-level nodes refer back to the
+      "@id" below instead of asserting a second organisation of the same
+      name. Keep the domain here in step with SITE_URL in
+      src/lib/seo/site.ts.
+    -->
     <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
     {
-      "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": "https://minervaims.org/#organization",
+      "name": "Minerva Investment Management Society",
+      "alternateName": [
+        "MIMS",
+        "Minerva IMS"
+      ],
+      "url": "https://minervaims.org",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://minervaims.org/favicon.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://minervaims.org/og-image.png",
+      "description": "A student association of Universita Bocconi, founded in 2017, dedicated to investment research and portfolio management. It runs five research divisions and two student-managed funds, publishes research reports, and maintains an international alumni network.",
+      "foundingDate": "2017",
+      "email": "as.minerva@unibocconi.it",
+      "sameAs": [
+        "https://www.linkedin.com/company/minerva-investment-management/",
+        "https://www.instagram.com/minerva.ims/"
+      ],
+      "parentOrganization": {
+        "@type": "CollegeOrUniversity",
+        "name": "Universita Bocconi",
+        "alternateName": "Bocconi University",
+        "url": "https://www.unibocconi.it"
+      },
+      "location": {
+        "@type": "Place",
+        "name": "Universita Bocconi",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Via Roberto Sarfatti 25",
+          "addressLocality": "Milan",
+          "postalCode": "20136",
+          "addressCountry": "IT"
+        }
+      },
+      "knowsAbout": [
+        "Equity research",
+        "Investment research",
+        "Macroeconomic research",
+        "Portfolio management",
+        "Quantitative finance",
+        "Asset management"
+      ],
+      "subOrganization": [
+        {
+          "@type": "Organization",
+          "name": "Equity Research",
+          "url": "https://minervaims.org/divisions/equity",
+          "description": "Single-name coverage across sectors, with full financial modelling, discounted cash flow and relative valuation, target prices and published reports."
+        },
+        {
+          "@type": "Organization",
+          "name": "Investment Research",
+          "url": "https://minervaims.org/divisions/investment",
+          "description": "Cross-asset strategy: global outlooks and trade ideas across equities, rates, credit, FX and commodities for the society's portfolios."
+        },
+        {
+          "@type": "Organization",
+          "name": "Macro Research",
+          "url": "https://minervaims.org/divisions/macro",
+          "description": "Thematic reports on monetary policy, growth and fiscal sustainability, and structural shifts in the international economy, with market implications."
+        },
+        {
+          "@type": "Organization",
+          "name": "Portfolio Management",
+          "url": "https://minervaims.org/divisions/portfolio",
+          "description": "Designs, runs and reports on the society's student-managed portfolios across equities, rates and commodities, with disclosed holdings."
+        },
+        {
+          "@type": "Organization",
+          "name": "Quantitative Research",
+          "url": "https://minervaims.org/divisions/quant",
+          "description": "Models for risk, forecasting and derivatives pricing, built with probability, statistical inference, optimisation and machine learning."
+        }
+      ],
+      "owns": [
+        {
+          "@type": "InvestmentOrDeposit",
+          "name": "Multi Asset Global Opportunities Fund",
+          "url": "https://minervaims.org/funds/multi-asset",
+          "description": "Actively managed portfolio of listed equities, sovereign and credit instruments and commodities, targeting long-term growth with controlled volatility."
+        },
+        {
+          "@type": "InvestmentOrDeposit",
+          "name": "Long Short Equity Fund",
+          "url": "https://minervaims.org/funds/long-short",
+          "description": "Market-neutral, zero-net-investment portfolio across US and European equities, built on a proprietary multi-factor model."
+        },
+        {
+          "@type": "InvestmentOrDeposit",
+          "name": "Diversified Passive Selection Fund",
+          "url": "https://minervaims.org/funds/dps",
+          "description": "Closed ETF-only portfolio of UCITS instruments expressing sector and macro themes with minimal idiosyncratic risk."
+        },
+        {
+          "@type": "InvestmentOrDeposit",
+          "name": "Italian Equity PIR Fund",
+          "url": "https://minervaims.org/funds/pir",
+          "description": "Closed long-only portfolio of Italian equities within the PIR framework."
+        }
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://minervaims.org/#website",
+      "url": "https://minervaims.org",
       "name": "Minerva Investment Management Society",
       "alternateName": "MIMS",
-      "description": "An association promoted and run by students of Università Bocconi focused on investment research and portfolio management."
+      "inLanguage": "en-GB",
+      "publisher": {
+        "@id": "https://minervaims.org/#organization"
+      }
     }
+  ]
+}
     </script>
-    <meta property="og:title" content="Minerva Investment Management Society | MIMS">
-  <meta name="twitter:title" content="Minerva Investment Management Society | MIMS">
-  <meta property="og:description" content="Minerva Investment Management Society is the leading student association at Bocconi University for investment research and portfolio management.">
-  <meta name="twitter:description" content="Minerva Investment Management Society is the leading student association at Bocconi University for investment research and portfolio management.">
+    <meta data-rh="true" property="og:title" content="Minerva Investment Management Society | MIMS">
+  <meta data-rh="true" name="twitter:title" content="Minerva Investment Management Society | MIMS">
+  <meta data-rh="true" property="og:description" content="The Bocconi University student society for investment research and portfolio management. Five research divisions, two student-managed funds, published research and an international alumni network.">
+  <meta data-rh="true" name="twitter:description" content="The Bocconi University student society for investment research and portfolio management. Five research divisions, two student-managed funds, published research and an international alumni network.">
 </head>
 
   <body>
     <div id="root"><div id="initial-loader" aria-hidden="true"><img class="loader-color" src="/__l5e/assets-v1/970ec7e4-f40c-48d8-9065-98bb03112841/logo-color-loader.webp" alt="" width="65" height="48" fetchpriority="high" decoding="sync" /><img class="loader-white" src="/__l5e/assets-v1/1eaa5426-5147-4233-ae56-2cad28df4a47/logo-white-loader.webp" alt="" width="65" height="48" fetchpriority="high" decoding="sync" /></div></div>
+    <!--
+      ===================================================================
+      THE PAGE, FOR A READER THAT DOES NOT RUN JAVASCRIPT.
+      -------------------------------------------------------------------
+      This site is a single-page React application: without JavaScript the
+      document is an empty <div id="root">. Google renders JavaScript and
+      sees the real pages, but most of the crawlers that now matter for
+      being FOUND THROUGH AN ASSISTANT do not: GPTBot, ClaudeBot,
+      PerplexityBot, Applebot-Extended and the rest fetch the HTML and
+      read what is in it. Until now what was in it was nothing at all, so
+      a model asked "what is Minerva IMS and how do I join" had only the
+      one-line description in <head> to work from.
+
+      What follows is therefore a real summary and a real link graph: the
+      facts a reader would want, and an anchor to every public page so
+      that a crawler can walk the site rather than dead-ending here. It is
+      invisible to every visitor with JavaScript enabled, which is all of
+      them, so it costs the interface nothing.
+
+      It is deliberately short and factual. It is a signpost to the pages,
+      not a copy of them, and llms.txt carries the fuller account.
+      ===================================================================
+    -->
+    <noscript>
+      <h1>Minerva Investment Management Society</h1>
+      <p>
+        Minerva Investment Management Society (MIMS) is a student association of
+        Universita Bocconi in Milan, founded in 2017 and dedicated to investment
+        research and portfolio management. It is run entirely by students, publishes
+        research reports, manages student portfolios, and holds events with industry
+        professionals and its alumni.
+      </p>
+      <h2>Research divisions</h2>
+      <ul>
+        <li><a href="/divisions/equity">Equity Research</a>: single-name coverage across sectors, with full financial modelling, discounted cash flow and relative valuation, target prices and published reports.</li>
+        <li><a href="/divisions/investment">Investment Research</a>: cross-asset strategy, global outlooks and trade ideas across equities, rates, credit, FX and commodities.</li>
+        <li><a href="/divisions/macro">Macro Research</a>: thematic reports on monetary policy, growth and fiscal sustainability, and structural shifts in the international economy.</li>
+        <li><a href="/divisions/portfolio">Portfolio Management</a>: designs, runs and reports on the society's student-managed portfolios, with disclosed holdings.</li>
+        <li><a href="/divisions/quant">Quantitative Research</a>: models for risk, forecasting and derivatives pricing, built with probability, statistical inference, optimisation and machine learning.</li>
+      </ul>
+      <h2>Student-managed funds</h2>
+      <ul>
+        <li><a href="/funds/multi-asset">Multi Asset Global Opportunities Fund</a>, actively managed across equities, bonds and commodities.</li>
+        <li><a href="/funds/long-short">Long Short Equity Fund</a>, market-neutral, driven by a proprietary multi-factor model.</li>
+        <li><a href="/funds/dps">Diversified Passive Selection Fund</a> (closed), an ETF-only allocation.</li>
+        <li><a href="/funds/pir">Italian Equity PIR Fund</a> (closed), Italian equities within the PIR framework.</li>
+      </ul>
+      <h2>Joining the association</h2>
+      <p>
+        Minerva IMS recruits once each academic semester, and applications are open
+        to Bocconi students. Applicants name a first choice of division and, for the
+        research divisions, a second; they submit a CV and a written answer to the
+        question set by their first-choice division. Shortlisted candidates are
+        invited to interview by the division that selected them, and successful
+        candidates receive an offer to join with a role and a division.
+        <a href="/join">Recruiting and admissions</a> explains the process in full and
+        answers the questions applicants ask most often, and the
+        <a href="/apply">application form</a> is where an application is submitted.
+      </p>
+      <h2>All pages</h2>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About the society, its history and its governance</a></li>
+        <li><a href="/archive">Research archive: every report the society has published</a></li>
+        <li><a href="/events">Events, past and upcoming</a></li>
+        <li><a href="/people/members">Members</a></li>
+        <li><a href="/people/alumni">Alumni network</a></li>
+        <li><a href="/readings">Recommended readings</a></li>
+        <li><a href="/partnerships">Partnerships</a></li>
+        <li><a href="/statute">Society statute</a></li>
+        <li><a href="/contacts">Contacts</a></li>
+        <li><a href="/sitemap">Sitemap</a></li>
+        <li><a href="/terms-of-use">Terms of use</a>, <a href="/privacy-policy">privacy policy</a>, <a href="/cookie-policy">cookie policy</a>, <a href="/disclaimer">disclaimer</a></li>
+      </ul>
+      <p>
+        Contact: as.minerva@unibocconi.it. Research published by the association is
+        produced by students for educational purposes and is not investment advice.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

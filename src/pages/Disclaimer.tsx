@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 
 // =====================================================================
@@ -19,13 +19,7 @@ const sections: LegalSection[] = [
 
 const Disclaimer = () => (
   <>
-    <Helmet>
-      <title>Disclaimer | MIMS</title>
-      <meta
-        name="description"
-        content="Important information about the educational nature of all content published by Minerva Investment Management Society."
-      />
-    </Helmet>
+    <Seo page="/disclaimer" />
     <LegalLayout
       title="Disclaimer"
       description="Important information about the educational nature of everything published on this website."

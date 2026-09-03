@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 import { STATUTE_ARTICLES, type StatuteBlock } from '@/lib/statute-content';
 
@@ -79,10 +79,7 @@ const Statute = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{HERO.metaTitle}</title>
-        <meta name="description" content={HERO.metaDescription} />
-      </Helmet>
+      <Seo page="/statute" />
       <LegalLayout
         title={HERO.title}
         description={HERO.description}

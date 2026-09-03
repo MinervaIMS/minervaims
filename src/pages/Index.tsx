@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
+import { Seo } from '@/components/shared/Seo';
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import logoWhite from "@/assets/footer-logo.svg";
 import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
@@ -125,9 +125,7 @@ const Index = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Minerva Investment Management Society | MIMS</title>
-      </Helmet>
+      <Seo page="/" />
 
       {/* Hero Section */}
       <section data-page-hero className="relative min-h-screen flex flex-col">
@@ -150,6 +148,16 @@ const Index = () => {
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
           <div className="absolute inset-0 hero-overlay" />
           <div className="relative z-10">
+            {/* THE PAGE HAS A HEADING NOW.
+                The homepage's title is a logotype, which is right for the
+                design and wrong for everything that reads structure: the
+                document had no <h1> at all, so a screen reader announcing
+                the page and a search engine deciding what it is about both
+                had only the <title> to work from. A visually hidden h1
+                states it in words, changing nothing on screen. */}
+            <h1 className="sr-only">
+              Minerva Investment Management Society, the Bocconi University student society for investment research and portfolio management
+            </h1>
             <img
               src={logoWhite}
               alt="Minerva Investment Management Society"
