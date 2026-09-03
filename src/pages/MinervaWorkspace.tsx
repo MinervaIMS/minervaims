@@ -1135,6 +1135,10 @@ const MinervaWorkspace = () => {
       <>
         <Helmet>
           <title>{documentTitle}</title>
+          {/* The workspace is behind authentication: a crawler that
+              requests it receives a sign-in page, and indexing that under
+              every workspace address helps nobody. */}
+          <meta name="robots" content="noindex, nofollow" />
         </Helmet>
         <MobileWorkspaceShell
           nav={visibleNav}
@@ -1157,6 +1161,10 @@ const MinervaWorkspace = () => {
     <>
     <Helmet>
       <title>{documentTitle}</title>
+          {/* The workspace is behind authentication: a crawler that
+              requests it receives a sign-in page, and indexing that under
+              every workspace address helps nobody. */}
+          <meta name="robots" content="noindex, nofollow" />
     </Helmet>
     <div className={`ws-flat ${shellHeight} w-full flex bg-background overflow-hidden`}>
       <ContactPrompt onGoToProfile={() => goTo('my-role', null)} />
