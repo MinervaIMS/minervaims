@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Seo } from '@/components/shared/Seo';
+import { DIVISION_META } from '@/lib/seo/routes';
 import { FundPerformanceChart } from '@/components/shared/FundPerformanceChart';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
@@ -144,9 +145,21 @@ const DivisionDetail = () => {
 
   return (
     <div className="theme-division-accent">
-      <Helmet>
-        <title>{content.title} | MIMS</title>
-      </Helmet>
+      {/* A division is a subject of its own: somebody searching for
+          "student equity research Bocconi" should land here rather than on
+          the homepage. The title and the sentence come from the SEO
+          registry, which holds a description written for a search result;
+          the page's own longer prose stays where it is. */}
+      <Seo
+        page={`/divisions/${divisionKey}`}
+        title={DIVISION_META[divisionKey]?.title ?? content.title}
+        description={DIVISION_META[divisionKey]?.description ?? content.subtitle}
+        socialTitle={content.title}
+        breadcrumbs={[
+          { name: 'About', path: '/about' },
+          { name: content.title, path: `/divisions/${divisionKey}` },
+        ]}
+      />
       {/* First Section: Title and Subtitle with Background */}
       <div data-page-hero className="relative">
         <div 

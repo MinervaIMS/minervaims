@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Seo } from '@/components/shared/Seo';
 import fullLogoAsset from "@/assets/mims-full-logo-color.png.asset.json";
 
 const NotFound = () => {
@@ -28,9 +28,7 @@ const NotFound = () => {
     // closing.
     // =================================================================
     <div className="flex min-h-[calc(100svh-84px)] items-center justify-center py-24 sm:py-32 lg:py-40">
-      <Helmet>
-        <title>Page Not Found | MIMS</title>
-      </Helmet>
+      <Seo title="Page Not Found" description="This page does not exist. Return to the Minerva Investment Management Society homepage." noindex />
       <div className="text-center flex flex-col items-center px-6">
         <img
           src={fullLogoAsset.url}

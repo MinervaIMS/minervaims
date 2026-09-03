@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ const STUD_EMAIL = /@studbocconi\.it$/i;
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Helmet><title>Apply | MIMS</title></Helmet>
+      <Seo page="/apply" />
       <div className="min-h-screen w-full relative flex items-start justify-center px-4 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12">
         <ApplyBackground />
         {/* Flat white card per the Minerva Forms design: sharp corners, hairline
@@ -112,7 +112,7 @@ function SuccessScreen() {
   }, [refreshProfile]);
   return (
     <>
-      <Helmet><title>Application submitted | MIMS</title></Helmet>
+      <Seo title="Application Submitted" description="Your application to Minerva Investment Management Society has been received." noindex />
       {/* CENTRED IN THE SPACE THE PAGE ACTUALLY HAS, not pinned under the
           navigation. `items-start` put the card's top edge at exactly the
           padding line, a hand's width below the header, with the rest of the

@@ -1,5 +1,5 @@
 import { CSSProperties, ReactNode } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import Beams from './Beams';
 import ApplyBackground from './ApplyBackground';
@@ -39,9 +39,11 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <>
-      <Helmet>
-        <title>{title} | MIMS</title>
-      </Helmet>
+      {/* Sign-in, password reset and email confirmation are steps in a
+          journey, not answers to a search: indexed, they would put a
+          half-finished flow in results under a dozen near-identical
+          titles. */}
+      <Seo title={title} description={`${title} for the Minerva Investment Management Society workspace.`} noindex />
       <div className="w-full flex flex-col bg-background" style={{ minHeight: '100vh' }}>
         {/* Form panel */}
         <main className="relative flex-1 flex items-center justify-center px-6 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12 lg:pb-[7.5vh] overflow-hidden" style={{ backgroundColor: '#05030F' }}>

@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 
 // =====================================================================
@@ -31,13 +31,7 @@ const sections: LegalSection[] = [
 
 const PrivacyPolicy = () => (
   <>
-    <Helmet>
-      <title>Privacy Policy | MIMS</title>
-      <meta
-        name="description"
-        content="How Minerva Investment Management Society collects, uses and protects personal data, in line with the GDPR and Italian data protection law."
-      />
-    </Helmet>
+    <Seo page="/privacy-policy" />
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."

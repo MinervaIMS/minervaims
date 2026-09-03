@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet-async";
+import { Seo } from '@/components/shared/Seo';
 import { Link } from "react-router-dom";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -19,9 +19,7 @@ const Contacts = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Contacts | MIMS</title>
-      </Helmet>
+      <Seo page="/contacts" />
 
       <div data-page-hero className="relative">
         <div

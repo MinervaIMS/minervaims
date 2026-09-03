@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ const sb = supabase as unknown as { from: (t: string) => any };
 // =====================================================================
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <>
-    <Helmet><title>Register | MIMS</title></Helmet>
+    <Seo title="Event Registration" description="Register for an event held by Minerva Investment Management Society." noindex />
     {/* THE CARD STARTS BELOW THE NAVIGATION, which it did not.
         This shell centred the card in the viewport with 48px of padding, so
         on any card taller than the screen - which is every event with a

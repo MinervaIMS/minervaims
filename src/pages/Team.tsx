@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
+import { Seo } from '@/components/shared/Seo';
 import { useSearchParams } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, MembersDirectory, PageLoader } from '@/components/shared';
 import { OrgChart } from '@/components/shared/OrgChart';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,9 +76,7 @@ const Team = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Members | MIMS</title>
-      </Helmet>
+      <Seo page="/people/members" />
       <div data-page-hero>
         <PageIntroduction
           title="Members"

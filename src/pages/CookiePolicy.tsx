@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 import { openCookieSettings } from '@/components/cookies';
 
@@ -22,13 +22,7 @@ const sections: LegalSection[] = [
 
 const CookiePolicy = () => (
   <>
-    <Helmet>
-      <title>Cookie Policy | MIMS</title>
-      <meta
-        name="description"
-        content="How the Minerva Investment Management Society website uses cookies and similar technologies, and how to control them."
-      />
-    </Helmet>
+    <Seo page="/cookie-policy" />
     <LegalLayout
       title="Cookie Policy"
       description="How this website uses cookies and similar technologies, and how you control them."

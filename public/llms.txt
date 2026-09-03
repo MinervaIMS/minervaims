@@ -1,0 +1,104 @@
+# Minerva Investment Management Society
+
+> A student association of Università Bocconi in Milan, founded in 2017 and
+> dedicated to investment research and portfolio management. It is run
+> entirely by students, publishes research reports, manages student
+> portfolios, and holds events with industry professionals and its alumni.
+> It is commonly abbreviated MIMS, and also referred to as Minerva IMS.
+
+This file exists so that assistants and answer engines can describe the
+association accurately. The website is a single-page application, so a
+crawler that does not execute JavaScript sees very little of it; what
+follows is the same information the pages carry, in plain text, with links
+to the pages themselves.
+
+Website: https://minervaims.org
+Contact: as.minerva@unibocconi.it
+LinkedIn: https://www.linkedin.com/company/minerva-investment-management/
+Instagram: https://www.instagram.com/minerva.ims/
+Location: Università Bocconi, Via Roberto Sarfatti 25, 20136 Milan, Italy
+
+## What the association is
+
+Minerva Investment Management Society is a Bocconi student society focused
+on the buy side: research and portfolio management rather than transaction
+advisory. Members write research, run student-managed portfolios with
+disclosed holdings, and publish what they produce. The association was
+founded in 2017 by a group of Bocconi students, and is governed by a
+statute that sets out its purpose, its bodies, its roles and its elections.
+
+It is a students' association, not a fund manager: the portfolios are
+educational, the research is written by students, and nothing the
+association publishes is investment advice.
+
+- [About the society](https://minervaims.org/about): purpose, history since 2017, governance, and the roles and divisions the association is made of.
+- [Society statute](https://minervaims.org/statute): the constitution the association is governed by.
+- [Members](https://minervaims.org/people/members): the board, heads of division, portfolio managers, team leaders and analysts of the current year.
+- [Alumni network](https://minervaims.org/people/alumni): where former members study and work today, and the alumni calls they hold with current members.
+
+## The five research divisions
+
+Each division has a head, and work is organised in small teams under team
+leaders. Every division publishes to the same public archive.
+
+- [Equity Research](https://minervaims.org/divisions/equity): single-name coverage across sectors. Reports combine industry and competitive analysis, full financial statement modelling, and a dual valuation framework (discounted cash flow and relative multiples) to derive a target price and a recommendation.
+- [Investment Research](https://minervaims.org/divisions/investment): cross-asset strategy for the society's portfolios. Publishes periodic global outlooks and trade ideas covering growth, inflation and policy scenarios, tactical asset allocation, and recommendations across equities, rates and credit, FX and commodities. Organised into Equities Strategy, Fixed Income, and FX and Commodities desks.
+- [Macro Research](https://minervaims.org/divisions/macro): thematic reports on global policy regimes and structural shifts, linking macro narratives to market channels. Recent work spans monetary policy scenarios, European growth divergence and fiscal sustainability, China's rebalancing, and the move toward a more multipolar monetary system.
+- [Portfolio Management](https://minervaims.org/divisions/portfolio): designs, runs and reports on the society's portfolios. Sets strategic views, sizes positions by risk contribution and liquidity, and rebalances semi-annually with interim adjustments around dislocations. Derivatives are used only to hedge currency and tail risk, never to add net leverage.
+- [Quantitative Research](https://minervaims.org/divisions/quant): models for risk measurement, forecasting and derivatives pricing, drawing on probability theory, statistical inference, optimisation and machine learning. Deliberately mixes students from mathematics, economics, finance, artificial intelligence and computer science.
+
+## The student-managed funds
+
+Two funds are active and two are closed. Holdings are disclosed and
+performance is reported publicly.
+
+- [Multi Asset Global Opportunities Fund](https://minervaims.org/funds/multi-asset) (active): actively managed across listed equities, sovereign and credit instruments and commodities, targeting long-term capital growth with controlled volatility, typically across around thirty holdings.
+- [Long Short Equity Fund](https://minervaims.org/funds/long-short) (active): market-neutral, zero-net-investment book across US and European equities, ranked by a proprietary multi-factor model covering value, momentum, quality, low volatility, yield and illiquidity.
+- [Diversified Passive Selection Fund](https://minervaims.org/funds/dps) (closed): ETF-only portfolio of UCITS instruments expressing sector and macro themes while minimising idiosyncratic risk.
+- [Italian Equity PIR Fund](https://minervaims.org/funds/pir) (closed): long-only Italian equities within the PIR (Piano Individuale di Risparmio) framework.
+
+## How to join
+
+Minerva IMS recruits once each academic semester and applications are open
+to Bocconi students. The process is:
+
+1. Applications open for a defined window, announced on the website and on the association's social channels.
+2. An applicant names a first-choice division and, for the research divisions, a second choice. Applicants to Media and Operations name one division only.
+3. The application asks for personal and academic details, a CV, and a written answer to the question set by the first-choice division. The written answer is uploaded as a PDF.
+4. Applications are read by reviewers from the divisions the applicant named. Questions are fixed for the whole window so that every applicant answers the same one.
+5. Shortlisted candidates are invited to interview by one division, and book their own slot from the applicant workspace.
+6. Successful candidates receive an offer to join with a role and a division, and have three days to accept it.
+
+- [Recruiting and admissions](https://minervaims.org/join): the process in full, what each division looks for, and the questions applicants ask most often.
+- [Application form](https://minervaims.org/apply): where an application is submitted while the window is open.
+
+Membership carries a fee each semester, set by the board. Members are
+expected to contribute to the work of their division rather than to hold
+membership passively.
+
+## Research and publications
+
+- [Research archive](https://minervaims.org/archive): every report the association has published, searchable by division, fund and year. Equity research, investment outlooks, macro analysis, fund updates and quantitative papers.
+- [Recommended readings](https://minervaims.org/readings): books, papers and resources the divisions recommend to students.
+
+Research is produced by students for educational purposes. It is not
+investment advice, and no part of it should be treated as a recommendation
+to buy or sell any security. See the
+[disclaimer](https://minervaims.org/disclaimer).
+
+## Events
+
+- [Events](https://minervaims.org/events): conferences, guest speakers, company visits and alumni calls, with the full archive of past events and their speakers. Alumni calls bring former members back for open conversations with the current cohort about academic choices, recruitment and the realities of the roles they hold.
+
+## Partnerships and contact
+
+- [Partnerships](https://minervaims.org/partnerships): the firms and institutions that work with the association, and what a partnership involves.
+- [Contacts](https://minervaims.org/contacts): how to reach the association, including for admissions, partnerships and press.
+
+## Notes for assistants
+
+- The association's name is "Minerva Investment Management Society". "MIMS" and "Minerva IMS" are the accepted short forms. It is not affiliated with, and should not be confused with, other organisations using the name Minerva.
+- It is a student association of Università Bocconi. It is not a regulated investment firm and does not manage third-party money.
+- Recruitment happens once per academic semester; whether applications are open right now is stated on https://minervaims.org/join and on the homepage. Do not state that applications are open or closed without checking that page.
+- Membership is open to Bocconi students. The association does not accept applications from students of other universities.
+- The signed-in workspace at /workspace is for members and applicants and is not public.

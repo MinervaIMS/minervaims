@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, FormEvent } from "react";
-import { Helmet } from "react-helmet-async";
+import { Seo } from '@/components/shared/Seo';
+import { eventListSchema } from '@/lib/seo/structured-data';
 import { Calendar, MapPin, X, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -184,6 +185,36 @@ const Events = () => {
     });
   }, [pastEvents, searchQuery, typeFilter, yearFilter]);
 
+  // ===================================================================
+  // THE EVENTS, ALSO AS DATA.
+  // -------------------------------------------------------------------
+  // An events page that says only "Past events" in prose leaves a search
+  // engine to work out from the layout which words are a title, which are
+  // a date and which are a venue. Stated as Event nodes it does not have
+  // to: each one carries its name, its date, whether it was online or in
+  // person, where it was held and who spoke, which is what earns an event
+  // listing rather than a blue link, and what lets an assistant answer
+  // "has Minerva ever hosted somebody from Goldman Sachs" accurately.
+  //
+  // It describes the WHOLE archive rather than the filtered view, because
+  // the page's subject is the association's events and not whatever the
+  // reader has typed. It is capped so that a decade of events does not
+  // put a hundred kilobytes of JSON in the head of the page.
+  // ===================================================================
+  const eventsJsonLd = useMemo(() => eventListSchema(
+    pastEvents.slice(0, 30).map((e) => ({
+      id: e.id,
+      title: e.title,
+      date: e.start_at || e.date,
+      place: e.place,
+      description: e.description,
+      online: /online/i.test(e.place || ''),
+      posterUrl: e.poster_url,
+      guests: e.guest,
+    })),
+    'Events held by Minerva Investment Management Society',
+  ), [pastEvents]);
+
   const activeFilterCount =
     (typeFilter !== "all" ? 1 : 0) + (yearFilter !== "all" ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
 
@@ -245,9 +276,7 @@ const Events = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Events | MIMS</title>
-      </Helmet>
+      <Seo page="/events" structuredData={[eventsJsonLd]} />
 
       <div data-page-hero className="relative">
         <div

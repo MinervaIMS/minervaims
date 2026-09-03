@@ -7,6 +7,7 @@
 // and rendering only.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Seo } from "@/components/shared/Seo";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowUpRight, Home } from "lucide-react";
 import type { GreekName, GridResult, LabState } from "@/lib/payofflab/types";
@@ -41,7 +42,10 @@ export default function PayoffLab() {
   );
 
   useEffect(() => {
-    document.title = "PayoffLab · Minerva Investment Management Society";
+    // The document title is set by <Seo> below, with the rest of this
+    // page's metadata. It used to be assigned here directly, which raced
+    // react-helmet-async and left this title in place after navigating
+    // away from the page.
     const onResize = () => setIsDesktop(window.innerWidth >= DESKTOP_MIN_PX);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -66,6 +70,7 @@ export default function PayoffLab() {
   if (!isDesktop) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-8">
+        <Seo page="/lab" />
         <div className="max-w-md text-center">
           <div className="mb-3 text-xs uppercase tracking-[0.13em] text-muted-foreground">Minerva PayoffLab</div>
           <h1 className="mb-3 font-serif text-2xl tracking-tight text-foreground">Built for a wide screen</h1>
@@ -85,6 +90,7 @@ export default function PayoffLab() {
 
   return (
     <LabProvider initial={initial ?? undefined}>
+      <Seo page="/lab" breadcrumbs={[{ name: 'Payoff Lab', path: '/lab' }]} />
       <LabShell />
     </LabProvider>
   );

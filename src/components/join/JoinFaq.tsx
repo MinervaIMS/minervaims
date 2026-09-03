@@ -10,6 +10,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useJoinFaqs } from '@/hooks/useJoinFaqs';
+import { Helmet } from 'react-helmet-async';
+import { faqSchema, graph } from '@/lib/seo/structured-data';
 import { JOIN_FAQ_HEADING } from '@/lib/join-content';
 import { faqCategories, filterFaqGroups, countFaqEntries } from '@/lib/faq-filter';
 
@@ -52,6 +54,31 @@ export function JoinFaq() {
   // Search and category are one question, answered in one place, so the
   // public page and the candidate workspace can never disagree about which
   // entries match. See lib/faq-filter.ts.
+  // ===================================================================
+  // THE QUESTIONS, ALSO AS DATA.
+  // -------------------------------------------------------------------
+  // These are the real questions applicants ask, with the association's
+  // real answers, and they are the single most useful thing on the site
+  // for somebody who asks a search engine or an assistant how to join.
+  // As prose they have to be found inside a page and interpreted; as a
+  // FAQPage node each answer is attached to the exact question it
+  // answers, which is what earns the expandable answers in a Google
+  // result and what lets a model quote the association rather than
+  // paraphrase it.
+  //
+  // It describes EVERY published question, not the filtered view: the
+  // structured data is about the page's subject, not about whatever the
+  // reader has currently typed into the search box.
+  // ===================================================================
+  const faqJsonLd = useMemo(() => {
+    const entries = groups.flatMap((g) => g.entries.map((e) => ({
+      question: e.question,
+      answer: e.answer,
+    })));
+    const node = faqSchema(entries);
+    return node ? graph([node]) : null;
+  }, [groups]);
+
   const categories = useMemo(() => faqCategories(groups), [groups]);
   const visibleGroups = useMemo(
     () => filterFaqGroups(groups, query, category),
@@ -80,6 +107,14 @@ export function JoinFaq() {
 
   return (
     <div className="bg-secondary">
+      {/* The questions as structured data. It sits with the component that
+          holds them rather than on the page, so it cannot describe a set of
+          questions the page is not showing. */}
+      {faqJsonLd && (
+        <Helmet>
+          <script type="application/ld+json">{faqJsonLd}</script>
+        </Helmet>
+      )}
       <div className="container py-section-sm md:py-section">
         <h2
           id="join-faq-heading"

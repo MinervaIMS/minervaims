@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Seo } from '@/components/shared/Seo';
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { OrgChart } from "@/components/shared/OrgChart";
 import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
@@ -56,9 +56,7 @@ const About = () => {
 
   return (
     <>
-      <Helmet>
-        <title>About | MIMS</title>
-      </Helmet>
+      <Seo page="/about" />
       {/* SECTION 0 - Hero with title and photo background */}
       <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${aboutBg})` }} />

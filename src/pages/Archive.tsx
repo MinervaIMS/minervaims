@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { Seo } from '@/components/shared/Seo';
+import { reportListSchema } from '@/lib/seo/structured-data';
 import { ClearFilters } from "@/components/shared/ClearFilters";
 import { useSearchParams } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from "@/lib/types";
@@ -175,6 +176,32 @@ const Archive = () => {
     });
   }, [files, divisionFilter, fundFilter, yearFilter, searchQuery]);
 
+  // ===================================================================
+  // THE RESEARCH, ALSO AS DATA.
+  // -------------------------------------------------------------------
+  // The archive is the association's most substantial public asset and
+  // the page most likely to answer a real question. As a list of Report
+  // nodes each document carries its title, its publication date, its
+  // abstract and the fact that it is free to read, attributed to the
+  // association as both author and publisher, which is what lets a search
+  // engine surface an individual report and an assistant cite one rather
+  // than describe the archive in general.
+  //
+  // Capped, and taken from the FULL set rather than the current filter,
+  // for the same reasons as the events page.
+  // ===================================================================
+  const reportsJsonLd = useMemo(() => reportListSchema(
+    files.slice(0, 40).map((f) => ({
+      id: f.id,
+      title: f.title,
+      date: f.date,
+      description: f.description,
+      url: f.file_url,
+      division: f.division,
+    })),
+    'Research published by Minerva Investment Management Society',
+  ), [files]);
+
   // Handle direct file linking - find the page containing the file and scroll to it
   useEffect(() => {
     if (fileIdFromUrl && files.length > 0 && !hasScrolledToFile.current) {
@@ -235,9 +262,7 @@ const Archive = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Archive | MIMS</title>
-      </Helmet>
+      <Seo page="/archive" structuredData={[reportsJsonLd]} />
       {/* Hero section with background image */}
       <div data-page-hero className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${archiveBg})` }} />

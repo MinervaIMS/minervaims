@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
@@ -79,9 +79,7 @@ const Sitemap = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Sitemap | MIMS</title>
-      </Helmet>
+      <Seo page="/sitemap" />
       <div className="relative">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sitemapBg})` }} />
         <div className="absolute inset-0 hero-overlay" />

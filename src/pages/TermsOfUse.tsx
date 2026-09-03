@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/shared/Seo';
 import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/shared';
 
 // =====================================================================
@@ -28,13 +28,7 @@ const sections: LegalSection[] = [
 
 const TermsOfUse = () => (
   <>
-    <Helmet>
-      <title>Terms of Use | MIMS</title>
-      <meta
-        name="description"
-        content="The terms governing the use of the Minerva Investment Management Society website and reserved Workspace."
-      />
-    </Helmet>
+    <Seo page="/terms-of-use" />
     <LegalLayout
       title="Terms of Use"
       description="The rules that govern your use of this website and of the reserved Workspace."

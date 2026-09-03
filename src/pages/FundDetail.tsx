@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Seo } from '@/components/shared/Seo';
+import { FUND_META } from '@/lib/seo/routes';
+import { fundSchema } from '@/lib/seo/structured-data';
 import { FundPerformanceChart } from '@/components/shared/FundPerformanceChart';
 import { useParams, Navigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
@@ -154,9 +156,21 @@ const FundDetail = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{content.title} | MIMS</title>
-      </Helmet>
+      {/* Each fund is its own subject, and each is described as an
+          investment product as well as in prose, so a reader asking an
+          assistant what Minerva actually runs gets the strategy rather
+          than a page title. */}
+      <Seo
+        page={`/funds/${fundKey}`}
+        title={FUND_META[fundKey]?.title ?? content.title}
+        description={FUND_META[fundKey]?.description ?? content.subtitle}
+        socialTitle={content.title}
+        breadcrumbs={[
+          { name: 'About', path: '/about' },
+          { name: content.title, path: `/funds/${fundKey}` },
+        ]}
+        structuredData={[fundSchema(fundKey)]}
+      />
       {/* First Section: Title and Subtitle with Background */}
       <div data-page-hero className="relative">
         <div 

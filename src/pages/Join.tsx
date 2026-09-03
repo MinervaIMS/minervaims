@@ -1,5 +1,5 @@
-import { Helmet } from 'react-helmet-async';
 import AlumniTicker from '@/components/shared/AlumniTicker';
+import { Seo } from '@/components/shared/Seo';
 import ApplicationCta from '@/components/join/ApplicationCta';
 import DivisionVideoRail from '@/components/join/DivisionVideoRail';
 import JoinFaq from '@/components/join/JoinFaq';
@@ -22,9 +22,6 @@ import {
 // components themselves are a few kilobytes of markup, so importing them
 // eagerly keeps the section heights reserved from first paint and avoids the
 // large layout shift a Suspense swap would otherwise introduce.
-const META_DESCRIPTION =
-  'Admissions to Minerva Investment Management Society, the Bocconi student society founded in 2017 and dedicated to asset management. Five core research divisions, two student-managed funds, one intake each academic semester.';
-
 const Join = () => {
   const { settings, isLoading } = useApplicationSettings();
 
@@ -38,22 +35,7 @@ const Join = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Join Us | MIMS</title>
-        <meta name="description" content={META_DESCRIPTION} />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Organization',
-            name: 'Minerva Investment Management Society',
-            alternateName: 'MIMS',
-            foundingDate: '2017',
-            description: META_DESCRIPTION,
-            url: 'https://minervaims.org/join',
-            parentOrganization: { '@type': 'CollegeOrUniversity', name: 'Bocconi University' },
-          })}
-        </script>
-      </Helmet>
+      <Seo page="/join" />
 
       {/* The dark introduction: title, payoff and the live key figures. */}
       <JoinHeroStage figures={<JoinFigures tone="dark" />} />
