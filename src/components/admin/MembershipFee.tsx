@@ -41,6 +41,10 @@ export default function MembershipFee() {
   const [firstDeadline, setFirstDeadline] = useState('');
   const [secondDeadline, setSecondDeadline] = useState('');
   const [busy, setBusy] = useState(false);
+  // Payments banked for this collection by somebody who has since left the
+  // list (moved to alumni, or appointed advisor). Reported rather than
+  // folded silently into the total.
+  const [bankedOff, setBankedOff] = useState(0);
 
   // Past collections: who contributed each closed semester. Read from the
   // frozen semester registers (snapshotted when a collection closes).
@@ -62,7 +66,7 @@ export default function MembershipFee() {
 
   const load = async () => {
     setLoading(true);
-    try { const r = await getCurrentFees(session); setPeriod(r.period); setMembers(r.members); setFees(r.fees); }
+    try { const r = await getCurrentFees(session); setPeriod(r.period); setMembers(r.members); setFees(r.fees); setBankedOff(r.banked_off_register ?? 0); }
     catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
   };
@@ -144,7 +148,7 @@ export default function MembershipFee() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Membership Fees" description="Track who has paid the semester fee (minimum €10). Closing a collection locks it and automatically records the total in Treasury." />
+      <WorkspacePageHeader title="Membership Fees" description="Track who has paid the semester fee (minimum €10). The list holds this semester's active members; advisors are outside the fee and never appear. Closing a collection locks it and automatically records the total in Treasury." />
 
       <div className="mb-5">
         <Recommendation title="Collect fees as soon as offers are accepted">
@@ -178,6 +182,16 @@ export default function MembershipFee() {
                 <div className="text-sm text-muted-foreground mt-1">
                   First deadline {new Date(period.first_deadline).toLocaleDateString()}
                   {period.second_deadline ? ` · second deadline ${new Date(period.second_deadline).toLocaleDateString()}` : ''}
+                </div>
+              )}
+              {/* The one case where the ticks below and the total banked can
+                  legitimately differ, said out loud rather than left as an
+                  unexplained gap in the Treasury entry. */}
+              {bankedOff > 0 && (
+                <div className="text-sm text-amber-700 mt-1">
+                  {bankedOff} further payment{bankedOff !== 1 ? 's were' : ' was'} banked for this collection by
+                  {bankedOff !== 1 ? ' people' : ' somebody'} who has since left the list, and {bankedOff !== 1 ? 'are' : 'is'} still
+                  counted in the Treasury total.
                 </div>
               )}
             </div>
@@ -236,7 +250,8 @@ export default function MembershipFee() {
           <h3 className="font-serif text-lg text-accent mb-1">Past collections</h3>
           <p className="font-body text-sm text-muted-foreground mb-3">
             Who contributed to each closed semester's fee collection. Each record was frozen when that
-            collection closed and can no longer change.
+            collection closed and can no longer change. Advisors are not members of the association for
+            fee purposes and are in none of these registers.
           </p>
           <div className="space-y-2">
             {past.map((g) => {

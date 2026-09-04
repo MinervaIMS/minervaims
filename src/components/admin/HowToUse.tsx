@@ -18,25 +18,30 @@ interface ManualSection { section: string; entries: (GuideEntry & { canManage: b
 // How the workspace is organised, independent of role.
 const AT_A_GLANCE = [
   'The navigation is organised in sections, each holding subsections. You only ever see the pages your role can access, so nothing in your menu is off limits.',
-  'The fastest way anywhere is the search bar in the header, or Ctrl K (Cmd K on a Mac). It searches subsections and help topics together, limited to what your role can open.',
+  'The fastest way anywhere is the search bar in the header, or Ctrl K (Cmd K on a Mac). It finds subsections and help topics, and it also searches INSIDE the workspace: members, alumni, events, reports and the resource libraries. Type a person\'s name and you get the person, not just the page they are on. Every result is limited to what your role can open, and no search is even sent for a part of the workspace you cannot reach.',
   'One role drives everything. It is assigned by the President or Admin in Settings, Users, which edits the same record as People, Members: a change made in either place appears in both immediately. Nobody can change their own role.',
-  'Help lives where you work: the floating question mark on every page opens the sliding help panel for that page, and the small circled question marks next to specific controls open the panel directly at the matching topic.',
+  'Help lives where you work: the floating question mark on every page opens the sliding help panel for that page, and the small circled question marks next to specific controls open the panel directly at the matching topic. Everything you read there is generated from the same source as this manual, for your role only.',
   'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, consultation available everywhere. Subsections that need a full screen are marked with a monitor icon and open on desktop only; read-only pages carry a ribbon.',
   'Links of the form /admin?section=...&sub=... open the workspace directly on a subsection, provided your role can see it. Some website buttons use them to bring you to the right place in one click.',
   'Every meaningful action is recorded in Settings, Activity log, together with the role you held at that moment.',
 ];
 
 // What changed recently, so returning members catch up at a glance.
+// Newest first. Kept to what a person would actually notice: a change
+// nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
-  'A search bar sits in the workspace header, on desktop and on a phone. Ctrl K, Cmd K or the / key opens it from anywhere. It searches every subsection AND every help topic your role can reach, so a page you have never opened is one or two letters away. Nothing you cannot access is ever in the results.',
-  'Website, History is new: it holds the "Our History" timeline shown on the About page, one key event per year from 2017 onwards. A year with no event stays on the rail as a quiet marker, and future years are never offered.',
+  'Recruiting, Candidates screening has a new first column: "Evaluated for", the division actually assessing a candidate, kept apart from the two divisions they asked for. It starts as their first choice and can be changed to any research division or to Media or Operations, including one the candidate never named. Changing it returns them to "To be invited", releases the interview slot they were holding, and tells them in their own workspace which division is now considering them. A candidacy runs in at most two divisions: after one move, the only way left is back. The circled question mark beside the column explains the whole process.',
+  'Advisors are outside the membership fee entirely. They appear in no collection, count towards no total, receive no fee deadline on their Calendar or Dashboard, and enter no semester member register. Appointing a member as advisor part way through a semester removes the fee they had not yet paid; a payment already banked is never deleted, and the fee page says so where it happens.',
+  'Advisors can now read the whole workspace and change none of it, apart from their own profile. Settings stays closed to them: an outside adviser has no business in the association\'s access control or its audit trail.',
+  'Team leaders are published as Team Leaders. The public Members page had been printing them as Senior Analysts, which is a different rank of the association, and several older head-of-division roles were appearing as plain analysts. Both are fixed for every division.',
+  'Investment Research members can carry a desk, Equities, Fixed Income or FX & Commodities, shown after their position on the public site exactly as Portfolio Management already showed its funds. Assign it in People, Members.',
+  'Moving a member to alumni asks only for their surname and graduation year. The current company is optional and can be filled in later; wherever an alumnus\'s employer is shown, including on alumni calls, it is now read live from the alumni register rather than copied once and left to go stale.',
+  'Events, Event archive offers only the event types it actually contains, so every option in the filter leads somewhere, and registered alumni calls now appear in it.',
+  'A candidate accepts their offer by writing their name in full and submitting it, rather than pressing a confirmation button.',
   'Every filtered list can be cleared in one press. The button appears only when something is filtered and says how many filters are on.',
-  'People, Members carries a Public column stating who the website shows, filterable like any other column. People, Alumni reads as cards on a phone, and turning a page returns you to the top of the list.',
-  'Fund performances feed a real chart on the public fund pages and on the Portfolio Management page: a period selector from six months to inception opening on three years, a date range built from the months actually published, the return over the period on screen coloured by sign, and the curve extending on its own as each month is published. On Portfolio Management either mandate can be switched off, and with one line left the chart shades green above zero and red below.',
-  'Fund performances protect the published track record: only the last 15 calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included.',
+  'Fund performances feed the charts on the public fund pages and on the Portfolio Management page, and protect the published track record: only the last 15 calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included.',
   'Recruiting, Form & Questions is one unified page: the division questions, with the fixed form inspected through "Preview the form". Heads of Division edit their own division only, and questions lock automatically while applications are open.',
   'Roles stay in step everywhere: People, Members and Settings, Users edit the same record, and workspace permissions follow instantly.',
-  'Tables across People, Website and Settings share one design, numbered pagination and standard filters.',
   'This manual and the sliding help panel are generated from the same guide, so both already reflect all of the above, for your role only.',
 ];
 
@@ -116,10 +121,18 @@ export default function HowToUse() {
             <div className="font-serif text-lg text-foreground mb-1">Always current</div>
             <p className="text-sm text-muted-foreground">Built from your real permissions. Use the <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-separator text-[10px] align-middle">?</span> icons for help in place.</p>
           </div>
-          <div className="border border-separator rounded-lg px-5 py-6 text-center">
-            <Sparkles className="h-10 w-10 text-accent mx-auto mb-3" strokeWidth={1.5} />
-            <div className="font-serif text-lg text-foreground mb-1">Learn with AI</div>
-            <p className="text-sm text-muted-foreground">Download your manual and ask an AI assistant to walk you through it.</p>
+          {/* THE ONE CARD OF THE THREE THAT ASKS FOR SOMETHING.
+              The other two state facts about the workspace; this one
+              suggests an action, and sitting in the same outlined box it
+              read as a third fact and was passed over. Filling it in the
+              accent, with its icon and text in white, is what separates a
+              suggestion from a statement here: it is the treatment the
+              rest of the workspace already uses for the thing on a page
+              worth doing. */}
+          <div className="rounded-lg border border-accent bg-accent px-5 py-6 text-center text-accent-foreground">
+            <Sparkles className="h-10 w-10 text-accent-foreground mx-auto mb-3" strokeWidth={1.5} />
+            <div className="font-serif text-lg text-accent-foreground mb-1">Learn with AI</div>
+            <p className="text-sm text-accent-foreground/85">Download your manual and ask an AI assistant to walk you through it.</p>
           </div>
           <div className="border border-separator rounded-lg px-5 py-6 text-center">
             <ShieldCheck className="h-10 w-10 text-accent mx-auto mb-3" strokeWidth={1.5} />

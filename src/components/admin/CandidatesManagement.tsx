@@ -24,9 +24,11 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
   listApplications, signDocumentUrl, bulkDocumentUrls,
-  updateApplicationStatus, addApplicationNote, transferApplicationDivision,
+  updateApplicationStatus, addApplicationNote, setEvaluationDivision,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
   isLockedStatus, allowedNextStatuses,
+  APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
+  evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
   type ApplicationRow, type ApplicationStatus,
 } from '@/lib/applications-api';
 import { openReportInTab } from '@/lib/open-report';
@@ -34,8 +36,6 @@ import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDe
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
 import { documentTitle } from '@/components/admin/recruiting/document-title';
 import { listSlots } from '@/lib/interviews-api';
-
-const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
 /** Sentinel used by the second-choice filter for applicants who named none. */
 const NO_SECOND_CHOICE = '__none__';
@@ -92,6 +92,21 @@ export default function CandidatesManagement() {
   // =================================================================
   const [firstChoiceFilter, setFirstChoiceFilter] = useState<string[]>([]);
   const [secondChoiceFilter, setSecondChoiceFilter] = useState<string[]>([]);
+  // =================================================================
+  // A THIRD COLUMN, AND THE ONLY ONE THAT IS A DECISION.
+  // -----------------------------------------------------------------
+  // The two choice columns record what the applicant asked for. Neither
+  // answers the question a reviewer works from: which division is
+  // assessing this person. Until now the answer was implied - the first
+  // choice, until an interview invitation quietly overwrote it - and
+  // could not be seen, filtered or set.
+  //
+  // It is a decision, so it sits to the LEFT of the preferences it is
+  // taken from: the column a reviewer acts on comes before the two it
+  // consults, and it defaults to the first choice so that the ordinary
+  // case reads exactly as it did before.
+  // =================================================================
+  const [evaluationFilter, setEvaluationFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -106,11 +121,12 @@ export default function CandidatesManagement() {
   const [pendingStatus, setPendingStatus] = useState<{ id: string; status: ApplicationStatus } | null>(null);
   const [inviteDivision, setInviteDivision] = useState<OrgDivision | null>(null);
 
-  // Post-interview division transfer: the one sanctioned way to redo the
-  // interview stage, in a different division.
-  const [transferTarget, setTransferTarget] = useState<OrgDivision | ''>('');
-  const [transferConfirm, setTransferConfirm] = useState(false);
-  const [transferring, setTransferring] = useState(false);
+  // Changing the division a candidate is evaluated for: the one sanctioned
+  // way a candidacy revisits an earlier stage. `pendingEval` holds the row
+  // and the target while the confirmation is open, so the change can be
+  // started from the table as well as from the open candidate.
+  const [pendingEval, setPendingEval] = useState<{ app: ApplicationRow; target: OrgDivision } | null>(null);
+  const [movingEval, setMovingEval] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -130,8 +146,9 @@ export default function CandidatesManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
+    setEvaluationFilter([]);
     setFirstChoiceFilter([]);
     setSecondChoiceFilter([]);
     setStatusFilter([]);
@@ -143,6 +160,7 @@ export default function CandidatesManagement() {
     const q = search.trim().toLowerCase();
     return apps
       .filter((a) => semesterOf(a.created_at).key === semKey)
+      .filter((a) => evaluationFilter.length === 0 || evaluationFilter.includes(evaluationDivision(a)))
       .filter((a) => firstChoiceFilter.length === 0 || firstChoiceFilter.includes(a.first_choice))
       // NO_SECOND_CHOICE is a real value to filter on, not an absence: the
       // Media and Operations applicants name one division and stop, and
@@ -151,10 +169,20 @@ export default function CandidatesManagement() {
       .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, semKey]);
+  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, semKey]);
 
-  const divOptions = CORE.map((d) => ({ value: d, label: divisionLabels[d] }));
+  // THE FILTERS OFFER WHAT THE FORM OFFERS. The choice filters were built
+  // from the five research divisions alone, so the Media and Operations
+  // applicants - who have been able to apply for some time - could not be
+  // filtered for at all: their rows were in the table and no option in the
+  // menu selected them. Both choice filters now come from the form's own
+  // list, under the name the applicant saw.
+  const divOptions = APPLY_DIVISIONS.map((d) => ({ value: d, label: applyDivisionLabel(d) }));
   const secondChoiceOptions = [...divOptions, { value: NO_SECOND_CHOICE, label: 'No second choice' }];
+  // The evaluation column is wider still: Operations stands on its own
+  // here, because a candidate can be assessed for it even though the form
+  // recruits Media and Operations as one intake.
+  const evaluationOptions = EVALUATION_DIVISIONS.map((d) => ({ value: d, label: divisionLabels[d] }));
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
 
@@ -194,7 +222,11 @@ export default function CandidatesManagement() {
   // Status changes that send an email need explicit confirmation first.
   const requestStatusChange = (id: string, status: ApplicationStatus) => {
     if (EMAIL_ON_STATUS[status]) {
-      if (status === 'interview_invitation_sent' && detail) setInviteDivision(detail.application.first_choice);
+      // The invitation goes out for the division that is evaluating the
+      // candidate. It used to default to the first choice and offer a
+      // second control to change it, which meant two places could set the
+      // same fact and disagree; the column above is now the one place.
+      if (status === 'interview_invitation_sent' && detail) setInviteDivision(evaluationDivision(detail.application));
       setPendingStatus({ id, status });
     } else changeStatus(id, status);
   };
@@ -206,7 +238,7 @@ export default function CandidatesManagement() {
   const confirmPendingStatus = async () => {
     if (!pendingStatus) return;
     if (pendingStatus.status === 'interview_invitation_sent') {
-      const division = (inviteDivision ?? detail?.application.first_choice) as OrgDivision | undefined;
+      const division = (inviteDivision ?? (detail ? evaluationDivision(detail.application) : undefined)) as OrgDivision | undefined;
       if (!division) { toast({ title: 'Choose an interview division first', variant: 'destructive' }); return; }
       setConfirming(true);
       try {
@@ -231,19 +263,33 @@ export default function CandidatesManagement() {
     setPendingStatus(null);
   };
 
-  const doTransfer = async () => {
-    if (!detail || !transferTarget) return;
-    setTransferring(true);
+  // Moving a candidacy to a different division. The confirmation is not
+  // decoration: it returns the candidate to an earlier stage, releases the
+  // interview slot they were holding and, once done, fixes the pair of
+  // divisions this candidacy can ever involve.
+  const doSetEvaluation = async () => {
+    if (!pendingEval) return;
+    const { app, target } = pendingEval;
+    setMovingEval(true);
     try {
-      await transferApplicationDivision(session, detail.application.id, transferTarget);
-      logActivity(session, primaryRole, { action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application', entityId: detail.application.id, entityName: `${detail.application.first_name} ${detail.application.surname}`, details: { division_transfer_to: transferTarget } });
-      toast({ title: 'Division transfer started', description: `${detail.application.first_name} has been re-invited to interview with ${divisionLabels[transferTarget]}.` });
-      setTransferConfirm(false); setTransferTarget('');
-      const fresh = await refreshCandidate(detail.application.id);
+      await setEvaluationDivision(session, app.id, target);
+      logActivity(session, primaryRole, {
+        action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening',
+        entityType: 'application', entityId: app.id, entityName: `${app.first_name} ${app.surname}`,
+        details: { evaluation_division_from: evaluationDivision(app), evaluation_division_to: target },
+      });
+      toast({
+        title: `Now evaluated for ${divisionLabels[target]}`,
+        description: `${app.first_name} returns to “${STATUS_LABELS.to_be_contacted}” and can be invited to interview by ${divisionLabels[target]}.`,
+      });
+      setPendingEval(null);
+      // The server decides the resulting status and the remembered pair, so
+      // the row is re-read rather than guessed at locally.
+      const fresh = await refreshCandidate(app.id);
       setApps((prev) => prev.map((a) => (a.id === fresh.application.id ? { ...a, ...fresh.application } : a)));
     } catch (e) {
-      toast({ title: 'Could not transfer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { setTransferring(false); }
+      toast({ title: 'Could not change the division', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setMovingEval(false); }
   };
 
   // The note is written, then the ONE candidate is re-read and its row's note
@@ -357,6 +403,12 @@ export default function CandidatesManagement() {
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
+                <th className="px-3 py-2 font-normal">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ColumnFilter label="Evaluated for" options={evaluationOptions} selected={evaluationFilter} onChange={setEvaluationFilter} />
+                    <HelpDot page="applications-screening" topic="evaluation-division" />
+                  </span>
+                </th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="First choice" options={divOptions} selected={firstChoiceFilter} onChange={setFirstChoiceFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Second choice" options={secondChoiceOptions} selected={secondChoiceFilter} onChange={setSecondChoiceFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
@@ -376,9 +428,43 @@ export default function CandidatesManagement() {
                     {!a.cv_viewed_at && <span className="ml-2 align-middle inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">new</span>}
                     <div className="text-xs text-muted-foreground">{a.email}</div>
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">{divisionLabels[a.first_choice]}</td>
+                  {/* Evaluated for. A control where the role can move a
+                      candidacy, plain text where it cannot, so a reviewer
+                      without that power reads the same fact without being
+                      offered a menu that would refuse them. */}
                   <td className="px-3 py-2 whitespace-nowrap">
-                    {a.second_choice ? divisionLabels[a.second_choice] : <span className="text-muted-foreground">-</span>}
+                    {canChangeStatus && !isLockedStatus(a.status) ? (
+                      <Select
+                        value={evaluationDivision(a)}
+                        onValueChange={(v) => { if (v !== evaluationDivision(a)) setPendingEval({ app: a, target: v as OrgDivision }); }}
+                      >
+                        {/* The trigger prints the division and nothing else.
+                            The "(first choice)" hint belongs in the open
+                            list, where it helps choose; in the closed
+                            trigger it only pushed the division name out of
+                            its own cell and left it clipped mid-word. */}
+                        <SelectTrigger className="h-8 w-[13.5rem] font-body text-sm">
+                          <SelectValue>{divisionLabels[evaluationDivision(a)]}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allowedEvaluationDivisions(a).map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {divisionLabels[d]}
+                              {d === a.first_choice ? ' (first choice)' : d === a.second_choice ? ' (second choice)' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-foreground">{divisionLabels[evaluationDivision(a)]}</span>
+                    )}
+                    {isReEvaluated(a) && (
+                      <div className="mt-0.5 text-[11px] text-amber-700">Re-evaluated, not a stated preference</div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">{applyDivisionLabel(a.first_choice)}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {a.second_choice ? applyDivisionLabel(a.second_choice) : <span className="text-muted-foreground">-</span>}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year]}</td>
                   <td className="px-3 py-2 whitespace-nowrap max-w-[14rem] truncate" title={a.degree_course}>{a.degree_course}</td>
@@ -471,29 +557,46 @@ export default function CandidatesManagement() {
                 )}
               </div>
 
-              {/* Division transfer: the one sanctioned exception to forward-only
-                  progress, available once the interview has been completed. */}
-              {canChangeStatus && ['interview_completed', 'accepted'].includes(detail.application.status) && (
+              {/* Evaluated for: the same control as the table's column, in
+                  the place a reviewer is most likely to reach for it, having
+                  just read the CV. */}
+              {canChangeStatus && !isLockedStatus(detail.application.status) && (
                 <div className="border border-separator p-3 space-y-2">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Consider for another division</div>
-                  <p className="text-xs text-muted-foreground">
-                    If the interview showed this candidate fits a different division better, transfer them:
-                    they are re-invited to interview with the new division (email plus booking access), and the
-                    move is recorded. Their progress so far is never lowered in any other way.
-                  </p>
-                  <div className="flex gap-2">
-                    <Select value={transferTarget || undefined} onValueChange={(v) => setTransferTarget(v as OrgDivision)}>
-                      <SelectTrigger className="font-body flex-1"><SelectValue placeholder="New division…" /></SelectTrigger>
-                      <SelectContent>
-                        {CORE.filter((d) => d !== (detail.application.interview_division || detail.application.first_choice)).map((d) => (
-                          <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="sm" className="h-10" disabled={!transferTarget || transferring} onClick={() => setTransferConfirm(true)}>
-                      Transfer
-                    </Button>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+                    Evaluated for <HelpDot page="applications-screening" topic="evaluation-division" />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Which division is assessing this candidate. It starts as their first choice. If they
+                    fit another division better, including one they did not name, change it here: they
+                    return to <strong>{STATUS_LABELS.to_be_contacted}</strong> so the new division can invite them,
+                    and any interview slot they were holding is released.
+                  </p>
+                  <Select
+                    value={evaluationDivision(detail.application)}
+                    onValueChange={(v) => {
+                      const app = apps.find((x) => x.id === detail.application.id) ?? (detail.application as ApplicationRow);
+                      if (v !== evaluationDivision(detail.application)) setPendingEval({ app, target: v as OrgDivision });
+                    }}
+                  >
+                    <SelectTrigger className="font-body">
+                      <SelectValue>{divisionLabels[evaluationDivision(detail.application)]}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allowedEvaluationDivisions(detail.application).map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {divisionLabels[d]}
+                          {d === detail.application.first_choice ? ' (first choice)'
+                            : d === detail.application.second_choice ? ' (second choice)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {detail.application.evaluation_division_previous && (
+                    <p className="text-xs text-amber-700">
+                      This candidacy has already been moved once, so it is now fixed to these two divisions.
+                      A candidate is never opened in a third.
+                    </p>
+                  )}
                 </div>
               )}
             </CandidateProfile>
@@ -515,16 +618,13 @@ export default function CandidatesManagement() {
           {pendingStatus?.status === 'interview_invitation_sent' && detail && (
             <div className="font-body">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Interview division</div>
-              <Select value={inviteDivision ?? detail.application.first_choice} onValueChange={(v) => setInviteDivision(v as OrgDivision)}>
-                <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={detail.application.first_choice}>{divisionLabels[detail.application.first_choice]} (first choice)</SelectItem>
-                  {detail.application.second_choice && (
-                    <SelectItem value={detail.application.second_choice}>{divisionLabels[detail.application.second_choice]} (second choice)</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">The candidate will only be able to book an interview for this division.</p>
+              <div className="border border-separator bg-muted/30 px-3 py-2 text-sm text-foreground">
+                {divisionLabels[evaluationDivision(detail.application)]}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                The division this candidate is being evaluated for, and the only one they will be able to book
+                an interview with. To invite them for a different division, change <strong>Evaluated for</strong> first.
+              </p>
             </div>
           )}
           <AlertDialogFooter>
@@ -536,28 +636,62 @@ export default function CandidatesManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Division-transfer confirmation. */}
-      <AlertDialog open={transferConfirm} onOpenChange={(o) => { if (!o) setTransferConfirm(false); }}>
+      {/* Changing the evaluation division. Every consequence is named,
+          because between them they undo work: a stage already reached, an
+          interview slot already booked, and the freedom to move again. */}
+      <AlertDialog open={!!pendingEval} onOpenChange={(o) => { if (!o && !movingEval) setPendingEval(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Transfer this candidate to {transferTarget ? divisionLabels[transferTarget] : 'another division'}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {detail && transferTarget && (
-                <>
-                  {detail.application.first_name} {detail.application.surname} moves from{' '}
-                  {divisionLabels[detail.application.interview_division || detail.application.first_choice]} to{' '}
-                  {divisionLabels[transferTarget]}. Their status returns to “Interview invitation sent” for the new
-                  division only, they <strong>receive an automatic email</strong> inviting them to book a new
-                  interview slot there, and the transfer is recorded in the activity log. This is the only way a
-                  candidacy ever revisits an earlier stage. Are you sure?
-                </>
-              )}
+            <AlertDialogTitle>
+              Evaluate {pendingEval ? pendingEval.app.first_name : 'this candidate'} for{' '}
+              {pendingEval ? divisionLabels[pendingEval.target] : 'another division'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              {pendingEval ? (
+                <div className="space-y-2">
+                  <p>
+                    {pendingEval.app.first_name} {pendingEval.app.surname} moves from{' '}
+                    <strong>{divisionLabels[evaluationDivision(pendingEval.app)]}</strong> to{' '}
+                    <strong>{divisionLabels[pendingEval.target]}</strong>. From now on every communication they
+                    receive names {divisionLabels[pendingEval.target]}.
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>
+                      Their status returns to <strong>{STATUS_LABELS.to_be_contacted}</strong>, because the new
+                      division has not yet invited or interviewed them.
+                    </li>
+                    <li>
+                      Any interview slot they were holding is released back to the division they are leaving,
+                      and they can only book with {divisionLabels[pendingEval.target]}.
+                    </li>
+                    {!pendingEval.app.evaluation_division_previous && (
+                      <li>
+                        Afterwards this candidacy is fixed to{' '}
+                        <strong>{divisionLabels[evaluationDivision(pendingEval.app)]}</strong> and{' '}
+                        <strong>{divisionLabels[pendingEval.target]}</strong>: those two divisions and no third.
+                        You can move them back at any time.
+                      </li>
+                    )}
+                    {pendingEval.app.status === 'rejected' && (
+                      <li className="text-amber-700">
+                        This candidate has already been rejected and told so. Moving them reopens their
+                        candidacy, and they will hear from {divisionLabels[pendingEval.target]} next.
+                      </li>
+                    )}
+                  </ul>
+                  <p>
+                    No email is sent by this change on its own. The invitation you send next is what reaches
+                    them, and it will name {divisionLabels[pendingEval.target]}. The move is recorded in the
+                    activity log.
+                  </p>
+                </div>
+              ) : <span />}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={transferring}>No, cancel</AlertDialogCancel>
-            <AlertDialogAction disabled={transferring} onClick={(e) => { e.preventDefault(); doTransfer(); }}>
-              {transferring ? 'Transferring…' : 'Yes, transfer'}
+            <AlertDialogCancel disabled={movingEval}>No, cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={movingEval} onClick={(e) => { e.preventDefault(); doSetEvaluation(); }}>
+              {movingEval ? 'Moving…' : 'Yes, change the division'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -5,6 +5,7 @@ import { currentSemester, previousSemester, semesterOf, type Semester } from '@/
 import { parseFundNumber } from '@/lib/funds-api';
 import { activeFunds, type Fund } from '@/lib/types';
 import type { OrgDivision } from '@/lib/roles';
+import { isFeeExempt } from '@/lib/membership-fee';
 import { semesterOrdinal, type GreetingVars } from './greetings';
 
 // =====================================================================
@@ -160,8 +161,11 @@ async function safe<T>(run: () => PromiseLike<{ data: T | null; error: unknown }
 }
 
 export function useDashboardData(): DashboardData {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const userId = user?.id ?? 'anonymous';
+  // The fee is not an advisor's business, so the open collection is never
+  // read on their behalf and can never become their headline update.
+  const feeExempt = isFeeExempt((roles || []).map((r) => r.role));
 
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<ReportRow[] | null>(null);
@@ -212,13 +216,15 @@ export function useDashboardData(): DashboardData {
         safe<{ event_date: string; registration_open: boolean }[]>(() => supabase
           .from('aod_days')
           .select('event_date, registration_open')),
-        safe<{ semester_label: string; first_deadline: string | null; second_deadline: string | null }>(() => supabase
-          .from('fee_periods')
-          .select('semester_label, first_deadline, second_deadline')
-          .eq('closed', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()),
+        feeExempt
+          ? Promise.resolve(null)
+          : safe<{ semester_label: string; first_deadline: string | null; second_deadline: string | null }>(() => supabase
+            .from('fee_periods')
+            .select('semester_label, first_deadline, second_deadline')
+            .eq('closed', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()),
         safe<{ graduation_year: number; alumni_count: number }[]>(() => supabase
           .rpc('public_alumni_classes')),
         safe<AvatarRow[]>(() => supabase
@@ -260,6 +266,14 @@ export function useDashboardData(): DashboardData {
       setLoading(false);
     })();
     return () => { active = false; };
+    // `feeExempt` is deliberately not a dependency. Adding it would refetch
+    // the entire dashboard the moment the viewer's roles arrive, which is a
+    // second round of every query on this page to learn one boolean. Its
+    // only use here is to SKIP one query, and skipping it is an economy,
+    // not a guarantee: what actually keeps the fee off an exempt viewer's
+    // screen is the check in `latestUpdate`, which does re-run when the
+    // roles land. Worst case the collection is fetched and never shown.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // The greeting drops any line whose variable is missing, so a first name
@@ -386,8 +400,13 @@ export function useDashboardData(): DashboardData {
     const asDate = (d: string) => new Date(d).getTime();
     const format = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
 
-    // 1. Membership fee, while a collection is open.
-    if (fee) {
+    // 1. Membership fee, while a collection is open — and never for a role
+    //    that is outside the fee. The query above is already skipped for
+    //    them, but roles arrive asynchronously and this memo re-runs when
+    //    they do, so the check is repeated here where it is what the
+    //    reader actually sees. Without it, an advisor whose roles landed a
+    //    moment after the first fetch would be shown the card once.
+    if (fee && !feeExempt) {
       const deadline = fee.first_deadline ?? fee.second_deadline;
       return {
         kind: 'fee',
@@ -459,7 +478,7 @@ export function useDashboardData(): DashboardData {
       };
     }
     return null;
-  }, [fee, aod, events, reports]);
+  }, [fee, aod, events, reports, feeExempt]);
 
   /**
    * The PDFs behind the report-cover columns. Six is the whole ask: each

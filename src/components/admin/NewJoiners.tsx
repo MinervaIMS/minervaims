@@ -16,7 +16,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
-import { listApplications, sendOffer, addApplicationNote, type ApplicationRow } from '@/lib/applications-api';
+import { listApplications, sendOffer, addApplicationNote, evaluationDivision, type ApplicationRow } from '@/lib/applications-api';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile, CandidateStage } from '@/components/admin/recruiting/CandidateProfile';
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
@@ -37,10 +37,13 @@ const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'port
 // So the column reads DIVISION and prints the one the offer concerns, in
 // the same precedence the offer dialog itself uses:
 //
-//   offer_division    - the division on an offer already prepared or sent
-//   interview_division - otherwise, the division of the LAST interview,
-//                        which is what a post-interview transfer updates
-//   first_choice      - and only if no interview was ever recorded
+//   offer_division      - the division on an offer already prepared or sent
+//   evaluation_division - otherwise, the division that assessed them,
+//                         which is what Candidates screening sets and what
+//                         every email to this candidate has named
+//   interview_division  - then the division that interviewed them, for
+//                         rows written before the evaluation division
+//   first_choice        - and only if none of the above was ever recorded
 //
 // Because it is the same precedence, the column and the dialog can never
 // disagree, and changing the division in the confirmation pop-up (still
@@ -48,7 +51,7 @@ const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'port
 // as soon as the offer is saved.
 // =====================================================================
 const selectedDivision = (a: ApplicationRow): OrgDivision =>
-  (a.offer_division as OrgDivision) || a.interview_division || a.first_choice;
+  (a.offer_division as OrgDivision) || evaluationDivision(a);
 
 // Human-readable state of the offer for a candidate row.
 function offerState(a: ApplicationRow): { label: string; tone: string; canOffer: boolean; resend: boolean } {

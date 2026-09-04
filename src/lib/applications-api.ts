@@ -35,6 +35,17 @@ export interface ApplicationRow {
   status: ApplicationStatus;
   /** Division the candidate was invited to interview for (set on invitation). */
   interview_division: OrgDivision | null;
+  /**
+   * The division currently ASSESSING this candidate, which is not the same
+   * question as the divisions they asked for. Defaults to the first choice
+   * and may be changed by a role that can move candidacies. Optional in
+   * the type only because the generated Supabase types are regenerated
+   * from the live schema and lag behind a migration; `select('*')` returns
+   * the column regardless. Read it through `evaluationDivision()`.
+   */
+  evaluation_division?: OrgDivision | null;
+  /** The division the evaluation was last moved away from, or null. */
+  evaluation_division_previous?: OrgDivision | null;
   cv_viewed_at: string | null;
   created_at: string;
   note_count?: number;
@@ -91,6 +102,66 @@ export const ACADEMIC_YEAR_LABELS: Record<AcademicYear, string> = {
 
 /** In the order the form offers them. */
 export const APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media'];
+
+// =====================================================================
+// THE EVALUATION DIVISION: who is assessing this candidate.
+// ---------------------------------------------------------------------
+// Separate from the two preferences, and wider than them. An applicant
+// ranks the five research divisions, or applies once to the joint Media
+// and Operations intake; an examiner may conclude that somebody belongs
+// in a division nobody named, including Operations on its own, and this
+// is the list that lets them say so.
+//
+// Mirrors EVALUATION_DIVISIONS in supabase/functions/admin-applications.
+// =====================================================================
+export const EVALUATION_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
+
+/**
+ * The division assessing this candidate.
+ *
+ * Every screen that names "the division" for a candidate reads it from
+ * here, so the table, the candidate's own status page and the emails can
+ * never be describing three different divisions. The fallbacks cover rows
+ * written before the field existed: an application already invited to
+ * interview is being evaluated by whoever invited it, and one that is not
+ * is being evaluated by its first choice.
+ */
+export function evaluationDivision(
+  a: Pick<ApplicationRow, 'first_choice'> & Partial<Pick<ApplicationRow, 'evaluation_division' | 'interview_division'>>,
+): OrgDivision {
+  return a.evaluation_division || a.interview_division || a.first_choice;
+}
+
+/**
+ * Is this candidate being assessed by a division they did not ask for?
+ *
+ * The one fact that makes a candidacy unusual, and the trigger for both
+ * the marker in the reviewer's table and the notice on the candidate's
+ * own status page.
+ */
+export function isReEvaluated(
+  a: Pick<ApplicationRow, 'first_choice' | 'second_choice'> & Partial<Pick<ApplicationRow, 'evaluation_division' | 'interview_division' | 'evaluation_division_previous'>>,
+): boolean {
+  if (!a.evaluation_division_previous) return false;
+  const ev = evaluationDivision(a);
+  return ev !== a.first_choice && ev !== a.second_choice;
+}
+
+/**
+ * The divisions this candidacy may still be moved to.
+ *
+ * Before the first move: any of them. After it: only the two it has
+ * already involved, which is what caps a candidate at two selection
+ * processes rather than an open-ended tour of the association.
+ */
+export function allowedEvaluationDivisions(
+  a: Pick<ApplicationRow, 'first_choice'> & Partial<Pick<ApplicationRow, 'evaluation_division' | 'interview_division' | 'evaluation_division_previous'>>,
+): OrgDivision[] {
+  const current = evaluationDivision(a);
+  const previous = a.evaluation_division_previous;
+  if (!previous) return EVALUATION_DIVISIONS;
+  return EVALUATION_DIVISIONS.filter((d) => d === current || d === previous);
+}
 
 /** The five a candidate may rank. Media and Operations is not ranked. */
 export const RANKED_APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
@@ -288,11 +359,16 @@ export async function addApplicationNote(session: Session | null, id: string, bo
   return await invoke(session, { action: 'add-note', id, body });
 }
 /**
- * Post-interview division transfer: re-opens the interview stage in the
- * target division (the candidate is re-invited and books a new slot there).
+ * Move a candidacy to a different division.
+ *
+ * Returns the candidacy to "To be invited" for the new division, clears
+ * the old interview invitation and releases any slot it held. Sends no
+ * email of its own: the invitation that follows does that, naming the new
+ * division. Refused server-side once the candidacy has already been moved
+ * once and the target is neither of its two divisions.
  */
-export async function transferApplicationDivision(session: Session | null, id: string, division: OrgDivision) {
-  return await invoke(session, { action: 'transfer-division', id, division });
+export async function setEvaluationDivision(session: Session | null, id: string, division: OrgDivision) {
+  return await invoke(session, { action: 'set-evaluation-division', id, division });
 }
 export async function setDivisionQuestion(session: Session | null, division: OrgDivision, question: string) {
   return await invoke(session, { action: 'set-question', division, question });
