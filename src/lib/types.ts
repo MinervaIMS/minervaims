@@ -13,6 +13,11 @@ export type Position =
   | 'Head of Portfolio Management'
   | 'Head of Quantitative Research'
   | 'Portfolio Manager'
+  // A rank of its own, and it was absent from this list. Because there
+  // was no value for it, the database function that publishes a member
+  // mapped the workspace role `team_leader` onto 'Senior Analyst', so
+  // every team leader appeared on the public site as a senior analyst.
+  | 'Team Leader'
   | 'Senior Analyst'
   | 'Analyst'
   | 'Head of Operations'
@@ -36,7 +41,12 @@ export interface TeamMember {
   surname: string;
   position: Position;
   division?: Division;
+  /** Legacy: the fund column, still populated on rows created before the
+   *  roster became the single source of truth. Read as a fallback. */
   fund?: Fund;
+  /** The member's sub-unit within their division: a fund for Portfolio
+   *  Management, a desk for Investment Research. See lib/division-teams. */
+  team?: string;
   photoUrl?: string;
   linkedinUrl?: string;
   isBoard: boolean;

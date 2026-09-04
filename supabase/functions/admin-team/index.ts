@@ -26,6 +26,7 @@ const TeamMemberSchema = z.object({
     'Head of Portfolio Management',
     'Head of Quantitative Research',
     'Portfolio Manager',
+    'Team Leader',
     'Senior Analyst',
     'Analyst',
     'Head of Operations',

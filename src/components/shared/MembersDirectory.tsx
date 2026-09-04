@@ -1,5 +1,20 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { TeamMember, Division, divisionLabels, fundShortLabels } from '@/lib/types';
+import { teamShortLabel } from '@/lib/division-teams';
+
+/**
+ * What follows a member's position: their fund, or their desk.
+ *
+ * Nothing is shown for the head of a division, who leads every one of its
+ * teams rather than belonging to one of them.
+ */
+function teamSuffix(member: TeamMember): string | null {
+  if (member.position.includes('Head of')) return null;
+  const fromTeam = teamShortLabel(member.division, member.team);
+  if (fromTeam) return fromTeam;
+  if (member.division === 'portfolio' && member.fund) return fundShortLabels[member.fund];
+  return null;
+}
 
 interface MembersDirectoryProps {
   members: TeamMember[];
@@ -50,6 +65,9 @@ const POSITION_ORDER: Record<string, number> = {
   'Head of Media': 10,
   'Co-Head of Media': 11,
   'Portfolio Manager': 20,
+  // Between the portfolio managers and the senior analysts, which is
+  // where member_rank() has always put them in the database.
+  'Team Leader': 25,
   'Senior Analyst': 30,
   'Analyst': 40,
   'Operations': 50,
@@ -64,7 +82,8 @@ const sortMembers = (a: TeamMember, b: TeamMember) => {
 };
 
 const isLeadership = (m: TeamMember) =>
-  m.position.includes('Head of') || m.position === 'Portfolio Manager' || m.position === 'Senior Analyst';
+  m.position.includes('Head of') || m.position === 'Portfolio Manager'
+  || m.position === 'Team Leader' || m.position === 'Senior Analyst';
 
 const getInitials = (m: TeamMember) =>
   `${m.name?.charAt(0) ?? ''}${m.surname?.charAt(0) ?? ''}`.toUpperCase();
@@ -372,11 +391,20 @@ function CompactCard({
         </h3>
         <p className="font-body text-[.74rem] md:text-[.8rem] uppercase md:normal-case tracking-[.08em] md:tracking-normal text-muted-foreground mt-1">
           {member.position}
-          {member.division === 'portfolio' &&
-            member.fund &&
-            !member.position.includes('Head of Portfolio Management') && (
-              <span className="text-accent/70 italic"> · {fundShortLabels[member.fund]}</span>
-            )}
+          {/* THE SUB-UNIT, FOR THE TWO DIVISIONS THAT HAVE ONE.
+              Portfolio Management has always shown which fund a member
+              runs; Investment Research is organised into three desks and
+              showed nothing. Both now come from the same `team` field,
+              so the two divisions are presented the same way and a third
+              could be added by editing one list.
+
+              `fund` is read as a fallback because rows created before the
+              workspace roster became the single source of truth still
+              carry it and nothing else. It is never shown against a head
+              of division, who leads all of them rather than one. */}
+          {teamSuffix(member) && (
+            <span className="text-accent/70 italic"> · {teamSuffix(member)}</span>
+          )}
         </p>
       </div>
       {member.linkedinUrl && (

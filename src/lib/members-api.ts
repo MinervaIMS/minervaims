@@ -31,6 +31,9 @@ export interface MemberRow {
   photo_url: string | null;
   linkedin_url: string | null;
   division: OrgDivision;
+  /** Sub-unit within the division: a fund for Portfolio Management, a
+   *  desk for Investment Research. See lib/division-teams. */
+  team: string | null;
   role: AppRole;
   membership_status: MembershipStatus;
   account_status: AccountStatus;
@@ -50,6 +53,7 @@ export interface MemberInput {
   photo_url?: string | null;
   linkedin_url?: string | null;
   division: OrgDivision;
+  team?: string | null;
   role: AppRole;
   membership_status?: MembershipStatus;
   account_status?: AccountStatus;

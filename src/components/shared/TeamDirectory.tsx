@@ -32,6 +32,9 @@ const POSITION_ORDER: Record<string, number> = {
   'Head of Media': 10,
   'Co-Head of Media': 11,
   'Portfolio Manager': 20,
+  // Between the portfolio managers and the senior analysts, matching
+  // member_rank() in the database and MembersDirectory on the live page.
+  'Team Leader': 25,
   'Senior Analyst': 30,
   'Analyst': 40,
   'Operations': 50,

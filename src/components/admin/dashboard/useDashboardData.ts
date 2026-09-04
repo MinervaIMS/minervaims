@@ -325,7 +325,13 @@ export function useDashboardData(): DashboardData {
    * class and none is ever assigned an invented one.
    */
   const alumniYears = useMemo<AlumniYear[] | null>(() => {
-    if (!alumniClasses) return null;
+    // ARRAY, NOT MERELY TRUTHY. This came back from an RPC, and a `safe`
+    // wrapper that swallows a failure can hand back whatever the endpoint
+    // produced rather than the shape the type promises. Spreading a
+    // non-array throws, and the throw happens inside a memo during
+    // render, which takes the whole dashboard down rather than losing one
+    // chart. A chart is the right thing to lose.
+    if (!Array.isArray(alumniClasses)) return null;
     const ordered = [...alumniClasses]
       .filter((c) => Number.isFinite(c.graduation_year) && c.alumni_count > 0)
       .sort((a, b) => a.graduation_year - b.graduation_year);

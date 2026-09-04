@@ -92,7 +92,29 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   head_of_media: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage' },
   media_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-on-display': 'view', 'smm-editorial': 'view', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view' },
   head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-on-display': 'manage', 'people-members': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view' },
-  advisor: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'people-members': 'view', 'people-alumni': 'view' },
+  // =================================================================
+  // THE ADVISOR SEES EVERYTHING AND CHANGES NOTHING.
+  // -----------------------------------------------------------------
+  // An advisor is an alumnus appointed to advise the association, and
+  // advice given without sight of the work is not worth much: they were
+  // limited to the dashboard, the calendar and the two people registers,
+  // which left them unable to read the research, the events or the
+  // operations they are there to comment on.
+  //
+  // So the grant is `'*': 'view'` - every section and every subsection,
+  // read-only - with two deliberate exceptions:
+  //
+  //   * SETTINGS IS CLOSED ENTIRELY (see ROLE_DENY below). Users, role
+  //     permissions, mobile view and the activity log are the machinery
+  //     that decides who may do what; an outside adviser has no business
+  //     reading the association's access control or its audit trail.
+  //
+  //   * MY PROFILE IS THEIRS TO EDIT, because it is their own record.
+  //
+  // `'*'` also means an advisor sees a NEW subsection the day it is
+  // added, without anybody remembering to widen this line.
+  // =================================================================
+  advisor: { '*': 'view', 'my-role': 'manage' },
   alumni: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view' },
   // member / pending / candidate intentionally have no general grants.
 };
@@ -186,12 +208,38 @@ export const MEMBERS_DIVISION_VIEW_ROLES: AppRole[] = [
  * given resource. Candidate isolation is handled by the caller (useAccess)
  * before this is consulted.
  */
+// =====================================================================
+// Carve-outs from a wildcard grant.
+// ---------------------------------------------------------------------
+// A role granted `'*'` needs a way to say "everything EXCEPT". Listing
+// the forty-odd subsections an advisor may see, in order to omit four,
+// would be a list that silently goes stale the next time a subsection is
+// added: the whole point of the wildcard is that it does not.
+//
+// A denial is scoped to the ROLE that carries it, not to the person. If
+// somebody holds two roles and the other one grants the resource, they
+// keep it: the deny removes what this role would have given, and nothing
+// more. That is what stops an advisor appointment quietly stripping
+// access from a president who is also listed as one.
+// =====================================================================
+const ROLE_DENY: Partial<Record<AppRole, ResourceKey[]>> = {
+  advisor: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity'],
+};
+
+/** Is this resource explicitly withheld from this role? */
+export function isDeniedForRole(role: AppRole, resource: ResourceKey): boolean {
+  return ROLE_DENY[normalizeRole(role)]?.includes(resource) ?? false;
+}
+
 export function resolveLevel(roles: AppRole[], resource: ResourceKey): AccessLevel {
   let level: AccessLevel = 'none';
   for (const raw of roles) {
     const role = normalizeRole(raw);
     const grants = DEFAULT_MATRIX[role];
     if (!grants) continue;
+    // This role contributes nothing at all on a resource it is denied,
+    // wildcard included. Another role the same person holds still can.
+    if (isDeniedForRole(role, resource)) continue;
     if (grants['*']) level = maxLevel(level, grants['*']);
     if (grants[resource]) level = maxLevel(level, grants[resource]);
   }

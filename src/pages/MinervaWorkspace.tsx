@@ -204,15 +204,10 @@ const MinervaWorkspace = () => {
   // button - are untouched. What changed is that they are now `const`.
   // ══════════════════════════════════════════════════════════════════════
   const location = useLocation();
-  // Set by the email-confirmation page when it sends a brand-new session here.
-  // The gate below is fractionally more patient in that case.
-  const justConfirmed = (location.state as { justConfirmed?: boolean } | null)?.justConfirmed === true;
-  const confirmRetryDone = useRef(false);
   const { sectionSlug, subSlug } = useMemo(
     () => parseWorkspaceUrl(location.pathname),
     [location.pathname],
   );
-
   const resolution = useMemo(
     () => resolveWorkspaceTarget(visibleNav, sectionSlug, subSlug),
     [visibleNav, sectionSlug, subSlug],
@@ -397,25 +392,13 @@ const MinervaWorkspace = () => {
           })();
           return;
         }
-        // ARRIVING STRAIGHT FROM EMAIL CONFIRMATION, ROLES GET ONE MORE READ.
-        // The session is seconds old here, and a role list fetched while the
-        // access token was still being attached can come back short. Throwing a
-        // Head of Division out to the public homepage on the strength of that
-        // read was exactly the reported bug, so the first denial after a
-        // confirmation only triggers a refresh; the next render decides.
-        if (justConfirmed && !confirmRetryDone.current) {
-          confirmRetryDone.current = true;
-          refreshProfile();
-          return;
-        }
         toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
       if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile, justConfirmed]);
-
+  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile]);
 
   const fetchEvents = async () => {
     try {
@@ -430,10 +413,30 @@ const MinervaWorkspace = () => {
     }
   };
 
+  // ══════════════════════════════════════════════════════════════════════
+  // THE ARCHIVE IS ONE SET, AND THE FILTERS ARE BUILT FROM IT.
+  // ----------------------------------------------------------------------
+  // The type filter used to offer every value in the EVENT_TYPE_LABELS
+  // enum, whether or not a single event had ever been given that type. So
+  // a reader was shown eight kinds of event, chose one out of curiosity,
+  // and met an empty table: a filter that can only return nothing is not
+  // a filter, it is a dead end presented as a choice. The year filter had
+  // a subtler version of the same fault, being derived from EVERY event
+  // including those excluded from the archive, so it could offer a year
+  // whose only events were not listed.
+  //
+  // Both now come from `archivedEvents`, which is exactly the set the
+  // table draws from. Every option therefore returns at least one row,
+  // and the options change by themselves as the association's events do.
+  // ══════════════════════════════════════════════════════════════════════
+  const archivedEvents = useMemo(
+    // Only events their creator chose to record in the archive are listed.
+    () => events.filter((event) => event.in_archive !== false),
+    [events],
+  );
+
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
-      // Only events their creator chose to record in the archive are listed.
-      if (event.in_archive === false) return false;
+    return archivedEvents.filter((event) => {
       if (eventsTypeFilter !== 'all' && (event.event_type ?? 'other') !== eventsTypeFilter) return false;
       if (eventsWebsiteFilter === 'on' && event.show_on_website === false) return false;
       if (eventsWebsiteFilter === 'off' && event.show_on_website !== false) return false;
@@ -453,12 +456,21 @@ const MinervaWorkspace = () => {
       }
       return true;
     });
-  }, [events, eventsYearFilter, eventsSearchQuery, eventsTypeFilter, eventsWebsiteFilter]);
+  }, [archivedEvents, eventsYearFilter, eventsSearchQuery, eventsTypeFilter, eventsWebsiteFilter]);
 
   const eventsYears = useMemo(() => {
-    const years = [...new Set(events.map((e) => new Date(e.date).getFullYear()))];
+    const years = [...new Set(archivedEvents.map((e) => new Date(e.date).getFullYear()))];
     return years.sort((a, b) => b - a);
-  }, [events]);
+  }, [archivedEvents]);
+
+  /** The event types the association has actually used, in label order. */
+  const eventsTypes = useMemo(() => {
+    const used = new Set<string>();
+    for (const e of archivedEvents) used.add(e.event_type ?? 'other');
+    return [...used]
+      .map((t) => ({ value: t, label: EVENT_TYPE_LABELS[t as EventType] ?? t }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [archivedEvents]);
 
   const eventsTotalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
   const eventsStartIndex = (eventsCurrentPage - 1) * EVENTS_PER_PAGE;
@@ -660,14 +672,7 @@ const MinervaWorkspace = () => {
     );
   }
 
-  // A SIGNED-IN READER WHOSE ROLES HAVE NOT ARRIVED SEES A LOADER, NOT A BLANK
-  // PAGE. Returning null here used to leave a white screen for the moment
-  // between session and roles — indistinguishable, to someone who has just
-  // confirmed their email, from being dumped somewhere unexpected.
-  if (user && !rolesLoaded && !isCandidate) return <PageLoader />;
-
   if (!user || (!permissions.hasAnyAccess && !isCandidate)) return null;
-
 
   const primaryRoleAssignment = primaryAssignment(
     roles.map((r) => ({ role: r.role, division: r.division ?? null })),
@@ -1022,7 +1027,7 @@ const MinervaWorkspace = () => {
           <select value={eventsTypeFilter} onChange={(e) => setEventsTypeFilter(e.target.value as EventType | 'all')}
             className="font-body bg-background border border-input px-3 h-10 min-w-[150px]">
             <option value="all">All types</option>
-            {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>)}
+            {eventsTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
           <select value={eventsWebsiteFilter} onChange={(e) => setEventsWebsiteFilter(e.target.value as 'all' | 'on' | 'off')}
             className="font-body bg-background border border-input px-3 h-10 min-w-[150px]">
