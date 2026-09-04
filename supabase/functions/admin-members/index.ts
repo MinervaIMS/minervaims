@@ -31,6 +31,9 @@ const ASSIGNABLE_ROLES = [
 // Board and advisor roles carry NO division; department roles are pinned;
 // core-division roles must name one of the five research divisions.
 const CORE_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+// Roles outside the membership fee. Kept in step with
+// src/lib/membership-fee.ts and with admin-fees.
+const FEE_EXEMPT_ROLES = ['advisor', 'silent_advisor'];
 const FIXED_DIVISION: Record<string, string> = {
   portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations',
 };
@@ -327,10 +330,36 @@ Deno.serve(async (req) => {
         // The advisor starts hidden from the public website; the visibility
         // switch on their profile can show them later. Workspace access
         // follows automatically (sync_member_access trigger).
+        //
+        // `fee_status: 'exempt'` is part of the appointment, not decoration:
+        // an advisor is outside the membership fee, and leaving the record
+        // saying 'unpaid' describes them as a member in arrears.
         const { error } = await supabase.from('members')
-          .update({ role: 'advisor', membership_status: 'active', division: 'none', is_public: false })
+          .update({ role: 'advisor', membership_status: 'active', division: 'none', is_public: false, fee_status: 'exempt' })
           .eq('id', parsed.data.id);
         if (error) throw error;
+
+        // THE FEE ROW THEY NO LONGER OWE. Somebody appointed advisor part
+        // way through a semester was given a row when that collection
+        // opened, and nothing took it away: they stayed in the count of
+        // people expected to pay while disappearing from the list of
+        // people shown, which is how a collection ends up with a total
+        // nobody can reconcile. Only UNPAID rows in OPEN collections go.
+        // A payment already made is money in the association's account and
+        // is never deleted here; Treasury still receives it when the
+        // collection closes.
+        try {
+          const { data: openPeriods } = await supabase.from('fee_periods').select('id').eq('closed', false);
+          const periodIds = (openPeriods || []).map((p: { id: string }) => p.id);
+          if (periodIds.length) {
+            await supabase.from('membership_fees').delete()
+              .in('period_id', periodIds).eq('member_id', parsed.data.id).eq('paid', false);
+          }
+        } catch (feeErr) {
+          // The appointment itself has already succeeded and must not be
+          // reported as a failure because of this tidy-up.
+          console.error('Could not clear the advisor\'s open fee rows:', feeErr);
+        }
       } else {
         // Deleting the roster row leaves the linked account with the minimal
         // 'alumni' access (sync_member_access trigger).
@@ -372,7 +401,11 @@ Deno.serve(async (req) => {
       role: m.role,
       membership_status: m.membership_status || 'active',
       account_status: m.account_status || 'to_redeem',
-      fee_status: m.fee_status || 'unpaid',
+      // An advisor is outside the membership fee, so their fee status is a
+      // property of the role rather than something a form can get wrong.
+      // "Add advisor" used to save them as 'unpaid', which reads as a
+      // member who owes money.
+      fee_status: FEE_EXEMPT_ROLES.includes(m.role) ? 'exempt' : (m.fee_status || 'unpaid'),
       is_public: isExpelled ? false : (m.is_public ?? true),
       // Expulsion: schedule permanent deletion one month out.
       deletion_scheduled_at: isExpelled ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,

@@ -22,6 +22,34 @@ function json(body: unknown, status = 200) {
 // Fees remain open to the Board and to Operations, who administer them.
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations'];
 
+// =====================================================================
+// WHO IS OUTSIDE THE MEMBERSHIP FEE.
+// ---------------------------------------------------------------------
+// Mirrors src/lib/membership-fee.ts, which the workspace reads. An edge
+// function cannot import from `src/`, so the list is repeated here; it is
+// two values and it changes about never, and the alternative is a round
+// trip on every fee operation to learn something this file already knows.
+//
+// An advisor is an alumnus appointed to advise the association, not a
+// dues-paying member of it. The consequence is applied at all four
+// moments a fee row or a register row could come into being:
+//
+//   · a collection OPENS   - no row is created for them;
+//   · a collection is READ - any row that exists anyway is dropped, so
+//                            the count on screen is the count of people
+//                            actually in the list;
+//   · a member LEAVES to become an advisor - their unpaid row is removed
+//                            (in admin-members, on the same list);
+//   · a collection CLOSES  - they enter no semester register.
+//
+// The roles that never pay. Candidates, pending accounts, the admin
+// account and alumni are excluded separately: they are not members of the
+// association this semester at all, which is a different reason.
+// =====================================================================
+const FEE_EXEMPT_ROLES = ['advisor', 'silent_advisor'];
+/** Roles that are not part of this semester's paying membership. */
+const NON_PAYING_ROLES = ['candidate', 'pending', 'admin', 'alumni', ...FEE_EXEMPT_ROLES];
+
 function academicSemester(d: Date): string {
   const m = d.getMonth() + 1; const y = d.getFullYear();
   return m >= 9 || m === 1 ? `Sep-Jan ${m === 1 ? y - 1 : y}` : `Feb-Aug ${y}`;
@@ -46,14 +74,29 @@ Deno.serve(async (req) => {
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
         .eq('membership_status', 'active')
-        .not('role', 'in', '(candidate,pending,admin,alumni,advisor,silent_advisor)')).data || [];
+        .not('role', 'in', `(${NON_PAYING_ROLES.join(',')})`)).data || [];
 
     if (action === 'current') {
       const { data: period } = await supabase.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
       const members = await activeMembers();
       let fees: any[] = [];
-      if (period) fees = (await supabase.from('membership_fees').select('*').eq('period_id', period.id)).data || [];
-      return json({ period, members, fees });
+      let banked_off_register = 0;
+      if (period) {
+        const all = (await supabase.from('membership_fees').select('*').eq('period_id', period.id)).data || [];
+        // THE LIST AND ITS COUNT MUST BE THE SAME PEOPLE. A member who was
+        // in the collection and has since left - to alumni, or to an
+        // advisor appointment - keeps their row, but is no longer in
+        // `members`. Returning that row anyway made "12/40 paid" count a
+        // thirteenth person the table did not show, and nothing on screen
+        // explained the difference. Rows are now narrowed to the visible
+        // list, and any payment left outside it is reported separately
+        // rather than silently folded into the total or silently dropped:
+        // the money was received and Treasury will still record it.
+        const visible = new Set(members.map((m: any) => m.id));
+        fees = all.filter((f: any) => visible.has(f.member_id));
+        banked_off_register = all.filter((f: any) => f.paid && !visible.has(f.member_id)).length;
+      }
+      return json({ period, members, fees, banked_off_register });
     }
 
     if (action === 'history') {
@@ -81,6 +124,15 @@ Deno.serve(async (req) => {
       const members = await activeMembers();
       if (members.length) {
         await supabase.from('membership_fees').insert(members.map((m: any) => ({ period_id: period.id, member_id: m.id, paid: false })));
+      }
+      // Defensive, and idempotent: a fresh period cannot already hold an
+      // exempt member's row, but re-running this against a period that
+      // somehow does costs one statement and removes the possibility.
+      const { data: exempt } = await supabase.from('members').select('id').in('role', FEE_EXEMPT_ROLES);
+      const exemptIds = (exempt || []).map((m: any) => m.id);
+      if (exemptIds.length) {
+        await supabase.from('membership_fees').delete()
+          .eq('period_id', period.id).eq('paid', false).in('member_id', exemptIds);
       }
       return json({ success: true, period });
     }
@@ -131,9 +183,11 @@ Deno.serve(async (req) => {
         const { data: allMembers } = await supabase.from('members')
           .select('id, first_name, surname, email, division, role, fee_status, membership_status');
         // Advisors are appointed alumni, not dues-paying members: they never
-        // enter the register.
+        // enter the register, even in the case where a payment of theirs was
+        // banked before the appointment. The register answers "who belonged
+        // to the association this semester", and an advisor does not.
         const registerRows = (allMembers || []).filter((mm: any) =>
-          !['advisor', 'silent_advisor'].includes(mm.role) &&
+          !FEE_EXEMPT_ROLES.includes(mm.role) &&
           (paidIds.has(mm.id) || (mm.membership_status === 'active' && mm.fee_status === 'exempt')));
         // Idempotent: re-closing/re-running replaces that semester's register.
         await supabase.from('semester_members').delete().eq('semester_key', semKey);

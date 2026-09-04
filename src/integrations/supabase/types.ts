@@ -499,6 +499,12 @@ export type Database = {
           cv_viewed_by: string | null
           degree_course: string
           email: string
+          evaluation_division:
+            | Database["public"]["Enums"]["org_division"]
+            | null
+          evaluation_division_previous:
+            | Database["public"]["Enums"]["org_division"]
+            | null
           first_choice: Database["public"]["Enums"]["org_division"]
           first_name: string
           id: string
@@ -529,6 +535,12 @@ export type Database = {
           cv_viewed_by?: string | null
           degree_course: string
           email: string
+          evaluation_division?:
+            | Database["public"]["Enums"]["org_division"]
+            | null
+          evaluation_division_previous?:
+            | Database["public"]["Enums"]["org_division"]
+            | null
           first_choice: Database["public"]["Enums"]["org_division"]
           first_name: string
           id?: string
@@ -561,6 +573,12 @@ export type Database = {
           cv_viewed_by?: string | null
           degree_course?: string
           email?: string
+          evaluation_division?:
+            | Database["public"]["Enums"]["org_division"]
+            | null
+          evaluation_division_previous?:
+            | Database["public"]["Enums"]["org_division"]
+            | null
           first_choice?: Database["public"]["Enums"]["org_division"]
           first_name?: string
           id?: string

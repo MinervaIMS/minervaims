@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
+import { isFeeExempt } from '@/lib/membership-fee';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { CalendarLegend, type LegendItem } from '@/components/admin/CalendarLegend';
 
@@ -54,11 +55,15 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 const monthKey = (y: number, m: number) => `m-${y}-${m}`;
 
 export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (section: string, sub: string) => void } = {}) {
-  const { session } = useAuth();
+  const { session, roles } = useAuth();
   const { primaryRole } = useAccess();
   const { toast } = useToast();
   const { canManage } = useAccess();
   const canEdit = canManage('calendar');
+  // An advisor pays no membership fee, so no fee deadline is theirs to
+  // meet. Putting one on their calendar asks them for money the
+  // association has decided not to ask them for.
+  const feeExempt = isFeeExempt((roles || []).map((r) => r.role));
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
@@ -98,8 +103,12 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         if (settings?.start_date) out.push({ date: settings.start_date.slice(0, 10), label: `Applications open (${settings.semester_label})`, kind: 'application' });
         if (settings?.end_date) out.push({ date: settings.end_date.slice(0, 10), label: `Applications close (${settings.semester_label})`, kind: 'application' });
 
-        // Membership fee — an association-wide deadline (never a division deadline).
-        const { data: fee } = await sb.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        // Membership fee — an association-wide deadline (never a division
+        // deadline), and never an advisor's: they are outside the fee, so
+        // the collection is not queried on their behalf at all.
+        const { data: fee } = feeExempt
+          ? { data: null }
+          : await sb.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (fee?.first_deadline) {
           out.push({ date: fee.first_deadline.slice(0, 10), label: `Membership fee deadline (${fee.semester_label})`, kind: 'fee' });
           // The second deadline is hidden until the first has passed, then shown
@@ -284,7 +293,10 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     <div>
       <WorkspacePageHeader
         title="Calendar"
-        description={`Association events, Association on Display, alumni calls, application periods and the membership fee deadline. Scroll to move through the months. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
+        // The description lists what this calendar holds, so for a viewer
+        // outside the membership fee it stops promising a deadline that
+        // will never appear on it.
+        description={`Association events, Association on Display, alumni calls${feeExempt ? ' and application periods' : ', application periods and the membership fee deadline'}. Scroll to move through the months. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
         /* ONE CONTROL GROUP, AT THE TOP.
            "Jump to today" used to sit on a row of its own between the header
            and the colour key, adrift from the two buttons it belongs with;
@@ -298,7 +310,9 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         actions={
           <>
             <Button variant="outline" size="sm" className="font-body h-9" onClick={jumpToToday}>Jump to today</Button>
-            <CalendarLegend items={CALENDAR_LEGEND} />
+            {/* The fee swatch explains a colour an exempt viewer will never
+                see on this grid, so it comes out of their key too. */}
+            <CalendarLegend items={feeExempt ? CALENDAR_LEGEND.filter((l) => l.label !== 'Membership fee') : CALENDAR_LEGEND} />
             {canEdit && (
               <>
                 <Button variant="outline" className="font-body h-9" onClick={() => setExamDialogOpen(true)}>

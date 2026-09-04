@@ -6,6 +6,7 @@ import { Download, FileText, Loader2 } from 'lucide-react';
 import { divisionLabels } from '@/lib/roles';
 import {
   ACADEMIC_YEAR_LABELS, STATUS_LABELS, statusBadgeClass, signDocumentUrl,
+  applyDivisionLabel, evaluationDivision,
 } from '@/lib/applications-api';
 import { openReportInTab } from '@/lib/open-report';
 import type { CandidateDetail } from './useCandidateDetail';
@@ -105,11 +106,16 @@ export function CandidateProfile({
           <Info label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
           <Info label="Programme" value={app.degree_course} />
           <Info label="LinkedIn" value={app.linkedin_url || '-'} link={app.linkedin_url || undefined} />
-          <Info label="First choice" value={divisionLabels[app.first_choice]} />
-          <Info label="Second choice" value={app.second_choice ? divisionLabels[app.second_choice] : '-'} />
+          {/* The preferences read under the names the APPLICANT saw on the
+              form, where "Media and Operations" is one intake. The
+              evaluation reads under the association's own division names,
+              because it is the association's decision, not their request. */}
+          <Info label="Evaluated for" value={divisionLabels[evaluationDivision(app)]} />
+          <Info label="First choice" value={applyDivisionLabel(app.first_choice)} />
+          <Info label="Second choice" value={app.second_choice ? applyDivisionLabel(app.second_choice) : '-'} />
           <Info label="Submitted" value={new Date(app.created_at).toLocaleString()} />
           {app.interview_division && (
-            <Info label="Interview division" value={divisionLabels[app.interview_division]} />
+            <Info label="Interviewed by" value={divisionLabels[app.interview_division]} />
           )}
         </div>
 

@@ -132,13 +132,21 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'applications-screening', section: 'Recruiting', label: 'Candidates screening',
-    purpose: 'Review this semester\'s applications: profiles, CVs, written answers, shared notes and each candidate\'s status. Previous semesters remain consultable as read-only archives.',
-    view: ['Open candidate profiles, preview and download documents.', 'Team Leaders and Portfolio Managers can also add notes, without changing statuses.'],
-    manage: ['Change candidate statuses (some statuses email the candidate automatically) and add notes.'],
-    warnings: ['Statuses marked "sends an email / action" notify the candidate immediately and cannot be undone.', 'Notes are visible to all reviewers. Keep them technical and appropriate.', 'Archived semesters are read-only: statuses and notes can no longer change.'],
+    purpose: 'Review this semester\'s applications: profiles, CVs, written answers, shared notes, the division each candidate is being evaluated for, and their status. Previous semesters remain consultable as read-only archives.',
+    view: ['Open candidate profiles, preview and download documents.', 'Read which division is evaluating each candidate, and filter the register by it.', 'Team Leaders and Portfolio Managers can also add notes, without changing statuses.'],
+    manage: ['Change candidate statuses (some statuses email the candidate automatically) and add notes.', 'Change the division a candidate is being evaluated for.'],
+    warnings: ['Statuses marked "sends an email / action" notify the candidate immediately and cannot be undone.', 'Changing the division a candidate is evaluated for returns them to "To be invited" and releases any interview slot they had booked.', 'Notes are visible to all reviewers. Keep them technical and appropriate.', 'Archived semesters are read-only: statuses and notes can no longer change.'],
     topics: [
       { id: 'status', title: 'Candidate status dropdown', body: 'A candidacy only moves FORWARD: the dropdown offers only stages later than the current one, and the server refuses any attempt to move a candidate back. Statuses marked "sends an email / action" also email the candidate, for example an interview invitation. A confirmation dialog always appears first. Offer outcomes are managed in Offers, not here.', requires: 'manage' },
-      { id: 'transfer', title: 'Considering a candidate for another division', body: 'The one sanctioned exception to forward-only progress: after the interview, the examiners may conclude the candidate fits a different division better. The transfer control re-invites them to interview with the new division (email plus booking access) and records the move in the activity log.', requires: 'manage' },
+      {
+        id: 'evaluation-division',
+        title: 'Evaluated for: the division assessing a candidate',
+        body: 'The first column of the register, and the only one that records a decision rather than a request. First choice and second choice are what the applicant asked for; "Evaluated for" is which division is actually assessing them, and it is what every email they receive names, which interview calendar they can book, and which division sends them an offer. It starts as their first choice, so for most candidates it simply reads the same and nothing about the process changes. '
+          + 'Roles that can change a candidate\'s status can change it, to any of the five research divisions or to Media or Operations, which is wider than the form: an applicant ranks the research divisions or applies once to the joint Media and Operations intake, while an examiner may conclude that somebody belongs in a division nobody named. '
+          + 'CHANGING IT RESTARTS THE SELECTION with new examiners, so a confirmation dialog lists the consequences first: the candidate returns to "To be invited", because the new division has neither invited nor interviewed them; any interview slot they were holding is released back to the division they are leaving; and their own workspace tells them, in plain words, that they are being re-evaluated for another division and names it. No email is sent by the change itself. The invitation you send next is what reaches them, and it names the new division. '
+          + 'A CANDIDATE HAS AT MOST TWO SELECTION PROCESSES. Once the division has been changed once, the pair is fixed: the only move left is back to where they came from, at any time, and a third division is never offered. The move is recorded in the activity log with both divisions.',
+        requires: 'manage',
+      },
       { id: 'semester', title: 'Semester selector', body: 'The list shows only the current semester\'s candidates. Pick a past semester to consult its archived candidacies; they are preserved for accountability and cannot be modified.' },
       { id: 'notes', title: 'Shared notes', body: 'Notes are visible to every reviewer with access to this page and are attributed to their author. Write only technical, relevant observations that help evaluate the candidate.' },
       { id: 'documents', title: 'CV and written answer', body: 'Both documents open in the preview panes and can be downloaded. Opening a CV for the first time automatically advances the candidate\'s status to show the application has been seen.' },
@@ -151,7 +159,7 @@ export const GUIDE: GuideEntry[] = [
     manage: ['Open and close slots and manage bookings for your division.'],
     warnings: ['A candidate can only be invited to interview if their division has at least one open slot.'],
     topics: [
-      { id: 'slots', title: 'How slots work', body: 'Each slot belongs to a division and holds one candidate. Candidates see only the open slots of the division they were invited for, and book directly from their own restricted workspace.' },
+      { id: 'slots', title: 'How slots work', body: 'Each slot belongs to a division and holds one candidate. A candidate sees only the open slots of the division they are being evaluated for, and books directly from their own restricted workspace. If that division changes, the slot they were holding is released back to the division they are leaving and they can book only with the new one.' },
       { id: 'bulk', title: 'Opening several slots at once', body: 'The bulk tool creates a run of slots between a start and an end time on one day, all carrying the same meeting link. Ideal for a full interview afternoon.', requires: 'manage' },
     ],
   },
@@ -162,7 +170,8 @@ export const GUIDE: GuideEntry[] = [
     manage: ['Send or resend offers; the candidate has three days to accept from their workspace.'],
     warnings: ['Sending an offer emails the candidate immediately and cannot be reversed.', 'When the candidate accepts, their account becomes a member automatically.'],
     topics: [
-      { id: 'offer-flow', title: 'The offer lifecycle', body: 'Ready to offer means the candidate passed selection but has not been contacted. Offer sent means they have three days to reply, with an automatic reminder after two. Declined or expired offers can be resent. Joined means the person is now a member.' },
+      { id: 'offer-flow', title: 'The offer lifecycle', body: 'Ready to offer means the candidate passed selection but has not been contacted. Offer sent means they have three days to reply, with an automatic reminder after two. To accept, the candidate writes their name in full and submits it, rather than pressing a button. Declined or expired offers can be resent. Joined means the person is now a member.' },
+      { id: 'offer-division', title: 'Which division the offer names', body: 'The division on the offer starts as the one that evaluated the candidate, which is the division named in every email they have received, and which Candidates screening sets in the "Evaluated for" column. The confirmation dialog is the one place it can still be changed, and once the offer is saved the register shows the division the offer actually concerns.', requires: 'manage' },
       { id: 'fee-due', title: 'Membership fee due', body: 'The switch decides whether this new member will be asked to pay the membership fee for the current semester. Leave it on unless the board granted an exemption.', requires: 'manage' },
     ],
   },
@@ -214,6 +223,7 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['The website toggle takes effect immediately on the public Events page.'],
     topics: [
       { id: 'website-toggle', title: 'On website / Not on website', body: 'The toggle controls whether the event is listed on the public Events page. Internal events such as meetings and calls are normally kept off the website; outward-facing events stay on.', requires: 'manage' },
+      { id: 'filters', title: 'The type filter', body: 'The type menu offers only the types the archive actually contains, so every option in it returns something. A type the association has never run does not appear, and appears the moment the first event of that type is created. Alumni calls are created in Events, Alumni calls and reach this archive automatically once they are published.' },
     ],
   },
   {
@@ -222,7 +232,7 @@ export const GUIDE: GuideEntry[] = [
     view: ['See planned and past calls.'],
     manage: ['Create and edit calls; invite alumni by name or company.'],
     topics: [
-      { id: 'search', title: 'Inviting alumni', body: 'Type a name or a company in the search box and click a result to invite that alumnus. Alumni must exist in the directory first; add missing people in People, Alumni.', requires: 'manage' },
+      { id: 'search', title: 'Inviting alumni', body: 'Type a name or a company in the search box and click a result to invite that alumnus. Only people in the alumni directory can be invited, which is what guarantees the poster and the workspace name a real alumnus; add anybody missing in People, Alumni first. Their current employer is not typed here and not stored on the call: it is read from the alumni register whenever the call is shown, so a call from two years ago names where the person works today.', requires: 'manage' },
     ],
   },
   {
@@ -244,10 +254,10 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.', 'Roles are assigned only by the President and the association account, and nobody can ever change their own role, from any page.'],
     topics: [
       { id: 'registers', title: 'Semester registers', body: 'Each register lists who officially belonged to the association in a given semester. It is created automatically the moment that semester\'s membership fee collection is closed, and preserved unchanged from then on.' },
-      { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Board members can additionally stay in the workspace as advisors (hidden from the website by default).', requires: 'manage' },
+      { id: 'leave', title: 'Moving a member to alumni', body: 'When someone graduates or leaves on good terms, move them to alumni instead of deleting: their history is preserved and they join the alumni directory. Only their surname and graduation year are required; the current company is optional, because it is the fact the association is least likely to know on the day somebody leaves, and it can be added later in People, Alumni. Board members can additionally stay in the workspace as advisors (hidden from the website by default).', requires: 'manage' },
       { id: 'redeem', title: 'How existing members claim their account', body: 'When a person on this register creates a website account with the email stored on their profile, the system links the profile to the account automatically as soon as the email is verified, and applies the role and permissions stored here. No duplicate is created; the link is recorded in the activity log.' },
       { id: 'role-division', title: 'One role for everything', body: 'The role on the member profile is the person\'s ONLY role: workspace permissions mirror it automatically, and Settings > Users edits this same record. President, Vice President, Head of Asset Management and advisors carry no division (the board is not a division); heads of division belong to the board AND to their division; Portfolio Manager is Portfolio Management\'s team leader.', requires: 'manage' },
-      { id: 'advisors', title: 'Advisors', body: 'Advisors are appointed alumni who assist the board and keep consulting access to the workspace. They live in this register; the "Show on public Members page" switch on their profile decides whether they appear on the public website (rows marked "hidden" do not). Advisors never enter fee collections or the semester registers.', requires: 'manage' },
+      { id: 'advisors', title: 'Advisors', body: 'Advisors are appointed alumni who assist the board and keep consulting access to the workspace: they can read every section and change none of it, except their own profile, and Settings is closed to them entirely. They live in this register; the "Show on public Members page" switch on their profile decides whether they appear on the public website (rows marked "hidden" do not). AN ADVISOR IS OUTSIDE THE MEMBERSHIP FEE: they enter no fee collection, count towards no total, receive no fee deadline, and are in no semester register. Appointing a serving member as advisor part way through a semester removes the fee they had not yet paid; a payment already made is kept, because the association received the money.', requires: 'manage' },
     ],
   },
   {
@@ -308,11 +318,17 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'Per-semester membership fee collection: open a period, tick who paid, close it. Closing posts the total to the Treasury and freezes the semester\'s official member register.',
     view: ['See the state of the current collection.'],
     manage: ['Open a collection, mark members as paid, close the collection.'],
-    warnings: ['Closing is final: it locks the collection, records the total in the Treasury and takes the official member snapshot for the semester.'],
+    warnings: ['Closing is final: it locks the collection, records the total in the Treasury and takes the official member snapshot for the semester.', 'Advisors are outside the membership fee entirely: they are in no collection, no total and no semester register.'],
     topics: [
       { id: 'close', title: 'Close and record', body: 'Closing ends the semester\'s collection. The total is written to the Treasury as a locked entry and the definitive member register for the semester is frozen at that moment. It cannot be reopened, so close only when every payment is ticked.', requires: 'manage' },
-      { id: 'deadlines', title: 'The two deadlines', body: 'The first deadline is the standard payment date shown to everyone. The second deadline is a final grace period, shown only to members who have not paid once the first deadline has passed.' },
-      { id: 'past', title: 'Past collections', body: 'Below the current collection, every closed semester shows who contributed and who did not, frozen at the moment the collection closed. This record stays consultable even while no collection is open.' },
+      { id: 'deadlines', title: 'The two deadlines', body: 'The first deadline is the standard payment date shown to everyone who owes the fee, on their Calendar. The second deadline is a final grace period, shown only to members who have not paid once the first deadline has passed. Neither is shown to anyone outside the fee.' },
+      {
+        id: 'who-pays',
+        title: 'Who is in the collection',
+        body: 'The list holds this semester\'s ACTIVE members. Four groups are absent, for two different reasons. Candidates, pending accounts and alumni are not members of the association this semester at all. ADVISORS ARE MEMBERS OF NOTHING THEY PAY FOR: an advisor is an alumnus appointed to advise the association, not a dues-paying member of it, so they are in no collection, count towards no total, receive no fee deadline on their Calendar and enter no semester register. '
+          + 'The rule follows a person rather than a moment: appointing a member as advisor part way through a semester removes the unpaid fee row they were given when the collection opened. A payment they had already made is never deleted, because the association received the money and the Treasury must still record it; where that happens, a line under the collection header says so, and it explains any gap between the ticks on screen and the total the collection banks.',
+      },
+      { id: 'past', title: 'Past collections', body: 'Below the current collection, every closed semester shows who contributed and who did not, frozen at the moment the collection closed. This record stays consultable even while no collection is open, and holds only people who were dues-paying members of the association that semester.' },
     ],
   },
   {
@@ -404,6 +420,7 @@ export const GUIDE: GuideEntry[] = [
     manage: [],
     topics: [
       { id: 'levels', title: 'Reading the table', body: 'Full means the role can create, edit and remove in that subsection. View means it can open the page and use light actions such as registering or downloading. A dash means the subsection is hidden for that role.' },
+      { id: 'advisor-row', title: 'The advisor row', body: 'An advisor reads View across the whole table and Full on My Profile alone: an appointed alumnus is there to advise on the work, which requires seeing it, and to change none of it. The Settings subsections are the deliberate exception and show a dash, because access control and the activity log are not an outside adviser\'s to read. Because the row is generated from the live rules rather than written by hand, a subsection added tomorrow appears here for them automatically.' },
     ],
   },
   {

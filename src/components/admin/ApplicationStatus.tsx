@@ -6,7 +6,7 @@ import { divisionLabels } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
-import { candidateStatus, isOfferLive } from '@/lib/applications-api';
+import { candidateStatus, isOfferLive, evaluationDivision, isReEvaluated } from '@/lib/applications-api';
 
 // Four candidate-facing stages, mirroring "The Application Journey" on /join.
 //
@@ -53,6 +53,8 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
   // A live offer the candidate can act on. The decision itself lives in
   // the Offer section; this page only says that it is waiting.
   const offerLive = isOfferLive(app);
+  // Is a division that the candidate never named now assessing them?
+  const reEvaluated = !!app && isReEvaluated(app);
   // An internal "accepted" (no offer sent yet) must NOT be revealed (report 14).
   const internalAccepted = !!app && app.status === 'accepted' && !app.offer_sent_at;
   // Journey progress: hide an internal acceptance at the interview stage.
@@ -153,6 +155,28 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
             <div className={`font-serif text-2xl ${rejected ? 'text-muted-foreground' : 'text-accent'}`}>{statusLabel}</div>
           </div>
 
+          {/* BEING LOOKED AT BY A DIVISION THEY DID NOT NAME.
+              A candidate whose evaluation moves goes back a step, and a
+              progress bar that quietly retreats with no explanation is
+              alarming. This says what happened and why, in the one place
+              they will look for it. It appears only while the outcome is
+              still open: after an offer or a rejection the news is the
+              outcome, not the route to it. */}
+          {reEvaluated && !rejected && !offerLive && app.status !== 'joined' && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <div className="text-sm text-amber-900">
+                You are currently being re-evaluated for another division:{' '}
+                <strong>{divisionLabels[evaluationDivision(app)]}</strong>.
+              </div>
+              <p className="mt-1.5 text-xs text-amber-800">
+                After reading your application, our reviewers believe this division suits you better than the
+                ones you named. Your candidacy has returned to the review stage so that {divisionLabels[evaluationDivision(app)]}{' '}
+                can consider it from the start, and any interview you had booked has been released. Everything
+                you hear from us next will be about this division.
+              </p>
+            </div>
+          )}
+
           {/* Animated journey: only the reached steps light up. */}
           <div ref={rootRef} className="journey">
             {STEPS.map((s, i) => {
@@ -167,7 +191,15 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                   </div>
                   <div>
                     <h3 className="jt-t">{label}</h3>
-                    <div className="jt-d">{s.d}</div>
+                    {/* "The divisions you chose" stops being true once a
+                        different division has taken the candidacy on, and a
+                        step that contradicts the notice above it is worse
+                        than one that says nothing. */}
+                    <div className="jt-d">
+                      {i === 1 && reEvaluated
+                        ? `Reviewers from ${divisionLabels[evaluationDivision(app)]} are reading what you submitted.`
+                        : s.d}
+                    </div>
                     <div className="jt-n">{s.n}</div>
                   </div>
                 </div>

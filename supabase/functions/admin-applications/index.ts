@@ -77,6 +77,24 @@ function joinRoleDivisionError(role: string, division: string): string | null {
 }
 const INTERVIEW_STAGES = ['interview_invitation_sent', 'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed'];
 
+// =====================================================================
+// THE DIVISIONS A CANDIDATE MAY BE EVALUATED FOR.
+// ---------------------------------------------------------------------
+// Wider than the divisions a candidate may RANK on the form, and that is
+// deliberate. The applicant ranks the five research divisions, or applies
+// once to the joint Media and Operations intake (stored as `media`). An
+// examiner may conclude that somebody belongs in Operations proper, or in
+// Media, or in a research division nobody named, and this is the list
+// that lets them say so. `board` and `none` are not divisions anybody is
+// recruited into and are absent on purpose.
+//
+// Mirrors EVALUATION_DIVISIONS in src/lib/applications-api.ts.
+// =====================================================================
+const EVALUATION_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
+
+/** The status a re-evaluated candidacy returns to: "To be invited". */
+const REEVALUATION_STATUS = 'to_be_contacted';
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -113,8 +131,27 @@ Deno.serve(async (req) => {
     const PROGRESS_DENIED = 'Your role can review candidates and add notes, but not change a candidate\'s progression. Ask the President, Vice President or a Head to move this candidacy.';
 
     const primaryRole = roleNames[0] || 'member';
-    const inScope = (app: { first_choice: string; second_choice: string | null }) =>
-      canAll || reviewerDivisions.includes(app.first_choice) || (app.second_choice ? reviewerDivisions.includes(app.second_choice) : false);
+    // =====================================================================
+    // SCOPE FOLLOWS THE EVALUATION, NOT ONLY THE PREFERENCES.
+    // ---------------------------------------------------------------------
+    // A candidate can now be moved to a division they never named, which
+    // is the whole point of the evaluation division. If scope were still
+    // read from the two choices alone, the head who is actually assessing
+    // them would be unable to open them, and the head who is not would
+    // still see them. Both halves matter, so both are here: the two
+    // preferences (a reviewer may look at anyone who asked for their
+    // division) and the evaluation division (a reviewer must be able to
+    // see whoever has been handed to them).
+    // =====================================================================
+    const inScope = (app: { first_choice: string; second_choice: string | null; evaluation_division?: string | null }) =>
+      canAll
+      || reviewerDivisions.includes(app.first_choice)
+      || (app.second_choice ? reviewerDivisions.includes(app.second_choice) : false)
+      || (app.evaluation_division ? reviewerDivisions.includes(app.evaluation_division) : false);
+
+    /** The division assessing this candidate right now. */
+    const evaluationOf = (app: { evaluation_division?: string | null; interview_division?: string | null; first_choice: string }) =>
+      app.evaluation_division || app.interview_division || app.first_choice;
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
@@ -122,7 +159,7 @@ Deno.serve(async (req) => {
     // ── list ───────────────────────────────────────────────────────────────
     if (action === 'list') {
       let q = supabase.from('applications').select('*').order('created_at', { ascending: false });
-      if (!canAll) q = q.or(`first_choice.in.(${reviewerDivisions.join(',')}),second_choice.in.(${reviewerDivisions.join(',')})`);
+      if (!canAll) q = q.or(`first_choice.in.(${reviewerDivisions.join(',')}),second_choice.in.(${reviewerDivisions.join(',')}),evaluation_division.in.(${reviewerDivisions.join(',')})`);
       const { data, error } = await q;
       if (error) throw error;
       // note counts
@@ -189,7 +226,7 @@ Deno.serve(async (req) => {
       if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!STATUSES.includes(body.status)) return json({ error: 'Invalid status' }, 400);
       const { data: app } = await supabase.from('applications')
-        .select('first_choice, second_choice, first_name, email, interview_division, status')
+        .select('first_choice, second_choice, first_name, email, interview_division, evaluation_division, offer_division, status')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
 
@@ -203,30 +240,35 @@ Deno.serve(async (req) => {
         }, 400);
       }
       const updates: Record<string, unknown> = { status: body.status };
-      let invitedDivision: string | null = app.interview_division;
-      // Inviting to interview locks the candidate to one division's calendar.
-      // A scoped reviewer invites for their own division; a full-access role
-      // may pass an explicit division and otherwise defaults to first choice.
+      // WHICH DIVISION THIS CANDIDACY IS ABOUT. One answer, used for the
+      // invitation, for the booking calendar and for every email below.
+      let evaluation: string = evaluationOf(app);
       if (body.status === 'interview_invitation_sent') {
-        // The examiner may explicitly choose one of the candidate's two
-        // preferred divisions; it must be a candidate choice and within the
-        // examiner's scope. Otherwise fall back to a sensible default.
+        // The examiner may still name the division at the moment of the
+        // invitation, which is the same control as before. What has
+        // changed is what it may be set to: the evaluation division is no
+        // longer confined to the candidate's own two preferences, because
+        // an examiner is now allowed to conclude that somebody belongs in
+        // a division they never asked for. It must still be a real
+        // division and still within the examiner's own scope.
         const requested = typeof body.interview_division === 'string' ? body.interview_division : null;
-        const isCandidateChoice = !!requested && (requested === app.first_choice || requested === app.second_choice);
+        const isRealDivision = !!requested && EVALUATION_DIVISIONS.includes(requested);
         const withinScope = canAll || (requested ? reviewerDivisions.includes(requested) : false);
-        if (requested && isCandidateChoice && withinScope) {
-          invitedDivision = requested;
-        } else if (canAll) {
-          invitedDivision = app.first_choice;
-        } else if (reviewerDivisions.includes(app.first_choice)) {
-          invitedDivision = app.first_choice;
-        } else if (app.second_choice && reviewerDivisions.includes(app.second_choice)) {
-          invitedDivision = app.second_choice;
-        } else {
-          invitedDivision = reviewerDivisions[0] ?? app.first_choice;
+        if (requested && isRealDivision && withinScope) {
+          evaluation = requested;
+        } else if (!canAll && !reviewerDivisions.includes(evaluation)) {
+          // A scoped reviewer inviting somebody whose evaluation sits
+          // outside their divisions invites for one of their own.
+          evaluation = reviewerDivisions.includes(app.first_choice) ? app.first_choice
+            : (app.second_choice && reviewerDivisions.includes(app.second_choice)) ? app.second_choice
+            : (reviewerDivisions[0] ?? evaluation);
         }
-        updates.interview_division = invitedDivision;
+        // The invitation is the moment the two fields converge: the
+        // division that invited is the division that is assessing.
+        updates.interview_division = evaluation;
+        updates.evaluation_division = evaluation;
       }
+      const invitedDivision = evaluation;
 
       const { error } = await supabase.from('applications').update(updates).eq('id', body.id);
       if (error) throw error;
@@ -251,7 +293,7 @@ Deno.serve(async (req) => {
             p_to: app.email,
             p_vars: {
               first_name: app.first_name,
-              division_name: DIV_LABELS[(app.interview_division || app.first_choice) as string] || '',
+              division_name: DIV_LABELS[evaluation] || '',
             },
           });
         } else if (body.status === 'offer_accepted' && previousStatus !== 'offer_accepted') {
@@ -259,7 +301,7 @@ Deno.serve(async (req) => {
             p_key: 'acceptance_received', p_to: app.email,
             p_vars: {
               first_name: app.first_name,
-              division_name: DIV_LABELS[(app.offer_division || app.interview_division || app.first_choice) as string] || '',
+              division_name: DIV_LABELS[(app.offer_division || evaluation) as string] || '',
               status_url: STATUS_URL,
             },
           });
@@ -269,52 +311,88 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    // ── transfer-division ────────────────────────────────────────────────────
-    // The one sanctioned exception to forward-only progress: after the
-    // interview, the examiners may conclude the candidate fits a DIFFERENT
-    // division better. The transfer re-opens the interview stage in the target
-    // division: the candidate is re-invited (email + booking access) for the
-    // new division, and the move is recorded in the activity log.
-    if (action === 'transfer-division') {
+    // ── set-evaluation-division ──────────────────────────────────────────────
+    // =====================================================================
+    // MOVING A CANDIDACY TO A DIFFERENT DIVISION.
+    // ---------------------------------------------------------------------
+    // The one sanctioned exception to forward-only progress, and the only
+    // way a candidacy ever revisits an earlier stage. It replaces the old
+    // `transfer-division`, which could only run after the interview and
+    // only between the five research divisions; both limits were wrong.
+    // An examiner reading a CV can already see that somebody belongs in
+    // Operations, and having to interview them for the wrong division
+    // first, in order to be allowed to say so, helped nobody.
+    //
+    // What happens, and why each part is here:
+    //
+    //   · the candidacy RETURNS TO "To be invited", because it is starting
+    //     again with a different set of examiners. A candidate who had
+    //     been invited, or interviewed, by the old division has not been
+    //     invited or interviewed by the new one.
+    //   · `interview_division` is CLEARED, so the applicant's own
+    //     workspace stops offering the old division's calendar, and any
+    //     booking they held is released rather than left occupying a slot
+    //     the old division could give to somebody else.
+    //   · `evaluation_division_previous` remembers where they came from,
+    //     which is what caps this at TWO PROCESSES: once it is set, the
+    //     only move on offer is back.
+    //
+    // No email is sent by this action. The move alone is not news the
+    // candidate can act on; the invitation that follows is, and it is sent
+    // by `update-status` in the ordinary way, naming the new division.
+    // =====================================================================
+    if (action === 'set-evaluation-division') {
       if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const target = typeof body.division === 'string' ? body.division : null;
-      if (!target || !['equity', 'investment', 'macro', 'portfolio', 'quant'].includes(target)) {
-        return json({ error: 'Choose a valid target division' }, 400);
+      if (!target || !EVALUATION_DIVISIONS.includes(target)) {
+        return json({ error: 'Choose a valid division to evaluate this candidate for.' }, 400);
       }
       const { data: app } = await supabase.from('applications')
-        .select('id, first_choice, second_choice, first_name, surname, email, interview_division, status')
+        .select('id, first_choice, second_choice, first_name, surname, email, interview_division, evaluation_division, evaluation_division_previous, status, user_id')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
-      if (!['interview_completed', 'accepted'].includes(app.status)) {
-        return json({ error: 'A division transfer is only possible after the interview has been completed.' }, 400);
+
+      // An outcome the candidate has already been told about, or acted on,
+      // is not something to reopen from here.
+      if (['offer_accepted', 'offer_declined', 'joined'].includes(app.status)) {
+        return json({ error: 'This candidacy has reached its final outcome and its division can no longer be changed.' }, 400);
       }
-      const current = app.interview_division || app.first_choice;
-      if (target === current) return json({ error: 'The candidate is already in this division.' }, 400);
-      // The target division must have at least one open slot so the candidate
-      // can actually book the new interview.
-      const { data: slots } = await supabase.from('interview_slots')
-        .select('id').eq('division', target).eq('is_active', true).eq('is_booked', false).limit(1);
-      if (!slots || slots.length === 0) {
-        return json({ error: `Open at least one interview slot for ${DIV_LABELS[target]} before transferring this candidate.` }, 400);
+
+      const current = evaluationOf(app);
+      if (target === current) return json({ error: 'This candidate is already being evaluated for this division.' }, 400);
+
+      // THE TWO-PROCESS CAP. Once a candidacy has been moved once, the
+      // pair of divisions is fixed and the only move left is between them.
+      const previous = app.evaluation_division_previous as string | null;
+      if (previous && target !== previous) {
+        return json({
+          error: `This candidate has already been moved once. They can only be evaluated for ${DIV_LABELS[current]} or ${DIV_LABELS[previous]}; a candidacy is never opened in a third division.`,
+        }, 400);
       }
 
       const { error } = await supabase.from('applications')
-        .update({ status: 'interview_invitation_sent', interview_division: target })
+        .update({
+          evaluation_division: target,
+          evaluation_division_previous: current,
+          // Starting again with new examiners: the invitation and the
+          // stage that followed it belonged to the old division.
+          interview_division: null,
+          status: STATUSES.indexOf(app.status) > STATUSES.indexOf(REEVALUATION_STATUS)
+            ? REEVALUATION_STATUS
+            : app.status,
+        })
         .eq('id', app.id);
       if (error) throw error;
 
+      // Release any interview slot held for the division they are leaving,
+      // so it goes back to that division rather than being held by a
+      // candidate who is no longer theirs to interview. Freeing the slot
+      // itself is the `interview_booking_delete` trigger's job, so the
+      // booking is simply deleted and the slot follows.
       try {
-        await supabase.rpc('enqueue_app_email', {
-          p_key: 'interview_invitation', p_to: app.email,
-          p_vars: {
-            first_name: app.first_name,
-            division_name: DIV_LABELS[target] || '',
-            division_slug: target,
-            status_url: STATUS_URL,
-          },
-        });
-      } catch (e) { console.error('transfer email enqueue failed', e); }
+        await supabase.from('interview_bookings').delete().eq('application_id', app.id);
+      } catch (e) { console.error('releasing the old interview booking failed', e); }
 
       try {
         await supabase.from('activity_logs').insert({
@@ -322,11 +400,11 @@ Deno.serve(async (req) => {
           action: 'status_change', entity_type: 'application', entity_id: app.id,
           entity_name: `${app.first_name} ${app.surname}`,
           section: 'Recruiting', subsection: 'Candidates screening',
-          details: { event: 'division_transfer', from: current, to: target, previous_status: app.status },
+          details: { event: 'evaluation_division_change', from: current, to: target, previous_status: app.status },
         });
-      } catch (e) { console.error('transfer log failed', e); }
+      } catch (e) { console.error('evaluation division log failed', e); }
 
-      return json({ success: true });
+      return json({ success: true, evaluation_division: target, evaluation_division_previous: current });
     }
 
     // ── add-note ───────────────────────────────────────────────────────────

@@ -28,7 +28,17 @@ async function invoke(fn: string, session: Session | null, body: Record<string, 
 }
 
 // Fees
-export async function getCurrentFees(session: Session | null): Promise<{ period: FeePeriod | null; members: FeeMember[]; fees: MembershipFeeRow[] }> {
+export async function getCurrentFees(session: Session | null): Promise<{
+  period: FeePeriod | null; members: FeeMember[]; fees: MembershipFeeRow[];
+  /**
+   * Payments held for this collection by somebody no longer on the list:
+   * a member who has since left, or been appointed advisor. The money was
+   * received and Treasury will still record it, so the number is reported
+   * rather than hidden, and it explains any gap between the ticks on
+   * screen and the total the collection banks.
+   */
+  banked_off_register?: number;
+}> {
   return await invoke('admin-fees', session, { action: 'current' });
 }
 export function openFeePeriod(session: Session | null, semester_label: string, fee_amount: number, first_deadline: string, second_deadline: string | null) {
