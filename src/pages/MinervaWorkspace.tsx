@@ -204,6 +204,10 @@ const MinervaWorkspace = () => {
   // button - are untouched. What changed is that they are now `const`.
   // ══════════════════════════════════════════════════════════════════════
   const location = useLocation();
+  // Set by the email-confirmation page when it sends a brand-new session here.
+  // The gate below is fractionally more patient in that case.
+  const justConfirmed = (location.state as { justConfirmed?: boolean } | null)?.justConfirmed === true;
+  const confirmRetryDone = useRef(false);
   const { sectionSlug, subSlug } = useMemo(
     () => parseWorkspaceUrl(location.pathname),
     [location.pathname],
@@ -392,13 +396,19 @@ const MinervaWorkspace = () => {
           })();
           return;
         }
+        // ARRIVING STRAIGHT FROM EMAIL CONFIRMATION, ROLES GET ONE MORE READ.
+        if (justConfirmed && !confirmRetryDone.current) {
+          confirmRetryDone.current = true;
+          refreshProfile();
+          return;
+        }
         toast({ title: 'Access Denied', description: "You don't have permission to access the Minerva Workspace.", variant: 'destructive' });
         navigate('/');
         return;
       }
       if (!isCandidate) fetchEvents();
     }
-  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile]);
+  }, [user, authLoading, navigate, roles, rolesLoaded, permissions.hasAnyAccess, isCandidate, refreshProfile, justConfirmed]);
 
   const fetchEvents = async () => {
     try {
@@ -671,6 +681,9 @@ const MinervaWorkspace = () => {
       </div>
     );
   }
+
+  // A signed-in reader whose roles have not arrived sees a loader, not a blank page.
+  if (user && !rolesLoaded && !isCandidate) return <PageLoader />;
 
   if (!user || (!permissions.hasAnyAccess && !isCandidate)) return null;
 
