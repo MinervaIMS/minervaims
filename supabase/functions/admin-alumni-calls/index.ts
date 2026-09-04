@@ -60,7 +60,7 @@ interface MirrorCall {
   planned_date?: string | null;
   notes?: string | null;
   poster_url?: string | null;
-  participants: { alumnus_name: string; former_role?: string | null }[];
+  participants: { alumnus_name: string; former_role?: string | null; company?: string | null }[];
 }
 
 /** The event row a published call becomes. */
@@ -75,14 +75,26 @@ function eventPayload(c: MirrorCall) {
     event_type: 'alumni_call',
     division: c.division && c.division !== 'none' ? c.division : null,
     online: true,
-    // Each guest as "Name - former role", which is exactly how the public
-    // event row already prints a guest list.
-    guest: c.participants.map((p) => (p.former_role ? `${p.alumnus_name} - ${p.former_role}` : p.alumnus_name)),
+    // Each guest as "Name - where they are now", which is exactly how the
+    // public event row already prints a guest list. The company is read
+    // from the alumni directory at the moment the call is saved rather
+    // than from anything stored on the call, so re-saving a call picks up
+    // an alumnus who has changed employer.
+    guest: c.participants.map((p) => {
+      const at = (p.company || p.former_role || '').trim();
+      return at ? `${p.alumnus_name} - ${at}` : p.alumnus_name;
+    }),
     description: c.notes ?? null,
     poster_url: c.poster_url ?? null,
     show_on_website: true,
     registration_enabled: false,
-    in_archive: false,
+    // IN THE ARCHIVE, because it happened. This was written as false in
+    // step 48, and the Event archive in the workspace lists only events
+    // with in_archive, so every published alumni call was missing from
+    // the association's own record of its events while appearing on the
+    // public site. An alumni call is an event the association held; the
+    // archive is the list of events the association held.
+    in_archive: true,
   };
 }
 
@@ -130,17 +142,36 @@ Deno.serve(async (req) => {
     }
     const c = parsed.data;
 
-    // Verify every named alumnus exists in the directory.
+    // ─────────────────────────────────────────────────────────────────
+    // VERIFY EACH ALUMNUS, AND TAKE THEIR CURRENT COMPANY WHILE THERE.
+    // The check that the person is genuinely in the directory was already
+    // here and is unchanged: a call naming somebody who is not an alumnus
+    // is refused. What is new is that the same query now also reads where
+    // they work, which is what the mirrored event prints beside the name.
+    // One round trip does both, and the company can never be a value
+    // somebody typed into the call by hand.
+    // ─────────────────────────────────────────────────────────────────
+    const companies = new Map<string, string | null>();
     for (const p of c.participants) {
       let ok = false;
       if (p.alumni_id) {
-        const { data } = await supabase.from('alumni').select('id').eq('id', p.alumni_id).maybeSingle();
+        const { data } = await supabase.from('alumni').select('id, company').eq('id', p.alumni_id).maybeSingle();
         ok = !!data;
+        if (data) companies.set(p.alumni_id, (data as { company: string | null }).company ?? null);
       }
       if (!ok) {
         return json({ error: `"${p.alumnus_name}" is not in the alumni list. Please add them in the Alumni section first.` }, 400);
       }
     }
+    /** The call, with each participant's company resolved, for the mirror. */
+    const mirrorInput: MirrorCall = {
+      ...c,
+      participants: c.participants.map((p) => ({
+        alumnus_name: p.alumnus_name,
+        former_role: p.former_role ?? null,
+        company: p.alumni_id ? companies.get(p.alumni_id) ?? null : null,
+      })),
+    };
 
     const organiser = (await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.email;
     const payload = {
@@ -172,7 +203,7 @@ Deno.serve(async (req) => {
         }
         return;
       }
-      const ev = eventPayload(c);
+      const ev = eventPayload(mirrorInput);
       if (currentEventId) {
         const { error } = await supabase.from('events').update(ev).eq('id', currentEventId);
         // A mirrored event deleted by hand from Event archive leaves a stale

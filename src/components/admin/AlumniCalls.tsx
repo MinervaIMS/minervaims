@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,6 +51,34 @@ export default function AlumniCalls() {
   useEffect(() => { load(); }, []);
 
   const alumniById = useMemo(() => { const m: Record<string, AlumniOption> = {}; for (const a of alumni) m[a.id] = a; return m; }, [alumni]);
+
+  // ===================================================================
+  // THE COMPANY IS LOOKED UP, NOT REMEMBERED.
+  // -------------------------------------------------------------------
+  // Adding an alumnus to a call used to copy their company into the
+  // participant row at the moment of picking, which turns a fact that
+  // changes into a fact that was true once. Alumni move: the whole point
+  // of the directory is that it tracks where they are now. A call
+  // recorded in March showed last year's employer beside a name that the
+  // Alumni page, three lines of code away, already knew had changed.
+  //
+  // Nothing about the company is stored on the call any more. The
+  // participant row carries the LINK to the alumnus, the server checks
+  // that the link resolves, and the company is read from the directory
+  // every time the line is drawn. Correcting an employer in one place
+  // corrects it everywhere it appears.
+  //
+  // `former_role` is still read as a fallback so the calls recorded
+  // before this change keep whatever they were given, but it is no
+  // longer written.
+  // ===================================================================
+  const companyFor = useCallback(
+    (p: Pick<CallParticipant, 'alumni_id' | 'former_role'>): string | null => {
+      const live = p.alumni_id ? alumniById[p.alumni_id]?.company : null;
+      return (live || p.former_role || null)?.trim() || null;
+    },
+    [alumniById],
+  );
   const available = useMemo(() => alumni.filter((a) => !form.participants.some((p) => p.alumni_id === a.id)), [alumni, form.participants]);
   // Search alumni by name or company for the invite typeahead.
   const searchResults = useMemo(() => {
@@ -87,7 +115,8 @@ export default function AlumniCalls() {
     const a = alumniById[alumniId];
     if (!a) return;
     if (form.participants.length >= 5) { toast({ title: 'A call can have at most 5 alumni', variant: 'destructive' }); return; }
-    const participant: CallParticipant = { alumni_id: a.id, alumnus_name: `${a.name} ${a.surname}`, former_role: a.company };
+    // The link and the name. The company is resolved when it is shown.
+    const participant: CallParticipant = { alumni_id: a.id, alumnus_name: `${a.name} ${a.surname}`, former_role: null };
     setForm((f) => ({ ...f, participants: [...f.participants, participant] }));
     setSearch('');
   };
@@ -135,7 +164,7 @@ export default function AlumniCalls() {
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {c.participants.map((p, i) => (
-                      <span key={i} className="text-xs bg-accent/10 text-accent px-2 py-0.5">{p.alumnus_name}{p.former_role ? ` · ${p.former_role}` : ''}</span>
+                      <span key={i} className="text-xs bg-accent/10 text-accent px-2 py-0.5">{p.alumnus_name}{companyFor(p) ? ` · ${companyFor(p)}` : ''}</span>
                     ))}
                   </div>
                   {c.notes && <p className="text-sm text-muted-foreground mt-2">{c.notes}</p>}
@@ -172,7 +201,7 @@ export default function AlumniCalls() {
               <div className="flex flex-wrap gap-1.5">
                 {form.participants.map((p, i) => (
                   <span key={i} className="inline-flex items-center gap-1 text-sm bg-accent/10 text-accent px-2 py-1">
-                    {p.alumnus_name}{p.former_role ? ` · ${p.former_role}` : ''}
+                    {p.alumnus_name}{companyFor(p) ? ` · ${companyFor(p)}` : ''}
                     <button type="button" onClick={() => removeParticipant(i)}><X className="h-3 w-3" /></button>
                   </span>
                 ))}
@@ -204,7 +233,12 @@ export default function AlumniCalls() {
                   )}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">Alumni must exist in the alumni directory. If someone is missing, add them in the Alumni section first.</p>
+              <p className="text-xs text-muted-foreground">
+                Alumni must exist in the alumni directory: the server checks each one and refuses a call naming
+                somebody who is not there. If a person is missing, add them in the Alumni section first. The company
+                shown beside each name is read from the directory whenever the call is displayed, so keeping the
+                Alumni page current keeps every call current.
+              </p>
             </div>
 
             {/* ===========================================================

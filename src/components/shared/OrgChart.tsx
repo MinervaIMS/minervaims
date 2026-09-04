@@ -165,7 +165,7 @@ const SUBTREES: Record<AmDiv, SubTree> = {
     columns: [
       { left: 0, width: 156, leader: 'Team Leader', sub: 'Equities' },
       { left: 174, width: 156, leader: 'Team Leader', sub: 'Fixed Income' },
-      { left: 348, width: 156, leader: 'Team Leader', sub: 'FX and Commodities' },
+      { left: 348, width: 156, leader: 'Team Leader', sub: 'FX & Commodities' },
     ],
   },
   macro: {

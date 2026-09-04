@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, User, X } from "lucide-react";
 import logoColor from "@/assets/logo-color.svg";
 import logoWhite from "@/assets/logo-white.svg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -557,14 +557,6 @@ function Avatar({
   user: { fullName: string; avatarUrl?: string | null };
   transparent: boolean;
 }) {
-  const initials = (user.fullName || "")
-    .split(/\s+/)
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
   const ring = transparent
     ? "shadow-[0_0_0_1px_rgba(255,255,255,0.55)]"
     : "shadow-[0_0_0_1px_#E0E0E0]";
@@ -578,13 +570,28 @@ function Avatar({
       />
     );
   }
+
+  // =====================================================================
+  // NO PHOTOGRAPH YET: THE SAME ANONYMOUS FIGURE THE WORKSPACE USES.
+  // ---------------------------------------------------------------------
+  // This used to draw the person's initials in bold Times New Roman on
+  // white. Two letters in a serif, in a ring, read as a monogram: a
+  // deliberate mark somebody chose, rather than the absence of one. And
+  // it was the only place on the site where a missing photograph looked
+  // like that, because the workspace roster already answers the same
+  // question with a grey field and a plain figure.
+  //
+  // Using that figure here says the right thing (nothing has been
+  // uploaded) in the language the rest of the product already speaks. The
+  // ring and the round shape stay, so the header does not shift when a
+  // photograph is added and the avatar becomes an image.
+  // =====================================================================
   return (
     <span
       aria-hidden="true"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black border border-[#1F0F4D] font-bold text-[12.5px] tracking-wide uppercase"
-      style={{ fontFamily: '"Times New Roman", Times, serif' }}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground ${ring}`}
     >
-      {initials || "·"}
+      <User className="h-4 w-4" strokeWidth={1.75} />
     </span>
   );
 }

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 // =====================================================================
@@ -14,21 +14,37 @@ import { supabase } from '@/integrations/supabase/client';
 //
 // IT READS `events`, NOT `alumni_calls`. A call is planned in the
 // workspace and, once it has a poster and a date, mirrored into `events`
-// as an event of type `alumni_call` (see the admin-alumni-calls edge
-// function). So this page reads the same public table the Events page
-// reads, under the same row-level security, and the internal planning
-// tracker - which holds calls that have not happened and alumni who have
-// not yet agreed to appear - is never exposed.
+// as an event of type `alumni_call`. So this page reads the same public
+// table the Events page reads, under the same row-level security, and
+// the internal planning tracker is never exposed.
 //
-// ONLY CALLS WITH A POSTER. A carousel of posters with a blank card in
-// it is worse than a shorter carousel, and the poster is what makes the
-// call recognisable in the first place.
+// ---------------------------------------------------------------------
+// IT SCROLLS LIKE THE HOMEPAGE, BECAUSE IT IS THE SAME KIND OF OBJECT.
 //
-// NO CAROUSEL LIBRARY. The strip is a scroll container with scroll-snap:
-// on a phone that is the platform's own momentum scrolling, with no
-// gesture handling to get wrong, and on a desktop the two arrows scroll
-// it by exactly one card. Nothing is hidden from the reader who prefers
-// to swipe, and nothing new is added to the bundle of a public page.
+// The first version was its own small invention: two circular arrows
+// floating over the edges, and no indication of how far along the strip
+// a reader had come. The homepage has carried a horizontal rail of cards
+// since long before this section existed, and it answers both questions
+// differently: no arrows at all, and a row of dots underneath that both
+// REPORTS the position and MOVES to one when pressed.
+//
+// This now uses that model exactly, down to the arithmetic:
+//
+//   * the step is one card plus one gap, measured from the first card
+//     rather than assumed, so it stays right at every breakpoint;
+//   * the active dot is `round(scrollLeft / step)`, so it changes at the
+//     half-way point between two cards rather than on the first pixel;
+//   * pressing a dot scrolls to `step * i`, which lands the card flush
+//     against the rail's start edge;
+//   * `scroll-snap-align: start` on the cards and a matching
+//     `scroll-padding-inline-start` make a swipe settle in the same
+//     places the dots do, so the two can never disagree;
+//   * the edges fade only where there is something beyond them, from the
+//     same `data-at-start` / `data-at-end` pair the homepage uses.
+//
+// The dots use the shared `.rdots` / `.rdot` rules in index.css, which is
+// where the homepage's dots come from, so a change to the dot is a change
+// in both places.
 // =====================================================================
 
 interface AlumniCallEvent {
@@ -50,9 +66,12 @@ function formatDate(iso: string) {
 export function AlumniCallsCarousel() {
   const [calls, setCalls] = useState<AlumniCallEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const railRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+  /** Which poster is open full size, or null. */
+  const [lightbox, setLightbox] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,32 +94,73 @@ export function AlumniCallsCarousel() {
     return () => { cancelled = true; };
   }, []);
 
-  const measure = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  /**
+   * One card plus one gap, measured rather than assumed.
+   *
+   * The card width is a clamp on the viewport and the gap is a clamp too,
+   * so neither can be hardcoded here without going wrong at some width.
+   */
+  const stepWidth = useCallback(() => {
+    const rail = railRef.current;
+    if (!rail) return 1;
+    const card = rail.querySelector<HTMLElement>('[data-call-card]');
+    const gap = parseFloat(getComputedStyle(rail).columnGap || '24');
+    return Math.max(1, (card?.offsetWidth || 280) + (Number.isNaN(gap) ? 24 : gap));
   }, []);
 
-  useEffect(() => {
-    measure();
-    const el = trackRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', measure, { passive: true });
-    window.addEventListener('resize', measure);
-    return () => {
-      el.removeEventListener('scroll', measure);
-      window.removeEventListener('resize', measure);
-    };
-  }, [measure, calls.length]);
+  /**
+   * ONE DOT PER POSITION THE RAIL CAN ACTUALLY REACH.
+   *
+   * The obvious thing is one dot per card, and it is wrong here. Five
+   * posters on a laptop leaves three of them already on screen, so the
+   * rail can only travel about one card's width before it hits the end:
+   * clicking the fourth or fifth dot moved nothing, and the dot never
+   * lit, because the position it pointed at does not exist. Three dead
+   * controls is a worse affordance than the arrows this replaced.
+   *
+   * The number of reachable positions is how many whole steps fit inside
+   * the leftover scroll, plus the resting position at zero. That is the
+   * same reasoning CarouselScrollIndicator already uses elsewhere on the
+   * site, so the two agree. The scroll model itself is untouched: the
+   * step is still one card plus one gap, and the rail still comes to
+   * rest on a card's leading edge.
+   */
+  const [dotCount, setDotCount] = useState(1);
 
-  /** Scroll by one card, measured from the first card rather than guessed. */
-  const scrollByCard = (direction: -1 | 1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>('[data-call-card]');
-    const step = card ? card.offsetWidth + 24 : el.clientWidth * 0.8;
-    el.scrollBy({ left: direction * step, behavior: 'smooth' });
+  const update = useCallback(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const step = stepWidth();
+    const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    const positions = Math.max(1, Math.min(calls.length, 1 + Math.ceil(max / step - 0.02)));
+    const ended = rail.scrollLeft >= max - 2;
+    setDotCount(positions);
+    // The final position is the end of the rail, and the end is not always
+    // a whole number of steps from the start: at 1440px the last card runs
+    // out 40px after the previous step, so `round(scrollLeft / step)` names
+    // the second-to-last dot while the rail is sitting at the last one.
+    // Reading the end as the last dot rather than rounding to it is what
+    // keeps the pressed dot and the lit dot the same dot.
+    setActiveIdx(ended ? positions - 1 : Math.min(Math.round(rail.scrollLeft / step), positions - 1));
+    setAtStart(rail.scrollLeft <= 2);
+    setAtEnd(ended);
+  }, [stepWidth, calls.length]);
+
+  useLayoutEffect(() => {
+    update();
+    const onResize = () => update();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [update, calls.length]);
+
+  const scrollToIdx = (i: number) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    // The last dot means "the end", which is not always a whole number of
+    // steps away. Clamping here rather than letting the browser do it
+    // keeps the dot that was pressed the dot that lights up.
+    const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    rail.scrollTo({ left: Math.min(stepWidth() * i, max), behavior: 'smooth' });
   };
 
   // Nothing to show and nothing to explain: the section is simply absent
@@ -126,43 +186,29 @@ export function AlumniCallsCarousel() {
         cohort: academic choices, recruitment, and what the work is actually like. These are the most recent.
       </p>
 
-      <div className="relative">
-        {/* The arrows are an ADDITION to scrolling, never the only way to
-            it: the strip scrolls with a finger, a trackpad and the
-            keyboard whether or not they are shown, and each disables
-            itself at the end it would scroll past. */}
-        <button
-          type="button"
-          onClick={() => scrollByCard(-1)}
-          disabled={!canScrollLeft}
-          aria-label="Previous alumni calls"
-          className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 items-center justify-center border border-separator bg-background text-accent transition-opacity hover:bg-muted disabled:opacity-0 disabled:pointer-events-none"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-
-        <div
-          ref={trackRef}
-          tabIndex={0}
-          role="group"
-          aria-label="Recent alumni calls"
-          className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {calls.map((call) => (
-            <article
-              key={call.id}
-              data-call-card
-              className="snap-start shrink-0 w-[78%] sm:w-[46%] lg:w-[30%] xl:w-[23%]"
-            >
-              {/* The poster is shown WHOLE. These are designed sheets with
-                  names and times on them; a crop would cut a guest out. */}
-              <img
-                src={call.poster_url ?? ''}
-                alt={`${call.title} poster`}
-                loading="lazy"
-                decoding="async"
-                className="block w-full h-auto border border-separator bg-muted object-contain"
-              />
+      <div className="ac-rail-fade" data-at-start={atStart} data-at-end={atEnd}>
+        <div className="ac-rail" ref={railRef} onScroll={update}>
+          {calls.map((call, i) => (
+            <article key={call.id} data-call-card className="ac-card">
+              {/* The poster is a button, because pressing it does
+                  something: it opens the sheet at a size where the names
+                  and the times printed on it can actually be read. At
+                  card size a poster is a thumbnail of a document, which
+                  is an invitation nobody could accept until now. */}
+              <button
+                type="button"
+                onClick={() => setLightbox(i)}
+                className="block w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label={`Open the poster for ${call.title}`}
+              >
+                <img
+                  src={call.poster_url ?? ''}
+                  alt={`${call.title} poster`}
+                  loading="lazy"
+                  decoding="async"
+                  className="block w-full h-auto border border-separator bg-muted object-contain"
+                />
+              </button>
               <div className="mt-3">
                 <div className="font-body text-xs tracking-[0.12em] uppercase text-muted-foreground">
                   {formatDate(call.date)}
@@ -180,18 +226,130 @@ export function AlumniCallsCarousel() {
             </article>
           ))}
         </div>
+      </div>
 
+      {/* The dots, in the shared style, doing the job the arrows used to. */}
+      {dotCount > 1 && (
+        <div className="v3-foot">
+          <div className="rdots v3-dots" role="tablist" aria-label="Alumni calls pagination">
+            {Array.from({ length: dotCount }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIdx}
+                aria-label={`Scroll to position ${i + 1} of ${dotCount}`}
+                className={`rdot${i === activeIdx ? ' is-active' : ''}`}
+                onClick={() => scrollToIdx(i)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {lightbox !== null && calls[lightbox] && (
+        <PosterLightbox
+          calls={calls}
+          index={lightbox}
+          onClose={() => setLightbox(null)}
+          onIndexChange={setLightbox}
+        />
+      )}
+    </section>
+  );
+}
+
+/**
+ * One poster, as large as the window allows.
+ *
+ * The arrows removed from the strip belong HERE instead: on the rail they
+ * duplicated a gesture the reader already has, whereas in a full-screen
+ * view there is no other way to reach the next sheet without closing and
+ * reopening. It is the same object the Events page uses for its own
+ * posters, so a reader who has opened one knows how this one behaves.
+ */
+function PosterLightbox({
+  calls, index, onClose, onIndexChange,
+}: {
+  calls: AlumniCallEvent[];
+  index: number;
+  onClose: () => void;
+  onIndexChange: (i: number) => void;
+}) {
+  const current = calls[index];
+
+  // The page behind must not scroll under the overlay.
+  useEffect(() => {
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    return () => { document.documentElement.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight') onIndexChange((index + 1) % calls.length);
+      else if (e.key === 'ArrowLeft') onIndexChange((index - 1 + calls.length) % calls.length);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [index, calls.length, onClose, onIndexChange]);
+
+  if (!current) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Poster: ${current.title}`}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/80 backdrop-blur-md p-4 md:p-8"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        aria-label="Close poster"
+        className="absolute top-4 right-4 md:top-6 md:right-6 text-background hover:opacity-80 transition-opacity"
+      >
+        <X className="h-7 w-7 md:h-8 md:w-8" />
+      </button>
+
+      {calls.length > 1 && (
         <button
           type="button"
-          onClick={() => scrollByCard(1)}
-          disabled={!canScrollRight}
-          aria-label="More alumni calls"
-          className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 items-center justify-center border border-separator bg-background text-accent transition-opacity hover:bg-muted disabled:opacity-0 disabled:pointer-events-none"
+          onClick={(e) => { e.stopPropagation(); onIndexChange((index - 1 + calls.length) % calls.length); }}
+          aria-label="Previous poster"
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 p-2 text-background hover:opacity-80 transition-opacity"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronLeft className="h-8 w-8 md:h-10 md:w-10" />
         </button>
+      )}
+
+      <div className="relative flex flex-col items-center max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={current.poster_url ?? ''}
+          alt={`${current.title} poster`}
+          className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
+        />
+        <div className="mt-4 text-center max-w-[90vw]">
+          <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
+            {formatDate(current.date)}
+          </div>
+          <div className="font-serif text-base md:text-lg text-background">{current.title}</div>
+        </div>
       </div>
-    </section>
+
+      {calls.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onIndexChange((index + 1) % calls.length); }}
+          aria-label="Next poster"
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 p-2 text-background hover:opacity-80 transition-opacity"
+        >
+          <ChevronRight className="h-8 w-8 md:h-10 md:w-10" />
+        </button>
+      )}
+    </div>
   );
 }
 

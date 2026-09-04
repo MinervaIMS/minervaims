@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -43,11 +48,22 @@ export default function CandidateOffer() {
   const { toast } = useToast();
   const { application: app, loading, refresh } = useMyApplication();
   const [busy, setBusy] = useState(false);
+  const [signOpen, setSignOpen] = useState(false);
+  const [signature, setSignature] = useState('');
+
+  // WHAT COUNTS AS A SIGNATURE. Deliberately not compared against the name
+  // on the application: this is a moment of deliberation, not an identity
+  // check, and the applicant is already authenticated as themselves. All it
+  // guards against is submitting an empty box by accident, so it asks for
+  // two words, which is what "your full name" means.
+  const canSign = signature.trim().split(/\s+/).filter(Boolean).length >= 2;
 
   const doAccept = async () => {
     setBusy(true);
     try {
       await acceptOffer(session);
+      setSignOpen(false);
+      setSignature('');
       toast({ title: 'Offer accepted', description: 'Welcome to Minerva. Your account is being upgraded: if your new role is not visible yet, please wait a few minutes and come back.' });
       await refresh();
     } catch (e) {
@@ -148,21 +164,68 @@ export default function CandidateOffer() {
                   Accepting turns your account into a member account, unlocks your full profile and gives you the member workspace. It cannot be undone, and it can take a few minutes for your new role to appear.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                  {/* =========================================================
+                      ACCEPTING IS SIGNING, AND IT IS MEANT TO FEEL LIKE IT.
+                      ---------------------------------------------------------
+                      Joining the association is a commitment, and a
+                      commitment entered by clicking a button reads as one
+                      more confirmation dialog among the dozen a person
+                      dismisses in a day. Writing your own name out is a
+                      small, deliberate act: it takes a moment, it cannot be
+                      done by accident, and it is the convention everybody
+                      already understands for accepting terms.
+                      ========================================================= */}
+                  <Dialog open={signOpen} onOpenChange={(o) => { setSignOpen(o); if (!o) setSignature(''); }}>
+                    <DialogTrigger asChild>
                       <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept offer'}</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Accept your offer to join?</AlertDialogTitle>
-                        <AlertDialogDescription>You will become a member of Minerva IMS with the offered role and will be asked to complete your member profile. This cannot be undone. It can take a few minutes for your account to be upgraded and your new role to appear. If it has not updated straight away, please be patient and come back shortly.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Not yet</AlertDialogCancel>
-                        <AlertDialogAction onClick={doAccept}>Accept and join</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle className="font-serif text-xl">Accept your offer to join</DialogTitle>
+                        <DialogDescription>
+                          You will become a member of Minerva IMS with the role and division above, and will be asked
+                          to complete your member profile. This cannot be undone, and it can take a few minutes for
+                          your new role to appear.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-4 font-body">
+                        {roleText && (
+                          <div className="border border-accent/30 bg-accent/5 p-3 text-sm">
+                            <div className="text-xs uppercase tracking-wider text-accent">You are accepting</div>
+                            <div className="mt-1 text-foreground">{roleText}</div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <Label htmlFor="offer-signature">Sign by writing your full name</Label>
+                          <Input
+                            id="offer-signature"
+                            value={signature}
+                            onChange={(e) => setSignature(e.target.value)}
+                            placeholder="Your full name"
+                            autoComplete="off"
+                            /* The serif at a larger size, because it is a
+                               signature line and should not look like one
+                               more form field. */
+                            className="font-serif text-lg h-12"
+                            onKeyDown={(e) => { if (e.key === 'Enter' && canSign && !busy) doAccept(); }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Writing your name here records your acceptance of the offer above. It has the same
+                            effect as signing it.
+                          </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-1">
+                          <Button className="flex-1" disabled={!canSign || busy} onClick={doAccept}>
+                            {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Accepting</> : 'Sign and join'}
+                          </Button>
+                          <Button variant="outline" disabled={busy} onClick={() => setSignOpen(false)}>Not yet</Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" disabled={busy}>Decline</Button>

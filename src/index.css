@@ -499,6 +499,31 @@ button.mdot, button.rdot, button.dstack-dot {
 .mdots--ondark .mdot, .rsec--navy .rdot, .v2-strip-dots .rdot { background:hsl(0 0% 100% / .34); }
 .mdots--ondark .mdot.is-on, .rsec--navy .rdot.is-active, .v2-strip-dots .rdot.is-active { background:#fff; }
 
+/* ---- Alumni calls rail (public Alumni page) ----
+   The same scroll model as the homepage's card carousel: snap to the
+   start of each card, one card plus one gap per step, and the edges
+   faded only where there is more to reach. It is a separate rule set
+   rather than a reuse of .v3-rail because that rail is full-bleed and
+   carries the report card's own padding and background, while these
+   cards are posters sitting inside the page's container. What has to
+   match is the BEHAVIOUR, and that lives in these four declarations. */
+.ac-rail-fade { --ac-fade: clamp(1rem, 3vw, 2.5rem);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 calc(100% - var(--ac-fade)), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 calc(100% - var(--ac-fade)), transparent 100%); }
+.ac-rail-fade[data-at-start="true"][data-at-end="true"] { -webkit-mask-image:none; mask-image:none; }
+.ac-rail-fade[data-at-start="true"]:not([data-at-end="true"]) {
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--ac-fade)), transparent 100%);
+          mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--ac-fade)), transparent 100%); }
+.ac-rail-fade[data-at-end="true"]:not([data-at-start="true"]) {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 100%); }
+.ac-rail { display:grid; grid-auto-flow:column; grid-auto-columns:clamp(220px, 26vw, 300px);
+  gap:clamp(1rem,2vw,1.5rem); overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
+  scrollbar-width:none; -ms-overflow-style:none; padding-bottom:.25rem;
+  scroll-padding-inline-start:0; }
+.ac-rail::-webkit-scrollbar { height:0; width:0; display:none; }
+.ac-card { scroll-snap-align:start; min-width:0; }
+
 /* ---- V3 card carousel ---- */
 .v3-rail-bleed { width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
   --fade: clamp(1rem, 4vw, 4rem);

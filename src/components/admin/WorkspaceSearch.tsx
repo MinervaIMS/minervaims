@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, CornerDownLeft, ArrowUp, ArrowDown, X, FileText, HelpCircle } from 'lucide-react';
+import { Search, CornerDownLeft, ArrowUp, ArrowDown, X, FileText, HelpCircle, Loader2, Database } from 'lucide-react';
 import { useAccess } from '@/hooks/useAccess';
 import { GUIDE, type GuideEntry } from '@/lib/workspace-guide';
+import { useWorkspaceContentSearch, type ContentHit } from '@/hooks/useWorkspaceContentSearch';
 
 // =====================================================================
 // WorkspaceSearch — one place to reach anything you are allowed to reach.
@@ -177,6 +178,38 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
       .map((r) => r.item);
   }, [index, q]);
 
+  // ═══════════════════════════════════════════════════════════════════
+  // THE SECOND PASS, WHICH ARRIVES AFTER THE FIRST AND UNDER IT.
+  // -------------------------------------------------------------------
+  // `results` above is unchanged: built from the guide, computed on the
+  // keystroke, shown first. What follows is content - the rows inside the
+  // registers - fetched with a debounce and appended beneath. Somebody
+  // typing "alumni" still sees the Alumni page at the top, instantly, as
+  // they always have; somebody typing an alumnus's full name matches no
+  // page at all and finds the person underneath a moment later.
+  //
+  // It only runs while the palette is open, and only for the sources this
+  // role may open. See useWorkspaceContentSearch for what that means and
+  // what it does not mean.
+  // ═══════════════════════════════════════════════════════════════════
+  const canView = useCallback((k: string) => access.canView(k), [access]);
+  const { hits, searching } = useWorkspaceContentSearch(query, canView, open);
+
+  /**
+   * Everything selectable, in the order it is shown.
+   *
+   * Pages first and content after, in ONE array, so the arrow keys, the
+   * Enter key and the active-row scrolling all keep working across the
+   * two groups without knowing there are two.
+   */
+  const rows = useMemo(
+    () => [
+      ...results.map((item) => ({ kind: 'guide' as const, id: item.id, item })),
+      ...hits.map((hit) => ({ kind: 'content' as const, id: hit.id, hit })),
+    ],
+    [results, hits],
+  );
+
   useEffect(() => { setCursor(0); }, [q]);
 
   // Ctrl/Cmd+K from anywhere in the workspace, and "/" when not typing.
@@ -242,25 +275,29 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     const bottom = top + row.offsetHeight;
     if (top < list.scrollTop) list.scrollTop = top;
     else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
-  }, [cursor, results]);
+  }, [cursor, rows]);
 
-  const choose = useCallback((item: Indexed | undefined) => {
-    if (!item) return;
+  const choose = useCallback((row: (typeof rows)[number] | undefined) => {
+    if (!row) return;
     setOpen(false);
-    onNavigate(item.target);
+    // A content row opens the page its row lives on. There is no deep
+    // link to an individual member or report, and inventing one here
+    // would be a second navigation model to keep correct; landing on the
+    // register with the person in it is what somebody wanted anyway.
+    onNavigate(row.kind === 'guide' ? row.item.target : { key: row.hit.resource });
   }, [onNavigate]);
 
   // Bound to the dialog rather than to the input, so the keys keep working
   // if focus lands on a row (a tap on a phone) or on the close button.
   const onDialogKeyDown = (e: React.KeyboardEvent) => {
-    const last = results.length - 1;
+    const last = rows.length - 1;
     if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => (c >= last ? 0 : c + 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => (c <= 0 ? last : c - 1)); }
     else if (e.key === 'Home') { e.preventDefault(); setCursor(0); }
     else if (e.key === 'End') { e.preventDefault(); setCursor(Math.max(0, last)); }
     else if (e.key === 'PageDown') { e.preventDefault(); setCursor((c) => Math.min(last, c + 5)); }
     else if (e.key === 'PageUp') { e.preventDefault(); setCursor((c) => Math.max(0, c - 5)); }
-    else if (e.key === 'Enter') { e.preventDefault(); choose(results[cursor]); }
+    else if (e.key === 'Enter') { e.preventDefault(); choose(rows[cursor]); }
     else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
     else return;
     // Anything handled here must never reach the page underneath.
@@ -316,11 +353,11 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search subsections and help topics"
-                aria-label="Search subsections and help topics"
+                placeholder="Search the workspace, its records and its help"
+                aria-label="Search the workspace, its records and its help"
                 aria-autocomplete="list"
                 aria-controls="workspace-search-results"
-                aria-activedescendant={results[cursor] ? `wsr-${results[cursor].id}` : undefined}
+                aria-activedescendant={rows[cursor] ? `wsr-${rows[cursor].id}` : undefined}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="none"
@@ -349,12 +386,20 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
               </button>
             </div>
 
-            {results.length === 0 ? (
+            {rows.length === 0 ? (
               <div className="px-4 py-10 text-center font-body">
-                <p className="text-muted-foreground">Nothing matches that.</p>
-                <p className="text-xs text-muted-foreground/80 mt-1">
-                  Only the pages your role can open are searched.
-                </p>
+                {searching ? (
+                  <p className="text-muted-foreground inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />Looking through the workspace
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground">Nothing matches that.</p>
+                    <p className="text-xs text-muted-foreground/80 mt-1">
+                      Only the pages and records your role can open are searched.
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <>
@@ -367,8 +412,64 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
                   className="flex-1 min-h-0 overflow-hidden pb-1"
                   role="listbox"
                 >
-                  {results.map((item, i) => {
+                  {rows.map((row, i) => {
                     const active = i === cursor;
+                    // The heading that introduces the content group. It is
+                    // drawn once, on the first content row, so the two
+                    // kinds of result read as two lists in one column
+                    // rather than as one list that changes character
+                    // halfway down.
+                    const firstContent = row.kind === 'content' && rows[i - 1]?.kind !== 'content';
+                    if (row.kind === 'content') {
+                      const { hit } = row;
+                      return (
+                        <li key={row.id}>
+                          {firstContent && (
+                            <p className="px-4 pt-3 pb-1 font-body text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 border-t border-separator mt-1">
+                              In the workspace
+                            </p>
+                          )}
+                          <div
+                            id={`wsr-${row.id}`}
+                            role="option"
+                            aria-selected={active}
+                            data-active={active}
+                          >
+                            <button
+                              type="button"
+                              tabIndex={-1}
+                              onMouseEnter={() => setCursor(i)}
+                              onClick={() => choose(row)}
+                              className={`w-full text-left flex items-start gap-3 px-4 py-2.5 h-[3.75rem] font-body border-l-2 transition-colors ${
+                                active ? 'border-l-accent bg-accent/[0.07]' : 'border-l-transparent hover:bg-muted/40'
+                              }`}
+                            >
+                              <span className={`mt-[3px] shrink-0 ${active ? 'text-accent' : 'text-muted-foreground'}`}>
+                                <Database className="h-4 w-4" />
+                              </span>
+                              <span className="flex-1 min-w-0">
+                                <span className="flex items-baseline gap-2">
+                                  <span className="min-w-0 text-sm text-foreground truncate">
+                                    <Highlight text={hit.label} q={q} />
+                                  </span>
+                                  <span className="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground/80">
+                                    {hit.source}
+                                  </span>
+                                </span>
+                                <span className="block text-xs text-muted-foreground truncate">
+                                  {hit.detail || hit.source}
+                                </span>
+                              </span>
+                              <CornerDownLeft
+                                className={`h-3.5 w-3.5 shrink-0 mt-[3px] text-accent transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}
+                                aria-hidden="true"
+                              />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    }
+                    const item = row.item;
                     return (
                       <li
                         key={item.id}
@@ -381,7 +482,7 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
                           type="button"
                           tabIndex={-1}
                           onMouseEnter={() => setCursor(i)}
-                          onClick={() => choose(item)}
+                          onClick={() => choose(row)}
                           /* Exactly two lines, always. A row that grew with
                              its own explanation is what set the first few
                              results apart from the rest of the list. */
@@ -425,7 +526,13 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
               <span className="hidden sm:inline-flex items-center gap-1"><ArrowUp className="h-3 w-3" /><ArrowDown className="h-3 w-3" />move</span>
               <span className="hidden sm:inline-flex items-center gap-1"><CornerDownLeft className="h-3 w-3" />open</span>
               <span className="hidden sm:inline">esc to close</span>
-              <span className="sm:ml-auto">{"\n"}</span>
+              <span className="sm:ml-auto">
+                {searching ? (
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground/80">
+                    <Loader2 className="h-3 w-3 animate-spin" />searching records
+                  </span>
+                ) : "\n"}
+              </span>
             </div>
           </div>
         </div>

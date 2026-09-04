@@ -16,6 +16,7 @@ import {
   divisionsForRole, roleNeedsDivision, isBoardRole,
   type AppRole, type OrgDivision,
 } from '@/lib/roles';
+import { divisionHasTeams, teamsFor, teamFieldLabel } from '@/lib/division-teams';
 import { MEMBERS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -62,7 +63,7 @@ const VISIBILITY_OPTIONS = [
 
 const EMPTY: MemberInput = {
   first_name: '', surname: '', email: '', phone: '', linkedin_url: '', photo_url: '',
-  division: 'none', role: 'analyst', membership_status: 'active', account_status: 'approved',
+  division: 'none', team: null, role: 'analyst', membership_status: 'active', account_status: 'approved',
   fee_status: 'unpaid', is_public: true,
 };
 
@@ -212,6 +213,7 @@ export default function MembersManagement() {
     setForm({
       id: m.id, first_name: m.first_name, surname: m.surname, email: m.email ?? '',
       phone: m.phone ?? '', linkedin_url: m.linkedin_url ?? '', photo_url: m.photo_url ?? '',
+      team: m.team ?? null,
       division: m.division, role: normalizeRole(m.role),
       membership_status: m.membership_status, account_status: m.account_status,
       fee_status: m.fee_status, is_public: m.is_public,
@@ -290,10 +292,24 @@ export default function MembersManagement() {
 
   const doLeave = async (keepAsAdvisor: boolean) => {
     if (!leaveTarget) return;
-    // An advisor can be registered before their company is known; a plain
-    // move to the directory still requires the current company.
-    if (!keepAsAdvisor && !leaveForm.company.trim()) {
-      toast({ title: 'Please add their current company', variant: 'destructive' });
+    // =================================================================
+    // WHAT AN ALUMNUS RECORD ACTUALLY NEEDS: A NAME AND A YEAR.
+    // -----------------------------------------------------------------
+    // The current company used to be mandatory, which got the dependency
+    // backwards. A member leaves at a fixed moment - the end of their
+    // term - and very often has not started anywhere yet, or has not
+    // told anybody where. Requiring it meant the person recording the
+    // departure either guessed, typed a placeholder that then lived in
+    // the directory as though it were true, or postponed the move
+    // altogether and left a former member sitting in the active roster.
+    //
+    // The surname and the graduation year are what genuinely identify an
+    // alumnus and place them in their cohort, and both are known on the
+    // day. The company, the city and the job area are added later, from
+    // the Alumni page, when there is something true to write.
+    // =================================================================
+    if (!leaveTarget.surname?.trim()) {
+      toast({ title: 'This person has no surname on their record', description: 'Add it in their profile first: the alumni directory is ordered by surname.', variant: 'destructive' });
       return;
     }
     const year = parseInt(leaveForm.graduation_year, 10);
@@ -570,7 +586,11 @@ export default function MembersManagement() {
                 <Label>Division</Label>
                 <Select
                   value={roleNeedsDivision(form.role) ? form.division : 'none'}
-                  onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}
+                  // Moving somebody between divisions drops a team that
+                  // belonged to the old one. The server would reject it
+                  // anyway; clearing it here means the form never shows a
+                  // desk the division does not have.
+                  onValueChange={(v) => setForm({ ...form, division: v as OrgDivision, team: null })}
                   disabled={!canAssignRoles || !roleNeedsDivision(form.role) || divisionsForRole(form.role).length === 1}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -588,6 +608,47 @@ export default function MembersManagement() {
                       : 'Heads of a division sit on the board and lead their division.'}
                 </p>
               </div>
+
+              {/* =========================================================
+                  THE SUB-UNIT, FOR THE TWO DIVISIONS THAT HAVE ONE.
+                  ---------------------------------------------------------
+                  Portfolio Management is organised by fund and Investment
+                  Research by desk, and the public Members page shows the
+                  first after a member's role. It could not show the second
+                  because there was nowhere to record it, and in truth it
+                  could not really show the first either: the fund column
+                  it reads is not written by anything in the workspace, so
+                  it survives only on rows that predate this roster.
+                  One field answers both, and the projection carries it to
+                  the website.
+
+                  It appears only where it means something. A macro analyst
+                  has no desk to belong to, and a heading over an empty
+                  select is a question with no answer.
+                  ========================================================= */}
+              {divisionHasTeams(form.division) && roleNeedsDivision(form.role) && (
+                <div className="space-y-1 col-span-2">
+                  <Label>{teamFieldLabel(form.division)}</Label>
+                  <Select
+                    value={form.team ?? 'none'}
+                    onValueChange={(v) => setForm({ ...form, team: v === 'none' ? null : v })}
+                    disabled={!canAssignRoles}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Not assigned" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not assigned</SelectItem>
+                      {teamsFor(form.division).map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {form.division === 'portfolio'
+                      ? 'Which fund this member works on. Shown after their role on the public Members page. Heads of the division are not shown against one fund.'
+                      : 'Which desk this member belongs to. Shown after their role on the public Members page. Heads of the division are not shown against one desk.'}
+                  </p>
+                </div>
+              )}
               <p className="col-span-2 text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
                 This role is the person's ONE role: it drives their workspace permissions everywhere.
                 {!canAssignRoles
@@ -636,16 +697,25 @@ export default function MembersManagement() {
             <DialogDescription className="font-body">
               {advisorFlow
                 ? 'Every advisor is a role assignment on a registered alumnus. Complete the alumni details; the advisor role is applied right after. The advisor starts hidden from the public website.'
-                : 'A member leaving usually becomes an alumnus. Add a few details to move them to the alumni directory - their phone and email are kept privately for the association only.'}
+                : 'A member leaving usually becomes an alumnus. Their surname and graduation year are all that is needed; their phone and email are kept privately for the association only.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 font-body">
+            {/* WHAT IS REQUIRED IS MARKED, AND IT IS TWO THINGS. The
+                surname comes from the member's own record and the
+                graduation year is asked for here; everything else is
+                added later, from the Alumni page, when it is known. */}
+            <div className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+              <strong className="text-foreground">{leaveTarget?.first_name} {leaveTarget?.surname}</strong> will be
+              recorded in the alumni directory under that surname. Only the graduation year is needed now:
+              the company, the job area and the city can be added at any time from the Alumni page.
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Graduation year</Label><Input value={leaveForm.graduation_year} onChange={(e) => setLeaveForm({ ...leaveForm, graduation_year: e.target.value })} placeholder="e.g. 2026" /></div>
+              <div className="space-y-1"><Label>Graduation year *</Label><Input value={leaveForm.graduation_year} onChange={(e) => setLeaveForm({ ...leaveForm, graduation_year: e.target.value })} placeholder="e.g. 2026" /></div>
               <div className="space-y-1">
-                <Label>Current company{advisorFlow ? ' (optional)' : ''}</Label>
-                <Input value={leaveForm.company} onChange={(e) => setLeaveForm({ ...leaveForm, company: e.target.value })} placeholder="e.g. Goldman Sachs" />
+                <Label>Current company (optional)</Label>
+                <Input value={leaveForm.company} onChange={(e) => setLeaveForm({ ...leaveForm, company: e.target.value })} placeholder="Leave empty if not known yet" />
               </div>
               <div className="space-y-1"><Label>Job area (optional)</Label><Input value={leaveForm.job_area} onChange={(e) => setLeaveForm({ ...leaveForm, job_area: e.target.value })} placeholder="e.g. Investment Banking" /></div>
               <div className="space-y-1"><Label>City (optional)</Label><CityInput value={leaveForm.city} onChange={(city) => setLeaveForm({ ...leaveForm, city })} /></div>

@@ -16,6 +16,12 @@ interface DbTeamMember {
   position: string;
   division: string | null;
   fund: string | null;
+  /** The member's sub-unit: a fund for Portfolio Management, a desk for
+   *  Investment Research. Projected from the workspace roster.
+   *  Optional because the generated Supabase types are regenerated from
+   *  the live schema and do not carry it until that has happened; the
+   *  column is selected by `select('*')` regardless. */
+  team?: string | null;
   photo_url: string | null;
   linkedin_url: string | null;
   is_board: boolean;
@@ -62,6 +68,7 @@ const Team = () => {
     position: m.position as any,
     division: (m.division as Division | null) ?? undefined,
     fund: (m.fund as any) ?? undefined,
+    team: (m.team as string | null) ?? undefined,
     photoUrl: m.photo_url || undefined,
     linkedinUrl: m.linkedin_url || undefined,
     isBoard: m.is_board,

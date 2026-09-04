@@ -1434,6 +1434,7 @@ export type Database = {
           photo_url: string | null
           role: Database["public"]["Enums"]["app_role"]
           surname: string
+          team: string | null
           updated_at: string
           user_id: string | null
         }
@@ -1454,6 +1455,7 @@ export type Database = {
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           surname: string
+          team?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1474,6 +1476,7 @@ export type Database = {
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           surname?: string
+          team?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1835,6 +1838,7 @@ export type Database = {
           photo_url: string | null
           position: Database["public"]["Enums"]["team_position"]
           surname: string
+          team: string | null
           updated_at: string
         }
         Insert: {
@@ -1850,6 +1854,7 @@ export type Database = {
           photo_url?: string | null
           position: Database["public"]["Enums"]["team_position"]
           surname: string
+          team?: string | null
           updated_at?: string
         }
         Update: {
@@ -1865,6 +1870,7 @@ export type Database = {
           photo_url?: string | null
           position?: Database["public"]["Enums"]["team_position"]
           surname?: string
+          team?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2264,6 +2270,7 @@ export type Database = {
         | "Head of Portfolio Management"
         | "Head of Quantitative Research"
         | "Portfolio Manager"
+        | "Team Leader"
         | "Senior Analyst"
         | "Analyst"
         | "Head of Operations"
@@ -2465,6 +2472,7 @@ export const Constants = {
         "Head of Portfolio Management",
         "Head of Quantitative Research",
         "Portfolio Manager",
+        "Team Leader",
         "Senior Analyst",
         "Analyst",
         "Head of Operations",

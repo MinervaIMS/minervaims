@@ -52,6 +52,7 @@ const POSITIONS = [
   { value: 'Head of Quantitative Research', label: 'Head of Quantitative Research', isBoard: false },
   { value: 'Co-Head of Quantitative Research', label: 'Co-Head of Quantitative Research', isBoard: false },
   { value: 'Portfolio Manager', label: 'Portfolio Manager', isBoard: false },
+  { value: 'Team Leader', label: 'Team Leader', isBoard: false },
   { value: 'Senior Analyst', label: 'Senior Analyst', isBoard: false },
   { value: 'Analyst', label: 'Analyst', isBoard: false },
   { value: 'Head of Operations', label: 'Head of Operations', isBoard: false },
@@ -99,6 +100,7 @@ interface TeamManagementProps {
 // Positions that division heads can assign (restricted roles)
 const DIVISION_HEAD_ALLOWED_POSITIONS = [
   'Analyst',
+  'Team Leader',
   'Senior Analyst',
 ];
 
@@ -183,6 +185,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
     'Head of Media': 10,
     'Co-Head of Media': 11,
     'Portfolio Manager': 20,
+    'Team Leader': 25,
     'Senior Analyst': 30,
     'Analyst': 40,
     'Operations': 50,

@@ -41,6 +41,25 @@ function divisionOptionsFor(role: string): string[] {
   return []; // president, vice_president, head_of_asset_management, advisor, alumni, member
 }
 /** Returns the division to store for (role, requested), or an error string. */
+// The sub-units each division may have. Kept in step with
+// src/lib/division-teams.ts and with the members_team_check constraint.
+const DIVISION_TEAMS: Record<string, string[]> = {
+  portfolio: ['long-short', 'multi-asset', 'dps', 'pir'],
+  investment: ['equities', 'fixed-income', 'fx-commodities'],
+};
+
+/**
+ * A team is only meaningful inside the division that has it.
+ *
+ * Silently dropping a team that does not belong to the division is right
+ * rather than strict: a member moved from Investment Research to Macro
+ * keeps neither their old desk nor an error message they cannot act on.
+ */
+function resolveTeam(division: string, requested: string | null | undefined): string | null {
+  if (!requested) return null;
+  return (DIVISION_TEAMS[division] ?? []).includes(requested) ? requested : null;
+}
+
 function resolveRoleDivision(role: string, requested: string | null | undefined): { division: string; error?: string } {
   const options = divisionOptionsFor(role);
   if (options.length === 0) return { division: 'none' };
@@ -62,6 +81,11 @@ const MemberSchema = z.object({
   linkedin_url: z.string().max(500).nullable().optional()
     .refine((v) => !v || v.startsWith('http://') || v.startsWith('https://'), 'LinkedIn URL must be a valid URL'),
   division: z.enum(DIVISIONS),
+  // The sub-unit within the division: a fund for Portfolio Management, a
+  // desk for Investment Research. Validated against the division below,
+  // and again by a CHECK constraint on the table, because this value
+  // reaches the public website through the projection trigger.
+  team: z.string().max(40).nullable().optional(),
   role: z.enum(ASSIGNABLE_ROLES),
   membership_status: z.enum(['active', 'on_exchange', 'one_semester_pause', 'alumni', 'expelled']).optional(),
   account_status: z.enum(['approved', 'pending', 'to_redeem']).optional(),
@@ -344,6 +368,7 @@ Deno.serve(async (req) => {
       photo_url: m.photo_url || null,
       linkedin_url: m.linkedin_url || null,
       division,
+      team: resolveTeam(division, m.team),
       role: m.role,
       membership_status: m.membership_status || 'active',
       account_status: m.account_status || 'to_redeem',
