@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Block } from './DashboardKit';
 import type { DivisionShare } from './useDashboardData';
 
@@ -93,6 +93,104 @@ interface Segment {
 export function ReportsMixBlock({ shares, animate }: {
   shares: DivisionShare[] | null; animate: boolean;
 }) {
+  // ===================================================================
+  // THE LABELS KEEP THEIR SIZE WHILE THE RING LOSES ITS OWN.
+  // -------------------------------------------------------------------
+  // The whole composition is a fixed viewBox scaled to the card, which is
+  // what keeps the ring, the leader lines and the names in proportion at
+  // any width. It also scales the TEXT, and text has a floor that a
+  // drawing does not: measured, "Investment 17%" rendered at 15px on a
+  // 1920 screen, 10px at 1440, 9px at 1280 and SIX PIXELS at 1100, where
+  // this card is 191px wide. Nobody reads six pixels.
+  //
+  // So the labels are counter-scaled. The card is measured, the scale the
+  // browser is applying to the viewBox is worked out from it, and the
+  // font size is expressed in viewBox units that CANCEL that scale below
+  // a floor: as the card narrows the type stops shrinking with it and
+  // holds at a readable size, growing again with the card past that
+  // point. Nothing else in the drawing changes, so the ring is still the
+  // same object at every width - only its captions refuse to disappear.
+  // ===================================================================
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const measure = () => {
+      // `preserveAspectRatio="xMidYMid meet"` fits the whole viewBox, so
+      // the scale actually applied is the smaller of the two axes.
+      const s = Math.min(el.clientWidth / VB_W, el.clientHeight / VB_H);
+      if (s > 0) setScale(s);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  /** A size in viewBox units that renders at no less than `floorPx`. */
+  const sized = (idealUnits: number, floorPx: number) =>
+    Math.max(idealUnits, floorPx / Math.max(scale, 0.01));
+
+  // ===================================================================
+  // AND A CEILING, BECAUSE THE CARD CAN BE TOO NARROW FOR THE FLOOR.
+  // -------------------------------------------------------------------
+  // On a portrait card - 191 wide by 308 tall on a 1100px window - a
+  // ring with labels either side of it simply cannot also carry
+  // "Investment" at eleven pixels: the word alone wants more width than
+  // the half-card the layout can give it, whatever the ring does. Asking
+  // for the floor anyway produced "Investmen", which is the one outcome
+  // worse than small type, because a clipped word is not a shorter word,
+  // it is a wrong one.
+  //
+  // So the counter-scaling has a ceiling as well: the largest size at
+  // which the LONGEST name still fits the room beside the ring. The
+  // labels then grow towards the floor as far as the card allows and
+  // stop there, which is the honest answer to a card that is too narrow.
+  // The width estimate is deliberately generous; erring large costs a
+  // little type size, erring small costs a clipped word again.
+  // ===================================================================
+  const longestName = Math.max(4, ...(shares ?? []).map((r) => r.name.length));
+  /** The ring's outer edge and the label's start, for a given type size. */
+  const geometryFor = (units: number) => {
+    const ringScale = 1 / Math.max(units / 9.5, 1) ** 1.15;
+    const rr = R * ringScale;
+    const tt = THICK * ringScale;
+    const oo = rr + tt / 2;
+    return { r: rr, thick: tt, outer: oo, textAt: oo + (TEXT - (R + THICK / 2)) };
+  };
+  // ITERATED FROM THE SIZE WE WANT, NOT FROM THE ONE WE HAVE. The room
+  // and the type size each depend on the other: a larger label shrinks
+  // the ring, and a smaller ring leaves more room for the label. Starting
+  // from the current size finds the fixed point where nothing moves,
+  // which is the size it already was; starting from the size we want and
+  // stepping down finds the largest one the card can actually hold.
+  // Three steps is well past converging for any card this page has.
+  const wanted = sized(9.5, 11);
+  const fits = (room: number) => Math.max(9.5, Math.min(wanted, room / (longestName * 0.55)));
+  let units = wanted;
+  for (let pass = 0; pass < 3; pass += 1) units = fits(VB_W / 2 - geometryFor(units).textAt);
+  const nameSize = units;
+  const percentSize = Math.max(9, nameSize * 0.9);
+
+  // ===================================================================
+  // A BIGGER LABEL NEEDS A SMALLER RING. They share one fixed viewBox,
+  // so the room the type gains has to come from somewhere, and the ring
+  // is the thing that can afford to give it: a doughnut reads perfectly
+  // well at four fifths of its size, while "Investment" clipped to
+  // "Investmen" does not read at all. That was the state of it on a
+  // 191px card once the labels stopped shrinking.
+  //
+  // The ring therefore contracts as the type is counter-scaled, and the
+  // leaders and label anchors follow it outwards from the new radius, so
+  // the whole composition stays the same drawing at a different size
+  // rather than a ring with its captions pushed off the edge.
+  // ===================================================================
+  // Each landmark keeps its own distance OUTSIDE the ring, so the leader
+  // still leaves, turns and arrives in the same three moves.
+  const { r, thick, outer, textAt } = geometryFor(nameSize);
+  const anchor = outer + (ANCHOR - (R + THICK / 2));
+
   const { segments, total, single } = useMemo(() => {
     const rows = shares ?? [];
     const sum = rows.reduce((s, r) => s + r.reports, 0);
@@ -120,15 +218,20 @@ export function ReportsMixBlock({ shares, animate }: {
     const slots = new Map<number, number>();
     ([1, -1] as const).forEach((side) => {
       const members = mids
-        .map((m, i) => ({ i, y: CY - Math.cos(rad(m)) * R }))
+        .map((m, i) => ({ i, y: CY - Math.cos(rad(m)) * r }))
         .filter(({ i }) => sides[i] === side)
         .sort((a, b) => a.y - b.y);
       const ys = members.map((m) => m.y);
+      // The gap has to follow the type, not sit at a constant. Once the
+      // labels counter-scale on a narrow card a two-line label is taller
+      // than the old fixed 25 units, and two of them would have overlapped
+      // exactly where the type had just been enlarged to be readable.
+      const gap = Math.max(MIN_GAP, nameSize + percentSize + 7);
       for (let k = 0; k < ys.length; k += 1) {
-        ys[k] = Math.max(ys[k], k === 0 ? MARGIN : ys[k - 1] + MIN_GAP);
+        ys[k] = Math.max(ys[k], k === 0 ? MARGIN : ys[k - 1] + gap);
       }
       for (let k = ys.length - 1; k >= 0; k -= 1) {
-        ys[k] = Math.min(ys[k], k === ys.length - 1 ? VB_H - MARGIN : ys[k + 1] - MIN_GAP);
+        ys[k] = Math.min(ys[k], k === ys.length - 1 ? VB_H - MARGIN : ys[k + 1] - gap);
       }
       members.forEach(({ i }, k) => slots.set(i, ys[k]));
     });
@@ -137,40 +240,40 @@ export function ReportsMixBlock({ shares, animate }: {
       const span = Math.max(spans[i] - GAP_DEG, 0.8);
       const from = starts[i] + GAP_DEG / 2;
       const to = from + span;
-      const [x0, y0] = px(from, R);
-      const [x1, y1] = px(to, R);
+      const [x0, y0] = px(from, r);
+      const [x1, y1] = px(to, r);
       const large = span > 180 ? 1 : 0;
       const mid = mids[i];
       const side = sides[i];
       const slotY = slots.get(i) ?? CY;
-      const [lx0, ly0] = px(mid, OUTER + LEAD_IN);
-      const [lx1, ly1] = px(mid, OUTER + LEAD_IN + ELBOW);
+      const [lx0, ly0] = px(mid, outer + LEAD_IN);
+      const [lx1, ly1] = px(mid, outer + LEAD_IN + ELBOW);
       return {
         key: row.key,
         name: row.name,
         reports: row.reports,
         percent: Math.round((row.reports / sum) * 100),
         colour: SLICE[i % SLICE.length],
-        d: `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`,
-        length: R * rad(span),
+        d: `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`,
+        length: r * rad(span),
         delay: (starts[i] / 360) * DRAW_MS,
         duration: Math.max(90, (spans[i] / 360) * DRAW_MS),
         points: [
           `${lx0.toFixed(2)},${ly0.toFixed(2)}`,
           `${lx1.toFixed(2)},${ly1.toFixed(2)}`,
-          `${(CX + side * (ANCHOR - RUN_IN)).toFixed(2)},${slotY.toFixed(2)}`,
+          `${(CX + side * (anchor - RUN_IN)).toFixed(2)},${slotY.toFixed(2)}`,
           // The last run is level, so a leader arrives at its name rather
           // than pointing past it.
-          `${(CX + side * ANCHOR).toFixed(2)},${slotY.toFixed(2)}`,
+          `${(CX + side * anchor).toFixed(2)},${slotY.toFixed(2)}`,
         ].join(' '),
-        textX: CX + side * TEXT,
+        textX: CX + side * textAt,
         textY: slotY,
         anchor: side === 1 ? 'start' : 'end',
       };
     });
 
     return { segments, total: sum, single: rows.length === 1 };
-  }, [shares]);
+  }, [shares, nameSize, percentSize, r, outer, anchor, textAt]);
 
   if (!shares) {
     return (
@@ -192,7 +295,7 @@ export function ReportsMixBlock({ shares, animate }: {
 
   return (
     <Block title="Reports by division" aside="all time">
-      <div className="h-full w-full min-h-0">
+      <div ref={boxRef} className="h-full w-full min-h-0">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
           preserveAspectRatio="xMidYMid meet"
@@ -208,12 +311,12 @@ export function ReportsMixBlock({ shares, animate }: {
               {single ? (
                 <circle
                   className="dash-arc"
-                  cx={CX} cy={CY} r={R}
-                  fill="none" stroke={s.colour} strokeWidth={THICK}
+                  cx={CX} cy={CY} r={r}
+                  fill="none" stroke={s.colour} strokeWidth={thick}
                   style={animate ? {
-                    '--dash-len': `${2 * Math.PI * R}px`,
-                    strokeDasharray: 2 * Math.PI * R,
-                    strokeDashoffset: 2 * Math.PI * R,
+                    '--dash-len': `${2 * Math.PI * r}px`,
+                    strokeDasharray: 2 * Math.PI * r,
+                    strokeDashoffset: 2 * Math.PI * r,
                     animation: `dash-draw ${DRAW_MS}ms linear both`,
                   } as React.CSSProperties : undefined}
                 />
@@ -221,7 +324,7 @@ export function ReportsMixBlock({ shares, animate }: {
                 <path
                   className="dash-arc"
                   d={s.d}
-                  fill="none" stroke={s.colour} strokeWidth={THICK} strokeLinecap="butt"
+                  fill="none" stroke={s.colour} strokeWidth={thick} strokeLinecap="butt"
                   style={animate ? {
                     '--dash-len': `${s.length}px`,
                     strokeDasharray: s.length,
@@ -255,15 +358,15 @@ export function ReportsMixBlock({ shares, animate }: {
                 x={s.textX} y={s.textY - 1}
                 textAnchor={s.anchor}
                 className="font-body"
-                style={{ fontSize: 9.5, fill: 'hsl(var(--foreground))' }}
+                style={{ fontSize: nameSize, fill: 'hsl(var(--foreground))' }}
               >
                 {s.name}
               </text>
               <text
-                x={s.textX} y={s.textY + 10}
+                x={s.textX} y={s.textY + nameSize + 1}
                 textAnchor={s.anchor}
                 className="font-body"
-                style={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' }}
+                style={{ fontSize: percentSize, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' }}
               >
                 {s.percent}%
               </text>

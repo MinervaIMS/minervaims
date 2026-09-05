@@ -121,6 +121,23 @@ const DISABLES = 'button, [role="switch"], input[type="checkbox"], input[type="r
 /** The content pane, plus any dialog Radix has portalled out of it. */
 const ROOTS = '[data-ws-pane], [role="dialog"], [role="alertdialog"]';
 
+// =====================================================================
+// PAGES THAT ARE INFORMATION, NOT A REGISTER.
+// ---------------------------------------------------------------------
+// "View but not manage" is the ordinary state of a page somebody can
+// read and not edit. On the Dashboard and How to use it is the state of
+// EVERYONE: no role holds 'manage' on either, because there is nothing on
+// them to manage. They report; they are not edited by anybody.
+//
+// Guarding them therefore faded the whole Dashboard for every role except
+// the President and the association account - including the invitation to
+// register for Association on Display, which is exactly the kind of light
+// action the permissions table has always said a view-level role keeps.
+// A page whose every control is a link, a registration or a download has
+// nothing for this guard to take away, so it is left alone.
+// =====================================================================
+const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome']);
+
 function sweep() {
   document.querySelectorAll<HTMLElement>(ROOTS).forEach((root) => {
     root.querySelectorAll<HTMLElement>(DISABLES).forEach((el) => {
@@ -156,9 +173,12 @@ function release() {
  * Renders nothing. It is a behaviour, not a box, so it cannot disturb the
  * layout of any page it is switched on for.
  */
-export function ReadOnlyRegion({ readOnly }: { readOnly: boolean }) {
+export function ReadOnlyRegion({ resource, readOnly }: { resource: string | null; readOnly: boolean }) {
+  // The exemption is applied HERE rather than by the caller, so the list
+  // of pages this does not touch lives beside the thing it does not do.
+  const active = readOnly && !!resource && !EXEMPT_RESOURCES.has(resource);
   useEffect(() => {
-    if (!readOnly) { release(); return; }
+    if (!active) { release(); return; }
     document.documentElement.dataset.wsReadonly = 'true';
     sweep();
     // These pages render asynchronously: a table arrives after its fetch, a
@@ -172,7 +192,7 @@ export function ReadOnlyRegion({ readOnly }: { readOnly: boolean }) {
       delete document.documentElement.dataset.wsReadonly;
       release();
     };
-  }, [readOnly]);
+  }, [active]);
 
   return null;
 }

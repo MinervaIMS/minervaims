@@ -1187,7 +1187,7 @@ const MinervaWorkspace = () => {
           onWebsite={() => navigate('/')}
           onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
         >
-          <ReadOnlyRegion readOnly={subsectionReadOnly} />
+          <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
           {renderContent()}
         </MobileWorkspaceShell>
       </>
@@ -1364,7 +1364,7 @@ const MinervaWorkspace = () => {
                 and centre within exactly this pane (the portion that loads). */}
             <div id="ws-content" data-ws-pane className="flex-1 overflow-y-auto px-6 py-6 relative">
               <HelpProvider>
-                <ReadOnlyRegion readOnly={subsectionReadOnly} />
+                <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
                 {renderContent()}
                 {/* CONTEXTUAL HELP, ON EVERY PAGE INCLUDING AN APPLICANT'S.
                     The floating question mark used to be withheld from
