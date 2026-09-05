@@ -177,13 +177,13 @@ export function AlumniCallsCarousel() {
           to="/events"
           className="font-body text-sm text-accent underline underline-offset-4 hover:opacity-80 transition-opacity"
         >
-          See all past events
+          {"\n"}
         </Link>
       </div>
 
       <p className="font-body text-body text-muted-foreground mb-6 max-w-4xl">
         Each semester our divisions bring former members back for an open conversation with the current
-        cohort: academic choices, recruitment, and what the work is actually like. These are the most recent.
+        cohort: academic choices, recruitment, and what the work is actually like.&nbsp;
       </p>
 
       <div className="ac-rail-fade" data-at-start={atStart} data-at-end={atEnd}>
