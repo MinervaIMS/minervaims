@@ -251,6 +251,13 @@ export function ReportsMixBlock({ shares, animate }: {
                 strokeWidth={1}
                 strokeLinejoin="round"
               />
+              {/* THE PERCENTAGE MAY GROW; THE NAME MAY NOT. The room
+                  beside the ring is 52 viewBox units, and "Investment" at
+                  9.5 units already measures about 52: half a unit more
+                  and the longest name clips, which is worse than small
+                  type because a clipped word is a wrong word. "21%" is
+                  three characters and has room to spare, so it is the
+                  line that can be lifted. */}
               <text
                 x={s.textX} y={s.textY - 1}
                 textAnchor={s.anchor}
@@ -263,7 +270,7 @@ export function ReportsMixBlock({ shares, animate }: {
                 x={s.textX} y={s.textY + 10}
                 textAnchor={s.anchor}
                 className="font-body"
-                style={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' }}
+                style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontVariantNumeric: 'tabular-nums' }}
               >
                 {s.percent}%
               </text>

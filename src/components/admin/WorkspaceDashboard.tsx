@@ -136,7 +136,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
           images, and translating an ancestor of those forces the browser
           to re-rasterise them for the length of the animation. The four
           chart cards below, which are vector, get the small rise too. */}
-      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3 auto-rows-[160px] sm:auto-rows-[168px] xl:auto-rows-[156px]">
+      <div className="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3 auto-rows-[160px] sm:auto-rows-[168px] xl:auto-rows-[clamp(116px,15vh,156px)]">
         <div className="dash-enter-soft min-h-0" style={enter(0)}>
           <KpiCard
             label="Reports" value={data.reportsAllTime} filled animate={animate}
@@ -181,7 +181,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
             Current update comes FIRST, directly under the KPI row: it is
             the only card that asks the reader to do something, and it was
             arriving under three charts. */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3 lg:min-h-[clamp(210px,25vh,300px)]">
           <div className="dash-enter order-2 lg:order-1 h-[264px] lg:h-auto min-h-0" style={enter(4)}>
             <ResearchByDivisionBlock
               rows={data.divisionCounts}
@@ -198,18 +198,27 @@ export default function WorkspaceDashboard({ onNavigate }: {
             <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} />
           </div>
         </div>
-        {/* Three cards across, 35 / 25 / 40 of the row once the two gaps
-            are taken out of the width. On a phone they stack, with the
-            doughnut last: it is the most compact reading and the least
-            urgent. */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[35fr_25fr_40fr] gap-3">
-          <div className="dash-enter h-[300px] lg:h-auto min-h-0" style={enter(6)}>
+        {/* Three cards across, 34 / 30 / 36 of the row once the two gaps
+            are taken out of the width. The doughnut used to take 25, the
+            smallest share of the three, and it is the one chart of the
+            four that carries labels on BOTH SIDES of its drawing: width
+            is exactly what it is short of, and at 25 per cent of a
+            laptop's row its captions were rendering at four pixels.
+            The three share a row from xl up. Between lg and xl they were
+            slivers of about 207px, where the doughnut's captions rendered
+            at six pixels; below xl they now take the full width one under
+            another, which is the shape a chart with side labels needs.
+            Every width where that adds scrolling was already scrolling.
+            On a phone they stack too, with the doughnut last: it is the
+            most compact reading and the least urgent. */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[34fr_30fr_36fr] gap-3 xl:min-h-[clamp(210px,25vh,300px)]">
+          <div className="dash-enter h-[300px] xl:h-auto min-h-0" style={enter(6)}>
             <FundPerformanceBlock series={data.fundSeries} animate={animate} enterDelay={chartDelay(6)} />
           </div>
-          <div className="dash-enter order-3 lg:order-none h-[300px] lg:h-auto min-h-0" style={enter(7)}>
+          <div className="dash-enter order-3 lg:order-none h-[300px] xl:h-auto min-h-0" style={enter(7)}>
             <ReportsMixBlock shares={data.divisionShares} animate={animate} />
           </div>
-          <div className="dash-enter h-[288px] lg:h-auto min-h-0" style={enter(8)}>
+          <div className="dash-enter h-[300px] xl:h-auto min-h-0" style={enter(8)}>
             <AlumniGrowthBlock years={data.alumniYears} narrow={!isDesktop} animate={animate} enterDelay={chartDelay(8)} />
           </div>
         </div>
