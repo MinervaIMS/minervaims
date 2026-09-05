@@ -229,16 +229,37 @@ Deno.serve(async (req) => {
         ? { fee_status: 'exempt' }
         : (!isExempt && wasExempt ? { fee_status: 'unpaid' } : {});
 
+      // =================================================================
+      // AND THE PUBLIC WEBSITE, which is the same crossing seen from the
+      // other side, and where leaving it out lost people.
+      // -----------------------------------------------------------------
+      // Appointing an advisor sets `is_public` to false, because an advisor
+      // starts hidden until somebody decides to show them. Nothing set it
+      // back. So president -> advisor -> president left `is_public` false,
+      // the projection trigger requires it to publish anybody, and the
+      // person simply disappeared from the public Members page while the
+      // workspace showed them correctly as President. The role was right
+      // everywhere; the visibility switch had been turned off by a step
+      // nobody could see and turned on again by nothing.
+      //
+      // Restoring it is a CROSSING, not a blanket rule. Leaving an advisory
+      // role for a role the website lists restores the default for that
+      // role, because the `false` was written by the appointment rather
+      // than chosen by anybody. Every other role change leaves the switch
+      // exactly where it is, so a member deliberately hidden in
+      // People > Members stays hidden.
+      // =================================================================
+      const publicChange: Record<string, boolean> = isExempt && !wasExempt
+        ? { is_public: false }
+        : (!isExempt && wasExempt ? { is_public: PUBLIC_ROLES.has(role) } : {});
+
       let writeError = null;
       if (memberRow) {
         ({ error: writeError } = await supabaseAdmin.from('members')
           .update({
             role, division: div ?? 'none', user_id: userId,
             ...feeStatusChange,
-            // An advisor starts hidden from the public website, exactly as
-            // the People > Members appointment leaves them; the visibility
-            // switch on their profile can show them afterwards.
-            ...(isExempt && !wasExempt ? { is_public: false } : {}),
+            ...publicChange,
           })
           .eq('id', memberRow.id));
       } else {

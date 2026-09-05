@@ -27,6 +27,7 @@ export function ClearFilters({ count, onClear, size = 'default', className = '' 
   const pad = size === 'sm' ? 'h-8 px-2.5 text-xs' : 'h-10 px-3 text-sm';
   return (
     <button
+      data-ro
       type="button"
       onClick={onClear}
       title="Remove every filter currently applied"

@@ -309,7 +309,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
            buttons depend on `canEdit`, exactly as before. */
         actions={
           <>
-            <Button variant="outline" size="sm" className="font-body h-9" onClick={jumpToToday}>Jump to today</Button>
+            <Button data-ro variant="outline" size="sm" className="font-body h-9" onClick={jumpToToday}>Jump to today</Button>
             {/* The fee swatch explains a colour an exempt viewer will never
                 see on this grid, so it comes out of their key too. */}
             <CalendarLegend items={feeExempt ? CALENDAR_LEGEND.filter((l) => l.label !== 'Membership fee') : CALENDAR_LEGEND} />
@@ -368,7 +368,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                           else if (isAod) onNavigate!('events', 'events-on-display');
                         };
                         return (
-                          <button key={j} disabled={!clickable} onClick={onClick}
+                          <button key={j} data-ro disabled={!clickable} onClick={onClick}
                             title={isCustom ? `${CALENDAR_ENTRY_LABELS[it.entry!.entry_type]}: ${it.label}` : isEvent ? EVENT_TYPE_LABELS[it.event!.event_type] : isAod ? 'Open the Association on Display registration page' : it.label}
                             className={`flex items-center gap-1 w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${kindColor(it.kind, it.entry)} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
                             {isReg && <Check className="h-3 w-3 shrink-0" />}
@@ -489,7 +489,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
               {registered.has(regEvent.id) ? (
                 <div className="flex items-center gap-2 text-emerald-700"><CalendarClock className="h-4 w-4" />You are registered for this event.</div>
               ) : (
-                <Button className="w-full" onClick={doRegister} disabled={registering}>
+                <Button data-ro className="w-full" onClick={doRegister} disabled={registering}>
                   {registering ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering</> : 'Register for this event'}
                 </Button>
               )}

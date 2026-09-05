@@ -17,6 +17,7 @@ interface ManualSection { section: string; entries: (GuideEntry & { canManage: b
 
 // How the workspace is organised, independent of role.
 const AT_A_GLANCE = [
+  'Your role decides not only which pages you see but what you can do on each. On a page you may read but not change, the editing controls are faded and inert rather than failing when pressed; everything that only changes what you see keeps working.',
   'The navigation is organised in sections, each holding subsections. You only ever see the pages your role can access, so nothing in your menu is off limits.',
   'The fastest way anywhere is the search bar in the header, or Ctrl K (Cmd K on a Mac). It finds subsections and help topics, and it also searches INSIDE the workspace: members, alumni, events, reports and the resource libraries. Type a person\'s name and you get the person, not just the page they are on. Every result is limited to what your role can open, and no search is even sent for a part of the workspace you cannot reach.',
   'One role drives everything. It is assigned by the President or Admin in Settings, Users, which edits the same record as People, Members: a change made in either place appears in both immediately. Nobody can change their own role.',
@@ -30,6 +31,7 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Where your role may look but not change, the controls that would change something are now faded and cannot be pressed: create and add buttons, the edit and delete icons on a row, publishing switches, the Save at the foot of a form. Searching, filtering, sorting, downloading, opening a record to read it and registering yourself for an event all keep working. Previously those buttons looked live and failed only after you had filled in the form.',
   'Recruiting, Candidates screening has a new first column: "Evaluated for", the division actually assessing a candidate, kept apart from the two divisions they asked for. It starts as their first choice and can be changed to any research division or to Media or Operations, including one the candidate never named. Changing it returns them to "To be invited", releases the interview slot they were holding, and tells them in their own workspace which division is now considering them. A candidacy runs in at most two divisions: after one move, the only way left is back. The circled question mark beside the column explains the whole process.',
   'Advisors are outside the membership fee entirely. They appear in no collection, count towards no total, receive no fee deadline on their Calendar or Dashboard, and enter no semester member register. Appointing a member as advisor part way through a semester removes the fee they had not yet paid; a payment already banked is never deleted, and the fee page says so where it happens.',
   'Advisors can now read the whole workspace and change none of it, apart from their own profile. Settings stays closed to them: an outside adviser has no business in the association\'s access control or its audit trail.',
