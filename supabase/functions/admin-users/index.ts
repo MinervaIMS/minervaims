@@ -76,14 +76,30 @@ Deno.serve(async (req) => {
     // ONE identity system: assigning a role here writes the person's MEMBER
     // PROFILE (the single source of truth); workspace access mirrors it via a
     // database trigger. 'admin' is reserved for the association account;
-    // advisors are appointed from People > Members (alumni registration
-    // first); 'alumni' is reached only through the leave flow.
+    // 'alumni' is reached only through the leave flow.
+    //
+    // ADVISOR IS ASSIGNABLE HERE. It used to be refused, on the grounds that
+    // every advisor is a registered alumnus and the registration happens in
+    // People > Members. That reasoning describes the association's practice
+    // correctly, but nothing in the data depends on it: there is no foreign
+    // key, no join and no query anywhere that requires an advisor to have an
+    // alumni row. So the refusal did not protect an invariant, it simply
+    // meant the role could not be granted from the page whose whole purpose
+    // is granting roles - and, worse, that an existing advisor opened here
+    // could only be moved OFF the role, never back onto it.
+    //
+    // People > Members remains the fuller route, because it registers the
+    // person in the alumni directory in the same step. This page grants the
+    // role, and says so.
     const ASSIGNABLE_ROLES = [
       'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
       'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-      'media_analyst', 'head_of_operations', 'member',
+      'media_analyst', 'head_of_operations', 'advisor', 'member',
       ...Object.keys(LEGACY_HEADS),
     ];
+    // Roles outside the membership fee. Kept in step with
+    // src/lib/membership-fee.ts, admin-fees and admin-members.
+    const FEE_EXEMPT_ROLES = ['advisor', 'silent_advisor'];
     const DIVISION_ROLES = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst'];
     const PUBLIC_ROLES = new Set([
       'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
@@ -105,10 +121,6 @@ Deno.serve(async (req) => {
       }
       if (rawRole === 'admin') {
         return new Response(JSON.stringify({ error: 'The admin role belongs to the association account only and cannot be granted.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-      if (rawRole === 'advisor' || rawRole === 'silent_advisor') {
-        return new Response(JSON.stringify({ error: 'Advisors are appointed from People > Members: the flow registers the person as an alumnus first.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (!ASSIGNABLE_ROLES.includes(rawRole)) {
@@ -179,25 +191,55 @@ Deno.serve(async (req) => {
       const { data: targetProfile } = await supabaseAdmin
         .from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
 
-      let memberRow: { id: string } | null = null;
+      let memberRow: { id: string; role: string | null; fee_status: string | null } | null = null;
       {
         const { data } = await supabaseAdmin
-          .from('members').select('id').eq('user_id', userId).maybeSingle();
+          .from('members').select('id, role, fee_status').eq('user_id', userId).maybeSingle();
         memberRow = data ?? null;
       }
       if (!memberRow && targetProfile?.email) {
         const { data } = await supabaseAdmin
-          .from('members').select('id')
+          .from('members').select('id, role, fee_status')
           .is('user_id', null)
           .ilike('email', targetProfile.email)
           .limit(1).maybeSingle();
         memberRow = data ?? null;
       }
 
+      // =================================================================
+      // CROSSING THE MEMBERSHIP-FEE BOUNDARY, in either direction.
+      // -----------------------------------------------------------------
+      // This page and People > Members write the SAME record, so they must
+      // reach the same conclusions about it. People > Members already
+      // handles the fee consequences of an advisor appointment; without the
+      // matching handling here, granting advisor from this page would leave
+      // the person marked 'unpaid' - the description of a member in arrears
+      // on somebody who owes nothing - and leave the fee row they were given
+      // when the collection opened.
+      //
+      // Only the CROSSING changes anything. A member whose fee the board
+      // waived keeps that waiver through an ordinary role change, because
+      // the exemption is theirs rather than their role's; it is reset only
+      // when they leave an exempt role, at which point they are back in the
+      // paying membership.
+      // =================================================================
+      const wasExempt = FEE_EXEMPT_ROLES.includes(memberRow?.role ?? '');
+      const isExempt = FEE_EXEMPT_ROLES.includes(role);
+      const feeStatusChange: Record<string, string> = isExempt && !wasExempt
+        ? { fee_status: 'exempt' }
+        : (!isExempt && wasExempt ? { fee_status: 'unpaid' } : {});
+
       let writeError = null;
       if (memberRow) {
         ({ error: writeError } = await supabaseAdmin.from('members')
-          .update({ role, division: div ?? 'none', user_id: userId })
+          .update({
+            role, division: div ?? 'none', user_id: userId,
+            ...feeStatusChange,
+            // An advisor starts hidden from the public website, exactly as
+            // the People > Members appointment leaves them; the visibility
+            // switch on their profile can show them afterwards.
+            ...(isExempt && !wasExempt ? { is_public: false } : {}),
+          })
           .eq('id', memberRow.id));
       } else {
         // First assignment to an account that has no member profile yet:
@@ -211,13 +253,32 @@ Deno.serve(async (req) => {
           email: targetProfile?.email ?? null,
           role, division: div ?? 'none',
           account_status: 'approved', membership_status: 'active',
-          fee_status: 'unpaid', is_public: PUBLIC_ROLES.has(role),
+          fee_status: isExempt ? 'exempt' : 'unpaid', is_public: PUBLIC_ROLES.has(role),
         }));
       }
       if (writeError) {
         console.error('Error setting role:', writeError);
         return new Response(JSON.stringify({ error: 'Failed to update the role. Please try again.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // The fee row they no longer owe, on the same terms as People >
+      // Members: only UNPAID rows, only in OPEN collections. A payment
+      // already banked is money the association received and is never
+      // deleted here; Treasury still records it when the collection closes.
+      if (isExempt && !wasExempt && memberRow) {
+        try {
+          const { data: openPeriods } = await supabaseAdmin.from('fee_periods').select('id').eq('closed', false);
+          const periodIds = (openPeriods || []).map((p: { id: string }) => p.id);
+          if (periodIds.length) {
+            await supabaseAdmin.from('membership_fees').delete()
+              .in('period_id', periodIds).eq('member_id', memberRow.id).eq('paid', false);
+          }
+        } catch (feeErr) {
+          // The role change has already succeeded and must not be reported
+          // as a failure because of this tidy-up.
+          console.error('Could not clear the advisor\'s open fee rows:', feeErr);
+        }
       }
 
       // Audit trail.
