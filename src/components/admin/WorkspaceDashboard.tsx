@@ -24,12 +24,22 @@ import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
 //   research by division (40%)  |  current update (60%)
 //   fund performance (35%) | reports mix (25%) | alumni growth (40%)
 //
-// THE WHOLE PAGE IS ONE DESKTOP SCREEN. The root is a height-bounded
-// flex column inside the workspace's content pane, the greeting and the
-// KPI row take what they need, and the two lower rows share everything
-// that is left. Nothing is measured in fixed pixels, so the page fits
-// whatever the chrome above it happens to occupy at any window height.
-// Below `lg` that constraint is dropped and the cards stack and scroll.
+// THE PAGE PREFERS ONE DESKTOP SCREEN, BUT READABILITY COMES FIRST.
+// The root fills the content pane and the two lower rows share what the
+// greeting and the KPI row leave, which on a tall window puts everything
+// on one screen with nothing to scroll.
+//
+// It used to insist on that. The rows were bounded to whatever was left,
+// so on a laptop, or a window a person had made shorter, the charts were
+// squeezed until the axis of Research by division showed one tick and
+// the doughnut's labels shrank with their viewBox into something nobody
+// could read. A chart that fits and cannot be read has not fitted.
+//
+// So each row now carries a FLOOR. Above it the rows still stretch to
+// fill the screen; below it they stop, the page grows past the viewport,
+// and the pane scrolls. Scrolling is the compromise, and it is the right
+// way round: a reader can scroll, and cannot un-shrink a label.
+// Below `lg` the cards stack at their own heights, as they always did.
 //
 // IT ALSO LOADS AS ONE THING. The workspace loader holds the pane until
 // every query has answered, so a member never watches cards arrive one
@@ -120,7 +130,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
   if (!data.greetingReady || !coversReady) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
-    <div className="flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0">
+    <div className="flex flex-col gap-3 font-body lg:min-h-full pb-16 lg:pb-0">
       <DashboardMotionStyles />
 
       <DashboardGreeting userId={data.userId} vars={data.greetingVars} />
@@ -181,8 +191,8 @@ export default function WorkspaceDashboard({ onNavigate }: {
             Current update comes FIRST, directly under the KPI row: it is
             the only card that asks the reader to do something, and it was
             arriving under three charts. */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3">
-          <div className="dash-enter order-2 lg:order-1 h-[264px] lg:h-auto min-h-0" style={enter(4)}>
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3 lg:min-h-[300px]">
+          <div className="dash-enter order-2 lg:order-1 h-[264px] lg:h-auto lg:min-h-[300px]" style={enter(4)}>
             <ResearchByDivisionBlock
               rows={data.divisionCounts}
               currentLabel={data.semester.label}
@@ -194,7 +204,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
               and the Association on Display state needs all three to
               stand in it without the photograph being reduced to a
               strip. */}
-          <div className="dash-enter order-1 lg:order-2 h-[360px] lg:h-auto min-h-0" style={enter(5)}>
+          <div className="dash-enter order-1 lg:order-2 h-[360px] lg:h-auto lg:min-h-[300px]" style={enter(5)}>
             <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} />
           </div>
         </div>
@@ -202,14 +212,14 @@ export default function WorkspaceDashboard({ onNavigate }: {
             are taken out of the width. On a phone they stack, with the
             doughnut last: it is the most compact reading and the least
             urgent. */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[35fr_25fr_40fr] gap-3">
-          <div className="dash-enter h-[300px] lg:h-auto min-h-0" style={enter(6)}>
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[35fr_25fr_40fr] gap-3 xl:min-h-[310px]">
+          <div className="dash-enter h-[320px] xl:h-auto xl:min-h-[310px]" style={enter(6)}>
             <FundPerformanceBlock series={data.fundSeries} animate={animate} enterDelay={chartDelay(6)} />
           </div>
-          <div className="dash-enter order-3 lg:order-none h-[300px] lg:h-auto min-h-0" style={enter(7)}>
+          <div className="dash-enter order-3 lg:order-none h-[320px] xl:h-auto xl:min-h-[310px]" style={enter(7)}>
             <ReportsMixBlock shares={data.divisionShares} animate={animate} />
           </div>
-          <div className="dash-enter h-[288px] lg:h-auto min-h-0" style={enter(8)}>
+          <div className="dash-enter h-[320px] xl:h-auto xl:min-h-[310px]" style={enter(8)}>
             <AlumniGrowthBlock years={data.alumniYears} narrow={!isDesktop} animate={animate} enterDelay={chartDelay(8)} />
           </div>
         </div>
