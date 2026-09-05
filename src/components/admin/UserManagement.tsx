@@ -42,12 +42,20 @@ interface UserRow {
 // Roles that can be granted from this page. Assigning here writes the
 // person's MEMBER PROFILE (People > Members): one email, one user, one role.
 // 'admin' is reserved for the association account and cannot be granted;
-// advisors are appointed from People > Members (the flow registers them as
-// alumni first); 'alumni' is reached only through the leave flow.
+// 'alumni' is reached only through the leave flow.
+//
+// ADVISOR IS HERE NOW. It was left out because every advisor is a registered
+// alumnus and the registration happens in People > Members, which is a true
+// description of the association's practice but was being enforced by simply
+// omitting the option. The result was a page that could not grant the role it
+// existed to grant, and an existing advisor who could be moved off the role
+// but never back onto it. People > Members is still the fuller route, because
+// it registers the person in the alumni directory in the same step; the
+// dialog says so rather than the list omitting the row.
 const ASSIGNABLE_ROLES: AppRole[] = [
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'member',
+  'media_analyst', 'head_of_operations', 'advisor', 'member',
 ];
 // A user with one of these (or no role row) is "pending" — not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];
@@ -125,6 +133,27 @@ const UserManagement = () => {
       return { role, division: f.division && opts.includes(f.division) ? f.division : null };
     });
   };
+
+  // =================================================================
+  // THE LIST ALWAYS CONTAINS THE ROLE THE PERSON ACTUALLY HOLDS.
+  // -----------------------------------------------------------------
+  // A Select whose value matches no item renders an EMPTY trigger. Every
+  // role this page cannot grant - alumni, candidate, pending, admin, and
+  // until now advisor - therefore opened this dialog with the Role field
+  // blank, so the control could not state what it was about to change,
+  // and the only thing it could do was move the person off that role.
+  //
+  // The unassignable ones are shown as the current value and disabled:
+  // present, so the field reads correctly, and unselectable, so this page
+  // still cannot grant them.
+  // =================================================================
+  const editRoleOptions = useMemo<{ role: AppRole; disabled: boolean }[]>(() => {
+    const list = ASSIGNABLE_ROLES.map((role) => ({ role, disabled: false }));
+    if (editing && !ASSIGNABLE_ROLES.includes(editing.role)) {
+      return [{ role: editing.role, disabled: true }, ...list];
+    }
+    return list;
+  }, [editing]);
 
   const editValid = useMemo(() => {
     if (!editing) return false;
@@ -341,7 +370,7 @@ const UserManagement = () => {
           <DialogHeader>
             <DialogTitle className="font-serif inline-flex items-center gap-2">Change role <HelpDot page="settings-users" topic="change-role" /></DialogTitle>
             <DialogDescription className="font-body">
-              {editing && <><span className="text-foreground">{editing.full_name || editing.email}</span> is currently <span className="text-foreground">{roleLabel(editing.role, editing.division)}</span>. This writes the person's member profile (the single record behind People &gt; Members and this page); permissions follow immediately and the change is recorded in the activity log. Advisors are appointed from People &gt; Members instead.</>}
+              {editing && <><span className="text-foreground">{editing.full_name || editing.email}</span> is currently <span className="text-foreground">{roleLabel(editing.role, editing.division)}</span>. This writes the person's member profile (the single record behind People &gt; Members and this page); permissions follow immediately and the change is recorded in the activity log.</>}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 font-body">
@@ -350,7 +379,11 @@ const UserManagement = () => {
               <Select value={editForm.role} onValueChange={(v) => changeEditRole(v as AppRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ASSIGNABLE_ROLES.map((r) => <SelectItem key={r} value={r}>{roleLabel(r, null)}</SelectItem>)}
+                  {editRoleOptions.map(({ role, disabled }) => (
+                    <SelectItem key={role} value={role} disabled={disabled}>
+                      {roleLabel(role, null)}{disabled ? ' (current, set elsewhere)' : ''}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -371,6 +404,29 @@ const UserManagement = () => {
             )}
             {!roleNeedsDivision(editForm.role) && (
               <p className="text-xs text-muted-foreground">This role carries no division: the board is not a division.</p>
+            )}
+            {/* What granting Advisor here does, and the one thing it does
+                not do. Said at the moment of choosing rather than left for
+                the person to discover from the alumni directory later. */}
+            {normalizeRole(editForm.role) === 'advisor' && normalizeRole(editing?.role ?? 'member') !== 'advisor' && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900 space-y-1.5">
+                <p>
+                  An advisor can read every section of the workspace and change none of it, apart from their
+                  own profile. Settings stays closed to them.
+                </p>
+                <p>
+                  They leave the membership fee: no collection, no total, no semester register. Any fee they
+                  have not yet paid for an open collection is cleared. A payment already made is kept.
+                </p>
+                <p>
+                  They start hidden from the public Members page; the switch on their profile can show them.
+                </p>
+                <p>
+                  This grants the role only. It does <strong>not</strong> add them to the alumni directory.
+                  To do both at once, use <strong>People &gt; Members</strong> and move them to alumni,
+                  appointing them advisor in the same step.
+                </p>
+              </div>
             )}
           </div>
           <DialogFooter>
