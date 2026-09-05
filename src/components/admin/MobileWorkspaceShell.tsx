@@ -178,6 +178,7 @@ export default function MobileWorkspaceShell({
           never chain to the document and drag the fixed header around. */}
       <main
         id="mobile-ws-content"
+        data-ws-pane
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 relative"
         style={{ overscrollBehavior: 'contain', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >

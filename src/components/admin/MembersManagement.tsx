@@ -225,10 +225,27 @@ export default function MembersManagement() {
   // the same pairing rules as Settings → Users (and the server re-checks).
   const changeFormRole = (role: AppRole) => {
     setForm((f) => {
+      // LEAVING AN ADVISORY ROLE TURNS THE WEBSITE SWITCH BACK ON.
+      //
+      // An advisor appointment sets "Show on public Members page" to off,
+      // because an advisor starts hidden. Nothing turned it back on, so
+      // somebody going president -> advisor -> president came back with the
+      // switch still off and vanished from the public Members page: the
+      // workspace said President, the website showed nobody, and the cause
+      // was a switch two dialogs away that no step in the journey had
+      // touched since the appointment set it.
+      //
+      // Done in the form rather than on the server because this control is
+      // visible here: the switch flips in front of the person making the
+      // change, who can still turn it off again before saving. Only the
+      // CROSSING out of an advisory role does it, so a member deliberately
+      // hidden for any other reason stays hidden.
+      const leavingAdvisory = normalizeRole(f.role) === 'advisor' && normalizeRole(role) !== 'advisor';
+      const visibility = leavingAdvisory ? { is_public: true } : {};
       const options = divisionsForRole(role);
-      if (options.length === 0) return { ...f, role, division: 'none' };
-      if (options.length === 1) return { ...f, role, division: options[0] };
-      return { ...f, role, division: options.includes(f.division) ? f.division : options[0] };
+      if (options.length === 0) return { ...f, role, division: 'none', ...visibility };
+      if (options.length === 1) return { ...f, role, division: options[0], ...visibility };
+      return { ...f, role, division: options.includes(f.division) ? f.division : options[0], ...visibility };
     });
   };
 

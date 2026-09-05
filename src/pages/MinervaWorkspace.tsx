@@ -57,6 +57,7 @@ import MobileViewTable from '@/components/admin/MobileViewTable';
 import JoinFaqsManagement from '@/components/admin/JoinFaqsManagement';
 import HowToUse from '@/components/admin/HowToUse';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
+import { ReadOnlyRegion } from '@/components/admin/ReadOnlyRegion';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { helpPageKey } from '@/lib/workspace-guide';
@@ -699,6 +700,23 @@ const MinervaWorkspace = () => {
   const activeSection = visibleNav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
 
+  // ══════════════════════════════════════════════════════════════════════
+  // MAY THIS READER CHANGE WHAT IS ON THE SCREEN?
+  // ----------------------------------------------------------------------
+  // Asked once, here, for whichever subsection is open, and answered from
+  // the same matrix that decided they could open it. `ReadOnlyRegion` acts
+  // on the answer for every page at once, which is the only way a rule
+  // like this survives the next page somebody adds.
+  //
+  // A section with no subsection of its own (the Dashboard, the Calendar,
+  // My Profile, How to use) is keyed by the section itself, so those are
+  // covered too rather than falling through as "not read-only".
+  // ══════════════════════════════════════════════════════════════════════
+  const openResource = activeSubKey ?? activeSectionKey;
+  const subsectionReadOnly = !!openResource
+    && access.canView(openResource)
+    && !access.canManage(openResource);
+
   // THE TITLE NAMES THE PAGE, now that the page has an address. Every
   // subsection used to be "Workspace | MIMS", which meant a browser tab and,
   // more to the point, a BOOKMARK of one of these new URLs carried no
@@ -1169,6 +1187,7 @@ const MinervaWorkspace = () => {
           onWebsite={() => navigate('/')}
           onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
         >
+          <ReadOnlyRegion readOnly={subsectionReadOnly} />
           {renderContent()}
         </MobileWorkspaceShell>
       </>
@@ -1343,8 +1362,9 @@ const MinervaWorkspace = () => {
 
             {/* Scrollable content. `relative` so the workspace loader can fill
                 and centre within exactly this pane (the portion that loads). */}
-            <div id="ws-content" className="flex-1 overflow-y-auto px-6 py-6 relative">
+            <div id="ws-content" data-ws-pane className="flex-1 overflow-y-auto px-6 py-6 relative">
               <HelpProvider>
+                <ReadOnlyRegion readOnly={subsectionReadOnly} />
                 {renderContent()}
                 {/* CONTEXTUAL HELP, ON EVERY PAGE INCLUDING AN APPLICANT'S.
                     The floating question mark used to be withheld from

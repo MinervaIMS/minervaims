@@ -524,6 +524,34 @@ button.mdot, button.rdot, button.dstack-dot {
 .ac-rail::-webkit-scrollbar { height:0; width:0; display:none; }
 .ac-card { scroll-snap-align:start; min-width:0; }
 
+/* =====================================================================
+   VIEW-ONLY: what a role that may read but not change actually sees.
+   ---------------------------------------------------------------------
+   The pairing to ReadOnlyRegion.tsx, which decides WHICH controls these
+   rules apply to and marks them with `data-ro-disabled`. Doing the
+   marking in script and the appearance here keeps one list of controls
+   rather than two that could disagree.
+
+   `pointer-events: none` is the half a mouse feels; the component sets
+   `disabled` and `tabindex="-1"` for the half a keyboard feels. Neither
+   alone is enough, and neither is the boundary: the server is.
+   ===================================================================== */
+[data-ro-disabled="1"] {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+/* A tick box or a switch that is off-limits should still read as ticked or
+   unticked: it is reporting a fact, and fading it to nothing would hide
+   the very thing a reader came to see. */
+[data-ro-disabled="1"][role="switch"],
+[data-ro-disabled="1"][type="checkbox"] {
+  opacity: 0.6;
+  filter: none;
+}
+
 /* ---- V3 card carousel ---- */
 .v3-rail-bleed { width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
   --fade: clamp(1rem, 4vw, 4rem);

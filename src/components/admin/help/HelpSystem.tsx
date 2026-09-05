@@ -56,6 +56,7 @@ export function HelpDot({ page, topic, className = '' }: { page: string; topic?:
   if (!guideFor(page)) return null;
   return (
     <button
+      data-ro
       type="button"
       onClick={(e) => { e.stopPropagation(); openHelp(page, topic); }}
       title="What is this?"
@@ -78,6 +79,7 @@ export function PageHelpButton({ page }: { page: string }) {
   const isOpen = !!state;
   return (
     <button
+      data-ro
       type="button"
       onClick={() => (isOpen ? closeHelp() : openHelp(page))}
       title={isOpen ? 'Close help' : 'Help for this page'}

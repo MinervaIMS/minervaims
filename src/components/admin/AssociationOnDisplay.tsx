@@ -211,11 +211,11 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
               {/* Registration button: clear, full-width, for everyone. */}
               <div className="mt-2">
                 {mine ? (
-                  <Button variant="outline" size="sm" className="w-full text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => onRemove(mine.id)}>
+                  <Button data-ro variant="outline" size="sm" className="w-full text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => onRemove(mine.id)}>
                     Cancel my registration
                   </Button>
                 ) : (
-                  <Button variant="outline" size="sm" className="w-full" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
+                  <Button data-ro variant="outline" size="sm" className="w-full" disabled={!day.registration_open || busySlot === `${day.id}-${slot}`} onClick={() => onSignup(slot)}>
                     {busySlot === `${day.id}-${slot}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : day.registration_open ? 'Register for this slot' : 'Registration closed'}
                   </Button>
                 )}

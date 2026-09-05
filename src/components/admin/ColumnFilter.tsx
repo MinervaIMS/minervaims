@@ -35,6 +35,7 @@ export function ColumnFilter({ label, options, selected, onChange }: Props) {
       <Popover>
         <PopoverTrigger asChild>
           <button
+            data-ro
             type="button"
             title={`Filter by ${label.toLowerCase()}`}
             className={`inline-flex items-center justify-center h-5 w-5 border ${active ? 'border-accent text-accent' : 'border-transparent text-muted-foreground'} hover:text-accent`}
@@ -42,7 +43,7 @@ export function ColumnFilter({ label, options, selected, onChange }: Props) {
             <Filter className={`h-3 w-3 ${active ? 'fill-accent' : ''}`} />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-56 p-0 rounded-none">
+        <PopoverContent data-ro align="start" className="w-56 p-0 rounded-none">
           <div className="flex items-center justify-between px-3 py-2 border-b border-separator">
             <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
             <button type="button" className="text-xs text-accent underline disabled:opacity-40" disabled={!active} onClick={() => onChange([])}>Clear</button>

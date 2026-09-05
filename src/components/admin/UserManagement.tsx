@@ -303,8 +303,27 @@ const UserManagement = () => {
                     <div className="text-foreground truncate">{u.full_name || '-'}</div>
                     <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                   </div>
+                  {/* An account waiting here is not always one to admit. A
+                      duplicate sign-up, a typo in an address, somebody who
+                      never went on to apply: the only thing this list could
+                      do with them was give them a role, so they accumulated
+                      with no way out. Removing is the same guarded action
+                      the approved list already has, and runs through the
+                      same confirmation. */}
                   {canEdit
-                    ? <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={() => openEdit(u)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Assign role</Button>
+                    ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button variant="outline" size="sm" className="h-8" onClick={() => openEdit(u)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Assign role</Button>
+                        <Button
+                          variant="outline" size="icon"
+                          className="h-8 w-8 text-destructive border-destructive/40 hover:bg-destructive/10"
+                          aria-label={`Remove ${u.full_name || u.email}`}
+                          title="Remove this account"
+                          disabled={busyUserId === u.id}
+                          onClick={() => setConfirmDelete(u)}
+                        ><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    )
                     : <Badge variant="secondary" className="shrink-0">{roleLabel(u.role, u.division)}</Badge>}
                 </div>
               ))}
