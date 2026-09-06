@@ -3,6 +3,7 @@
 // deduplicates in-flight calls so crosshair/UI work never re-queries.
 
 import { supabase } from "@/integrations/supabase/client";
+import { callFunction } from '@/lib/errors';
 import type {
   ChartState, GreekName, GridResult, HedgeSimResult, HedgeSolveResult, XVar,
 } from "./types";
@@ -32,7 +33,7 @@ async function invoke<T>(body: Record<string, unknown>): Promise<T> {
   const existing = inflight.get(key);
   if (existing) return existing as Promise<T>;
   const p = (async () => {
-    const { data, error } = await supabase.functions.invoke("pricing-engine", { body });
+    const { data, error } = await callFunction("pricing-engine", { body });
     if (error) {
       let msg = error.message || "Pricing request failed";
       // supabase-js surfaces non-2xx as FunctionsHttpError with a Response.

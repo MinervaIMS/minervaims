@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { Loader2, Clock, ChevronDown, ChevronRight, Trash2, Search, ShieldCheck, Pencil, Save } from 'lucide-react';
@@ -168,10 +169,7 @@ const UserManagement = () => {
     if (!editing) return;
     setBusyUserId(editing.id);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-users', {
-        body: { action: 'set-role', userId: editing.id, role: editForm.role, division: editForm.division },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-users', { body: { action: 'set-role', userId: editing.id, role: editForm.role, division: editForm.division }, session });
       // Surface the function's real message (invoke reports non-2xx as `error`).
       if (error) {
         let msg = error.message || 'Failed to update role';
@@ -196,10 +194,7 @@ const UserManagement = () => {
   const deleteUser = async (u: UserRow) => {
     setBusyUserId(u.id);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-users', {
-        body: { action: 'delete', userId: u.id },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-users', { body: { action: 'delete', userId: u.id }, session });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Could not delete', description: data.error, variant: 'destructive' }); return; }
       toast({ title: 'User deleted' });

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import {
   Plus, Edit, Trash2, LogOut, X, Loader2,
   ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
@@ -527,7 +528,7 @@ const MinervaWorkspace = () => {
   const toggleWebsite = async (event: DbEvent, value: boolean) => {
     setTogglingWebsite(event.id);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-events', {
+      const { data, error } = await callFunction('admin-events', {
         body: {
           action: 'update',
           event: {
@@ -542,7 +543,7 @@ const MinervaWorkspace = () => {
             in_archive: event.in_archive ?? true,
           },
         },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        session,
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -624,10 +625,7 @@ const MinervaWorkspace = () => {
           in_archive: editingEvent.in_archive ?? true,
         }),
       };
-      const { data, error } = await supabase.functions.invoke('admin-events', {
-        body: { action, event: eventData },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-events', { body: { action, event: eventData }, session: session });
       if (error) throw error;
       if (data.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
       toast({ title: 'Success', description: `Event ${editingEvent ? 'updated' : 'created'} successfully` });
@@ -643,9 +641,9 @@ const MinervaWorkspace = () => {
   const handleDelete = async (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return;
     try {
-      const { data, error } = await supabase.functions.invoke('admin-events', {
+      const { data, error } = await callFunction('admin-events', {
         body: { action: 'delete', event: { id: eventId } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        session,
       });
       if (error) throw error;
       if (data.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
@@ -1187,7 +1185,7 @@ const MinervaWorkspace = () => {
           onWebsite={() => navigate('/')}
           onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
         >
-          <ReadOnlyRegion readOnly={subsectionReadOnly} />
+          <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
           {renderContent()}
         </MobileWorkspaceShell>
       </>
@@ -1364,7 +1362,7 @@ const MinervaWorkspace = () => {
                 and centre within exactly this pane (the portion that loads). */}
             <div id="ws-content" data-ws-pane className="flex-1 overflow-y-auto px-6 py-6 relative">
               <HelpProvider>
-                <ReadOnlyRegion readOnly={subsectionReadOnly} />
+                <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
                 {renderContent()}
                 {/* CONTEXTUAL HELP, ON EVERY PAGE INCLUDING AN APPLICANT'S.
                     The floating question mark used to be withheld from

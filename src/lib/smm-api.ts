@@ -5,6 +5,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
+import { invokeFunction } from '@/lib/errors';
 export type EditorialPlatform = 'instagram' | 'linkedin' | 'other';
 export type EditorialFormat = 'ig_story' | 'ig_post' | 'ig_reel' | 'li_post' | 'other';
 export type EditorialStatus = 'idea' | 'scheduled' | 'in_progress' | 'published' | 'cancelled';
@@ -118,11 +119,12 @@ export const ED_STATUS_LABELS: Record<EditorialStatus, string> = {
   idea: 'Idea', scheduled: 'Scheduled', in_progress: 'In progress', published: 'Published', cancelled: 'Cancelled',
 };
 
-async function invoke(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-smm', { body, headers: { Authorization: `Bearer ${session?.access_token}` } });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction('admin-smm', { body: body, session });
 }
 
 export async function listEditorial(session: Session | null): Promise<EditorialItem[]> {

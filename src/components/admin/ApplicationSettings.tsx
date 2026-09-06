@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
@@ -47,8 +48,7 @@ const ApplicationSettings = () => {
     if (!session?.access_token) return;
     (async () => {
       try {
-        const { data } = await supabase.functions.invoke('admin-settings', {
-          body: { action: 'get' }, headers: { Authorization: `Bearer ${session.access_token}` },
+        const { data } = await callFunction('admin-settings', { body: { action: 'get' }, headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const s = data?.data;
         if (s) setForm({ semester_label: s.semester_label || '', start_local: toLocal(s.start_date), end_local: toLocal(s.end_date) });
@@ -73,10 +73,8 @@ const ApplicationSettings = () => {
       // that still checks it; the schedule is the source of truth.
       const now = Date.now();
       const open = now >= new Date(form.start_local).getTime() && now <= new Date(form.end_local).getTime();
-      const { data, error } = await supabase.functions.invoke('admin-settings', {
-        body: { action: 'update', settings: { semester_label: form.semester_label, start_date: toIso(form.start_local), end_date: toIso(form.end_local), auto_open: true, applications_open: open } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-settings', {
+        body: { action: 'update', settings: { semester_label: form.semester_label, start_date: toIso(form.start_local), end_date: toIso(form.end_local), auto_open: true, applications_open: open } }, session });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       logActivity(session, primaryRole, { action: 'update', section: 'Recruiting', subsection: 'Application page', entityType: 'application_settings', entityName: form.semester_label || 'Application window' });

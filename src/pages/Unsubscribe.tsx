@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { Loader2 } from 'lucide-react';
 import AuthLayout from '@/components/shared/AuthLayout';
 import { AuthButton } from '@/components/shared/AuthUI';
@@ -45,9 +46,7 @@ export default function Unsubscribe() {
   const confirm = async () => {
     setState('confirming');
     try {
-      const { data, error } = await supabase.functions.invoke('handle-email-unsubscribe', {
-        body: { token },
-      });
+      const { data, error } = await callFunction('handle-email-unsubscribe', { body: { token } });
       if (error) throw error;
       if (data?.success === false && data?.reason === 'already_unsubscribed') {
         setState('already');

@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
+import { invokeFunction } from '@/lib/errors';
 // =====================================================================
 // join-faqs-api — the admissions FAQ, as the workspace manages it.
 // ---------------------------------------------------------------------
@@ -69,13 +70,12 @@ export async function listAllFaqs(session: Session | null): Promise<JoinFaqRow[]
   return (data?.faqs ?? []) as JoinFaqRow[];
 }
 
-async function invoke(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-join-faqs', {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction('admin-join-faqs', { body: body, session });
 }
 
 export function saveFaq(session: Session | null, faq: JoinFaqInput) {

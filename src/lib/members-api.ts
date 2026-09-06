@@ -10,6 +10,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { callFunction, invokeFunction } from '@/lib/errors';
 import type { AppRole, OrgDivision } from '@/lib/roles';
 
 export type MembershipStatus = 'active' | 'on_exchange' | 'one_semester_pause' | 'alumni' | 'expelled';
@@ -75,14 +76,12 @@ export async function listMembers(): Promise<MemberRow[]> {
   return data || [];
 }
 
-async function invokeAdminMembers(session: Session | null, payload: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-members', {
-    body: payload,
-    headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invokeAdminMembers(session: Session | null, payload: Record<string, unknown>): Promise<any> {
+  return invokeFunction('admin-members', { body: payload, session });
 }
 
 export function saveMember(session: Session | null, member: MemberInput) {
@@ -117,10 +116,7 @@ export function moveMemberToAlumni(session: Session | null, input: MoveToAlumniI
 export async function uploadMemberPhoto(session: Session | null, file: File): Promise<string> {
   const form = new FormData();
   form.append('file', file);
-  const { data, error } = await supabase.functions.invoke('admin-members', {
-    body: form,
-    headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+  const { data, error } = await callFunction('admin-members', { body: form, session: session });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data.photo_url as string;
@@ -137,10 +133,7 @@ export interface MyProfileResult {
 }
 
 export async function getMyMember(session: Session | null): Promise<MyProfileResult> {
-  const { data, error } = await supabase.functions.invoke('member-profile', {
-    body: { action: 'get' },
-    headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+  const { data, error } = await callFunction('member-profile', { body: { action: 'get' }, session: session });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data as MyProfileResult;
@@ -150,10 +143,7 @@ export async function updateMyProfile(
   session: Session | null,
   input: { phone: string; photo_url?: string | null },
 ): Promise<MemberRow> {
-  const { data, error } = await supabase.functions.invoke('member-profile', {
-    body: { action: 'update', ...input },
-    headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+  const { data, error } = await callFunction('member-profile', { body: { action: 'update', ...input }, session: session });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data.member as MemberRow;
@@ -162,10 +152,7 @@ export async function updateMyProfile(
 export async function uploadMyPhoto(session: Session | null, file: File): Promise<string> {
   const form = new FormData();
   form.append('file', file);
-  const { data, error } = await supabase.functions.invoke('member-profile', {
-    body: form,
-    headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+  const { data, error } = await callFunction('member-profile', { body: form, session: session });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data.photo_url as string;
