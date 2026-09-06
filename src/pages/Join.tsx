@@ -3,6 +3,7 @@ import { Seo } from '@/components/shared/Seo';
 import ApplicationCta from '@/components/join/ApplicationCta';
 import DivisionVideoRail from '@/components/join/DivisionVideoRail';
 import JoinFaq from '@/components/join/JoinFaq';
+import { WorkspaceSection } from '@/components/shared/WorkspaceSection';
 import JoinFigures from '@/components/join/JoinFigures';
 import JoinHeroStage from '@/components/join/JoinHeroStage';
 import JoinJourney from '@/components/join/JoinJourney';
@@ -160,8 +161,12 @@ const Join = () => {
       </section>
 
       {/* Close: mirrors the Status block, same source, same two states.
-          Opens on the half, for the same reason as the block above it. */}
-      <section aria-labelledby="join-close-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
+          Opens on the half, because it continues the admissions sequence
+          above it. It CLOSES on the full rhythm, because what follows is
+          a different subject: the workspace section below is joined at
+          256, which is the interval the site puts between two subjects
+          and the one this same component sits in on the homepage. */}
+      <section aria-labelledby="join-close-heading" className="bg-background pt-10 md:pt-16 pb-section-sm md:pb-section">
         <div className="container">
           <ApplicationCta
             {...status}
@@ -171,6 +176,14 @@ const Join = () => {
           />
         </div>
       </section>
+
+      {/* The workspace, immediately before the FAQs.
+          Everything above this point describes a selection that runs
+          inside it, from the form to the offer, so it lands on a reader
+          who already knows what it is for. It also carries the one thing
+          on this page that is about membership rather than admission:
+          what the alumni network looks like from the inside. */}
+      <WorkspaceSection />
 
       {/* FAQs */}
       <JoinFaq />

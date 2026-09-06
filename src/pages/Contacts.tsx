@@ -54,8 +54,12 @@ const Contacts = () => {
             </div>
           </div>
 
-          {/* Partnerships & Collaborations section */}
-          <div className="mt-16 md:mt-20">
+          {/* Partnerships & Collaborations section.
+              `mt-section-sm md:mt-section`: two blocks, each with its own
+              heading and rule, are two subjects, and the site joins two
+              subjects at 80 on a phone and 128 from md up. This was 64/80,
+              a value used nowhere else. */}
+          <div className="mt-section-sm md:mt-section">
             <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
               Partnerships &amp; Collaborations
             </h2>

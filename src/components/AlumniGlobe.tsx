@@ -587,7 +587,12 @@ export default function AlumniGlobe() {
   );
 
   return (
-    <div className="mb-16 sm:mb-20">
+    // THE SITE'S RHYTHM, NOT A MARGIN OF ITS OWN. This is the first of
+    // four blocks stacked inside one section on /people/alumni, and the
+    // four were separated by 80, 96 and 96 pixels where every other page
+    // separates its blocks by 128 (80 on a phone). See the note in
+    // Alumni.tsx.
+    <div className="mb-section-sm md:mb-section">
       <div className="relative w-full" style={{ height: "clamp(360px, 46vw, 560px)" }}>
         <canvas ref={canvasRef} className="block h-full w-full" />
         {/* Desktop/tablet: overlay top-right (zoom only) */}

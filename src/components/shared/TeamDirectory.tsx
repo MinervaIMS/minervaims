@@ -159,7 +159,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
 
       {/* Board Members */}
       {boardMembers.length > 0 && (
-        <section className="mb-12">
+        <section className="mb-10 md:mb-16">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             Board of Directors
           </h2>
@@ -179,7 +179,7 @@ export function TeamDirectory({ members, showFilters = false, initialDivisionFil
           return labelA.localeCompare(labelB);
         })
         .map(([division, members]) => (
-        <section key={division} className="mb-12">
+        <section key={division} className="mb-10 md:mb-16">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
             {divisionLabels[division as Division] || 'Operations & Media'}
           </h2>

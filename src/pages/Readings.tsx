@@ -124,7 +124,7 @@ const Readings = () => {
       </section>
 
       {/* Third Section: Readings List */}
-      <section className="pt-6 md:pt-8 pb-section-sm md:pb-section bg-background">
+      <section className="pt-6 md:pt-8 pb-10 md:pb-16 bg-background">
         <div className="container px-4 sm:px-6 lg:px-8">
           <h2 className="font-serif text-heading mb-4 sm:mb-6 pb-3 border-b border-separator text-accent">
             Our Library
@@ -164,8 +164,14 @@ const Readings = () => {
         </div>
       </section>
 
-      {/* Disclaimer Section */}
-      <section className="py-6 sm:py-8 bg-muted">
+      {/* Disclaimer Section.
+          The library and its disclaimer are one subject, so they are
+          joined at the site's HALF rhythm: 40 on a phone, 64 from md up,
+          which is 64 above from the list and 64 below from this band.
+          It used to be 128 above and 32 below, a 160px join that appeared
+          nowhere else on the site and made a two-line legal note read as
+          a section in its own right. */}
+      <section className="py-10 md:py-16 bg-muted">
         <div className="container px-4 sm:px-6 lg:px-8">
           <h3 className="font-serif text-base sm:text-xl mb-3 sm:mb-4 text-foreground text-center">
             Recommended Readings Disclaimer
