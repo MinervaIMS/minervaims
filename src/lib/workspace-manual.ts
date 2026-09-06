@@ -505,3 +505,291 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     answer: 'Report the exact wording. The workspace shows the reason a server gives rather than a status code, so a message that explains nothing is a fault worth fixing rather than something to live with.',
   },
 ];
+
+// =====================================================================
+// WHAT EACH PAGE'S SUBTITLE USED TO SAY, AND MORE.
+// ---------------------------------------------------------------------
+// Every subsection carried a paragraph beneath its title, explaining its
+// rules, its consequences and the things worth knowing before touching
+// it. That is the right material in the wrong place: it is read once and
+// then competes with the page for the reader's attention on every visit
+// afterwards, and on a page like the Calendar it pushed the grid most of
+// a screen down.
+//
+// The subtitles are one sentence now, saying what the page gives you.
+// This is where the rest went: the help panel shows it on request, and
+// the manual prints it in full. Nothing was discarded in the move, and
+// several entries say more than the subtitle ever did.
+//
+// `related` names the subsections a page is part of a sequence with. It
+// is filtered by the reader's own access before it is shown, so a page
+// never points at something they cannot open.
+// =====================================================================
+
+export interface PageDetail {
+  detail: string[];
+  related: string[];
+}
+
+export const PAGE_DETAIL: Record<string, PageDetail> = {
+  'calendar': {
+    detail: [
+      "Everything the association has scheduled appears here in one grid: events, Association on Display days, alumni calls, the application window and, for members who owe it, the membership fee deadline. Each is coloured by what it is, and the colour key lists them all.",
+      "The grid has three sizes. Small shows most of a term at once and is the default, because planning a semester needs to see a semester; Large gives a busy week the room to be read. The choice is remembered for this calendar only.",
+      "Double-click any day to add your own entry. Hovering an entry shows it in full without opening anything, which is what a month cell three words wide cannot do on its own.",
+      "No event can be scheduled during an exam session break or on an Italian public holiday. Both are shaded, and the restriction is enforced by the database, so it holds however the entry is created.",
+    ],
+    related: ['events-create', 'events-on-display', 'events-alumni-calls'],
+  },
+  'smm-editorial': {
+    detail: [
+      "The Media team's plan: what is going out, when, where it goes and in what format, who is responsible, its status and whether it is paid advertising.",
+      "One item can go to several destinations at once, each with its own format, because a single piece of work is a single record even when it runs as a reel on Instagram and a post on LinkedIn. A chip on the calendar is split into the colours of the destinations it carries.",
+      "Double-click a day to add. Hover an item to read it in full, including its notes. The three sizes work exactly as they do on the main Calendar and are remembered separately.",
+    ],
+    related: ['smm-ig', 'smm-li', 'smm-ads', 'events-create'],
+  },
+  'smm-ads': {
+    detail: [
+      "Every piece of paid promotion the association buys: the content, the platform, the date, the amount, what it was for and whether it worked.",
+      "Recording a spend posts its cost to the Treasury automatically, once, on the date it was incurred, so the media budget and the association's accounts cannot drift apart. Editing the description of an entry that already exists never posts a second time.",
+      "Entries can be added but not deleted, for the same reason the Treasury cannot be edited: the register has to be worth trusting after the people who wrote it have left.",
+    ],
+    related: ['ops-treasury', 'smm-editorial'],
+  },
+  'ops-treasury': {
+    detail: [
+      "The association's cash-flow register, grouped by the semester each movement was executed in, with a net per semester and a running balance.",
+      "It is append-only. There is no edit and no delete, for anybody, including the association account: a mistake is corrected by recording a second entry that offsets it and says why. That is what makes the register trustworthy across changing leadership teams.",
+      "Some entries write themselves and arrive locked, because they are the record of something that happened elsewhere: closing a fee collection posts its total, and recording an advertising spend posts its cost.",
+    ],
+    related: ['ops-fee', 'smm-ads'],
+  },
+  'ops-fee': {
+    detail: [
+      "The semester's membership fee collection: who owes it, who has paid, and the deadlines they were given.",
+      "The first deadline is shown to everyone who owes the fee, on their own Calendar. The second is a grace period and is shown only to those who have not paid once the first has passed. Neither is shown to anybody outside the fee.",
+      "Closing a collection does three things at once and none of them can be undone: it locks the collection, it writes the total to the Treasury as a locked entry, and it freezes the official member register for that semester.",
+      "Advisors are outside the fee entirely: in no collection, no total and no semester register. Appointing a member as advisor part way through a semester removes the fee they had not yet paid, while a payment already banked is never deleted, and the collection says so where it happens.",
+    ],
+    related: ['ops-treasury', 'people-members'],
+  },
+  'applications-screening': {
+    detail: [
+      "This semester's applications, with each candidate's profile, their CV, their written answer, the shared notes and the division actually assessing them.",
+      "A candidacy only ever moves forward. The status dropdown offers stages later than the current one and nothing earlier, and the server refuses a backward move even when the request is built by hand.",
+      "Statuses marked as sending an email notify the candidate the moment they are set, and cannot be recalled. A confirmation dialog always appears first.",
+      "Notes are visible to every reviewer with access to this page and are attributed to their author. Previous semesters remain consultable as read-only archives.",
+    ],
+    related: ['applications-form', 'applications-interview-calendar', 'applications-joiners', 'applications-website'],
+  },
+  'applications-website': {
+    detail: [
+      "The recruitment window. Applications open and close automatically on the dates set here, and the public Join page announces them: before the opening it names the day and the hour, and while open it names the closing date and says places may fill sooner.",
+      "Check the division questions before opening a round. They lock automatically while applications are open, so anything that needs changing has to change first.",
+    ],
+    related: ['applications-form', 'applications-screening'],
+  },
+  'applications-form': {
+    detail: [
+      "The written question each division asks its applicants, answered with a PDF upload. Changes appear immediately on the public Join page and inside the application form.",
+      "The rest of the form is fixed, deliberately, so that applications stay comparable across semesters and divisions. Use Preview the form to see it exactly as an applicant does.",
+      "Heads of Division edit their own division's question only. Questions lock automatically while applications are open.",
+    ],
+    related: ['applications-website', 'applications-screening'],
+  },
+  'applications-joiners': {
+    detail: [
+      "Candidates who passed the selection, and the offers made to them.",
+      "An offer names a role and a division. The candidate has three days to accept from their own workspace, with a reminder sent after two; accepting turns their account into a member automatically.",
+      "Sending, resending and editing an offer is reserved for the President and the association account, on the server as well as in the interface.",
+    ],
+    related: ['applications-screening', 'people-members'],
+  },
+  'people-members': {
+    detail: [
+      "The association register: every member and advisor, with the one role each of them holds. That role drives their workspace permissions everywhere, and Settings, Users edits the same record.",
+      "The public Team page is written from this register automatically. A person appears there only if three things are true at once: their profile is marked to show on the website, their membership status is one that is published, and their role is one the public page carries.",
+      "Only the President and the association account can assign or change a role. Nobody can change their own, from any page.",
+      "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
+    ],
+    related: ['settings-users', 'people-alumni', 'ops-fee'],
+  },
+  'people-alumni': {
+    detail: [
+      "The complete alumni directory: every former member, with graduation year, current company, job area and city.",
+      "The public website shows only the first hundred entries. This register always holds them all, and every place an alumnus's employer appears, including on alumni calls, reads it live from here rather than from a copy.",
+    ],
+    related: ['events-alumni-calls', 'people-members'],
+  },
+  'events-create': {
+    detail: [
+      "Where a new event is set up: its type, its date, its place, its description and whether registration is open.",
+      "Attach a registration form from Events, Registration forms when the event needs to ask registrants something specific. Registrations feed straight into Attendance.",
+      "Alumni calls are created in Events, Alumni calls, not here. Whether an event is recorded in the archive is decided when it is created.",
+    ],
+    related: ['events-forms', 'events-attendance', 'events-archive'],
+  },
+  'events-archive': {
+    detail: [
+      "The events that were recorded in the archive. Whether an event is recorded is decided when it is created; online calls, guest events and alumni calls are by default.",
+      "Each row shows its type and whether it is published on the public website. Deleting an event from the archive is permanent.",
+      "The filter offers only the event types the archive actually contains, so every option leads somewhere.",
+    ],
+    related: ['events-create', 'events-attendance'],
+  },
+  'events-on-display': {
+    detail: [
+      "The days on which the association presents itself, and the slots members have signed up for. The stand runs 10:00 to 19:00 in half-hour slots, and more than one person can take the same slot.",
+      "Senior roles open and close a day. Everybody else registers and de-registers themselves, up to 48 hours before it.",
+    ],
+    related: ['calendar', 'events-create'],
+  },
+  'events-alumni-calls': {
+    detail: [
+      "Each alumni call groups two to five alumni, organised by a division on a date.",
+      "Alumni are verified against the alumni directory and the organiser is recorded automatically. A call with a poster and a date is published on the public site.",
+    ],
+    related: ['people-alumni', 'calendar'],
+  },
+  'reports-upload': {
+    detail: [
+      "Where a report is published. Attach the PDF, fill in the title, the date and the division, and either publish it or save it as a draft.",
+      "The page count is read from the file itself, so there is nothing to type. Publishing sends the report to the archive and to the public website at once.",
+      "Division-scoped roles upload for their own division only. A Portfolio Management report can be attached to a fund; remember to update Fund performances so the public fund table matches it.",
+    ],
+    related: ['reports-archive', 'reports-funds', 'reports-templates'],
+  },
+  'reports-archive': {
+    detail: [
+      "Every published report, searchable by title and filterable by division, year and fund.",
+      "Opening and downloading a report is available to every role that can see this page, because reading the research is what the archive is for. Downloads follow the filters that are active.",
+    ],
+    related: ['reports-upload', 'reports-templates'],
+  },
+  'reports-funds': {
+    detail: [
+      "The monthly figures for the association's simulated funds, in the same tables the public fund pages show. Any change here appears there immediately.",
+      "Enter each value exactly as it should read on the site, for example +1.2% or -0.4%.",
+      "Only the last fifteen calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included. That is what protects a published track record.",
+    ],
+    related: ['reports-upload', 'reports-archive'],
+  },
+  'settings-users': {
+    detail: [
+      "The accounts connected to the workspace, and the role each of them holds.",
+      "Assigning a role here writes the person's member profile, which People, Members shows identically; permissions follow it everywhere, immediately.",
+      "Role changes are confirmed, recorded in the activity log, and reserved for the President and the association account. Nobody can change their own role.",
+      "Applicants are not here. They live in Recruiting, Candidates screening until they accept an offer.",
+    ],
+    related: ['people-members', 'settings-roles', 'settings-activity'],
+  },
+  'settings-activity': {
+    detail: [
+      "The record of what has been done in the workspace: who, what, where, when, and with which role at that exact moment.",
+      "Entries are written by the server as each action is carried out, so the trail does not depend on any page remembering to record itself. The outcome is part of the entry: an attempt that was refused is recorded as refused, which is exactly what a security log is for.",
+      "Entries never change retroactively. A later role change does not rewrite what somebody did before it.",
+    ],
+    related: ['settings-users', 'settings-roles'],
+  },
+  'settings-roles': {
+    detail: [
+      "Who can use which parts of the workspace, as one table of roles against subsections.",
+      "It is generated from the workspace's live access rules rather than maintained by hand, so it always reflects what each role can actually do. The special rules under the grid are the nuances a single level cannot express.",
+    ],
+    related: ['settings-users', 'settings-mobile'],
+  },
+  'settings-mobile': {
+    detail: [
+      "What each part of the workspace offers on a phone.",
+      "Generated from the live mobile rules, so it always reflects what actually happens on a small screen. Subsections that need a full screen are marked and open on desktop only.",
+    ],
+    related: ['settings-roles'],
+  },
+  'website-faqs': {
+    detail: [
+      "The admissions questions, in the four categories the Join page groups them by.",
+      "Everything here appears in two places at once: at the foot of the public Join page, and in an applicant's own FAQs page inside the workspace. A question that is not published stays here and disappears from both.",
+      "Order is per category, so moving a question renumbers its category rather than one row at a time.",
+    ],
+    related: ['applications-website', 'website-pages'],
+  },
+  'website-testimonials': {
+    detail: [
+      "The quotes in the homepage carousel, each linked to the alumnus who gave it.",
+      "Reorder to change the sequence on the homepage. Unpublish hides one without deleting it. The alumnus's current company is read live from the alumni directory, so it never goes stale.",
+    ],
+    related: ['people-alumni', 'website-pages'],
+  },
+  'website-history': {
+    detail: [
+      "The timeline shown in Our History on the About page: one key event per year.",
+      "A year with no event stays on the rail as a quiet marker, so the story never skips a step.",
+    ],
+    related: ['website-pages'],
+  },
+  'website-pages': {
+    detail: [
+      "Which public pages are switched on.",
+      "When a page is hidden its address stays reachable, but a visitor sees a Page Under Update notice over a blurred body rather than a dead link. The homepage and the legal pages cannot be hidden.",
+    ],
+    related: ['website-faqs', 'website-history'],
+  },
+  'website-readings': {
+    detail: [
+      "The books, papers and resources shown on the public Readings page.",
+    ],
+    related: ['reports-archive'],
+  },
+  'ops-auto-emails': {
+    detail: [
+      "Every automatic email the workspace can send, with its layout, its subject line, when it fires and who receives it, together with the log of what was actually sent.",
+      "The templates are maintained in code; this page is where they are read and their delivery checked.",
+    ],
+    related: ['applications-screening', 'ops-newsletter'],
+  },
+  'ops-newsletter': {
+    detail: [
+      "The people who subscribed through the public newsletter form.",
+    ],
+    related: ['ops-auto-emails'],
+  },
+  'welcome': {
+    detail: [
+      "Your manual, generated for your role from the same rules that run the workspace, so it never describes a page you cannot open.",
+      "It covers how the workspace works, every page you can reach, the tasks that cross more than one of them, the vocabulary, and what to do when something looks wrong.",
+      "The download is the same document as a file. Many members upload it to an AI assistant and ask for a summary of their role or a walkthrough of one task.",
+    ],
+    related: ['my-role', 'settings-roles'],
+  },
+  'my-role': {
+    detail: [
+      "Your own record: your card, the brief describing what your role covers, and the link to the association statute.",
+      "Your role and division are assigned by the President or the association account. You cannot change your own role from any page, and the server enforces that as well as the interface.",
+    ],
+    related: ['welcome', 'people-members'],
+  },
+  'dashboard': {
+    detail: [
+      "A summary of the association's semester, identical for every member: research output, people, and fund performance, always against the semester before.",
+      "Nothing here needs maintaining. Every figure is computed from the registers the workspace already holds.",
+    ],
+    related: ['reports-archive', 'people-members', 'reports-funds'],
+  },
+  'applications-status': {
+    detail: [
+      "Where your application has got to, and what happens next.",
+      "The four stages are the association's whole selection process. Only the ones your application has reached are lit.",
+      "What you submitted, including your documents, is in My Profile. It is not repeated here.",
+    ],
+    related: ['my-role', 'applications-faqs'],
+  },
+  'applications-faqs': {
+    detail: [
+      "The questions applicants ask most, with the association's answers.",
+      "These are the same answers published at the foot of the public Join page, so nothing here is written for one audience and hidden from the other.",
+    ],
+    related: ['applications-status'],
+  },
+};
+

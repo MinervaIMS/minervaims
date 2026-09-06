@@ -65,7 +65,6 @@ export default function FormSettings() {
     setSavingQ(division);
     try {
       await setDivisionQuestion(session, division, questions[division] ?? '');
-      logActivity(session, access.primaryRole, { action: 'update', section: 'Recruiting', subsection: 'Form & Questions', entityType: 'application_question', entityName: divisionLabels[division] });
       toast({ title: `${divisionLabels[division]} question saved`, description: 'It now appears on the public Join page and in the application form.' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -76,7 +75,7 @@ export default function FormSettings() {
     <div>
       <WorkspacePageHeader
         title="Form & Questions"
-        description="The written question each division asks its applicants, answered with a PDF upload. Changes appear immediately on the public Join page and inside the application form. The rest of the form is fixed for consistency across semesters and divisions; use Preview the form to see it as applicants do."
+        description="The written question each division asks its applicants."
         actions={<Button variant="outline" className="font-body" onClick={() => window.open('/apply?preview=1', '_blank', 'noopener')}><Eye className="h-4 w-4 mr-2" />Preview the form</Button>}
       />
 

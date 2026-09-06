@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode, type RefObject } from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
 // =====================================================================
@@ -94,7 +94,7 @@ export function CalendarZoomControl({ value, onChange }: {
   onChange: (z: CalendarZoom) => void;
 }) {
   return (
-    <div data-ro className="flex items-center border border-separator" role="group" aria-label="Calendar size">
+    <div data-ro className="flex items-center border border-separator w-full" role="group" aria-label="Calendar size">
       {ZOOM_ORDER.map((z) => (
         <button
           key={z}
@@ -103,7 +103,7 @@ export function CalendarZoomControl({ value, onChange }: {
           onClick={() => onChange(z)}
           aria-pressed={value === z}
           title={`${ZOOM_LABEL[z]} month view`}
-          className={`h-9 px-3 font-body text-xs transition-colors ${
+          className={`h-9 flex-1 px-3 font-body text-xs transition-colors ${
             value === z ? 'bg-accent text-accent-foreground' : 'bg-background text-muted-foreground hover:bg-muted'
           }`}
         >
@@ -205,15 +205,51 @@ export function CalendarDayCell({ className, onAdd, canAdd, date, children }: {
   );
 }
 
-/**
- * Scrolls the grid to the current month once the data has arrived.
- *
- * Both calendars did this by hand, and both did it slightly differently.
- */
-export function useScrollToCurrentMonth(ready: boolean, idFor: (y: number, m: number) => string) {
+// =====================================================================
+// OPENING ON THE CURRENT MONTH WITHOUT DRAGGING THE PAGE WITH IT.
+// ---------------------------------------------------------------------
+// This is why the calendars opened halfway down the page, with the title
+// and the description already scrolled off the top.
+//
+// `scrollIntoView` does not scroll one box. It walks EVERY scrollable
+// ancestor until the element is visible in all of them, and the month
+// grid sits inside the workspace's own content pane, which scrolls. So
+// asking for September brought September into view inside the grid AND
+// pulled the whole pane down far enough to put September on screen,
+// which meant the page header went off the top of it. The workspace
+// resets that pane to zero when a subsection opens; this ran afterwards,
+// on the tick the data arrived, and undid it.
+//
+// So the box is scrolled by arithmetic instead, and only ever the box.
+// The main calendar already worked this way and carried a comment saying
+// exactly this; the shared hook, written later, reintroduced the fault
+// for the editorial calendar. Both go through this now, so there is one
+// implementation and one place for it to be right.
+//
+// THE SECOND FRAME MATTERS. The effect fires on the commit that renders
+// the months, before the browser has laid them out, so on a cold load the
+// measurement can be taken against a grid that is not its final height.
+// One repeat on the next frame costs nothing and is the difference
+// between landing on the current month and landing near it.
+// =====================================================================
+export function useScrollToCurrentMonth(
+  ready: boolean,
+  boxRef: RefObject<HTMLElement>,
+  idFor: (y: number, m: number) => string,
+) {
   useEffect(() => {
     if (!ready) return;
-    const now = new Date();
-    document.getElementById(idFor(now.getFullYear(), now.getMonth()))?.scrollIntoView({ block: 'start' });
-  }, [ready, idFor]);
+    let frame = 0;
+    const run = () => {
+      const box = boxRef.current;
+      if (!box) return;
+      const now = new Date();
+      const el = document.getElementById(idFor(now.getFullYear(), now.getMonth()));
+      if (!el) return;
+      box.scrollTop = box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top;
+    };
+    run();
+    frame = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(frame);
+  }, [ready, boxRef, idFor]);
 }

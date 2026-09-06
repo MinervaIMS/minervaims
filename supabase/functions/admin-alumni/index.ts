@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
@@ -66,7 +67,7 @@ async function logActivity(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-alumni', async (req, audit) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -111,6 +112,7 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id);
 
     const userRoleNames = userRoles?.map(r => r.role) || [];
+    audit.actor(user, userRoleNames);
     const hasAlumniAccess = isAdminEmail || userRoleNames.some(r => alumniAccessRoles.includes(r));
 
     if (!hasAlumniAccess) {
@@ -137,6 +139,7 @@ Deno.serve(async (req) => {
       });
     }
     const action = actionResult.data;
+    audit.request(action, body);
 
     // Use different schema based on action
     const schema = action === 'delete' ? DeleteAlumniSchema : AlumniSchema;
@@ -257,4 +260,4 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+}));

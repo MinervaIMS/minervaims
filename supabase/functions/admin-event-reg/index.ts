@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
@@ -14,7 +15,7 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-event-reg', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -25,11 +26,13 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
     const roles = (roleRows || []).map((r: { role: string }) => r.role);
+    audit.actor(user, roles);
     const isStaff = user.email === 'as.minerva@unibocconi.it' || roles.some((r) => !['member', 'pending', 'candidate'].includes(r));
     if (!isStaff) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     if (action === 'list') {
       const { data, error } = await supabase.from('event_registrations')
@@ -71,4 +74,4 @@ Deno.serve(async (req) => {
     console.error('admin-event-reg error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

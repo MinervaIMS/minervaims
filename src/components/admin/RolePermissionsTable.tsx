@@ -51,7 +51,7 @@ export default function RolePermissionsTable() {
     <div>
       <WorkspacePageHeader
         title="Role permissions"
-        description="Who can use which parts of the workspace. This prospect is generated from the workspace's live access rules, so it always reflects what each role can actually do."
+        description="Who can use which parts of the workspace."
       />
 
       {/* Legend */}

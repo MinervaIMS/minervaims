@@ -485,7 +485,7 @@ const ReadingsManagement = () => {
     <div>
       <WorkspacePageHeader
         title="Readings"
-        description="Curate the books, papers and resources shown on the public Readings page."
+        description="The books and papers shown on the public Readings page."
         actions={<>
 
           <AlertDialog>

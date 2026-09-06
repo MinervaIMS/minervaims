@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccess } from '@/hooks/useAccess';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -71,7 +70,6 @@ function chipStyle(platforms: EditorialPlatform[]): React.CSSProperties {
 
 export default function EditorialCalendar() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   // The editorial calendar is read-only in the mobile shell.
   const isDesktop = useIsDesktop();
   const { toast } = useToast();
@@ -82,6 +80,7 @@ export default function EditorialCalendar() {
   const [form, setForm] = useState<EditorialInput>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [zoom, setZoom] = useCalendarZoom('mims.zoom.editorial');
+  const scrollRef = useRef<HTMLDivElement>(null);
   const size = CALENDAR_ZOOM[zoom];
 
   const load = async () => {
@@ -116,7 +115,7 @@ export default function EditorialCalendar() {
   }, [dated]);
 
 
-  useScrollToCurrentMonth(!loading, (y, m) => monthKey(y, m));
+  useScrollToCurrentMonth(!loading, scrollRef, monthKey);
 
   const openCreate = (date?: string) => { setEditingId(null); setForm({ ...EMPTY, scheduled_date: date ?? '' }); setDialogOpen(true); };
   const openEdit = (i: EditorialItem) => {
@@ -135,7 +134,6 @@ export default function EditorialCalendar() {
     setSaving(true);
     try {
       await saveEditorial(session, form);
-      logActivity(session, primaryRole, { action: editingId ? 'update' : 'create', section: 'Media & Communication', subsection: 'Editorial calendar', entityType: 'editorial_item', entityName: form.title.trim() });
       toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load();
     }
     catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -146,7 +144,6 @@ export default function EditorialCalendar() {
     if (!confirm(`Delete "${i.title}"?`)) return;
     try {
       await deleteEditorial(session, i.id);
-      logActivity(session, primaryRole, { action: 'delete', section: 'Media & Communication', subsection: 'Editorial calendar', entityType: 'editorial_item', entityId: i.id, entityName: i.title });
       setDialogOpen(false); await load();
     } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
@@ -167,7 +164,7 @@ export default function EditorialCalendar() {
     <div>
       {/* The colour key moves up beside Add item and folds away, exactly as on
           the main Calendar. Same three platforms, same three colours. */}
-      <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, where it goes and in which format, who is responsible, the status and whether it is paid. One item can go to several places at once. Scroll through the months, use Small, Medium or Large to change how much you see, hover an item to read it in full, double-click a day to add and click an item to edit."
+      <WorkspacePageHeader title="Editorial calendar" description="What the Media team is publishing, and when."
         actions={
           <>
             <CalendarLegend items={EDITORIAL_LEGEND} />
@@ -178,7 +175,7 @@ export default function EditorialCalendar() {
 
       {loading ? <WorkspaceLoader /> : (
         <>
-          <div className="max-h-[68vh] overflow-y-auto border border-separator">
+          <div ref={scrollRef} className="max-h-[68vh] overflow-y-auto border border-separator">
             {months.map(({ year, month }) => (
               <section key={monthKey(year, month)} id={monthKey(year, month)} className="border-b border-separator last:border-b-0">
                 <div className="sticky top-0 z-10 bg-background/95 backdrop-blur px-3 py-2 border-b border-separator">

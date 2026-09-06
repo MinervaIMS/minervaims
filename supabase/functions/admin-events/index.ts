@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
@@ -143,7 +144,7 @@ async function logActivity(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-events', async (req, audit) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -216,6 +217,7 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
     
     const userRoleNames = userRoles?.map(r => r.role) || []
+    audit.actor(user, userRoleNames)
     const hasEventAccess = isAdminEmail || 
       userRoleNames.some(r => eventAccessRoles.includes(r))
 
@@ -253,6 +255,7 @@ Deno.serve(async (req) => {
     }
 
     const action = actionResult.data
+    audit.request(action, body as Record<string, unknown>)
     const event = (body as { event?: unknown }).event
 
     console.log('Admin events action:', action)
@@ -423,4 +426,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
-})
+}))

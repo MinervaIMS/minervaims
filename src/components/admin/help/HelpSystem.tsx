@@ -11,7 +11,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 import { useAccess } from '@/hooks/useAccess';
-import { guideFor } from '@/lib/workspace-guide';
+import { GUIDE, guideFor } from '@/lib/workspace-guide';
+import { COMMON_TASKS, PAGE_DETAIL, TROUBLESHOOTING } from '@/lib/workspace-manual';
 
 interface HelpState { page: string; topic?: string }
 interface HelpContextValue {
@@ -119,6 +120,42 @@ function HelpPanel() {
   const canManage = g ? access.canManage(g.key) : false;
   const topics = (g?.topics ?? []).filter((t) => t.requires !== 'manage' || canManage);
 
+  // =====================================================================
+  // WHAT THE PANEL CARRIES NOW, AND WHY IT CARRIES IT.
+  // ---------------------------------------------------------------------
+  // The page subtitles used to be paragraphs. They are one sentence each
+  // now, and this is where the rest of what they said arrived: `detail`
+  // below is that material, expanded. Alongside it the panel gained three
+  // things it never had, each of which somebody standing on the page
+  // would otherwise have to go and find:
+  //
+  //   * THE TASKS THAT START HERE, in the order they are done, filtered
+  //     to the ones this role can actually perform. A page description
+  //     cannot teach a sequence, and a sequence is what somebody doing
+  //     the job for the first time is missing.
+  //
+  //   * WHAT TO DO WHEN SOMETHING LOOKS WRONG on this page, answered
+  //     with the real mechanism rather than "try again".
+  //
+  //   * WHERE THIS PAGE SITS. The subsections it is part of a sequence
+  //     with, filtered by what this reader can open, so the panel never
+  //     points at a door that is locked for them.
+  //
+  // All four come from the same two modules the downloadable manual is
+  // generated from, so the panel and the manual can never say different
+  // things about the same page.
+  // =====================================================================
+  const extra = g ? PAGE_DETAIL[g.key] : undefined;
+  const tasks = g
+    ? COMMON_TASKS.filter((t) => t.requires === g.key
+        && (t.level === 'manage' ? access.canManage(t.requires) : access.canView(t.requires)))
+    : [];
+  const answers = g ? TROUBLESHOOTING.filter((a) => a.requires === g.key) : [];
+  const related = (extra?.related ?? [])
+    .filter((k) => access.canView(k))
+    .map((k) => GUIDE.find((e) => e.key === k))
+    .filter((e): e is NonNullable<typeof e> => !!e);
+
   return (
     <>
       {/* Click-away backdrop below the top strip, so Return to Website and
@@ -148,8 +185,25 @@ function HelpPanel() {
             <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8 font-body text-sm">
               {/* 1 · Purpose: the tinted accent block opens the page. */}
               <section className="border-l-2 border-accent bg-accent/[0.05] px-4 py-3.5">
-                <h3 className="font-serif text-[17px] text-accent mb-1.5">What you are looking at</h3>
+                <div className="mb-2 flex items-center gap-2">
+                  <h3 className="font-serif text-[17px] text-accent">What you are looking at</h3>
+                  {/* The level, stated rather than inferred from which
+                      buttons happen to be faded. */}
+                  <span className={`ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${
+                    canManage ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {canManage ? 'Full interact' : 'Interact only'}
+                  </span>
+                </div>
                 <p className="text-[15px] text-foreground leading-relaxed">{g.purpose}</p>
+                {/* The old subtitle's paragraph, and then some. */}
+                {extra && extra.detail.length > 0 && (
+                  <div className="mt-3 space-y-2.5 border-t border-accent/15 pt-3">
+                    {extra.detail.map((d, i) => (
+                      <p key={i} className="text-foreground/80 leading-relaxed">{d}</p>
+                    ))}
+                  </div>
+                )}
               </section>
 
               {/* 2 · Actions, split into consult vs manage for a clear
@@ -217,6 +271,63 @@ function HelpPanel() {
                       </div>
                     ))}
                   </div>
+                </section>
+              )}
+
+              {/* 5 · How the work is actually done here, in order. */}
+              {tasks.length > 0 && (
+                <section>
+                  <h3 className="font-serif text-[17px] text-accent pb-2 mb-3 border-b border-separator">How to do it</h3>
+                  <div className="space-y-4">
+                    {tasks.map((t) => (
+                      <div key={t.id}>
+                        <div className="font-serif text-base text-foreground mb-1.5">{t.title}</div>
+                        <ol className="list-decimal space-y-1 pl-4">
+                          {t.steps.map((step, i) => (
+                            <li key={i} className="text-foreground/75 leading-relaxed">{step}</li>
+                          ))}
+                        </ol>
+                        {t.caution && (
+                          <p className="mt-2 flex gap-2 text-xs text-amber-800">
+                            <span className="shrink-0 font-semibold text-amber-600">!</span>{t.caution}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 6 · The questions people ask about this page. */}
+              {answers.length > 0 && (
+                <section>
+                  <h3 className="font-serif text-[17px] text-accent pb-2 mb-3 border-b border-separator">If something looks wrong</h3>
+                  <div className="space-y-3">
+                    {answers.map((a) => (
+                      <div key={a.question}>
+                        <div className="text-foreground">{a.question}</div>
+                        <p className="text-foreground/70 leading-relaxed">{a.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 7 · Where this page sits, and what it leads to. */}
+              {related.length > 0 && (
+                <section>
+                  <h3 className="font-serif text-[17px] text-accent pb-2 mb-3 border-b border-separator">Works with</h3>
+                  <ul className="space-y-1.5">
+                    {related.map((r) => (
+                      <li key={r.key} className="flex gap-2.5">
+                        <span aria-hidden className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-accent" />
+                        <span className="text-foreground/80 leading-relaxed">
+                          <span className="text-foreground">{r.section}, {r.label}.</span>{' '}
+                          {r.purpose}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </section>
               )}
 

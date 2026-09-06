@@ -14,7 +14,6 @@ import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -123,7 +122,6 @@ export default function ResourceManager({
   restrictDivisions = null, canViewOtherDivisions = true, canManage = true,
 }: Props) {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   // Repositories are consultable but read-only in the mobile shell.
   const isDesktop = useIsDesktop();
   canManage = canManage && isDesktop;
@@ -233,7 +231,6 @@ export default function ResourceManager({
     if (sources.length < 1) { toast({ title: 'Add at least one text, link, file, telephone number or email address', variant: 'destructive' }); return; }
     setSaving(true);
     try {
-      logActivity(session, primaryRole, { action: form.id ? 'update' : 'create', section: 'Workspace', subsection: title, entityType: 'resource', entityName: form.title });
       await saveResource(session, {
         id: form.id ?? undefined, category, division: form.division,
         title: form.title.trim(), description: form.description.trim(), sources, is_favourite: form.is_favourite,
@@ -258,7 +255,7 @@ export default function ResourceManager({
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    try { await deleteResource(session, deleteTarget.id); logActivity(session, primaryRole, { action: 'delete', section: 'Workspace', subsection: title, entityType: 'resource', entityId: deleteTarget.id, entityName: deleteTarget.title }); setDeleteTarget(null); await load(); toast({ title: 'Removed' }); }
+    try { await deleteResource(session, deleteTarget.id);setDeleteTarget(null); await load(); toast({ title: 'Removed' }); }
     catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 

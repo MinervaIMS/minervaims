@@ -8,7 +8,6 @@ import { Plus, Trash2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -19,7 +18,6 @@ import {
 
 export default function EventAttendance() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventId, setEventId] = useState<string>('');
@@ -55,13 +53,13 @@ export default function EventAttendance() {
   }), [regs]);
 
   const toggle = async (r: EventRegistration) => {
-    try { await markAttended(session, r.id, !r.attended); logActivity(session, primaryRole, { action: 'update', section: 'Events', subsection: 'Attendance', entityType: 'event_registration', entityId: r.id, entityName: r.name, details: { attended: !r.attended } }); setRegs((p) => p.map((x) => (x.id === r.id ? { ...x, attended: !x.attended } : x))); }
+    try { await markAttended(session, r.id, !r.attended);setRegs((p) => p.map((x) => (x.id === r.id ? { ...x, attended: !x.attended } : x))); }
     catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   const addExt = async () => {
     if (!ext.name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
-    try { await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true); logActivity(session, primaryRole, { action: 'create', section: 'Events', subsection: 'Attendance', entityType: 'event_registration', entityName: `${ext.name.trim()} ${ext.surname.trim()}` }); setExt({ name: '', surname: '', email: '' }); await loadRegs(eventId); }
+    try { await addExternalAttendee(session, eventId, ext.name.trim(), ext.surname.trim(), ext.email.trim(), true);setExt({ name: '', surname: '', email: '' }); await loadRegs(eventId); }
     catch (e) { toast({ title: 'Could not add', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -79,7 +77,7 @@ export default function EventAttendance() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Attendance" description="See who registered, mark who attended, and add external participants. Members and external participants are distinguished." />
+      <WorkspacePageHeader title="Attendance" description="Who registered for an event, and who came." />
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:items-center">
         <div className="flex-1">

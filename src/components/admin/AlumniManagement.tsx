@@ -54,7 +54,6 @@ interface AlumniRecord {
 export default function AlumniManagement() {
   const { session } = useAuth();
   const access = useAccess();
-  const { primaryRole } = access;
   const canManage = access.canManage('people-alumni');
   // The full-directory export is reserved for the President and the
   // association (admin) account.
@@ -171,7 +170,6 @@ export default function AlumniManagement() {
       }
 
       toast({ title: "Success", description: `Alumni ${editingAlumni ? 'updated' : 'created'} successfully` });
-      logActivity(session, primaryRole, { action: editingAlumni ? 'update' : 'create', section: 'People', subsection: 'Alumni', entityType: 'alumnus', entityName: `${alumniData.name} ${alumniData.surname}` });
       fetchAlumni();
     } catch (error) {
       console.error('Submit error:', error);
@@ -200,7 +198,6 @@ export default function AlumniManagement() {
 
       toast({ title: "Success", description: "Alumni deleted successfully" });
       const rec = previousAlumni.find((a) => a.id === alumniId);
-      logActivity(session, primaryRole, { action: 'delete', section: 'People', subsection: 'Alumni', entityType: 'alumnus', entityId: alumniId, entityName: rec ? `${rec.name} ${rec.surname}` : null });
     } catch (error) {
       console.error('Delete error:', error);
       setAlumni(previousAlumni);
@@ -290,7 +287,7 @@ export default function AlumniManagement() {
     <div id="alumni-section">
       <WorkspacePageHeader
         title="Alumni"
-        description="The complete alumni directory: every former member, with graduation year, current company, job area and city. The public website shows only the first 100 entries; this register always holds them all."
+        description="The full directory of former members."
         actions={<>
           {canDownloadCsv && (
             <AlertDialog>

@@ -16,7 +16,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { CalendarLegend, type LegendItem } from '@/components/admin/CalendarLegend';
 import {
   CalendarDayCell, CalendarHoverPreview, CalendarZoomControl, CALENDAR_ZOOM,
-  PreviewRow, useCalendarZoom,
+  PreviewRow, useCalendarZoom, useScrollToCurrentMonth,
 } from '@/components/admin/CalendarView';
 
 /**
@@ -60,7 +60,6 @@ const monthKey = (y: number, m: number) => `m-${y}-${m}`;
 
 export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (section: string, sub: string) => void } = {}) {
   const { session, roles } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const { canManage } = useAccess();
   const canEdit = canManage('calendar');
@@ -158,7 +157,6 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         id: entryForm.id ?? undefined, title: entryForm.title.trim(), description: entryForm.description.trim() || null,
         entry_date: entryForm.entry_date, entry_type: entryForm.entry_type, location: entryForm.location.trim() || null,
       });
-      logActivity(session, primaryRole, { action: entryForm.id ? 'update' : 'create', section: 'General', subsection: 'Calendar', entityType: 'calendar_entry', entityName: entryForm.title.trim() });
       toast({ title: entryForm.id ? 'Entry updated' : 'Entry added' });
       setEntryForm(null);
       await load();
@@ -168,7 +166,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
 
   const removeEntry = async () => {
     if (!entryForm?.id) return;
-    try { await deleteCalendarEntry(session, entryForm.id); logActivity(session, primaryRole, { action: 'delete', section: 'General', subsection: 'Calendar', entityType: 'calendar_entry', entityName: entryForm.title }); toast({ title: 'Entry removed' }); setEntryForm(null); await load(); }
+    try { await deleteCalendarEntry(session, entryForm.id);toast({ title: 'Entry removed' }); setEntryForm(null); await load(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -185,7 +183,6 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     setSavingExam(true);
     try {
       await saveExamSession(session, { label: examForm.label.trim(), start_date: examForm.start_date, end_date: examForm.end_date });
-      logActivity(session, primaryRole, { action: 'create', section: 'General', subsection: 'Calendar', entityType: 'exam_session', entityName: examForm.label.trim(), details: { start: examForm.start_date, end: examForm.end_date } });
       toast({ title: 'Exam session added', description: 'No events can be scheduled on those days, on any workspace calendar.' });
       setExamForm({ label: '', start_date: '', end_date: '' });
       await load();
@@ -196,7 +193,6 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const removeExam = async (ex: ExamSession) => {
     try {
       await deleteExamSession(ex.id);
-      logActivity(session, primaryRole, { action: 'delete', section: 'General', subsection: 'Calendar', entityType: 'exam_session', entityId: ex.id, entityName: ex.label });
       toast({ title: 'Exam session removed' });
       await load();
     } catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -236,27 +232,21 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     return map;
   }, [months]);
 
-  // Jump to the current month once the calendar is rendered.
-  // Bring the current month into view by scrolling ONLY the calendar's own
-  // scroll box. scrollIntoView() must not be used here: it scrolls every
-  // scrollable ancestor too, which dragged the whole workspace content pane
-  // down and hid the page title and description on load.
-  const scrollToCurrentMonth = (behavior: ScrollBehavior = 'auto') => {
+  // Opening on the current month, and "Jump to today", both scroll ONLY
+  // this box. See useScrollToCurrentMonth for why that distinction is the
+  // whole of the "the page opens already scrolled down" fault.
+  useScrollToCurrentMonth(!loading, scrollRef, monthKey);
+
+  const jumpToToday = () => {
+    const box = scrollRef.current;
     const now = new Date();
     const el = document.getElementById(monthKey(now.getFullYear(), now.getMonth()));
-    const box = scrollRef.current;
-    if (!el || !box) return;
-    const top = box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top;
-    box.scrollTo({ top, behavior });
+    if (!box || !el) return;
+    box.scrollTo({
+      top: box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top,
+      behavior: 'smooth',
+    });
   };
-
-  useEffect(() => {
-    if (loading) return;
-    scrollToCurrentMonth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  const jumpToToday = () => scrollToCurrentMonth('smooth');
 
   const kindColor = (k: Kind, entry?: CalendarEntry) =>
     k === 'event' ? 'bg-accent/10 text-accent'
@@ -272,7 +262,6 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     try {
       await registerForEvent(session, { event_id: regEvent.id });
       setRegistered((p) => new Set(p).add(regEvent.id));
-      logActivity(session, primaryRole, { action: 'registration', section: 'General', subsection: 'Calendar', entityType: 'event_registration', entityId: regEvent.id, entityName: regEvent.title });
       toast({ title: 'Registered' });
       setRegEvent(null);
     } catch (e) { toast({ title: 'Could not register', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -302,7 +291,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         // The description lists what this calendar holds, so for a viewer
         // outside the membership fee it stops promising a deadline that
         // will never appear on it.
-        description={`Association events, Association on Display, alumni calls${feeExempt ? ' and application periods' : ', application periods and the membership fee deadline'}. Scroll to move through the months, and use Small, Medium or Large to change how much of the term you see at once. Hover an entry to read it in full. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Double-click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
+        description="Everything the association has on, month by month."
         /* ONE CONTROL GROUP, AT THE TOP.
            "Jump to today" used to sit on a row of its own between the header
            and the colour key, adrift from the two buttons it belongs with;

@@ -43,7 +43,6 @@ export default function QuestionsManagement() {
     setSavingQ(division);
     try {
       await setDivisionQuestion(session, division, questions[division] ?? '');
-      logActivity(session, access.primaryRole, { action: 'update', section: 'Recruiting', subsection: 'Form & Questions', entityType: 'application_question', entityName: divisionLabels[division] });
       toast({ title: `${divisionLabels[division]} question saved`, description: 'It now appears on the public Join page and in the application form.' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -58,7 +57,7 @@ export default function QuestionsManagement() {
     <div>
       <WorkspacePageHeader
         title="Questions"
-        description="The written question each division asks applicants. Changes appear immediately on the public Join page and inside the application form. You can edit your own division’s question; full-access roles can edit all."
+        description="The written question each division asks applicants."
       />
 
       <div className="max-w-2xl space-y-4">

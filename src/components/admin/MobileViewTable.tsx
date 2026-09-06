@@ -64,7 +64,7 @@ export default function MobileViewTable() {
     <div>
       <WorkspacePageHeader
         title="Mobile view"
-        description="What each part of the workspace offers on a phone. This prospect is generated from the workspace's live mobile rules, so it always reflects what actually happens on a small screen."
+        description="What each part of the workspace offers on a phone."
       />
 
       <div className="flex flex-wrap items-center gap-4 mb-4 font-body text-xs text-muted-foreground">

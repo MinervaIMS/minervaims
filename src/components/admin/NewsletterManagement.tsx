@@ -117,7 +117,7 @@ export default function NewsletterManagement() {
     <div>
       <WorkspacePageHeader
         title="Newsletter"
-        description="Subscribers to the public newsletter form. Export the list or remove individual records."
+        description="Subscribers to the public newsletter."
         actions={
           <AlertDialog>
             <AlertDialogTrigger asChild>

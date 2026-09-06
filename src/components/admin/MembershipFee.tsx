@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, roleLabel as composeRoleLabel, memberRank } from '@/lib/roles';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -30,7 +29,6 @@ interface PastCollection { semester_key: string; semester_label: string; rows: P
 
 export default function MembershipFee() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<FeePeriod | null>(null);
@@ -113,7 +111,6 @@ export default function MembershipFee() {
     setBusy(true);
     try {
       await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null);
-      logActivity(session, primaryRole, { action: 'open', section: 'Operations', subsection: 'Membership fees', entityType: 'fee_period', entityName: newLabel.trim() });
       setNewLabel(''); setFirstDeadline(''); setSecondDeadline(''); await load(); toast({ title: 'Collection opened' });
     }
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -127,7 +124,7 @@ export default function MembershipFee() {
       const ex = prev.find((f) => f.member_id === memberId);
       return ex ? prev.map((f) => (f.member_id === memberId ? { ...f, paid: next } : f)) : [...prev, { id: memberId, period_id: period.id, member_id: memberId, paid: next }];
     });
-    try { await setFeePaid(session, period.id, memberId, next); logActivity(session, primaryRole, { action: 'update', section: 'Operations', subsection: 'Membership fees', entityType: 'membership_fee', entityId: memberId, details: { paid: next } }); }
+    try { await setFeePaid(session, period.id, memberId, next);}
     catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); load(); }
   };
 
@@ -148,7 +145,7 @@ export default function MembershipFee() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Membership Fees" description="Track who has paid the semester fee (minimum €10). The list holds this semester's active members; advisors are outside the fee and never appear. Closing a collection locks it and automatically records the total in Treasury." />
+      <WorkspacePageHeader title="Membership Fees" description="The semester's fee collection, and who has paid." />
 
       <div className="mb-5">
         <Recommendation title="Collect fees as soon as offers are accepted">

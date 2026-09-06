@@ -212,13 +212,28 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
 
   useEffect(() => { setCursor(0); }, [q]);
 
-  // Ctrl/Cmd+K from anywhere in the workspace, and "/" when not typing.
+  // =====================================================================
+  // OPENING, AND CLOSING, FROM ANYWHERE.
+  // ---------------------------------------------------------------------
+  // Escape used to be handled only by `onKeyDown` on the dialog element,
+  // which fires only while focus is inside it. That held for as long as
+  // the caret stayed in the input, and stopped the moment anything took
+  // focus away: a click on the dimmed area (which is not focusable, so
+  // focus falls to <body>), a click on a row, a tap on a phone. From then
+  // on Escape did nothing, the dim did nothing, and the only way out was
+  // to find the small x in the corner. That is the whole of "it is often
+  // not possible to close the search window".
+  //
+  // Escape is a document-level handler now, in the capture phase, so it
+  // closes the palette wherever focus happens to be and before any page
+  // underneath can act on it.
+  // =====================================================================
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const typing = (e.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]');
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen(true);
+        setOpen((o) => !o);
       } else if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         setOpen(true);
@@ -227,6 +242,18 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+    };
+    document.addEventListener('keydown', onEscape, true);
+    return () => document.removeEventListener('keydown', onEscape, true);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -341,7 +368,25 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
           onKeyDown={onDialogKeyDown}
           onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
         >
-          <div className="absolute inset-0 bg-foreground/45 backdrop-blur-[2px]" aria-hidden="true" />
+          {/* =========================================================
+              THE DIM IS THE THING PEOPLE CLICK, SO THE DIM CLOSES IT.
+              ---------------------------------------------------------
+              This element covers the whole overlay. The wrapper above
+              closes on a click whose target IS the wrapper, and because
+              this sits on top of the wrapper edge to edge, that
+              condition was never true: every click on the dimmed area
+              landed HERE, and nothing happened. Which is the reported
+              fault, "it is often not possible to close the search
+              window", and it was not intermittent at all - clicking
+              outside the panel never worked, and the only ways out were
+              the small x and a keypress that, as below, had usually
+              stopped working too.
+              ========================================================= */}
+          <div
+            className="absolute inset-0 bg-foreground/45 backdrop-blur-[2px]"
+            aria-hidden="true"
+            onMouseDown={() => setOpen(false)}
+          />
 
           {/* text-foreground is not decoration. On a phone this palette is a
               child of the trigger inside the purple header, which paints its
@@ -406,10 +451,18 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
                 <p className="px-4 pt-3 pb-1 font-body text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 shrink-0">
                   {q ? 'Results' : '\n'}
                 </p>
+                {/* `overflow-y-auto`, not `overflow-hidden`. The list is
+                    capped at 70vh and routinely holds more rows than that,
+                    and with the overflow hidden everything past the fold
+                    was unreachable by mouse or trackpad: the arrow keys
+                    could move the cursor onto a row that could not be
+                    seen. The wheel handler above already exempts this
+                    element, so this is the one thing on the overlay that
+                    scrolls, which is what was intended all along. */}
                 <ul
                   ref={listRef}
                   id="workspace-search-results"
-                  className="flex-1 min-h-0 overflow-hidden pb-1"
+                  className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-1"
                   role="listbox"
                 >
                   {rows.map((row, i) => {

@@ -44,7 +44,7 @@ import {
 
 export default function JoinFaqsManagement() {
   const { session } = useAuth();
-  const { primaryRole, canManage } = useAccess();
+  const { canManage } = useAccess();
   const { toast } = useToast();
   const editable = canManage('website-faqs');
 
@@ -121,11 +121,6 @@ export default function JoinFaqsManagement() {
         link_label: hasLabel ? form.link_label!.trim() : null,
         link_href: hasHref ? form.link_href!.trim() : null,
       });
-      logActivity(session, primaryRole, {
-        action: editingId ? 'update' : 'create',
-        section: 'Website', subsection: 'FAQs',
-        entityType: 'join_faq', entityName: form.question.trim().slice(0, 120),
-      });
       toast({ title: editingId ? 'Question updated' : 'Question added' });
       setDialogOpen(false);
       await load();
@@ -140,10 +135,6 @@ export default function JoinFaqsManagement() {
     setBusy(true);
     try {
       await deleteFaq(session, r.id);
-      logActivity(session, primaryRole, {
-        action: 'delete', section: 'Website', subsection: 'FAQs',
-        entityType: 'join_faq', entityId: r.id, entityName: r.question.slice(0, 120),
-      });
       toast({ title: 'Question removed' });
       setConfirmDelete(null);
       await load();
@@ -180,7 +171,7 @@ export default function JoinFaqsManagement() {
   if (loading) {
     return (
       <div>
-        <WorkspacePageHeader title="FAQs" description="The admissions questions shown on the public Join page and to applicants in their own workspace." />
+        <WorkspacePageHeader title="FAQs" description="The admissions questions shown on Join and to applicants." />
         <WorkspaceLoader />
       </div>
     );
@@ -190,7 +181,7 @@ export default function JoinFaqsManagement() {
     <div>
       <WorkspacePageHeader
         title="FAQs"
-        description="The admissions questions, in the four categories the Join page groups them by. Everything here appears in two places at once: at the foot of the public Join page, and in the applicant's own FAQs page inside the workspace. A question that is not published stays here and disappears from both."
+        description="The admissions questions shown on Join and to applicants."
         actions={
           <span className="font-body text-sm text-muted-foreground">
             {publishedCount} published{rows.length !== publishedCount && ` · ${rows.length - publishedCount} hidden`}

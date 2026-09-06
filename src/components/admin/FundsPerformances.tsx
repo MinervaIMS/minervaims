@@ -8,7 +8,6 @@ import { Plus, Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
@@ -48,7 +47,6 @@ interface EditState {
 
 export default function FundsPerformances() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [rows, setRows] = useState<FundYear[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +103,6 @@ export default function FundsPerformances() {
         vol: formatFundValue(edit.vol, 'pct'),
         sharpe: formatFundValue(edit.sharpe, 'ratio'),
       });
-      logActivity(session, primaryRole, { action: 'update', section: 'Reports', subsection: 'Fund performances', entityType: 'fund_year', entityName: 'Fund performance data' });
       toast({ title: 'Saved', description: 'The public fund table now shows this data.' });
       setEdit(null);
       await load();
@@ -123,7 +120,7 @@ export default function FundsPerformances() {
     <div>
       <WorkspacePageHeader
         title="Fund Performances"
-        description="Update the monthly performance of the active simulated funds. Both fund tables are shown together and mirror the tables on the public fund pages: any change here appears there immediately. Enter each value exactly as it should read on the site (for example +1.2% or -0.4%)."
+        description="Monthly figures for the simulated funds."
       />
 
       {loading ? <WorkspaceLoader /> : (

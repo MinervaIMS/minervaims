@@ -14,7 +14,6 @@ import {
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Loader2, Link2, AlertTriangle, CheckCircle2, Building2, Quote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -27,7 +26,6 @@ interface FormState { id: string | null; quote: string; alumni_id: string | null
 
 export default function TestimonialsManagement() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [items, setItems] = useState<Testimonial[]>([]);
   const [alumni, setAlumni] = useState<AlumniLite[]>([]);
@@ -73,7 +71,6 @@ export default function TestimonialsManagement() {
         name: form.name.trim(), role_label: form.role_label.trim(), published: form.published,
       });
       toast({ title: form.id ? 'Testimonial updated' : 'Testimonial added' });
-      logActivity(session, primaryRole, { action: form.id ? 'update' : 'create', section: 'Website', subsection: 'Testimonials', entityType: 'testimonial', entityName: form.name.trim() });
       setForm(null);
       await load();
     } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -102,7 +99,6 @@ export default function TestimonialsManagement() {
     if (!deleteTarget) return;
     try {
       await deleteTestimonial(session, deleteTarget.id);
-      logActivity(session, primaryRole, { action: 'delete', section: 'Website', subsection: 'Testimonials', entityType: 'testimonial', entityId: deleteTarget.id, entityName: deleteTarget.name });
       setDeleteTarget(null); await load(); toast({ title: 'Removed' });
     }
     catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -114,7 +110,7 @@ export default function TestimonialsManagement() {
     <div>
       <WorkspacePageHeader
         title="Testimonials"
-        description="The control centre for the homepage testimonials carousel. Add or edit the quotes, link each one to the alumnus who gave it, and check that their current company is found and shown correctly. Reorder to change the sequence on the homepage; unpublish to hide one without deleting it."
+        description="The quotes in the homepage carousel."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add testimonial</Button>}
       />
 

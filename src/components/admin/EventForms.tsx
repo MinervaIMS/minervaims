@@ -7,7 +7,6 @@ import { Copy, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -15,7 +14,6 @@ import { listEvents, saveEvent, AUDIENCE_LABELS, type EventRow, type Registratio
 
 export default function EventForms() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +43,6 @@ export default function EventForms() {
         show_on_website: ev.show_on_website,
         in_archive: ev.in_archive,
       });
-      logActivity(session, primaryRole, { action: 'update', section: 'Events', subsection: 'Registration forms', entityType: 'event', entityId: ev.id, entityName: ev.title, details: patch as Record<string, unknown> });
       setEvents((prev) => prev.map((e) => (e.id === ev.id ? { ...e, ...patch } : e)));
     } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
@@ -60,7 +57,7 @@ export default function EventForms() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Registration Forms" description="Any event of any type can have a registration form. Turn registration on, choose who can register, preview the public form, and share the link. Registrations feed straight into Attendance." />
+      <WorkspacePageHeader title="Registration Forms" description="Registration forms, and the links that point at them." />
 
       {loading ? <WorkspaceLoader /> : ordered.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Create one in Events → Create.</p></CardContent></Card>

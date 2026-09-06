@@ -40,7 +40,7 @@ export default function CandidateFaqs() {
     <div>
       <WorkspacePageHeader
         title="FAQs"
-        description="The questions we are asked most often about applying and about joining the association. These are the same answers published on the public Join page."
+        description="Answers to the questions applicants ask most."
       />
 
       {isLoading ? <WorkspaceLoader /> : groups.length === 0 ? (
@@ -63,7 +63,23 @@ export default function CandidateFaqs() {
         // questions all share one left and one right edge instead of the
         // text sitting in a narrow band inside a wide one.
         // =============================================================
-        <div className="font-body max-w-2xl">
+        // ---------------------------------------------------------
+        // BIGGER TYPE, AND EACH CATEGORY IN ITS OWN CARD.
+        //
+        // The questions were set at `text-base` and the answers at
+        // `text-sm`, which is the size the workspace uses for a dense
+        // register of rows. This page is the opposite of that: it is a
+        // page an applicant READS, one question at a time, and it is
+        // often the first thing they read about the association. The
+        // question is now `text-lg`, the answer `text-base` with relaxed
+        // leading, and the measure goes from 2xl to 3xl so the longer
+        // line has somewhere to go.
+        //
+        // The groups sit in rounded cards rather than on bare rules, so
+        // the four categories read as four things rather than as one
+        // long list with headings in it.
+        // ---------------------------------------------------------
+        <div className="font-body max-w-3xl">
           {/* THE SAME FILTER ROW THE PUBLIC SITE USES on Archive, Readings and
               the /join FAQ: flat corners, the body font, no labels above the
               fields, the search taking whatever width is left and the category
@@ -124,9 +140,13 @@ export default function CandidateFaqs() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-5">
               {visible.map((group) => (
-                <section key={group.key} aria-labelledby={`faq-${group.key}`}>
+                <section
+                  key={group.key}
+                  aria-labelledby={`faq-${group.key}`}
+                  className="rounded-xl border border-separator bg-background px-5 py-4 sm:px-6 sm:py-5"
+                >
                   {/* The group name is a label, not a headline: small caps
                       in the body font, so the QUESTIONS are the largest
                       type in the column and the eye lands on them first.
@@ -134,7 +154,7 @@ export default function CandidateFaqs() {
                       ABOVE the questions it introduced. */}
                   <h2
                     id={`faq-${group.key}`}
-                    className="mb-1 text-xs uppercase tracking-[0.12em] text-muted-foreground"
+                    className="mb-2 text-[11px] uppercase tracking-[0.14em] text-accent"
                   >
                     {group.label}
                   </h2>
@@ -154,7 +174,7 @@ export default function CandidateFaqs() {
                             - and the open question takes the accent
                               colour, so it is obvious which of several
                               expanded answers belongs to which question. */}
-                        <AccordionTrigger className="items-start gap-6 py-4 text-left font-serif text-base leading-normal text-foreground transition-colors hover:text-accent hover:no-underline data-[state=open]:text-accent [&>svg]:mt-1 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-accent">
+                        <AccordionTrigger className="items-start gap-6 py-4 text-left font-serif text-lg leading-snug text-foreground transition-colors hover:text-accent hover:no-underline data-[state=open]:text-accent [&>svg]:mt-1.5 [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-accent">
                           {entry.question}
                         </AccordionTrigger>
                         {/* The answer is indented to sit under the question
@@ -162,11 +182,11 @@ export default function CandidateFaqs() {
                             which is what separates an answer from the next
                             question at a glance. */}
                         <AccordionContent className="pb-5 pl-4 border-l-2 border-accent/20 ml-px">
-                          <p className="text-sm leading-relaxed text-muted-foreground">{entry.answer}</p>
+                          <p className="text-base leading-relaxed text-muted-foreground">{entry.answer}</p>
                           {entry.linkLabel && entry.linkHref && (
                             <Link
                               to={entry.linkHref}
-                              className="mt-3 inline-block text-sm text-accent underline-offset-4 hover:underline"
+                              className="mt-3 inline-block text-base text-accent underline-offset-4 hover:underline"
                             >
                               {entry.linkLabel}
                             </Link>

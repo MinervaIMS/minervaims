@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 // Raster images only — SVG is XML and can carry executable script content.
@@ -165,7 +166,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-members', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
@@ -199,6 +200,7 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id);
 
     const roleNames: string[] = (userRoles || []).map((r: any) => r.role);
+    audit.actor(user, roleNames);
     const isManager = isAdminEmail || roleNames.some((r) => MANAGER_ROLES.includes(r));
     if (!isManager) {
       return json({ error: 'Access denied - insufficient permissions for member management' }, 403);
@@ -270,6 +272,7 @@ Deno.serve(async (req) => {
     const actionResult = ActionSchema.safeParse(body.action);
     if (!actionResult.success) return json({ error: 'Invalid action' }, 400);
     const action = actionResult.data;
+    audit.request(action, body);
 
     if (action === 'delete') {
       // Removing someone from the register removes their role: President/admin only.
@@ -462,4 +465,4 @@ Deno.serve(async (req) => {
     console.error('admin-members error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

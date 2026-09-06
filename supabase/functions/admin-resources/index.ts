@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 // =====================================================================
@@ -119,7 +120,7 @@ function objectPath(fileUrlOrPath: string): string {
   return i >= 0 ? fileUrlOrPath.slice(i + marker.length) : fileUrlOrPath;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-resources', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -130,6 +131,7 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role, division').eq('user_id', user.id);
     const roles = (roleRows || []) as { role: string; division: string | null }[];
+    audit.actor(user, roles.map((r) => r.role));
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
     const canAll = isAdminEmail || roles.some((r) => MANAGE_ALL.includes(r.role));
     const scopedDivisions = roles.filter((r) => SCOPED.includes(r.role))
@@ -163,6 +165,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     // Return a short-lived signed URL for a stored file (private bucket).
     if (action === 'sign') {
@@ -254,4 +257,4 @@ Deno.serve(async (req) => {
     console.error('admin-resources error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

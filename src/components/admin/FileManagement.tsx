@@ -135,7 +135,6 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
       setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status } : f)));
       const target = files.find((f) => f.id === fileId);
-      logActivity(session, access.primaryRole, { action: 'status_change', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: fileId, entityName: target?.title ?? null, details: { status } });
       toast({ title: `Report ${status === 'published' ? 'published' : status === 'blocked' ? 'blocked' : 'set to draft'}` });
     } catch (e) {
       toast({ title: 'Could not update status', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -198,7 +197,6 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         toast({ title: 'Could not restore', description: friendlyError(error ?? data?.error, 'Please try again.'), variant: 'destructive' });
         return;
       }
-      logActivity(session, access.primaryRole, { action: 'update', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: file.id, entityName: file.title, details: { operation: 'restore' } });
       toast({ title: 'Report restored', description: `"${file.title}" is back in the archive${file.status === 'published' ? ' and live on the website' : ''}.` });
     } catch (e) {
       setFiles(previous);
@@ -218,7 +216,6 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         toast({ title: 'Could not remove', description: friendlyError(error ?? data?.error, 'Please try again.'), variant: 'destructive' });
         return;
       }
-      logActivity(session, access.primaryRole, { action: 'delete', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: file.id, entityName: file.title, details: { operation: 'permanent' } });
       toast({ title: 'Removed permanently' });
     } catch (e) {
       setFiles(previous);
@@ -580,7 +577,6 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       }
 
       const target = previousFiles.find((f) => f.id === fileId);
-      logActivity(session, access.primaryRole, { action: 'delete', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: fileId, entityName: target?.title ?? null });
       toast({ title: 'Report deleted', description: `It is off the website and can be restored from Recently deleted for ${RECOVERY_DAYS} days.` });
       // Show the reader where it went, the first time.
       setShowDeleted(true);
@@ -648,7 +644,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       {/* Header */}
       <WorkspacePageHeader
         title="Reports Archive"
-        description="Browse, search and download every published report. Filter by division, year, fund or free-text search."
+        description="Every published report, searchable and downloadable."
         actions={<>
 
           <AlertDialog>

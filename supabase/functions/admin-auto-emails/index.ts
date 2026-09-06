@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
 import { LEGACY_KEYS_TO_DISCONNECT, TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts';
 import { normalizeEmailSubject } from '../_shared/email-subjects.ts';
@@ -56,7 +57,7 @@ function objectPath(fileUrlOrPath: string): string {
   return i >= 0 ? fileUrlOrPath.slice(i + marker.length) : fileUrlOrPath;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-auto-emails', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -66,6 +67,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
     const roles = rolesOf(roleRows);
+    audit.actor(user, roles);
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
     const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
     if (!canRead) return json({ error: 'Access denied' }, 403);
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     // Reading is not editing. `sign` is a read: it turns a stored path
     // into a link the reader can open, and reading the attached layout is
@@ -185,4 +188,4 @@ Deno.serve(async (req) => {
     console.error('admin-auto-emails error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

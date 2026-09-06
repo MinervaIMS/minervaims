@@ -10,7 +10,6 @@ import { Plus, Pencil, Trash2, Loader2, X, Upload, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -26,7 +25,6 @@ const EMPTY: AlumniCallInput = { division: null, planned_date: '', status: 'plan
 
 export default function AlumniCalls() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [calls, setCalls] = useState<AlumniCall[]>([]);
   const [alumni, setAlumni] = useState<AlumniOption[]>([]);
@@ -125,19 +123,19 @@ export default function AlumniCalls() {
   const save = async () => {
     if (form.participants.length < 2) { toast({ title: 'Add at least 2 alumni', description: 'A call is a group of 2 to 5 alumni.', variant: 'destructive' }); return; }
     setSaving(true);
-    try { await saveAlumniCall(session, form); logActivity(session, primaryRole, { action: editingId ? 'update' : 'create', section: 'Events', subsection: 'Alumni calls', entityType: 'alumni_call', entityName: form.planned_date || 'Alumni call' }); toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load(); }
+    try { await saveAlumniCall(session, form);toast({ title: editingId ? 'Updated' : 'Added' }); setDialogOpen(false); await load(); }
     catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setSaving(false); }
   };
 
   const remove = async (c: AlumniCall) => {
     if (!confirm('Delete this alumni call?')) return;
-    try { await deleteAlumniCall(session, c.id); logActivity(session, primaryRole, { action: 'delete', section: 'Events', subsection: 'Alumni calls', entityType: 'alumni_call', entityId: c.id, entityName: c.planned_date || 'Alumni call' }); await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    try { await deleteAlumniCall(session, c.id);await load(); } catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   return (
     <div>
-      <WorkspacePageHeader title="Alumni Calls" description="Each alumni call is an initiative grouping 2 to 5 alumni, organised by a division on a date. Alumni are verified against the alumni directory; the organiser is recorded automatically. A call with a poster and a date is published on the public site."
+      <WorkspacePageHeader title="Alumni Calls" description="Alumni call initiatives, their dates and who is taking part."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add call</Button>} />
 
       {loading ? <WorkspaceLoader /> : calls.length === 0 ? (

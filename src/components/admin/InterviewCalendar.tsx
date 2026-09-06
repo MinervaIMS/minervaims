@@ -35,7 +35,6 @@ const plus30 = (t: string) => {
 
 export default function InterviewCalendar() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const access = useAccess();
 
@@ -103,7 +102,6 @@ export default function InterviewCalendar() {
     setBusy(true);
     try {
       await createSlot(session, { division, ...form });
-      logActivity(session, primaryRole, { action: 'create', section: 'Recruiting', subsection: 'Interview calendar', entityType: 'interview_slot', entityName: `${division} slot` });
       toast({ title: 'Slot opened' });
       setCreateOpen(false); setForm({ slot_date: '', start_time: '', end_time: '', meeting_link: '' });
       await load(division);
@@ -128,7 +126,7 @@ export default function InterviewCalendar() {
 
   const removeSlot = async (id: string) => {
     if (!division) return;
-    try { await deleteSlot(session, id); logActivity(session, primaryRole, { action: 'delete', section: 'Recruiting', subsection: 'Interview calendar', entityType: 'interview_slot', entityId: id }); toast({ title: 'Slot removed' }); await load(division); }
+    try { await deleteSlot(session, id);toast({ title: 'Slot removed' }); await load(division); }
     catch (e) { toast({ title: 'Could not remove the slot', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -151,11 +149,7 @@ export default function InterviewCalendar() {
     <div>
       <WorkspacePageHeader
         title="Interview Calendar"
-        description={
-          canManage
-            ? 'Open interview slots for your division and see who has booked each time. Invited candidates book directly from their workspace.'
-            : 'View the interview slots for your division and who has booked each time.'
-        }
+        description="Interview slots for your division, and who has booked them."
         actions={canManage ? (
           <>
             <Button variant="outline" className="rounded-none font-body" onClick={() => setCreateOpen(true)}>

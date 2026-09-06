@@ -94,7 +94,7 @@ export default function AutoEmails() {
       <div>
         <WorkspacePageHeader
           title="Automatic emails"
-          description="Reference catalogue of every automated email the system can send. For each one you can see the layout, the subject line, when it is fired and who receives it. This section is read-only; templates are maintained in code."
+          description="Every automatic email the workspace can send, and what it sent."
         />
 
         <div className="mb-4 max-w-sm">

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 // Raster images only — SVG is XML and can carry executable script content.
@@ -124,7 +125,7 @@ async function logActivity(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-team', async (req, audit) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -177,6 +178,7 @@ Deno.serve(async (req) => {
       .in('role', allTeamRoles);
 
     const userRoleNames = userRoles?.map(r => r.role) || [];
+    audit.actor(user, userRoleNames);
     const hasFullAccess = isAdminEmail || userRoleNames.some(r => fullAccessRoles.includes(r));
     const divisionHeadUserRoles = userRoleNames.filter(r => divisionHeadRoles.includes(r));
     const isDivisionHead = divisionHeadUserRoles.length > 0;
@@ -303,6 +305,7 @@ Deno.serve(async (req) => {
       );
     }
     const action = actionResult.data;
+    audit.request(action, body);
 
     // Validate member data based on action
     if (action === 'delete') {
@@ -565,4 +568,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-});
+}));

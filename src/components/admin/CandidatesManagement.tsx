@@ -60,7 +60,7 @@ function triggerDownloads(files: { name: string; url: string }[]) {
 
 export default function CandidatesManagement() {
   const { session } = useAuth();
-  const { canManage, hasSpecial, primaryRole } = useAccess();
+  const { canManage, hasSpecial } = useAccess();
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
   const { toast } = useToast();
@@ -212,7 +212,6 @@ export default function CandidatesManagement() {
     try {
       await updateApplicationStatus(session, id, status, division);
       const who = apps.find((x) => x.id === id);
-      logActivity(session, primaryRole, { action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application', entityId: id, entityName: who ? `${who.first_name} ${who.surname}` : id, details: { status } });
       setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status, interview_division: division ?? a.interview_division } : a)));
       patchCandidate(id, { status, ...(division ? { interview_division: division } : {}) });
       toast({ title: 'Status updated' });
@@ -273,11 +272,6 @@ export default function CandidatesManagement() {
     setMovingEval(true);
     try {
       await setEvaluationDivision(session, app.id, target);
-      logActivity(session, primaryRole, {
-        action: 'status_change', section: 'Recruiting', subsection: 'Candidates screening',
-        entityType: 'application', entityId: app.id, entityName: `${app.first_name} ${app.surname}`,
-        details: { evaluation_division_from: evaluationDivision(app), evaluation_division_to: target },
-      });
       toast({
         title: `Now evaluated for ${divisionLabels[target]}`,
         description: `${app.first_name} returns to “${STATUS_LABELS.to_be_contacted}” and can be invited to interview by ${divisionLabels[target]}.`,
@@ -297,7 +291,6 @@ export default function CandidatesManagement() {
   const addNote = async (body: string) => {
     if (!openId) return;
     await addApplicationNote(session, openId, body);
-    logActivity(session, primaryRole, { action: 'create', section: 'Recruiting', subsection: 'Candidates screening', entityType: 'application_note', entityId: openId, entityName: detail ? `${detail.application.first_name} ${detail.application.surname}` : openId });
   };
 
   const afterNote = async () => {
@@ -321,7 +314,7 @@ export default function CandidatesManagement() {
     <div>
       <WorkspacePageHeader
         title="Candidates Screening"
-        description="Review applications: open profiles, preview and download CVs and written answers, track status and share notes. Downloads follow the active filters."
+        description="This semester's applications, with their documents, notes and status."
         actions={
           <>
             <Button variant="outline" className="font-body" disabled={rows.length === 0 || bulkBusy} onClick={() => bulkDownload('cv')}>

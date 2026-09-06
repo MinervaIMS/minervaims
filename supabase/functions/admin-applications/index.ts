@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 
 // =====================================================================
 // admin-applications — reviewer backend for the Applications pipeline.
@@ -101,7 +102,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-applications', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
@@ -117,6 +118,7 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role, division').eq('user_id', user.id);
     const roles = (roleRows || []) as Array<{ role: string; division: string | null }>;
+    audit.actor(user, roles.map((r) => r.role));
     const roleNames = roles.map((r) => r.role);
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
     const canAll = isAdminEmail || roleNames.some((r) => FULL_ACCESS.includes(r));
@@ -155,6 +157,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     // ── list ───────────────────────────────────────────────────────────────
     if (action === 'list') {
@@ -542,4 +545,4 @@ Deno.serve(async (req) => {
     console.error('admin-applications error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

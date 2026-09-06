@@ -66,7 +66,6 @@ function offerState(a: ApplicationRow): { label: string; tone: string; canOffer:
 
 export default function NewJoiners() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const { canManage } = useAccess();
   // Some roles may open this page only to understand the offer flow; every
@@ -152,7 +151,6 @@ export default function NewJoiners() {
     setBusy(true);
     try {
       await sendOffer(session, target.id, role, division, feeDue);
-      logActivity(session, primaryRole, { action: 'approval', section: 'Recruiting', subsection: 'Offers', entityType: 'application', entityId: target.id, entityName: `${target.first_name} ${target.surname}`, details: { role, division } });
       toast({ title: 'Offer sent', description: `${target.first_name} ${target.surname} has 3 days to accept. They will receive an email.` });
       setTarget(null);
       await load();
@@ -165,7 +163,7 @@ export default function NewJoiners() {
     <div>
       <WorkspacePageHeader
         title="Offers"
-        description="Candidates who passed the selection. Send an offer to join with a specific role and division; the candidate has three days to accept from their workspace (a reminder is sent after two days). Accepting turns their account into a member automatically."
+        description="Offers to the candidates who passed selection."
       />
 
       {!canSendOffers && (
