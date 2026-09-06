@@ -86,12 +86,12 @@ export function WorkspaceSection() {
           // is a layout shift at the foot of the page and, here, was
           // also why the figure appeared to be missing entirely.
           //
-          // `aspect-[1.9/1]` with `object-contain` reserves the shape
-          // the mock-up actually has WITHOUT depending on it: an image
-          // of slightly different proportions is fitted inside the same
-          // box rather than cropped or stretched, and the letterboxing
-          // is invisible because the ground it falls on is the white the
-          // section already stands on.
+          // `aspect-[1.9/1]` reserves the shape the mock-up actually has
+          // WITHOUT depending on it. On desktop the full composition is
+          // shown with `object-contain`; on mobile it is cropped to fill
+          // the frame and scaled slightly so the interface details read at
+          // phone size. `overflow-hidden` keeps the scaled crop inside the
+          // reserved box.
           // =========================================================
           <figure className="mt-10 md:mt-14 aspect-[1.9/1] w-full overflow-hidden">
             <img
