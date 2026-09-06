@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { audited } from '../_shared/activity.ts';
 import { allows } from '../_shared/access.ts';
 
 const corsHeaders = {
@@ -21,7 +22,7 @@ const corsHeaders = {
 // =====================================================================
 const RESOURCE = 'applications-form';
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-settings', async (req, audit) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -77,6 +78,7 @@ Deno.serve(async (req) => {
     }
 
     const userRoleNames = userRoles?.map(r => r.role) || [];
+    audit.actor(user, userRoleNames);
     const canRead = allows(userRoleNames, user.email, RESOURCE, 'view');
     const canManage = allows(userRoleNames, user.email, RESOURCE, 'manage');
 
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
     console.log('User authorized with roles:', userRoleNames);
 
     const { action, settings } = await req.json();
+    audit.request(action, settings ?? {});
     console.log('Action:', action, 'Settings:', settings);
 
     // `get` is the read. Anything that writes the window needs 'manage'.
@@ -206,4 +209,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-});
+}));

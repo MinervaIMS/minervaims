@@ -21,17 +21,20 @@ import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 // that silently reopens itself is back to occupying the screen.
 //
 // ---------------------------------------------------------------------
-// THE CONTROL ASKS THE READER'S QUESTION, it does not name the object.
+// THE PANEL ASKS THE READER'S QUESTION. THE BUTTON NAMES THE THING.
 //
-// It used to read "Colour key" beside a palette icon. "Colour key" is
-// the name of the thing behind the button, which is only useful to
-// somebody who already knows what is behind the button; a reader looking
-// at a grid of coloured blocks and wondering what they mean does not
-// think "I need the colour key", they think "what do these colours
-// mean?". So the button asks that, and the panel it opens answers it in
-// the same words. The question mark replaces the palette for the same
-// reason: it says there is an explanation here, where a palette says
-// there are colours here, which the reader can already see.
+// The button used to ask it too - "What do the colours mean?" - which is
+// the better sentence and was the right call while the header's actions
+// were a horizontal row with room for it. They are a narrow vertical
+// stack now, one button wide, and in that column the question wrapped to
+// two lines and left this one control half again as tall as its
+// neighbours.
+//
+// So the question moved INSIDE, where it is the panel's own heading and
+// has the width to be a sentence, and the button carries the short name
+// with the question mark beside it. The question mark is what still says
+// "there is an explanation here"; a palette icon would only say "there
+// are colours here", which the reader can already see.
 // ---------------------------------------------------------------------
 
 export interface LegendItem {
@@ -60,17 +63,23 @@ export function CalendarLegend({ items, className = '' }: { items: LegendItem[];
   }, [open]);
 
   return (
-    <div ref={wrapRef} className={`relative ${className}`}>
+    <div ref={wrapRef} className={`relative w-full lg:w-auto ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="calendar-legend-panel"
-        className="inline-flex h-9 items-center gap-2 border border-separator bg-background px-3 font-body text-sm text-foreground transition-colors hover:border-accent hover:text-accent"
+        /* THE LABEL IS SHORT BECAUSE THE COLUMN IS NARROW. The header's
+           action stack is one button wide, and "What do the colours
+           mean?" wrapped to two lines inside it, so this one control was
+           half again as tall as every other and the row of buttons read
+           as ragged. "Colour key" says the same thing in the space
+           available, and the panel it opens is unchanged. */
+        className="inline-flex h-9 w-full items-center justify-center gap-2 whitespace-nowrap border border-separator bg-background px-3 font-body text-sm text-foreground transition-colors hover:border-accent hover:text-accent"
       >
-        <HelpCircle aria-hidden className="h-4 w-4" />
-        What do the colours mean?
-        {open ? <ChevronUp aria-hidden className="h-4 w-4" /> : <ChevronDown aria-hidden className="h-4 w-4" />}
+        <HelpCircle aria-hidden className="h-4 w-4 shrink-0" />
+        Colour key
+        {open ? <ChevronUp aria-hidden className="h-4 w-4 shrink-0" /> : <ChevronDown aria-hidden className="h-4 w-4 shrink-0" />}
       </button>
 
       {open && (

@@ -8,34 +8,29 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
 import { candidateStatus, isOfferLive, evaluationDivision, isReEvaluated } from '@/lib/applications-api';
 
-// Four candidate-facing stages, mirroring "The Application Journey" on /join.
+// The four candidate-facing stages, in the association's own words.
 //
-// EACH ONE NOW SAYS WHAT IT MEANS FOR THE CANDIDATE, in one sentence and one
-// short note: what is happening, and whether anything is expected of them.
-// The wording follows the recruiting workflow the workspace actually runs -
-// review, invitation, interview, outcome - rather than describing a different
-// process. It stays deliberately short: this page is a status, not a guide,
-// and the FAQs section answers everything beyond it.
+// ONE SENTENCE EACH. The previous version carried a description AND a
+// note per step, which made a status page read like a guide: eight
+// paragraphs to say where a candidacy has got to. What an applicant
+// wants here is the stage and what it means, and everything beyond that
+// is answered in FAQs, which is the page written for it.
 const STEPS = [
   {
     t: 'Application received',
-    d: 'Your form, your CV and your written answer are with us.',
-    n: 'Nothing is expected from you at this point.',
+    d: "We've got your CV and written answer. Thanks for applying!",
   },
   {
-    t: 'Application under review',
-    d: 'Reviewers from the divisions you chose are reading what you submitted.',
-    n: 'They share notes internally before any decision is taken.',
+    t: 'Under review',
+    d: 'Our Talent Recruiting Team reads through your profile.',
   },
   {
-    t: 'Interview stage',
-    d: 'You have been invited to interview.',
-    n: 'The Interview section appears in your menu. Book your slot there; it shows the division that invited you.',
+    t: 'Interview',
+    d: 'Invited candidates book their time slot. The invite shows which division has invited you, which might not be one of your original choices.',
   },
   {
     t: 'Outcome',
-    d: 'The decision on your application.',
-    n: 'If you are selected, an Offer section appears in your menu with the role, the division and the date to reply by.',
+    d: "The final decision. If it's good news, you'll have 48 hours to sign and accept.",
   },
 ];
 
@@ -85,8 +80,29 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
 
   const statusLabel = offerLive ? 'You have received an offer to join'
     : internalAccepted ? 'Application under review' : cs.label;
-  // Is there anything to put beside the progression?
-  const hasSideCard = offerLive || app.status === 'joined';
+
+  // =================================================================
+  // THE STATUS IS THE ANSWER, SO IT IS THE THING THAT LOOKS LIKE ONE.
+  // -----------------------------------------------------------------
+  // It used to be two lines of plain type at the top of the left
+  // column: a small grey label and a serif line, immediately above a
+  // four-step progression that occupies the rest of the page. An
+  // applicant opens this page to read one fact, and that fact was the
+  // least emphatic thing on it.
+  //
+  // It is now a filled card in the top right corner, in the
+  // association's own accent purple with everything on it in white,
+  // which is the treatment the workspace already reserves for the one
+  // thing on a page worth reading first. The offer, when there is one,
+  // sits directly under it, so the corner holds the news and the left
+  // column holds the process.
+  //
+  // The grid is now unconditional. It used to collapse to one column
+  // when there was no offer, which is what put the status inline in the
+  // first place; with the status itself living in the right column
+  // there is always something there.
+  // =================================================================
+  const sideExtras = offerLive || app.status === 'joined';
 
   return (
     <div>
@@ -108,9 +124,20 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
           section, which appears in the rail the moment an offer is sent.
           What stands here is the ANNOUNCEMENT of it, and the way in: the
           news belongs on the status page, the decision does not. */}
-      <div className={`font-body ${hasSideCard ? 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start' : 'max-w-2xl'}`}>
-        {hasSideCard && (
+      <div className="font-body grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start">
           <div className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4">
+            {/* CURRENT STATUS. The one fact this page exists to give. */}
+            <div className="rounded-xl bg-accent px-6 py-6 text-accent-foreground shadow-elevated">
+              <div className="text-xs uppercase tracking-[0.14em] text-accent-foreground/75">Current status</div>
+              <div className="mt-1.5 font-serif text-2xl leading-tight text-accent-foreground">{statusLabel}</div>
+              <div className="mt-3 border-t border-accent-foreground/20 pt-3 text-xs text-accent-foreground/80">
+                {app.semester_label} intake
+                {reEvaluated && !rejected && (
+                  <> · being considered by {divisionLabels[evaluationDivision(app)]}</>
+                )}
+              </div>
+            </div>
+
             {offerLive && (
               <Card className="border-accent/40 bg-accent/5">
                 <CardContent className="py-6">
@@ -147,14 +174,8 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
               </Card>
             )}
           </div>
-        )}
 
-        <div className={`space-y-8 ${hasSideCard ? 'order-2 lg:order-1' : ''}`}>
-          <div>
-            <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Current status</div>
-            <div className={`font-serif text-2xl ${rejected ? 'text-muted-foreground' : 'text-accent'}`}>{statusLabel}</div>
-          </div>
-
+        <div className="space-y-8 order-2 lg:order-1">
           {/* BEING LOOKED AT BY A DIVISION THEY DID NOT NAME.
               A candidate whose evaluation moves goes back a step, and a
               progress bar that quietly retreats with no explanation is
@@ -197,10 +218,9 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                         than one that says nothing. */}
                     <div className="jt-d">
                       {i === 1 && reEvaluated
-                        ? `Reviewers from ${divisionLabels[evaluationDivision(app)]} are reading what you submitted.`
+                        ? `Our Talent Recruiting Team is reading your profile for ${divisionLabels[evaluationDivision(app)]}.`
                         : s.d}
                     </div>
-                    <div className="jt-n">{s.n}</div>
                   </div>
                 </div>
               );

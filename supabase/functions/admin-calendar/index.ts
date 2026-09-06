@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 // =====================================================================
@@ -39,7 +40,7 @@ const EntrySchema = z.object({
   location: z.string().max(300).nullable().optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-calendar', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -50,6 +51,7 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role, division').eq('user_id', user.id);
     const roles = (roleRows || []) as { role: string; division: string | null }[];
+    audit.actor(user, roles.map((r) => r.role));
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r) => MANAGE.includes(r.role));
     if (!canManage) return json({ error: 'Access denied' }, 403);
 
@@ -59,6 +61,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     if (action === 'list') {
       const { data, error } = await supabase.from('calendar_entries').select('*').order('entry_date', { ascending: true });
@@ -96,4 +99,4 @@ Deno.serve(async (req) => {
     console.error('admin-calendar error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

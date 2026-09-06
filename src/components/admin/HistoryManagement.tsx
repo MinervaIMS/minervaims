@@ -58,7 +58,6 @@ function MediaGlyph({ kind }: { kind: HistoryMediaKind }) {
 export default function HistoryManagement() {
   const { session } = useAuth();
   const access = useAccess();
-  const { primaryRole } = access;
   const canManage = access.canManage('website-history');
   const { toast } = useToast();
 
@@ -131,10 +130,6 @@ export default function HistoryManagement() {
         href: form.href?.trim() || null,
       });
       toast({ title: `${form.year} saved` });
-      logActivity(session, primaryRole, {
-        action: 'update', section: 'Website', subsection: 'History',
-        entityType: 'key event', entityName: String(form.year),
-      });
       setForm(null);
       load();
     } catch (e) {
@@ -153,10 +148,6 @@ export default function HistoryManagement() {
     try {
       await deleteHistoryEvent(session, deleteTarget);
       toast({ title: `${deleteTarget} cleared` });
-      logActivity(session, primaryRole, {
-        action: 'delete', section: 'Website', subsection: 'History',
-        entityType: 'key event', entityName: String(deleteTarget),
-      });
       load();
     } catch (e) {
       toast({
@@ -176,7 +167,7 @@ export default function HistoryManagement() {
     <div>
       <WorkspacePageHeader
         title="History"
-        description={`The timeline shown in "Our History" on the About page. One key event per year, from ${HISTORY_FIRST_YEAR} to today. A year with no event stays on the rail as a quiet marker, so the story never skips a step.`}
+        description="The timeline shown in Our History on the About page."
       />
 
       {loading ? (

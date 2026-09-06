@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { allows } from '../_shared/access.ts';
 
@@ -46,7 +47,7 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-funds', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -57,6 +58,7 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role, division').eq('user_id', user.id);
     const roles = (roleRows || []) as { role: string; division: string | null }[];
+    audit.actor(user, roles.map((r) => r.role));
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
     // Head of Portfolio Management = head_of_division with division 'portfolio'.
     const isPortfolioHead = roles.some((r) => r.role === 'head_of_division' && r.division === 'portfolio');
@@ -66,6 +68,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     if (action !== 'list' && !canManage) {
       return json({ error: 'Your role can read the fund performances but not publish them.' }, 403);
@@ -103,4 +106,4 @@ Deno.serve(async (req) => {
     console.error('admin-funds error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

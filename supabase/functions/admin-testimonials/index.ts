@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
 
@@ -44,7 +45,7 @@ const TestimonialSchema = z.object({
   published: z.boolean().optional(),
 });
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-testimonials', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -54,12 +55,14 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
     const roles = rolesOf(roleRows);
+    audit.actor(user, roles);
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
     const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
     if (!canRead) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     // Reading is not editing. Everything except the read needs 'manage'.
     if (action !== 'list' && !canManage) {
@@ -123,4 +126,4 @@ Deno.serve(async (req) => {
     console.error('admin-testimonials error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

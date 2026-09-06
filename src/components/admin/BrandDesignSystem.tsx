@@ -135,7 +135,7 @@ export default function BrandDesignSystem() {
     <div>
       <WorkspacePageHeader
         title="Brand & Design"
-        description="The association's visual identity: fonts, colours, logo usage, spacing, motion, iconography and tone-of-voice rules. This page mirrors the Minerva IMS Design System bundle chapter for chapter: treat it as the source of truth for on-brand output."
+        description="The association's visual identity, chapter by chapter."
       />
 
       {/* Provenance, then a way in. The page is nineteen chapters long, so

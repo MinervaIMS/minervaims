@@ -69,7 +69,7 @@ export default function ReportDeadlines() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Report deadlines" description="Plan and publish report deadlines per division. Deadlines show on the workspace Calendar." />
+      <WorkspacePageHeader title="Report deadlines" description="Report deadlines per division, as they appear on the Calendar." />
 
       <div className="flex flex-wrap items-center gap-3 mb-4 font-body">
         <Label className="text-sm">Filter division</Label>

@@ -16,7 +16,6 @@ import {
 import { semesterOf, semestersInData } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
-import { useAccess } from '@/hooks/useAccess';
 
 // =====================================================================
 // WHEN A SLOT COUNTS AS COVERED, and there are two ways to be.
@@ -57,7 +56,6 @@ const isSlotCovered = (people: AodSignup[]) =>
 
 export default function AssociationOnDisplay() {
   const { session, user } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [days, setDays] = useState<AodDay[]>([]);
   const [signups, setSignups] = useState<AodSignup[]>([]);
@@ -77,7 +75,7 @@ export default function AssociationOnDisplay() {
 
   const addDay = async () => {
     if (!newDate) { toast({ title: 'Pick a date', variant: 'destructive' }); return; }
-    try { await createAodDay(session, newDate); logActivity(session, primaryRole, { action: 'create', section: 'Events', subsection: 'Association on Display', entityType: 'aod_day', entityName: newDate }); setNewDate(''); await load(); }
+    try { await createAodDay(session, newDate);setNewDate(''); await load(); }
     catch (e) { toast({ title: 'Could not create', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -93,20 +91,19 @@ export default function AssociationOnDisplay() {
     setBusySlot(`${dayId}-${slot}`);
     try {
       await aodSignup(session, dayId, slot);
-      logActivity(session, primaryRole, { action: 'registration', section: 'Events', subsection: 'Association on Display', entityType: 'aod_signup', entityName: `Slot ${slot}`, details: { day_id: dayId } });
       await load();
     }
     catch (e) { toast({ title: 'Could not sign up', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusySlot(null); }
   };
   const handleRemove = async (id: string) => {
-    try { await aodRemoveSignup(session, id); logActivity(session, primaryRole, { action: 'delete', section: 'Events', subsection: 'Association on Display', entityType: 'aod_signup', entityId: id, entityName: 'Slot registration cancelled' }); await load(); }
+    try { await aodRemoveSignup(session, id);await load(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
   return (
     <div>
-      <WorkspacePageHeader title="Association On Display" description="Organise stand coverage. The stand runs 10:00–19:00 in 30-minute slots; multiple people can take the same slot. Senior roles open or close a day; everyone else can register or de-register up to 48 hours before." />
+      <WorkspacePageHeader title="Association On Display" description="Stand days, and the slots people have signed up for." />
 
       {isSenior && (
         <div className="flex gap-2 mb-6 font-body">

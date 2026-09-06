@@ -67,10 +67,61 @@ interface Source {
 
 /** Rows per source, and overall. Enough to be useful, few enough to scan. */
 const PER_SOURCE = 4;
-const TOTAL = 8;
+const TOTAL = 10;
 
 /** Escape a value going into a PostgREST `ilike` pattern. */
 const like = (q: string) => `%${q.replace(/[%_,()]/g, ' ').trim()}%`;
+
+// =====================================================================
+// A NAME IS TWO WORDS, AND THAT IS WHY THE SEARCH NEVER FOUND ANYBODY.
+// ---------------------------------------------------------------------
+// The reported fault was that typing a member's name returns nothing.
+// It was not a permissions problem and not a policy problem. It was
+// this: the query took the whole typed string and asked whether it
+// appeared inside ONE column.
+//
+//   first_name ILIKE '%Mario Rossi%' OR surname ILIKE '%Mario Rossi%'
+//
+// No column contains "Mario Rossi". `first_name` is "Mario" and
+// `surname` is "Rossi", so a full name - which is exactly what somebody
+// types when they are looking for a person, and exactly the case the
+// feature was asked for - matched nothing, every time, for everybody.
+// Only a single word ever worked.
+//
+// The fix is to split what was typed and require EVERY word to appear
+// somewhere in the row, each in any of the columns:
+//
+//   (first_name ~ 'Mario' OR surname ~ 'Mario' OR email ~ 'Mario')
+//   AND
+//   (first_name ~ 'Rossi' OR surname ~ 'Rossi' OR email ~ 'Rossi')
+//
+// PostgREST ANDs repeated `or=` parameters, and supabase-js appends one
+// per `.or()` call, so `tokens.reduce(...)` below expresses precisely
+// that. It also makes the search order-independent, which matters: half
+// the association writes the surname first.
+//
+// Three words is the cap. It is enough for "Anna Maria Rossi" and it
+// stops a pasted sentence from becoming a twelve-clause query.
+// =====================================================================
+
+/** The words to match, at most three, each at least two characters. */
+function tokensOf(q: string): string[] {
+  const parts = q.split(/\s+/).map((t) => t.trim()).filter((t) => t.length >= 2);
+  return (parts.length ? parts : [q]).slice(0, 3);
+}
+
+/**
+ * Apply one `or(...)` per token over the given columns, so that a row has
+ * to satisfy all of them. `builder` is a PostgREST query builder.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function allTokens(builder: any, q: string, columns: string[]): any {
+  return tokensOf(q).reduce(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (acc: any, token: string) => acc.or(columns.map((c) => `${c}.ilike.${like(token)}`).join(',')),
+    builder,
+  );
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
@@ -81,10 +132,10 @@ function buildSources(): Source[] {
       resource: 'people-members',
       label: 'Members',
       run: async (q) => {
-        const { data } = await sb.from('members')
-          .select('id, first_name, surname, email, division, role')
-          .or(`first_name.ilike.${like(q)},surname.ilike.${like(q)},email.ilike.${like(q)}`)
-          .limit(PER_SOURCE);
+        const { data } = await allTokens(
+          sb.from('members').select('id, first_name, surname, email, division, role'),
+          q, ['first_name', 'surname', 'email'],
+        ).limit(PER_SOURCE);
         return (data ?? []).map((m: Record<string, string>) => ({
           id: `member:${m.id}`,
           label: `${m.first_name ?? ''} ${m.surname ?? ''}`.trim(),
@@ -99,10 +150,10 @@ function buildSources(): Source[] {
       resource: 'people-alumni',
       label: 'Alumni',
       run: async (q) => {
-        const { data } = await sb.from('alumni')
-          .select('id, name, surname, company, graduation_year')
-          .or(`name.ilike.${like(q)},surname.ilike.${like(q)},company.ilike.${like(q)}`)
-          .limit(PER_SOURCE);
+        const { data } = await allTokens(
+          sb.from('alumni').select('id, name, surname, company, graduation_year'),
+          q, ['name', 'surname', 'company'],
+        ).limit(PER_SOURCE);
         return (data ?? []).map((a: Record<string, string>) => ({
           id: `alumnus:${a.id}`,
           label: `${a.name ?? ''} ${a.surname ?? ''}`.trim(),
@@ -117,11 +168,10 @@ function buildSources(): Source[] {
       resource: 'events-archive',
       label: 'Event archive',
       run: async (q) => {
-        const { data } = await sb.from('events')
-          .select('id, title, date, place, event_type')
-          .or(`title.ilike.${like(q)},place.ilike.${like(q)},moderator.ilike.${like(q)}`)
-          .order('date', { ascending: false })
-          .limit(PER_SOURCE);
+        const { data } = await allTokens(
+          sb.from('events').select('id, title, date, place, event_type'),
+          q, ['title', 'place', 'moderator'],
+        ).order('date', { ascending: false }).limit(PER_SOURCE);
         return (data ?? []).map((e: Record<string, string>) => ({
           id: `event:${e.id}`,
           label: e.title,
@@ -136,12 +186,12 @@ function buildSources(): Source[] {
       resource: 'reports-archive',
       label: 'Report archive',
       run: async (q) => {
-        const { data } = await sb.from('archive_files')
-          .select('id, title, date, division, status, deleted_at')
-          .is('deleted_at', null)
-          .or(`title.ilike.${like(q)},description.ilike.${like(q)}`)
-          .order('date', { ascending: false })
-          .limit(PER_SOURCE);
+        const { data } = await allTokens(
+          sb.from('archive_files')
+            .select('id, title, date, division, status, deleted_at')
+            .is('deleted_at', null),
+          q, ['title', 'description'],
+        ).order('date', { ascending: false }).limit(PER_SOURCE);
         return (data ?? []).map((r: Record<string, string>) => ({
           id: `report:${r.id}`,
           label: r.title,
@@ -165,11 +215,12 @@ function buildSources(): Source[] {
       resource,
       label,
       run: async (q) => {
-        const { data } = await sb.from('workspace_resources')
-          .select('id, title, description, category, division')
-          .eq('category', category)
-          .or(`title.ilike.${like(q)},description.ilike.${like(q)},body.ilike.${like(q)}`)
-          .limit(PER_SOURCE);
+        const { data } = await allTokens(
+          sb.from('workspace_resources')
+            .select('id, title, description, category, division')
+            .eq('category', category),
+          q, ['title', 'description', 'body'],
+        ).limit(PER_SOURCE);
         return (data ?? []).map((r: Record<string, string>) => ({
           id: `resource:${r.id}`,
           label: r.title,

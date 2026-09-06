@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 
 // =====================================================================
 // admin-aod — Association on Display stand slots (report 9.6).
@@ -20,7 +21,7 @@ function json(body: unknown, status = 200) {
 const SENIOR = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 const HOURS_48 = 48 * 60 * 60 * 1000;
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-aod', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -31,6 +32,7 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role, division').eq('user_id', user.id);
     const roles = (roleRows || []) as { role: string; division: string | null }[];
+    audit.actor(user, roles.map((r) => r.role));
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
     const isSenior = isAdminEmail || roles.some((r) => SENIOR.includes(r.role));
     const isStaff = isSenior || roles.some((r) => !['member', 'pending', 'candidate'].includes(r.role));
@@ -38,6 +40,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     if (action === 'list') {
       const { data: days } = await supabase.from('aod_days').select('*').order('event_date', { ascending: false });
@@ -110,4 +113,4 @@ Deno.serve(async (req) => {
     console.error('admin-aod error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

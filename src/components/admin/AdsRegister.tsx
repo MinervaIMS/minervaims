@@ -13,7 +13,6 @@ import { Plus, Pencil, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { listAds, saveAd, type AdEntry, type AdInput } from '@/lib/smm-api';
@@ -29,7 +28,6 @@ function semesterOf(dateStr: string | null): { label: string; sort: number } {
 
 export default function AdsRegister() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const [ads, setAds] = useState<AdEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +87,6 @@ export default function AdsRegister() {
         campaign_purpose: form.campaign_purpose || null, effectiveness_notes: form.effectiveness_notes || null,
       };
       await saveAd(session, payload);
-      logActivity(session, primaryRole, { action: editingId ? 'update' : 'create', section: 'Media & Communication', subsection: 'Ads & spending', entityType: 'ad', entityName: form.content.slice(0, 80), details: { amount: form.amount || null, platform: form.platform || null } });
       toast({ title: editingId ? 'Updated' : 'Entry added', description: editingId ? undefined : 'The amount was posted to the Treasury.' });
       setConfirmOpen(false); setDialogOpen(false); await load();
     } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
@@ -98,7 +95,7 @@ export default function AdsRegister() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Ads & Spending Register" description="Record paid advertising - content, platform, date, amount, purpose and notes on whether it worked. Each amount is posted once to the Treasury on the date the expense was incurred. Entries can be added but not deleted."
+      <WorkspacePageHeader title="Ads & Spending Register" description="Paid promotion: what was bought, when, and what it cost."
         actions={<Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add entry</Button>} />
 
       <Card className="mb-6 max-w-xs"><CardContent className="py-4">

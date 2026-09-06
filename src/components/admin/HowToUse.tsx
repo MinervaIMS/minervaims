@@ -11,7 +11,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { GUIDE, type GuideEntry } from '@/lib/workspace-guide';
 import {
-  COMMON_TASKS, GLOSSARY, HOW_IT_WORKS, ROLE_BRIEFS, TROUBLESHOOTING,
+  COMMON_TASKS, GLOSSARY, HOW_IT_WORKS, PAGE_DETAIL, ROLE_BRIEFS, TROUBLESHOOTING,
 } from '@/lib/workspace-manual';
 import { SPECIAL_RULES, MEMBERS_DIVISION_VIEW_ROLES, CROSS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { roleLabel, divisionLabels, normalizeRole } from '@/lib/roles';
@@ -187,6 +187,12 @@ export default function HowToUse() {
         push(`*Your level: ${e.canManage ? 'Full interact' : 'Interact only'}.*`, '');
         push(e.purpose, '');
         const can = [...e.view, ...(e.canManage ? e.manage : [])];
+        // THE PARAGRAPHS THE PAGE HEADERS GAVE UP. Every subsection's
+        // subtitle is now one sentence; what it used to say, expanded,
+        // is here and in the help panel. It is printed before the action
+        // lists because it is the context those lists sit in.
+        const extra = PAGE_DETAIL[e.key];
+        if (extra?.detail.length) { extra.detail.forEach((d) => push(d, '')); }
         if (can.length) { push('**You can:**', ''); can.forEach((c) => push(`- ${c}`)); push(''); }
         if (!e.canManage && e.manage.length) {
           push('**You cannot** (reserved for roles with full interact on this page):', '');
@@ -203,6 +209,25 @@ export default function HowToUse() {
           push('**In detail:**', '');
           topics.forEach((t) => { push(`- **${t.title}.** ${t.body}`); });
           push('');
+        }
+        // The sequence this page belongs to, limited to the parts of it
+        // this role can actually open.
+        const links = (extra?.related ?? [])
+          .filter((k) => access.canView(k))
+          .map((k) => GUIDE.find((x) => x.key === k))
+          .filter((x): x is GuideEntry => !!x);
+        if (links.length) {
+          push('**Works with:** ' + links.map((l) => `${l.section}, ${l.label}`).join('; ') + '.', '');
+        }
+        // The tasks that start on this page, in the order they are done.
+        const pageTasks = tasks.filter((t) => t.requires === e.key);
+        if (pageTasks.length) {
+          pageTasks.forEach((t) => {
+            push(`**${t.title}**`, '');
+            t.steps.forEach((step, i) => push(`${i + 1}. ${step}`));
+            push('');
+            if (t.caution) push(`> ${t.caution}`, '');
+          });
         }
       }
     }
@@ -409,19 +434,30 @@ export default function HowToUse() {
                       here. A disclosure is the honest middle. */}
                   {(() => {
                     const topics = (e.topics ?? []).filter((t) => !(t.requires === 'manage' && !e.canManage));
-                    if (topics.length === 0) return null;
+                    const extra = PAGE_DETAIL[e.key];
+                    const paras = extra?.detail ?? [];
+                    if (topics.length === 0 && paras.length === 0) return null;
                     return (
                       <details className="mt-3 border-t border-separator pt-2">
                         <summary data-ro className="cursor-pointer text-xs font-semibold text-accent">
-                          In detail ({topics.length})
+                          In detail ({topics.length + paras.length})
                         </summary>
-                        <ul className="mt-2 space-y-2">
-                          {topics.map((t) => (
-                            <li key={t.id} className="text-sm text-muted-foreground leading-relaxed">
-                              <span className="text-foreground">{t.title}. </span>{t.body}
-                            </li>
-                          ))}
-                        </ul>
+                        {paras.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {paras.map((d, i) => (
+                              <p key={i} className="text-sm text-muted-foreground leading-relaxed">{d}</p>
+                            ))}
+                          </div>
+                        )}
+                        {topics.length > 0 && (
+                          <ul className="mt-2 space-y-2">
+                            {topics.map((t) => (
+                              <li key={t.id} className="text-sm text-muted-foreground leading-relaxed">
+                                <span className="text-foreground">{t.title}. </span>{t.body}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </details>
                     );
                   })()}

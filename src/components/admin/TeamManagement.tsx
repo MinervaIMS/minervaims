@@ -684,7 +684,7 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
     <div>
       <WorkspacePageHeader
         title="Members"
-        description="Manage the members shown on the public team page, including roles, photos and division."
+        description="The members shown on the public team page."
         actions={<>
 
           <AlertDialog>

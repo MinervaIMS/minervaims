@@ -1,14 +1,43 @@
 // =====================================================================
-// Activity logging — one helper every workspace page can call.
-// Records who did what, where (section/subsection), to which entity, and
-// with WHICH ROLE AT THAT MOMENT (entries never change retroactively when
-// someone's role changes later). Best-effort: a logging failure must never
-// break the user's action.
+// Activity logging, from the client. THE EXCEPTION, NOT THE RULE.
+// ---------------------------------------------------------------------
+// The audit trail is written on the SERVER now. Every edge function is
+// wrapped by `supabase/functions/_shared/activity.ts`, which records who
+// asked for what, with which role, and whether it succeeded, after the
+// response has gone back. That is where the trail comes from, and it is
+// complete by construction: a subsection added next year is audited the
+// day it is written, because the function it goes through is wrapped
+// already.
 //
-// The write goes through the log_activity() database function, which
-// stamps the caller's identity and CURRENT role server-side from the
-// verified session (nothing here is trusted from the frontend). If the
-// function is unavailable, it falls back to a direct RLS-guarded insert.
+// This module used to be that trail, and it was the reason the log was
+// half empty. Forty-eight calls, written out by hand in twenty-five
+// components, each of them a thing an author had to remember; every one
+// that was forgotten was a write that happened and was never recorded,
+// with nothing anywhere to say so. Those forty-eight are gone, because
+// the function behind each of them now records the same event itself,
+// and keeping both would have written every action to the log twice.
+//
+// WHAT IS LEFT HERE IS WHAT THE SERVER CANNOT SEE:
+//
+//   * a download, which happens entirely in the browser and reaches no
+//     function at all;
+//   * the two writes the workspace still makes straight to a table
+//     rather than through a function.
+//
+// Add a call here only for something in one of those two categories. If
+// the action goes through an edge function, it is already logged, and a
+// second entry makes the trail harder to read rather than fuller.
+//
+// ---------------------------------------------------------------------
+// IT NEVER DELAYS ANYTHING AND IT NEVER THROWS.
+//
+// `void logActivity(...)` is the intended shape and the reason this
+// returns nothing worth awaiting: several call sites used to await it
+// before showing the result, so a member watched a spinner through a
+// second round trip in order to write a line they will never read. The
+// promise is deliberately swallowed here, so a caller cannot accidentally
+// make the interface wait for it, and a failure is a console warning and
+// nothing else.
 // =====================================================================
 
 import { supabase } from '@/integrations/supabase/client';
@@ -24,13 +53,30 @@ export interface ActivityEvent {
   details?: Record<string, unknown>;
 }
 
-export async function logActivity(
+/**
+ * Records one client-side event. Returns immediately.
+ *
+ * The write goes through the `log_activity()` database function, which
+ * stamps the caller's identity and current role server-side from the
+ * verified session, so nothing about who did it is taken from the
+ * browser. A direct insert stands in if that function is unavailable.
+ */
+export function logActivity(
   session: Session | null,
   role: string | null,
   ev: ActivityEvent,
-): Promise<void> {
+): void {
   const user = session?.user;
   if (!user) return;
+  void send(user.id, user.email ?? '', role, ev);
+}
+
+async function send(
+  userId: string,
+  email: string,
+  role: string | null,
+  ev: ActivityEvent,
+): Promise<void> {
   try {
     const { error } = await supabase.rpc('log_activity', {
       p_action: ev.action,
@@ -48,8 +94,8 @@ export async function logActivity(
   }
   try {
     const { error } = await supabase.from('activity_logs').insert({
-      user_id: user.id,
-      user_email: user.email ?? '',
+      user_id: userId,
+      user_email: email,
       user_role: role ?? 'member',
       action: ev.action,
       entity_type: ev.entityType,

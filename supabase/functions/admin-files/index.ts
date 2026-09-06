@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
@@ -153,7 +154,7 @@ async function logActivity(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-files', async (req, audit) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -227,6 +228,7 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
 
     const roleRows = (userRoles || []) as { role: string; division: string | null }[]
+    audit.actor(user, roleRows.map((r) => r.role))
     const userRoleNames = roleRows.map(r => r.role)
     const hasFullAccess = isAdminEmail || userRoleNames.some(r => fullAccessRoles.includes(r))
     const canBlock = isAdminEmail || userRoleNames.some(r => blockRoles.includes(r))
@@ -357,6 +359,7 @@ Deno.serve(async (req) => {
     }
 
     const action = actionResult.data
+    audit.request(action, body as Record<string, unknown>)
     const file = (body as { file?: unknown }).file
 
     console.log('Admin files action:', action)
@@ -797,4 +800,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
-})
+}))

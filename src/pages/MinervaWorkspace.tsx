@@ -920,7 +920,7 @@ const MinervaWorkspace = () => {
     <div>
       <WorkspacePageHeader
         title="Events Archive"
-        description="The events recorded in the archive: whether an event is recorded here is decided when it is created (online calls, guest events and alumni calls by default). Each row shows its type and whether it is published on the public website; use the toggle to publish or hide it. Deleting an event from the archive is permanent."
+        description="The events that were recorded in the archive."
         actions={<>
 
           <AlertDialog>

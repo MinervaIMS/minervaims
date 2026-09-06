@@ -9,7 +9,6 @@ import { Plus, X, Loader2, Upload, Archive, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -27,7 +26,6 @@ const DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 
 
 export default function EventCreate() {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -72,7 +70,6 @@ export default function EventCreate() {
         online: form.online, registration_enabled: form.registration_enabled, registration_audience: form.registration_audience,
         in_archive: form.in_archive,
       });
-      logActivity(session, primaryRole, { action: 'create', section: 'Events', subsection: 'Create event', entityType: 'event', entityName: form.title });
       toast({ title: 'Event created', description: 'Find it in the Calendar.' });
       setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members', in_archive: false });
       setGuests(['']);
@@ -82,7 +79,7 @@ export default function EventCreate() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Create" description="Create a new event: internal meetings, aperitivi, division events, online calls, guest events or association-wide events. Enable registration to collect attendees. Alumni calls are created from Events > Alumni Calls, not here. You decide whether the event is recorded in the archive." />
+      <WorkspacePageHeader title="Create" description="Set up a new event and open its registration." />
 
       <div className="max-w-5xl space-y-5 font-body">
         <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest talk: Markets outlook 2026" /></div>

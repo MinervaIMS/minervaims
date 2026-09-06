@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
 
@@ -59,7 +60,7 @@ function academicSemester(d: Date): string {
   return m >= 9 || m === 1 ? `Sep-Jan ${m === 1 ? y - 1 : y}` : `Feb-Aug ${y}`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-treasury', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -69,6 +70,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
     const roles = rolesOf(roleRows);
+    audit.actor(user, roles);
     const isOwner = user.email === 'as.minerva@unibocconi.it';
     const canRead = allows(roles, user.email, RESOURCE, 'view');
     const canManage = isOwner || roles.some((r: string) => MANAGE.includes(r));
@@ -78,6 +80,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     if (action === 'list') {
       const { data, error } = await supabase.from('treasury_entries').select('*').order('execution_date', { ascending: false }).order('created_at', { ascending: false });
@@ -106,4 +109,4 @@ Deno.serve(async (req) => {
     console.error('admin-treasury error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

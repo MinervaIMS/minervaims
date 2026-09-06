@@ -289,7 +289,7 @@ const UserManagement = () => {
     <div className="space-y-6">
       <WorkspacePageHeader
         title="Users"
-        description="The accounts connected to the workspace. Each person has ONE role, stored on their member profile: assigning a role here writes that same profile (People > Members shows it identically), and permissions follow it everywhere. Role changes are confirmed, logged, and restricted to the President and Admin."
+        description="The accounts connected to the workspace, and their roles."
       />
 
       {!canEdit && (

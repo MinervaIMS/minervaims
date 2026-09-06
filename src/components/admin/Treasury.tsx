@@ -25,7 +25,7 @@ const eur = (n: number) => `€${n.toLocaleString(undefined, { minimumFractionDi
 
 export default function Treasury() {
   const { session, user, roles } = useAuth();
-  const { primaryRole, canManage } = useAccess();
+  const { canManage } = useAccess();
   // Only these roles may export the register.
   const canExport = user?.email === 'as.minerva@unibocconi.it' ||
     (roles || []).some((r) => ['admin', 'president', 'vice_president', 'head_of_operations'].includes(r.role as string));
@@ -97,7 +97,6 @@ export default function Treasury() {
     setBusy(true);
     try {
       await addTreasuryEntry(session, { amount: amt, flow: form.flow, description: form.description.trim(), source: form.source || null, execution_date: form.execution_date });
-      logActivity(session, primaryRole, { action: 'create', section: 'Operations', subsection: 'Treasury', entityType: 'treasury_entry', entityName: form.description.trim(), details: { amount: amt, flow: form.flow } });
       toast({ title: 'Entry recorded' });
       setConfirmOpen(false); setDialogOpen(false);
       setForm({ amount: '', flow: 'in', description: '', source: '', execution_date: new Date().toISOString().slice(0, 10) });
@@ -110,9 +109,7 @@ export default function Treasury() {
     <div>
       <WorkspacePageHeader
         title="Treasury"
-        description={canRecord
-          ? "The association's cash-flow register. Entries cannot be deleted or edited - correct a mistake by adding a correction entry."
-          : "The association's cash-flow register, in full. Recording an entry is reserved for the Board and Operations; everything here is open to read."}
+        description="The association's cash-flow register, by semester."
         actions={(canExport || canRecord) ? <div className="flex items-center gap-2">
           {canExport && <Button variant="outline" className="font-body" onClick={exportCsv}><Download className="h-4 w-4 mr-2" />Download CSV</Button>}
           {canRecord && <Button className="font-body" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />New entry</Button>}

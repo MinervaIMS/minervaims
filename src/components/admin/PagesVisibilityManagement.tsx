@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { logActivity } from '@/lib/activity-log';
 import { Loader2, Search } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -32,7 +33,7 @@ const formatDate = (iso: string | null | undefined) => {
 // filters inside the header row, bordered flat table.
 const PagesVisibilityManagement = () => {
   const { canView, canManage } = useAccess();
-  const { user, roles } = useAuth();
+  const { user, roles, session } = useAuth();
   const { getRow, isHidden, setHidden, loading } = usePageVisibility();
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
@@ -86,25 +87,19 @@ const PagesVisibilityManagement = () => {
     try {
       await setHidden(pageKey, next);
 
-      // Best-effort activity log
-      try {
-        await supabase.from('activity_logs').insert({
-          user_id: user?.id ?? null,
-          user_email: user?.email ?? '',
-          user_role: roles[0]?.role ?? 'admin',
-          action: 'update',
-          entity_type: 'page_visibility',
-          // entity_id is a uuid column; the page key is not one, so it
-          // travels in details instead (a bad id would reject the insert).
-          entity_id: null,
-          entity_name: label,
-          section: 'Website',
-          subsection: 'Pages',
-          details: { is_hidden: next, page_key: pageKey },
-        } as never);
-      } catch (e) {
-        console.warn('activity log write failed', e);
-      }
+      // Page visibility is one of the two writes that never goes through
+      // an edge function, so it is one of the two the server-side audit
+      // cannot see and this still has to record. It no longer blocks the
+      // toggle: `logActivity` returns immediately and the entry lands on
+      // its own.
+      logActivity(session, roles[0]?.role ?? null, {
+        action: 'update',
+        section: 'Website',
+        subsection: 'Pages',
+        entityType: 'page_visibility',
+        entityName: label,
+        details: { is_hidden: next, page_key: pageKey },
+      });
 
       toast.success(next ? 'Page hidden' : 'Page visible', {
         description: `${label} is now ${next ? 'hidden from the public' : 'visible to the public'}.`,
@@ -125,7 +120,7 @@ const PagesVisibilityManagement = () => {
     <div>
       <WorkspacePageHeader
         title="Pages"
-        description={`Toggle individual public pages on or off. When a page is hidden, the URL remains reachable but visitors see a "Page Under Update" notice over a blurred body. Homepage and legal pages cannot be hidden.`}
+        description="Which public pages are switched on."
       />
 
       {!canEdit && (

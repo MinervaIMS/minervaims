@@ -266,7 +266,6 @@ export default function MembersManagement() {
     setSaving(true);
     try {
       await saveMember(session, form);
-      logActivity(session, access.primaryRole, { action: form.id ? 'update' : 'create', section: 'People', subsection: 'Members', entityType: 'member', entityName: `${form.first_name} ${form.surname}` });
       toast({ title: editingId ? 'Updated' : 'Advisor added' });
       setExpelConfirm(false);
       setDialogOpen(false);
@@ -333,7 +332,6 @@ export default function MembersManagement() {
     if (!year) { toast({ title: 'Please add a graduation year', variant: 'destructive' }); return; }
     setLeaving(true);
     try {
-      logActivity(session, access.primaryRole, { action: 'update', section: 'People', subsection: 'Members', entityType: 'member', entityId: leaveTarget.id, entityName: `${leaveTarget.first_name} ${leaveTarget.surname}`, details: { moved_to: 'alumni', kept_as: keepAsAdvisor ? 'advisor' : undefined } });
       await moveMemberToAlumni(session, {
         id: leaveTarget.id, graduation_year: year,
         company: leaveForm.company.trim() || null,
@@ -357,7 +355,6 @@ export default function MembersManagement() {
     setLeaving(true);
     try {
       await deleteMember(session, leaveTarget.id);
-      logActivity(session, access.primaryRole, { action: 'delete', section: 'People', subsection: 'Members', entityType: 'member', entityId: leaveTarget.id, entityName: `${leaveTarget.first_name} ${leaveTarget.surname}` });
       toast({ title: 'Removed' });
       setLeaveTarget(null);
       await load();
@@ -403,7 +400,7 @@ export default function MembersManagement() {
     <div>
       <WorkspacePageHeader
         title="Members"
-        description="The association register: members and advisors, with THE role each person holds. This role drives their workspace permissions everywhere (Settings > Users edits the same record). Only the President and the association account can assign or change roles. Advisors are appointed alumni; the switch in their profile decides whether they appear on the public website."
+        description="The association register: everybody, and the role they hold."
         actions={
           <>
             {!limitedToOwnDivision && (

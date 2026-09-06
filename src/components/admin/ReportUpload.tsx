@@ -91,7 +91,6 @@ export default function ReportUpload() {
           ? 'Reminder: add the updated performance data in Funds\' Performances so it appears on the public fund table.'
           : 'You can find it in Reports > Archive.',
       });
-      logActivity(session, access.primaryRole, { action: 'upload', section: 'Reports', subsection: 'Upload report', entityType: 'file', entityName: form.title, details: { division: form.division, published: publishNow, pages: pageCount || null } });
       setForm((f) => ({ ...f, title: '', description: '', fund: '' }));
       setFileUrl(''); setFileName(''); setPageCount('');
     } catch (e) {
@@ -103,7 +102,7 @@ export default function ReportUpload() {
     <div>
       <WorkspacePageHeader
         title="Upload"
-        description="Add a new report: complete the details, attach the PDF, then publish it to the Archive or save it as a draft for review."
+        description="Publish a report to the archive, or save it as a draft."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr),360px] gap-10 font-body">

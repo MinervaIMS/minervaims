@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 const corsHeaders = {
@@ -115,7 +116,7 @@ const readingTypeLabels: Record<string, string> = {
   free_time_readings: 'Free Time Readings',
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-readings', async (req, audit) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -180,6 +181,7 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
     
     const userRoleNames = userRoles?.map(r => r.role) || []
+    audit.actor(user, userRoleNames)
     const hasReadingsAccess = isAdminEmail || 
       userRoleNames.some(r => readingsAccessRoles.includes(r))
 
@@ -216,6 +218,7 @@ Deno.serve(async (req) => {
     }
 
     const action = actionResult.data
+    audit.request(action, body as Record<string, unknown>)
     console.log('Admin readings action:', action)
 
     switch (action) {
@@ -427,4 +430,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
-})
+}))

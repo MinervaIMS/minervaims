@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 
 // =====================================================================
 // admin-interviews — backend for the Interview Calendar.
@@ -64,7 +65,7 @@ function addMinutes(t: string, mins: number): string {
   return `${hh}:${mm}`;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('admin-interviews', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
@@ -80,6 +81,7 @@ Deno.serve(async (req) => {
 
     const { data: roleRows } = await supabase.from('user_roles').select('role, division').eq('user_id', user.id);
     const roles = (roleRows || []) as Array<{ role: string; division: string | null }>;
+    audit.actor(user, roles.map((r) => r.role));
     const roleNames = roles.map((r) => r.role);
     const isAdminEmail = user.email === ADMIN_EMAIL;
     const canAll = isAdminEmail || roleNames.some((r) => FULL_ACCESS.includes(r));
@@ -93,6 +95,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+    audit.request(action, body);
 
     // Resolve the caller's display name once (used as examiner_name).
     const displayName = async () => {
@@ -343,4 +346,4 @@ Deno.serve(async (req) => {
     console.error('admin-interviews error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

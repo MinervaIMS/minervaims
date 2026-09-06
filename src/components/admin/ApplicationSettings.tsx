@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { useAccess } from '@/hooks/useAccess';
 import { Save, Loader2 } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -36,7 +35,6 @@ function windowState(startLocal: string, endLocal: string): { label: string; ton
 
 const ApplicationSettings = () => {
   const { session } = useAuth();
-  const { primaryRole } = useAccess();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -77,7 +75,6 @@ const ApplicationSettings = () => {
         body: { action: 'update', settings: { semester_label: form.semester_label, start_date: toIso(form.start_local), end_date: toIso(form.end_local), auto_open: true, applications_open: open } }, session });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      logActivity(session, primaryRole, { action: 'update', section: 'Recruiting', subsection: 'Application page', entityType: 'application_settings', entityName: form.semester_label || 'Application window' });
       toast({ title: 'Schedule saved' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -98,7 +95,7 @@ const ApplicationSettings = () => {
     <div>
       <WorkspacePageHeader
         title="Application Page"
-        description="Applications open and close automatically by schedule. Set the recruitment window and the semester label; the public Join page and the application form follow this schedule."
+        description="The recruitment window that opens and closes applications."
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-10 items-start">

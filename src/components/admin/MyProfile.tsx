@@ -255,69 +255,119 @@ export default function MyProfile() {
   // and takes no id - so no candidate can address another's record.
   if (isCandidate) {
     const app = candidateApp;
+    // =================================================================
+    // THE APPLICANT'S PROFILE IS THE MEMBER'S PROFILE, IN FOUR QUARTERS.
+    // -----------------------------------------------------------------
+    // It used to be three stacked headings and a rule on a plain page,
+    // which is a different piece of design from the card composition
+    // every member sees on the same route. An applicant meets this page
+    // before they meet anything else in the workspace, and it should not
+    // be the one page that looks like it belongs to another product.
+    //
+    // So: the same `ProfileCard`, the same rounded rectangle, the same
+    // ten-column grid arithmetic, arranged as four quarters.
+    //
+    //   Your details      |  Your documents
+    //   Your application  |  Applicant info
+    //
+    // The two on the left are what the applicant IS and what they ASKED
+    // FOR; the two on the right are what they ATTACHED and what happens
+    // next. `lg:items-stretch` with `lg:h-full` is what makes the four
+    // genuinely equal quarters rather than four boxes of ragged height,
+    // and `scrollBody` lets a long list inside one of them scroll rather
+    // than lengthen the page, exactly as the member cards do.
+    // =================================================================
     return (
-      <div>
-        <WorkspacePageHeader
-          title="My profile"
-          description={app?.semester_label
-            ? `Your application for ${app.semester_label}. These details come from the form you submitted and cannot be edited here.`
-            : 'Your applicant account. These details come from your application and cannot be edited here.'}
-        />
-        <div className="max-w-4xl space-y-6 font-body">
-          {/* 1. Who you are. */}
-          <section>
-            <h2 className="mb-3 border-b border-separator pb-2 font-serif text-lg text-accent">Your details</h2>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-              <Field label="First name" value={app?.first_name ?? ''} />
-              <Field label="Surname" value={app?.surname ?? ''} />
-              <Field label="Email" value={app?.email || email} />
-              <Field label="Phone number" value={app?.phone ?? ''} />
-              <Field label="Bocconi ID" value={app?.bocconi_id ?? ''} />
-              <Field label="Role" value="Applicant" />
-              <div className="sm:col-span-2">
-                <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">LinkedIn</div>
-                {app?.linkedin_url
-                  ? <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent underline">{app.linkedin_url}</a>
-                  : <div className="text-sm text-foreground">Not set</div>}
+      <div className="font-body lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+        <div className="grid grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-2 lg:items-stretch">
+          {/* Upper left. Who you are. */}
+          <div className="min-w-0 flex lg:min-h-0">
+            <ProfileCard title="Your details" scrollBody>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+                <Field label="First name" value={app?.first_name ?? ''} />
+                <Field label="Surname" value={app?.surname ?? ''} />
+                <Field label="Email" value={app?.email || email} />
+                <Field label="Phone number" value={app?.phone ?? ''} />
+                <Field label="Bocconi ID" value={app?.bocconi_id ?? ''} />
+                <Field label="Role" value="Applicant" />
+                <div className="sm:col-span-2">
+                  <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">LinkedIn</div>
+                  {app?.linkedin_url
+                    ? <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent underline">{app.linkedin_url}</a>
+                    : <div className="text-sm text-foreground">Not set</div>}
+                </div>
               </div>
-            </div>
-          </section>
+            </ProfileCard>
+          </div>
 
-          {/* 2. What you asked for. Every value is shown in the words the
-                 website uses, never as a stored key. */}
-          <section>
-            <h2 className="mb-3 border-b border-separator pb-2 font-serif text-lg text-accent">Your application</h2>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-              <Field label="Programme" value={app?.degree_course ?? ''} />
-              <Field label="Academic year" value={app ? ACADEMIC_YEAR_LABELS[app.academic_year] : ''} />
-              <Field label="First choice division" value={app ? divisionLabels[app.first_choice] : ''} />
-              <Field label="Second choice division" value={app?.second_choice ? divisionLabels[app.second_choice] : 'None'} />
-              {app?.interview_division && (
-                <Field label="Interview division" value={divisionLabels[app.interview_division]} />
-              )}
-              <Field label="Submitted" value={app ? new Date(app.created_at).toLocaleString() : ''} />
-            </div>
-          </section>
+          {/* Upper right. What you attached. */}
+          <div className="min-w-0 flex lg:min-h-0">
+            <ProfileCard title="Your documents" scrollBody>
+              <div className="space-y-2">
+                <CandidateDocRow label="Curriculum Vitae (CV)" kind="cv" present={!!app?.cv_path} session={session} />
+                <CandidateDocRow label="Written answer" kind="answer" present={!!app?.answer_path} session={session} />
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                You can preview and download what you submitted. Your application and its documents cannot be changed or replaced; if you need a correction, contact the association.
+              </p>
+            </ProfileCard>
+          </div>
 
-          {/* 3. What you attached. */}
-          <section>
-            <h2 className="mb-3 border-b border-separator pb-2 font-serif text-lg text-accent">Your documents</h2>
-            <div className="space-y-2">
-              <CandidateDocRow label="Curriculum Vitae (CV)" kind="cv" present={!!app?.cv_path} session={session} />
-              <CandidateDocRow label="Written answer" kind="answer" present={!!app?.answer_path} session={session} />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              You can preview and download what you submitted. Your application and its documents cannot be changed or replaced; if you need a correction, contact the association.
-            </p>
-          </section>
+          {/* Lower left. What you asked for. Every value is shown in the
+              words the website uses, never as a stored key. */}
+          <div className="min-w-0 flex lg:min-h-0">
+            <ProfileCard
+              title="Your application"
+              subtitle={app?.semester_label ?? undefined}
+              scrollBody
+            >
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+                <Field label="Programme" value={app?.degree_course ?? ''} />
+                <Field label="Academic year" value={app ? ACADEMIC_YEAR_LABELS[app.academic_year] : ''} />
+                <Field label="First choice division" value={app ? divisionLabels[app.first_choice] : ''} />
+                <Field label="Second choice division" value={app?.second_choice ? divisionLabels[app.second_choice] : 'None'} />
+                {app?.interview_division && (
+                  <Field label="Interview division" value={divisionLabels[app.interview_division]} />
+                )}
+                <Field label="Submitted" value={app ? new Date(app.created_at).toLocaleString('en-GB') : ''} />
+              </div>
+            </ProfileCard>
+          </div>
 
-          <Card><CardContent className="py-5">
-            <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">You are an applicant</div>
-            <p className="text-sm leading-relaxed text-foreground">
-              Follow your application in <strong>My Application → Status</strong>. If you are invited to interview, you will be able to book a slot in <strong>My Application → Interview Calendar</strong>. Questions about the process are answered in <strong>FAQs</strong>. Once you accept an offer to join, this page becomes your full member profile.
-            </p>
-          </CardContent></Card>
+          {/* Lower right. Where to go next. */}
+          <div className="min-w-0 flex lg:min-h-0">
+            <ProfileCard title="Applicant info" scrollBody>
+              <div className="space-y-4 text-sm leading-relaxed text-foreground">
+                <p>
+                  Your details above come from the form you submitted and cannot be edited here.
+                  They are what the selection team reads.
+                </p>
+                <div className="space-y-2.5">
+                  <div className="flex gap-3">
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-accent" aria-hidden />
+                    <span>Follow your application in <strong>My Application, Status</strong>.</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-accent" aria-hidden />
+                    <span>If you are invited to interview, book your slot in <strong>My Application, Interview</strong>.</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-accent" aria-hidden />
+                    <span>Questions about the process are answered in <strong>FAQs</strong>.</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-accent" aria-hidden />
+                    <span>Once you accept an offer, this page becomes your full member profile.</span>
+                  </div>
+                </div>
+              </div>
+            </ProfileCard>
+          </div>
         </div>
+
+        <p className="mt-4 shrink-0 text-center text-xs text-muted-foreground lg:mt-3">
+          Activity across the workspace is recorded for accountability and security.
+        </p>
       </div>
     );
   }

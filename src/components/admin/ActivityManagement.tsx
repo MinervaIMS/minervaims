@@ -82,16 +82,65 @@ const actionLabels: Record<string, string> = {
   update: 'Updated',
   delete: 'Deleted',
   reorder: 'Reordered',
+  status_change: 'Changed the status of',
+  registration: 'Registered for',
+  approval: 'Approved',
+  rejection: 'Rejected',
+  upload: 'Uploaded',
+  download: 'Downloaded',
+  open: 'Opened',
+  close: 'Closed',
 };
 
-// Entity type labels
+// =====================================================================
+// WHAT KIND OF THING WAS TOUCHED.
+// ---------------------------------------------------------------------
+// The first group is the historic set, written by the client when the
+// log was a client-side feature. The second is what the server-side
+// audit writes: the name of the function that handled the request, minus
+// its prefix, which is the one label that is guaranteed to exist for
+// every entry however the request was shaped. Spelling them here turns
+// "Updated smm" into "Updated an editorial item".
+// =====================================================================
 const entityLabels: Record<string, string> = {
   event: 'event',
   alumnus: 'alumnus',
   file: 'file',
   team_member: 'team member',
   reading: 'reading',
+  manual: 'manual',
+  page_visibility: 'page',
+  newsletter_subscriber: 'newsletter subscriber',
+  // Server-side audit entries, named after the function that wrote them.
+  alumni: 'alumni record',
+  'alumni-calls': 'alumni call',
+  aod: 'Association on Display day',
+  applications: 'application',
+  'auto-emails': 'automatic email',
+  calendar: 'calendar entry',
+  events: 'event',
+  'event-reg': 'event registration',
+  fees: 'fee collection',
+  files: 'report',
+  funds: 'fund performance',
+  history: 'timeline entry',
+  interviews: 'interview slot',
+  'join-faqs': 'admissions question',
+  members: 'member',
+  readings: 'reading',
+  resources: 'resource',
+  settings: 'application setting',
+  smm: 'editorial item',
+  team: 'team member',
+  testimonials: 'testimonial',
+  treasury: 'treasury entry',
+  users: 'user account',
 };
+
+/** True when the server recorded the request as refused rather than done. */
+const wasRefused = (a: ActivityLog): boolean =>
+  !!a.details && typeof a.details === 'object'
+  && (a.details as { outcome?: string }).outcome === 'refused';
 
 // Role labels for display
 const roleLabels: Record<string, string> = {
@@ -303,7 +352,7 @@ export default function ActivityManagement() {
     <div id="activity-section">
       <WorkspacePageHeader
         title="Activity Log"
-        description="Every meaningful action in the workspace is recorded here for accountability and security: who did what, where, to which item, and when, with the role they held at that exact moment. Entries never change retroactively."
+        description="Who did what, where and when, with the role they held at the time."
         actions={
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -400,7 +449,18 @@ export default function ActivityManagement() {
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">{actionLabels[activity.action] || activity.action.replace(/_/g, ' ')}</td>
-                    <td className="px-3 py-2">{getActivityDescription(activity)}</td>
+                    <td className="px-3 py-2">
+                      {getActivityDescription(activity)}
+                      {/* AN ATTEMPT THAT WAS REFUSED IS STILL A RECORD, and
+                          for a security log it is the more interesting one.
+                          It must never read as though it went through, so it
+                          is marked rather than merely present. */}
+                      {wasRefused(activity) && (
+                        <span className="ml-2 whitespace-nowrap rounded bg-red-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-red-700">
+                          refused
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
