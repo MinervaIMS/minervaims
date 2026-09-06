@@ -198,6 +198,17 @@ const SHELL_CHUNKS: Array<() => Promise<unknown>> = [
   () => import('@/lib/workspace-guide'),
 ];
 
+/**
+ * How long the background sweep waits before it starts.
+ *
+ * Long enough to be clear of the Dashboard's entry animations, which run
+ * for about 1.8 seconds after the page appears (ENTRY_SETTLES_AT_MS in
+ * WorkspaceDashboard). Module evaluation is a long task and a long task
+ * during an entry animation is a dropped frame, so the two are kept apart
+ * rather than merely interleaved.
+ */
+const WARM_AFTER_MS = 2600;
+
 /** The idle sweep. One page at a time, in the order they appear in the nav. */
 async function warmSubsectionChunks(keys: string[]) {
   if (backgroundFetchIsUnwelcome()) return;
@@ -419,31 +430,47 @@ const MinervaWorkspace = () => {
   }, [navReady, visibleNav.length, resolution, homePath, location.pathname, navigate]);
 
   // ----------------------------------------------------------------------
-  // Once the workspace is up and the browser is idle, fetch the pages this
-  // reader can open, one at a time, in nav order. See the comment above
-  // SUBSECTION_CHUNK: this is what keeps the code split invisible at the
-  // point of use, and it runs strictly after the page that is on screen.
+  // Once the workspace is up AND HAS FINISHED ARRIVING, fetch the pages
+  // this reader can open, one at a time, in nav order. See the comment
+  // above SUBSECTION_CHUNK: this is what keeps the code split invisible at
+  // the point of use.
   //
-  // It runs once. `warmSubsectionChunks` resolves whether or not every
-  // chunk arrived, and a chunk that did not is fetched again on the click.
+  // IT WAS NEVER RUNNING. The scheduling used to live in an effect keyed
+  // on `[navReady, visibleNav]`, returning a cleanup that cancelled the
+  // idle callback. `visibleNav` is rebuilt whenever the roles or the
+  // application state change, so the effect re-ran within a few hundred
+  // milliseconds, the cleanup cancelled the pending callback, and the
+  // re-run found the "already warmed" latch set and scheduled nothing.
+  // Measured: zero chunks fetched in twelve seconds. Every page therefore
+  // waited for its own download on the click, which is the opposite of
+  // what the split was for.
+  //
+  // It is a timeout owned by a ref now, scheduled once and never
+  // cancelled by a re-render. The only thing that clears it is the
+  // workspace closing.
+  //
+  // AND IT WAITS LONGER THAN IT USED TO. Evaluating a module is a long
+  // task; forty of them starting while the Dashboard is drawing itself in
+  // is the surest way to make an entry animation stutter. The delay puts
+  // the sweep after the Dashboard has settled (see ENTRY_SETTLES_AT_MS
+  // there), so the two never overlap.
   // ----------------------------------------------------------------------
-  const warmedRef = useRef(false);
+  const warmTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!navReady || warmedRef.current || visibleNav.length === 0) return;
-    warmedRef.current = true;
+    if (!navReady || warmTimerRef.current !== null || visibleNav.length === 0) return;
     const keys = visibleNav.flatMap((s) => (s.subItems.length ? s.subItems.map((si) => si.key) : [s.key]));
-    const idle = (window as typeof window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (h: number) => void;
-    });
-    const start = () => { void warmSubsectionChunks(keys); };
-    if (idle.requestIdleCallback) {
-      const handle = idle.requestIdleCallback(start, { timeout: 4000 });
-      return () => idle.cancelIdleCallback?.(handle);
-    }
-    const timer = window.setTimeout(start, 2000);
-    return () => window.clearTimeout(timer);
+    warmTimerRef.current = window.setTimeout(() => {
+      const idle = (window as typeof window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      }).requestIdleCallback;
+      const start = () => { void warmSubsectionChunks(keys); };
+      if (idle) idle(start, { timeout: 4000 }); else start();
+    }, WARM_AFTER_MS);
   }, [navReady, visibleNav]);
+
+  useEffect(() => () => {
+    if (warmTimerRef.current !== null) window.clearTimeout(warmTimerRef.current);
+  }, []);
 
   // ----------------------------------------------------------------------
   // The applicant's "Interview Calendar" is now "Interview", and lives at

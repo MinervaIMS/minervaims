@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { isBookableSlot, nowInAssociationTime } from '../_shared/interview-slots.ts';
 import { audited } from '../_shared/activity.ts';
 
 // =====================================================================
@@ -278,11 +279,19 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         .select('id, division, slot_date, start_time, end_time, examiner_name, meeting_link, is_booked')
         .eq('division', app.interview_division)
         .eq('is_active', true)
-        .gte('slot_date', new Date().toISOString().split('T')[0])
+        .gte('slot_date', nowInAssociationTime().date)
         .order('slot_date', { ascending: true })
         .order('start_time', { ascending: true });
       // Candidates never receive PII: only availability + examiner name.
-      return json({ slots: (slots || []).filter((s: any) => !s.is_booked) });
+      //
+      // THE TIME OF DAY COUNTS, not only the date. `gte('slot_date', today)`
+      // keeps every slot from midnight onwards, so a 09:00 slot was still
+      // being offered at four in the afternoon. The same rule that decides
+      // whether a division may invite anybody at all now decides what a
+      // candidate is shown, so the two can never disagree: see
+      // _shared/interview-slots.ts.
+      const now = nowInAssociationTime();
+      return json({ slots: (slots || []).filter((s: any) => isBookableSlot(s, now)) });
     }
 
     // ── book ─────────────────────────────────────────────────────────────────

@@ -71,6 +71,72 @@ export function useEntered(delay = 0): boolean {
 }
 
 /**
+ * True `delay` ms after `active` first became true, and never before.
+ *
+ * `useEntered` counts from MOUNT, which is the wrong clock for anything
+ * that has to wait for the page to arrive: the Dashboard mounts while its
+ * loader is still up, so a timer started there is most of the way through
+ * before the reader has seen anything. This one starts when the page
+ * itself does, and never restarts.
+ */
+export function useSettled(active: boolean, delay: number): boolean {
+  const [settled, setSettled] = useState(false);
+  const started = useRef(false);
+  useEffect(() => {
+    if (!active || started.current) return;
+    started.current = true;
+    const id = window.setTimeout(() => setSettled(true), delay);
+    return () => window.clearTimeout(id);
+  }, [active, delay]);
+  return settled;
+}
+
+/**
+ * False until the browser has actually PAINTED a frame with `active` true.
+ *
+ * WHY A PAINT AND NOT A TIMER. The Dashboard commits its whole structure
+ * in one go when its data lands: four cards, three charts, the ornaments.
+ * Measured at 4x throttle that commit is a single task of 250 to 310ms.
+ * A CSS animation started in that commit has its clock running for the
+ * whole of it, so the first frame the reader ever sees is already a third
+ * of the way through: the cards do not fade in, they appear half faded
+ * and jump. That is what "the animations are glitchy at the beginning"
+ * describes, and no amount of tuning the animations themselves can fix
+ * it, because the frames are simply never drawn.
+ *
+ * Two animation frames after the commit, the page has been painted once
+ * and the main thread is free. Releasing the animations there costs the
+ * reader nothing they can perceive and gives every animation its own
+ * first frame.
+ */
+export function usePaintedAfter(active: boolean): boolean {
+  const [painted, setPainted] = useState(false);
+  const started = useRef(false);
+  useEffect(() => {
+    if (!active || started.current) return;
+    started.current = true;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => setPainted(true));
+    });
+    // THE BACKSTOP IS NOT OPTIONAL. The entry animations fill BOTH ways,
+    // so while this is false the page is held at their first frame, which
+    // is opacity zero. A browser that never runs an animation frame -
+    // a background tab, a hidden window - would therefore hold a blank
+    // Dashboard for as long as it stayed there. The timer releases it
+    // regardless, and 400ms is far longer than two frames ever take on a
+    // visible page, so on the path that matters this never fires.
+    const backstop = window.setTimeout(() => setPainted(true), 400);
+    return () => {
+      cancelAnimationFrame(first);
+      if (second) cancelAnimationFrame(second);
+      window.clearTimeout(backstop);
+    };
+  }, [active]);
+  return painted;
+}
+
+/**
  * THE STAGE A CHART ENTERS ON.
  *
  * Two problems are solved here, and they are the reason the Dashboard's

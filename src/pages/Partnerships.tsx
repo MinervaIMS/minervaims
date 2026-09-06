@@ -91,12 +91,28 @@ const FRAMEWORK: { topic: string; terms: string }[] = [
   },
 ];
 
-const ROW_LABELS: { key: keyof Format; label: string }[] = [
+/**
+ * The three practical facts, which sit together beneath the explanation.
+ *
+ * `description` is deliberately NOT here: it is the sentence that says
+ * what the format is, and it is set as prose above rather than as the
+ * fourth row of a specification.
+ */
+const SPEC_LABELS: { key: 'duration' | 'audience' | 'format'; label: string }[] = [
   { key: "duration", label: "Duration" },
   { key: "audience", label: "Audience" },
   { key: "format", label: "Format" },
-  { key: "description", label: "Description" },
 ];
+
+/**
+ * "1. On-campus Guest Speakers Panel" -> "On-campus Guest Speakers Panel".
+ *
+ * The numbers used to be typed into the titles. They are drawn from the
+ * list's own order now, so this removes a prefix if one is still there and
+ * leaves a title that never had one alone. It means the copy can be edited
+ * either way round without the numeral appearing twice.
+ */
+const stripLeadingNumber = (title: string) => title.replace(/^\s*\d+[.)]\s*/, '');
 
 const Partnerships = () => {
   const milanBg = milanBgAsset.url;
@@ -175,23 +191,66 @@ const Partnerships = () => {
             Collaboration Formats
           </h2>
 
-          {/* Cards: all viewports. Half again the gap, so the four read as
-              four rather than as one block ruled into quarters. */}
+          <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-3xl">
+            Four ways an organisation works with the Society. Each card explains what the format is, and closes with what it costs in practical terms: how long, for whom, and where.
+          </p>
+
+          {/* ═══════════════════════════════════════════════════════════════
+              FOUR FORMATS, EACH READ IN THE ORDER SOMEBODY ASKS ABOUT IT.
+              ---------------------------------------------------------------
+              The cards used to be a title over a four-row description list:
+              Duration, Audience, Format and Description, each label the same
+              size and the same colour as the last, and the paragraph that
+              explains what the thing actually IS sitting fourth, in the same
+              treatment as "45 - 90 minutes". A reader deciding between four
+              formats had to read sixteen equally weighted lines to find the
+              four sentences that distinguish them.
+
+              The order is now the order of the question. The number and the
+              name identify it; the paragraph explains it, in the body size
+              the site uses for reading; and the three practical facts sit
+              beneath a hairline as a specification strip, three to a row,
+              small and uppercase, which is how the rest of the site sets
+              metadata. Nothing was removed and no wording changed.
+
+              The numeral is drawn from the position in the list rather than
+              typed into the title, so the four can be reordered without
+              renumbering them by hand.
+              ═══════════════════════════════════════════════════════════════ */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {FORMATS.map((f) => (
+            {FORMATS.map((f, i) => (
               <article
                 key={f.title}
-                className="bg-muted p-5 transition-colors hover:bg-[#ece9f4]"
+                /* The accent rule along the top is the treatment the site
+                   already gives a card that is one of a set: it separates
+                   the four without four boxes of visible border, and it is
+                   what turns the hover into a considered change of state
+                   rather than a grey square going slightly less grey. */
+                className="flex flex-col bg-muted border-t-2 border-accent p-6 md:p-7 transition-colors hover:bg-[#ece9f4]"
               >
-                <h3 className="font-serif text-subheading text-accent">{f.title}</h3>
-                <dl className="mt-4 space-y-3">
-                  {ROW_LABELS.map(({ key, label }) => (
+                <div className="flex items-baseline gap-3">
+                  <span aria-hidden className="font-serif text-display leading-none text-accent/30 tabular-nums">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="font-serif text-subheading text-accent">
+                    {stripLeadingNumber(f.title)}
+                  </h3>
+                </div>
+
+                {/* `flex-1` so the specification strips of two cards side by
+                    side sit on the same line however long the paragraphs are. */}
+                <p className="font-body text-body leading-relaxed text-muted-foreground mt-4 flex-1">
+                  {f.description.trim()}
+                </p>
+
+                <dl className="mt-6 pt-4 border-t border-separator grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-4">
+                  {SPEC_LABELS.map(({ key, label }) => (
                     <div key={label}>
                       <dt className="font-body text-xs uppercase tracking-[.08em] text-muted-foreground">
                         {label}
                       </dt>
-                      <dd className="font-body text-body text-foreground mt-1">
-                        {f[key]}
+                      <dd className="font-body text-small leading-snug text-foreground mt-1">
+                        {f[key].trim()}
                       </dd>
                     </div>
                   ))}

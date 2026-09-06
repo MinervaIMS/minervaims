@@ -56,6 +56,29 @@ const ResetPassword = () => {
   const [banner, setBanner] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ═══════════════════════════════════════════════════════════════════
+  // THE TOKEN IS SPENT ONCE, AND THE PAGE REMEMBERS THAT.
+  // -------------------------------------------------------------------
+  // This is the loop that was reported: the password is changed, the page
+  // says it failed, and every retry fails too.
+  //
+  // `verifyOtp` consumes the emailed token and leaves a live recovery
+  // session behind. If the update that follows failed for ANY reason -
+  // a dropped response on a phone, a rule the password broke, a rate
+  // limit - the old code came back to this form with `link.tokenHash`
+  // still set, and pressing the button again redeemed the SAME, now
+  // spent, token. That second attempt could only ever answer "this link
+  // has already been used", so the page sent the student to ask for
+  // another one, and the cycle repeated: the session that would have
+  // worked was sitting right there, unused, every time.
+  //
+  // Once the token has been redeemed, this page never touches it again.
+  // A retry goes straight to the update, on the session it already holds.
+  // ═══════════════════════════════════════════════════════════════════
+  const [redeemed, setRedeemed] = useState(false);
+  /** Offer "sign in" as well as "new link" when the password may be set. */
+  const [maybeAlreadySet, setMaybeAlreadySet] = useState(false);
+
   useEffect(() => {
     const captured = captureAuthLink(searchParams);
     setLink(captured);
@@ -74,8 +97,8 @@ const ResetPassword = () => {
   const matches = password.length > 0 && password === confirm;
   const valid = passwordSchema.safeParse(password).success && matches;
   const canAttempt = useMemo(
-    () => !!link.tokenHash || hasSession || useCode,
-    [link.tokenHash, hasSession, useCode],
+    () => !!link.tokenHash || hasSession || useCode || redeemed,
+    [link.tokenHash, hasSession, useCode, redeemed],
   );
 
   const submit = async (e: React.FormEvent) => {
@@ -95,41 +118,112 @@ const ResetPassword = () => {
 
     setIsSubmitting(true);
     setBanner(null);
+    setMaybeAlreadySet(false);
     try {
-      // 1. Redeem, only now, at the moment of a real completion.
-      if (useCode) {
-        const { error } = await supabase.auth.verifyOtp({
-          type: 'recovery',
-          email: codeEmail.trim(),
-          token: code.trim(),
-        });
-        if (error) {
-          setBanner('That code is not valid or has expired. Check the most recent email, or request a new one.');
+      // ── 1. Redeem, only now, and ONLY IF IT HAS NOT BEEN REDEEMED ──
+      // A second press must not spend a token that is already spent; the
+      // recovery session from the first press is what carries the update.
+      if (!redeemed) {
+        if (useCode) {
+          const { error } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            email: codeEmail.trim(),
+            token: code.trim(),
+          });
+          if (error) {
+            setBanner('That code is not valid or has expired. Check the most recent email, or request a new one.');
+            return;
+          }
+          setRedeemed(true);
+          clearAuthLink();
+        } else if (link.tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: link.tokenHash,
+          });
+          if (error) {
+            setBanner(describeTokenError(error.message, 'reset'));
+            return;
+          }
+          // Spent, whatever happens next: forget it so nothing can retry
+          // with it, here or after a refresh.
+          setRedeemed(true);
+          clearAuthLink();
+        } else if (!hasSession) {
+          setBanner('This reset link is no longer valid. Request a new one below.');
           return;
         }
-      } else if (link.tokenHash) {
-        const { error } = await supabase.auth.verifyOtp({
-          type: 'recovery',
-          token_hash: link.tokenHash,
-        });
-        if (error) {
-          setBanner(describeTokenError(error.message, 'reset'));
-          return;
-        }
-      } else if (!hasSession) {
+      }
+
+      // ── 2. Set the new password on the recovery session ──────────────
+      const { error } = await supabase.auth.updateUser({ password });
+      if (!error) {
+        clearAuthLink();
+        navigate('/password-reset-success', { replace: true });
+        return;
+      }
+
+      // ═════════════════════════════════════════════════════════════════
+      // A FAILURE HERE IS NOT ONE THING, AND SAYING SO IS THE FIX.
+      // -----------------------------------------------------------------
+      // The page used to answer every one of these with the same
+      // sentence, "we couldn't update your password, request a new
+      // link", which is wrong in three of the four cases below and is
+      // what kept people going round.
+      //
+      // THE IMPORTANT ONE IS `same_password`. It means the account's
+      // password is ALREADY the one being typed, which is the goal: it is
+      // what a student sees when the first attempt succeeded and its
+      // response was lost, or when they set it, were told it failed and
+      // tried again. Reporting that as a failure and sending them for
+      // another link guarantees they can never escape, because the next
+      // attempt fails identically. It is a success, and it is treated as
+      // one.
+      // ═════════════════════════════════════════════════════════════════
+      const code$ = (error as { code?: string }).code ?? '';
+      const status = (error as { status?: number }).status;
+      const text = (error.message ?? '').toLowerCase();
+
+      if (code$ === 'same_password' || text.includes('should be different from the old password')) {
+        clearAuthLink();
+        navigate('/password-reset-success', { replace: true });
+        return;
+      }
+
+      if (code$ === 'weak_password' || text.includes('password should be') || text.includes('weak')) {
+        setErr((prev) => ({ ...prev, password: error.message || 'Choose a stronger password.' }));
+        setBanner(null);
+        return;
+      }
+
+      if (code$ === 'over_request_rate_limit' || status === 429) {
+        setBanner('Too many attempts in a short time. Wait a minute and press Update Password again: your reset link is still good.');
+        return;
+      }
+
+      // NO HTTP STATUS MEANS THE REQUEST NEVER COMPLETED, and a request
+      // that never completed is not a request that never happened: the
+      // change may well have been made and only the answer lost. Saying
+      // "we couldn't update your password" there is a guess, and it is
+      // the guess that starts the loop.
+      if (status === undefined) {
+        setMaybeAlreadySet(true);
+        setBanner('We lost the connection before we could confirm the change. Your new password may already be active: try signing in with it. If it does not work, press Update Password again.');
+        return;
+      }
+
+      if (code$ === 'session_expired' || code$ === 'bad_jwt' || status === 401) {
         setBanner('This reset link is no longer valid. Request a new one below.');
         return;
       }
 
-      // 2. Set the new password on the recovery session just established.
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) {
-        setBanner("We couldn't update your password. Please request a new reset link.");
-        return;
-      }
-
-      clearAuthLink();
-      navigate('/password-reset-success', { replace: true });
+      setBanner(error.message
+        ? `We couldn't update your password: ${error.message}`
+        : "We couldn't update your password. Please try again, or request a new reset link.");
+    } catch {
+      // Thrown rather than returned: the same "we do not know" case.
+      setMaybeAlreadySet(true);
+      setBanner('We lost the connection before we could confirm the change. Your new password may already be active: try signing in with it. If it does not work, press Update Password again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -144,9 +238,19 @@ const ResetPassword = () => {
       {banner && (
         <AuthErrorBanner>
           {banner}{' '}
-          <Link to="/forgot-password" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
-            Send me a new link
-          </Link>
+          {/* THE RIGHT EXIT FOR THE RIGHT FAILURE. When the change may
+              have gone through, the useful next step is to try signing
+              in, not to fetch another link and set the same password
+              again. */}
+          {maybeAlreadySet ? (
+            <Link to="/auth" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
+              Go to sign-in
+            </Link>
+          ) : (
+            <Link to="/forgot-password" style={{ color: AUTH_TOKENS.NAVY, textDecoration: 'underline' }}>
+              Send me a new link
+            </Link>
+          )}
           .
         </AuthErrorBanner>
       )}

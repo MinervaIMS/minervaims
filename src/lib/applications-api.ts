@@ -349,7 +349,21 @@ export async function getApplication(session: Session | null, id: string): Promi
 export async function signDocumentUrl(session: Session | null, id: string, kind: 'cv' | 'answer', mode: 'preview' | 'download'): Promise<string> {
   return (await invoke(session, { action: 'sign-url', id, kind, mode })).url as string;
 }
-export async function bulkDocumentUrls(session: Session | null, ids: string[], kind: 'cv' | 'answer'): Promise<{ name: string; url: string }[]> {
+/** One document of one applicant, signed and ready to fetch. */
+export interface BulkDocument {
+  /** The file's own name, e.g. "Rossi_Anna_cv.pdf". */
+  name: string;
+  url: string;
+  /** The applicant it belongs to, used as the folder in a combined zip. */
+  folder?: string;
+  kind?: 'cv' | 'answer';
+}
+
+export async function bulkDocumentUrls(
+  session: Session | null,
+  ids: string[],
+  kind: 'cv' | 'answer' | 'both',
+): Promise<BulkDocument[]> {
   return (await invoke(session, { action: 'bulk-urls', ids, kind })).files;
 }
 export async function updateApplicationStatus(session: Session | null, id: string, status: ApplicationStatus, interviewDivision?: OrgDivision | null) {

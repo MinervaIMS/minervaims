@@ -4,6 +4,17 @@ interface WorkspacePageHeaderProps {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /**
+   * Lay the actions out in TWO columns from `lg` up, rather than one.
+   *
+   * For the pages that carry five or six controls a single column is a
+   * tall ladder down the right of the page, taller than the header it
+   * belongs to. Two columns halve that without giving the width back to
+   * the title, and the buttons still align on a shared grid rather than
+   * re-wrapping. Opt in per page: most pages have two or three actions
+   * and read better in one column.
+   */
+  actionColumns?: 1 | 2;
 }
 
 // =====================================================================
@@ -43,7 +54,7 @@ interface WorkspacePageHeaderProps {
 // any width.
 // =====================================================================
 
-export function WorkspacePageHeader({ title, description, actions }: WorkspacePageHeaderProps) {
+export function WorkspacePageHeader({ title, description, actions, actionColumns = 1 }: WorkspacePageHeaderProps) {
   return (
     <div className="mb-6 pb-4 border-b border-separator">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-x-8 gap-y-4">
@@ -56,7 +67,17 @@ export function WorkspacePageHeader({ title, description, actions }: WorkspacePa
           )}
         </div>
         {actions && (
-          <div className="flex flex-wrap items-center gap-2 shrink-0 lg:flex-col lg:flex-nowrap lg:items-stretch lg:gap-1.5 lg:w-[12.5rem] lg:pt-1">
+          <div
+            className={
+              actionColumns === 2
+                // A grid rather than a column: two equal tracks, each
+                // button filling its cell, so the block is a tidy
+                // rectangle at any number of buttons and an odd one out
+                // simply occupies the left cell of the last row.
+                ? 'flex flex-wrap items-center gap-2 shrink-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-1.5 lg:w-[25.5rem] lg:pt-1 [&>*]:lg:w-full'
+                : 'flex flex-wrap items-center gap-2 shrink-0 lg:flex-col lg:flex-nowrap lg:items-stretch lg:gap-1.5 lg:w-[12.5rem] lg:pt-1'
+            }
+          >
             {actions}
           </div>
         )}

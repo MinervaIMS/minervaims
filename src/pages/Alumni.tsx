@@ -241,7 +241,7 @@ const Alumni = () => {
         <AlumniGlobe />
 
         {/* Our Founders. The 2017 founding milestone on /about links straight here. */}
-        <div id="founders" className="mb-section-sm md:mb-section scroll-mt-28">
+        <div id="founders" className="mb-section-wide-sm md:mb-section-wide scroll-mt-28">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2017</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
             {founders.map((founder) => (

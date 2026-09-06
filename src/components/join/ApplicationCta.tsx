@@ -93,9 +93,25 @@ export function ApplicationCta({
     On the accent card (the close block) it stays white with accent text, which
     is the treatment already signed off there.
   */
+  /*
+    A LARGER LABEL FROM `md` UP, ON THIS PAGE ONLY.
+
+    Apply is the one thing /join exists to get pressed, and at the shared
+    button size it was the smallest piece of type in a composition full of
+    headings: easy to slide past on a wide screen, where the card is two
+    columns and the button sits alone in the right one with room around
+    it. `text-xl` from md is one step up the site's own scale, applied
+    where there is space for it; a phone keeps `text-lg`, because there
+    the button is full width and already the loudest thing on the card.
+
+    The size is added HERE and not to `.cta-link-invert`, which is the
+    site-wide button and is used on /about and elsewhere at the size those
+    pages were signed off at.
+  */
+  const buttonSize = 'md:text-xl';
   const buttonClass = light
-    ? 'cta-link-invert'
-    : 'inline-block border border-background bg-background px-10 py-4 font-serif text-lg text-accent shadow-none transition-all duration-200 hover:bg-transparent hover:text-background hover:shadow-elevated';
+    ? `cta-link-invert ${buttonSize}`
+    : `inline-block border border-background bg-background px-10 py-4 font-serif text-lg ${buttonSize} text-accent shadow-none transition-all duration-200 hover:bg-transparent hover:text-background hover:shadow-elevated`;
 
   return (
     <div

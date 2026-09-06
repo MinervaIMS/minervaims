@@ -71,6 +71,31 @@ export async function downloadAs(url: string, filename: string): Promise<boolean
   }
 }
 
+
+/**
+ * Save bytes the page already holds, under a chosen name.
+ *
+ * The blob URL is on the page's own origin, so `download` is honoured and
+ * nothing opens in a tab. Used by the workspace's bulk downloads, which
+ * build a zip in the browser: see lib/zip.ts for why.
+ */
+export function downloadBlob(blob: Blob, filename: string): boolean {
+  try {
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Long enough for the browser to have finished reading it.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Convenience: save a titled document (report, template, attachment). */
 export function downloadTitled(url: string, title: string, fallbackExt = 'pdf'): Promise<boolean> {
   return downloadAs(url, downloadNameFor(title, url, fallbackExt));

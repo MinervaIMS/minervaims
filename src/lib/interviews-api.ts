@@ -68,6 +68,45 @@ async function invoke(session: Session | null, body: Record<string, unknown>): P
   return invokeFunction('admin-interviews', { body: body, session });
 }
 
+
+// =====================================================================
+// "A slot a candidate could actually book."
+// ---------------------------------------------------------------------
+// The mirror of supabase/functions/_shared/interview-slots.ts, and it has
+// to stay a mirror: the workspace uses it to decide whether an invitation
+// may be offered, the server uses it to decide whether one may be sent,
+// and the candidate's booking list is filtered by it. If they drifted, an
+// examiner would be allowed to invite somebody to an empty calendar.
+//
+// `slot_date` is a date and `start_time` a time, both without a zone,
+// typed on the association's own clock. So "still to come" is compared
+// against the wall clock in Rome rather than against the reader's, which
+// keeps the answer the same for a member travelling and for the server.
+// =====================================================================
+const ASSOCIATION_TZ = 'Europe/Rome';
+
+/** `{ date: 'YYYY-MM-DD', time: 'HH:MM' }` right now, in Rome. */
+export function nowInAssociationTime(at: Date = new Date()): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ASSOCIATION_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(at);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${hour}:${get('minute')}` };
+}
+
+/** Has this slot not happened yet? */
+export function isFutureSlot(
+  slot: { slot_date: string; start_time: string },
+  now = nowInAssociationTime(),
+): boolean {
+  if (slot.slot_date > now.date) return true;
+  if (slot.slot_date < now.date) return false;
+  return (slot.start_time ?? '').slice(0, 5) > now.time;
+}
+
 // ── Staff ────────────────────────────────────────────────────────────────
 export async function listSlots(session: Session | null, division: OrgDivision): Promise<StaffSlotsResult> {
   return await invoke(session, { action: 'list', division });

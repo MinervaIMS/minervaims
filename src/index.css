@@ -533,7 +533,25 @@ button.mdot, button.rdot, button.dstack-dot {
    carries the report card's own padding and background, while these
    cards are posters sitting inside the page's container. What has to
    match is the BEHAVIOUR, and that lives in these four declarations. */
-.ac-rail-fade { --ac-fade: clamp(1rem, 3vw, 2.5rem);
+/* IT IS THE REPORTS RAIL NOW, not a rail of its own.
+
+   It used to be a rail the width of the container, masked to a soft fade
+   at BOTH of its own edges. That put a fade exactly where the page's text
+   margin is: the first card was already half faded at the point every
+   heading and paragraph on the page begins, and the last card faded out
+   before reaching the right margin, so the row read as narrower than the
+   column it sat in and as though it were dissolving into it.
+
+   Latest Reports on the homepage solves this and this rail now does the
+   same thing, in the same declarations: the track runs the FULL WIDTH OF
+   THE VIEWPORT and is padded inwards to the container's own margin, so
+   the first card starts exactly on the left margin and, scrolled to the
+   end, the last card finishes exactly on the right one. The only fade
+   left is at the edges of the SCREEN, far outside the text column, which
+   is what tells a reader there is more to scroll to. When everything fits
+   there is no fade at all. */
+.ac-rail-fade { width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
+  --ac-fade: clamp(1rem, 4vw, 4rem);
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 calc(100% - var(--ac-fade)), transparent 100%);
           mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 calc(100% - var(--ac-fade)), transparent 100%); }
 .ac-rail-fade[data-at-start="true"][data-at-end="true"] { -webkit-mask-image:none; mask-image:none; }
@@ -543,10 +561,15 @@ button.mdot, button.rdot, button.dstack-dot {
 .ac-rail-fade[data-at-end="true"]:not([data-at-start="true"]) {
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 100%);
           mask-image: linear-gradient(to right, transparent 0, #000 var(--ac-fade), #000 100%); }
+/* The padding is the container's own geometry: 1.5rem of gutter, and on a
+   screen wider than the 1280px container the slack either side of it. The
+   scroll padding repeats it so a snapped card lands ON the margin rather
+   than against the screen edge. */
 .ac-rail { display:grid; grid-auto-flow:column; grid-auto-columns:clamp(220px, 26vw, 300px);
   gap:clamp(1rem,2vw,1.5rem); overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
   scrollbar-width:none; -ms-overflow-style:none; padding-bottom:.25rem;
-  scroll-padding-inline-start:0; }
+  padding-inline: max(1.5rem, calc((100vw - 1280px) / 2 + 1.5rem));
+  scroll-padding-inline-start: max(1.5rem, calc((100vw - 1280px) / 2 + 1.5rem)); }
 .ac-rail::-webkit-scrollbar { height:0; width:0; display:none; }
 .ac-card { scroll-snap-align:start; min-width:0; }
 
