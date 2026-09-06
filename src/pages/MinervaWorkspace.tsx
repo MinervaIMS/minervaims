@@ -887,9 +887,16 @@ const MinervaWorkspace = () => {
   // covered too rather than falling through as "not read-only".
   // ══════════════════════════════════════════════════════════════════════
   const openResource = activeSubKey ?? activeSectionKey;
+  // A CANDIDATE IS NEVER A READER OF SOMEBODY ELSE'S RECORD. Their pages are
+  // granted at 'view' because a candidate manages nothing of the association's,
+  // but those pages are their OWN application: booking an interview slot and
+  // signing an offer are their actions to take. The server still decides
+  // whether each one is allowed.
   const subsectionReadOnly = !!openResource
+    && !access.isCandidate
     && access.canView(openResource)
     && !access.canManage(openResource);
+
 
   // THE TITLE NAMES THE PAGE, now that the page has an address. Every
   // subsection used to be "Workspace | MIMS", which meant a browser tab and,
