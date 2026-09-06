@@ -1105,6 +1105,12 @@ export type Database = {
           fee_amount: number
           first_deadline: string | null
           id: string
+          opening_email_sent_at: string | null
+          payment_account_holder: string | null
+          payment_iban: string | null
+          payment_method: string | null
+          payment_notes: string | null
+          payment_reference: string | null
           second_deadline: string | null
           semester_label: string
           treasury_entry_id: string | null
@@ -1117,6 +1123,12 @@ export type Database = {
           fee_amount?: number
           first_deadline?: string | null
           id?: string
+          opening_email_sent_at?: string | null
+          payment_account_holder?: string | null
+          payment_iban?: string | null
+          payment_method?: string | null
+          payment_notes?: string | null
+          payment_reference?: string | null
           second_deadline?: string | null
           semester_label: string
           treasury_entry_id?: string | null
@@ -1129,6 +1141,12 @@ export type Database = {
           fee_amount?: number
           first_deadline?: string | null
           id?: string
+          opening_email_sent_at?: string | null
+          payment_account_holder?: string | null
+          payment_iban?: string | null
+          payment_method?: string | null
+          payment_notes?: string | null
+          payment_reference?: string | null
           second_deadline?: string | null
           semester_label?: string
           treasury_entry_id?: string | null
@@ -1456,6 +1474,7 @@ export type Database = {
           membership_status: string
           phone: string | null
           photo_url: string | null
+          profile_email_sent_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           surname: string
           team: string | null
@@ -1477,6 +1496,7 @@ export type Database = {
           membership_status?: string
           phone?: string | null
           photo_url?: string | null
+          profile_email_sent_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           surname: string
           team?: string | null
@@ -1498,6 +1518,7 @@ export type Database = {
           membership_status?: string
           phone?: string | null
           photo_url?: string | null
+          profile_email_sent_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           surname?: string
           team?: string | null
@@ -1515,6 +1536,7 @@ export type Database = {
           member_id: string
           paid: boolean
           period_id: string
+          reminder_sent_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -1524,6 +1546,7 @@ export type Database = {
           member_id: string
           paid?: boolean
           period_id: string
+          reminder_sent_at?: string | null
         }
         Update: {
           amount?: number | null
@@ -1533,6 +1556,7 @@ export type Database = {
           member_id?: string
           paid?: boolean
           period_id?: string
+          reminder_sent_at?: string | null
         }
         Relationships: [
           {
@@ -2124,6 +2148,7 @@ export type Database = {
         Returns: number
       }
       exam_break_on: { Args: { _d: string }; Returns: string }
+      fee_payment_block: { Args: { p_period_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2181,7 +2206,9 @@ export type Database = {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
       }
+      process_fee_reminders: { Args: never; Returns: number }
       process_offer_deadlines: { Args: never; Returns: undefined }
+      process_profile_reminders: { Args: never; Returns: number }
       public_alumni_classes: {
         Args: never
         Returns: {
