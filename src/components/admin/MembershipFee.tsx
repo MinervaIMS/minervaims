@@ -104,18 +104,30 @@ export default function MembershipFee() {
     </th>
   );
 
+  // A collection cannot open until members can be told how to pay: the
+  // opening email carries these details, so every field below is required.
+  const paymentReady = !!(payMethod.trim() && payHolder.trim() && payIban.trim() && payRef.trim());
+  const openReady = !!newLabel.trim() && !!firstDeadline && paymentReady && (!secondDeadline || secondDeadline > firstDeadline);
+
   const open = async () => {
     if (!newLabel.trim()) { toast({ title: 'Enter a semester label', variant: 'destructive' }); return; }
     if (!firstDeadline) { toast({ title: 'Set a first deadline', variant: 'destructive' }); return; }
     if (secondDeadline && secondDeadline <= firstDeadline) { toast({ title: 'The second deadline must be after the first', variant: 'destructive' }); return; }
+    if (!paymentReady) { toast({ title: 'Complete the payment details', description: 'Method, account holder, IBAN and reference are required.', variant: 'destructive' }); return; }
     setBusy(true);
     try {
-      await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null);
-      setNewLabel(''); setFirstDeadline(''); setSecondDeadline(''); await load(); toast({ title: 'Collection opened' });
+      const r = await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null,
+        { payment_method: payMethod.trim(), payment_account_holder: payHolder.trim(), payment_iban: payIban.trim(), payment_reference: payRef.trim(), payment_notes: payNotes.trim() },
+        true);
+      setNewLabel(''); setFirstDeadline(''); setSecondDeadline('');
+      setPayMethod(''); setPayHolder(''); setPayIban(''); setPayRef(''); setPayNotes('');
+      await load();
+      toast({ title: 'Collection opened', description: r?.notified ? `${r.notified} member${r.notified === 1 ? '' : 's'} notified by email.` : undefined });
     }
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
+
 
   const toggle = async (memberId: string) => {
     if (!period) return;
