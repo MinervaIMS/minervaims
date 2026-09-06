@@ -36,7 +36,7 @@ const CALENDAR_LEGEND: LegendItem[] = [
   { swatch: 'bg-muted border border-separator', label: 'Exam session break: no events accepted' },
 ];
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
-import { listEvents, registerForEvent, myEventRegistrationIds, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
+import { listEvents, registerForEvent, myEventRegistrationIds, saveEvent, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
 import {
   listCalendarEntries, saveCalendarEntry, deleteCalendarEntry, CALENDAR_ENTRY_LABELS,
   listExamSessions, saveExamSession, deleteExamSession, examSessionOn,
@@ -63,6 +63,22 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const { toast } = useToast();
   const { canManage } = useAccess();
   const canEdit = canManage('calendar');
+  // ═══════════════════════════════════════════════════════════════════
+  // EDITING AN EVENT FROM THE CALENDAR EDITS THE EVENT.
+  // -------------------------------------------------------------------
+  // Not a copy of it, and not only its appearance here: the same row the
+  // Events pages, the public website and the registration form all read.
+  // Changing the time on this grid changes the time the registration form
+  // shows, because there is only one time.
+  //
+  // BOTH PERMISSIONS ARE REQUIRED, deliberately. Adding a calendar entry
+  // and changing an association event are different powers, and the
+  // events endpoint enforces its own list of roles. Offering the control
+  // to somebody the server would refuse is how a workspace ends up with
+  // buttons that do not work, so the control is only drawn for people who
+  // hold both.
+  // ═══════════════════════════════════════════════════════════════════
+  const canEditEvents = canEdit && canManage('events-create');
   // An advisor pays no membership fee, so no fee deadline is theirs to
   // meet. Putting one on their calendar asks them for money the
   // association has decided not to ask them for.
@@ -74,6 +90,9 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const [registering, setRegistering] = useState(false);
   const [entryForm, setEntryForm] = useState<EntryForm | null>(null);
   const [savingEntry, setSavingEntry] = useState(false);
+  /** The event being edited, held whole so the save can send it whole. */
+  const [eventForm, setEventForm] = useState<{ event: EventRow; title: string; date: string; time: string; endTime: string; place: string } | null>(null);
+  const [savingEvent, setSavingEvent] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Exam session breaks: ranges during which the calendars accept no events.
@@ -168,6 +187,79 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     if (!entryForm?.id) return;
     try { await deleteCalendarEntry(session, entryForm.id);toast({ title: 'Entry removed' }); setEntryForm(null); await load(); }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+  };
+
+  // ── Editing an event from the grid ───────────────────────────────────
+  /** Local time as the two form fields want it: 'YYYY-MM-DD' and 'HH:MM'. */
+  const splitWhen = (iso: string | null, fallbackDate: string) => {
+    if (!iso) return { date: fallbackDate, time: '' };
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return { date: fallbackDate, time: '' };
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return {
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    };
+  };
+
+  const openEventEdit = (event: EventRow) => {
+    const start = splitWhen(event.start_at, (event.date || '').slice(0, 10));
+    const end = splitWhen(event.end_at, start.date);
+    setEventForm({
+      event,
+      title: event.title ?? '',
+      date: start.date,
+      time: start.time,
+      endTime: event.end_at ? end.time : '',
+      place: event.place ?? '',
+    });
+  };
+
+  const saveEventEdits = async () => {
+    if (!eventForm) return;
+    const { event, title, date, time, endTime, place } = eventForm;
+    if (!title.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
+    if (!date) { toast({ title: 'A date is required', variant: 'destructive' }); return; }
+    if (!place.trim()) { toast({ title: 'A place is required', variant: 'destructive' }); return; }
+    if (endTime && !time) { toast({ title: 'Give a start time before an end time', variant: 'destructive' }); return; }
+
+    // A local wall-clock time typed by a member becomes an instant here,
+    // once, so the whole application reads the same one afterwards.
+    const localIso = (d: string, t: string) => {
+      const made = new Date(`${d}T${t}`);
+      return Number.isNaN(made.getTime()) ? null : made.toISOString();
+    };
+    const start_at = time ? localIso(date, time) : null;
+    let end_at: string | null = null;
+    if (endTime) {
+      end_at = localIso(date, endTime);
+      // An end before the start is an event that runs past midnight.
+      if (start_at && end_at && end_at <= start_at) {
+        const next = new Date(`${date}T${endTime}`);
+        next.setDate(next.getDate() + 1);
+        end_at = next.toISOString();
+      }
+    }
+
+    setSavingEvent(true);
+    try {
+      // THE WHOLE EVENT IS SENT, not the four edited fields: the endpoint
+      // writes every column it is given, so a partial payload would blank
+      // the poster, the guests and the registration settings.
+      await saveEvent(session, {
+        ...event,
+        title: title.trim(),
+        date,
+        place: place.trim(),
+        start_at,
+        end_at,
+      });
+      toast({ title: 'Event updated', description: 'The change applies everywhere the event appears, including its registration form.' });
+      setEventForm(null);
+      await load();
+    } catch (e) {
+      toast({ title: 'Could not update the event', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setSavingEvent(false); }
   };
 
   const openEntryEdit = (c: CalendarEntry) => setEntryForm({
@@ -292,6 +384,8 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         // outside the membership fee it stops promising a deadline that
         // will never appear on it.
         description="Everything the association has on, month by month."
+        // Six controls: a single column of them is taller than the header.
+        actionColumns={2}
         /* ONE CONTROL GROUP, AT THE TOP.
            "Jump to today" used to sit on a row of its own between the header
            and the colour key, adrift from the two buttons it belongs with;
@@ -358,10 +452,14 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                         const isEvent = it.kind === 'event' && !!it.event;
                         const isCustom = it.kind === 'custom' && !!it.entry;
                         const isAod = it.kind === 'aod' && !!onNavigate;
-                        const clickable = (isEvent && it.event!.registration_enabled) || (isCustom && canEdit) || isAod;
+                        // An editor opens the event to change it; everybody
+                        // else opens it to register, exactly as before.
+                        const isEditableEvent = isEvent && canEditEvents;
+                        const clickable = isEditableEvent || (isEvent && it.event!.registration_enabled) || (isCustom && canEdit) || isAod;
                         const isReg = isEvent && registered.has(it.event!.id);
                         const onClick = () => {
-                          if (isEvent && it.event!.registration_enabled) setRegEvent(it.event!);
+                          if (isEditableEvent) openEventEdit(it.event!);
+                          else if (isEvent && it.event!.registration_enabled) setRegEvent(it.event!);
                           else if (isCustom && canEdit) openEntryEdit(it.entry!);
                           else if (isAod) onNavigate!('events', 'events-on-display');
                         };
@@ -379,12 +477,13 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                             meta={<>
                               <PreviewRow label="Kind" value={kindLabel} />
                               <PreviewRow label="When" value={date} />
-                              <PreviewRow label="Where" value={isCustom ? it.entry!.location : undefined} />
+                              <PreviewRow label="Where" value={isCustom ? it.entry!.location : isEvent ? it.event!.place : undefined} />
                               <PreviewRow label="Details" value={isCustom ? it.entry!.description : undefined} />
                               <PreviewRow label="Registered" value={isReg ? 'You are registered' : undefined} />
                               <PreviewRow
                                 label="Action"
-                                value={isEvent && it.event!.registration_enabled ? 'Click to register'
+                                value={isEditableEvent ? 'Click to edit this event'
+                                  : isEvent && it.event!.registration_enabled ? 'Click to register'
                                   : isCustom && canEdit ? 'Click to edit'
                                   : isAod ? 'Click to open the sign-up page'
                                   : undefined}
@@ -415,6 +514,75 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
       </div>
 
       {/* Custom entry create / edit dialog (authorised users only) */}
+      {/* ═══════════════════════════════════════════════════════════════
+          EDIT AN EVENT, FROM THE CALENDAR.
+          ---------------------------------------------------------------
+          Four fields, because these are the four an event's details
+          actually consist of from a reader's point of view: what it is
+          called, when it starts, when it ends and where it happens.
+          Everything else about an event - its poster, its guests, whether
+          it is on the website, who may register - stays on the Events
+          pages, which are built for it, and is carried through this save
+          untouched.
+          ═══════════════════════════════════════════════════════════════ */}
+      <Dialog open={!!eventForm} onOpenChange={(o) => !o && setEventForm(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Edit event</DialogTitle>
+            <DialogDescription className="font-body">
+              These are the event's own details. Changing them here changes them everywhere the event appears, including its registration form and the public website.
+            </DialogDescription>
+          </DialogHeader>
+          {eventForm && (
+            <div className="space-y-3 font-body">
+              <div className="space-y-1">
+                <Label>Name *</Label>
+                <Input value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label>Date *</Label>
+                  <Input type="date" value={eventForm.date} onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Start</Label>
+                  <Input type="time" value={eventForm.time} onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>End</Label>
+                  <Input type="time" value={eventForm.endTime} onChange={(e) => setEventForm({ ...eventForm, endTime: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Place *</Label>
+                <Input value={eventForm.place} onChange={(e) => setEventForm({ ...eventForm, place: e.target.value })} placeholder="e.g. Room 3-E4-SR03, Via Roentgen 1" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Leave the times empty for an all-day event. {EVENT_TYPE_LABELS[eventForm.event.event_type]}
+                {eventForm.event.registration_enabled ? ' · registration is open for this event' : ''}
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button onClick={saveEventEdits} disabled={savingEvent} className="font-body">
+                  {savingEvent ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Save changes
+                </Button>
+                <Button variant="outline" onClick={() => setEventForm(null)} disabled={savingEvent} className="font-body">Cancel</Button>
+                {/* An editor is a member too, and may want to register. */}
+                {eventForm.event.registration_enabled && (
+                  <Button
+                    variant="outline"
+                    className="font-body ml-auto"
+                    disabled={savingEvent}
+                    onClick={() => { const ev = eventForm.event; setEventForm(null); setRegEvent(ev); }}
+                  >
+                    Register instead
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!entryForm} onOpenChange={(o) => !o && setEntryForm(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>

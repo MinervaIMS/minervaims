@@ -588,11 +588,15 @@ export default function AlumniGlobe() {
 
   return (
     // THE SITE'S RHYTHM, NOT A MARGIN OF ITS OWN. This is the first of
-    // four blocks stacked inside one section on /people/alumni, and the
-    // four were separated by 80, 96 and 96 pixels where every other page
-    // separates its blocks by 128 (80 on a phone). See the note in
-    // Alumni.tsx.
-    <div className="mb-section-sm md:mb-section">
+    // four blocks stacked inside one section on /people/alumni, and it
+    // owns the join into "Our Founders" because a block inside a section
+    // has only its own margin to give. The four used to sit 80, 96 and 96
+    // apart; they were brought onto the site's 128 and are now on its WIDE
+    // boundary, 160 on a phone and 256 from md up, which is what two
+    // adjacent sections come to elsewhere. Four subjects this distinct
+    // read better with a section's worth of air between them. See the
+    // note in Alumni.tsx.
+    <div className="mb-section-wide-sm md:mb-section-wide">
       <div className="relative w-full" style={{ height: "clamp(360px, 46vw, 560px)" }}>
         <canvas ref={canvasRef} className="block h-full w-full" />
         {/* Desktop/tablet: overlay top-right (zoom only) */}

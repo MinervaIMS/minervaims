@@ -29,13 +29,15 @@ import {
   isLockedStatus, allowedNextStatuses,
   APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
   evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
-  type ApplicationRow, type ApplicationStatus,
+  type ApplicationRow, type ApplicationStatus, type BulkDocument,
 } from '@/lib/applications-api';
 import { openReportInTab } from '@/lib/open-report';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
 import { documentTitle } from '@/components/admin/recruiting/document-title';
-import { listSlots } from '@/lib/interviews-api';
+import { listSlots, isFutureSlot } from '@/lib/interviews-api';
+import { zipFromUrls } from '@/lib/zip';
+import { downloadBlob } from '@/lib/file-download';
 
 /** Sentinel used by the second-choice filter for applicants who named none. */
 const NO_SECOND_CHOICE = '__none__';
@@ -48,14 +50,67 @@ const EMAIL_ON_STATUS: Record<string, string> = {
   offer_accepted: 'The candidate will receive a welcome email and be prompted to complete their member profile.',
 };
 
-function triggerDownloads(files: { name: string; url: string }[]) {
-  files.forEach((f, i) => {
-    setTimeout(() => {
-      const a = document.createElement('a');
-      a.href = f.url; a.download = f.name; a.target = '_blank';
-      document.body.appendChild(a); a.click(); a.remove();
-    }, i * 400);
-  });
+// =====================================================================
+// BULK DOWNLOAD: ONE ARCHIVE, NOT ONE TAB PER CANDIDATE.
+// ---------------------------------------------------------------------
+// This used to create an <a download target="_blank"> per file, 400ms
+// apart. The `download` attribute is IGNORED cross-origin, and these are
+// signed Supabase storage URLs, so what the browser actually did with
+// each one was open a tab. Thirty filtered candidates meant thirty tabs
+// arriving over twelve seconds, on top of whatever the reviewer already
+// had open: the browser became unusable and none of the documents could
+// be read, which is exactly what was reported.
+//
+// The files are fetched and packed into a single zip instead, saved from
+// a blob URL on the page's own origin, where `download` IS honoured and
+// the archive gets the name it should have. See lib/zip.ts.
+//
+// WHEN BOTH KINDS ARE ASKED FOR, THE ARCHIVE HAS A FOLDER PER APPLICANT,
+// because a flat list of sixty files named Surname_Firstname_cv.pdf and
+// Surname_Firstname_answer.pdf is a list nobody can read a candidate out
+// of. One kind on its own stays flat: the folders would each hold one
+// file and add nothing.
+// =====================================================================
+
+/** What the archive is called, and what is inside each entry. */
+function zipEntriesFor(files: BulkDocument[], kind: 'cv' | 'answer' | 'both') {
+  if (kind !== 'both') return files.map((f) => ({ name: f.name, url: f.url }));
+  return files.map((f) => ({
+    name: `${f.folder || 'Applicant'}/${f.kind === 'answer' ? 'Written answer' : 'CV'}.pdf`,
+    url: f.url,
+  }));
+}
+
+/**
+ * One bulk-download button, which reports what it is doing.
+ *
+ * Packing thirty PDFs takes long enough that a button which only greys
+ * out reads as a button that did nothing, so it counts the files as they
+ * arrive. The other buttons disable while any download runs: two archives
+ * being built at once would compete for the connection and neither would
+ * be ready sooner.
+ */
+function BulkDownloadButton({ label, kind, busy, progress, disabled, onRun }: {
+  label: string;
+  kind: 'cv' | 'answer' | 'both';
+  busy: false | 'cv' | 'answer' | 'both';
+  progress: { done: number; total: number } | null;
+  disabled: boolean;
+  onRun: (kind: 'cv' | 'answer' | 'both') => void;
+}) {
+  const running = busy === kind;
+  return (
+    <Button
+      variant="outline"
+      className="font-body"
+      disabled={disabled || busy !== false}
+      onClick={() => onRun(kind)}
+    >
+      {running
+        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{progress ? `${progress.done} of ${progress.total}` : 'Preparing'}</>
+        : <><Download className="h-4 w-4 mr-2" />{label}</>}
+    </Button>
+  );
 }
 
 export default function CandidatesManagement() {
@@ -109,7 +164,9 @@ export default function CandidatesManagement() {
   const [evaluationFilter, setEvaluationFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string[]>([]);
-  const [bulkBusy, setBulkBusy] = useState(false);
+  // Which bulk download is running ('cv' | 'answer' | 'both'), and how far.
+  const [bulkBusy, setBulkBusy] = useState<false | 'cv' | 'answer' | 'both'>(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   // Opening a candidate is the workspace's most repeated interaction, so it
   // has its own hook: one round trip to readable, the two documents signed in
@@ -242,11 +299,27 @@ export default function CandidatesManagement() {
       setConfirming(true);
       try {
         const res = await listSlots(session, division);
-        const open = res.slots.filter((s) => s.is_active && !s.is_booked).length;
+        // ═════════════════════════════════════════════════════════════
+        // A SLOT THAT HAS ALREADY HAPPENED IS NOT AN OPEN SLOT.
+        // -------------------------------------------------------------
+        // This used to count `is_active && !is_booked` and nothing else,
+        // so a division whose only remaining slots were this morning's
+        // passed the check: the invitation went out, the email told the
+        // candidate to book a time, and the Interview Calendar they
+        // opened was empty. The stage cannot be undone afterwards except
+        // through the division-transfer process.
+        //
+        // The rule is now the same one the candidate's own booking list
+        // uses, and the same one the server enforces before it sends
+        // anything: active, unbooked, and still to come.
+        const open = res.slots.filter((s) => s.is_active && !s.is_booked && isFutureSlot(s)).length;
         if (open === 0) {
+          const stale = res.slots.filter((s) => s.is_active && !s.is_booked).length;
           toast({
-            title: 'No open interview slots',
-            description: `Open at least one slot for ${divisionLabels[division]} in Applications → Interview Calendar before inviting this candidate.`,
+            title: 'No interview slot this candidate could book',
+            description: stale > 0
+              ? `Every open slot for ${divisionLabels[division]} is already in the past. Add a future slot in Recruiting, Interview Calendar before inviting this candidate.`
+              : `Open at least one slot for ${divisionLabels[division]} in Recruiting, Interview Calendar before inviting this candidate.`,
             variant: 'destructive',
           });
           return;
@@ -299,15 +372,29 @@ export default function CandidatesManagement() {
     setApps((prev) => prev.map((a) => (a.id === openId ? { ...a, note_count: fresh.notes.length } : a)));
   };
 
-  const bulkDownload = async (kind: 'cv' | 'answer') => {
-    setBulkBusy(true);
+  const bulkDownload = async (kind: 'cv' | 'answer' | 'both') => {
+    setBulkBusy(kind);
+    setBulkProgress(null);
     try {
       const files = await bulkDocumentUrls(session, rows.map((r) => r.id), kind);
       if (!files.length) { toast({ title: 'Nothing to download' }); return; }
-      triggerDownloads(files);
-      toast({ title: `Downloading ${files.length} file${files.length !== 1 ? 's' : ''}` });
+      const { blob, failed } = await zipFromUrls(
+        zipEntriesFor(files, kind),
+        (done, total) => setBulkProgress({ done, total }),
+      );
+      const label = kind === 'cv' ? 'CVs' : kind === 'answer' ? 'written answers' : 'applications';
+      const saved = downloadBlob(blob, `Minerva ${label} ${semKey}.zip`);
+      if (failed.length) {
+        toast({
+          title: `${failed.length} file${failed.length !== 1 ? 's' : ''} could not be added`,
+          description: `The archive holds the rest. Missing: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '…' : ''}`,
+          variant: 'destructive',
+        });
+      } else if (saved) {
+        toast({ title: `${files.length} file${files.length !== 1 ? 's' : ''} saved as one archive` });
+      }
     } catch (e) { toast({ title: 'Bulk download failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-    finally { setBulkBusy(false); }
+    finally { setBulkBusy(false); setBulkProgress(null); }
   };
 
   return (
@@ -317,12 +404,24 @@ export default function CandidatesManagement() {
         description="This semester's applications, with their documents, notes and status."
         actions={
           <>
-            <Button variant="outline" className="font-body" disabled={rows.length === 0 || bulkBusy} onClick={() => bulkDownload('cv')}>
-              {bulkBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}Download CVs
-            </Button>
-            <Button variant="outline" className="font-body" disabled={rows.length === 0 || bulkBusy} onClick={() => bulkDownload('answer')}>
-              <Download className="h-4 w-4 mr-2" />Download answers
-            </Button>
+            <BulkDownloadButton
+              label="Download CVs" kind="cv"
+              busy={bulkBusy} progress={bulkProgress}
+              disabled={rows.length === 0} onRun={bulkDownload}
+            />
+            <BulkDownloadButton
+              label="Download answers" kind="answer"
+              busy={bulkBusy} progress={bulkProgress}
+              disabled={rows.length === 0} onRun={bulkDownload}
+            />
+            {/* Both together, foldered by applicant. It is the button a
+                reviewer starting a screening round actually wants, and it
+                is the only one for which the folders make sense. */}
+            <BulkDownloadButton
+              label="Download both" kind="both"
+              busy={bulkBusy} progress={bulkProgress}
+              disabled={rows.length === 0} onRun={bulkDownload}
+            />
           </>
         }
       />

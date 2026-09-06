@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
+import { countBookableSlots } from '../_shared/interview-slots.ts';
 
 // =====================================================================
 // admin-applications — reviewer backend for the Applications pipeline.
@@ -208,18 +209,35 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     }
 
     // ── bulk-urls (download all docs for a filtered set) ─────────────────────
+    //
+    // WHAT CHANGED, AND WHY IT MATTERS TO THE CLIENT.
+    // Each file now also carries the applicant it belongs to (`folder`)
+    // and which document it is (`kind`), and `kind: 'both'` returns the
+    // CV and the written answer together. The workspace packs these into
+    // a single zip, one folder per applicant when both are asked for, so
+    // a reviewer gets one file to save instead of one browser tab per
+    // candidate. The signed URLs are unchanged; only the shape grew, and
+    // it grew by addition, so an older client still finds `name` and
+    // `url` exactly where they were.
     if (action === 'bulk-urls') {
       const ids: string[] = Array.isArray(body.ids) ? body.ids : [];
-      const kind = body.kind === 'answer' ? 'answer' : 'cv';
+      const kind = body.kind === 'answer' ? 'answer' : body.kind === 'both' ? 'both' : 'cv';
+      const wanted: ('cv' | 'answer')[] = kind === 'both' ? ['cv', 'answer'] : [kind as 'cv' | 'answer'];
       const { data: apps } = await supabase.from('applications').select('*').in('id', ids);
-      const out: { name: string; url: string }[] = [];
+      const out: { name: string; url: string; folder: string; kind: string }[] = [];
       for (const app of apps || []) {
         if (!inScope(app)) continue;
-        const path = kind === 'answer' ? app.answer_path : app.cv_path;
-        if (!path) continue;
-        const { data: signed } = await supabase.storage.from('applications')
-          .createSignedUrl(path, 600, { download: `${app.surname}_${app.first_name}_${kind}.pdf` });
-        if (signed) out.push({ name: `${app.surname}_${app.first_name}_${kind}.pdf`, url: signed.signedUrl });
+        // The applicant, as a person rather than as a file name: the
+        // workspace uses it for the folder inside the archive.
+        const person = `${app.surname ?? ''} ${app.first_name ?? ''}`.trim() || 'Applicant';
+        for (const which of wanted) {
+          const path = which === 'answer' ? app.answer_path : app.cv_path;
+          if (!path) continue;
+          const fileName = `${app.surname}_${app.first_name}_${which}.pdf`;
+          const { data: signed } = await supabase.storage.from('applications')
+            .createSignedUrl(path, 600, { download: fileName });
+          if (signed) out.push({ name: fileName, url: signed.signedUrl, folder: person, kind: which });
+        }
       }
       return json({ files: out });
     }
@@ -270,6 +288,40 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         // division that invited is the division that is assessing.
         updates.interview_division = evaluation;
         updates.evaluation_division = evaluation;
+
+        // ═══════════════════════════════════════════════════════════
+        // AN INVITATION WITHOUT A SLOT TO OFFER IS NOT AN INVITATION.
+        // -----------------------------------------------------------
+        // The email tells the candidate to go and book a time. If the
+        // inviting division has no bookable slot the candidate opens
+        // the Interview Calendar, finds nothing, and has been told by
+        // the association to do something the association has not made
+        // possible. The stage is also one-way: it cannot be undone
+        // except through the division-transfer process.
+        //
+        // The workspace already asks this question before showing the
+        // confirmation, but a hidden control is not a rule: this
+        // endpoint is reachable with a token, the answer can change
+        // between the check and the send, and the client's check could
+        // not see the TIME of day at all. It is enforced here, on the
+        // same definition of "bookable" the booking list itself uses -
+        // active, unbooked, and still to come on the association's own
+        // clock. See _shared/interview-slots.ts.
+        // ═══════════════════════════════════════════════════════════
+        let bookable = 0;
+        try {
+          bookable = await countBookableSlots(supabase, evaluation);
+        } catch (slotErr) {
+          console.error('Could not count interview slots:', slotErr);
+          return json({
+            error: 'The interview slots for this division could not be checked, so the invitation was not sent. Please try again.',
+          }, 503);
+        }
+        if (bookable === 0) {
+          return json({
+            error: `${DIV_LABELS[evaluation] || evaluation} has no interview slot a candidate could book: every slot is either taken, closed or already past. Open at least one future slot in Recruiting, Interview Calendar, then invite this candidate.`,
+          }, 409);
+        }
       }
       const invitedDivision = evaluation;
 

@@ -75,6 +75,14 @@ export default {
       spacing: {
         'section': '8rem',
         'section-sm': '5rem',
+        // The WIDE boundary: what two adjacent full sections come to when
+        // each contributes its own 8rem. It exists as a token because a
+        // few places need that interval between blocks that live inside
+        // ONE section and so have only one margin to give it, and writing
+        // 16rem by hand in those places hides the fact that it is the
+        // site's own rhythm rather than a number somebody liked.
+        'section-wide': '16rem',
+        'section-wide-sm': '10rem',
       },
       borderRadius: {
         lg: "var(--radius)",

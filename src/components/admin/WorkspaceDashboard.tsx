@@ -4,7 +4,7 @@ import { useAccess } from '@/hooks/useAccess';
 import type { ResourceKey } from '@/lib/access/matrix';
 import { useDashboardData } from '@/components/admin/dashboard/useDashboardData';
 import { KpiCard } from '@/components/admin/dashboard/DashboardKit';
-import { useMediaMatch, usePageVisible, useReducedMotion } from '@/components/admin/dashboard/motion';
+import { useMediaMatch, usePageVisible, usePaintedAfter, useReducedMotion, useSettled } from '@/components/admin/dashboard/motion';
 import { useReportCovers } from '@/components/admin/dashboard/useReportCovers';
 import {
   DashboardMotionStyles, GlobeOrnament, LibraryCorner, MemberRings, ReportColumns,
@@ -61,6 +61,17 @@ const KPI_TARGETS = [
 /** The stagger between one card's entry and the next. One place. */
 const STAGGER_MS = 45;
 
+/**
+ * When the page has finished arriving, measured from the moment it mounts.
+ *
+ * The longest thread of the entry is a chart's: its card's stagger (up to
+ * five steps of STAGGER_MS), then the 200ms pause before the series
+ * starts, then the 900ms draw, then the 250ms the chart holds before it
+ * stops treating itself as entering. 1800 covers all of it with a little
+ * room, and it is the one number the ambient ornaments wait for.
+ */
+const ENTRY_SETTLES_AT_MS = 1800;
+
 export default function WorkspaceDashboard({ onNavigate }: {
   onNavigate?: (section: string, sub: string | null) => void;
 }) {
@@ -78,7 +89,48 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const { covers } = useReportCovers(data.reportFiles);
 
   const animate = !reduced;
-  const ambientPaused = reduced || !visible;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // THE ORNAMENTS HOLD STILL WHILE THE PAGE IS ARRIVING.
+  // -------------------------------------------------------------------
+  // This is the whole of the "the Dashboard's animations are glitchy"
+  // report, and it was measured rather than guessed at. A CPU profile of
+  // the first five seconds of the page, throttled 4x, attributes the
+  // largest named cost to the globe ornament: 585ms of script in that
+  // window, more than React itself, and it is spent from the moment the
+  // page mounts and then for ever afterwards. It is a rotating canvas
+  // running at 24fps behind one card.
+  //
+  // The entry sequence runs in the same second: four cards staggered in,
+  // three charts drawing themselves, an ornament per card. On a machine
+  // with a spare core nobody notices; on anything else the two compete,
+  // the entry animations lose frames, and what a member sees is a page
+  // that stutters as it opens. The measured worst frame in that window
+  // was over 300ms - a fifth of a second where nothing moves at all.
+  //
+  // So the ambient loops do not start until the entry sequence has
+  // finished. `pause` on these ornaments STOPS THE LOOP AND KEEPS THE
+  // LAST FRAME, so nothing is missing while they wait: the globe, the
+  // rings and the report columns are all on screen from the first frame,
+  // still, and they begin to move once the page has finished composing
+  // itself. That is also the better reading of the page.
+  // ═══════════════════════════════════════════════════════════════════
+  // Counted from the moment the page actually appears, not from the
+  // moment this component mounts: the loader is up until the data lands.
+  const settled = useSettled(data.greetingReady, ENTRY_SETTLES_AT_MS);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // NOTHING MOVES UNTIL THE PAGE HAS BEEN PAINTED ONCE.
+  // -------------------------------------------------------------------
+  // See usePaintedAfter. `dash-paused` is the class the ornaments already
+  // use to hold still; put on the root it holds EVERY animation on the
+  // page, entry included, at its first frame. It comes off two animation
+  // frames later, once the big commit has been painted and the main
+  // thread is free, so the entry plays from its beginning on frames the
+  // reader can actually see instead of starting under a blocked one.
+  // ═══════════════════════════════════════════════════════════════════
+  const painted = usePaintedAfter(data.greetingReady);
+  const ambientPaused = reduced || !visible || !settled;
   /** The stagger. One place, so the sequence is obvious and orderable. */
   const enter = (i: number) => ({ animationDelay: `${i * STAGGER_MS}ms` });
   /**
@@ -137,7 +189,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
   if (!data.greetingReady) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
-    <div className="flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0">
+    <div className={`flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0${painted ? '' : ' dash-paused'}`}>
       <DashboardMotionStyles />
 
       <DashboardGreeting userId={data.userId} vars={data.greetingVars} />
