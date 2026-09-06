@@ -52,9 +52,15 @@ export const BOCCONI_PROGRAMMES: ProgrammeGroup[] = [
       'Global Law',
     ],
   },
+  // Specialised masters and doctoral programmes. MAFINRISK belongs here
+  // rather than under Master of Science: it is a specialised master, not
+  // one of the university's MSc degrees, and candidates on it were having
+  // to describe themselves as "Other Bocconi programme" - which loses the
+  // one thing about their background this question exists to record.
   {
-    label: 'PhD / Other',
+    label: 'PhD / Specialised / Other',
     options: [
+      'MAFINRISK (Master in Quantitative Finance and Risk Management)',
       'PhD programme',
       'Other Bocconi programme',
     ],

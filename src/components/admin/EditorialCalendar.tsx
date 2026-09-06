@@ -24,19 +24,50 @@ const EDITORIAL_LEGEND: LegendItem[] = [
 ];
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
+  CalendarDayCell, CalendarHoverPreview, CalendarZoomControl, CALENDAR_ZOOM,
+  PreviewRow, useCalendarZoom, useScrollToCurrentMonth,
+} from '@/components/admin/CalendarView';
+import {
   listEditorial, saveEditorial, deleteEditorial,
-  FORMAT_LABELS, FORMAT_SHORT_LABELS, FORMATS_BY_PLATFORM, PLATFORM_LABELS, formatForPlatform, platformForFormat,
+  FORMAT_SHORT_LABELS, FORMATS_BY_PLATFORM, PLATFORM_LABELS, PLATFORM_ORDER,
+  describeDestinations, normalisedDestinations, setFormatFor, togglePlatform,
   ED_STATUS_LABELS,
   type EditorialItem, type EditorialInput, type EditorialFormat, type EditorialPlatform, type EditorialStatus,
 } from '@/lib/smm-api';
 
-const EMPTY: EditorialInput = { title: '', platform: 'instagram', format: 'ig_post', scheduled_date: '', responsible_person: '', status: 'idea', paid: false, notes: '' };
+const EMPTY: EditorialInput = { title: '', platforms: ['instagram'], formats: ['ig_post'], scheduled_date: '', responsible_person: '', status: 'idea', paid: false, notes: '' };
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const monthKey = (y: number, m: number) => `ed-${y}-${m}`;
 
-const platformColor = (p: EditorialPlatform) =>
-  p === 'instagram' ? 'bg-pink-100 text-pink-800' : p === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-muted text-foreground';
+// =====================================================================
+// A CHIP THAT GOES TO TWO PLACES LOOKS LIKE IT GOES TO TWO PLACES.
+// ---------------------------------------------------------------------
+// The colour was the platform, one chip one colour, and that reading has
+// to survive an item that has more than one destination. Rather than
+// invent a fourth colour for "several" - which would say nothing about
+// WHICH several - the chip is split into equal bands of the colours it
+// actually has, in the canonical order, so Instagram-and-LinkedIn reads
+// as pink beside blue at a glance and needs no key of its own.
+//
+// A single destination is a single band, which is exactly the flat colour
+// it always was. Nothing about the existing chips changes.
+// =====================================================================
+const PLATFORM_TINT: Record<EditorialPlatform, string> = {
+  instagram: '#FBCFE8',   // pink-200
+  linkedin: '#BFDBFE',    // blue-200
+  other: '#E7E5E4',       // a neutral that is not either of the two
+};
+
+function chipStyle(platforms: EditorialPlatform[]): React.CSSProperties {
+  const tints = platforms.map((p) => PLATFORM_TINT[p]);
+  if (tints.length === 1) return { backgroundColor: tints[0] };
+  const step = 100 / tints.length;
+  const stops = tints
+    .map((c, i) => `${c} ${i * step}%, ${c} ${(i + 1) * step}%`)
+    .join(', ');
+  return { backgroundImage: `linear-gradient(90deg, ${stops})` };
+}
 
 export default function EditorialCalendar() {
   const { session } = useAuth();
@@ -50,6 +81,8 @@ export default function EditorialCalendar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EditorialInput>(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [zoom, setZoom] = useCalendarZoom('mims.zoom.editorial');
+  const size = CALENDAR_ZOOM[zoom];
 
   const load = async () => {
     setLoading(true);
@@ -82,21 +115,18 @@ export default function EditorialCalendar() {
     return list;
   }, [dated]);
 
-  useEffect(() => {
-    if (loading) return;
-    const now = new Date();
-    document.getElementById(monthKey(now.getFullYear(), now.getMonth()))?.scrollIntoView({ block: 'start' });
-  }, [loading]);
+
+  useScrollToCurrentMonth(!loading, (y, m) => monthKey(y, m));
 
   const openCreate = (date?: string) => { setEditingId(null); setForm({ ...EMPTY, scheduled_date: date ?? '' }); setDialogOpen(true); };
   const openEdit = (i: EditorialItem) => {
     setEditingId(i.id);
-    // A row saved before the two controls agreed can hold a pair that
-    // no longer exists - LinkedIn with an Instagram reel. Opening it
-    // shows the platform the FORMAT belongs to, so the editor is
-    // never in a state its own controls cannot express.
-    const platform = FORMATS_BY_PLATFORM[i.platform].includes(i.format) ? i.platform : platformForFormat(i.format);
-    setForm({ id: i.id, title: i.title, platform, format: i.format, scheduled_date: i.scheduled_date ?? '', responsible_person: i.responsible_person ?? '', status: i.status, paid: i.paid, notes: i.notes ?? '' });
+    // `normalisedDestinations` repairs both legacy shapes at once: a row
+    // written before the arrays existed, and a row whose format does not
+    // belong to its platform. The editor is therefore never opened in a
+    // state its own controls cannot express.
+    const { platforms, formats } = normalisedDestinations(i);
+    setForm({ id: i.id, title: i.title, platforms, formats, scheduled_date: i.scheduled_date ?? '', responsible_person: i.responsible_person ?? '', status: i.status, paid: i.paid, notes: i.notes ?? '' });
     setDialogOpen(true);
   };
 
@@ -137,10 +167,11 @@ export default function EditorialCalendar() {
     <div>
       {/* The colour key moves up beside Add item and folds away, exactly as on
           the main Calendar. Same three platforms, same three colours. */}
-      <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, on which platform and format, who is responsible, the status and whether it is paid. Scroll through the months and click a day to add, or an item to edit."
+      <WorkspacePageHeader title="Editorial calendar" description="A dedicated calendar for the Media team: plan what to publish and when, where it goes and in which format, who is responsible, the status and whether it is paid. One item can go to several places at once. Scroll through the months, use Small, Medium or Large to change how much you see, hover an item to read it in full, double-click a day to add and click an item to edit."
         actions={
           <>
             <CalendarLegend items={EDITORIAL_LEGEND} />
+            <CalendarZoomControl value={zoom} onChange={setZoom} />
             {isDesktop && <Button className="font-body h-9" onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" />Add item</Button>}
           </>
         } />
@@ -155,25 +186,53 @@ export default function EditorialCalendar() {
                 </div>
                 <div className="grid grid-cols-7 gap-px bg-separator font-body">
                   {WEEKDAYS.map((d) => <div key={d} className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider px-2 py-1 text-center">{d}</div>)}
-                  {monthCells(year, month).map((date, i) => (
-                    <div key={i} className={`bg-background min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}>
-                      {date && <>
-                        {isDesktop ? (
-                          <button className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'} hover:text-accent`} onClick={() => openCreate(date)} title="Add on this day">{parseInt(date.slice(-2), 10)}</button>
-                        ) : (
-                          <div className={`text-sm mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
-                        )}
+                  {monthCells(year, month).map((date, i) => {
+                    if (!date) return <div key={i} className={`bg-muted/20 ${size.cell}`} />;
+                    const dayItems = itemsByDate[date] || [];
+                    const shown = dayItems.slice(0, size.max);
+                    const hidden = dayItems.length - shown.length;
+                    return (
+                      <CalendarDayCell
+                        key={i}
+                        date={date}
+                        canAdd={isDesktop}
+                        onAdd={openCreate}
+                        className={`bg-background align-top ${size.cell} ${size.pad} ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
+                      >
+                        <div className={`${size.day} mb-1 ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
                         <div className="space-y-1">
-                          {(itemsByDate[date] || []).map((it) => (
-                            <button key={it.id} onClick={() => openEdit(it)} title={`${FORMAT_LABELS[it.format]} · ${ED_STATUS_LABELS[it.status]}`}
-                              className={`block w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${platformColor(it.platform)}`}>
-                              {it.paid ? '€ ' : ''}{it.title}
-                            </button>
-                          ))}
+                          {shown.map((it) => {
+                            const dest = normalisedDestinations(it);
+                            return (
+                              <CalendarHoverPreview
+                                key={it.id}
+                                title={it.title}
+                                meta={<>
+                                  <PreviewRow label="Where" value={describeDestinations(dest.platforms, dest.formats)} />
+                                  <PreviewRow label="When" value={it.scheduled_date ?? 'Not scheduled'} />
+                                  <PreviewRow label="Status" value={ED_STATUS_LABELS[it.status]} />
+                                  <PreviewRow label="Responsible" value={it.responsible_person} />
+                                  <PreviewRow label="Paid" value={it.paid ? 'Paid advertising' : undefined} />
+                                  <PreviewRow label="Notes" value={it.notes} />
+                                </>}
+                              >
+                                <button
+                                  onClick={() => openEdit(it)}
+                                  style={chipStyle(dest.platforms)}
+                                  className={`block w-full text-left rounded truncate text-foreground/90 ${size.chip}`}
+                                >
+                                  {it.paid ? '€ ' : ''}{it.title}
+                                </button>
+                              </CalendarHoverPreview>
+                            );
+                          })}
+                          {hidden > 0 && (
+                            <div className="px-1 text-[10px] text-muted-foreground">{hidden} more</div>
+                          )}
                         </div>
-                      </>}
-                    </div>
-                  ))}
+                      </CalendarDayCell>
+                    );
+                  })}
                 </div>
               </section>
             ))}
@@ -183,9 +242,23 @@ export default function EditorialCalendar() {
             <div className="mt-6">
               <h3 className="font-serif text-lg text-accent mb-2">Unscheduled ideas</h3>
               <div className="flex flex-wrap gap-2">
-                {undated.map((it) => (
-                  <button key={it.id} onClick={() => openEdit(it)} className={`text-sm px-2 py-1 rounded ${platformColor(it.platform)}`}>{it.title}</button>
-                ))}
+                {undated.map((it) => {
+                  const dest = normalisedDestinations(it);
+                  return (
+                    <CalendarHoverPreview
+                      key={it.id}
+                      title={it.title}
+                      meta={<>
+                        <PreviewRow label="Where" value={describeDestinations(dest.platforms, dest.formats)} />
+                        <PreviewRow label="Status" value={ED_STATUS_LABELS[it.status]} />
+                        <PreviewRow label="Responsible" value={it.responsible_person} />
+                        <PreviewRow label="Notes" value={it.notes} />
+                      </>}
+                    >
+                      <button onClick={() => openEdit(it)} style={chipStyle(dest.platforms)} className="text-sm px-2 py-1 rounded text-foreground/90">{it.title}</button>
+                    </CalendarHoverPreview>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -198,64 +271,79 @@ export default function EditorialCalendar() {
           <div className="space-y-3 font-body">
             <div className="space-y-1"><Label>What to promote *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Guest speaker event teaser" /></div>
             {/* ==========================================================
-                WHERE IT GOES, AND WHAT IT IS. One row, two segmented
-                controls, and the second is the first's own list.
+                WHERE IT GOES, AND WHAT IT IS IN EACH PLACE.
 
-                Two dropdowns over the same five formats meant reading
-                "LinkedIn" and then "LinkedIn post", and offering
-                "Instagram reel" while LinkedIn was selected. Here the
-                platform is picked from three visible options rather than
-                from a menu that has to be opened, and the formats shown
-                are that platform's, named without repeating it: Story,
-                Post, Reel. Changing the platform repairs the format
-                (`formatForPlatform`), so an item that says LinkedIn can
-                no longer be a reel.
+                "Where it goes" is a MULTIPLE choice now. Most of what the
+                Media team publishes goes to Instagram and LinkedIn both,
+                and the calendar allowed exactly one destination, so the
+                team was entering the same piece twice - two rows, same
+                title, same date, kept in step by whoever remembered. Two
+                records for one piece of work is not a plan.
 
-                The stored values are exactly what they were. A platform
-                with one format shows that one option, disabled-looking
-                but still the true answer, which is more honest than a
-                dropdown that opens to a single line.
+                The format follows, one row PER SELECTED DESTINATION,
+                because the answer genuinely differs: a teaser is a reel
+                on Instagram and a post on LinkedIn. A single format field
+                would have forced one of those two to be recorded as
+                something it is not.
+
+                A platform with one format shows that one option, selected
+                and unremarkable, which is more honest than a dropdown
+                that opens to a single line. The last destination cannot
+                be removed: an item has to go somewhere, and refusing it
+                here means the editor never reaches a state the server
+                would have to reject.
                 ========================================================== */}
             <div className="space-y-1">
               <Label>Where it goes</Label>
               <div className="flex flex-wrap gap-2">
-                {(Object.keys(PLATFORM_LABELS) as EditorialPlatform[]).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setForm({ ...form, platform: p, format: formatForPlatform(p, form.format) })}
-                    aria-pressed={form.platform === p}
-                    className={`h-9 px-4 border font-body text-sm transition-colors ${
-                      form.platform === p
-                        ? 'border-accent bg-accent text-accent-foreground'
-                        : 'border-separator bg-background text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {PLATFORM_LABELS[p]}
-                  </button>
-                ))}
+                {PLATFORM_ORDER.map((p) => {
+                  const on = form.platforms.includes(p);
+                  const only = on && form.platforms.length === 1;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setForm({ ...form, ...togglePlatform(form.platforms, form.formats, p) })}
+                      aria-pressed={on}
+                      title={only ? 'An item has to go somewhere: add another destination before removing this one.' : undefined}
+                      className={`h-9 px-4 border font-body text-sm transition-colors ${
+                        on
+                          ? 'border-accent bg-accent text-accent-foreground'
+                          : 'border-separator bg-background text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {PLATFORM_LABELS[p]}
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-xs text-muted-foreground">Choose one or more. The same piece can go to Instagram and LinkedIn.</p>
             </div>
-            <div className="space-y-1">
-              <Label>Format</Label>
-              <div className="flex flex-wrap gap-2">
-                {FORMATS_BY_PLATFORM[form.platform].map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setForm({ ...form, format: f })}
-                    aria-pressed={form.format === f}
-                    className={`h-9 px-4 border font-body text-sm transition-colors ${
-                      form.format === f
-                        ? 'border-accent bg-accent text-accent-foreground'
-                        : 'border-separator bg-background text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {FORMAT_SHORT_LABELS[f]}
-                  </button>
-                ))}
+            {form.platforms.map((p) => (
+              <div key={p} className="space-y-1">
+                <Label>{form.platforms.length > 1 ? `Format on ${PLATFORM_LABELS[p]}` : 'Format'}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {FORMATS_BY_PLATFORM[p].map((f) => {
+                    const current = form.formats[form.platforms.indexOf(p)];
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setForm({ ...form, formats: setFormatFor(form.platforms, form.formats, p, f) })}
+                        aria-pressed={current === f}
+                        className={`h-9 px-4 border font-body text-sm transition-colors ${
+                          current === f
+                            ? 'border-accent bg-accent text-accent-foreground'
+                            : 'border-separator bg-background text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {FORMAT_SHORT_LABELS[f]}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ))}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label>Scheduled date</Label><Input type="date" value={form.scheduled_date ?? ''} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} /></div>
               <div className="space-y-1"><Label>Responsible</Label><Input value={form.responsible_person ?? ''} onChange={(e) => setForm({ ...form, responsible_person: e.target.value })} placeholder="e.g. Jane Smith" /></div>

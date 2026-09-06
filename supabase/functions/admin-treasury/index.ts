@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { allows, rolesOf } from '../_shared/access.ts';
 
 // =====================================================================
 // admin-treasury — append-only cash-flow register (report 12.2).
@@ -34,8 +35,15 @@ function json(body: unknown, status = 200) {
 // cash position is part of leading a research area. Recording a movement
 // is not - that belongs to the Board and to Operations, and the register
 // is append-only for them too.
+//
+// READ now comes from the matrix rather than from a list written here,
+// because the list was still short by one: the ADVISOR is granted 'view'
+// on everything and appeared in no array anywhere, so the register opened
+// empty for the one role appointed to look at it and change nothing.
+// MANAGE stays a list, because it is narrower than the matrix on purpose
+// and says so - see `treasury_readonly` in SPECIAL_RULES.
 // =====================================================================
-const READ = ['admin', 'president', 'vice_president', 'head_of_operations', 'head_of_asset_management', 'head_of_division'];
+const RESOURCE = 'ops-treasury';
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations'];
 
 const EntrySchema = z.object({
@@ -60,9 +68,9 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
+    const roles = rolesOf(roleRows);
     const isOwner = user.email === 'as.minerva@unibocconi.it';
-    const canRead = isOwner || roles.some((r: string) => READ.includes(r));
+    const canRead = allows(roles, user.email, RESOURCE, 'view');
     const canManage = isOwner || roles.some((r: string) => MANAGE.includes(r));
     // Treasury holds financial data: it is never open to any signed-in user.
     // Reading requires a role on READ; recording requires one on MANAGE.

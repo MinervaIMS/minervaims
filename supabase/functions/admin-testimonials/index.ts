@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { allows, rolesOf } from '../_shared/access.ts';
 
 // =====================================================================
 // admin-testimonials — control centre for the homepage testimonials.
@@ -18,6 +19,20 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
+// =====================================================================
+// READ AND WRITE ARE ASKED SEPARATELY, FROM THE ACCESS MATRIX.
+// ---------------------------------------------------------------------
+// One list used to answer both, and it was narrower than the matrix the
+// navigation uses. The visible result was a subsection that opened and
+// then stayed empty, which is the fault this step exists to remove. The
+// widest case was the ADVISOR, granted `'*': 'view'` and present in no
+// function's list anywhere, so every read-only page an advisor is
+// appointed to consult refused them.
+//
+// `allows` answers from `_shared/access.ts`, which mirrors
+// `src/lib/access/matrix.ts` exactly. The writing list is unchanged.
+// =====================================================================
+const RESOURCE = 'website-testimonials';
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 
 const TestimonialSchema = z.object({
@@ -38,12 +53,18 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
+    const roles = rolesOf(roleRows);
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
-    if (!canManage) return json({ error: 'Access denied' }, 403);
+    const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
+    if (!canRead) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    // Reading is not editing. Everything except the read needs 'manage'.
+    if (action !== 'list' && !canManage) {
+      return json({ error: 'Your role can read the testimonials but not change them.' }, 403);
+    }
 
     if (action === 'list') {
       const { data, error } = await supabase.from('testimonials').select('*').order('display_order', { ascending: true });

@@ -10,7 +10,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { GUIDE, type GuideEntry } from '@/lib/workspace-guide';
-import { roleLabel, divisionLabels } from '@/lib/roles';
+import {
+  COMMON_TASKS, GLOSSARY, HOW_IT_WORKS, ROLE_BRIEFS, TROUBLESHOOTING,
+} from '@/lib/workspace-manual';
+import { SPECIAL_RULES, MEMBERS_DIVISION_VIEW_ROLES, CROSS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
+import { roleLabel, divisionLabels, normalizeRole } from '@/lib/roles';
 import { logActivity } from '@/lib/activity-log';
 
 interface ManualSection { section: string; entries: (GuideEntry & { canManage: boolean })[] }
@@ -66,34 +70,173 @@ export default function HowToUse() {
     return [...bySection.values()];
   }, [access]);
 
+  // The role's own facts, said once at the top rather than left to be
+  // inferred from forty page descriptions.
+  const roleFacts = useMemo(() => {
+    const role = access.primaryRole ? normalizeRole(access.primaryRole) : null;
+    const brief = role ? ROLE_BRIEFS[role] : undefined;
+    const specials = role
+      ? SPECIAL_RULES.filter((r) => r.roles.includes(role) && access.canView(r.resource))
+      : [];
+    const scoped = !!role && MEMBERS_DIVISION_VIEW_ROLES.includes(role);
+    const crossDivision = !!role && CROSS_DIVISION_VIEW_ROLES.includes(role);
+    return { role, brief, specials, scoped, crossDivision };
+  }, [access]);
+
+  // Reference material is filtered exactly as the per-page manual is: a
+  // block whose subject is a page you cannot open is not printed, so
+  // nothing here describes a part of the workspace you will never meet.
+  const concepts = useMemo(
+    () => HOW_IT_WORKS.filter((c) => !c.requires || access.canView(c.requires)),
+    [access],
+  );
+  const tasks = useMemo(
+    () => COMMON_TASKS.filter((t) => (t.level === 'manage' ? access.canManage(t.requires) : access.canView(t.requires))),
+    [access],
+  );
+  const glossary = useMemo(
+    () => GLOSSARY.filter((g) => !g.requires || access.canView(g.requires)),
+    [access],
+  );
+  const answers = useMemo(
+    () => TROUBLESHOOTING.filter((a) => !a.requires || access.canView(a.requires)),
+    [access],
+  );
+
+  // =================================================================
+  // THE DOWNLOAD IS THE MANUAL, NOT A SUMMARY OF IT.
+  // -----------------------------------------------------------------
+  // It used to print each page's purpose and its two lists of actions,
+  // and stop. The TOPICS - a hundred and three of them, and the part of
+  // the guide that actually explains how a control behaves and what it
+  // costs to get wrong - were shown in the sliding help panel and left
+  // out of the file entirely. So the document people download, and the
+  // document people paste into an AI assistant to have explained, was
+  // the thinnest version of the guide that exists.
+  //
+  // It now carries everything: the reference sections above, the role's
+  // own rules, every page with all of its topics, the tasks that cross
+  // pages, the vocabulary and the questions people ask when something
+  // looks wrong. Written in the order somebody reads rather than the
+  // order the navigation happens to be in.
+  //
+  // IT IS WRITTEN TO BE READ BY A MODEL AS WELL AS BY A PERSON. That is
+  // not a stylistic note, it is why the reference sections exist at all:
+  // asked "how do I move a candidate", a model given only page
+  // descriptions will produce something plausible and wrong, because the
+  // rule it needs was never in the file. Stating the rules is what makes
+  // the answers it gives correct.
+  // =================================================================
   const buildMarkdown = () => {
     const lines: string[] = [];
-    lines.push(`# Minerva workspace user manual for ${roleName}`);
-    lines.push('');
-    lines.push(`Generated for your role${divisionName ? ` (${divisionName})` : ''} on ${new Date().toLocaleDateString()}. It covers exactly the pages you can access and what you can do on each.`);
-    lines.push('');
-    lines.push('> Tip: paste this manual into an AI assistant and ask it to explain any part in the way you prefer: step by step, as a checklist, or with examples.');
-    lines.push('');
-    lines.push('## The workspace at a glance');
-    AT_A_GLANCE.forEach((p) => lines.push(`- ${p}`));
-    lines.push('');
-    lines.push('## Recent improvements');
-    RECENT_IMPROVEMENTS.forEach((p) => lines.push(`- ${p}`));
-    lines.push('');
+    const push = (...l: string[]) => lines.push(...l);
+
+    push(`# Minerva workspace manual: ${roleName}`, '');
+    push(`Generated for your role${divisionName ? ` (${divisionName})` : ''} on ${new Date().toLocaleDateString('en-GB')}.`, '');
+    push('This manual describes exactly the parts of the workspace your role can reach, and what you can do in each. Anything it does not mention is something your role cannot do.', '');
+    push('> If you are reading this inside an AI assistant: this file is authoritative and complete for this role. Where it does not say something, the right answer is that the role cannot do it, rather than an inference from how similar systems usually work.', '');
+
+    push('## Contents', '');
+    push('1. Your role');
+    push('2. How the workspace works');
+    push('3. The workspace at a glance');
+    push('4. Your pages, one by one');
+    push('5. Common tasks');
+    push('6. When something looks wrong');
+    push('7. Glossary');
+    push('8. Recent improvements');
+    push('');
+
+    // 1 -------------------------------------------------------------
+    push('## 1. Your role', '');
+    push(`You are signed in as **${roleName}**${divisionName ? `, in ${divisionName}` : ''}.`, '');
+    if (roleFacts.brief) push(roleFacts.brief, '');
+    const sectionNames = manual.map((s) => s.section).join(', ');
+    push(`You can open ${manual.reduce((n, s) => n + s.entries.length, 0)} subsections across these sections: ${sectionNames}.`, '');
+    const managed = manual.flatMap((s) => s.entries.filter((e) => e.canManage).map((e) => e.label));
+    const readOnly = manual.flatMap((s) => s.entries.filter((e) => !e.canManage).map((e) => e.label));
+    if (managed.length) push(`**Full interact** (you can create, edit, delete and publish): ${managed.join(', ')}.`, '');
+    if (readOnly.length) push(`**Interact only** (you can read and use light actions, but not change anything): ${readOnly.join(', ')}.`, '');
+    if (roleFacts.scoped) push('**Division scoping.** On the report pages and in the members register you see your own division. Reports, templates and archives are limited the same way.', '');
+    if (roleFacts.crossDivision) push('**Cross-division view.** On the report pages you can look beyond your own division.', '');
+    if (roleFacts.specials.length) {
+      push('**Rules that apply specifically to your role:**', '');
+      roleFacts.specials.forEach((r) => push(`- ${r.label}`));
+      push('');
+    }
+    push('You cannot change your own role, from any page. That is enforced on the server as well as in the interface.', '');
+
+    // 2 -------------------------------------------------------------
+    push('## 2. How the workspace works', '');
+    concepts.forEach((c) => {
+      push(`### ${c.title}`, '');
+      c.body.forEach((b) => push(b, ''));
+    });
+
+    // 3 -------------------------------------------------------------
+    push('## 3. The workspace at a glance', '');
+    AT_A_GLANCE.forEach((p) => push(`- ${p}`));
+    push('');
+
+    // 4 -------------------------------------------------------------
+    push('## 4. Your pages, one by one', '');
     for (const sec of manual) {
-      lines.push(`## ${sec.section}`);
+      push(`### ${sec.section}`, '');
       for (const e of sec.entries) {
-        lines.push(`### ${e.label}`);
-        lines.push(e.purpose);
+        push(`#### ${e.label}`, '');
+        push(`*Your level: ${e.canManage ? 'Full interact' : 'Interact only'}.*`, '');
+        push(e.purpose, '');
         const can = [...e.view, ...(e.canManage ? e.manage : [])];
-        if (can.length) { lines.push('', '**You can:**'); can.forEach((c) => lines.push(`- ${c}`)); }
-        if (!e.canManage && e.manage.length) { lines.push('', '**You cannot** (reserved for managing roles):'); e.manage.forEach((c) => lines.push(`- ${c}`)); }
-        if (e.warnings?.length) { lines.push('', '**Good to know:**'); e.warnings.forEach((w) => lines.push(`- ${w}`)); }
-        lines.push('');
+        if (can.length) { push('**You can:**', ''); can.forEach((c) => push(`- ${c}`)); push(''); }
+        if (!e.canManage && e.manage.length) {
+          push('**You cannot** (reserved for roles with full interact on this page):', '');
+          e.manage.forEach((c) => push(`- ${c}`));
+          push('');
+        }
+        if (e.warnings?.length) { push('**Good to know:**', ''); e.warnings.forEach((w) => push(`- ${w}`)); push(''); }
+        // The topics, which is where the guide actually explains itself.
+        // A topic marked `requires: 'manage'` describes a control this
+        // role does not have, so it is left out rather than teaching
+        // somebody a button they will never see.
+        const topics = (e.topics ?? []).filter((t) => !(t.requires === 'manage' && !e.canManage));
+        if (topics.length) {
+          push('**In detail:**', '');
+          topics.forEach((t) => { push(`- **${t.title}.** ${t.body}`); });
+          push('');
+        }
       }
     }
-    lines.push('---');
-    lines.push('All actions in the workspace are logged for accountability and security.');
+
+    // 5 -------------------------------------------------------------
+    if (tasks.length) {
+      push('## 5. Common tasks', '');
+      push('Sequences that cross more than one page, in the order they are done.', '');
+      tasks.forEach((t) => {
+        push(`### ${t.title}`, '');
+        t.steps.forEach((step, i) => push(`${i + 1}. ${step}`));
+        push('');
+        if (t.caution) push(`> ${t.caution}`, '');
+      });
+    }
+
+    // 6 -------------------------------------------------------------
+    if (answers.length) {
+      push('## 6. When something looks wrong', '');
+      answers.forEach((a) => { push(`**${a.question}**`, '', a.answer, ''); });
+    }
+
+    // 7 -------------------------------------------------------------
+    push('## 7. Glossary', '');
+    glossary.forEach((g) => push(`- **${g.term}.** ${g.definition}`));
+    push('');
+
+    // 8 -------------------------------------------------------------
+    push('## 8. Recent improvements', '');
+    RECENT_IMPROVEMENTS.forEach((p) => push(`- ${p}`));
+    push('');
+
+    push('---');
+    push('Every meaningful action in the workspace is recorded in the activity log together with the role held at the time.');
     return lines.join('\n');
   };
 
@@ -142,6 +285,54 @@ export default function HowToUse() {
             <p className="text-sm text-muted-foreground">Every action is recorded in Settings, Activity log.</p>
           </div>
         </div>
+
+        {/* YOUR ROLE, STATED. It used to have to be inferred from forty
+            page descriptions, which is not a thing anybody does. */}
+        <section>
+          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Your role</h2>
+          <div className="max-w-3xl space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p className="text-foreground">
+              You are signed in as <span className="font-semibold">{roleName}</span>{divisionName ? `, in ${divisionName}` : ''}.
+            </p>
+            {roleFacts.brief && <p>{roleFacts.brief}</p>}
+            <p>
+              You can open {manual.reduce((n, sec) => n + sec.entries.length, 0)} subsections
+              {manual.length > 0 && <> across {manual.map((sec) => sec.section).join(', ')}</>}.
+              {' '}Of those, {manual.flatMap((sec) => sec.entries).filter((e) => e.canManage).length} are yours to change and the rest are yours to read.
+            </p>
+            {roleFacts.scoped && (
+              <p>On the report pages and in the members register you see your own division.</p>
+            )}
+            {roleFacts.crossDivision && (
+              <p>On the report pages you can look beyond your own division.</p>
+            )}
+            {roleFacts.specials.length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground mb-1">Rules that apply specifically to your role</div>
+                <ul className="space-y-1">
+                  {roleFacts.specials.map((r) => (
+                    <li key={r.rule} className="flex gap-2"><span className="text-accent">·</span><span>{r.label}</span></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* HOW IT WORKS, before the pages. The model, not the menu. */}
+        <section>
+          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">How the workspace works</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
+            {concepts.map((c) => (
+              <article key={c.id} className="border border-separator rounded-lg p-4">
+                <h3 className="font-serif text-lg text-foreground mb-2">{c.title}</h3>
+                <div className="space-y-2">
+                  {c.body.map((b, i) => <p key={i} className="text-sm text-muted-foreground leading-relaxed">{b}</p>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         {/* How the workspace is organised, before the per-page manual. */}
         <section>
@@ -207,11 +398,85 @@ export default function HowToUse() {
                       <ul className="space-y-1">{e.warnings.map((w, i) => <li key={i} className="text-sm text-muted-foreground flex gap-2"><span className="text-amber-600">!</span>{w}</li>)}</ul>
                     </div>
                   )}
+
+                  {/* THE DETAIL, FOLDED AWAY RATHER THAN LEFT OUT.
+                      These are the same topics the sliding help panel
+                      shows, and they are the part of the guide that
+                      explains how a control actually behaves. Printing
+                      them open would make this page a wall; omitting
+                      them, which is what happened before, made the page
+                      a summary of a document nobody could reach from
+                      here. A disclosure is the honest middle. */}
+                  {(() => {
+                    const topics = (e.topics ?? []).filter((t) => !(t.requires === 'manage' && !e.canManage));
+                    if (topics.length === 0) return null;
+                    return (
+                      <details className="mt-3 border-t border-separator pt-2">
+                        <summary data-ro className="cursor-pointer text-xs font-semibold text-accent">
+                          In detail ({topics.length})
+                        </summary>
+                        <ul className="mt-2 space-y-2">
+                          {topics.map((t) => (
+                            <li key={t.id} className="text-sm text-muted-foreground leading-relaxed">
+                              <span className="text-foreground">{t.title}. </span>{t.body}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    );
+                  })()}
                 </article>
               ))}
             </div>
           </section>
         ))}
+
+        {/* THE SEQUENCES THAT CROSS PAGES. A page description cannot
+            teach an order, and an order is what somebody doing the job
+            for the first time is missing. */}
+        {tasks.length > 0 && (
+          <section>
+            <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Common tasks</h2>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
+              {tasks.map((t) => (
+                <article key={t.id} className="border border-separator rounded-lg p-4">
+                  <h3 className="font-serif text-lg text-foreground mb-2">{t.title}</h3>
+                  <ol className="space-y-1.5 list-decimal pl-5">
+                    {t.steps.map((step, i) => <li key={i} className="text-sm text-muted-foreground leading-relaxed">{step}</li>)}
+                  </ol>
+                  {t.caution && (
+                    <p className="mt-3 flex gap-2 text-sm text-muted-foreground"><span className="text-amber-600">!</span>{t.caution}</p>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {answers.length > 0 && (
+          <section>
+            <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">When something looks wrong</h2>
+            <div className="max-w-3xl space-y-4">
+              {answers.map((a) => (
+                <div key={a.question}>
+                  <div className="text-sm text-foreground">{a.question}</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a.answer}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <h2 className="font-serif text-heading text-accent border-b border-separator pb-2 mb-4">Glossary</h2>
+          <ul className="max-w-3xl space-y-2">
+            {glossary.map((g) => (
+              <li key={g.term} className="text-sm text-muted-foreground leading-relaxed">
+                <span className="text-foreground">{g.term}. </span>{g.definition}
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

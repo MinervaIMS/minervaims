@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { allows, rolesOf } from '../_shared/access.ts';
 import { LEGACY_KEYS_TO_DISCONNECT, TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts';
 import { normalizeEmailSubject } from '../_shared/email-subjects.ts';
 import { normalizeEmailLinks } from '../_shared/email-links.ts';
@@ -18,6 +19,20 @@ const corsHeaders = {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
+// =====================================================================
+// READ AND WRITE ARE ASKED SEPARATELY, FROM THE ACCESS MATRIX.
+// ---------------------------------------------------------------------
+// One list used to answer both, and it was narrower than the matrix the
+// navigation uses. The visible result was a subsection that opened and
+// then stayed empty, which is the fault this step exists to remove. The
+// widest case was the ADVISOR, granted `'*': 'view'` and present in no
+// function's list anywhere, so every read-only page an advisor is
+// appointed to consult refused them.
+//
+// `allows` answers from `_shared/access.ts`, which mirrors
+// `src/lib/access/matrix.ts` exactly. The writing list is unchanged.
+// =====================================================================
+const RESOURCE = 'ops-auto-emails';
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
 const LEGACY_KEYS = new Set(LEGACY_KEYS_TO_DISCONNECT);
 
@@ -50,13 +65,16 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
+    const roles = rolesOf(roleRows);
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
-    if (!canManage) return json({ error: 'Access denied' }, 403);
+    const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
+    if (!canRead) return json({ error: 'Access denied' }, 403);
 
     // File upload (multipart) for the email layout — reuses the public bucket.
+    // An upload is an edit, so it needs 'manage' and not merely 'view'.
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
+      if (!canManage) return json({ error: 'Your role can read the automatic emails but not change them.' }, 403);
       const form = await req.formData();
       const file = form.get('file') as File | null;
       if (!file) return json({ error: 'No file provided' }, 400);
@@ -73,6 +91,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    // Reading is not editing. `sign` is a read: it turns a stored path
+    // into a link the reader can open, and reading the attached layout is
+    // part of reading the template it belongs to.
+    if (action !== 'list' && action !== 'sign' && !canManage) {
+      return json({ error: 'Your role can read the automatic emails but not change them.' }, 403);
+    }
 
     if (action === 'sign') {
       const p = objectPath(String(body.file_url || ''));

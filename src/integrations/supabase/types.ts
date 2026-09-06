@@ -798,10 +798,12 @@ export type Database = {
           created_by: string | null
           event_id: string | null
           format: string
+          formats: string[]
           id: string
           notes: string | null
           paid: boolean
           platform: string
+          platforms: string[]
           responsible_person: string | null
           scheduled_date: string | null
           status: string
@@ -813,10 +815,12 @@ export type Database = {
           created_by?: string | null
           event_id?: string | null
           format?: string
+          formats?: string[]
           id?: string
           notes?: string | null
           paid?: boolean
           platform?: string
+          platforms?: string[]
           responsible_person?: string | null
           scheduled_date?: string | null
           status?: string
@@ -828,10 +832,12 @@ export type Database = {
           created_by?: string | null
           event_id?: string | null
           format?: string
+          formats?: string[]
           id?: string
           notes?: string | null
           paid?: boolean
           platform?: string
+          platforms?: string[]
           responsible_person?: string | null
           scheduled_date?: string | null
           status?: string

@@ -1,12 +1,13 @@
 /* eslint-disable react/no-unknown-property */
-import { forwardRef, useImperativeHandle, useEffect, useRef, useMemo, ReactNode } from 'react';
+import { forwardRef, useImperativeHandle, useEffect, useRef, useMemo, useState, ReactNode } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { degToRad } from 'three/src/math/MathUtils.js';
 
 import './Beams.css';
-import { perfMode } from '@/lib/perf';
+import { usePerfMode } from '@/hooks/usePerfMode';
+import { AmbientGround } from './AmbientGround';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extendMaterial(BaseMaterial: any, cfg: any) {
@@ -50,8 +51,64 @@ function extendMaterial(BaseMaterial: any, cfg: any) {
   return mat;
 }
 
-const CanvasWrapper = ({ children }: { children: ReactNode }) => (
-  <Canvas dpr={[1, 2]} frameloop="always" className="beams-container">
+// =====================================================================
+// IS THERE A WEBGL CONTEXT TO BE HAD AT ALL?
+// ---------------------------------------------------------------------
+// Asked once, cheaply, before a Canvas is mounted. When the answer is no
+// - a browser with WebGL disabled, a machine that has run out of
+// contexts, a remote session without hardware acceleration - the Canvas
+// mounts perfectly happily and then draws NOTHING, with no error anybody
+// sees. That is the worst version of this failure: the page looks broken
+// and the console is clean.
+//
+// The probe context is released immediately, because contexts are a
+// limited resource and holding one to prove a point would be its own way
+// of causing the fault.
+// =====================================================================
+let webglAnswer: boolean | null = null;
+function webglAvailable(): boolean {
+  if (webglAnswer !== null) return webglAnswer;
+  if (typeof document === 'undefined') return false;
+  try {
+    const probe = document.createElement('canvas');
+    const gl = (probe.getContext('webgl2') || probe.getContext('webgl')) as WebGLRenderingContext | null;
+    if (gl) {
+      const lose = gl.getExtension('WEBGL_lose_context');
+      if (lose) lose.loseContext();
+    }
+    webglAnswer = !!gl;
+  } catch {
+    webglAnswer = false;
+  }
+  return webglAnswer;
+}
+
+const CanvasWrapper = ({ children, onLost }: { children: ReactNode; onLost: () => void }) => (
+  <Canvas
+    dpr={[1, 2]}
+    frameloop="always"
+    className="beams-container"
+    // =================================================================
+    // A LOST CONTEXT IS RECOVERED, NOT ABANDONED.
+    // -----------------------------------------------------------------
+    // The browser takes a WebGL context away whenever it wants to: a tab
+    // left in the background, a phone that slept, a second tab opening a
+    // scene of its own. By default the canvas then stays on screen
+    // showing the last frame it managed, or nothing, for the rest of the
+    // visit - which is a large part of "the animation sometimes is not
+    // there".
+    //
+    // `preventDefault` on the loss is what makes RESTORATION possible at
+    // all; without it the browser will not restore. The remount on
+    // restore rebuilds the scene, because the geometry, the material and
+    // the compiled shaders all died with the context.
+    // =================================================================
+    onCreated={({ gl }) => {
+      const canvas = gl.domElement;
+      canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); }, false);
+      canvas.addEventListener('webglcontextrestored', onLost, false);
+    }}
+  >
     {children}
   </Canvas>
 );
@@ -163,6 +220,25 @@ const Beams = ({
   rotation = 0,
 }: BeamsProps) => {
   const meshRef = useRef<THREE.Mesh | null>(null);
+  const lite = usePerfMode() === 'lite';
+  // Answered on the first render, never in an effect: mounting a canvas
+  // and taking it away one frame later is worse than either answer.
+  const [canWebgl] = useState(() => webglAvailable());
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof globalThis.matchMedia === 'function'
+      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  // Bumped when a lost context is restored, which remounts the Canvas and
+  // rebuilds everything that died with the old one.
+  const [generation, setGeneration] = useState(0);
+  useEffect(() => {
+    if (typeof globalThis.matchMedia !== 'function') return;
+    const mq = globalThis.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setReducedMotion(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
   const beamMaterial = useMemo(
     () =>
       extendMaterial(THREE.MeshStandardMaterial, {
@@ -220,17 +296,30 @@ const Beams = ({
     [speed, noiseIntensity, scale]
   );
 
-  // THE BEAMS ARE AMBIENCE, AND AMBIENCE IS THE FIRST THING TO GO.
-  // This is a three.js scene rendered every frame behind the auth and event
-  // cards. The browsers embedded inside other apps run it without GPU
-  // rasterisation and it costs them most of their frame budget, which is why
-  // the same page that is effortless in Safari arrives in jumps there. On
-  // those browsers nothing is mounted and the deep navy ground the page
-  // already paints stands on its own. See lib/perf.ts.
-  if (perfMode() === 'lite') return null;
+  // =================================================================
+  // THERE IS ALWAYS A BACKGROUND. SOMETIMES IT IS THE CANVAS.
+  // -----------------------------------------------------------------
+  // Three things can stop the scene: the lite list (an in-app browser or
+  // a two-core device, where a per-frame three.js scene costs most of the
+  // frame budget), a reader who has asked for reduced motion, and a
+  // browser with no WebGL to give. Each used to return `null`, leaving a
+  // flat rectangle where the composition should be.
+  //
+  // Now each falls through to `AmbientGround`, which draws the same
+  // impression in static CSS. The page is never bare, whatever the
+  // browser decided, and the reason the reader gets the simpler version
+  // stays invisible to them - as it should be, because it is not their
+  // problem.
+  //
+  // The mode is read through the HOOK rather than the module function, so
+  // that if the answer ever does change this component re-renders with
+  // it instead of holding a stale one until some parent happens to
+  // re-render.
+  // =================================================================
+  if (lite || reducedMotion || !canWebgl) return <AmbientGround kind="beams" />;
 
   return (
-    <CanvasWrapper>
+    <CanvasWrapper onLost={() => setGeneration((g) => g + 1)} key={generation}>
       <group rotation={[0, 0, degToRad(rotation)]}>
         <PlaneNoise
           ref={meshRef}

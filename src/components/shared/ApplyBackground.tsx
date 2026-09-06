@@ -16,9 +16,18 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 // The canvas is code-split and mounted a beat after the card has painted,
 // so first paint never waits on it, and it is skipped altogether under
 // reduced motion.
+//
+// UNDERNEATH IT, ALWAYS, IS `AmbientGround`. The flat #05030F rectangle
+// this used to fall back to is what a visitor saw whenever the field was
+// skipped, deferred or unavailable, and it is why the background was
+// reported as often not loading at all. The CSS ground draws the same
+// lattice with nothing to fetch and nothing to compile, so the page is
+// composed from the first frame and the canvas, when it arrives, fades in
+// over the top of a picture rather than into an empty box.
 // =====================================================================
 
 import { perfMode } from '@/lib/perf';
+import { AmbientGround } from '@/components/shared/AmbientGround';
 
 const DotField = lazy(() => import('@/components/shared/DotField'));
 
@@ -39,6 +48,11 @@ export function ApplyBackground() {
     // mounted. See lib/perf.ts.
     if (perfMode() === 'lite') return () => mq.removeEventListener('change', apply);
 
+    // Short and unconditional. An idle callback would be tidier and is
+    // exactly what the /join hero used to do, but on a busy main thread
+    // "idle" can be most of a second away, and a background that arrives
+    // that late has already been experienced as a background that did not
+    // arrive.
     const id = window.setTimeout(() => setShow(true), 120);
     return () => {
       window.clearTimeout(id);
@@ -48,6 +62,7 @@ export function ApplyBackground() {
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#05030F' }} aria-hidden="true">
+      <AmbientGround kind="dots" />
       {show && !reduced && (
         <Suspense fallback={null}>
           <div className="h-full w-full animate-[fadeIn_700ms_ease-out_forwards] opacity-0">

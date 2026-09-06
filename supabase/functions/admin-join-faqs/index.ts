@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { allows, rolesOf } from '../_shared/access.ts';
 
 // =====================================================================
 // admin-join-faqs — the admissions FAQ shown on /join and to applicants.
@@ -31,7 +32,19 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-const MANAGE = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
+// =====================================================================
+// READING THE QUESTIONS IS NOT EDITING THEM.
+// ---------------------------------------------------------------------
+// One list answered both, so the page was closed to everybody who could
+// only look - and the matrix grants 'view' on `website-faqs` to the
+// advisor, who therefore opened the subsection to an empty list and a
+// toast. The list of QUESTIONS is not sensitive: it is published on
+// /join. What has to stay reserved is changing it.
+//
+// So the level is asked for separately, from the same matrix the
+// navigation used to decide the subsection could be opened at all.
+// =====================================================================
+const RESOURCE = 'website-faqs';
 
 /** The four categories, with the label and order the page renders. */
 const GROUPS: Record<string, { label: string; order: number }> = {
@@ -63,12 +76,18 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
 
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
-    const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
-    if (!canManage) return json({ error: 'Access denied' }, 403);
+    const roles = rolesOf(roleRows);
+    const canRead = allows(roles, user.email, RESOURCE, 'view');
+    const canManage = allows(roles, user.email, RESOURCE, 'manage');
+    if (!canRead) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    // Everything except the read is an edit.
+    if (action !== 'list' && !canManage) {
+      return json({ error: 'Your role can read the admissions FAQ but not change it.' }, 403);
+    }
 
     if (action === 'list') {
       const { data, error } = await supabase

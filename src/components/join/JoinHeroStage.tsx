@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { JOIN_HERO } from '@/lib/join-content';
 import { perfMode } from '@/lib/perf';
+import { AmbientGround } from '@/components/shared/AmbientGround';
 
 // The particle field is the one ambient layer on the page. It is code-split so
 // the initial route bundle does not carry the canvas, and it only mounts after
@@ -54,14 +55,24 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
     if (perfMode() === 'lite') return () => mq.removeEventListener('change', apply);
 
     // Mount the canvas once the browser is idle, after the LCP text is up.
+    //
+    // THE TIMEOUT IS THE POINT, and it used to be 1200ms. `requestIdleCallback`
+    // waits for a quiet moment, and the first second of this page has none:
+    // the route chunk, the hero image and the key figures are all in flight.
+    // So on a cold load the field routinely mounted at the timeout rather
+    // than at an idle moment, which is over a second of flat black under
+    // the title - long enough that a visitor has finished reading it and
+    // concluded the page is plain. 300ms still lets the text paint first
+    // and is short enough that the field is part of the opening rather
+    // than an afterthought arriving into it.
     const idle = (window as typeof window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
     }).requestIdleCallback;
     let handle: number;
     if (idle) {
-      handle = idle(() => setShowField(true), { timeout: 1200 });
+      handle = idle(() => setShowField(true), { timeout: 300 });
     } else {
-      handle = window.setTimeout(() => setShowField(true), 400);
+      handle = window.setTimeout(() => setShowField(true), 300);
     }
     return () => {
       mq.removeEventListener('change', apply);
@@ -80,6 +91,10 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
         layout shift, and under reduced motion it is simply never mounted.
       */}
       <div className="absolute inset-0" aria-hidden="true">
+        {/* The CSS ground, always. See AmbientGround: it is what stands
+            here when the field is skipped, deferred or unavailable, so the
+            band is never a plain black rectangle. */}
+        <AmbientGround kind="dots" />
         {showField && !reduced && (
           <Suspense fallback={null}>
             <div className="h-full w-full animate-[fadeIn_700ms_ease-out_forwards] opacity-0">

@@ -225,6 +225,36 @@ const DotField = memo(function DotField({
     }
 
     doResize();
+
+    // =================================================================
+    // A FIELD THAT MEASURED ZERO USED TO STAY EMPTY FOREVER.
+    // -----------------------------------------------------------------
+    // The lattice is built from the parent's measured box. The parent is
+    // an absolutely positioned layer inside a container that is still
+    // being laid out when this effect runs, so on a slow first paint -
+    // or behind a font that has not settled, or inside a section that is
+    // briefly zero-height - the measurement comes back 0 x 0, the grid
+    // is built with no rows and no columns, and the loop then runs at
+    // sixty frames a second drawing nothing at all. No error, no
+    // warning, just a background that is not there.
+    //
+    // The ResizeObserver below covers it wherever there is one. This
+    // covers everywhere else, and covers the observer arriving late: a
+    // handful of frames of re-measuring, stopping the moment there is a
+    // real box. It is a dozen reads of a rect, once, and only on the path
+    // where the alternative is a blank page.
+    // =================================================================
+    let settleFrames = 30;
+    let settleRaf = 0;
+    const settle = () => {
+      settleRaf = 0;
+      if (sizeRef.current.w > 0 && sizeRef.current.h > 0) return;
+      if (settleFrames-- <= 0) return;
+      doResize();
+      settleRaf = requestAnimationFrame(settle);
+    };
+    if (sizeRef.current.w === 0 || sizeRef.current.h === 0) settleRaf = requestAnimationFrame(settle);
+
     window.addEventListener('resize', resize);
     // The field also has to follow its CONTAINER, not just the window. On a
     // long form the page keeps its viewport size while the card below grows
@@ -243,6 +273,7 @@ const DotField = memo(function DotField({
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      if (settleRaf) cancelAnimationFrame(settleRaf);
       window.clearInterval(speedInterval);
       window.clearTimeout(resizeTimer);
       window.removeEventListener('resize', resize);

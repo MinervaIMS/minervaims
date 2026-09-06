@@ -15,9 +15,30 @@
 // `document.documentElement.dataset.perf` is 'full' or 'lite'. CSS reads
 // it as `[data-perf="lite"]`; components read it with `usePerfMode`.
 //
-// THE ANSWER IS ONE-WAY. It can go from full to lite and never back, so
-// the page can never oscillate between two treatments while somebody is
-// reading it.
+// THE ANSWER IS STATIC, AND IT IS THE SAME ON EVERY VISIT FROM THE SAME
+// DEVICE. It used to be revisable: after publishing this decision the
+// module WATCHED THE FIRST SECOND OF FRAMES and stepped a browser down to
+// lite if the median frame was worse than 32ms. That is why the beams and
+// the dot field "often did not load at all", on ordinary laptops and
+// ordinary phones, with no pattern the reader could see.
+//
+// The sample began 900ms after load - which is exactly when the page is
+// fetching a route chunk, decoding the hero image, compiling the very
+// shaders the check was meant to protect, and doing it all on one thread.
+// A median frame over 32ms in that window says nothing about the machine.
+// It says the page is starting up.
+//
+// So the check condemned the animation FOR THE COST OF STARTING THE
+// ANIMATION, and it did so permanently for the visit: same device, same
+// browser, same page, and whether the background appeared came down to
+// whether another tab happened to be busy at second one. An effect that
+// is present nine times and absent the tenth does not read as a
+// performance decision. It reads as a broken page.
+//
+// The static signals below are kept, because they are the ones this was
+// actually written for: an in-app browser identifies itself in the user
+// agent, and a two-core device is two cores on every visit. Those answers
+// are stable, so the treatment is stable.
 //
 // WHAT LITE ACTUALLY MEANS, everywhere it is honoured:
 //   * the WebGL layers (the particle field, the beams, the specular
@@ -29,8 +50,8 @@
 // content. Nothing that carries meaning is removed.
 //
 // NOTHING HERE CHANGES A CAPABLE BROWSER. Safari and Chrome do not match
-// any of the signals and never fail the frame-rate check, so they stay on
-// 'full' and render exactly what they render today.
+// any of the signals, so they stay on 'full' and render exactly what they
+// render today - every time, not most times.
 // =====================================================================
 
 export type PerfMode = 'full' | 'lite';
@@ -85,48 +106,12 @@ function publish(mode: PerfMode) {
 /**
  * Called once from the entry module.
  *
- * After publishing the initial answer it WATCHES THE FIRST SECOND OF
- * FRAMES. An unrecognised in-app browser, or simply a device having a bad
- * day, will not match the list above; what it will do is miss frames. If
- * the median frame over the sample is worse than 32ms - about 30 frames a
- * second, against the 16.7ms a healthy browser holds - the page steps down
- * to lite for the rest of the visit.
- *
- * The median is used rather than the mean so that one long frame, which
- * every page has while it is starting up, cannot condemn a browser that is
- * otherwise fine. The sample starts after a short delay for the same
- * reason: the frames during mount are not representative of anything.
+ * It publishes the static decision and stops. There is no sampling and no
+ * later revision: whatever this answers on the first frame is what the
+ * visit gets, so a background layer that mounts is a background layer
+ * that stays.
  */
 export function initPerfMode() {
   if (typeof document === 'undefined') return;
   publish(perfMode());
-  if (decided === 'lite') return;
-  if (typeof requestAnimationFrame !== 'function') return;
-
-  const frames: number[] = [];
-  let last = 0;
-  let raf = 0;
-  const SAMPLE_MS = 1000;
-  const MEDIAN_LIMIT_MS = 32;
-
-  const step = (now: number) => {
-    if (last) frames.push(now - last);
-    last = now;
-    if (frames.length < 90 && frames.reduce((a, b) => a + b, 0) < SAMPLE_MS) {
-      raf = requestAnimationFrame(step);
-      return;
-    }
-    raf = 0;
-    if (frames.length < 12) return; // Too few to judge: leave it alone.
-    const sorted = frames.slice().sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)];
-    if (median > MEDIAN_LIMIT_MS) publish('lite');
-  };
-
-  // The sample begins once the page has settled, so start-up work is not
-  // mistaken for a slow browser.
-  const begin = () => { last = 0; raf = requestAnimationFrame(step); };
-  window.setTimeout(begin, 900);
-
-  window.addEventListener('pagehide', () => { if (raf) cancelAnimationFrame(raf); }, { once: true });
 }
