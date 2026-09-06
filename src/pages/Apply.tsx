@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Seo } from '@/components/shared/Seo';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -102,7 +102,18 @@ function FilePicker({ label, file, onChange }: {
 function SuccessScreen() {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
+  // ONE REQUEST PER PAGE LOAD. `refreshProfile` in the dependency list made
+  // this effect run again whenever its identity changed, and React's
+  // development double-mount ran it twice more; each run asked the server to
+  // send the "application received" email, so the candidate received two or
+  // three copies within milliseconds. The ref keeps the latest callback
+  // without re-triggering, and the flag makes a repeat run a no-op.
+  const refreshRef = useRef(refreshProfile);
+  refreshRef.current = refreshProfile;
+  const firedRef = useRef(false);
   useEffect(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
     let active = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -111,10 +122,11 @@ function SuccessScreen() {
       catch { /* non-blocking */ }
       // Pull the freshly-inserted candidate role into client state before the
       // user clicks through, so the workspace guard sees them as a candidate.
-      try { await refreshProfile(); } catch { /* non-blocking */ }
+      try { await refreshRef.current(); } catch { /* non-blocking */ }
     })();
     return () => { active = false; };
-  }, [refreshProfile]);
+  }, []);
+
   return (
     <>
       <Seo title="Application Submitted" description="Your application to Minerva Investment Management Society has been received." noindex />
