@@ -43,8 +43,12 @@ export async function getCurrentFees(session: Session | null): Promise<{
 }> {
   return await invoke('admin-fees', session, { action: 'current' });
 }
-export function openFeePeriod(session: Session | null, semester_label: string, fee_amount: number, first_deadline: string, second_deadline: string | null) {
-  return invoke('admin-fees', session, { action: 'open', semester_label, fee_amount, first_deadline, second_deadline });
+export interface FeePaymentDetails {
+  payment_method: string; payment_account_holder: string; payment_iban: string;
+  payment_reference: string; payment_notes?: string;
+}
+export function openFeePeriod(session: Session | null, semester_label: string, fee_amount: number, first_deadline: string, second_deadline: string | null, payment: FeePaymentDetails, notify: boolean) {
+  return invoke('admin-fees', session, { action: 'open', semester_label, fee_amount, first_deadline, second_deadline, ...payment, notify });
 }
 export function setFeePaid(session: Session | null, period_id: string, member_id: string, paid: boolean) {
   return invoke('admin-fees', session, { action: 'set-paid', period_id, member_id, paid });
