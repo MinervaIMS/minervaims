@@ -27,6 +27,21 @@ export interface DotFieldProps {
   gradientTo?: string;
   /** Cursor glow colour (deep indigo by default). */
   glowColor?: string;
+  /**
+   * Fired once, on the first frame that actually puts dots on screen.
+   *
+   * NOT ON MOUNT, which is the distinction that matters. A mounted field
+   * is not a drawing field: the 2D context can be refused, and the grid
+   * is built from the parent's measured box, which is briefly 0 x 0 often
+   * enough to be worth guarding (see the settle loop below). Both of
+   * those fail silently and leave an empty canvas.
+   *
+   * So this is the only honest answer to "is the field up?", and it is
+   * what `AmbientGround`'s CSS lattice waits for before fading itself
+   * out: if the canvas never draws, the callback never comes and the
+   * stand-in stays exactly where it is.
+   */
+  onReady?: () => void;
   className?: string;
   style?: CSSProperties;
 }
@@ -47,6 +62,7 @@ const DotField = memo(function DotField({
   gradientFrom = '#7E5BC2',
   gradientTo = '#B0A2DA',
   glowColor = '#2A1A5C',
+  onReady,
   className,
   style,
 }: DotFieldProps) {
@@ -63,6 +79,12 @@ const DotField = memo(function DotField({
   propsRef.current = { dotRadius, dotSpacing, cursorRadius, cursorForce, bulgeOnly, bulgeStrength, sparkle, waveAmplitude, gradientFrom, gradientTo };
   const rebuildRef = useRef<(() => void) | null>(null);
   const glowIdRef = useRef(`dot-field-glow-${Math.random().toString(36).slice(2, 9)}`);
+  // Read through a ref for the same reason as the props above: the draw
+  // loop is set up once, in an effect with no dependencies, and must not
+  // be torn down and rebuilt because a parent passed a new closure.
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+  const announcedRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -221,6 +243,15 @@ const DotField = memo(function DotField({
         }
       }
       ctx!.fill();
+
+      // The field is up: there was a real box, a grid was built from it
+      // and it has just been painted. Once only, and never before this
+      // point. See `onReady`.
+      if (!announcedRef.current && len > 0) {
+        announcedRef.current = true;
+        onReadyRef.current?.();
+      }
+
       rafRef.current = requestAnimationFrame(tick);
     }
 
