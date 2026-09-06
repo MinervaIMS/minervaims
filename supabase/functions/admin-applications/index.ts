@@ -484,10 +484,13 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       // filled by anything, so candidates received the literal token.
       let presidentName = 'The President';
       try {
+        // The website admin account also carries the president role and must
+        // never be named in a candidate-facing signature.
         const { data: pres } = await supabase.from('members')
-          .select('first_name, surname').eq('role', 'president')
-          .eq('membership_status', 'active').limit(1).maybeSingle();
-        if (pres) presidentName = `${pres.first_name} ${pres.surname}`.trim();
+          .select('first_name, surname, email').eq('role', 'president')
+          .eq('membership_status', 'active');
+        const real = (pres || []).find((m: any) => (m.email || '').toLowerCase() !== 'as.minerva@unibocconi.it');
+        if (real) presidentName = `${real.first_name} ${real.surname}`.trim();
       } catch (e) { console.error('president lookup failed', e); }
       try {
         await supabase.rpc('enqueue_app_email', {
