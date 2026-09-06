@@ -75,7 +75,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
   // The KPI cards are two to a row until `xl`, so the only genuinely
   // narrow ornament column is a phone's.
   const isPhone = useMediaMatch('(max-width: 639px)');
-  const { covers, ready: coversReady } = useReportCovers(data.reportFiles);
+  const { covers } = useReportCovers(data.reportFiles);
 
   const animate = !reduced;
   const ambientPaused = reduced || !visible;
@@ -105,19 +105,36 @@ export default function WorkspaceDashboard({ onNavigate }: {
     [onNavigate, access, openTarget],
   );
 
-  // ONE GATE FOR THE WHOLE PAGE. The loader holds the pane until every
-  // query has answered, the reader's NAME has settled and the decorative
-  // assets are drawn, so when it lifts the structure is complete, no
-  // chart is missing and nothing pops in afterwards. The cover renderer
-  // reports ready on a cap as well as on success, so a slow PDF can never
-  // hold the Dashboard hostage.
+  // =================================================================
+  // THE GATE WAITS FOR THE DATA. IT NO LONGER WAITS FOR THE PICTURES.
+  // -----------------------------------------------------------------
+  // It used to wait for both, and the second half was what a member
+  // actually experienced as the Dashboard being slow. The covers are six
+  // PDFs fetched and rasterised in the browser; on a cold session that is
+  // most of a second of work, with a backstop that lets it run to 1.6,
+  // and for every millisecond of it the whole page was a spinner. Not one
+  // card, not one chart: the greeting, the four figures, the four charts
+  // and the update, all held behind a decoration.
   //
-  // The name is part of the gate because the greeting is chosen from it:
-  // without it the sentence was picked from the unnamed pool and then
-  // REPLACED a moment later, in front of the reader. Every query runs in
-  // parallel, so waiting for the name costs nothing beyond the slowest of
-  // them.
-  if (!data.greetingReady || !coversReady) return <div className="h-full"><WorkspaceLoader /></div>;
+  // The figures and the charts are the page. The covers are a texture
+  // behind one number, and the card is complete without them, so they are
+  // not something to keep the reader waiting for.
+  //
+  // NOTHING POPS. `ReportColumns` latches the first cover list it is
+  // given and builds its loop once from that, so a list arriving after
+  // the page has opened starts its animation from the first frame exactly
+  // as it would have done behind the loader; and the ornament carries a
+  // 420ms fade of its own, so what the reader sees is a texture arriving
+  // rather than an image appearing.
+  //
+  // The name stays part of the gate, because the greeting is CHOSEN from
+  // it: without it the sentence is picked from the unnamed pool and then
+  // replaced a moment later, in front of the reader. That is a word
+  // changing on the page, which is a different thing from a picture
+  // arriving on it. Every query runs in parallel, so waiting for the name
+  // costs nothing beyond the slowest of them.
+  // =================================================================
+  if (!data.greetingReady) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
     <div className="flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0">

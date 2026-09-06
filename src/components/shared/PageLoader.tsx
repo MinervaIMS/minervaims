@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import logoColorAsset from '@/assets/logo-color-loader.webp.asset.json';
-import logoWhiteAsset from '@/assets/logo-white-loader.webp.asset.json';
 import { pulsePhaseStyle } from '@/lib/loader-pulse';
 import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
 
@@ -12,15 +11,30 @@ import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
 // mobile connection is a second or more. Both ends of that range have to
 // look deliberate, and the two rules below are what make them.
 //
-// IT PAINTS THE SURFACE THE ROUTE IS ABOUT TO HAVE, not white. The
-// fallback used to be `bg-background`, so opening /join, /apply, /auth or
-// an event registration produced a full-screen WHITE flash immediately
-// before a page that is nearly black - the single most visible loading
-// fault on the site, and the more visible the faster the connection.
-// RouteChrome already decides each route's surface for the mobile browser
-// chrome; it now publishes it as `--chrome-base`, and the loader simply
-// stands on it. The lock-up follows the same decision, so it is never a
-// dark logo on a dark ground.
+// IT IS ALWAYS WHITE, WITH THE COLOUR MARK. Always, on every route, in
+// every direction of travel, with no state to consult and nothing to get
+// wrong.
+//
+// It used to paint the surface the route was ABOUT to have, read from
+// `--chrome-base` and `data-surface`, both of which RouteChrome writes in
+// an effect keyed on the pathname. This component reads them during
+// RENDER, and render runs before effects: on a navigation the loader was
+// therefore reading the surface of the page being LEFT, not the one being
+// opened. Going from a white page to a dark one it latched "light" and
+// drew the colour lock-up, then the effect repainted the ground black
+// underneath it - a black screen with a purple logo on it, which is the
+// exact fault reported. Going the other way it drew the white lock-up and
+// then turned the ground white, leaving a screen that looked empty.
+//
+// The intermittency is what made it damaging. A loader that is wrong
+// sometimes reads as a site that is broken sometimes, and that is a far
+// worse thing to show a visitor than any flash: nobody trusts a page that
+// appears to fail at random.
+//
+// A fixed white ground with the colour mark cannot be wrong, because
+// there is no longer a question being answered. The cost is a white
+// moment before the few pages that are nearly black, which is a
+// transition; the thing it replaces was a defect.
 //
 // THE MARK ONLY APPEARS IF THERE IS SOMETHING TO WAIT FOR. Under about a
 // sixth of a second the reader sees the destination's own colour and
@@ -38,11 +52,6 @@ const MARK_DELAY_MS = 160;
 
 export function PageLoader() {
   const [showMark, setShowMark] = useState(false);
-  // Read synchronously: an effect would settle a frame late, which is
-  // exactly the frame this component exists to get right.
-  const [dark] = useState(
-    () => typeof document !== 'undefined' && document.documentElement.dataset.surface === 'dark',
-  );
 
   useEffect(() => {
     document.body.setAttribute('data-page-loading', 'true');
@@ -81,7 +90,12 @@ export function PageLoader() {
     <div className="min-h-[100svh]">
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
-      style={{ backgroundColor: 'var(--chrome-base, hsl(var(--background)))' }}
+      // A LITERAL, NOT A TOKEN AND NOT A VARIABLE. `hsl(var(--background))`
+      // is white today and is redefined under `.dark`, and `--chrome-base`
+      // is whatever the last route set; either can hand this element a
+      // dark ground at the one moment it must not have one. White is
+      // stated here so that nothing upstream can answer differently.
+      style={{ backgroundColor: '#FFFFFF' }}
     >
       {/* TWO ELEMENTS, TWO JOBS. They used to be one, and that is why the
           grace period above never worked: a running CSS animation writes the
@@ -97,7 +111,7 @@ export function PageLoader() {
       <div className={`transition-opacity duration-200 ${showMark ? 'opacity-100' : 'opacity-0'}`}>
         <div className="animate-markPulse" style={pulsePhaseStyle()}>
           <img
-            src={dark ? logoWhiteAsset.url : logoColorAsset.url}
+            src={logoColorAsset.url}
             alt="Loading"
             width={65}
             height={48}

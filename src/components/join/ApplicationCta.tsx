@@ -1,10 +1,16 @@
 import { Link } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
-import { JOIN_STATUS_COPY, formatDeadlineSentence } from '@/lib/join-content';
+import { JOIN_STATUS_COPY, formatDeadlineSentence, formatOpeningSentence } from '@/lib/join-content';
 
 interface Props {
   applicationsOpen: boolean;
   semesterLabel: string;
+  /**
+   * The scheduled opening. Present as soon as an intake is configured,
+   * whether or not it has started, which is what lets the closed state
+   * say WHEN rather than only that it is closed.
+   */
+  startDate: Date | null;
   endDate: Date | null;
   /**
    * False when application_settings has no row, or a row without both window
@@ -27,6 +33,7 @@ interface Props {
 export function ApplicationCta({
   applicationsOpen,
   semesterLabel,
+  startDate,
   endDate,
   isConfigured,
   isLoading,
@@ -43,12 +50,32 @@ export function ApplicationCta({
   const headingClass = light ? 'text-accent' : 'text-background';
   const bodyClass = light ? 'text-muted-foreground' : 'text-background/85';
 
+  // =================================================================
+  // THREE STATES, NOT TWO.
+  // -----------------------------------------------------------------
+  // Open, closed with an intake scheduled, and closed with nothing
+  // scheduled. The middle one used to be shown as the third: a candidate
+  // met "Admissions open at the start of each academic semester" on a day
+  // when the association already knew the exact hour the form would go
+  // live. The heading stays "Applications closed", because it is, but the
+  // sentence now says when that changes.
+  //
+  // `formatOpeningSentence` returns null unless the start is genuinely in
+  // the future, so a passed intake falls back to the general sentence and
+  // no stale date is ever printed.
+  // =================================================================
+  const scheduledOpening = applicationsOpen
+    ? null
+    : formatOpeningSentence(semesterLabel, startDate);
+
   const heading = applicationsOpen
     ? JOIN_STATUS_COPY.openHeading
-    : JOIN_STATUS_COPY.closedHeading;
+    : scheduledOpening
+      ? JOIN_STATUS_COPY.scheduledHeading
+      : JOIN_STATUS_COPY.closedHeading;
   const body = applicationsOpen
     ? formatDeadlineSentence(semesterLabel, endDate)
-    : closedBody;
+    : scheduledOpening ?? closedBody;
 
   // The closed state always keeps a route into the funnel. Between intakes the
   // useful destination is the research archive, so the primary action sends

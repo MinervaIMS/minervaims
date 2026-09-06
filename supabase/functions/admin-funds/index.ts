@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { allows } from '../_shared/access.ts';
 
 // =====================================================================
 // admin-funds — fund performance matrix for the active simulated funds.
@@ -24,6 +25,21 @@ const YearSchema = z.object({
   sharpe: z.string().max(20).default(''),
 });
 
+// =====================================================================
+// READING THE FIGURES AND PUBLISHING THEM ARE TWO QUESTIONS.
+// ---------------------------------------------------------------------
+// One list answered both, and it was missing a role the matrix grants
+// outright: `reports-funds` is 'manage' for EVERY Head of Division, and
+// this list only admitted the one whose division happens to be
+// `portfolio`. A Head of Equity opening Fund performances got a 403 and
+// an empty table. The advisor, granted 'view' on everything, got the
+// same.
+//
+// Reading now comes from the matrix. Writing keeps the list, because it
+// is deliberately narrower than the matrix and always was: the numbers
+// on this page are published on the website.
+// =====================================================================
+const RESOURCE = 'reports-funds';
 const ALLOWED = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'portfolio_manager'];
 
 function json(body: unknown, status = 200) {
@@ -45,10 +61,15 @@ Deno.serve(async (req) => {
     // Head of Portfolio Management = head_of_division with division 'portfolio'.
     const isPortfolioHead = roles.some((r) => r.role === 'head_of_division' && r.division === 'portfolio');
     const canManage = isAdminEmail || isPortfolioHead || roles.some((r) => ALLOWED.includes(r.role));
-    if (!canManage) return json({ error: 'Access denied' }, 403);
+    const canRead = allows(roles.map((r) => r.role), user.email, RESOURCE, 'view');
+    if (!canRead) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    if (action !== 'list' && !canManage) {
+      return json({ error: 'Your role can read the fund performances but not publish them.' }, 403);
+    }
 
     if (action === 'list') {
       const { data, error } = await supabase.from('fund_performance_years').select('*').order('year', { ascending: true });

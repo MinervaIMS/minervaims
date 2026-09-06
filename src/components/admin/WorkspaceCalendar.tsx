@@ -14,6 +14,10 @@ import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { isFeeExempt } from '@/lib/membership-fee';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { CalendarLegend, type LegendItem } from '@/components/admin/CalendarLegend';
+import {
+  CalendarDayCell, CalendarHoverPreview, CalendarZoomControl, CALENDAR_ZOOM,
+  PreviewRow, useCalendarZoom,
+} from '@/components/admin/CalendarView';
 
 /**
  * The colour key. Every entry, colour and phrase is exactly what the
@@ -77,6 +81,8 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const [examSessions, setExamSessions] = useState<ExamSession[]>([]);
   const [examDialogOpen, setExamDialogOpen] = useState(false);
   const [examForm, setExamForm] = useState({ label: '', start_date: '', end_date: '' });
+  const [zoom, setZoom] = useCalendarZoom('mims.zoom.workspace');
+  const size = CALENDAR_ZOOM[zoom];
   const [savingExam, setSavingExam] = useState(false);
 
   const load = async () => {
@@ -296,7 +302,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         // The description lists what this calendar holds, so for a viewer
         // outside the membership fee it stops promising a deadline that
         // will never appear on it.
-        description={`Association events, Association on Display, alumni calls${feeExempt ? ' and application periods' : ', application periods and the membership fee deadline'}. Scroll to move through the months. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
+        description={`Association events, Association on Display, alumni calls${feeExempt ? ' and application periods' : ', application periods and the membership fee deadline'}. Scroll to move through the months, and use Small, Medium or Large to change how much of the term you see at once. Hover an entry to read it in full. Click an event with open registration to sign up or check your status. Click an Association on Display day to open its slot registration page.${canEdit ? ' Double-click a day to add your own entry (meeting, deadline, reminder…).' : ''}`}
         /* ONE CONTROL GROUP, AT THE TOP.
            "Jump to today" used to sit on a row of its own between the header
            and the colour key, adrift from the two buttons it belongs with;
@@ -313,6 +319,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
             {/* The fee swatch explains a colour an exempt viewer will never
                 see on this grid, so it comes out of their key too. */}
             <CalendarLegend items={feeExempt ? CALENDAR_LEGEND.filter((l) => l.label !== 'Membership fee') : CALENDAR_LEGEND} />
+            <CalendarZoomControl value={zoom} onChange={setZoom} />
             {canEdit && (
               <>
                 <Button variant="outline" className="font-body h-9" onClick={() => setExamDialogOpen(true)}>
@@ -342,21 +349,23 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                   : hol
                   ? `${hol}: Italian public holiday, the calendar does not accept events on this day`
                   : undefined;
+                if (!date) return <div key={i} className={`bg-muted/20 ${size.cell}`} />;
+                const dayItems = itemsByDate[date] || [];
+                const shown = dayItems.slice(0, size.max);
+                const hiddenCount = dayItems.length - shown.length;
                 return (
-                <div key={i}
-                  className={`${hol ? 'bg-red-50' : brk ? 'bg-muted/70' : 'bg-background'} min-h-[92px] p-1.5 align-top ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
-                  title={blockedTitle}>
-                  {date && <>
-                    {dayIsClickable && !blocked ? (
-                      <button type="button" className={`text-sm mb-1 hover:text-accent ${date === todayStr ? 'text-accent' : 'text-muted-foreground'}`} onClick={() => setEntryForm(emptyEntry(date))} title="Add an entry on this day">{parseInt(date.slice(-2), 10)}</button>
-                    ) : (
-                      <div className={`text-sm mb-1 ${hol ? 'text-red-700' : date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
-                    )}
+                <CalendarDayCell key={i}
+                  date={date}
+                  canAdd={dayIsClickable && !blocked}
+                  onAdd={(d) => setEntryForm(emptyEntry(d))}
+                  className={`${hol ? 'bg-red-50' : brk ? 'bg-muted/70' : 'bg-background'} align-top ${size.cell} ${size.pad} ${date === todayStr ? 'ring-1 ring-accent ring-inset' : ''}`}
+                >
+                  <div title={blockedTitle} className={`${size.day} mb-1 ${hol ? 'text-red-700' : date === todayStr ? 'text-accent' : 'text-muted-foreground'}`}>{parseInt(date.slice(-2), 10)}</div>
                     {hol && (
                       <div className="text-[10px] leading-tight px-1.5 py-0.5 rounded bg-red-100 text-red-800 truncate mb-1" title={hol}>{hol}</div>
                     )}
                     <div className="space-y-1">
-                      {(itemsByDate[date] || []).map((it, j) => {
+                      {shown.map((it, j) => {
                         const isEvent = it.kind === 'event' && !!it.event;
                         const isCustom = it.kind === 'custom' && !!it.entry;
                         const isAod = it.kind === 'aod' && !!onNavigate;
@@ -367,21 +376,48 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                           else if (isCustom && canEdit) openEntryEdit(it.entry!);
                           else if (isAod) onNavigate!('events', 'events-on-display');
                         };
+                        const kindLabel = isCustom ? CALENDAR_ENTRY_LABELS[it.entry!.entry_type]
+                          : isEvent ? EVENT_TYPE_LABELS[it.event!.event_type]
+                          : isAod ? 'Association on Display'
+                          : it.kind === 'alumni' ? 'Alumni call'
+                          : it.kind === 'application' ? 'Applications'
+                          : it.kind === 'fee' ? 'Membership fee'
+                          : 'Calendar';
                         return (
-                          <button key={j} data-ro disabled={!clickable} onClick={onClick}
-                            title={isCustom ? `${CALENDAR_ENTRY_LABELS[it.entry!.entry_type]}: ${it.label}` : isEvent ? EVENT_TYPE_LABELS[it.event!.event_type] : isAod ? 'Open the Association on Display registration page' : it.label}
-                            className={`flex items-center gap-1 w-full text-left text-xs leading-tight px-1.5 py-0.5 rounded truncate ${kindColor(it.kind, it.entry)} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
-                            {isReg && <Check className="h-3 w-3 shrink-0" />}
-                            <span className="truncate">{it.label}</span>
-                          </button>
+                          <CalendarHoverPreview
+                            key={j}
+                            title={it.label}
+                            meta={<>
+                              <PreviewRow label="Kind" value={kindLabel} />
+                              <PreviewRow label="When" value={date} />
+                              <PreviewRow label="Where" value={isCustom ? it.entry!.location : undefined} />
+                              <PreviewRow label="Details" value={isCustom ? it.entry!.description : undefined} />
+                              <PreviewRow label="Registered" value={isReg ? 'You are registered' : undefined} />
+                              <PreviewRow
+                                label="Action"
+                                value={isEvent && it.event!.registration_enabled ? 'Click to register'
+                                  : isCustom && canEdit ? 'Click to edit'
+                                  : isAod ? 'Click to open the sign-up page'
+                                  : undefined}
+                              />
+                            </>}
+                          >
+                            <button data-ro disabled={!clickable} onClick={onClick}
+                              className={`flex items-center gap-1 w-full text-left rounded truncate ${size.chip} ${kindColor(it.kind, it.entry)} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
+                              {isReg && <Check className="h-3 w-3 shrink-0" />}
+                              <span className="truncate">{it.label}</span>
+                            </button>
+                          </CalendarHoverPreview>
                         );
                       })}
+                      {hiddenCount > 0 && (
+                        <div className="px-1 text-[10px] text-muted-foreground">{hiddenCount} more</div>
+                      )}
                     </div>
-                    {brk && (itemsByDate[date]?.length ?? 0) === 0 && (
+                    {brk && dayItems.length === 0 && (
                       <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 mt-1">Exam break</div>
                     )}
-                  </>}
-                </div>
+                </CalendarDayCell>
                 );
               })}
             </div>

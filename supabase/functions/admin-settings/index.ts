@@ -1,12 +1,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { allows } from '../_shared/access.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Roles allowed to manage application settings
-const ALLOWED_ROLES = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
+// =====================================================================
+// READING THE WINDOW AND SETTING IT ARE TWO QUESTIONS.
+// ---------------------------------------------------------------------
+// One list answered both, and it was short by two: the matrix grants
+// `applications-form` as 'manage' to every HEAD OF DIVISION, and 'view'
+// to the ADVISOR, and neither appeared here. A Head of Division opening
+// the application form settings saw the page and an empty form, because
+// the `get` came back 403 and the page rendered its own defaults - which
+// looks exactly like an intake that has not been configured.
+//
+// The list is replaced entirely rather than extended, because the matrix
+// already states this precisely and a second copy is what drifted.
+// =====================================================================
+const RESOURCE = 'applications-form';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -64,13 +77,13 @@ Deno.serve(async (req) => {
     }
 
     const userRoleNames = userRoles?.map(r => r.role) || [];
-    const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
-    const hasAllowedRole = userRoleNames.some(role => ALLOWED_ROLES.includes(role));
+    const canRead = allows(userRoleNames, user.email, RESOURCE, 'view');
+    const canManage = allows(userRoleNames, user.email, RESOURCE, 'manage');
 
-    if (!isAdminEmail && !hasAllowedRole) {
+    if (!canRead) {
       console.log('User does not have permission. Roles:', userRoleNames);
       return new Response(
-        JSON.stringify({ error: 'Permission denied. Only President, Vice President, and Head of Asset Management can manage application settings.' }),
+        JSON.stringify({ error: 'Your role does not include the application form settings.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -79,6 +92,14 @@ Deno.serve(async (req) => {
 
     const { action, settings } = await req.json();
     console.log('Action:', action, 'Settings:', settings);
+
+    // `get` is the read. Anything that writes the window needs 'manage'.
+    if (action !== 'get' && !canManage) {
+      return new Response(
+        JSON.stringify({ error: 'Your role can read the application settings but not change them.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     switch (action) {
       case 'get': {

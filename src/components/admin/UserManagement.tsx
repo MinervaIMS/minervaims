@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { callFunction, friendlyError } from '@/lib/errors';
+import { callFunction, friendlyError, invokeFunction } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { Loader2, Clock, ChevronDown, ChevronRight, Trash2, Search, ShieldCheck, Pencil, Save } from 'lucide-react';
@@ -81,15 +80,34 @@ const UserManagement = () => {
   const { canManage } = useAccess();
   const canEdit = canManage('settings-users');
 
+  // =================================================================
+  // THE REGISTER IS READ THROUGH THE FUNCTION, NOT OFF THE TABLES.
+  // -----------------------------------------------------------------
+  // It used to select `profiles` and `user_roles` directly. Their SELECT
+  // policy is `is_admin()` - the two roles `admin` and `president` - and
+  // the matrix grants the VICE PRESIDENT 'view' on this subsection. So a
+  // Vice President saw the item in the navigation, opened it, and got a
+  // table with nothing in it: row-level security does not refuse a
+  // query, it filters it, and a filtered-to-empty result is
+  // indistinguishable from an association with no members.
+  //
+  // `admin-users` answers from the same matrix the navigation used, so
+  // the two can no longer disagree. WRITING is unchanged and still
+  // reserved to the President and the association account, which the
+  // reply states directly rather than leaving to be discovered at the
+  // Save button.
+  // =================================================================
   const fetchUsers = async () => {
     try {
-      const { data: profiles, error: pErr } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (pErr) throw pErr;
-      const { data: roles, error: rErr } = await supabase.from('user_roles').select('*');
-      if (rErr) throw rErr;
+      const data = await invokeFunction<{
+        profiles: { id: string; email: string; full_name: string | null; created_at: string }[];
+        roles: { id: string; user_id: string; role: string; division: string | null }[];
+        applicantIds: string[];
+      }>('admin-users', { body: { action: 'list' }, session });
+      const profiles = data.profiles;
+      const roles = data.roles;
       // Applicants live in Recruiting → Candidates, not here.
-      const { data: apps } = await supabase.from('applications').select('user_id');
-      const applicantIds = new Set((apps || []).map((a: { user_id: string }) => a.user_id));
+      const applicantIds = new Set(data.applicantIds || []);
 
       const rows: UserRow[] = (profiles || []).map((profile) => {
         const ur = roles?.find((r) => r.user_id === profile.id);
@@ -112,13 +130,17 @@ const UserManagement = () => {
       setUsers(rows);
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast({ title: 'Error', description: 'Failed to fetch users', variant: 'destructive' });
+      toast({ title: 'Error', description: friendlyError(error, 'Failed to fetch users'), variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
+  // The register is read through an edge function now, so it needs the
+  // session. On a cold load that arrives a tick after the component does;
+  // fetching before it is there would send an unauthenticated request and
+  // show an empty table, which is the exact failure this replaced.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { if (session) fetchUsers(); }, [session]);
 
   const openEdit = (u: UserRow) => {
     setEditing(u);

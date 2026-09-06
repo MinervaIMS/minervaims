@@ -129,6 +129,12 @@ export const JOIN_WRITTEN = {
 export const JOIN_STATUS_COPY = {
   openHeading: 'Applications open',
   closedHeading: 'Applications closed',
+  /**
+   * Closed, but with a date. It is a different fact from "closed" and it
+   * deserves its own heading: a candidate scanning the page should be able
+   * to tell the two apart without reading the sentence under them.
+   */
+  scheduledHeading: 'Applications opening soon',
   /** Closed-state sentence for the Status block, directly under the hero. */
   closedBodyTop: 'Admissions open at the start of each academic semester.',
   /** Closed-state sentence for the Close block at the foot of the page. */
@@ -146,25 +152,76 @@ export const JOIN_STATUS_COPY = {
 
 export const JOIN_FAQ_HEADING = 'Frequently Asked Questions';
 
+// =====================================================================
+// THE TWO DATES THE PAGE ACTUALLY KNOWS, SAID OUT LOUD.
+// ---------------------------------------------------------------------
+// `application_settings` holds a start and an end, to the minute, and the
+// page was using them ONLY to decide which of two headings to print. A
+// candidate arriving between intakes was told "Admissions open at the
+// start of each academic semester", which is true of the association in
+// general and says nothing about the intake that is already scheduled and
+// already has a date. That is a candidate who has to come back and check,
+// repeatedly, for information the page is holding.
+//
+// So when a window is scheduled the closed state names the day and the
+// hour it opens, and the open state names the day and the hour it closes.
+// Both in Europe/Rome, which is the zone the deadline is published in, and
+// both in UK English to match the rest of the site.
+// =====================================================================
+
+/** Day and hour in the zone the association publishes its deadlines in. */
+function romeDateTime(when: Date): { date: string; time: string } {
+  return {
+    date: new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'Europe/Rome',
+    }).format(when),
+    time: new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Europe/Rome',
+    }).format(when),
+  };
+}
+
 /**
- * Builds the open-state sentence. Date and time come from application_settings
- * and are formatted in UK English against Europe/Rome, the CET/CEST zone the
- * published deadline is quoted in.
+ * Builds the open-state sentence.
+ *
+ * IT NAMES THE OTHER WAY THE WINDOW CAN END. The published date is a
+ * deadline, not a promise of how long the places last: an intake closes on
+ * that date OR when the available places are filled, whichever comes
+ * first, and a candidate who reads only the date can reasonably conclude
+ * there is no hurry. Saying both is the difference between a deadline and
+ * an accurate deadline.
  */
 export function formatDeadlineSentence(semesterLabel: string, endDate: Date | null): string {
   if (!endDate) {
-    return `Applications for ${semesterLabel} are open.`;
+    return `Applications for ${semesterLabel} are open, and close once the available spots are filled.`;
   }
-  const date = new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'Europe/Rome',
-  }).format(endDate);
-  const time = new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'Europe/Rome',
-  }).format(endDate);
-  return `Applications for ${semesterLabel} close on ${date} at ${time} CET.`;
+  const { date, time } = romeDateTime(endDate);
+  return `Applications for ${semesterLabel} close on ${date} at ${time} CET, or sooner upon successful filling of available spots.`;
+}
+
+/**
+ * The closed-state sentence WHEN, AND ONLY WHEN, a window is scheduled and
+ * has not started yet.
+ *
+ * `null` for everything else - no configured window, or a window that has
+ * already ended - so the caller falls back to the general sentence rather
+ * than announcing a date that has passed. That fallback is the reason this
+ * returns null instead of a string: an intake whose end has gone by is
+ * closed with nothing scheduled, and printing its old start date would be
+ * worse than saying nothing.
+ */
+export function formatOpeningSentence(
+  semesterLabel: string,
+  startDate: Date | null,
+  now: Date = new Date(),
+): string | null {
+  if (!startDate) return null;
+  if (startDate.getTime() <= now.getTime()) return null;
+  const { date, time } = romeDateTime(startDate);
+  return `Applications for ${semesterLabel} will open on ${date} at ${time} CET.`;
 }

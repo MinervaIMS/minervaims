@@ -121,6 +121,26 @@ const DISABLES = 'button, [role="switch"], input[type="checkbox"], input[type="r
 /** The content pane, plus any dialog Radix has portalled out of it. */
 const ROOTS = '[data-ws-pane], [role="dialog"], [role="alertdialog"]';
 
+// =====================================================================
+// THE PAGES THAT ARE NEVER GREYED, WHATEVER THE ROLE.
+// ---------------------------------------------------------------------
+// The matrix grants the Dashboard as 'view' to every role except the
+// three with full access, because there is nothing on it to manage: it
+// is a summary. Read literally, that made the Dashboard a read-only
+// subsection, so this guard did what it is for and faded the whole of
+// it - every card, every filter, every "open this" arrow - for nearly
+// everybody who signs in. The first screen of the workspace, greyed out,
+// which reads as a broken page rather than as a permission.
+//
+// The Welcome page is the same shape and the same argument.
+//
+// These two are not exceptions to the rule so much as pages the rule was
+// never about. The rule protects WRITES; a page with no writes on it has
+// nothing to protect, and dimming it communicates a restriction that
+// does not exist.
+// =====================================================================
+const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome']);
+
 function sweep() {
   document.querySelectorAll<HTMLElement>(ROOTS).forEach((root) => {
     root.querySelectorAll<HTMLElement>(DISABLES).forEach((el) => {
@@ -156,9 +176,10 @@ function release() {
  * Renders nothing. It is a behaviour, not a box, so it cannot disturb the
  * layout of any page it is switched on for.
  */
-export function ReadOnlyRegion({ readOnly }: { readOnly: boolean }) {
+export function ReadOnlyRegion({ resource, readOnly }: { resource?: string; readOnly: boolean }) {
+  const active = readOnly && !!resource && !EXEMPT_RESOURCES.has(resource);
   useEffect(() => {
-    if (!readOnly) { release(); return; }
+    if (!active) { release(); return; }
     document.documentElement.dataset.wsReadonly = 'true';
     sweep();
     // These pages render asynchronously: a table arrives after its fetch, a
@@ -172,7 +193,7 @@ export function ReadOnlyRegion({ readOnly }: { readOnly: boolean }) {
       delete document.documentElement.dataset.wsReadonly;
       release();
     };
-  }, [readOnly]);
+  }, [active]);
 
   return null;
 }

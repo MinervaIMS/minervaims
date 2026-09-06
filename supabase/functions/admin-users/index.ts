@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { allows } from '../_shared/access.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,16 +46,68 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if requesting user is admin
+    // =================================================================
+    // WHO MAY READ THE LIST, AND WHO MAY CHANGE IT.
+    // -----------------------------------------------------------------
+    // The page used to build its own list straight from `profiles` and
+    // `user_roles`. Both are behind row-level security whose SELECT
+    // policy is `is_admin()`, which means the two roles `admin` and
+    // `president` and nobody else. The matrix grants the VICE PRESIDENT
+    // 'view' on Settings > Users, so a Vice President saw the subsection
+    // in the navigation, opened it, and RLS returned zero rows - with no
+    // error, because a policy does not refuse a query, it simply filters
+    // it to nothing. An empty table that looks like a working table.
+    //
+    // The list is therefore built HERE instead, where the service role
+    // can read both tables and this function can apply the matrix's
+    // answer rather than the policy's. Nothing is widened at the
+    // database level: `profiles` stays closed to everybody it was closed
+    // to, and the only way to the list is this check.
+    //
+    // Writing is untouched and stays where it was: only `admin` and
+    // `president` may set a role or delete a user, which is narrower
+    // than the matrix on purpose.
+    // =================================================================
     const isAdminEmail = requestingUser.email === 'as.minerva@unibocconi.it';
-    
-    const { data: adminRoles } = await supabaseAdmin
+
+    const { data: roleRows } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', requestingUser.id)
-      .in('role', ['admin', 'president']);
+      .eq('user_id', requestingUser.id);
 
-    const isAdmin = isAdminEmail || (adminRoles && adminRoles.length > 0);
+    const callerRoles = (roleRows || []).map((r: { role: string }) => r.role);
+    const isAdmin = isAdminEmail || callerRoles.some((r) => r === 'admin' || r === 'president');
+    const canReadUsers = isAdmin || allows(callerRoles, requestingUser.email, 'settings-users', 'view');
+
+    const body = await req.json();
+    const { action, userId } = body;
+    console.log('Action:', action, 'User ID:', userId);
+
+    if (action === 'list') {
+      if (!canReadUsers) {
+        console.log('User may not read the register:', requestingUser.email);
+        return new Response(
+          JSON.stringify({ error: 'Your role does not include Settings > Users.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const [{ data: profiles, error: pErr }, { data: allRoles, error: rErr }, { data: apps }] = await Promise.all([
+        supabaseAdmin.from('profiles').select('id, email, full_name, created_at').order('created_at', { ascending: false }),
+        supabaseAdmin.from('user_roles').select('id, user_id, role, division'),
+        supabaseAdmin.from('applications').select('user_id'),
+      ]);
+      if (pErr) throw pErr;
+      if (rErr) throw rErr;
+      return new Response(
+        JSON.stringify({
+          profiles: profiles || [],
+          roles: allRoles || [],
+          applicantIds: (apps || []).map((a: { user_id: string }) => a.user_id),
+          canManage: isAdmin,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!isAdmin) {
       console.log('User is not admin:', requestingUser.email);
@@ -63,10 +116,6 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const body = await req.json();
-    const { action, userId } = body;
-    console.log('Action:', action, 'User ID:', userId);
 
     // Legacy division-baked head roles map to (head_of_division, division).
     const LEGACY_HEADS: Record<string, string> = {

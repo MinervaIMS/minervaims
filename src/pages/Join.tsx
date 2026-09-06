@@ -28,6 +28,7 @@ const Join = () => {
   const status = {
     applicationsOpen: settings.applicationsOpen,
     semesterLabel: settings.semesterLabel,
+    startDate: settings.startDate,
     endDate: settings.endDate,
     isConfigured: settings.isConfigured,
     isLoading,

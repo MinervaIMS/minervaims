@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { allows, rolesOf } from '../_shared/access.ts';
 
 // =====================================================================
 // admin-fees — per-semester membership fee collection (report 12.1).
@@ -20,6 +21,18 @@ function json(body: unknown, status = 200) {
 // the thing that actually holds the data, so the Head of Asset Management
 // comes off this list as well. The Head of Division was never on it.
 // Fees remain open to the Board and to Operations, who administer them.
+// =====================================================================
+// CONSULTING THE COLLECTION IS NOT RUNNING IT.
+// ---------------------------------------------------------------------
+// One list answered both, so the register was closed to everybody who
+// could only look - including the ADVISOR, whom the matrix grants 'view'
+// on everything and who appeared in no function's list anywhere. Opening
+// Membership fees produced a page and a 403, which is an empty table.
+//
+// Reading now comes from the matrix. Opening a collection, marking a fee
+// paid and closing a period keep the list below, unchanged.
+// =====================================================================
+const RESOURCE = 'ops-fee';
 const MANAGE = ['admin', 'president', 'vice_president', 'head_of_operations'];
 
 // =====================================================================
@@ -64,12 +77,19 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
+    const roles = rolesOf(roleRows);
     const canManage = user.email === 'as.minerva@unibocconi.it' || roles.some((r: string) => MANAGE.includes(r));
-    if (!canManage) return json({ error: 'Access denied' }, 403);
+    const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
+    if (!canRead) return json({ error: 'Access denied' }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = body.action as string;
+
+    // `current` and `history` are the two reads. Everything else moves money
+    // or the record of it, and stays with the Board and Operations.
+    if (action !== 'current' && action !== 'history' && !canManage) {
+      return json({ error: 'Your role can read the fee register but not change it.' }, 403);
+    }
 
     const activeMembers = async () =>
       (await supabase.from('members').select('id, first_name, surname, division, role, phone, email')
