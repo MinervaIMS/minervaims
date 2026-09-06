@@ -116,8 +116,17 @@ Deno.serve(async (req) => {
 
     // ── notify-received (default) ──────────────────────────────────────────────
     if (!app) return json({ success: true, skipped: 'no_application' });
-    if (app.received_email_sent_at) return json({ success: true, skipped: 'already_sent' });
-    await supabase.from('applications').update({ received_email_sent_at: new Date().toISOString() }).eq('id', app.id);
+    // ATOMIC CLAIM. Reading `received_email_sent_at` and then writing it are two
+    // steps: requests arriving milliseconds apart all read "not sent yet" and all
+    // sent, so one candidate received the same email two or three times. The
+    // conditional update lets exactly one request win the claim.
+    const { data: claimed } = await supabase.from('applications')
+      .update({ received_email_sent_at: new Date().toISOString() })
+      .eq('id', app.id)
+      .is('received_email_sent_at', null)
+      .select('id');
+    if (!claimed || claimed.length === 0) return json({ success: true, skipped: 'already_sent' });
+
     await supabase.rpc('enqueue_app_email', {
       p_key: 'application_received', p_to: app.email,
       p_vars: {
