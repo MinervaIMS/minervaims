@@ -159,7 +159,7 @@ export function createZip(entries: ZipEntry[], at: Date = new Date()): Blob {
   ev.setUint32(16, offset, true);
   ev.setUint16(20, 0, true);             // no archive comment
 
-  return new Blob([...locals, ...centrals, end], { type: 'application/zip' });
+  return new Blob([...locals, ...centrals, end] as BlobPart[], { type: 'application/zip' });
 }
 
 /**
