@@ -93,14 +93,14 @@ export function WorkspaceSection() {
           // is invisible because the ground it falls on is the white the
           // section already stands on.
           // =========================================================
-          <figure className="mt-10 md:mt-14 aspect-[1.9/1] w-full">
+          <figure className="mt-10 md:mt-14 aspect-[1.9/1] w-full overflow-hidden">
             <img
               src={PREVIEW_SRC}
               alt="The Minerva Workspace shown on a desktop screen, a laptop and a phone: the shared calendar, the member dashboard and the report archive."
               loading="lazy"
               decoding="async"
               onError={() => setHasImage(false)}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover scale-110 md:object-contain md:scale-100"
             />
           </figure>
         )}
