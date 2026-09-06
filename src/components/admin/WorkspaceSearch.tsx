@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft, ArrowUp, ArrowDown, X, FileText, HelpCircle, Loader2, Database } from 'lucide-react';
 import { useAccess } from '@/hooks/useAccess';
-import { GUIDE, type GuideEntry } from '@/lib/workspace-guide';
+import type { GuideEntry } from '@/lib/workspace-guide';
 import { useWorkspaceContentSearch, type ContentHit } from '@/hooks/useWorkspaceContentSearch';
 
 // =====================================================================
@@ -158,9 +158,34 @@ export function WorkspaceSearch({ onNavigate, variant = 'bar', className = '' }:
   const listRef = useRef<HTMLUListElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
+  // ═══════════════════════════════════════════════════════════════════
+  // THE GUIDE IS FETCHED WHEN THE PALETTE IS FIRST OPENED.
+  //
+  // This box sits in the workspace's top strip, so it is mounted on every
+  // page whether or not anybody searches. It used to build its index from
+  // `GUIDE` at mount, which meant the shell carried 60kB of guide prose
+  // into its own chunk and paid for it on the click that opens the
+  // workspace, for a palette most visits never open.
+  //
+  // Nothing about the search changed: the index is the same index, built
+  // from the same guide, and the workspace warms this chunk in the
+  // background once the page is up, so by the time anybody presses Ctrl K
+  // it is already here. Until it is, the palette shows its own empty
+  // state rather than a wrong one.
+  // ═══════════════════════════════════════════════════════════════════
+  const [guide, setGuide] = useState<GuideEntry[] | null>(null);
+  useEffect(() => {
+    if (!open || guide) return;
+    let alive = true;
+    import('@/lib/workspace-guide')
+      .then((m) => { if (alive) setGuide(m.GUIDE); })
+      .catch(() => { /* the next opening tries again */ });
+    return () => { alive = false; };
+  }, [open, guide]);
+
   const index = useMemo(
-    () => buildIndex(GUIDE.filter((g) => access.canView(g.key)), (k) => access.canManage(k)),
-    [access],
+    () => buildIndex((guide ?? []).filter((g) => access.canView(g.key)), (k) => access.canManage(k)),
+    [access, guide],
   );
 
   const q = query.trim().toLowerCase();

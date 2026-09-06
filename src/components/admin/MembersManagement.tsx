@@ -757,8 +757,7 @@ export default function MembersManagement() {
                     <Button variant="outline" className="w-full" disabled={leaving} onClick={() => doLeave(true)}>Move to alumni and appoint as advisor</Button>
                     <p className="text-xs text-muted-foreground">
                       The advisor keeps consulting access to the workspace and starts hidden from the public
-                      website; the visibility switch in their profile can show them later. For an advisor the
-                      company can be left empty and added later.
+                      website; the visibility switch in their profile can show them later.
                     </p>
                   </div>
                 )}

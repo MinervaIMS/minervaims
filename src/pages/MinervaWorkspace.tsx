@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,52 +23,201 @@ import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { EVENT_TYPE_LABELS, type EventType } from '@/lib/events-api';
-import FileManagement from '@/components/admin/FileManagement';
-import MembersManagement from '@/components/admin/MembersManagement';
-import MyProfile from '@/components/admin/MyProfile';
 import ContactPrompt from '@/components/admin/ContactPrompt';
-import CandidatesManagement from '@/components/admin/CandidatesManagement';
-import NewJoiners from '@/components/admin/NewJoiners';
-import CandidateFaqs from '@/components/admin/CandidateFaqs';
-import FormSettings from '@/components/admin/FormSettings';
-import ApplicationStatus from '@/components/admin/ApplicationStatus';
-import InterviewCalendar from '@/components/admin/InterviewCalendar';
-import InterviewCalendarCandidate from '@/components/admin/InterviewCalendarCandidate';
-import CandidateOffer from '@/components/admin/CandidateOffer';
-import ReportUpload from '@/components/admin/ReportUpload';
-import ResourceManager from '@/components/admin/ResourceManager';
-import FundsPerformances from '@/components/admin/FundsPerformances';
-import EventCreate from '@/components/admin/EventCreate';
-import EventForms from '@/components/admin/EventForms';
-import EventAttendance from '@/components/admin/EventAttendance';
-import AlumniCalls from '@/components/admin/AlumniCalls';
-import AssociationOnDisplay from '@/components/admin/AssociationOnDisplay';
-import WorkspaceCalendar from '@/components/admin/WorkspaceCalendar';
-import MembershipFee from '@/components/admin/MembershipFee';
-import Treasury from '@/components/admin/Treasury';
-import AutoEmails from '@/components/admin/AutoEmails';
-import EditorialCalendar from '@/components/admin/EditorialCalendar';
-import BrandDesignSystem from '@/components/admin/BrandDesignSystem';
-import AdsRegister from '@/components/admin/AdsRegister';
 import { PageLoader } from '@/components/shared/PageLoader';
-import AlumniManagement from '@/components/admin/AlumniManagement';
-import UserManagement from '@/components/admin/UserManagement';
-import RolePermissionsTable from '@/components/admin/RolePermissionsTable';
-import MobileViewTable from '@/components/admin/MobileViewTable';
-import JoinFaqsManagement from '@/components/admin/JoinFaqsManagement';
-import HowToUse from '@/components/admin/HowToUse';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
+
+// =====================================================================
+// THE SUBSECTIONS ARE FETCHED WHEN THEY ARE OPENED, NOT WHEN THE
+// WORKSPACE IS.
+// ---------------------------------------------------------------------
+// Every one of the forty pages below used to be imported at the top of
+// this file, which put all forty into one chunk with the shell. Opening
+// the workspace therefore meant downloading, parsing and evaluating the
+// Treasury, the brand system, both calendars, the alumni register and
+// thirty-six other pages before the Dashboard could paint - the entire
+// workspace, to look at one page of it, every time.
+//
+// It is the wrong shape twice over. A member opens two or three pages in
+// a session, so most of that work is for pages they will never look at;
+// and the cost lands at the worst possible moment, on the click that is
+// meant to open the workspace, which is exactly the lag that was
+// reported.
+//
+// Each page is now its own chunk, requested the first time it is opened
+// and cached by the browser from then on. The Dashboard is the one
+// exception and stays imported directly: it is what almost every member
+// lands on, and a separate request for it would trade the cost we are
+// removing for a round trip on the very page we are trying to make fast.
+//
+// `prefetchSubsections` below then removes the visible cost of the split
+// itself. See it for how, and for what it deliberately does not do.
+// =====================================================================
+const FileManagement = lazy(() => import('@/components/admin/FileManagement'));
+const MembersManagement = lazy(() => import('@/components/admin/MembersManagement'));
+const MyProfile = lazy(() => import('@/components/admin/MyProfile'));
+const CandidatesManagement = lazy(() => import('@/components/admin/CandidatesManagement'));
+const NewJoiners = lazy(() => import('@/components/admin/NewJoiners'));
+const CandidateFaqs = lazy(() => import('@/components/admin/CandidateFaqs'));
+const FormSettings = lazy(() => import('@/components/admin/FormSettings'));
+const ApplicationStatus = lazy(() => import('@/components/admin/ApplicationStatus'));
+const InterviewCalendar = lazy(() => import('@/components/admin/InterviewCalendar'));
+const InterviewCalendarCandidate = lazy(() => import('@/components/admin/InterviewCalendarCandidate'));
+const CandidateOffer = lazy(() => import('@/components/admin/CandidateOffer'));
+const ReportUpload = lazy(() => import('@/components/admin/ReportUpload'));
+const ResourceManager = lazy(() => import('@/components/admin/ResourceManager'));
+const FundsPerformances = lazy(() => import('@/components/admin/FundsPerformances'));
+const EventCreate = lazy(() => import('@/components/admin/EventCreate'));
+const EventForms = lazy(() => import('@/components/admin/EventForms'));
+const EventAttendance = lazy(() => import('@/components/admin/EventAttendance'));
+const AlumniCalls = lazy(() => import('@/components/admin/AlumniCalls'));
+const AssociationOnDisplay = lazy(() => import('@/components/admin/AssociationOnDisplay'));
+const WorkspaceCalendar = lazy(() => import('@/components/admin/WorkspaceCalendar'));
+const MembershipFee = lazy(() => import('@/components/admin/MembershipFee'));
+const Treasury = lazy(() => import('@/components/admin/Treasury'));
+const AutoEmails = lazy(() => import('@/components/admin/AutoEmails'));
+const EditorialCalendar = lazy(() => import('@/components/admin/EditorialCalendar'));
+const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
+const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
+const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
+const UserManagement = lazy(() => import('@/components/admin/UserManagement'));
+const RolePermissionsTable = lazy(() => import('@/components/admin/RolePermissionsTable'));
+const MobileViewTable = lazy(() => import('@/components/admin/MobileViewTable'));
+const JoinFaqsManagement = lazy(() => import('@/components/admin/JoinFaqsManagement'));
+const HowToUse = lazy(() => import('@/components/admin/HowToUse'));
+const ApplicationSettings = lazy(() => import('@/components/admin/ApplicationSettings'));
+const ReadingsManagement = lazy(() => import('@/components/admin/ReadingsManagement'));
+const ActivityManagement = lazy(() => import('@/components/admin/ActivityManagement'));
+const NewsletterManagement = lazy(() => import('@/components/admin/NewsletterManagement'));
+const PagesVisibilityManagement = lazy(() => import('@/components/admin/PagesVisibilityManagement'));
+const TestimonialsManagement = lazy(() => import('@/components/admin/TestimonialsManagement'));
+const HistoryManagement = lazy(() => import('@/components/admin/HistoryManagement'));
+
+// =====================================================================
+// WARMING THE CHUNKS, SO THE SPLIT COSTS NOTHING TO NAVIGATE.
+// ---------------------------------------------------------------------
+// Splitting the pages out moves work off the click that opens the
+// workspace and onto the click that opens each page. That is a good
+// trade only if the second click does not visibly wait, so the chunks
+// are fetched BEFORE they are needed, in two ways that cover each other:
+//
+//   * once the Dashboard is up and the browser is idle, every page the
+//     reader can actually open is fetched in the background, ONE AT A
+//     TIME. Sequentially, deliberately: forty parallel requests would
+//     compete with the Dashboard's own data for the connection, which
+//     would reintroduce the delay at the exact moment it was removed;
+//
+//   * pointing at a page in the submenu fetches it immediately, which
+//     covers the pages the sweep has not reached yet.
+//
+// Both are hints. A chunk that fails to prefetch is simply fetched again
+// on the click, and a key missing from the map below costs one fetch and
+// nothing else, so this can never be the reason a page fails to open.
+//
+// NOTHING IS FETCHED FOR PAGES THE READER CANNOT OPEN: the keys come
+// from the nav their role actually sees. Nothing is fetched at all on a
+// metered or a 2G connection.
+// =====================================================================
+
+const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
+  'my-role': () => import('@/components/admin/MyProfile'),
+  'welcome': () => import('@/components/admin/HowToUse'),
+  'calendar': () => import('@/components/admin/WorkspaceCalendar'),
+  'reports-upload': () => import('@/components/admin/ReportUpload'),
+  'reports-archive': () => import('@/components/admin/FileManagement'),
+  'reports-templates': () => import('@/components/admin/ResourceManager'),
+  'reports-funds': () => import('@/components/admin/FundsPerformances'),
+  'applications-website': () => import('@/components/admin/ApplicationSettings'),
+  'applications-screening': () => import('@/components/admin/CandidatesManagement'),
+  'applications-interview-calendar': () => import('@/components/admin/InterviewCalendar'),
+  'applications-joiners': () => import('@/components/admin/NewJoiners'),
+  'applications-form': () => import('@/components/admin/FormSettings'),
+  'applications-status': () => import('@/components/admin/ApplicationStatus'),
+  'applications-interview': () => import('@/components/admin/InterviewCalendarCandidate'),
+  'applications-offer': () => import('@/components/admin/CandidateOffer'),
+  'applications-faqs': () => import('@/components/admin/CandidateFaqs'),
+  'events-create': () => import('@/components/admin/EventCreate'),
+  'events-forms': () => import('@/components/admin/EventForms'),
+  'events-attendance': () => import('@/components/admin/EventAttendance'),
+  // 'events-archive' is drawn inline by this file and has no chunk to warm.
+  'events-alumni-calls': () => import('@/components/admin/AlumniCalls'),
+  'events-on-display': () => import('@/components/admin/AssociationOnDisplay'),
+  'people-members': () => import('@/components/admin/MembersManagement'),
+  'people-alumni': () => import('@/components/admin/AlumniManagement'),
+  'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
+  'smm-ig': () => import('@/components/admin/ResourceManager'),
+  'smm-li': () => import('@/components/admin/ResourceManager'),
+  'smm-graphics': () => import('@/components/admin/ResourceManager'),
+  'smm-other': () => import('@/components/admin/ResourceManager'),
+  'smm-brand': () => import('@/components/admin/BrandDesignSystem'),
+  'smm-ads': () => import('@/components/admin/AdsRegister'),
+  'ops-fee': () => import('@/components/admin/MembershipFee'),
+  'ops-treasury': () => import('@/components/admin/Treasury'),
+  'ops-external': () => import('@/components/admin/ResourceManager'),
+  'ops-docs': () => import('@/components/admin/ResourceManager'),
+  'ops-newsletter': () => import('@/components/admin/NewsletterManagement'),
+  'ops-auto-emails': () => import('@/components/admin/AutoEmails'),
+  'website-pages': () => import('@/components/admin/PagesVisibilityManagement'),
+  'website-readings': () => import('@/components/admin/ReadingsManagement'),
+  'website-testimonials': () => import('@/components/admin/TestimonialsManagement'),
+  'website-history': () => import('@/components/admin/HistoryManagement'),
+  'website-faqs': () => import('@/components/admin/JoinFaqsManagement'),
+  'settings-users': () => import('@/components/admin/UserManagement'),
+  'settings-roles': () => import('@/components/admin/RolePermissionsTable'),
+  'settings-mobile': () => import('@/components/admin/MobileViewTable'),
+  'settings-activity': () => import('@/components/admin/ActivityManagement'),
+};
+
+/** Fetch one page's chunk now. Safe to call repeatedly: the browser and
+ *  the module registry both keep what they already have. */
+function warmSubsectionChunk(key: string | null | undefined) {
+  if (!key) return;
+  try { void SUBSECTION_CHUNK[key]?.(); } catch { /* a hint, never a failure */ }
+}
+
+/** True when fetching in the background would be rude: the reader has
+ *  asked for less data, or the connection cannot spare it. */
+function backgroundFetchIsUnwelcome() {
+  const conn = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (!conn) return false;
+  return !!conn.saveData || /(^|-)2g$/.test(conn.effectiveType ?? '');
+}
+
+/**
+ * The two chunks that are not a page: the help panel, with the guide and
+ * the manual behind it, and the guide on its own for the search palette.
+ *
+ * They are warmed FIRST, ahead of the pages, because they are what the
+ * shell itself opens: the ? is on every page and Ctrl K is one keystroke
+ * away, while a given page may never be visited at all.
+ */
+const SHELL_CHUNKS: Array<() => Promise<unknown>> = [
+  () => import('@/components/admin/help/HelpPanel'),
+  () => import('@/lib/workspace-guide'),
+];
+
+/** The idle sweep. One page at a time, in the order they appear in the nav. */
+async function warmSubsectionChunks(keys: string[]) {
+  if (backgroundFetchIsUnwelcome()) return;
+  for (const load of SHELL_CHUNKS) {
+    try { await load(); } catch { /* fetched again when it is needed */ }
+    await new Promise((r) => { window.setTimeout(r, 60); });
+  }
+  for (const key of keys) {
+    const load = SUBSECTION_CHUNK[key];
+    if (!load) continue;
+    try { await load(); } catch { /* fetched again on the click */ }
+    // A breath between pages, so the sweep never holds the connection
+    // against something the reader is actually waiting for.
+    await new Promise((r) => { window.setTimeout(r, 60); });
+  }
+}
 import { ReadOnlyRegion } from '@/components/admin/ReadOnlyRegion';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
-import { helpPageKey } from '@/lib/workspace-guide';
-import ApplicationSettings from '@/components/admin/ApplicationSettings';
-import ReadingsManagement from '@/components/admin/ReadingsManagement';
-import ActivityManagement from '@/components/admin/ActivityManagement';
-import NewsletterManagement from '@/components/admin/NewsletterManagement';
-import PagesVisibilityManagement from '@/components/admin/PagesVisibilityManagement';
-import TestimonialsManagement from '@/components/admin/TestimonialsManagement';
-import HistoryManagement from '@/components/admin/HistoryManagement';
+import { helpPageKey } from '@/lib/workspace-guide-keys';
 import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -268,6 +417,33 @@ const MinervaWorkspace = () => {
       if (canonical !== location.pathname) navigate(canonical, { replace: true });
     }
   }, [navReady, visibleNav.length, resolution, homePath, location.pathname, navigate]);
+
+  // ----------------------------------------------------------------------
+  // Once the workspace is up and the browser is idle, fetch the pages this
+  // reader can open, one at a time, in nav order. See the comment above
+  // SUBSECTION_CHUNK: this is what keeps the code split invisible at the
+  // point of use, and it runs strictly after the page that is on screen.
+  //
+  // It runs once. `warmSubsectionChunks` resolves whether or not every
+  // chunk arrived, and a chunk that did not is fetched again on the click.
+  // ----------------------------------------------------------------------
+  const warmedRef = useRef(false);
+  useEffect(() => {
+    if (!navReady || warmedRef.current || visibleNav.length === 0) return;
+    warmedRef.current = true;
+    const keys = visibleNav.flatMap((s) => (s.subItems.length ? s.subItems.map((si) => si.key) : [s.key]));
+    const idle = (window as typeof window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (h: number) => void;
+    });
+    const start = () => { void warmSubsectionChunks(keys); };
+    if (idle.requestIdleCallback) {
+      const handle = idle.requestIdleCallback(start, { timeout: 4000 });
+      return () => idle.cancelIdleCallback?.(handle);
+    }
+    const timer = window.setTimeout(start, 2000);
+    return () => window.clearTimeout(timer);
+  }, [navReady, visibleNav]);
 
   // ----------------------------------------------------------------------
   // The applicant's "Interview Calendar" is now "Interview", and lives at
@@ -1186,7 +1362,11 @@ const MinervaWorkspace = () => {
           onSignOut={async () => { resetMyApplication(); await signOut(); navigate('/'); }}
         >
           <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
-          {renderContent()}
+          {/* The same loader the workspace already shows while a page's
+              data is arriving, so a page whose chunk is still in flight
+              and a page whose rows are still in flight look identical:
+              there is one waiting state in the workspace, not two. */}
+          <Suspense fallback={<WorkspaceLoader />}>{renderContent()}</Suspense>
         </MobileWorkspaceShell>
       </>
     );
@@ -1316,6 +1496,11 @@ const MinervaWorkspace = () => {
                       <button
                         key={si.key}
                         onClick={() => activeSection && goTo(activeSection.key, si.key)}
+                        // Fetch the page while the pointer is still on its
+                        // name, so the pages the idle sweep has not reached
+                        // yet open with nothing to wait for either.
+                        onPointerEnter={() => warmSubsectionChunk(si.key)}
+                        onFocus={() => warmSubsectionChunk(si.key)}
                         className={`w-full text-left px-4 h-11 flex items-center transition-colors text-[17px] ${
                           isActive ? 'text-accent font-medium bg-[#ece9f4]' : 'text-foreground hover:bg-background/60'
                         }`}
@@ -1363,7 +1548,13 @@ const MinervaWorkspace = () => {
             <div id="ws-content" data-ws-pane className="flex-1 overflow-y-auto px-6 py-6 relative">
               <HelpProvider>
                 <ReadOnlyRegion resource={openResource} readOnly={subsectionReadOnly} />
-                {renderContent()}
+                {/* The same loader the workspace already shows while a
+                    page's data is arriving, so a page whose chunk is still
+                    in flight and a page whose rows are still in flight look
+                    identical: there is one waiting state in the workspace,
+                    not two. It fills this pane because the pane is
+                    `relative`, exactly as WorkspaceLoader is written for. */}
+                <Suspense fallback={<WorkspaceLoader />}>{renderContent()}</Suspense>
                 {/* CONTEXTUAL HELP, ON EVERY PAGE INCLUDING AN APPLICANT'S.
                     The floating question mark used to be withheld from
                     applicants, which is exactly backwards: a member has a
