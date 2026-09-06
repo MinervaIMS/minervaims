@@ -36,7 +36,7 @@ const DIV_LABELS: Record<string, string> = {
   portfolio: 'Portfolio Management', quant: 'Quantitative Research',
   media: 'Media & Communication', operations: 'Operations', board: 'Board',
 };
-const STATUS_URL = 'https://minervaims.org/admin';
+const STATUS_URL = 'https://minervaims.org/workspace';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

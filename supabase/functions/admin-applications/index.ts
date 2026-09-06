@@ -64,7 +64,7 @@ const DIV_LABELS: Record<string, string> = {
   portfolio: 'Portfolio Management', quant: 'Quantitative Research',
   media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
 };
-const STATUS_URL = 'https://minervaims.org/admin';
+const STATUS_URL = 'https://minervaims.org/workspace';
 // Roles a new joiner may be given. Hard whitelist: the offer flow can never
 // hand out leadership or admin access.
 const JOIN_ROLES = new Set(['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst']);
