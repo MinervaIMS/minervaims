@@ -65,20 +65,13 @@ export function WorkspaceSection() {
 
         <div className="max-w-3xl space-y-5 font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
           <p>
-            The Society is run from a workspace we built and maintain ourselves. Recruiting lives
-            in it end to end, from the application form on this website through screening,
-            interviews and offers; so does the research, from the templates each division writes
-            to the archive every published report is filed in.
+            {'The Minerva Workspace is our proprietary operating platform: recruiting from application to offer, division templates and the full research archive, events, the shared calendar, the member register, fund performance and the association\'s accounts, all governed by role. It is the infrastructure behind the speed and consistency with which we execute projects and run events, and a durable advantage over peer societies.\n\nIt is also the gateway to our alumni network. Active members access it in full, every former member of the Society and the career each has built, a record held privately and never published externally.\n'}
           </p>
           <p>
-            Events, the shared calendar, the member register, the funds' figures and the
-            association's accounts are all held in the same place, by the people responsible for
-            them, with a role deciding what each member can see and change.
+            {'\n'}
           </p>
           <p className="text-foreground">
-            It is also how the alumni network is reached. This site shows a selection; active
-            members open the workspace and consult the whole of it, every former member of the
-            Society and where their career has taken them, which is not published to the public.
+            {'\n'}
           </p>
         </div>
 
