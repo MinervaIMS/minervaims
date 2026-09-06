@@ -3,6 +3,15 @@ import { useState } from 'react';
 // =====================================================================
 // WorkspaceSection — the association's own workspace, on the public site.
 // ---------------------------------------------------------------------
+// USED ON TWO PAGES, WHICH IS WHY IT IS A COMPONENT.
+//
+// The homepage runs it last, for a reader who has taken in what Minerva
+// does and is now wondering how it is actually operated. /join runs it
+// immediately before the FAQs, where it answers a different question
+// from the same facts: an applicant reading about the selection has just
+// been told the whole of it happens in here, and the last thing they
+// read before the FAQs is what joining gives them access to.
+// ---------------------------------------------------------------------
 // The homepage says what the association researches, how its funds have
 // done and who its alumni are. It said nothing at all about the thing the
 // association is actually run ON, which is a mistake in both directions:
@@ -43,12 +52,12 @@ export function WorkspaceSection() {
 
   return (
     <section
-      aria-labelledby="home-workspace-heading"
+      aria-labelledby="workspace-section-heading"
       className="bg-background py-section-sm md:py-section"
     >
       <div className="container">
         <h2
-          id="home-workspace-heading"
+          id="workspace-section-heading"
           className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent"
         >
           The Minerva Workspace

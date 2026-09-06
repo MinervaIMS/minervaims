@@ -168,7 +168,7 @@ export function AlumniCallsCarousel() {
   if (!loaded || calls.length === 0) return null;
 
   return (
-    <section aria-labelledby="alumni-calls-heading" className="mb-24">
+    <section aria-labelledby="alumni-calls-heading" className="mb-section-sm md:mb-section">
       <div className="mb-6 pb-3 border-b border-separator flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <h2 id="alumni-calls-heading" className="font-serif text-heading text-accent">
           Alumni Calls: Our Stories Are Endless

@@ -216,11 +216,32 @@ const Alumni = () => {
         </div>
       </section>
 
+      {/* =================================================================
+          FOUR BLOCKS IN ONE SECTION, SPACED LIKE FOUR SECTIONS.
+
+          The globe, the founders, the alumni calls and the directory are
+          four separate subjects, but they live inside a single container
+          rather than in four `<section>` elements, because they share one
+          measure and one background and splitting them would change
+          nothing a reader can see.
+
+          What a reader COULD see was the spacing. They were separated by
+          80, 96 and 96 pixels, none of which is a value the site uses
+          anywhere else, so this page read at roughly two thirds of the
+          rhythm every other page keeps and at three different intervals
+          within itself.
+
+          They now carry `mb-section-sm md:mb-section`, which is 80 on a
+          phone and 128 from md up: exactly the join /partnerships and
+          /events put between two adjacent sections, and exactly the join
+          this container already has with the description above it. The
+          page reads 128 in, 128 between every block, and 128 out.
+          ================================================================= */}
       <div className="container py-section-sm md:py-section">
         <AlumniGlobe />
 
         {/* Our Founders. The 2017 founding milestone on /about links straight here. */}
-        <div id="founders" className="mb-24 scroll-mt-28">
+        <div id="founders" className="mb-section-sm md:mb-section scroll-mt-28">
           <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">Our Founders back in 2017</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[.7rem] md:gap-5">
             {founders.map((founder) => (
@@ -485,7 +506,7 @@ const Alumni = () => {
         )}
 
         {/* Access note: the directory continues in the workspace. */}
-        <div className="mt-12 border border-separator bg-muted/40 px-6 py-5">
+        <div className="mt-10 md:mt-16 border border-separator bg-muted/40 px-6 py-5">
           <p className="font-body text-sm text-muted-foreground leading-relaxed">
             This page shows the first 100 alumni of the directory. Full access to the entire alumni
             community is reserved for active members and alumni through the Minerva Workspace.
