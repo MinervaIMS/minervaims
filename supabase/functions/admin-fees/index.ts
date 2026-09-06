@@ -138,8 +138,22 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
       if (secondDeadline && secondDeadline <= firstDeadline) {
         return json({ error: 'The second deadline must be after the first.' }, 400);
       }
+      // A collection cannot open without the information members need in
+      // order to pay: the opening email carries these details, so an
+      // incomplete collection would send an email nobody can act on.
+      const pay = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+      const paymentMethod = pay(body.payment_method);
+      const accountHolder = pay(body.payment_account_holder);
+      const iban = pay(body.payment_iban);
+      const reference = pay(body.payment_reference);
+      const notes = pay(body.payment_notes);
+      if (!paymentMethod || !accountHolder || !iban || !reference) {
+        return json({ error: 'Payment details are required: method, account holder, IBAN and reference.' }, 400);
+      }
       const { data: period, error } = await supabase.from('fee_periods')
-        .insert({ semester_label: label, fee_amount: amount, first_deadline: firstDeadline, second_deadline: secondDeadline, created_by: user.id }).select().single();
+        .insert({ semester_label: label, fee_amount: amount, first_deadline: firstDeadline, second_deadline: secondDeadline, created_by: user.id,
+          payment_method: paymentMethod, payment_account_holder: accountHolder, payment_iban: iban,
+          payment_reference: reference, payment_notes: notes || null }).select().single();
       if (error) {
         if ((error as any).code === '23505') return json({ error: 'A period with this label already exists.' }, 409);
         throw error;
@@ -157,7 +171,32 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
         await supabase.from('membership_fees').delete()
           .eq('period_id', period.id).eq('paid', false).in('member_id', exemptIds);
       }
-      return json({ success: true, period });
+      // The collection email goes out at the moment the collection opens,
+      // only when the person opening it confirmed the send in the dialog.
+      let notified = 0;
+      if (body.notify === true) {
+        const block = [paymentMethod, `Account holder: ${accountHolder}`, `IBAN: ${iban}`, `Reference: ${reference}`]
+          .concat(notes ? [notes] : []).join('<br />');
+        const deadlineLabel = new Date(secondDeadline || firstDeadline)
+          .toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        for (const m of members as any[]) {
+          if (!m.email) continue;
+          try {
+            await supabase.rpc('enqueue_app_email', {
+              p_key: 'ws_fee_collection', p_to: m.email,
+              p_vars: {
+                first_name: m.first_name, semester_label: label,
+                fee_amount: `EUR ${amount.toFixed(2)}`, fee_deadline: deadlineLabel,
+                payment_method: block,
+                status_url: 'https://minervaims.org/workspace/dashboard',
+              },
+            });
+            notified++;
+          } catch (e) { console.error('fee collection email failed', m.email, e); }
+        }
+        await supabase.from('fee_periods').update({ opening_email_sent_at: new Date().toISOString() }).eq('id', period.id);
+      }
+      return json({ success: true, period, notified });
     }
 
     if (action === 'set-paid') {

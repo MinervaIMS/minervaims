@@ -64,7 +64,7 @@ const DIV_LABELS: Record<string, string> = {
   portfolio: 'Portfolio Management', quant: 'Quantitative Research',
   media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
 };
-const STATUS_URL = 'https://minervaims.org/admin';
+const STATUS_URL = 'https://minervaims.org/workspace';
 // Roles a new joiner may be given. Hard whitelist: the offer flow can never
 // hand out leadership or admin access.
 const JOIN_ROLES = new Set(['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst']);
@@ -473,7 +473,25 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       }).eq('id', app.id);
       if (error) throw error;
 
-      const deadlineLabel = deadline.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      // The deadline is 72 hours from the moment the offer is sent, so the
+      // label carries the time as well: "05 Sep 2026, 18:40 (CET)" reads as
+      // an hour-precise cut-off, where a bare date does not.
+      const deadlineLabel = deadline.toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        timeZone: 'Europe/Rome', hour12: false,
+      }) + ' (Rome time)';
+      // The signature names the sitting President. The placeholder was never
+      // filled by anything, so candidates received the literal token.
+      let presidentName = 'The President';
+      try {
+        // The website admin account also carries the president role and must
+        // never be named in a candidate-facing signature.
+        const { data: pres } = await supabase.from('members')
+          .select('first_name, surname, email').eq('role', 'president')
+          .eq('membership_status', 'active');
+        const real = (pres || []).find((m: any) => (m.email || '').toLowerCase() !== 'as.minerva@unibocconi.it');
+        if (real) presidentName = `${real.first_name} ${real.surname}`.trim();
+      } catch (e) { console.error('president lookup failed', e); }
       try {
         await supabase.rpc('enqueue_app_email', {
           p_key: 'offer_to_join', p_to: app.email,
@@ -483,6 +501,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             acceptance_deadline: deadlineLabel,
             status_url: STATUS_URL,
             deadline: deadlineLabel,
+            president_name: presidentName,
           },
         });
       } catch (e) { console.error('offer email enqueue failed', e); }

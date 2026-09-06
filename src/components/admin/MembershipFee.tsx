@@ -38,6 +38,12 @@ export default function MembershipFee() {
   const [newAmount, setNewAmount] = useState('10');
   const [firstDeadline, setFirstDeadline] = useState('');
   const [secondDeadline, setSecondDeadline] = useState('');
+  // Payment information members receive in the collection email.
+  const [payMethod, setPayMethod] = useState('Bank transfer');
+  const [payHolder, setPayHolder] = useState('');
+  const [payIban, setPayIban] = useState('');
+  const [payRef, setPayRef] = useState('');
+  const [payNotes, setPayNotes] = useState('');
   const [busy, setBusy] = useState(false);
   // Payments banked for this collection by somebody who has since left the
   // list (moved to alumni, or appointed advisor). Reported rather than
@@ -104,18 +110,30 @@ export default function MembershipFee() {
     </th>
   );
 
+  // A collection cannot open until members can be told how to pay: the
+  // opening email carries these details, so every field below is required.
+  const paymentReady = !!(payMethod.trim() && payHolder.trim() && payIban.trim() && payRef.trim());
+  const openReady = !!newLabel.trim() && !!firstDeadline && paymentReady && (!secondDeadline || secondDeadline > firstDeadline);
+
   const open = async () => {
     if (!newLabel.trim()) { toast({ title: 'Enter a semester label', variant: 'destructive' }); return; }
     if (!firstDeadline) { toast({ title: 'Set a first deadline', variant: 'destructive' }); return; }
     if (secondDeadline && secondDeadline <= firstDeadline) { toast({ title: 'The second deadline must be after the first', variant: 'destructive' }); return; }
+    if (!paymentReady) { toast({ title: 'Complete the payment details', description: 'Method, account holder, IBAN and reference are required.', variant: 'destructive' }); return; }
     setBusy(true);
     try {
-      await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null);
-      setNewLabel(''); setFirstDeadline(''); setSecondDeadline(''); await load(); toast({ title: 'Collection opened' });
+      const r = await openFeePeriod(session, newLabel.trim(), Number(newAmount) || 10, firstDeadline, secondDeadline || null,
+        { payment_method: payMethod.trim(), payment_account_holder: payHolder.trim(), payment_iban: payIban.trim(), payment_reference: payRef.trim(), payment_notes: payNotes.trim() },
+        true);
+      setNewLabel(''); setFirstDeadline(''); setSecondDeadline('');
+      setPayMethod(''); setPayHolder(''); setPayIban(''); setPayRef(''); setPayNotes('');
+      await load();
+      toast({ title: 'Collection opened', description: r?.notified ? `${r.notified} member${r.notified === 1 ? '' : 's'} notified by email.` : undefined });
     }
     catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
   };
+
 
   const toggle = async (memberId: string) => {
     if (!period) return;
@@ -167,7 +185,36 @@ export default function MembershipFee() {
             <div className="space-y-1"><Label>First deadline</Label><Input type="date" value={firstDeadline} onChange={(e) => setFirstDeadline(e.target.value)} /></div>
             <div className="space-y-1"><Label>Second deadline (optional, hidden until the first passes)</Label><Input type="date" value={secondDeadline} onChange={(e) => setSecondDeadline(e.target.value)} /></div>
           </div>
-          <Button className="mt-4" onClick={open} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-body">
+            <div className="space-y-1"><Label>Payment method</Label><Input value={payMethod} onChange={(e) => setPayMethod(e.target.value)} placeholder="e.g. Bank transfer" /></div>
+            <div className="space-y-1"><Label>Account holder</Label><Input value={payHolder} onChange={(e) => setPayHolder(e.target.value)} placeholder="e.g. Minerva IMS" /></div>
+            <div className="space-y-1"><Label>IBAN</Label><Input value={payIban} onChange={(e) => setPayIban(e.target.value)} placeholder="IT00 0000 0000 0000 0000 00" /></div>
+            <div className="space-y-1"><Label>Payment reference</Label><Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="e.g. Fee Autumn 2026 — Name Surname" /></div>
+            <div className="space-y-1 sm:col-span-2 lg:col-span-4"><Label>Further instructions (optional)</Label><Input value={payNotes} onChange={(e) => setPayNotes(e.target.value)} placeholder="Anything else members need to know to pay" /></div>
+          </div>
+          <p className="font-body text-sm text-muted-foreground mt-3">
+            All payment details above are required: they are sent to every member in the fee collection email,
+            so a collection cannot open without them.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button className="mt-4" disabled={busy || !openReady}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Open collection'}</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Open the collection and email every member?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Opening the {newLabel.trim() || 'new'} collection sends the fee collection email to all
+                  {' '}{members.length || ''} listed members immediately, with the amount, the deadline and the payment
+                  details entered above. This email cannot be recalled.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={open}>Open & send email</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent></Card>
       ) : (
         <>

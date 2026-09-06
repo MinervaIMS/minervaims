@@ -15,7 +15,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const STATUS_URL = 'https://minervaims.org/admin';
+const STATUS_URL = 'https://minervaims.org/workspace';
 const DIV_LABELS: Record<string, string> = {
   equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
   portfolio: 'Portfolio Management', quant: 'Quantitative Research',
