@@ -114,8 +114,23 @@ const Join = () => {
       {/* 03 Alumni: the homepage section, unchanged. */}
       <AlumniTicker />
 
-      {/* 04 Admissions */}
-      <section aria-labelledby="join-journey-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
+      {/* 04 Admissions.
+          =================================================================
+          THE FIVE NUMBERED BLOCKS WERE SPACED 64, 128, 192 AND 192.
+          -----------------------------------------------------------------
+          A numbered sequence read at four different intervals, because
+          the opening and closing sides of each join were chosen
+          independently: a section that closed on the HALF rhythm was
+          followed by one that opened on the FULL one, and 64 + 128 is a
+          gap that appears nowhere else on the site.
+          The rule the rest of the site follows is that the two sides of a
+          join agree. A half meets a half (128 in total) and a full meets
+          a full (256). This block opens on the full rhythm because it
+          follows the alumni ticker, which is a full-bleed coloured band
+          and takes the wider join everywhere it appears; the two blocks
+          after it open on the half, because they continue the sequence.
+          ================================================================= */}
+      <section aria-labelledby="join-journey-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-journey-heading"
@@ -130,8 +145,9 @@ const Join = () => {
         </div>
       </section>
 
-      {/* 05 The Written Question */}
-      <section aria-labelledby="join-written-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
+      {/* 05 The Written Question. Opens on the half: it continues the
+          sequence above it, which closed on the half. */}
+      <section aria-labelledby="join-written-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
         <div className="container">
           <h2
             id="join-written-heading"
@@ -143,8 +159,9 @@ const Join = () => {
         </div>
       </section>
 
-      {/* Close: mirrors the Status block, same source, same two states. */}
-      <section aria-labelledby="join-close-heading" className="bg-background pt-section-sm md:pt-section pb-10 md:pb-16">
+      {/* Close: mirrors the Status block, same source, same two states.
+          Opens on the half, for the same reason as the block above it. */}
+      <section aria-labelledby="join-close-heading" className="bg-background pt-10 md:pt-16 pb-10 md:pb-16">
         <div className="container">
           <ApplicationCta
             {...status}
