@@ -160,12 +160,19 @@ const Join = () => {
         </div>
       </section>
 
+      {/* The workspace, immediately after Craft your Application.
+          Everything above this point describes a selection that runs
+          inside it, from the form to the offer, so it lands on a reader
+          who already knows what it is for. It also carries the one thing
+          on this page that is about membership rather than admission:
+          what the alumni network looks like from the inside. */}
+      <WorkspaceSection />
+
       {/* Close: mirrors the Status block, same source, same two states.
-          Opens on the half, because it continues the admissions sequence
+          Opens on the half, because it continues from the workspace section
           above it. It CLOSES on the full rhythm, because what follows is
-          a different subject: the workspace section below is joined at
-          256, which is the interval the site puts between two subjects
-          and the one this same component sits in on the homepage. */}
+          a different subject: the FAQ section below is joined at 256, which
+          is the interval the site puts between two subjects. */}
       <section aria-labelledby="join-close-heading" className="bg-background pt-10 md:pt-16 pb-section-sm md:pb-section">
         <div className="container">
           <ApplicationCta
@@ -177,16 +184,9 @@ const Join = () => {
         </div>
       </section>
 
-      {/* The workspace, immediately before the FAQs.
-          Everything above this point describes a selection that runs
-          inside it, from the form to the offer, so it lands on a reader
-          who already knows what it is for. It also carries the one thing
-          on this page that is about membership rather than admission:
-          what the alumni network looks like from the inside. */}
-      <WorkspaceSection />
-
       {/* FAQs */}
       <JoinFaq />
+
     </>
   );
 };
