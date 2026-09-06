@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
     // Reading is not editing. Everything except the read needs 'manage'.
     if (action !== 'list' && !canManage) {
-      return json({ error: 'Your role can read the Society's timeline but not change them.' }, 403);
+      return json({ error: "Your role can read the Society's timeline but not change them." }, 403);
     }
 
     if (action === 'list') {
