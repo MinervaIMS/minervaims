@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { activeFunds, fundLabels, type Fund } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -56,9 +57,7 @@ export default function ReportUpload() {
       const fd = new FormData();
       fd.append('file', file);
       if (form.division) fd.append('division', form.division);
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: fd, headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-files', { body: fd, session });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setFileUrl(data.file_url); setFileName(file.name);
@@ -75,8 +74,7 @@ export default function ReportUpload() {
     if (!fileUrl) { toast({ title: 'Please attach the report PDF first', variant: 'destructive' }); return; }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: {
+      const { data, error } = await callFunction('admin-files', { body: {
           action: 'create',
           file: {
             title: form.title, description: form.description || null, file_url: fileUrl,
@@ -84,9 +82,7 @@ export default function ReportUpload() {
             status: publishNow ? 'published' : 'draft',
             page_count: pageCount && Number(pageCount) > 0 ? Number(pageCount) : null,
           },
-        },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+        }, session });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({

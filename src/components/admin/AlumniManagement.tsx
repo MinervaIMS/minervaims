@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
@@ -161,14 +162,11 @@ export default function AlumniManagement() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('admin-alumni', {
-        body: { action, alumni: alumniData },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-alumni', { body: { action, alumni: alumniData }, session });
 
       if (error || data?.error) {
         fetchAlumni();
-        toast({ title: "Error", description: data?.error || "Failed to save alumni", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to save alumni"), variant: "destructive" });
         return;
       }
 
@@ -192,14 +190,11 @@ export default function AlumniManagement() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('admin-alumni', {
-        body: { action: 'delete', alumni: { id: alumniId } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-alumni', { body: { action: 'delete', alumni: { id: alumniId } }, session });
 
       if (error || data?.error) {
         setAlumni(previousAlumni);
-        toast({ title: "Error", description: data?.error || "Failed to delete alumni", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to delete alumni"), variant: "destructive" });
         return;
       }
 

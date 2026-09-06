@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { callFunction, invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
 
 export type ResourceType = 'text' | 'file' | 'link' | 'code' | 'other';
@@ -114,13 +115,12 @@ export async function listResources(category: string): Promise<ResourceRow[]> {
   return ((data || []) as ResourceRow[]).map((r) => ({ ...r, sources: normalizeSources(r) }));
 }
 
-async function invoke(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-resources', {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction('admin-resources', { body: body, session });
 }
 
 export function saveResource(session: Session | null, resource: ResourceInput) {
@@ -140,9 +140,7 @@ export async function signResourceFile(session: Session | null, file_url: string
 export async function uploadResourceFile(session: Session | null, file: File): Promise<string> {
   const fd = new FormData();
   fd.append('file', file);
-  const { data, error } = await supabase.functions.invoke('admin-resources', {
-    body: fd, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+  const { data, error } = await callFunction('admin-resources', { body: fd, session: session });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data.file_url as string;

@@ -13,8 +13,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { useApplicationSettings } from '@/hooks/useApplicationSettings';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { ApplyBackground } from '@/components/shared/ApplyBackground';
+import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { AuthButton } from '@/components/shared/AuthUI';
 import fullLogo from '@/assets/legal-hero-logo.svg';
@@ -34,6 +36,9 @@ import {
 const STUD_EMAIL = /@studbocconi\.it$/i;
 
 function Shell({ children }: { children: React.ReactNode }) {
+  // This page is the backdrop-plus-one-card shape, hand-rolled rather
+  // than through AuthLayout, so it declares the same thing directly.
+  useHideSiteFooter();
   return (
     <>
       <Seo page="/apply" />
@@ -102,7 +107,7 @@ function SuccessScreen() {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!active || !session) return;
-      try { await supabase.functions.invoke('applicant-notify', { headers: { Authorization: `Bearer ${session.access_token}` } }); }
+      try { await callFunction('applicant-notify', { session }); }
       catch { /* non-blocking */ }
       // Pull the freshly-inserted candidate role into client state before the
       // user clicks through, so the workspace guard sees them as a candidate.

@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown, RotateCcw } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
@@ -129,10 +130,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
   const handleSetStatus = async (fileId: string, status: 'draft' | 'published' | 'blocked') => {
     try {
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: { action: 'set-status', file: { id: fileId, status } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-files', { body: { action: 'set-status', file: { id: fileId, status } }, session });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error', description: data.error, variant: 'destructive' }); return; }
       setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status } : f)));
@@ -155,8 +153,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     (async () => {
       try {
         const { data: { session: s } } = await supabase.auth.getSession();
-        await supabase.functions.invoke('admin-files', {
-          body: { action: 'purge-expired' },
+        await callFunction('admin-files', { body: { action: 'purge-expired' },
           headers: { Authorization: `Bearer ${s?.access_token}` },
         });
       } catch { /* the list below does not depend on this */ }
@@ -194,13 +191,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     const previous = files;
     setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, deleted_at: null } : f)));
     try {
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: { action: 'restore', file: { id: file.id } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-files', {
+        body: { action: 'restore', file: { id: file.id } }, session });
       if (error || data?.error) {
         setFiles(previous);
-        toast({ title: 'Could not restore', description: data?.error || 'Please try again.', variant: 'destructive' });
+        toast({ title: 'Could not restore', description: friendlyError(error ?? data?.error, 'Please try again.'), variant: 'destructive' });
         return;
       }
       logActivity(session, access.primaryRole, { action: 'update', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: file.id, entityName: file.title, details: { operation: 'restore' } });
@@ -217,13 +212,10 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     const previous = files;
     setFiles((prev) => prev.filter((f) => f.id !== file.id));
     try {
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: { action: 'purge', file: { id: file.id } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-files', { body: { action: 'purge', file: { id: file.id } }, session });
       if (error || data?.error) {
         setFiles(previous);
-        toast({ title: 'Could not remove', description: data?.error || 'Please try again.', variant: 'destructive' });
+        toast({ title: 'Could not remove', description: friendlyError(error ?? data?.error, 'Please try again.'), variant: 'destructive' });
         return;
       }
       logActivity(session, access.primaryRole, { action: 'delete', section: 'Reports', subsection: 'Report archive', entityType: 'file', entityId: file.id, entityName: file.title, details: { operation: 'permanent' } });
@@ -549,14 +541,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: { action, file: fileData },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-files', { body: { action, file: fileData }, session });
 
       if (error || data?.error) {
         fetchFiles();
-        toast({ title: "Error", description: data?.error || "Failed to save file", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to save file"), variant: "destructive" });
         return;
       }
 
@@ -582,14 +571,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('admin-files', {
-        body: { action: 'delete', file: { id: fileId } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-files', { body: { action: 'delete', file: { id: fileId } }, session });
 
       if (error || data?.error) {
         setFiles(previousFiles);
-        toast({ title: "Error", description: data?.error || "Failed to delete file", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to delete file"), variant: "destructive" });
         return;
       }
 

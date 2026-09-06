@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { Plus, Edit, Trash2, Loader2, GripVertical, BookOpen, GraduationCap, Coffee, ChevronLeft, ChevronRight, MoreHorizontal, Download, Search } from 'lucide-react';
@@ -349,11 +350,9 @@ const ReadingsManagement = () => {
         ...(editingReading && { id: editingReading.id }),
       };
 
-      const { data, error } = await supabase.functions.invoke('admin-readings', {
+      const { data, error } = await callFunction('admin-readings', {
         body: { action, reading: readingData },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        session,
       });
 
       if (error) throw error;
@@ -391,11 +390,9 @@ const ReadingsManagement = () => {
     if (!confirm('Are you sure you want to delete this reading?')) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('admin-readings', {
+      const { data, error } = await callFunction('admin-readings', {
         body: { action: 'delete', reading: { id: readingId } },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        session,
       });
 
       if (error) throw error;
@@ -442,12 +439,10 @@ const ReadingsManagement = () => {
           display_order: index,
         }));
 
-        const { error } = await supabase.functions.invoke('admin-readings', {
+        const { error } = await callFunction('admin-readings', {
           body: { action: 'reorder', readings: updates },
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-        });
+        session,
+      });
 
         if (error) throw error;
 

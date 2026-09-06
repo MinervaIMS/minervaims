@@ -4,6 +4,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
 
 export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'other';
@@ -139,11 +140,10 @@ export async function registerForEvent(session: Session | null, payload: EventRe
   return invoke('register-event', session, { ...payload });
 }
 
-async function invoke(fn: string, session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke(fn, {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(fn: string, session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction(fn, { body: body, session });
 }

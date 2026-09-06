@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import AuthLayout from '@/components/shared/AuthLayout';
 import {
   AuthButton,
@@ -143,9 +144,7 @@ const EmailVerification = () => {
    */
   const describeSpentLink = async (tokenHash: string, fallback: string) => {
     try {
-      const { data } = await supabase.functions.invoke('auth-link-status', {
-        body: { token_hash: tokenHash },
-      });
+      const { data } = await callFunction('auth-link-status', { body: { token_hash: tokenHash } });
       if (data?.status === 'already_confirmed') {
         setAlreadyConfirmed(true);
         setFailure(null);

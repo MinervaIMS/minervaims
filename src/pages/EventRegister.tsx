@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import { Seo } from '@/components/shared/Seo';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -84,6 +85,9 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 );
 
 export default function EventRegister() {
+  // This page is the backdrop-plus-one-card shape, hand-rolled rather
+  // than through AuthLayout, so it declares the same thing directly.
+  useHideSiteFooter();
   const { id } = useParams<{ id: string }>();
   const { user, session } = useAuth();
   const { toast } = useToast();

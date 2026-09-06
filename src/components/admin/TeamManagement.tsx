@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction, friendlyError } from '@/lib/errors';
 import { Plus, Edit, Trash2, Upload, X, Loader2, GripVertical, Download, RotateCcw } from 'lucide-react';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { divisionLabels, Division } from '@/lib/types';
@@ -278,13 +279,12 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
         display_order: index,
       }));
 
-      const { data, error } = await supabase.functions.invoke('admin-team', {
-        body: { action: 'reorder', items },
+      const { data, error } = await callFunction('admin-team', { body: { action: 'reorder', items },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (error || data?.error) {
-        toast({ title: "Error", description: data?.error || "Failed to save order", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to save order"), variant: "destructive" });
         fetchMembers();
         return;
       }
@@ -322,13 +322,10 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
         display_order: index,
       }));
 
-      const { data, error } = await supabase.functions.invoke('admin-team', {
-        body: { action: 'reorder', items },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-team', { body: { action: 'reorder', items }, session });
 
       if (error || data?.error) {
-        toast({ title: "Error", description: data?.error || "Failed to reset order", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to reset order"), variant: "destructive" });
         return;
       }
 
@@ -615,14 +612,11 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('admin-team', {
-        body: { action, member: memberData },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-team', { body: { action, member: memberData }, session });
 
       if (error || data?.error) {
         fetchMembers();
-        const errorMsg = data?.error || error?.message || "Failed to save team member";
+        const errorMsg = friendlyError(error ?? data?.error, "Failed to save team member");
         if (errorMsg.includes('Invalid token') || errorMsg.includes('401')) {
           toast({ title: "Session Expired", description: "Please log out and log back in.", variant: "destructive" });
         } else {
@@ -650,14 +644,12 @@ export default function TeamManagement({ allowedDivisions, isFullAccess = true }
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('admin-team', {
-        body: { action: 'delete', member: { id: memberId } },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await callFunction('admin-team', {
+        body: { action: 'delete', member: { id: memberId } }, session });
 
       if (error || data?.error) {
         setMembers(previousMembers);
-        toast({ title: "Error", description: data?.error || "Failed to delete team member", variant: "destructive" });
+        toast({ title: "Error", description: friendlyError(error ?? data?.error, "Failed to delete team member"), variant: "destructive" });
         return;
       }
 

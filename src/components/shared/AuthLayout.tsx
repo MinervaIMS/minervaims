@@ -1,5 +1,6 @@
 import { CSSProperties, ReactNode } from 'react';
 import { Seo } from '@/components/shared/Seo';
+import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import fullLogo from '@/assets/legal-hero-logo.svg';
 import Beams from './Beams';
 import ApplyBackground from './ApplyBackground';
@@ -37,6 +38,11 @@ interface AuthLayoutProps {
 export function AuthLayout({
   title, children, cardTitle, cardSubtitle, align = 'center', background = 'workspace',
 }: AuthLayoutProps) {
+  // This shell IS the "backdrop plus one white card" shape, so every page
+  // built on it drops the site footer: the backdrop already fills the
+  // viewport, and a second screen of links below it belongs to a
+  // different kind of page.
+  useHideSiteFooter();
   return (
     <>
       {/* Sign-in, password reset and email confirmation are steps in a

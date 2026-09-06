@@ -4,6 +4,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { callFunction, invokeFunction } from '@/lib/errors';
 import type { OrgDivision, AppRole } from '@/lib/roles';
 
 export interface FeePeriod { id: string; semester_label: string; fee_amount: number; closed: boolean; closed_at: string | null; first_deadline: string | null; second_deadline: string | null; }
@@ -20,11 +21,12 @@ export interface TreasuryInput { amount: number; flow: 'in' | 'out'; description
 export interface AutoTemplate { id: string; key: string; name: string; subject: string; body: string; description: string | null; file_url: string | null; connected: boolean; updated_at: string; trigger_description: string | null; recipient_description: string | null; schedule_description: string | null; }
 export interface EmailLogRow { id: string; template_name: string; recipient_email: string; status: string; created_at: string; }
 
-async function invoke(fn: string, session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke(fn, { body, headers: { Authorization: `Bearer ${session?.access_token}` } });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(fn: string, session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction(fn, { body: body, session });
 }
 
 // Fees
@@ -75,9 +77,7 @@ export function createAutoTemplate(session: Session | null, template: { name: st
 export async function uploadAutoEmailFile(session: Session | null, file: File): Promise<string> {
   const fd = new FormData();
   fd.append('file', file);
-  const { data, error } = await supabase.functions.invoke('admin-auto-emails', {
-    body: fd, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
+  const { data, error } = await callFunction('admin-auto-emails', { body: fd, session: session });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data.file_url as string;

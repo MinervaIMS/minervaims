@@ -7,6 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { callFunction, invokeFunction } from '@/lib/errors';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 
 export type AcademicYear = 'bachelor_1' | 'bachelor_2' | 'bachelor_3' | 'master_1' | 'master_2' | 'exchange';
@@ -330,13 +331,12 @@ export function candidateStatus(s: ApplicationStatus): { label: string; step: nu
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
 
-async function invoke(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-applications', {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction('admin-applications', { body: body, session });
 }
 
 // ── Reviewer ───────────────────────────────────────────────────────────
@@ -382,13 +382,12 @@ export async function sendOffer(session: Session | null, id: string, role: strin
 }
 
 // ── Candidate offer actions (self-service via applicant-notify) ─────────────
-async function invokeNotify(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('applicant-notify', {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invokeNotify(session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction('applicant-notify', { body: body, session });
 }
 /** Read-only signed URL for the applicant's OWN CV / written answer. */
 export async function signMyDocument(session: Session | null, kind: 'cv' | 'answer', mode: 'preview' | 'download'): Promise<string> {
@@ -419,7 +418,7 @@ export async function getMyApplication(): Promise<ApplicationRow | null> {
 // Public: the applicant creates their account (client-side auth.signUp) and
 // then submits this form with the returned user id. No prior session needed.
 export async function submitApplication(form: FormData): Promise<{ id: string; verified?: boolean; already?: boolean }> {
-  const { data, error } = await supabase.functions.invoke('submit-application', { body: form });
+  const { data, error } = await callFunction('submit-application', { body: form });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data;

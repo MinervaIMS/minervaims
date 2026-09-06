@@ -7,6 +7,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
+import { invokeFunction } from '@/lib/errors';
 export type ActiveFund = 'long-short' | 'multi-asset';
 
 export interface FundYear {
@@ -149,13 +150,12 @@ export function listFundYears(): Promise<FundYear[]> {
   return fundYearsInFlight;
 }
 
-async function invoke(session: Session | null, body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('admin-funds', {
-    body, headers: { Authorization: `Bearer ${session?.access_token}` },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // `any` deliberately, matching what `supabase.functions.invoke` used to
+  // hand back: every caller in this module already narrows the shape it
+  // expects. Only the ERROR path changed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invoke(session: Session | null, body: Record<string, unknown>): Promise<any> {
+  return invokeFunction('admin-funds', { body: body, session });
 }
 
 // Both writers drop the coalesced read before returning, so the caller's
