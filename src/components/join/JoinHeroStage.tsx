@@ -42,10 +42,19 @@ const prefersReducedMotion = () =>
 export function JoinHeroStage({ figures }: { figures: ReactNode }) {
   const [showField, setShowField] = useState(false);
   const [reduced, setReduced] = useState(false);
+  // Set by the canvas itself, on the first frame it actually draws dots.
+  // Not on mount: see DotField's `onReady`.
+  const [fieldPainted, setFieldPainted] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setReduced(mq.matches);
+    const apply = () => {
+      setReduced(mq.matches);
+      // Asking for reduced motion unmounts the canvas, so the ground has
+      // to be a whole background again, and a canvas mounted later is a
+      // new one that has not drawn yet.
+      if (mq.matches) setFieldPainted(false);
+    };
     apply();
     mq.addEventListener('change', apply);
 
@@ -93,12 +102,21 @@ export function JoinHeroStage({ figures }: { figures: ReactNode }) {
       <div className="absolute inset-0" aria-hidden="true">
         {/* The CSS ground, always. See AmbientGround: it is what stands
             here when the field is skipped, deferred or unavailable, so the
-            band is never a plain black rectangle. */}
-        <AmbientGround kind="dots" />
+            band is never a plain black rectangle.
+
+            ITS LATTICE STOPS WHERE THE CANVAS BEGINS. The wash - the
+            purple bloom in the upper middle, which the canvas has no
+            equivalent of - is drawn the whole time; the CSS dots are a
+            stand-in, and they fade out over exactly the 700ms the canvas
+            fades in, so this band carries ONE grid of dots rather than
+            two slightly offset ones. If the canvas never paints, for any
+            of the four reasons in AmbientGround, `fieldPainted` stays
+            false and the stand-in stays. */}
+        <AmbientGround kind="dots" lattice={!fieldPainted || reduced} />
         {showField && !reduced && (
           <Suspense fallback={null}>
             <div className="h-full w-full animate-[fadeIn_700ms_ease-out_forwards] opacity-0">
-              <DotField glowRadius={0} />
+              <DotField glowRadius={0} onReady={() => setFieldPainted(true)} />
             </div>
           </Suspense>
         )}

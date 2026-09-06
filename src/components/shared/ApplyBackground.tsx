@@ -24,6 +24,15 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 // lattice with nothing to fetch and nothing to compile, so the page is
 // composed from the first frame and the canvas, when it arrives, fades in
 // over the top of a picture rather than into an empty box.
+//
+// AND THE GROUND'S OWN LATTICE THEN STANDS DOWN. Two 18px grids painted
+// at once, one anchored top left and one centred in the box, sit a pixel
+// or two apart and read as two layers of dots. The ground's wash stays
+// (it is where this page's colour comes from); its dots cross-fade out as
+// the canvas's cross-fade in, over the same 700ms, so the page carries
+// one grid at every moment. The handover is driven by the canvas's first
+// painted frame, not by its mount, so a canvas that never draws never
+// takes the stand-in away.
 // =====================================================================
 
 import { perfMode } from '@/lib/perf';
@@ -34,10 +43,18 @@ const DotField = lazy(() => import('@/components/shared/DotField'));
 export function ApplyBackground() {
   const [show, setShow] = useState(false);
   const [reduced, setReduced] = useState(false);
+  // Set by the canvas itself, on the first frame it actually draws dots.
+  // Not on mount: see DotField's `onReady`.
+  const [fieldPainted, setFieldPainted] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setReduced(mq.matches);
+    const apply = () => {
+      setReduced(mq.matches);
+      // Asking for reduced motion unmounts the canvas, so the ground has
+      // to be a whole background again.
+      if (mq.matches) setFieldPainted(false);
+    };
     apply();
     mq.addEventListener('change', apply);
     if (mq.matches) return () => mq.removeEventListener('change', apply);
@@ -62,11 +79,11 @@ export function ApplyBackground() {
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#05030F' }} aria-hidden="true">
-      <AmbientGround kind="dots" />
+      <AmbientGround kind="dots" lattice={!fieldPainted || reduced} />
       {show && !reduced && (
         <Suspense fallback={null}>
           <div className="h-full w-full animate-[fadeIn_700ms_ease-out_forwards] opacity-0">
-            <DotField glowRadius={0} />
+            <DotField glowRadius={0} onReady={() => setFieldPainted(true)} />
           </div>
         </Suspense>
       )}
