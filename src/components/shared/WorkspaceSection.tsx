@@ -65,7 +65,7 @@ export function WorkspaceSection() {
 
         <div className="max-w-3xl space-y-5 font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
           <p>
-            {'The Minerva Workspace is our proprietary operating platform: recruiting from application to offer, division templates and the full research archive, events, the shared calendar, the member register, fund performance and the association\'s accounts, all governed by role. It is the infrastructure behind the speed and consistency with which we execute projects and run events, and a durable advantage over peer societies.\n\nIt is also the gateway to our alumni network. Active members access it in full, every former member of the Society and the career each has built, a record held privately and never published externally.\n'}
+            {'The Minerva Workspace is our proprietary operating platform: recruiting from application to offer, division templates and the full research archive, events, the shared calendar, the member register, fund performance and the association\'s accounts, all governed by role. \n\nIt is the infrastructure behind the speed and consistency with which we execute projects and run events, and a durable advantage over peer societies. \n\n It is also the gateway to our alumni network. Active members access it in full, every former member of the Society and the career each has built, a record held privately and never published externally.\n'}
           </p>
           <p>
             {'\n'}
