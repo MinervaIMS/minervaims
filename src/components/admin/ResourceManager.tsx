@@ -22,7 +22,7 @@ import {
   listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite, signResourceFile,
   MAX_FAVOURITES, SOURCE_LIMITS, type ResourceRow, type ResourceSource,
 } from '@/lib/resources-api';
-import { downloadTitled } from '@/lib/file-download';
+import { downloadTitled, extensionOf } from '@/lib/file-download';
 import { previewLink } from '@/lib/link-label';
 
 interface Props {
@@ -47,6 +47,25 @@ const MAX_LINKS = SOURCE_LIMITS.link;
 const MAX_FILES = SOURCE_LIMITS.file;
 const MAX_PHONES = SOURCE_LIMITS.phone;
 const MAX_EMAILS = SOURCE_LIMITS.email;
+
+/**
+ * Is this attachment a picture? See the preview dialog at the foot of the
+ * file for why it matters.
+ *
+ * The stored name is asked first and the URL second, because the URL is a
+ * signed storage key: it carries the right extension, but the name the
+ * member gave the file is the one they recognise and the one that is
+ * certain to be intact. Anything unrecognised is not a picture, which is
+ * the safe answer: it keeps the iframe, which handles every other kind of
+ * file the library accepts.
+ */
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'svg', 'bmp', 'heic', 'heif'];
+
+function isImageAttachment(label: string, url: string): boolean {
+  const fromLabel = label.match(/\.([a-z0-9]{1,8})$/i)?.[1];
+  const ext = (fromLabel ?? extensionOf(url, '')).toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
 
 interface FileEntry { value: string; label: string }
 /**
@@ -698,16 +717,49 @@ export default function ResourceManager({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Quick look at an attachment: full-height frame, download to hand. */}
+      {/* ═══════════════════════════════════════════════════════════════
+          A QUICK LOOK, AT THE SIZE OF THE SCREEN IT IS ON.
+
+          IT WAS TOO SMALL. `max-w-5xl` capped the panel at 64rem, so a
+          1512px laptop gave it two thirds of the width and a wider
+          monitor barely half, with the rest of the screen dimmed and
+          empty. A preview exists to be looked at, so it now takes the
+          window: 96 by 94 per cent of it, capped at 1600px so it does
+          not stretch into an unreadable band on an ultrawide.
+
+          AND THE PICTURE WAS TOO BIG. An `<iframe>` pointed at an image
+          is not a viewer: the browser builds a document around the file
+          and lays it out at its natural size, so a 2000px graphic in a
+          900px frame arrived cropped at the top left with two
+          scrollbars, which is the "too zoomed in" that was reported. It
+          also cannot be scrolled sensibly, because the frame scrolls
+          rather than the page.
+
+          A picture is therefore drawn as a picture. `object-contain`
+          inside the frame fits the whole of it, at whatever proportions
+          it has, and never enlarges one that is already smaller than the
+          box. PDFs and everything else keep the iframe, where the
+          browser's own viewer already fits the page to the width.
+          ═══════════════════════════════════════════════════════════════ */}
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-5xl w-[min(96vw,64rem)] h-[92vh] flex flex-col gap-3 p-5">
+        <DialogContent className="max-w-[1600px] w-[96vw] h-[94vh] flex flex-col gap-3 p-5">
           <DialogHeader className="shrink-0">
             <DialogTitle className="font-serif truncate pr-8">{preview?.label}</DialogTitle>
           </DialogHeader>
           {preview && (
             <>
               <div className="flex-1 min-h-0 border border-separator bg-muted/20">
-                <iframe title={`preview-${preview.label}`} src={preview.url} className="w-full h-full block" />
+                {isImageAttachment(preview.label, preview.url) ? (
+                  <div className="h-full w-full flex items-center justify-center p-3">
+                    <img
+                      src={preview.url}
+                      alt={preview.label}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <iframe title={`preview-${preview.label}`} src={preview.url} className="w-full h-full block" />
+                )}
               </div>
               <div className="shrink-0 flex justify-end gap-2 font-body">
                 <Button variant="outline" onClick={() => window.open(preview.url, '_blank', 'noopener')}>

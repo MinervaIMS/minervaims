@@ -86,7 +86,27 @@
     <link rel="preconnect" href="https://asjudzdgsccacpjbzsue.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://asjudzdgsccacpjbzsue.supabase.co" />
     <link rel="preload" as="image" href="/src/assets/homepage-bg.webp" />
-    <link rel="modulepreload" href="/src/main.tsx" />
+    <!--
+      THE ENTRY SCRIPT IS PRELOADED BY THE BUILD, NOT BY HAND.
+
+      There used to be `<link rel="modulepreload" href="/src/main.tsx">`
+      here. In development that is the entry and the hint is harmless; in
+      a build it is not. Vite treats a `.tsx` in a link href as an ASSET,
+      so it copied the untranspiled source to `dist/assets/main-<hash>.tsx`
+      and pointed this tag at it, which meant every single page load of
+      the site, public and workspace alike:
+
+        * fetched 4kB of raw TypeScript nobody could run;
+        * had the browser reject it, because a `.tsx` is not served as a
+          module script, leaving "Failed to load module script: expected a
+          JavaScript-or-Wasm module script" in the console of every visit;
+        * published the application's own source file.
+
+      It bought nothing even when it worked: the real entry chunk and its
+      vendor chunks are injected with their own modulepreload tags at the
+      foot of this file by the build itself.
+    -->
+
     <style>
       /* Top safe area, painted from the document itself so it is already the
          right colour on the first frame and whenever Safari re-samples the

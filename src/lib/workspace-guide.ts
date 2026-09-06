@@ -10,6 +10,8 @@
 // Editorial rules: no em dashes, no emojis, professional tone.
 // =====================================================================
 
+import { GUIDE_KEYS as GUIDE_KEYS_FOR_CHECK } from './workspace-guide-keys';
+
 export interface GuideTopic {
   id: string;               // anchor id inside the help panel
   title: string;
@@ -559,26 +561,44 @@ export const GUIDE: GuideEntry[] = [
 export const guideFor = (key: string): GuideEntry | undefined => GUIDE.find((g) => g.key === key);
 
 // =====================================================================
-// ONE PAGE, TWO READERS.
+// ONE PAGE, TWO READERS, AND WHERE THAT NOW LIVES.
 // ---------------------------------------------------------------------
 // My Profile is rendered for members and for applicants alike, under the
 // one key `my-role`. Its help cannot be: a member reads about where
 // their role comes from and how to change their photograph, and neither
 // sentence is true for an applicant, whose page is a locked record of a
-// form they have already submitted.
+// form they have already submitted. So the applicant is routed to their
+// own entry; every other applicant page has a key of its own already.
 //
-// So the applicant is routed to their own entry. Every other applicant
-// page has a key of its own already and needs no translation.
+// That mapping, and the list of which pages have an entry at all, moved
+// to `workspace-guide-keys.ts`. Both are needed by the workspace SHELL,
+// on every page, to decide whether to draw the help button, and pulling
+// this module in to answer that meant carrying 60kB of prose nobody had
+// asked to read. `helpPageKey` is re-exported here so nothing that used
+// to import it from this module breaks.
 // =====================================================================
-const CANDIDATE_GUIDE_KEYS: Record<string, string> = {
-  'my-role': 'candidate-my-role',
-  // The address the Interview page used to occupy, so the help panel is
-  // right even in the tick before the workspace redirects it.
-  'applications-interview-calendar': 'applications-interview',
-};
+export { helpPageKey, GUIDE_KEYS, hasGuide } from './workspace-guide-keys';
 
-/** The guide key for a page, as the reader in front of it should read it. */
-export function helpPageKey(pageKey: string, isCandidate: boolean): string {
-  if (!isCandidate) return pageKey;
-  return CANDIDATE_GUIDE_KEYS[pageKey] ?? pageKey;
+// ---------------------------------------------------------------------
+// THE COPY IS CHECKED AGAINST THE ORIGINAL, HERE, WHERE THE ORIGINAL IS.
+//
+// `GUIDE_KEYS` is a hand-written copy of the keys below, and a copy that
+// nothing compares is a copy that quietly goes wrong: a page added to
+// GUIDE and not to the list silently loses its help button. This runs
+// once, in development only, the first time anything loads this module -
+// which is the first time the help panel or the search is opened - and
+// says exactly which keys are on which side.
+// ---------------------------------------------------------------------
+if (import.meta.env.DEV) {
+  const listed = new Set(GUIDE_KEYS_FOR_CHECK);
+  const actual = new Set(GUIDE.map((g) => g.key));
+  const missing = [...actual].filter((k) => !listed.has(k));
+  const extra = [...listed].filter((k) => !actual.has(k));
+  if (missing.length || extra.length) {
+    console.warn(
+      '[workspace-guide] GUIDE_KEYS has drifted from GUIDE.',
+      missing.length ? `Missing from workspace-guide-keys.ts: ${missing.join(', ')}.` : '',
+      extra.length ? `Listed but not in GUIDE: ${extra.join(', ')}.` : '',
+    );
+  }
 }

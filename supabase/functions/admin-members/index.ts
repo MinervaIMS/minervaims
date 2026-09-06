@@ -101,8 +101,9 @@ const DeleteSchema = z.object({ id: z.string().uuid('Valid member ID is required
 const MoveToAlumniSchema = z.object({
   id: z.string().uuid('Valid member ID is required'),
   graduation_year: z.number().int().min(1990).max(2100),
-  // Optional so a person can be appointed advisor before their current
-  // company is known; required for a plain move to the directory.
+  // OPTIONAL FOR EVERYBODY, NOT ONLY FOR ADVISORS. A member leaves at a
+  // fixed moment, the end of their term, and very often has not started
+  // anywhere yet or has not said where. See the handler below.
   company: z.string().max(200).trim().nullable().optional(),
   city: z.string().max(120).nullable().optional(),
   job_area: z.string().max(200).nullable().optional(),
@@ -305,11 +306,28 @@ Deno.serve(audited('admin-members', async (req, audit) => {
       if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
       const keepRole = parsed.data.keep_role ?? null;
       const company = parsed.data.company?.trim() || null;
-      // An advisor can be registered before their company is known; a plain
-      // move to the directory still requires the current company.
-      if (!company && keepRole !== 'advisor') {
-        return json({ error: 'Current company is required (it may be left empty only when appointing the person as advisor).' }, 400);
-      }
+      // ═══════════════════════════════════════════════════════════════
+      // NO COMPANY IS REQUIRED HERE, FOR ANYBODY.
+      // ---------------------------------------------------------------
+      // This used to refuse the move unless a current company was given,
+      // except when appointing an advisor. That got the dependency
+      // backwards. A member leaves at a fixed moment, the end of their
+      // term, and very often has not started anywhere yet or has not
+      // told anybody where. Requiring it meant the person recording the
+      // departure either guessed, typed a placeholder that then lived in
+      // the directory as though it were true, or postponed the move and
+      // left a former member sitting in the active roster.
+      //
+      // What actually identifies an alumnus is the surname and the
+      // graduation year, and both are known on the day. The company, the
+      // city and the job area are added later, from the Alumni page,
+      // when there is something true to write. `alumni.company` is
+      // nullable in the schema and every reader already handles a blank.
+      //
+      // The dialog was changed to say so ("Current company (optional)",
+      // "Leave empty if not known yet") and this check was not, so the
+      // form invited an empty field and the server then refused it.
+      // ═══════════════════════════════════════════════════════════════
       const { data: member } = await supabase.from('members')
         .select('user_id, first_name, surname, division, role, phone, email, linkedin_url').eq('id', parsed.data.id).single();
       if (!member) return json({ error: 'Member not found' }, 404);

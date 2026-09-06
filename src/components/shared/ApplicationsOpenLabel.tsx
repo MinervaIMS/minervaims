@@ -23,8 +23,15 @@
 // the preview cannot drift from the page it previews.
 // =====================================================================
 
-/** The wording, in one place, for the two surfaces that draw it. */
-const APPLICATIONS_OPEN_TEXT = 'Applications are open';
+/**
+ * The wording, in one place, for the two surfaces that draw it.
+ *
+ * TITLE CASE, not sentence case. The label is the name of a state the
+ * association is in, set on its own on a button, not a sentence in a
+ * paragraph, and at that size the initial capitals give the three words
+ * equal weight instead of letting the phrase trail off after the first.
+ */
+const APPLICATIONS_OPEN_TEXT = 'Applications Are Open';
 
 /**
  * The label, as one line of type in the weight its container sets.
