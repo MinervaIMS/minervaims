@@ -473,7 +473,22 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       }).eq('id', app.id);
       if (error) throw error;
 
-      const deadlineLabel = deadline.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      // The deadline is 72 hours from the moment the offer is sent, so the
+      // label carries the time as well: "05 Sep 2026, 18:40 (CET)" reads as
+      // an hour-precise cut-off, where a bare date does not.
+      const deadlineLabel = deadline.toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        timeZone: 'Europe/Rome', hour12: false,
+      }) + ' (Rome time)';
+      // The signature names the sitting President. The placeholder was never
+      // filled by anything, so candidates received the literal token.
+      let presidentName = 'The President';
+      try {
+        const { data: pres } = await supabase.from('members')
+          .select('first_name, surname').eq('role', 'president')
+          .eq('membership_status', 'active').limit(1).maybeSingle();
+        if (pres) presidentName = `${pres.first_name} ${pres.surname}`.trim();
+      } catch (e) { console.error('president lookup failed', e); }
       try {
         await supabase.rpc('enqueue_app_email', {
           p_key: 'offer_to_join', p_to: app.email,
@@ -483,6 +498,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             acceptance_deadline: deadlineLabel,
             status_url: STATUS_URL,
             deadline: deadlineLabel,
+            president_name: presidentName,
           },
         });
       } catch (e) { console.error('offer email enqueue failed', e); }
