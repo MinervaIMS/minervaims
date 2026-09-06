@@ -6,6 +6,7 @@ import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
+import { WorkspaceSection } from "@/components/shared/WorkspaceSection";
 import { PageLoader } from "@/components/shared";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { FundPerformanceChart } from "@/components/shared/FundPerformanceChart";
@@ -288,6 +289,12 @@ const Index = () => {
         reports={archiveFilesToReports(carouselFiles, { preferDivision: true })}
         useRealCover
       />
+
+      {/* The workspace the association is run from. Last on the page on
+          purpose: it is the one section addressed to somebody who has
+          already read what Minerva does and is now wondering how it is
+          actually operated. */}
+      <WorkspaceSection />
     </>
   );
 };

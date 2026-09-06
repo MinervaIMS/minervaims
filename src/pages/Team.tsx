@@ -91,8 +91,14 @@ const Team = () => {
         />
       </div>
 
-      {/* Intro block */}
-      <section className="pt-section-sm md:pt-section pb-10 md:pb-12 bg-background">
+      {/* Intro block.
+          `md:pb-16`, not `md:pb-12`. The site's half boundary - the gap
+          between two sections that belong to one subject - is 2.5rem on a
+          phone and 4rem from md up, which is exactly half the full
+          rhythm. This was the only place on the public site that used 3rem
+          instead, so the join under this heading measured 48px where the
+          equivalent join on /about and /join measures 64. */}
+      <section className="pt-section-sm md:pt-section pb-10 md:pb-16 bg-background">
         <div className="container">
           <div className="flex items-baseline justify-between gap-4 mb-6 pb-3 border-b border-separator">
             <h2 className="font-serif text-heading text-accent">

@@ -394,8 +394,34 @@ html:has(body[data-scroll-locked]) {
 .rsec a { color:inherit; text-decoration:none; }
 .rsec button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
 
-.rsec--light { background: hsl(var(--background)); color: hsl(var(--foreground)); padding: clamp(3.5rem,7.5vw,8rem) 0; }
-.rsec--navy  { background: hsl(var(--accent));     color:#fff;                  padding: clamp(3.5rem,7.5vw,8rem) 0; }
+/* =====================================================================
+   THE REPORTS SECTION KEEPS THE SITE'S RHYTHM, NOT ONE OF ITS OWN.
+   ---------------------------------------------------------------------
+   Every section on the public site is spaced with `py-section-sm
+   md:py-section`, which is 5rem below 768px and 8rem at and above it.
+   This block was the one exception, and it was a fluid one:
+   `clamp(3.5rem, 7.5vw, 8rem)`. Because 7.5vw only reaches 8rem at
+   about 1707px, a laptop at 1440 got 108px where the section directly
+   above it had 128, and a phone got 56px where the rest of the site
+   gives 80.
+
+   It shows on the two pages a visitor is most likely to look at. On the
+   homepage the join between the testimonials and Latest Reports
+   measured 236px while every other join on that page measured 256; the
+   fund and division pages have the same 236 where they should have 256.
+   Twenty pixels is not much on its own and is exactly enough to make a
+   rhythm read as approximate.
+
+   The two declarations below are `py-section-sm md:py-section` written
+   in plain CSS, because this block is styled in the stylesheet rather
+   than with utility classes. Only the vertical padding changes; the
+   horizontal zero, the colours and everything else are untouched.
+   ===================================================================== */
+.rsec--light { background: hsl(var(--background)); color: hsl(var(--foreground)); padding: 5rem 0; }
+.rsec--navy  { background: hsl(var(--accent));     color:#fff;                  padding: 5rem 0; }
+@media (min-width: 768px) {
+  .rsec--light, .rsec--navy { padding: 8rem 0; }
+}
 .rwrap { max-width: 1280px; margin:0 auto; padding:0 clamp(1rem,4vw,1.5rem); width:100%; }
 
 .rhead { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; flex-wrap:wrap;
