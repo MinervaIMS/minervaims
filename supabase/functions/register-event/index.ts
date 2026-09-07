@@ -23,6 +23,45 @@ function isValidEmail(e: string | null | undefined): e is string {
   return typeof e === 'string' && e.length >= 3 && e.length <= 255 && EMAIL_RE.test(e);
 }
 
+// ---------------------------------------------------------------------
+// Confirmation-email helpers. Dates and times are shown in Europe/Rome,
+// which is the timezone every attendee reads the event in.
+// ---------------------------------------------------------------------
+const ROME = 'Europe/Rome';
+function firstNameOf(full: string): string {
+  const first = full.trim().split(/\s+/)[0] || '';
+  return first || 'there';
+}
+function formatEventDate(startAt: string | null, date: string | null): string {
+  const iso = startAt || (date ? `${date}T12:00:00Z` : null);
+  if (!iso) return 'To be confirmed';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'To be confirmed';
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ROME,
+  }).format(d);
+}
+function hhmm(iso: string): string {
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: ROME }).format(new Date(iso));
+}
+function formatEventTime(startAt: string | null, endAt: string | null): string {
+  if (!startAt || isNaN(new Date(startAt).getTime())) return 'To be confirmed';
+  const start = hhmm(startAt);
+  if (endAt && !isNaN(new Date(endAt).getTime())) return `${start} – ${hhmm(endAt)}`;
+  return start;
+}
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+// The description is optional: when absent the whole paragraph row is omitted
+// rather than left as an empty gap in the email.
+function descriptionBlock(description: string | null): string {
+  const text = (description || '').trim();
+  if (!text) return '';
+  return `<tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">${escapeHtml(text)}</p></td></tr>`;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
