@@ -50,8 +50,10 @@ Deno.serve(async (req) => {
     if (!eventId) return json({ error: 'Missing event' }, 400);
 
     const { data: ev } = await supabase.from('events')
-      .select('registration_enabled, registration_audience, title').eq('id', eventId).maybeSingle();
+      .select('registration_enabled, registration_audience, title, date, start_at, end_at, place, online, description')
+      .eq('id', eventId).maybeSingle();
     if (!ev || !ev.registration_enabled) return json({ error: 'Registration is not open for this event.' }, 403);
+
 
     const audience = ev.registration_audience as string;
     if (audience === 'members' && !isMember) {
