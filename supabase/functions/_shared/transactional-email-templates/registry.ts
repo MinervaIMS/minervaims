@@ -60,7 +60,9 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   closing_line: 'Thank you for your attention.',
   cta_label: 'Open the Workspace',
   cta_url: 'https://minervaims.org/auth',
+  description_block: '',
   detail_label_1: 'Division',
+
   detail_label_2: 'Deadline',
   detail_value_1: 'Equity Research',
   detail_value_2: 'Sunday, 15 September 2026',
