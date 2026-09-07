@@ -95,7 +95,25 @@ Deno.serve(async (req) => {
       try { await supabase.from('newsletter_subscribers').insert({ email, consent: true, source: 'event' }); }
       catch { /* ignore duplicates */ }
     }
+
+    // Confirmation of the registration, with the event's details.
+    try {
+      await supabase.rpc('enqueue_app_email', {
+        p_key: 'event_registration_confirmation',
+        p_to: email,
+        p_vars: {
+          first_name: firstNameOf(displayName || ''),
+          event_title: ev.title || 'Minerva IMS event',
+          event_date: formatEventDate(ev.start_at, ev.date),
+          event_time: formatEventTime(ev.start_at, ev.end_at),
+          event_location: ev.online ? 'Online' : (ev.place || 'To be confirmed'),
+          description_block: descriptionBlock(ev.description),
+        },
+      });
+    } catch (e) { console.error('registration confirmation email failed', e); }
+
     return json({ success: true });
+
   } catch (error) {
     console.error('register-event error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
