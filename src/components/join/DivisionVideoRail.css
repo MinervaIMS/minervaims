@@ -176,6 +176,34 @@
   max-width: 34ch;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   margin: 0;
+  /* THE COPY YIELDS BEFORE THE LINK DOES, and only where it must.
+
+     A flex item's `min-height` is `auto`, which is why on a very short
+     window the longest description already runs past the bottom of the
+     card and is clipped by `.jd-card`'s own `overflow: hidden`. That was
+     true before this link existed. With a link beneath it, the same
+     overflow would have pushed the link off the card instead, which is
+     the one outcome that would make it useless.
+
+     `min-height: 0` lets the paragraph give up the space it does not
+     have; the clip then happens here, above the link, rather than at the
+     card's edge. At every viewport where the copy fits - which is every
+     one the section runs the rail at down to a 700px-tall window - this
+     changes nothing at all, because there is nothing to shrink. */
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The link's row. `margin-top: auto` in the body's flex column puts it on
+   the bottom edge of the space the copy leaves, which is between 96 and
+   490 pixels at the viewports measured. It is a row of its own so the
+   link keeps its intrinsic width and is not stretched across the card by
+   the column's `align-items: stretch`. */
+.jd-action {
+  margin-top: auto;
+  padding-top: clamp(0.9rem, 2vw, 1.25rem);
+  flex: 0 0 auto;
+  display: flex;
 }
 
 @media (prefers-reduced-motion: reduce) {
