@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { JOIN_DIVISIONS, type JoinDivision } from '@/lib/join-content';
 import { bindPinnedScroll } from '@/lib/pinned-scroll';
 import ScrollStack, { ScrollStackItem } from '@/components/shared/ScrollStack';
@@ -190,6 +191,32 @@ const DivisionCard = memo(function DivisionCard({
           {division.name}
         </h3>
         <p className="jd-text">{division.description}</p>
+        {/* ═══════════════════════════════════════════════════════════
+            THE WAY INTO THE DIVISION'S OWN PAGE.
+            -----------------------------------------------------------
+            The same destination and the same treatment as the homepage's
+            division deck: white ground, foreground ink, serif label,
+            "Visit Division". Set at the homepage's SMALLER size, because
+            that composition is a full-width card and this one is a
+            9:16 tile that is 243px wide on a short laptop.
+
+            IT COSTS THE CARD NOTHING. `.jd-body` is already `height:
+            100%` of a card whose height comes from its aspect ratio, and
+            the copy leaves between 96 and 490 pixels empty beneath it at
+            every viewport this section runs the rail at. `margin-top:
+            auto` puts the link in that space, so no box grows, the
+            track's scrollWidth is unchanged, and the pinned sequence's
+            travel, pacing and reserved height are exactly what they
+            were. The title and the paragraph do not move.
+            ═══════════════════════════════════════════════════════════ */}
+        <div className="jd-action">
+          <Link
+            to={`/divisions/${division.key}`}
+            className="inline-block bg-background text-foreground font-serif text-base px-6 py-3 hover:opacity-90 transition-opacity"
+          >
+            Visit Division
+          </Link>
+        </div>
       </div>
     </article>
   );
@@ -280,6 +307,19 @@ const JoinStackCard = memo(function JoinStackCard({ division, active, canPlay }:
         <p className="font-body text-body text-white/90 leading-relaxed max-w-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
           {division.description}
         </p>
+        {/* The same link, in the place the homepage's deck puts it:
+            bottom right of the card. `mt-auto` rather than switching the
+            column to `justify-between`, so the heading and the paragraph
+            keep the exact positions they already have and only the new
+            row is placed. */}
+        <div className="mt-auto flex justify-end pt-6">
+          <Link
+            to={`/divisions/${division.key}`}
+            className="inline-block bg-background text-foreground font-serif text-base px-6 py-3 hover:opacity-90 transition-opacity"
+          >
+            Visit Division
+          </Link>
+        </div>
       </div>
     </article>
   );
@@ -473,6 +513,36 @@ export function DivisionVideoRail() {
       window.removeEventListener('resize', onScroll);
     };
   }, [pinned, overflow, narrow]);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // THE PINNED RAIL MUST NEVER ACQUIRE A scrollLeft, AND NOW IT CAN.
+  // -------------------------------------------------------------------
+  // The pinned rail travels by transform alone; the CSS says so and the
+  // scroll handler zeroes `scrollLeft` on every frame it runs, because
+  // any residual value offsets the track and breaks the alignment of the
+  // first and last cards with the page's content edges.
+  //
+  // Until now nothing inside the track could take focus, so nothing could
+  // put a scroll offset there. The cards carry a link each now, and a
+  // browser bringing a focused element into view scrolls its nearest
+  // scrollable ancestor to do it - `overflow: hidden` prevents a reader
+  // scrolling that box, not the browser. Tabbing to the fourth card's
+  // link would therefore shift the whole track sideways, and it would
+  // stay shifted until the next scroll event happened to correct it.
+  //
+  // The rail reports its own scroll here and is put straight back to
+  // zero. Focus still moves to the link and the link still works; the
+  // card it is on is brought into view by the reader's scrolling, which
+  // is the only thing that moves this rail.
+  // ═══════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!pinned || narrow) return;
+    const rail = railRef.current;
+    if (!rail) return;
+    const zero = () => { if (rail.scrollLeft !== 0) rail.scrollLeft = 0; };
+    rail.addEventListener('scroll', zero, { passive: true });
+    return () => rail.removeEventListener('scroll', zero);
+  }, [pinned, narrow]);
 
   // Static path: track the nearest card from native horizontal scrolling so the
   // dot indicator and video playback still follow the reader.
