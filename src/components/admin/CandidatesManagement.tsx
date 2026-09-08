@@ -36,6 +36,8 @@ import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDe
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
 import { documentTitle } from '@/components/admin/recruiting/document-title';
 import { listSlots, isFutureSlot } from '@/lib/interviews-api';
+import { safeLinkedInUrl } from '@/lib/linkedin';
+import linkedinIcon from '@/assets/linkedin-icon.png';
 import { zipFromUrls } from '@/lib/zip';
 import { downloadBlob } from '@/lib/file-download';
 
@@ -495,6 +497,14 @@ export default function CandidatesManagement() {
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-normal">Name</th>
+                {/* LinkedIn, as a column of its own and as narrow as one
+                    icon. It sits beside the name because it is part of
+                    identifying the person rather than part of assessing
+                    them, and because that is where the member register
+                    puts the same column. `w-px` in a full-width table is
+                    how a column is told to take only what it needs.
+                    "In" is the header the register already uses. */}
+                <th className="px-2 py-2 font-normal text-center w-px">In</th>
                 <th className="px-3 py-2 font-normal">
                   <span className="inline-flex items-center gap-1.5">
                     <ColumnFilter label="Evaluated for" options={evaluationOptions} selected={evaluationFilter} onChange={setEvaluationFilter} />
@@ -519,6 +529,42 @@ export default function CandidatesManagement() {
                     {a.first_name} {a.surname}
                     {!a.cv_viewed_at && <span className="ml-2 align-middle inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">new</span>}
                     <div className="text-xs text-muted-foreground">{a.email}</div>
+                  </td>
+                  {/* The profile, openable from the list. A reviewer
+                      checking who somebody is should not have to open the
+                      candidate first, and this is the one fact about them
+                      that lives somewhere else.
+
+                      `safeLinkedInUrl` is not decoration: `linkedin_url`
+                      is a free text field on the PUBLIC application form
+                      and is stored exactly as it was typed, so the value
+                      here is a stranger's string. See lib/linkedin.ts.
+                      Anything it cannot make an http(s) address of reads
+                      as no profile at all. */}
+                  <td className="px-2 py-2 text-center w-px">
+                    {(() => {
+                      const profile = safeLinkedInUrl(a.linkedin_url);
+                      return profile ? (
+                        <a
+                          href={profile}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`Open ${a.first_name} ${a.surname}'s LinkedIn profile`}
+                          aria-label={`Open ${a.first_name} ${a.surname}'s LinkedIn profile`}
+                          className="inline-flex align-middle hover:opacity-100"
+                        >
+                          <img
+                            src={linkedinIcon}
+                            alt=""
+                            width={18}
+                            height={18}
+                            className="h-[1.15rem] w-[1.15rem] shrink-0 object-contain opacity-80"
+                          />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground" aria-label="No LinkedIn profile">-</span>
+                      );
+                    })()}
                   </td>
                   {/* Evaluated for. A control where the role can move a
                       candidacy, plain text where it cannot, so a reviewer
