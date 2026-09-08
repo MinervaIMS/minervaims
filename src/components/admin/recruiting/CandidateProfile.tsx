@@ -11,6 +11,7 @@ import {
 import { openReportInTab } from '@/lib/open-report';
 import type { CandidateDetail } from './useCandidateDetail';
 import { documentTitle } from './document-title';
+import { safeLinkedInUrl } from '@/lib/linkedin';
 
 // =====================================================================
 // CandidateProfile — everything about a candidate that is the same
@@ -105,7 +106,17 @@ export function CandidateProfile({
           <Info label="Bocconi ID" value={app.bocconi_id} />
           <Info label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
           <Info label="Programme" value={app.degree_course} />
-          <Info label="LinkedIn" value={app.linkedin_url || '-'} link={app.linkedin_url || undefined} />
+          {/* The same stranger-supplied string the list column renders, put
+              through the same check: `linkedin_url` comes from the public
+              application form and is stored unvalidated. The candidate's
+              own text is still SHOWN whatever it says, so a reviewer can
+              read a mistyped address and act on it; only the link is
+              withheld when there is nothing safe to open. */}
+          <Info
+            label="LinkedIn"
+            value={app.linkedin_url || '-'}
+            link={safeLinkedInUrl(app.linkedin_url) || undefined}
+          />
           {/* The preferences read under the names the APPLICANT saw on the
               form, where "Media and Operations" is one intake. The
               evaluation reads under the association's own division names,
