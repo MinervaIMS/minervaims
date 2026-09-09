@@ -2,6 +2,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { isBookableSlot, nowInAssociationTime } from '../_shared/interview-slots.ts';
 import { audited } from '../_shared/activity.ts';
+import { notifyStaff, slotOpener } from '../_shared/staff-notify.ts';
+
 
 // =====================================================================
 // admin-interviews — backend for the Interview Calendar.
@@ -335,6 +337,16 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         });
       } catch (e) { console.error('booking confirmation email enqueue failed', e); }
 
+      // Automatic email: the member who OPENED this slot is told it is taken.
+      // Only that person, even where the division has several heads.
+      try {
+        await notifyStaff(supabase, 'staff_interview_booked', await slotOpener(supabase, slot), {
+          candidate_name: `${app.first_name} ${app.surname}`,
+          division_name: DIV_LABELS[slot.division] || slot.division,
+          interview_when: `${formatSlotDate(slot.slot_date)}, ${formatSlotTime(slot.start_time)}–${formatSlotTime(slot.end_time)}`,
+        }, `${app.id}:${slot.id}:booked`);
+      } catch (e) { console.error('staff booking notice failed', e); }
+
       return json({ success: true });
     }
 
@@ -342,13 +354,29 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
     if (action === 'cancel') {
       const app = await myApplication();
       if (!app) return json({ error: 'No application found' }, 404);
-      const { data: booking } = await supabase.from('interview_bookings').select('id').eq('application_id', app.id).maybeSingle();
+      const { data: booking } = await supabase.from('interview_bookings').select('id, slot_id').eq('application_id', app.id).maybeSingle();
       if (!booking) return json({ error: 'No booking to cancel' }, 404);
+      // Read the slot BEFORE the booking goes, so the notice can name the
+      // time that has just been given back and the person who opened it.
+      const { data: freedSlot } = await supabase.from('interview_slots')
+        .select('id, division, slot_date, start_time, end_time, created_by, examiner_id')
+        .eq('id', booking.slot_id).maybeSingle();
       const { error } = await supabase.from('interview_bookings').delete().eq('id', booking.id);
       if (error) throw error;
       await supabase.from('applications').update({ status: BOOKABLE_STATUS }).eq('id', app.id).eq('status', BOOKED_STATUS);
+
+      if (freedSlot) {
+        try {
+          await notifyStaff(supabase, 'staff_interview_released', await slotOpener(supabase, freedSlot), {
+            candidate_name: `${app.first_name} ${app.surname}`,
+            division_name: DIV_LABELS[freedSlot.division] || freedSlot.division,
+            interview_when: `${formatSlotDate(freedSlot.slot_date)}, ${formatSlotTime(freedSlot.start_time)}–${formatSlotTime(freedSlot.end_time)}`,
+          }, `${app.id}:${freedSlot.id}:released`);
+        } catch (e) { console.error('staff release notice failed', e); }
+      }
       return json({ success: true });
     }
+
 
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {

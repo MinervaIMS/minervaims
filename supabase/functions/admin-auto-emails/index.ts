@@ -139,13 +139,23 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
         const stored = new Map((templates || []).map((t: any) => [t.key, t]));
         for (const t of codeTemplates) {
           const row = stored.get(t.key) as any | undefined;
-          if (!row) continue;
+          // A template that exists in code but has no row yet cannot be sent:
+          // the send path reads subject and body from this table. Create it,
+          // rather than leaving a template that previews but never posts.
+          if (!row) {
+            await supabase.from('auto_email_templates').insert({
+              key: t.key, name: t.name, subject: t.subject, body: t.body,
+              description: (t as any).description ?? null, connected: true,
+            });
+            continue;
+          }
           if (row.subject === t.subject && row.body === t.body) continue;
           await supabase.from('auto_email_templates')
             .update({ name: t.name, subject: t.subject, body: t.body })
             .eq('key', t.key);
         }
       } catch (e) { console.error('template sync failed', e); }
+
 
       const mergedTemplates = [...codeTemplates, ...rowsByKey.values()].sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
       let log: any[] = [];

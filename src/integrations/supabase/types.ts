@@ -2134,6 +2134,10 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      division_label: {
+        Args: { _division: Database["public"]["Enums"]["org_division"] }
+        Returns: string
+      }
       division_to_team_division: {
         Args: { _division: Database["public"]["Enums"]["org_division"] }
         Returns: Database["public"]["Enums"]["team_division"]
@@ -2146,6 +2150,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      enqueue_staff_email: {
+        Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
+        Returns: undefined
       }
       exam_break_on: { Args: { _d: string }; Returns: string }
       fee_payment_block: { Args: { p_period_id: string }; Returns: string }
