@@ -1,25 +1,33 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Temporary: seeds auto_email_templates rows for templates that exist in code
-// but have no row yet. Deleted right after use.
+// Temporary: sends one of each new staff notice to a test address. Deleted after use.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { TRANSACTIONAL_TEMPLATES } from '../_shared/transactional-emails.ts';
+
+const TO = 'riccardo.colombo7@studbocconi.it';
 
 Deno.serve(async () => {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
-  const { data: rows } = await supabase.from('auto_email_templates').select('key');
-  const have = new Set((rows || []).map((r: any) => r.key));
-  const added: string[] = [];
-  for (const t of TRANSACTIONAL_TEMPLATES as any[]) {
-    if (have.has(t.key)) continue;
-    const { error } = await supabase.from('auto_email_templates').insert({
-      key: t.key, name: t.name, subject: t.subject, body: t.body,
-      connected: true,
+  const base = {
+    first_name: 'Riccardo',
+    candidate_name: 'Marco Rossi',
+    division_name: 'Equity Research',
+    interview_when: 'Monday, 21 September 2026, 15:00–15:30',
+    offer_role: 'Analyst',
+    offer_deadline: '24 Sep 2026, 18:00',
+  };
+  const keys = [
+    'staff_interview_booked', 'staff_interview_released', 'staff_offer_sent',
+    'staff_offer_accepted', 'staff_offer_declined', 'staff_offer_expired',
+  ];
+  const out: Record<string, string> = {};
+  for (const key of keys) {
+    const { error } = await supabase.rpc('enqueue_staff_email', {
+      p_key: key, p_to: TO, p_vars: base, p_dedupe: `test-${key}-${Date.now()}`,
     });
-    if (error) return new Response(JSON.stringify({ error: error.message, key: t.key }), { status: 500 });
-    added.push(t.key);
+    out[key] = error ? `error: ${error.message}` : 'queued';
   }
-  return new Response(JSON.stringify({ added }), { headers: { 'Content-Type': 'application/json' } });
+  await supabase.rpc('email_queue_dispatch').catch(() => {});
+  return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json' } });
 });
