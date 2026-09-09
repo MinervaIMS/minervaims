@@ -205,6 +205,10 @@ export default function InterviewCalendar() {
           {divisionOptions.map((d) => (
             <button
               key={d}
+              /* `data-ro`: this chooses WHICH division's calendar is on
+                 screen and writes nothing. Greyed out, a reader who can
+                 see several divisions was stuck on the first one. */
+              data-ro
               onClick={() => setDivision(d)}
               className={`px-4 py-2 border font-body text-sm transition-colors ${d === division ? 'bg-accent text-accent-foreground border-accent' : 'bg-transparent text-accent border-accent/40 hover:border-accent'}`}
             >

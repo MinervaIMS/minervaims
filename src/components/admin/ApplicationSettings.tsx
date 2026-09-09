@@ -143,9 +143,12 @@ const ApplicationSettings = () => {
               {isOpenNow ? 'The open state is live to visitors right now.' : 'Visitors currently see the closed state.'}
             </p>
           </div>
+          {/* `data-ro`: these two only choose WHICH PREVIEW IS SHOWN below.
+              They write nothing, so a reader keeps them: the preview is the
+              part of this page a reader came for. */}
           <div className="inline-flex rounded-md border border-separator overflow-hidden text-sm shrink-0">
-            <button type="button" onClick={() => setPreviewOpen(true)} className={`px-3 py-1.5 ${previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Open</button>
-            <button type="button" onClick={() => setPreviewOpen(false)} className={`px-3 py-1.5 ${!previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Closed</button>
+            <button data-ro type="button" onClick={() => setPreviewOpen(true)} className={`px-3 py-1.5 ${previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Open</button>
+            <button data-ro type="button" onClick={() => setPreviewOpen(false)} className={`px-3 py-1.5 ${!previewOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`}>Closed</button>
           </div>
         </div>
 

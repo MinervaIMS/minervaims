@@ -1,64 +1,49 @@
-import { Fragment, useMemo } from 'react';
-import { Info, Smartphone } from 'lucide-react';
+import { useMemo } from 'react';
+import { Info, Smartphone, Eye, Check, Monitor } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { SECTIONS } from '@/lib/workspace-sections';
-import { MOBILE_POLICY, mobilePolicyFor, type MobilePolicy } from '@/lib/mobile-policy';
 
 // =====================================================================
 // Settings > Mobile view — what the workspace offers on a phone.
 // ---------------------------------------------------------------------
 // The workspace behaves differently below the desktop breakpoint, and
-// until now that was a fact you could only discover by opening it on a
-// phone and finding a page missing. Somebody has to be able to answer
-// "can I do this from my phone?" without a phone in their hand, which is
-// exactly what Role permissions does for roles.
+// somebody has to be able to answer "can I do this from my phone?"
+// without a phone in their hand, which is exactly what Role permissions
+// does for roles.
 //
-// So this is that table, for the other axis. It is GENERATED FROM THE
-// LIVE POLICY - the same `MOBILE_POLICY` the workspace itself reads, and
-// the same subsection list Role permissions renders - so it cannot drift
-// from the behaviour it describes. There is nothing to edit here and no
-// state: change the policy and this page changes with it.
+// THIS PAGE USED TO BE A TABLE, and it was a table because the answer
+// varied: some subsections worked in full on a phone, some opened
+// read-only, and nineteen did not open at all. It no longer varies.
+// Every page of the workspace opens on a phone, subject to the role,
+// and nothing at all can be edited from one.
 //
-// THE DESKTOP COLUMN IS THERE FOR CONTRAST, and it says the same thing
-// on every row on purpose. On a computer the answer is always "whatever
-// your role allows"; the phone is the only place a second rule applies,
-// and putting the two side by side is what makes that visible.
+// So the page states the rule, and then lists everything the rule covers
+// rather than repeating the same two words down fifty rows. The list is
+// GENERATED FROM THE LIVE NAVIGATION - the same subsection list Role
+// permissions renders - so it cannot fall behind the workspace it
+// describes.
 // =====================================================================
 
-const POLICY_STYLE: Record<MobilePolicy, { text: string; cls: string; meaning: string }> = {
-  full: {
-    text: 'Full',
-    cls: 'bg-emerald-50 text-emerald-700',
-    meaning: 'Opens on a phone and works exactly as it does on a computer, within your role.',
-  },
-  view: {
-    text: 'Read only',
-    cls: 'bg-amber-50 text-amber-700',
-    meaning: 'Opens on a phone so you can read it, but every editing control is withheld, whatever your role.',
-  },
-  no: {
-    text: 'Desktop only',
-    cls: 'bg-muted text-muted-foreground',
-    meaning: 'Listed in the navigation but not opened on a phone: a card explains it needs a computer.',
-  },
-};
+// =====================================================================
+// THE ONE EXCEPTION, AND IT IS NOT A MEMBER'S.
+// ---------------------------------------------------------------------
+// An applicant's four pages are not read-only pages: booking an
+// interview and answering an offer are the applicant's own actions on
+// their own candidacy, and they are the entire purpose of the pages. A
+// read-only phone would show an applicant a booking list they could not
+// book from, which is worse than telling them plainly to use a computer.
+// So the applicant's workspace is still opened on a desktop, exactly as
+// it was, and it is marked here rather than quietly omitted.
+// =====================================================================
+const APPLICANT_PAGES = new Set([
+  'applications-status', 'applications-interview', 'applications-offer', 'applications-faqs',
+]);
 
 export default function MobileViewTable() {
-  const grid = useMemo(
-    () => SECTIONS.map((sec) => ({
-      ...sec,
-      items: sec.items.map((it) => ({ ...it, policy: mobilePolicyFor(it.key) })),
-    })),
+  const totalSubsections = useMemo(
+    () => SECTIONS.reduce((n, sec) => n + sec.items.filter((it) => !APPLICANT_PAGES.has(it.key)).length, 0),
     [],
   );
-
-  // Counted from the same source the table renders, so the summary can
-  // never disagree with the rows underneath it.
-  const totals = useMemo(() => {
-    const counts: Record<MobilePolicy, number> = { full: 0, view: 0, no: 0 };
-    for (const sec of grid) for (const it of sec.items) counts[it.policy] += 1;
-    return counts;
-  }, [grid]);
 
   return (
     <div>
@@ -68,59 +53,65 @@ export default function MobileViewTable() {
       />
 
       <div className="flex flex-wrap items-center gap-4 mb-4 font-body text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-100 inline-block" /> Full: works as on a computer ({totals.full})</span>
-        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-100 inline-block" /> Read only: opens, but nothing can be changed ({totals.view})</span>
-        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-muted inline-block" /> Desktop only ({totals.no})</span>
         <span className="inline-flex items-center gap-1.5"><Smartphone className="h-3.5 w-3.5" /> below 1024px wide</span>
+        <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-amber-700" /> {totalSubsections} member subsections, all of them readable</span>
+        <span className="inline-flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" /> the applicant's own pages, on a desktop</span>
       </div>
 
-      <div className="max-w-full overflow-x-auto border border-separator">
-        <table className="w-full border-collapse font-body text-xs">
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-20 bg-muted text-left px-3 py-2 font-serif text-sm border-b border-r border-separator min-w-[210px]">Subsection</th>
-              <th className="bg-muted px-2 py-2 border-b border-separator min-w-[110px]">
-                <div className="text-[11px] font-normal text-muted-foreground text-center leading-tight">On a computer</div>
-              </th>
-              <th className="bg-muted px-2 py-2 border-b border-separator min-w-[110px]">
-                <div className="text-[11px] font-normal text-muted-foreground text-center leading-tight">On a phone</div>
-              </th>
-              <th className="bg-muted px-3 py-2 border-b border-separator text-left">
-                <div className="text-[11px] font-normal text-muted-foreground leading-tight">What that means</div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {grid.map((sec) => (
-              <Fragment key={sec.section}>
-                <tr>
-                  <td colSpan={4} className="bg-accent/5 border-b border-separator p-0">
-                    <span className="sticky left-0 inline-block text-accent font-serif px-3 py-1.5 uppercase tracking-wider text-[11px]">{sec.section}</span>
-                  </td>
-                </tr>
-                {sec.items.map((it) => {
-                  const s = POLICY_STYLE[it.policy];
-                  return (
-                    <tr key={it.key} className="hover:bg-muted/30">
-                      <th className="sticky left-0 z-10 bg-background text-left font-normal px-3 py-1.5 border-b border-r border-separator">
-                        {it.label}
-                      </th>
-                      <td className="text-center px-2 py-1.5 border-b border-separator text-muted-foreground">
-                        Per role
-                      </td>
-                      <td className={`text-center px-2 py-1.5 border-b border-separator ${s.cls}`}>
-                        <span className="whitespace-nowrap">{s.text}</span>
-                      </td>
-                      <td className="px-3 py-1.5 border-b border-separator text-muted-foreground">
-                        {s.meaning}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+      {/* The rule, as the two facts it consists of. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="border border-separator p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Check className="h-5 w-5 text-emerald-700" />
+            <span className="font-serif text-heading text-accent">Every page opens</span>
+          </div>
+          <p className="font-body text-sm text-muted-foreground">
+            There is no member page that a phone refuses to show. Which pages you see is decided by your
+            role, exactly as it is on a computer: a page your role cannot open stays closed on both, and a
+            page it can open is here in full, to read.
+          </p>
+        </div>
+        <div className="border border-separator p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye className="h-5 w-5 text-amber-700" />
+            <span className="font-serif text-heading text-accent">Nothing can be edited</span>
+          </div>
+          <p className="font-body text-sm text-muted-foreground">
+            On a phone every editing control is withheld, on every page, for every role including the
+            President's. Reading, searching, filtering, previewing a document and downloading all keep
+            working. Changing something is done from a computer.
+          </p>
+        </div>
+      </div>
+
+      {/* What the rule covers, section by section. */}
+      <div className="mt-6 border border-separator">
+        {SECTIONS.map((sec) => (
+          <div key={sec.section} className="border-b border-separator last:border-b-0">
+            <div className="bg-accent/5 px-3 py-1.5 text-accent font-serif uppercase tracking-wider text-[11px]">
+              {sec.section}
+            </div>
+            <div className="px-3 py-2.5 flex flex-wrap gap-x-2 gap-y-1.5 font-body text-xs">
+              {sec.items.map((it) => {
+                const applicant = APPLICANT_PAGES.has(it.key);
+                return (
+                  <span
+                    key={it.key}
+                    title={applicant ? 'The applicant opens this on a desktop' : 'Opens on a phone, read only'}
+                    className={`inline-flex items-center gap-1.5 border px-2 py-1 ${
+                      applicant ? 'border-separator text-muted-foreground' : 'border-separator bg-muted/30'
+                    }`}
+                  >
+                    {applicant
+                      ? <Monitor className="h-3 w-3 shrink-0" />
+                      : <Eye className="h-3 w-3 text-amber-700 shrink-0" />}
+                    {it.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 font-body">
@@ -131,8 +122,8 @@ export default function MobileViewTable() {
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-2 text-sm text-muted-foreground">
           <li>
             The mobile rule is a <span className="text-foreground">cap, never a grant</span>. It can only take
-            away what your role already gives you: a page marked Read only is read-only for everybody on a
-            phone, including the President, and a page your role cannot open stays closed on both.
+            away what your role already gives you, so it makes a page read-only and it never opens one your
+            role could not open anyway.
           </li>
           <li>
             <span className="text-foreground">The desktop is never affected.</span> The cap engages below
@@ -140,15 +131,19 @@ export default function MobileViewTable() {
             Rotating a tablet into landscape is enough to leave it.
           </li>
           <li>
-            <span className="text-foreground">Desktop only is a deliberate answer, not a gap.</span> The
-            pages marked so are the ones that need a wide table, a long form or a file the phone cannot
-            handle well: the Treasury ledger, the recruiting pipeline, the fund matrix.
+            <span className="text-foreground">Wide pages scroll sideways.</span> The pages built for a large
+            screen, such as the treasury ledger, the recruiting pipeline and the fund matrix, keep all of
+            their columns on a phone: the table is dragged left and right rather than trimmed.
           </li>
           <li>
-            Everything here is read from <code className="bg-muted px-1 text-foreground">MOBILE_POLICY</code>,
-            the same table the workspace consults when it decides what to show. There are{' '}
-            {Object.keys(MOBILE_POLICY).length} subsections in it, and this page lists every one that appears
-            in the navigation.
+            <span className="text-foreground">It applies to the server too.</span> What is withheld here is
+            also refused by the edge functions and the database policies behind them, so the rule holds
+            however a request is made.
+          </li>
+          <li>
+            <span className="text-foreground">An applicant is the exception</span>, because their four pages
+            are not pages they read: booking an interview and answering an offer are their own actions on
+            their own candidacy. Applicants are still asked to use a computer, as they were before.
           </li>
         </ul>
       </div>

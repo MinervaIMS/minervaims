@@ -62,7 +62,7 @@ export const GUIDE: GuideEntry[] = [
     topics: [
       { id: 'download', title: 'Download my manual', body: 'The download produces a Markdown file containing exactly the manual you see, overview included. Many members prefer to upload it to an AI assistant and ask for a summary, a checklist or a step-by-step walkthrough of one specific task.' },
       { id: 'help-tools', title: 'Help, always in place', body: 'Every workspace page carries a floating question mark that opens the sliding help panel for that page, and many controls carry a small circled question mark that opens the panel directly at the matching topic. The panel shows only what your role can actually do.' },
-      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, consultation available everywhere. Subsections that need a full screen are marked with a monitor icon and open on desktop only, and read-only pages carry a ribbon saying editing is available on desktop.' },
+      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read. Nothing is withheld that you could see on a computer, and nothing can be edited: each page carries a ribbon saying so, and wide tables are dragged sideways rather than trimmed.' },
       { id: 'deep-links', title: 'Direct links into the workspace', body: 'A link of the form /admin?section=...&sub=... opens the workspace directly on that subsection, provided your role can see it. Some website buttons use these links to bring you to the right place in one click.' },
     ],
   },
@@ -135,7 +135,7 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'applications-screening', section: 'Recruiting', label: 'Candidates screening',
     purpose: 'Review this semester\'s applications: profiles, CVs, written answers, shared notes, the division each candidate is being evaluated for, and their status. Previous semesters remain consultable as read-only archives.',
-    view: ['Open candidate profiles, preview and download documents.', 'Read which division is evaluating each candidate, and filter the register by it.', 'Team Leaders and Portfolio Managers can also add notes, without changing statuses.'],
+    view: ['Open candidate profiles, preview and download documents.', 'Read which division is evaluating each candidate, and filter the register by it.', 'Step from one candidate to the next with the arrows at the top of the candidate window.', 'Team Leaders and Portfolio Managers can also add notes, without changing statuses.'],
     manage: ['Change candidate statuses (some statuses email the candidate automatically) and add notes.', 'Change the division a candidate is being evaluated for.'],
     warnings: ['Statuses marked "sends an email / action" notify the candidate immediately and cannot be undone.', 'Changing the division a candidate is evaluated for returns them to "To be invited" and releases any interview slot they had booked.', 'Notes are visible to all reviewers. Keep them technical and appropriate.', 'Archived semesters are read-only: statuses and notes can no longer change.'],
     topics: [
@@ -151,6 +151,8 @@ export const GUIDE: GuideEntry[] = [
       },
       { id: 'semester', title: 'Semester selector', body: 'The list shows only the current semester\'s candidates. Pick a past semester to consult its archived candidacies; they are preserved for accountability and cannot be modified.' },
       { id: 'notes', title: 'Shared notes', body: 'Notes are visible to every reviewer with access to this page and are attributed to their author. Write only technical, relevant observations that help evaluate the candidate.' },
+      { id: 'walk', title: 'From one candidate to the next', body: 'The candidate window carries an arrow on either side of the name and a counter between them. They walk the register in the order it is showing, so narrowing the list to one division, one status or one search term narrows what the arrows step through as well. The first candidate has no arrow back and the last none forward. Everything else in the window behaves exactly as it does when a candidate is opened from the table.' },
+      { id: 'scope', title: 'Which candidates you see', body: 'The President, the Vice President and the Head of Asset Management see every application. A HEAD OF DIVISION ALSO SEES THE WHOLE INTAKE, so a selection round can be judged as a whole and a candidate who fits another division better can be noticed; the Evaluated for filter narrows the register to their own in one press. Team Leaders and Portfolio Managers see the candidates who named their division or have been handed to it. Moving a candidacy is a different question from reading it: advancing, inviting and reassigning a candidate belong to the division assessing them, so on somebody else\'s candidate a head reads the whole application and can add a note, and the status controls are not offered.' },
       { id: 'documents', title: 'CV and written answer', body: 'Both documents open in the preview panes and can be downloaded. Opening a CV for the first time automatically advances the candidate\'s status to show the application has been seen.' },
     ],
   },
@@ -430,11 +432,11 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'settings-mobile', section: 'Settings', label: 'Mobile view',
-    purpose: 'What each part of the workspace offers on a phone, generated from the live mobile rules so it always matches the real behaviour.',
+    purpose: 'What the workspace offers on a phone: every page opens, within your role, and nothing can be edited.',
     view: ['Consult the table.'],
     manage: [],
     topics: [
-      { id: 'levels', title: 'Reading the table', body: 'Full means the subsection works on a phone exactly as on a computer, within your role. Read only means it opens but every editing control is withheld, for everybody. Desktop only means it is listed in the navigation and asks to be opened on a computer.' },
+      { id: 'levels', title: 'The rule', body: 'Every subsection opens on a phone and every one of them is read only: the controls that change something are withheld, for everybody, including the President. Which pages you see is still decided by your role, exactly as it is on a computer, because the mobile rule is a cap and never a grant. An applicant is the one exception: their own pages, where they book an interview and answer an offer, are still opened on a computer.' },
       { id: 'cap', title: 'A cap, never a grant', body: 'The mobile rule can only take away what a role already has. It cannot open a page a role cannot open, and it applies to everyone including the President. It engages below 1024 pixels wide, which is the same threshold that switches the workspace to its mobile shell.' },
     ],
   },

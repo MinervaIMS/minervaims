@@ -174,8 +174,8 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     id: 'mobile',
     title: 'The workspace on a phone',
     body: [
-      'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and consultation available everywhere.',
-      'Some subsections need a full screen to be usable and open on desktop only; they are marked with a monitor icon. Pages that are readable but not editable on a phone carry a ribbon saying so. Nothing is hidden from you on a phone that you can see on a desktop.',
+      'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read.',
+      'Nothing is withheld on a phone that you can see on a computer, and nothing at all can be edited from one: every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
     ],
   },
 ];
@@ -702,7 +702,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'settings-mobile': {
     detail: [
       "What each part of the workspace offers on a phone.",
-      "Generated from the live mobile rules, so it always reflects what actually happens on a small screen. Subsections that need a full screen are marked and open on desktop only.",
+      "There is one rule and this page states it: every page opens, within your role, and nothing can be edited. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
     ],
     related: ['settings-roles'],
   },

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { Recommendation } from '@/components/admin/Recommendation';
-import { Download, FileText, Search, MessageSquare, Eye, Loader2 } from 'lucide-react';
+import { Download, FileText, Search, MessageSquare, Eye, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -29,6 +29,7 @@ import {
   isLockedStatus, allowedNextStatuses,
   APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
   evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
+  reviewerDivisionsOf, canActOnApplication,
   type ApplicationRow, type ApplicationStatus, type BulkDocument,
 } from '@/lib/applications-api';
 import { openReportInTab } from '@/lib/open-report';
@@ -116,11 +117,33 @@ function BulkDownloadButton({ label, kind, busy, progress, disabled, onRun }: {
 }
 
 export default function CandidatesManagement() {
-  const { session } = useAuth();
-  const { canManage, hasSpecial } = useAccess();
+  const { session, roles } = useAuth();
+  const { canManage, hasSpecial, isFullAccess } = useAccess();
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
   const { toast } = useToast();
+
+  // =================================================================
+  // A HEAD OF DIVISION NOW READS THE WHOLE INTAKE.
+  // -----------------------------------------------------------------
+  // The list this page receives is no longer only the candidates who
+  // named the reader's division: a head of division is sent every
+  // application in the semester, so they can judge the intake as a whole
+  // and notice somebody in another division's pile who belongs in
+  // theirs. The Evaluated for column says which division each candidate
+  // sits with, and it filters, so "mine" is one click away.
+  //
+  // READING IS ALL THAT WIDENED. Moving a candidacy - advancing it,
+  // inviting it, reassigning it - still belongs to the division doing
+  // the assessing, so those controls are drawn only for the candidates
+  // this reader may actually act on. The edge function enforces the same
+  // line; this is what stops a head choosing a status for somebody
+  // else's candidate and only then being refused.
+  // =================================================================
+  const myDivisions = useMemo(
+    () => reviewerDivisionsOf(roles as { role: string; division?: string | null }[] | null, isFullAccess),
+    [roles, isFullAccess],
+  );
 
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   // Semester scope: the active workflow only shows THIS semester's
@@ -129,6 +152,9 @@ export default function CandidatesManagement() {
   const viewingArchived = semKey !== currentSemester().key;
   const canChangeStatus = canManage('applications-screening') && !viewingArchived;
   const canAddNotes = (canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only')) && !viewingArchived;
+  /** May this reader move THIS candidacy, or only read it? */
+  const canMove = (a: Pick<ApplicationRow, 'first_choice' | 'second_choice' | 'evaluation_division'>) =>
+    canChangeStatus && canActOnApplication(a, myDivisions);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   // =================================================================
@@ -257,6 +283,33 @@ export default function CandidatesManagement() {
         : a)));
     });
   };
+
+  // =================================================================
+  // ONE CANDIDATE TO THE NEXT, WITHOUT GOING BACK TO THE LIST.
+  // -----------------------------------------------------------------
+  // Screening a semester means reading thirty or forty applications in a
+  // row, and until now each one cost a close, a scroll back to where you
+  // were, and a press of Open on the row below. The two arrows in the
+  // window's header walk the table in the order it is showing: the
+  // FILTERED, sorted order, so narrowing to one division or one status
+  // narrows what the arrows step through as well. That is the whole
+  // change. Nothing else about this window moves, and every control in
+  // it goes on behaving exactly as it did.
+  //
+  // A candidate the current filters no longer match (opening a CV can
+  // advance a status while a status filter is on) simply has no
+  // neighbours: both arrows go quiet rather than jumping somewhere
+  // unrelated.
+  // =================================================================
+  const openIndex = useMemo(() => (openId ? rows.findIndex((r) => r.id === openId) : -1), [rows, openId]);
+  const prevCandidate = openIndex > 0 ? rows[openIndex - 1] : null;
+  const nextCandidate = openIndex >= 0 && openIndex < rows.length - 1 ? rows[openIndex + 1] : null;
+
+  // The window is its own scroll box. Arriving at a new candidate two
+  // screens down the previous one's notes would be arriving in the middle
+  // of them, so it starts at the top, as opening from the table does.
+  const detailPaneRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { detailPaneRef.current?.scrollTo({ top: 0 }); }, [openId]);
 
   // Documents open in a tab that says whose they are, through the same wrapper
   // the site already uses for reports.
@@ -571,7 +624,7 @@ export default function CandidatesManagement() {
                       without that power reads the same fact without being
                       offered a menu that would refuse them. */}
                   <td className="px-3 py-2 whitespace-nowrap">
-                    {canChangeStatus && !isLockedStatus(a.status) ? (
+                    {canMove(a) && !isLockedStatus(a.status) ? (
                       <Select
                         value={evaluationDivision(a)}
                         onValueChange={(v) => { if (v !== evaluationDivision(a)) setPendingEval({ app: a, target: v as OrgDivision }); }}
@@ -620,7 +673,16 @@ export default function CandidatesManagement() {
                     </button>
                   </td>
                   <td className="px-3 py-2 text-center">{a.note_count || ''}</td>
-                  <td className="px-3 py-2 text-right"><Button variant="outline" size="sm" onClick={() => openDetail(a.id)}>Open</Button></td>
+                  {/* `data-ro`: OPENING A CANDIDATE IS A READ. Without it the
+                      read-only guard takes this button, since a plain word on
+                      a button is all the guard has to go on, and a reviewer is
+                      left with a table they cannot look inside. That silently
+                      cost the two roles the recruiting backend exists to serve
+                      - team leaders and portfolio managers, whose grant on this
+                      page is 'view' - the whole of their reviewing work, on a
+                      desktop, today. It is the same button everyone uses on a
+                      phone now that the page opens there. */}
+                  <td className="px-3 py-2 text-right"><Button data-ro variant="outline" size="sm" onClick={() => openDetail(a.id)}>Open</Button></td>
                 </tr>
               ))}
             </tbody>
@@ -635,11 +697,41 @@ export default function CandidatesManagement() {
           component now; what stays here is only what MOVES a candidacy: the
           status control and the division transfer. */}
       <Dialog open={!!openId} onOpenChange={(o) => { if (!o) closeCandidate(); }}>
-        <DialogContent className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
+        <DialogContent ref={detailPaneRef} className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">
-              {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
-            </DialogTitle>
+            {/* The name, and the way to the candidate on either side of it.
+                `pr-10` keeps the arrows clear of the window's own close
+                button, which sits in the top right corner. */}
+            <div className="flex items-center gap-3 pr-10">
+              <DialogTitle className="font-serif text-2xl min-w-0 truncate">
+                {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
+              </DialogTitle>
+              {rows.length > 1 && (
+                <div className="ml-auto shrink-0 flex items-center gap-1">
+                  <Button
+                    type="button" variant="outline" size="icon" className="h-8 w-8"
+                    disabled={!prevCandidate}
+                    onClick={() => prevCandidate && openDetail(prevCandidate.id)}
+                    title={prevCandidate ? `Previous candidate: ${prevCandidate.first_name} ${prevCandidate.surname}` : 'This is the first candidate'}
+                    aria-label="Previous candidate"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="font-body text-xs text-muted-foreground tabular-nums px-1 whitespace-nowrap">
+                    {openIndex >= 0 ? `${openIndex + 1} of ${rows.length}` : `${rows.length} shown`}
+                  </span>
+                  <Button
+                    type="button" variant="outline" size="icon" className="h-8 w-8"
+                    disabled={!nextCandidate}
+                    onClick={() => nextCandidate && openDetail(nextCandidate.id)}
+                    title={nextCandidate ? `Next candidate: ${nextCandidate.first_name} ${nextCandidate.surname}` : 'This is the last candidate'}
+                    aria-label="Next candidate"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </DialogHeader>
           {detailLoading || !detail ? <WorkspaceLoader inline /> : (
             <CandidateProfile
@@ -662,6 +754,12 @@ export default function CandidatesManagement() {
                 {!canChangeStatus ? (
                   <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
                     You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
+                  </p>
+                ) : !canMove(detail.application) ? (
+                  <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+                    This candidate is being assessed by <strong>{divisionLabels[evaluationDivision(detail.application)]}</strong>.
+                    You can read their whole application and add a note that their division will see; moving their
+                    candidacy is theirs to do, or the President's.
                   </p>
                 ) : isLockedStatus(detail.application.status) ? (
                   <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
@@ -698,7 +796,7 @@ export default function CandidatesManagement() {
               {/* Evaluated for: the same control as the table's column, in
                   the place a reviewer is most likely to reach for it, having
                   just read the CV. */}
-              {canChangeStatus && !isLockedStatus(detail.application.status) && (
+              {canMove(detail.application) && !isLockedStatus(detail.application.status) && (
                 <div className="border border-separator p-3 space-y-2">
                   <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
                     Evaluated for <HelpDot page="applications-screening" topic="evaluation-division" />

@@ -60,9 +60,9 @@ export interface Access {
 
 export function useAccess(): Access {
   const { user, roles } = useAuth();
-  // Below the desktop breakpoint the workspace runs in its mobile shell:
-  // subsections marked 'view' in the mobile policy are READ-ONLY for
-  // everyone, regardless of role. On desktop (>= 1024px) this cap never
+  // Below the desktop breakpoint the workspace runs in its mobile shell,
+  // where EVERY subsection is READ-ONLY for everyone, whatever their role
+  // (see lib/mobile-policy.ts). On desktop (>= 1024px) this cap never
   // engages, so desktop behaviour is untouched.
   const isDesktop = useIsDesktop();
 
@@ -106,7 +106,9 @@ export function useAccess(): Access {
         : isFullAccess
           ? 'manage'
           : resolveLevel(roleValues, resource);
-      // Mobile read-only cap: only 'full' subsections keep write levels.
+      // MOBILE READ-ONLY CAP. A cap, never a grant: it only ever lowers
+      // 'edit' and 'manage' to 'view', so what a role may OPEN is decided
+      // by the matrix above on a phone exactly as it is on a computer.
       if (!isDesktop && atLeast(base, 'edit') && mobilePolicyFor(resource) !== 'full') {
         return 'view';
       }
