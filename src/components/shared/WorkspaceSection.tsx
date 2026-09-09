@@ -65,7 +65,7 @@ export function WorkspaceSection() {
 
         <div className="max-w-3xl space-y-5 font-body text-body md:text-body-lg leading-relaxed text-muted-foreground">
           <p>
-            {'The Minerva Workspace is our proprietary operating platform: recruiting from application to offer, division templates, events, alumni list, fund performance and much more. It\'s the infrastructure behind the speed and consistency to execute complex projects and organise members only initiatives.'}
+            {'The Minerva Workspace is our proprietary operating platform: recruiting, report templates, code repositories, events, alumni list, fund performance and much more. It\'s the infrastructure providing the speed and consistency we need to pursue complex projects and organise initiatives for members only.'}
           </p>
           <p>
             {'\n'}
