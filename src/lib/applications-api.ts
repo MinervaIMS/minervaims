@@ -164,6 +164,55 @@ export function allowedEvaluationDivisions(
   return EVALUATION_DIVISIONS.filter((d) => d === current || d === previous);
 }
 
+// =====================================================================
+// WHO MAY READ A CANDIDACY, AND WHO MAY MOVE IT.
+// ---------------------------------------------------------------------
+// Two different questions since heads of division began seeing the whole
+// intake. A head reads every application in the semester; the ones they
+// may ACT on - advance, invite, reassign - are still their own
+// division's. Everybody else reads and acts on exactly the same set.
+//
+// THE SERVER IS THE BOUNDARY AND ENFORCES BOTH (`inScope` and
+// `inWriteScope` in supabase/functions/admin-applications). What these
+// two are for is telling the reviewer BEFORE they act, so a head does not
+// choose a new division for somebody else's candidate and only then read
+// a red toast. They mirror the server's rule line for line; if one moves,
+// move the other.
+// =====================================================================
+
+/** Roles whose candidate scope is their own division (mirrors REVIEW_ROLES). */
+const REVIEWER_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager'];
+
+/**
+ * The divisions this reader may act on, from their role assignments.
+ * `null` means every division: the roles with full access to recruiting.
+ */
+export function reviewerDivisionsOf(
+  roles: { role: string; division?: OrgDivision | string | null }[] | null | undefined,
+  isFullAccess: boolean,
+): OrgDivision[] | null {
+  if (isFullAccess) return null;
+  const own = (roles || [])
+    .filter((r) => REVIEWER_ROLES.includes(r.role) && r.division)
+    .map((r) => r.division as OrgDivision);
+  return Array.from(new Set(own));
+}
+
+/**
+ * May this reader move this candidacy? `divisions` is what
+ * `reviewerDivisionsOf` returned, so `null` is "any".
+ */
+export function canActOnApplication(
+  a: Pick<ApplicationRow, 'first_choice'> & Partial<Pick<ApplicationRow, 'second_choice' | 'evaluation_division'>>,
+  divisions: OrgDivision[] | null,
+): boolean {
+  if (!divisions) return true;
+  if (divisions.includes(a.first_choice)) return true;
+  if (a.second_choice && divisions.includes(a.second_choice)) return true;
+  if (a.evaluation_division && divisions.includes(a.evaluation_division)) return true;
+  return false;
+}
+
 /** The five a candidate may rank. Media and Operations is not ranked. */
 export const RANKED_APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 

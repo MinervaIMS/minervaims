@@ -127,6 +127,31 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     const isReviewer = canAll || reviewerDivisions.length > 0;
     if (!isReviewer) return json({ error: 'Access denied' }, 403);
 
+    // =====================================================================
+    // A HEAD OF DIVISION READS THE WHOLE INTAKE.
+    // ---------------------------------------------------------------------
+    // Heads used to see only the candidates who had named their division or
+    // been handed to it, which meant nobody below the Vice President could
+    // answer the two questions a head actually asks of a screening round:
+    // how strong is this intake overall, and is there somebody in another
+    // division's pile who belongs in mine. Reading is not the risky half of
+    // a candidacy, and a head is accountable for one of the divisions doing
+    // the choosing.
+    //
+    // READING IS ALL THIS GRANTS. It widens `inScope`, which governs list,
+    // get, sign-url and bulk-urls. It deliberately does NOT widen who may
+    // MOVE a candidacy: `inWriteScope` below stays on the reviewer's own
+    // divisions, so a head who opens another division's candidate can read
+    // them and leave a note, and cannot advance them, invite them or
+    // reassign them. That boundary matters because `update-status` falls
+    // back to the caller's own division when it is asked to invite somebody
+    // out of scope: without this check, a head opening another division's
+    // candidate and pressing "Invited to interview" would have quietly
+    // moved that candidate into their own division.
+    // =====================================================================
+    const SEE_ALL_DIVISIONS_ROLES = ['head_of_division'];
+    const canSeeAllDivisions = canAll || roleNames.some((r) => SEE_ALL_DIVISIONS_ROLES.includes(r));
+
     // May this caller change where a candidate sits in the process?
     const canProgress = canAll || roleNames.some((r) => REVIEW_ROLES.includes(r) && !NOTES_ONLY_ROLES.includes(r));
     const canOffer = isAdminEmail || roleNames.some((r) => OFFER_ROLES.includes(r));
@@ -146,11 +171,19 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     // division) and the evaluation division (a reviewer must be able to
     // see whoever has been handed to them).
     // =====================================================================
-    const inScope = (app: { first_choice: string; second_choice: string | null; evaluation_division?: string | null }) =>
+    type ScopedApp = { first_choice: string; second_choice: string | null; evaluation_division?: string | null };
+
+    /** MAY THIS CALLER ACT ON THIS CANDIDACY? Their own divisions, always. */
+    const inWriteScope = (app: ScopedApp) =>
       canAll
       || reviewerDivisions.includes(app.first_choice)
       || (app.second_choice ? reviewerDivisions.includes(app.second_choice) : false)
       || (app.evaluation_division ? reviewerDivisions.includes(app.evaluation_division) : false);
+
+    /** MAY THIS CALLER READ THIS CANDIDACY? Their own, and for a head, all. */
+    const inScope = (app: ScopedApp) => canSeeAllDivisions || inWriteScope(app);
+
+    const OUT_OF_DIVISION = 'This candidate is being assessed by another division. You can read their application and add a note, but only their own division, the President, the Vice President or the Head of Asset Management can move their candidacy.';
 
     /** The division assessing this candidate right now. */
     const evaluationOf = (app: { evaluation_division?: string | null; interview_division?: string | null; first_choice: string }) =>
@@ -163,7 +196,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     // ── list ───────────────────────────────────────────────────────────────
     if (action === 'list') {
       let q = supabase.from('applications').select('*').order('created_at', { ascending: false });
-      if (!canAll) q = q.or(`first_choice.in.(${reviewerDivisions.join(',')}),second_choice.in.(${reviewerDivisions.join(',')}),evaluation_division.in.(${reviewerDivisions.join(',')})`);
+      if (!canSeeAllDivisions) q = q.or(`first_choice.in.(${reviewerDivisions.join(',')}),second_choice.in.(${reviewerDivisions.join(',')}),evaluation_division.in.(${reviewerDivisions.join(',')})`);
       const { data, error } = await q;
       if (error) throw error;
       // note counts
@@ -250,6 +283,8 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         .select('first_choice, second_choice, first_name, email, interview_division, evaluation_division, offer_division, status')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      // Readable is not the same as movable: see `inWriteScope` above.
+      if (!inWriteScope(app)) return json({ error: OUT_OF_DIVISION }, 403);
 
       const previousStatus = app.status as string;
       // A candidacy only ever moves FORWARD. Once a stage is reached it can
@@ -407,6 +442,8 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         .select('id, first_choice, second_choice, first_name, surname, email, interview_division, evaluation_division, evaluation_division_previous, status, user_id')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      // Readable is not the same as movable: see `inWriteScope` above.
+      if (!inWriteScope(app)) return json({ error: OUT_OF_DIVISION }, 403);
 
       // An outcome the candidate has already been told about, or acted on,
       // is not something to reopen from here.
@@ -465,7 +502,11 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     // ── add-note ───────────────────────────────────────────────────────────
     if (action === 'add-note') {
       if (!body.body?.trim()) return json({ error: 'Empty note' }, 400);
-      const { data: app } = await supabase.from('applications').select('first_choice, second_choice').eq('id', body.id).maybeSingle();
+      // `evaluation_division` belongs in this select as much as the two
+      // preferences do: a reviewer handed a candidate who named neither of
+      // their divisions could open that candidate and then be refused when
+      // they tried to write the note they had opened them to write.
+      const { data: app } = await supabase.from('applications').select('first_choice, second_choice, evaluation_division').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
       const { error } = await supabase.from('application_notes').insert({

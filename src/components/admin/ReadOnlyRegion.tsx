@@ -75,6 +75,16 @@ const KEEPS_WORKING = [
   '[role="tab"]',
   '[aria-haspopup]',
   '[aria-expanded]',
+  // A DATE PICKER IS AN INPUT. Every day cell in the workspace is a
+  // <button>, so the sweep took all thirty-five of them and left the
+  // Interview Calendar looking broken rather than read-only: a whole
+  // month greyed out, which is what a page shows when it has failed.
+  // Choosing a date writes nothing on its own - it moves a highlight, or
+  // fills a field whose Save button is disabled a few lines below - and
+  // the same argument already keeps text fields and dropdowns alive.
+  // `.rdp-button` is react-day-picker's own class, on the day cells and
+  // on the month arrows, and on nothing else.
+  '.rdp-button',
 ].join(',');
 
 // =====================================================================

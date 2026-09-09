@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Menu, X, Globe, LogOut, ChevronDown, ChevronRight, Monitor, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Menu, X, Globe, LogOut, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
-import { mobilePolicyFor } from '@/lib/mobile-policy';
 import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import logoWhite from '@/assets/logo-white.svg';
 
@@ -19,10 +13,12 @@ import logoWhite from '@/assets/logo-white.svg';
 //                    in the drawer header)
 //   - subsection nav -> horizontally scrollable chip bar under the top bar
 //   - help panel -> full-screen sheet (handled responsively in HelpSystem)
-// Subsections marked 'no' in the mobile policy are visible but tapping
-// them opens a card explaining they are available on desktop only.
-// 'view' subsections carry a read-only ribbon; editing is withheld by the
-// useAccess mobile cap plus per-page guards.
+//
+// EVERY SUBSECTION THE ROLE MAY OPEN, OPENS HERE. The shell withholds
+// nothing of its own: what is listed is what `filterNav` allowed, which
+// is the same navigation the desktop draws. What a phone does NOT do is
+// edit, and that is said once in the ribbon below the chip bar and
+// enforced by the `useAccess` mobile cap plus `ReadOnlyRegion`.
 // =====================================================================
 
 export interface MobileNavSub { key: string; label: string }
@@ -52,7 +48,6 @@ export default function MobileWorkspaceShell({
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(activeSectionKey);
-  const [blocked, setBlocked] = useState<{ section: string; label: string } | null>(null);
   // The read-only ribbon states a fact once. Keeping it on screen for the
   // rest of the session costs a line of height on every scroll of every
   // read-only page, so it can be dismissed for the session. It returns on
@@ -63,18 +58,11 @@ export default function MobileWorkspaceShell({
   const activeSection = nav.find((s) => s.key === activeSectionKey) ?? null;
   const activeSub = activeSection?.subItems.find((si) => si.key === activeSubKey) ?? null;
   const currentPageKey = activeSubKey ?? activeSectionKey ?? '';
-  const currentPolicy = mobilePolicyFor(currentPageKey);
 
   // Keep the drawer accordion in step with the active section.
   useEffect(() => { if (drawerOpen) setExpanded(activeSectionKey); }, [drawerOpen, activeSectionKey]);
 
   const go = (sectionKey: string, sub: MobileNavSub | null) => {
-    const key = sub ? sub.key : sectionKey;
-    const label = sub ? sub.label : (nav.find((s) => s.key === sectionKey)?.label ?? key);
-    if (mobilePolicyFor(key) === 'no') {
-      setBlocked({ section: label, label });
-      return;
-    }
     onNavigate(sectionKey, sub ? sub.key : null);
     setDrawerOpen(false);
   };
@@ -134,7 +122,6 @@ export default function MobileWorkspaceShell({
         <nav className="shrink-0 border-b border-separator bg-muted/30 overflow-x-auto">
           <div className="flex gap-2 px-3 py-2 w-max">
             {activeSection.subItems.map((si) => {
-              const p = mobilePolicyFor(si.key);
               const isActive = si.key === activeSubKey;
               return (
                 <button
@@ -144,13 +131,10 @@ export default function MobileWorkspaceShell({
                   className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3 h-9 border font-body text-sm transition-colors ${
                     isActive
                       ? 'bg-accent text-accent-foreground border-accent'
-                      : p === 'no'
-                        ? 'bg-transparent text-muted-foreground border-separator'
-                        : 'bg-background text-accent border-accent/40'
+                      : 'bg-background text-accent border-accent/40'
                   }`}
                 >
                   {si.label}
-                  {p === 'no' && <Monitor className="h-3.5 w-3.5 opacity-70" aria-label="Desktop only" />}
                 </button>
               );
             })}
@@ -158,8 +142,9 @@ export default function MobileWorkspaceShell({
         </nav>
       )}
 
-      {/* Read-only ribbon for 'view' pages, dismissible for the session. */}
-      {currentPolicy === 'view' && !ribbonDismissed && (
+      {/* Read-only ribbon. Every page is read-only here, so the notice is
+          the same on all of them; it is dismissible for the session. */}
+      {!ribbonDismissed && (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-muted/60 border-b border-separator font-body text-xs text-muted-foreground">
           <Eye className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1 min-w-0 truncate">Read-only on mobile. Editing is available on desktop.</span>
@@ -175,30 +160,24 @@ export default function MobileWorkspaceShell({
       )}
 
       {/* Content slot. Overscroll is contained so a bounce at the edges can
-          never chain to the document and drag the fixed header around. */}
+          never chain to the document and drag the fixed header around.
+
+          IT SCROLLS SIDEWAYS TOO, now that every page opens here. Most of
+          the workspace's wide tables carry their own `overflow-x-auto`
+          wrapper and never reach this, but the pages that were previously
+          desktop-only were written without a phone in mind, and a column
+          that cannot be reached is the same as a column that was withheld.
+          The pane is a sibling of the header, so a sideways drag can move
+          the content and nothing else. */}
       <main
         id="mobile-ws-content"
         data-ws-pane
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 relative"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-auto px-4 py-4 relative"
         style={{ overscrollBehavior: 'contain', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >
         <HelpProvider>
-          {currentPolicy === 'no' ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="border border-separator bg-muted/30 px-6 py-8 text-center max-w-sm">
-                <Monitor className="h-8 w-8 text-accent mx-auto mb-3" strokeWidth={1.5} />
-                <div className="font-serif text-lg text-accent mb-1">Available on desktop</div>
-                <p className="font-body text-sm text-muted-foreground">
-                  This subsection can be used from a desktop computer or a tablet in landscape mode.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {children}
-              <PageHelpButton page={currentPageKey} />
-            </>
-          )}
+          {children}
+          <PageHelpButton page={currentPageKey} />
         </HelpProvider>
       </main>
 
@@ -245,7 +224,6 @@ export default function MobileWorkspaceShell({
                 {hasSubs && isOpen && (
                   <div className="pb-1">
                     {section.subItems.map((si) => {
-                      const p = mobilePolicyFor(si.key);
                       const isSubActive = si.key === activeSubKey && section.key === activeSectionKey;
                       return (
                         <button
@@ -253,11 +231,10 @@ export default function MobileWorkspaceShell({
                           type="button"
                           onClick={() => go(section.key, si)}
                           className={`w-full flex items-center gap-2 pl-12 pr-4 h-10 text-left font-body text-sm transition-colors ${
-                            isSubActive ? 'bg-background/20 text-accent-foreground' : p === 'no' ? 'text-accent-foreground/50' : 'text-accent-foreground/85 active:bg-background/10'
+                            isSubActive ? 'bg-background/20 text-accent-foreground' : 'text-accent-foreground/85 active:bg-background/10'
                           }`}
                         >
                           <span className="flex-1 truncate">{si.label}</span>
-                          {p === 'no' && <Monitor className="h-3.5 w-3.5 opacity-70" aria-label="Desktop only" />}
                         </button>
                       );
                     })}
@@ -269,30 +246,9 @@ export default function MobileWorkspaceShell({
         </nav>
 
         <div className="shrink-0 px-4 py-3 border-t border-accent-foreground/15 font-body text-[11px] text-accent-foreground/60">
-          Subsections marked with the monitor icon are available on desktop only.
+          Every page your role can open is available here, to read. Editing is done on a desktop computer.
         </div>
       </aside>
-
-      {/* Desktop-only popup for blocked subsections. */}
-      <AlertDialog open={!!blocked} onOpenChange={(o) => { if (!o) setBlocked(null); }}>
-        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-accent" />
-              {blocked?.label} is available on desktop
-            </AlertDialogTitle>
-            <AlertDialogDescription className="font-body">
-              This subsection involves work that needs a full screen, so it is not offered on mobile.
-              Open the Minerva Workspace from a desktop computer or a tablet in landscape mode to use it.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction asChild>
-              <Button className="font-body w-full sm:w-auto">Understood</Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

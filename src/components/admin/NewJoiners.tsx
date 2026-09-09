@@ -212,7 +212,10 @@ export default function NewJoiners() {
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">
                       <div className="inline-flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openCandidate(a.id)}>Open</Button>
+                        {/* `data-ro`: opening a joiner is a read, and the
+                            read-only guard has only the word "Open" to judge
+                            it by. See the same note in CandidatesManagement. */}
+                        <Button data-ro variant="outline" size="sm" onClick={() => openCandidate(a.id)}>Open</Button>
                         {st.canOffer && canSendOffers && !viewingArchived && (
                           <Button size="sm" onClick={() => openOffer(a)}>
                             <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}

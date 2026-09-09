@@ -183,7 +183,8 @@ function DocPane({ title, url, loading, onOpen, empty }: {
     <div className="min-h-[400px]">
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{title}</div>
-        <button type="button" onClick={onOpen} className="text-xs text-accent hover:underline inline-flex items-center gap-1">
+        {/* `data-ro`: this opens the document in a tab, which is a read. */}
+        <button data-ro type="button" onClick={onOpen} className="text-xs text-accent hover:underline inline-flex items-center gap-1">
           <FileText className="h-3.5 w-3.5" />Open
         </button>
       </div>
