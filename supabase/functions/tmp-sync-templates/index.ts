@@ -22,12 +22,11 @@ Deno.serve(async () => {
     'staff_offer_accepted', 'staff_offer_declined', 'staff_offer_expired',
   ];
   const out: Record<string, string> = {};
-  for (const key of keys) {
-    const { error } = await supabase.rpc('enqueue_staff_email', {
-      p_key: key, p_to: TO, p_vars: base, p_dedupe: `test-${key}-${Date.now()}`,
-    });
-    out[key] = error ? `error: ${error.message}` : 'queued';
+  const url = new URL('http://x');
+  if (String(base.first_name)) {
+    // dispatch only, no new queue entries
   }
-  await supabase.rpc('email_queue_dispatch').catch(() => {});
+  try { await supabase.rpc('email_queue_dispatch'); } catch (e) { out.dispatch = String(e); }
+  void keys; void url;
   return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json' } });
 });
