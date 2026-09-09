@@ -2,6 +2,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { countBookableSlots } from '../_shared/interview-slots.ts';
+import { divisionHeadsAndPresident, notifyStaff } from '../_shared/staff-notify.ts';
+
+// A stored role such as 'senior_analyst' read as a title: "Senior Analyst".
+function roleLabel(role: unknown): string {
+  const r = String(role || '').trim();
+  if (!r) return 'the role offered';
+  return r.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
 
 // =====================================================================
 // admin-applications — reviewer backend for the Applications pipeline.
@@ -280,8 +289,9 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
       if (!STATUSES.includes(body.status)) return json({ error: 'Invalid status' }, 400);
       const { data: app } = await supabase.from('applications')
-        .select('first_choice, second_choice, first_name, email, interview_division, evaluation_division, offer_division, status')
+        .select('first_choice, second_choice, first_name, surname, email, interview_division, evaluation_division, offer_division, offer_role, status')
         .eq('id', body.id).maybeSingle();
+
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
       // Readable is not the same as movable: see `inWriteScope` above.
       if (!inWriteScope(app)) return json({ error: OUT_OF_DIVISION }, 403);
@@ -398,7 +408,26 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         }
       } catch (e) { console.error('status email enqueue failed', e); }
 
+      // Staff notice: an acceptance recorded here is news for the heads of the
+      // division and for the President in office.
+      if (body.status === 'offer_accepted' && previousStatus !== 'offer_accepted') {
+        try {
+          const offerDivision = (app.offer_division || evaluation) as string;
+          await notifyStaff(
+            supabase, 'staff_offer_accepted',
+            await divisionHeadsAndPresident(supabase, offerDivision),
+            {
+              candidate_name: `${app.first_name} ${app.surname}`,
+              division_name: DIV_LABELS[offerDivision] || offerDivision || '',
+              offer_role: roleLabel(app.offer_role),
+            },
+            `${body.id}:offer_accepted`,
+          );
+        } catch (e) { console.error('staff acceptance notice failed', e); }
+      }
+
       return json({ success: true });
+
     }
 
     // ── set-evaluation-division ──────────────────────────────────────────────
@@ -598,7 +627,24 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           },
         });
       } catch (e) { console.error('offer email enqueue failed', e); }
+
+      // Staff notice: the heads of the division and the President in office are
+      // told an offer has gone out, with the role and the reply-by moment.
+      try {
+        await notifyStaff(
+          supabase, 'staff_offer_sent',
+          await divisionHeadsAndPresident(supabase, division),
+          {
+            candidate_name: `${app.first_name} ${app.surname}`,
+            division_name: DIV_LABELS[division] || division,
+            offer_role: roleLabel(role),
+            offer_deadline: deadlineLabel,
+          },
+          `${app.id}:offer_sent`,
+        );
+      } catch (e) { console.error('staff offer notice failed', e); }
       return json({ success: true });
+
     }
 
     // ── convert-to-member (New Joiners, report 10.5) ─────────────────────────
@@ -649,7 +695,23 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         });
       } catch (e) { console.error('welcome email enqueue failed', e); }
 
+      // Staff notice: converting a candidate by hand is an acceptance too.
+      try {
+        const joinDivision = division;
+        await notifyStaff(
+          supabase, 'staff_offer_accepted',
+          await divisionHeadsAndPresident(supabase, joinDivision),
+          {
+            candidate_name: `${app.first_name} ${app.surname}`,
+            division_name: DIV_LABELS[joinDivision] || joinDivision,
+            offer_role: roleLabel(role),
+          },
+          `${app.id}:offer_accepted`,
+        );
+      } catch (e) { console.error('staff acceptance notice failed', e); }
+
       return json({ success: true });
+
     }
 
     return json({ error: 'Invalid action' }, 400);

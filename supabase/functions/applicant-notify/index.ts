@@ -1,5 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { divisionHeadsAndPresident, notifyStaff } from '../_shared/staff-notify.ts';
+
+/** A stored role such as 'senior_analyst' read as a title. */
+function roleLabel(role: unknown): string {
+  const r = String(role || '').trim();
+  if (!r) return 'the role offered';
+  return r.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
 
 // =====================================================================
 // applicant-notify — candidate self-service backend.
@@ -87,7 +96,22 @@ Deno.serve(async (req) => {
           },
         });
       } catch (e) { console.error('welcome email enqueue failed', e); }
+
+      // Staff notice: the heads of the division and the President in office.
+      try {
+        await notifyStaff(
+          supabase, 'staff_offer_accepted',
+          await divisionHeadsAndPresident(supabase, division),
+          {
+            candidate_name: `${app.first_name} ${app.surname}`,
+            division_name: DIV_LABELS[division] || division,
+            offer_role: roleLabel(role),
+          },
+          `${app.id}:offer_accepted`,
+        );
+      } catch (e) { console.error('staff acceptance notice failed', e); }
       return json({ success: true });
+
     }
 
     // ── sign-own-doc ───────────────────────────────────────────────────────────
@@ -111,7 +135,24 @@ Deno.serve(async (req) => {
       if (!app) return json({ error: 'No application found' }, 404);
       if (app.status !== 'accepted' || !app.offer_sent_at) return json({ error: 'No active offer to decline' }, 400);
       await supabase.from('applications').update({ status: 'offer_declined' }).eq('id', app.id);
+
+      // Staff notice: a declined place is news the division and the President
+      // need at once, since the place goes back on the table.
+      try {
+        const division = (app.offer_division || app.interview_division || app.first_choice) as string;
+        await notifyStaff(
+          supabase, 'staff_offer_declined',
+          await divisionHeadsAndPresident(supabase, division),
+          {
+            candidate_name: `${app.first_name} ${app.surname}`,
+            division_name: DIV_LABELS[division] || division,
+            offer_role: roleLabel(app.offer_role),
+          },
+          `${app.id}:offer_declined`,
+        );
+      } catch (e) { console.error('staff decline notice failed', e); }
       return json({ success: true });
+
     }
 
     // ── notify-received (default) ──────────────────────────────────────────────
