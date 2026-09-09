@@ -16,7 +16,7 @@ Deno.serve(async () => {
     if (have.has(t.key)) continue;
     const { error } = await supabase.from('auto_email_templates').insert({
       key: t.key, name: t.name, subject: t.subject, body: t.body,
-      description: t.description ?? null, connected: t.connected === true,
+      connected: true,
     });
     if (error) return new Response(JSON.stringify({ error: error.message, key: t.key }), { status: 500 });
     added.push(t.key);

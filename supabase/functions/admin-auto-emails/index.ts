@@ -145,7 +145,7 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
           if (!row) {
             await supabase.from('auto_email_templates').insert({
               key: t.key, name: t.name, subject: t.subject, body: t.body,
-              description: t.description ?? null, connected: t.connected === true,
+              description: (t as any).description ?? null, connected: true,
             });
             continue;
           }
