@@ -140,6 +140,38 @@ export async function registerForEvent(session: Session | null, payload: EventRe
   return invoke('register-event', session, { ...payload });
 }
 
+// =====================================================================
+// SIGNED IN IS NOT THE SAME THING AS "WE ALREADY HAVE YOUR DETAILS".
+// ---------------------------------------------------------------------
+// The registration form used to ask one question, "is anybody signed
+// in?", and take the answer to mean two different things: that the
+// person may register, and that the association already holds their
+// name, programme and year. For a member both are true. For AN
+// APPLICANT THEY ARE NOT, and an applicant has an account: they sign in
+// to follow their application. So a candidate opening an event page saw
+// "your details are filled in automatically", pressed Register, and the
+// endpoint answered "Please provide your name" about a field the form
+// had never shown them. Nothing they could do on that page would have
+// worked.
+//
+// `register-event` decides who is a member with exactly this rule, and
+// this is a mirror of it, kept here beside the call it belongs to. If
+// one changes, change the other: a form that disagrees with its endpoint
+// about who somebody is produces precisely the failure above.
+// =====================================================================
+
+/** Roles that do not, on their own, make somebody a member of the association. */
+export const NON_MEMBER_ROLES = ['candidate', 'pending'];
+
+/**
+ * Does this account belong to a member of the association, as the
+ * registration endpoint counts one? An applicant, a pending account and
+ * an account holding no role at all are all "no".
+ */
+export function isAssociationMember(roles: { role: string }[] | null | undefined): boolean {
+  return (roles || []).some((r) => !NON_MEMBER_ROLES.includes(r.role));
+}
+
   // `any` deliberately, matching what `supabase.functions.invoke` used to
   // hand back: every caller in this module already narrows the shape it
   // expects. Only the ERROR path changed.

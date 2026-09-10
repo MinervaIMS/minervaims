@@ -5,6 +5,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 //   members            → must be signed in and be an association member
 //   members_external   → members or external students (name + email)
 //   guests / public    → anyone (name + email)
+//
+// SIGNED IN IS NOT THE SAME THING AS A MEMBER, and this function has
+// always known that: `isMember` below ignores the candidate and pending
+// roles, so an APPLICANT - who has an account, because they sign in to
+// follow their application - is treated here as any other guest and must
+// send a name. The registration form did not know it, showed applicants
+// the members' version of the form and sent no name, and this function
+// duly answered "Please provide your name" about a field they had never
+// been given. The form now asks the same question this does; see
+// `isAssociationMember` in src/lib/events-api.ts, which mirrors the rule
+// on line ~80 exactly.
 // =====================================================================
 
 const corsHeaders = {
@@ -96,7 +107,15 @@ Deno.serve(async (req) => {
 
     const audience = ev.registration_audience as string;
     if (audience === 'members' && !isMember) {
-      return json({ error: 'This event is open to association members only. Please sign in.' }, 403);
+      // TWO REASONS, TWO ANSWERS. "Please sign in" is an instruction an
+      // applicant cannot follow: they ARE signed in, and signing in again
+      // will not make them a member. Only somebody who is not signed in
+      // is told to sign in.
+      return json({
+        error: userId
+          ? 'This event is open to association members only, and your account is not a member of the association.'
+          : 'This event is open to association members only. Please sign in.',
+      }, 403);
     }
     if ((audience === 'members' || audience === 'members_external') && !isMember && !email) {
       return json({ error: 'An email is required to register.' }, 400);
