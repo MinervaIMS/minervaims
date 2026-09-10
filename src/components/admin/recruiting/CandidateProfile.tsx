@@ -37,6 +37,13 @@ interface Props {
   docsLoading: boolean;
   /** Notes may be added. Reading them is never restricted. */
   canAddNotes: boolean;
+  /**
+   * The page is read-only for this reader, but notes are a permission they
+   * genuinely hold (`candidates_notes_only`). Marks the note controls so the
+   * workspace-wide read-only sweep leaves them alive.
+   */
+  notesAllowedInReadOnly?: boolean;
+
   onNoteAdded: () => void | Promise<void>;
   addNote: (body: string) => Promise<void>;
   onError: (message: string) => void;

@@ -71,10 +71,19 @@ import { useEffect } from 'react';
  */
 const KEEPS_WORKING = [
   '[data-ro]',
+  // AN OPT-IN EXCEPTION FOR A WRITE THE ROLE IS ACTUALLY ALLOWED.
+  // A few 'view' grants come with an explicit permission attached: a
+  // Portfolio Manager or Team Leader may not move a candidacy, but the
+  // access matrix expressly lets them ADD A NOTE on a candidate
+  // (`candidates_notes_only`). The page-wide sweep cannot tell that
+  // button apart from a Save, so the page that owns the permission says
+  // so by hand with `data-ro-allow`. The server still checks it.
+  '[data-ro-allow]',
   '[role="combobox"]',
   '[role="tab"]',
   '[aria-haspopup]',
   '[aria-expanded]',
+
   // A DATE PICKER IS AN INPUT. Every day cell in the workspace is a
   // <button>, so the sweep took all thirty-five of them and left the
   // Interview Calendar looking broken rather than read-only: a whole
