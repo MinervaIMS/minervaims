@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
+import { useIsDesktop } from '@/hooks/use-desktop';
+
 import { Lock } from 'lucide-react';
 import { divisionLabels, roleLabel as composeRoleLabel, divisionsForRole, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -255,6 +257,8 @@ export default function NewJoiners() {
               answerUrl={answerUrl}
               docsLoading={docsLoading}
               canAddNotes={canAddNotes && !viewingArchived}
+              notesAllowedInReadOnly={notesAllowedInReadOnly && !viewingArchived}
+
               addNote={async (b) => { await addApplicationNote(session, detail.application.id, b); }}
               onNoteAdded={async () => { await refreshCandidate(detail.application.id); }}
               onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}
