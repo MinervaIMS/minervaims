@@ -11,8 +11,9 @@
  *
  * Halves: early = days 1 to 15, late = day 16 to end of month.
  *
- * The pick is deterministic on userId + year + bucket, so a member sees the
- * same line for a fortnight and two members rarely see the same one.
+ * A line is picked once when the dashboard is entered. The component keeps it
+ * stable for that visit and excludes the previous line from the same pool on
+ * the next visit whenever another eligible line exists.
  *
  * Any line containing a variable that has not loaded is removed from the pool
  * before selection. Never render a greeting with an unresolved placeholder.
@@ -396,16 +397,6 @@ export function semesterOrdinal(n: number): string {
   }
 }
 
-/** Stable non-cryptographic hash. */
-function hash(input: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 function normaliseFirstName(raw?: string): string | undefined {
   if (!raw) return undefined;
   const trimmed = raw.trim();
@@ -424,11 +415,11 @@ function resolvable(line: string, vars: Record<string, unknown>): boolean {
 
 export function pickGreeting(
   now: Date,
-  userId: string,
   vars: GreetingVars,
+  previousLine?: string,
+  random: () => number = Math.random,
 ): string {
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
+  const { month, day } = romeDateParts(now);
   const half: Half = day <= 15 ? 'early' : 'late';
 
   const resolved: Record<string, unknown> = {
@@ -438,13 +429,44 @@ export function pickGreeting(
 
   const special = SPECIAL_BLOCKS.find(b => b.match(month, day));
   const pool = special ? special.lines : PERIOD_LINES[month][half];
-  const bucketKey = special
-    ? `${now.getFullYear()}-${special.key}`
-    : `${now.getFullYear()}-${month}-${half}`;
 
-  const usable = pool.filter(l => resolvable(l, resolved));
+  const usable = pool
+    .filter(candidate => resolvable(candidate, resolved))
+    .map(candidate => candidate.replace(TOKEN, (_, key: string) => String(resolved[key])));
   if (!usable.length) return 'Welcome back.';
 
-  const line = usable[hash(userId + bucketKey) % usable.length];
-  return line.replace(TOKEN, (_, key: string) => String(resolved[key]));
+  const choices = usable.length > 1 && previousLine
+    ? usable.filter(line => line !== previousLine)
+    : usable;
+  return choices[Math.floor(random() * choices.length)] ?? choices[0];
+}
+
+const ROME_DATE = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/Rome',
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+});
+
+function romeDateParts(now: Date): { year: number; month: number; day: number } {
+  const parts = ROME_DATE.formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) => {
+    const part = parts.find(candidate => candidate.type === type);
+    return Number(part?.value ?? 0);
+  };
+  return { year: value('year'), month: value('month'), day: value('day') };
+}
+
+/** The Rome calendar day, used to refresh a dashboard left open overnight. */
+export function greetingDateKey(now: Date): string {
+  const { year, month, day } = romeDateParts(now);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/** The active copy pool, used to remember only the previous comparable line. */
+export function greetingPoolKey(now: Date): string {
+  const { year, month, day } = romeDateParts(now);
+  const special = SPECIAL_BLOCKS.find(block => block.match(month, day));
+  if (special) return `${year}-${special.key}`;
+  return `${year}-${month}-${day <= 15 ? 'early' : 'late'}`;
 }
