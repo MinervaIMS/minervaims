@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { pickGreeting, type GreetingVars } from './greetings';
+import { useEffect, useState } from 'react';
+import { greetingDateKey, greetingPoolKey, pickGreeting, type GreetingVars } from './greetings';
 
 // =====================================================================
 // The greeting.
@@ -19,7 +19,22 @@ import { pickGreeting, type GreetingVars } from './greetings';
 // =====================================================================
 
 export function DashboardGreeting({ userId, vars }: { userId: string; vars: GreetingVars }) {
-  const line = useMemo(() => pickGreeting(new Date(), userId, vars), [userId, vars]);
+  const [romeDay, setRomeDay] = useState(() => greetingDateKey(new Date()));
+  const [line, setLine] = useState(() => chooseGreeting(new Date(), userId, vars));
+
+  // A dashboard can remain mounted indefinitely. Check the Rome calendar,
+  // rather than waiting for unrelated data or visibility changes to cause a
+  // render, and move to the current pool when Milan crosses midnight.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const now = new Date();
+      const nextRomeDay = greetingDateKey(now);
+      if (nextRomeDay === romeDay) return;
+      setRomeDay(nextRomeDay);
+      setLine(chooseGreeting(now, userId, vars));
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [romeDay, userId, vars]);
 
   return (
     // VERTICALLY CENTRED IN THE WHITE SPACE ABOVE THE KPI ROW, which is
@@ -39,6 +54,27 @@ export function DashboardGreeting({ userId, vars }: { userId: string; vars: Gree
       </h1>
     </header>
   );
+}
+
+const LAST_GREETING_PREFIX = 'minerva-dashboard-greeting:';
+
+function chooseGreeting(now: Date, userId: string, vars: GreetingVars): string {
+  const storageKey = `${LAST_GREETING_PREFIX}${userId}:${greetingPoolKey(now)}`;
+  let previousLine: string | undefined;
+  try {
+    previousLine = window.localStorage.getItem(storageKey) ?? undefined;
+  } catch {
+    // Storage can be unavailable in privacy-restricted browsers. Rotation
+    // still works; only guaranteed consecutive-visit exclusion is skipped.
+  }
+
+  const nextLine = pickGreeting(now, vars, previousLine);
+  try {
+    window.localStorage.setItem(storageKey, nextLine);
+  } catch {
+    // A greeting must never make the dashboard depend on browser storage.
+  }
+  return nextLine;
 }
 
 export default DashboardGreeting;
