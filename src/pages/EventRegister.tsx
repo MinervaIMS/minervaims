@@ -11,7 +11,7 @@ import { Loader2, CalendarDays, MapPin, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { registerForEvent, EVENT_TYPE_LABELS, type EventRow } from '@/lib/events-api';
+import { registerForEvent, isAssociationMember, EVENT_TYPE_LABELS, type EventRow } from '@/lib/events-api';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
 import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
@@ -89,7 +89,7 @@ export default function EventRegister() {
   // than through AuthLayout, so it declares the same thing directly.
   useHideSiteFooter();
   const { id } = useParams<{ id: string }>();
-  const { user, session } = useAuth();
+  const { user, session, profile, roles, rolesLoaded } = useAuth();
   const { toast } = useToast();
   const [event, setEvent] = useState<EventRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,13 +114,45 @@ export default function EventRegister() {
     })();
   }, [id]);
 
-  useEffect(() => { if (user?.email) setEmail((e) => e || user.email || ''); }, [user]);
+  // ═══════════════════════════════════════════════════════════════════
+  // WHO IS FILLING THIS IN, AND WHAT THE ASSOCIATION ALREADY KNOWS.
+  // -------------------------------------------------------------------
+  // Two different questions, and this page used to ask only the first.
+  // `user` answers "is somebody signed in"; it does NOT answer "does the
+  // association hold this person's name, programme and year", because an
+  // applicant has an account too. `isAssociationMember` is the rule the
+  // endpoint itself uses, so the form and the endpoint now agree about
+  // who is who. See lib/events-api.ts.
+  //
+  // A MEMBER'S PATH IS UNTOUCHED: they still see one line and one
+  // button, and still send nothing but the event. Everyone else fills
+  // the form in, signed in or not, which is what an applicant needed and
+  // never had.
+  // ═══════════════════════════════════════════════════════════════════
+  const memberRegistering = !!user && isAssociationMember(roles);
+  const needsDetails = !memberRegistering;
+  // Roles arrive a moment after the session does. Deciding before they
+  // land would show a member the manual form and then swap it under them.
+  const checkingMembership = !!user && !rolesLoaded;
+
+  // What the account already gives us goes in, so a signed-in applicant
+  // confirms their details rather than typing them out. Every field stays
+  // editable: this is a starting point, not an assertion.
+  useEffect(() => {
+    if (!user) return;
+    setEmail((e) => e || user.email || '');
+    const full = (profile?.full_name || '').trim();
+    if (!full) return;
+    const parts = full.split(/\s+/);
+    setFirstName((v) => v || parts[0] || '');
+    setSurname((v) => v || parts.slice(1).join(' '));
+  }, [user, profile]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
     if (!consent) { toast({ title: 'Please accept the privacy policy to continue.', variant: 'destructive' }); return; }
-    if (!user) {
+    if (needsDetails) {
       if (!firstName.trim() || !surname.trim() || !email.trim()) { toast({ title: 'Please add your name, surname and email.', variant: 'destructive' }); return; }
       if (isBocconi && (!programme || !academicYear)) { toast({ title: 'Please select your Bocconi programme and year.', variant: 'destructive' }); return; }
       if (!isBocconi && !affiliation.trim()) { toast({ title: 'Please add your university or company.', variant: 'destructive' }); return; }
@@ -129,12 +161,12 @@ export default function EventRegister() {
     try {
       const res = await registerForEvent(session, {
         event_id: id,
-        name: user ? undefined : `${firstName.trim()} ${surname.trim()}`.trim(),
-        email: user ? undefined : email.trim(),
-        is_bocconi: user ? undefined : isBocconi,
-        programme: user || !isBocconi ? undefined : programme,
-        academic_year: user || !isBocconi ? undefined : academicYear || undefined,
-        affiliation: user || isBocconi ? undefined : affiliation.trim(),
+        name: needsDetails ? `${firstName.trim()} ${surname.trim()}`.trim() : undefined,
+        email: needsDetails ? email.trim() : undefined,
+        is_bocconi: needsDetails ? isBocconi : undefined,
+        programme: needsDetails && isBocconi ? programme : undefined,
+        academic_year: needsDetails && isBocconi ? (academicYear || undefined) : undefined,
+        affiliation: needsDetails && !isBocconi ? affiliation.trim() : undefined,
       });
       setDone(true);
       toast({ title: (res as { alreadyRegistered?: boolean }).alreadyRegistered ? 'You are already registered' : 'Registration confirmed' });
@@ -184,17 +216,42 @@ export default function EventRegister() {
           <span className="font-body text-xs font-semibold tracking-[0.1em] uppercase text-muted-foreground">Registration</span>
         </div>
 
-      {membersOnly && !user ? (
+      {checkingMembership ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : membersOnly && !memberRegistering ? (
         <div className="font-body text-center">
-          <p className="text-muted-foreground mb-4">This event is for association members. Please sign in to register.</p>
-          <Button asChild><Link to="/auth" state={{ from: `/events/${id}/register` }}>Sign in</Link></Button>
+          {/* SIGNED IN AND NOT A MEMBER IS ITS OWN ANSWER. Telling an
+              applicant who is already signed in to "please sign in" was
+              an instruction they could not follow, and the form used to
+              be shown to them instead, only for the endpoint to refuse
+              it afterwards. */}
+          {user ? (
+            <>
+              <p className="text-muted-foreground mb-4">
+                This event is open to association members. Your account is not a member yet, so registration for
+                this one is not available.
+              </p>
+              <Button asChild variant="outline"><Link to="/events">See the events open to everyone</Link></Button>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground mb-4">This event is for association members. Please sign in to register.</p>
+              <Button asChild><Link to="/auth" state={{ from: `/events/${id}/register` }}>Sign in</Link></Button>
+            </>
+          )}
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-4 font-body">
-          {user ? (
+          {memberRegistering ? (
             <p className="text-sm text-muted-foreground text-center">Registering as <span className="text-foreground">{user.email}</span>. Your details are filled in automatically.</p>
           ) : (
             <>
+              {user && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Signed in as <span className="text-foreground">{user.email}</span>. We do not hold your details yet,
+                  so please confirm them below.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1"><Label>Name *</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="e.g. Marco" required /></div>
                 <div className="space-y-1"><Label>Surname *</Label><Input value={surname} onChange={(e) => setSurname(e.target.value)} placeholder="e.g. Rossi" required /></div>
