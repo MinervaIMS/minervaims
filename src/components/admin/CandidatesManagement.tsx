@@ -16,6 +16,8 @@ import { Download, FileText, Search, MessageSquare, Eye, Loader2, ChevronLeft, C
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { useIsDesktop } from '@/hooks/use-desktop';
+
 import { logActivity } from '@/lib/activity-log';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -119,6 +121,8 @@ function BulkDownloadButton({ label, kind, busy, progress, disabled, onRun }: {
 export default function CandidatesManagement() {
   const { session, roles } = useAuth();
   const { canManage, hasSpecial, isFullAccess } = useAccess();
+  const isDesktop = useIsDesktop();
+
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
   const { toast } = useToast();
@@ -152,6 +156,13 @@ export default function CandidatesManagement() {
   const viewingArchived = semKey !== currentSemester().key;
   const canChangeStatus = canManage('applications-screening') && !viewingArchived;
   const canAddNotes = (canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only')) && !viewingArchived;
+  // NOTES SURVIVE THE READ-ONLY SWEEP FOR THE ROLES THAT MAY WRITE THEM.
+  // Portfolio Managers and Team Leaders hold 'view' on this page, so the
+  // workspace-wide guard greyed out their "Add note" button even though the
+  // matrix and the server both allow the note. Marked as an exception only
+  // on desktop, keeping the phone read-only policy exactly as it is.
+  const notesAllowedInReadOnly = isDesktop && canAddNotes && !canManage('applications-screening');
+
   /** May this reader move THIS candidacy, or only read it? */
   const canMove = (a: Pick<ApplicationRow, 'first_choice' | 'second_choice' | 'evaluation_division'>) =>
     canChangeStatus && canActOnApplication(a, myDivisions);
@@ -741,6 +752,8 @@ export default function CandidatesManagement() {
               answerUrl={answerUrl}
               docsLoading={docsLoading}
               canAddNotes={canAddNotes}
+              notesAllowedInReadOnly={notesAllowedInReadOnly}
+
               addNote={addNote}
               onNoteAdded={afterNote}
               onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}

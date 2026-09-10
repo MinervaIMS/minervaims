@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
+import { useIsDesktop } from '@/hooks/use-desktop';
+
 import { Lock } from 'lucide-react';
 import { divisionLabels, roleLabel as composeRoleLabel, divisionsForRole, type OrgDivision, type AppRole } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -82,9 +84,14 @@ export default function NewJoiners() {
     open: openCandidate, close: closeCandidate, refresh: refreshCandidate,
   } = useCandidateDetail(session);
   const { hasSpecial } = useAccess();
+  const isDesktop = useIsDesktop();
   // Notes are part of assessing a candidate, so anyone who may comment during
   // screening may comment here too. The offer itself is a separate permission.
   const canAddNotes = canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only');
+  // Same exception as Candidate Screening: a notes-only role holds 'view' here,
+  // so the read-only sweep must be told to leave the note controls alive.
+  const notesAllowedInReadOnly = isDesktop && canAddNotes && !canManage('applications-screening');
+
   const { confirm: confirmEmail, dialog: emailDialog } = useEmailConfirm();
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,6 +257,8 @@ export default function NewJoiners() {
               answerUrl={answerUrl}
               docsLoading={docsLoading}
               canAddNotes={canAddNotes && !viewingArchived}
+              notesAllowedInReadOnly={notesAllowedInReadOnly && !viewingArchived}
+
               addNote={async (b) => { await addApplicationNote(session, detail.application.id, b); }}
               onNoteAdded={async () => { await refreshCandidate(detail.application.id); }}
               onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}
