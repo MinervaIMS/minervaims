@@ -53,8 +53,10 @@ interface Props {
 
 export function CandidateProfile({
   session, detail, cvUrl, answerUrl, docsLoading,
-  canAddNotes, onNoteAdded, addNote, onError, children,
+  canAddNotes, notesAllowedInReadOnly = false,
+  onNoteAdded, addNote, onError, children,
 }: Props) {
+
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const app = detail.application;
@@ -163,13 +165,14 @@ export function CandidateProfile({
             ))}
           </div>
           {canAddNotes && (
-            <>
+            <div className="space-y-2" {...(notesAllowedInReadOnly ? { 'data-ro-allow': '' } : {})}>
               <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a technical, formal note…" rows={2} />
               <Button size="sm" onClick={submitNote} disabled={savingNote || !noteText.trim()}>
                 {savingNote ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Add note
               </Button>
-            </>
+            </div>
           )}
+
         </div>
       </div>
 
