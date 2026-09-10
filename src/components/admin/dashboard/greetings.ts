@@ -419,7 +419,7 @@ export function pickGreeting(
   previousLine?: string,
   random: () => number = Math.random,
 ): string {
-  const { year, month, day } = romeDateParts(now);
+  const { month, day } = romeDateParts(now);
   const half: Half = day <= 15 ? 'early' : 'late';
 
   const resolved: Record<string, unknown> = {
@@ -430,14 +430,15 @@ export function pickGreeting(
   const special = SPECIAL_BLOCKS.find(b => b.match(month, day));
   const pool = special ? special.lines : PERIOD_LINES[month][half];
 
-  const usable = pool.filter(l => resolvable(l, resolved));
+  const usable = pool
+    .filter(candidate => resolvable(candidate, resolved))
+    .map(candidate => candidate.replace(TOKEN, (_, key: string) => String(resolved[key])));
   if (!usable.length) return 'Welcome back.';
 
   const choices = usable.length > 1 && previousLine
     ? usable.filter(line => line !== previousLine)
     : usable;
-  const line = choices[Math.floor(random() * choices.length)] ?? choices[0];
-  return line.replace(TOKEN, (_, key: string) => String(resolved[key]));
+  return choices[Math.floor(random() * choices.length)] ?? choices[0];
 }
 
 const ROME_DATE = new Intl.DateTimeFormat('en-GB', {
