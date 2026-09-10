@@ -16,6 +16,8 @@ import { Download, FileText, Search, MessageSquare, Eye, Loader2, ChevronLeft, C
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
+import { useIsDesktop } from '@/hooks/use-desktop';
+
 import { logActivity } from '@/lib/activity-log';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -119,6 +121,8 @@ function BulkDownloadButton({ label, kind, busy, progress, disabled, onRun }: {
 export default function CandidatesManagement() {
   const { session, roles } = useAuth();
   const { canManage, hasSpecial, isFullAccess } = useAccess();
+  const isDesktop = useIsDesktop();
+
   // Team leaders and portfolio managers may review candidates and add notes,
   // but only roles with full access may change a candidate's status.
   const { toast } = useToast();

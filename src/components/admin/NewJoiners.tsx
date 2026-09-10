@@ -82,9 +82,14 @@ export default function NewJoiners() {
     open: openCandidate, close: closeCandidate, refresh: refreshCandidate,
   } = useCandidateDetail(session);
   const { hasSpecial } = useAccess();
+  const isDesktop = useIsDesktop();
   // Notes are part of assessing a candidate, so anyone who may comment during
   // screening may comment here too. The offer itself is a separate permission.
   const canAddNotes = canManage('applications-screening') || hasSpecial('applications-screening', 'candidates_notes_only');
+  // Same exception as Candidate Screening: a notes-only role holds 'view' here,
+  // so the read-only sweep must be told to leave the note controls alive.
+  const notesAllowedInReadOnly = isDesktop && canAddNotes && !canManage('applications-screening');
+
   const { confirm: confirmEmail, dialog: emailDialog } = useEmailConfirm();
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
