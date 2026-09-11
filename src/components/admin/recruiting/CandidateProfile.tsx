@@ -2,11 +2,12 @@ import { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { Download, FileText, Loader2, Mail } from 'lucide-react';
 import { divisionLabels } from '@/lib/roles';
 import {
   ACADEMIC_YEAR_LABELS, STATUS_LABELS, statusBadgeClass, signDocumentUrl,
-  applyDivisionLabel, evaluationDivision,
+  applyDivisionLabel, evaluationDivision, emailStatusTone, EMAIL_STATUS_MEANING,
+  type ApplicationEmail,
 } from '@/lib/applications-api';
 import { openReportInTab } from '@/lib/open-report';
 import type { CandidateDetail } from './useCandidateDetail';
@@ -106,7 +107,8 @@ export function CandidateProfile({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 font-body">
+    <div className="font-body">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
       {/* Left: who they are, the page's own controls, then the notes. */}
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -182,6 +184,92 @@ export function CandidateProfile({
           candidate is readable long before either arrives. */}
       <DocPane title="CV preview" url={cvUrl} loading={docsLoading} onOpen={() => openDoc('cv')} empty="No CV uploaded" />
       <DocPane title="Submitted work preview" url={answerUrl} loading={docsLoading} onOpen={() => openDoc('answer')} empty="No document uploaded" />
+    </div>
+
+    <EmailHistory emails={detail.emails} email={app.email} />
+    </div>
+  );
+}
+
+// =====================================================================
+// WHAT THIS CANDIDATE HAS BEEN SENT.
+// ---------------------------------------------------------------------
+// A candidate who has not replied is the commonest thing a reviewer has
+// to make sense of, and until now the workspace could not tell them the
+// one fact that decides it: whether the association had actually written,
+// when, and whether it arrived. The answer existed - every automatic
+// email is logged - but only on a Settings page, in one undifferentiated
+// register of every email ever sent to anybody.
+//
+// FULL WIDTH, AND UNDER EVERYTHING ELSE. It is a table, and a table put
+// in the left column beside two document previews would be four words
+// wide. It is also the last thing a reviewer consults rather than the
+// first, so it sits below the candidate rather than beside them.
+//
+// THE STATUS COLUMN IS NOT DECORATION. "Bounced" or "Suppressed" against
+// the interview invitation is the whole explanation of a silence, and it
+// is the reason this table is worth more than a list of dates.
+// =====================================================================
+function EmailHistory({ emails, email }: { emails: ApplicationEmail[] | undefined; email: string }) {
+  // `undefined` means the endpoint did not send the field, which is not
+  // the same as "no emails" and must not be reported as one.
+  if (!emails) return null;
+  return (
+    <div className="mt-6 pt-5 border-t border-separator">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+          <Mail className="h-3.5 w-3.5" />Emails sent to this candidate
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {emails.length === 0 ? 'none yet' : emails.length === 1 ? '1 email' : `${emails.length} emails`}
+          {' · '}to {email}
+        </span>
+      </div>
+
+      {emails.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nothing has been sent to this address yet. Automatic emails go out when a candidacy moves stage,
+          so a candidate at an early stage will have none.
+        </p>
+      ) : (
+        <div className="max-w-full border border-separator overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 font-normal whitespace-nowrap">Date</th>
+                <th className="px-3 py-2 font-normal whitespace-nowrap">Time</th>
+                <th className="px-3 py-2 font-normal">Email</th>
+                <th className="px-3 py-2 font-normal">Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emails.map((m) => {
+                const at = new Date(m.created_at);
+                return (
+                  <tr key={m.id} className="border-t border-separator">
+                    <td className="px-3 py-2 whitespace-nowrap text-foreground">
+                      {at.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap tabular-nums text-muted-foreground">
+                      {at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-foreground">{m.template_label || m.template_name}</span>
+                      {m.template_label && <span className="text-xs text-muted-foreground ml-2">{m.template_name}</span>}
+                    </td>
+                    <td className={`px-3 py-2 ${emailStatusTone(m.status)}`}>
+                      <span className="capitalize" title={EMAIL_STATUS_MEANING[m.status] || undefined}>{m.status}</span>
+                      {m.error_message && (
+                        <div className="text-xs text-muted-foreground mt-0.5 break-words">{m.error_message}</div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

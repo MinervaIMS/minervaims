@@ -158,13 +158,55 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
 
 
       const mergedTemplates = [...codeTemplates, ...rowsByKey.values()].sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
+
+      // =====================================================================
+      // THE REGISTER IS SEARCHED WHERE IT LIVES.
+      // ---------------------------------------------------------------------
+      // It used to hand back the newest two hundred rows and nothing else, so
+      // the only question it could answer was "what went out recently". The
+      // question people actually bring to it is about one person or one kind
+      // of email - "did the invitation reach her", "how many welcome emails
+      // bounced this week" - and two hundred rows is both far too many to
+      // read and far too few to contain the answer.
+      //
+      // Filtering in the browser would have had the same ceiling: whatever
+      // was not in those two hundred rows could not be found however the
+      // page was searched. So the search, the filters and the paging are all
+      // applied HERE, against the whole register, and the page asks for one
+      // page at a time.
+      //
+      // The old shape is kept exactly: `log` is still an array of the same
+      // rows in the same order, so nothing that reads it needs to change.
+      // =====================================================================
+      const limit = Math.min(Math.max(Number(body.log_limit) || 25, 1), 200);
+      const offset = Math.max(Number(body.log_offset) || 0, 0);
+      const statuses: string[] = Array.isArray(body.log_status) ? body.log_status.filter((x: unknown) => typeof x === 'string') : [];
+      const templateKeys: string[] = Array.isArray(body.log_template) ? body.log_template.filter((x: unknown) => typeof x === 'string') : [];
+      // PostgREST's `or` takes a comma-separated expression list, so a term
+      // carrying a comma, a bracket or a quote would be read as syntax
+      // rather than as text. Those characters are simply dropped: nobody
+      // searches an email register for a bracket, and a term that alters the
+      // query is not a search term.
+      const search = String(body.log_search || '').replace(/[,()"\\*]/g, '').trim().slice(0, 120);
+
+      const label = new Map<string, string>(mergedTemplates.map((t: any) => [t.key, t.name]));
       let log: any[] = [];
+      let logTotal = 0;
       try {
-        const { data } = await supabase.from('email_send_log')
-          .select('id, template_name, recipient_email, status, created_at').order('created_at', { ascending: false }).limit(200);
-        log = data || [];
-      } catch { /* email_send_log optional */ }
-      return json({ templates: mergedTemplates, log });
+        let q = supabase.from('email_send_log')
+          .select('id, template_name, recipient_email, status, error_message, created_at', { count: 'exact' });
+        if (statuses.length) q = q.in('status', statuses);
+        if (templateKeys.length) q = q.in('template_name', templateKeys);
+        if (body.log_from) q = q.gte('created_at', String(body.log_from));
+        if (body.log_to) q = q.lte('created_at', String(body.log_to));
+        if (search) q = q.or(`recipient_email.ilike.%${search}%,template_name.ilike.%${search}%`);
+        const { data, count } = await q
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+        log = (data || []).map((r: any) => ({ ...r, template_label: label.get(r.template_name) || null }));
+        logTotal = count ?? log.length;
+      } catch (e) { console.error('reading the email register failed', e); }
+      return json({ templates: mergedTemplates, log, log_total: logTotal });
     }
 
     if (action === 'save-template') {

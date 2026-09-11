@@ -5,16 +5,24 @@ interface WorkspacePageHeaderProps {
   description?: string;
   actions?: ReactNode;
   /**
-   * Lay the actions out in TWO columns from `lg` up, rather than one.
+   * How the actions are laid out from `lg` up.
    *
-   * For the pages that carry five or six controls a single column is a
-   * tall ladder down the right of the page, taller than the header it
-   * belongs to. Two columns halve that without giving the width back to
-   * the title, and the buttons still align on a shared grid rather than
-   * re-wrapping. Opt in per page: most pages have two or three actions
-   * and read better in one column.
+   * `1` (the default) is a single column: right for the pages that carry
+   * one or two controls, and for the long labels that would otherwise set
+   * the width of a row.
+   *
+   * `2` is two equal columns. For the pages that carry five or six
+   * controls a single column is a tall ladder down the right of the page,
+   * taller than the header it belongs to; two columns halve that without
+   * giving the width back to the title.
+   *
+   * `'row'` keeps them on ONE LINE, side by side, which is what the phone
+   * layout already does at every width. It suits a set of two or three
+   * SIBLING controls that are read as a group and compared with each
+   * other - three download buttons differing by one word - where a column
+   * makes three variants of one action look like three unrelated ones.
    */
-  actionColumns?: 1 | 2;
+  actionColumns?: 1 | 2 | 'row';
 }
 
 // =====================================================================
@@ -75,7 +83,14 @@ export function WorkspacePageHeader({ title, description, actions, actionColumns
                 // rectangle at any number of buttons and an odd one out
                 // simply occupies the left cell of the last row.
                 ? 'flex flex-wrap items-center gap-2 shrink-0 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-1.5 lg:w-[25.5rem] lg:pt-1 [&>*]:lg:w-full'
-                : 'flex flex-wrap items-center gap-2 shrink-0 lg:flex-col lg:flex-nowrap lg:items-stretch lg:gap-1.5 lg:w-[12.5rem] lg:pt-1'
+                : actionColumns === 'row'
+                  // The row the phone layout already uses, kept at every
+                  // width. `justify-end` holds it against the right edge
+                  // where the column used to sit, so the header's balance
+                  // is unchanged; it still wraps rather than overflowing
+                  // if the window is narrow enough to need it.
+                  ? 'flex flex-wrap items-center gap-2 shrink-0 lg:justify-end lg:pt-1'
+                  : 'flex flex-wrap items-center gap-2 shrink-0 lg:flex-col lg:flex-nowrap lg:items-stretch lg:gap-1.5 lg:w-[12.5rem] lg:pt-1'
             }
           >
             {actions}

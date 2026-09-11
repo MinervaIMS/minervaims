@@ -19,7 +19,31 @@ export interface TreasuryEntry {
 export interface TreasuryInput { amount: number; flow: 'in' | 'out'; description: string; source?: string | null; execution_date: string; }
 
 export interface AutoTemplate { id: string; key: string; name: string; subject: string; body: string; description: string | null; file_url: string | null; connected: boolean; updated_at: string; trigger_description: string | null; recipient_description: string | null; schedule_description: string | null; }
-export interface EmailLogRow { id: string; template_name: string; recipient_email: string; status: string; created_at: string; }
+export interface EmailLogRow {
+  id: string;
+  /** The template KEY, as the log stores it. */
+  template_name: string;
+  /** The name the Automatic Emails catalogue knows it by, when there is one. */
+  template_label?: string | null;
+  recipient_email: string;
+  status: string;
+  error_message?: string | null;
+  created_at: string;
+}
+
+/** How the sent register is narrowed. Every field is optional. */
+export interface EmailLogQuery {
+  /** Matches the recipient's address or the template key. */
+  search?: string;
+  status?: string[];
+  /** Template keys. */
+  template?: string[];
+  /** ISO instants; `to` should be the end of the chosen day. */
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
 
   // `any` deliberately, matching what `supabase.functions.invoke` used to
   // hand back: every caller in this module already narrows the shape it
@@ -69,8 +93,20 @@ export function addTreasuryEntry(session: Session | null, entry: TreasuryInput) 
 }
 
 // Auto emails
-export async function getAutoEmails(session: Session | null): Promise<{ templates: AutoTemplate[]; log: EmailLogRow[] }> {
-  return await invoke('admin-auto-emails', session, { action: 'list' });
+export async function getAutoEmails(
+  session: Session | null,
+  query: EmailLogQuery = {},
+): Promise<{ templates: AutoTemplate[]; log: EmailLogRow[]; log_total?: number }> {
+  return await invoke('admin-auto-emails', session, {
+    action: 'list',
+    log_search: query.search || undefined,
+    log_status: query.status?.length ? query.status : undefined,
+    log_template: query.template?.length ? query.template : undefined,
+    log_from: query.from || undefined,
+    log_to: query.to || undefined,
+    log_limit: query.limit,
+    log_offset: query.offset,
+  });
 }
 export function saveAutoTemplate(session: Session | null, template: Partial<AutoTemplate> & { id: string }) {
   return invoke('admin-auto-emails', session, { action: 'save-template', template });

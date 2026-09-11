@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { isBookableSlot, nowInAssociationTime } from '../_shared/interview-slots.ts';
+import { isBookableSlot, isFutureSlot, nowInAssociationTime } from '../_shared/interview-slots.ts';
 import { audited } from '../_shared/activity.ts';
 import { notifyStaff, slotOpener } from '../_shared/staff-notify.ts';
 
@@ -127,6 +127,49 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       const division = body.division as string;
       if (!isStaff) return json({ error: 'Access denied' }, 403);
       if (!canView(division)) return json({ error: 'Out of scope' }, 403);
+
+      // =====================================================================
+      // A SLOT NOBODY BOOKED AND NOBODY CAN STILL BOOK IS RUBBISH.
+      // ---------------------------------------------------------------------
+      // Slots are opened in bulk, a morning at a time, and most of them are
+      // never taken. Nothing removed them, so a division's calendar became a
+      // list of every half hour it had ever offered, in ascending order, with
+      // last semester at the top and this afternoon's interview somewhere
+      // below the fold. They are swept here, when the calendar is read.
+      //
+      // ONLY THE EMPTY ONES. A past slot that WAS booked is the only record
+      // the association keeps of who was interviewed and when: the booking
+      // row is `ON DELETE CASCADE` against the slot, so deleting it would
+      // erase the interview itself, and the existing delete path would also
+      // hand the candidate back to "book an interview" - after they had
+      // already been seen. Those are kept and shown under "Interviews
+      // already held".
+      //
+      // The clock is the association's, not the server's: `slot_date` and
+      // `start_time` were typed in Rome and are compared in Rome, which is
+      // the same rule the booking list and the invitation gate use.
+      //
+      // Only a reader who may MANAGE the division sweeps it. A team leader
+      // reading the calendar should not be causing deletions, and the head
+      // opening the same page a moment later does the same work.
+      if (canManage(division)) {
+        try {
+          const now = nowInAssociationTime();
+          const { data: stale } = await supabase
+            .from('interview_slots')
+            .select('id, slot_date, start_time')
+            .eq('division', division)
+            .eq('is_booked', false)
+            .lte('slot_date', now.date);
+          // `lte` catches today too, so the time of day decides that day's
+          // slots; a PostgREST filter cannot express "earlier today or any
+          // day before" in one comparison.
+          const expired = (stale || []).filter((s: any) => !isFutureSlot(s, now)).map((s: any) => s.id);
+          if (expired.length) {
+            await supabase.from('interview_slots').delete().in('id', expired);
+          }
+        } catch (e) { console.error('sweeping past slots failed', e); }
+      }
 
       const { data: slots, error } = await supabase
         .from('interview_slots')

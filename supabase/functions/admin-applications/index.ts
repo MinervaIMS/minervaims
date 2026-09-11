@@ -224,7 +224,52 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
       const { data: notes } = await supabase.from('application_notes')
         .select('*').eq('application_id', app.id).order('created_at', { ascending: true });
-      return json({ application: app, notes: notes || [] });
+
+      // =====================================================================
+      // WHAT THIS CANDIDATE HAS BEEN SENT, AND WHEN.
+      // ---------------------------------------------------------------------
+      // Every automatic email the association sends is already recorded in
+      // `email_send_log`, but only in aggregate, on a Settings page a
+      // reviewer has no reason to open and no way to narrow to one person.
+      // So the question a reviewer actually asks - "have we written to
+      // them, when, and did it arrive?" - had no answer anywhere, and a
+      // silent candidate looked the same whether they had been invited
+      // three days ago or never written to at all.
+      //
+      // THE STATUS IS HALF THE POINT. An address that bounced or was
+      // suppressed explains a silence completely, and until now nothing in
+      // the recruiting pages could say so.
+      //
+      // Matched on the address, because that is what the log records: the
+      // emails are enqueued by database functions that know the recipient
+      // and not the application. `ilike` rather than `eq` because a
+      // candidate types their own address on the public form and the case
+      // they typed is not necessarily the case anything else used.
+      //
+      // The log is optional infrastructure - `admin-auto-emails` guards its
+      // own read of it the same way - so a failure here costs the email
+      // table and never the candidate.
+      // =====================================================================
+      let emails: unknown[] = [];
+      try {
+        const { data: sent } = await supabase.from('email_send_log')
+          .select('id, template_name, status, error_message, created_at')
+          .ilike('recipient_email', app.email)
+          .order('created_at', { ascending: false })
+          .limit(100);
+        // The log stores the template KEY. A reviewer should read the name
+        // the Automatic Emails page shows, so the keys are resolved here,
+        // once, and the key is kept beside it for anyone who needs it.
+        const keys = Array.from(new Set((sent || []).map((r: any) => r.template_name).filter(Boolean)));
+        const labels: Record<string, string> = {};
+        if (keys.length) {
+          const { data: tpl } = await supabase.from('auto_email_templates').select('key, name').in('key', keys);
+          for (const t of tpl || []) labels[t.key] = t.name;
+        }
+        emails = (sent || []).map((r: any) => ({ ...r, template_label: labels[r.template_name] || null }));
+      } catch (e) { console.error('reading the candidate email log failed', e); }
+
+      return json({ application: app, notes: notes || [], emails });
     }
 
     // ── sign-url (preview/download a document) ───────────────────────────────
