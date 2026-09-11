@@ -31,7 +31,7 @@ import {
   isLockedStatus,
   APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
   evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
-  reviewerDivisionsOf, canActOnApplication,
+  reviewerDivisionsOf, canProgressApplication,
   type ApplicationRow, type ApplicationStatus, type BulkDocument,
 } from '@/lib/applications-api';
 import { openReportInTab } from '@/lib/open-report';
@@ -120,21 +120,22 @@ export default function CandidatesManagement() {
   const { toast } = useToast();
 
   // =================================================================
-  // A HEAD OF DIVISION NOW READS THE WHOLE INTAKE.
+  // EVERY REVIEWER READS THE WHOLE INTAKE.
   // -----------------------------------------------------------------
-  // The list this page receives is no longer only the candidates who
-  // named the reader's division: a head of division is sent every
-  // application in the semester, so they can judge the intake as a whole
-  // and notice somebody in another division's pile who belongs in
-  // theirs. The Evaluated for column says which division each candidate
-  // sits with, and it filters, so "mine" is one click away.
+  // The list this page receives is every application in the semester,
+  // for every role that may open the page: the heads, and now the team
+  // leaders and portfolio managers too. A selection round is judged as a
+  // whole or not at all, and a team leader sitting in on interviews
+  // could not previously see how the candidate in front of them compared
+  // with the rest of the intake. The Evaluated for column says which
+  // division each candidate sits with, and it filters, so "mine" is one
+  // press away.
   //
-  // READING IS ALL THAT WIDENED. Moving a candidacy - advancing it,
-  // inviting it, reassigning it - still belongs to the division doing
-  // the assessing, so those controls are drawn only for the candidates
-  // this reader may actually act on. The edge function enforces the same
-  // line; this is what stops a head choosing a status for somebody
-  // else's candidate and only then being refused.
+  // WHAT THEY MAY DO IS UNCHANGED, to the letter: a team leader and a
+  // portfolio manager read and add notes, and nothing else, exactly as
+  // before. `myDivisions` is what remains of division scoping, and it
+  // now answers one question only: whose candidacies this reader may
+  // ADVANCE. See the note on `canProgress` below.
   // =================================================================
   const myDivisions = useMemo(
     () => reviewerDivisionsOf(roles as { role: string; division?: string | null }[] | null, isFullAccess),
@@ -155,9 +156,27 @@ export default function CandidatesManagement() {
   // on desktop, keeping the phone read-only policy exactly as it is.
   const notesAllowedInReadOnly = isDesktop && canAddNotes && !canManage('applications-screening');
 
-  /** May this reader move THIS candidacy, or only read it? */
-  const canMove = (a: Pick<ApplicationRow, 'first_choice' | 'second_choice' | 'evaluation_division'>) =>
-    canChangeStatus && canActOnApplication(a, myDivisions);
+  // =================================================================
+  // TWO POWERS, AND THEY NO LONGER COVER THE SAME CANDIDATES.
+  // -----------------------------------------------------------------
+  // MOVING a candidate to another division is open to every role that
+  // may manage this page, for every candidate in the semester, because
+  // reassignment exists precisely when a candidate is sitting in the
+  // wrong place and the person who notices is usually not the division
+  // holding them.
+  //
+  // ADVANCING one - inviting, rejecting, marking them interviewed - is
+  // still the assessing division's, because those acts speak to the
+  // candidate in that division's name and an invitation opens that
+  // division's interview calendar.
+  //
+  // `canChangeStatus` answers the first (a role question), and
+  // `canProgress` the second (a role AND a candidate question). The edge
+  // function enforces the same pair; these two are what stop a reviewer
+  // being offered a control that would then be refused.
+  // =================================================================
+  const canProgress = (a: Pick<ApplicationRow, 'first_choice' | 'second_choice' | 'evaluation_division'>) =>
+    canChangeStatus && canProgressApplication(a, myDivisions);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   // =================================================================
@@ -569,7 +588,7 @@ export default function CandidatesManagement() {
                       without that power reads the same fact without being
                       offered a menu that would refuse them. */}
                   <td className="px-3 py-2 whitespace-nowrap">
-                    {canMove(a) && !isLockedStatus(a.status) ? (
+                    {canChangeStatus && !isLockedStatus(a.status) ? (
                       <Select
                         value={evaluationDivision(a)}
                         onValueChange={(v) => { if (v !== evaluationDivision(a)) setPendingEval({ app: a, target: v as OrgDivision }); }}
@@ -699,14 +718,16 @@ export default function CandidatesManagement() {
                 session={session}
                 app={detail.application}
                 canChangeStatus={canChangeStatus}
-                canMove={canMove(detail.application)}
+                canProgress={canProgress(detail.application)}
                 onChanged={onStatusChanged}
               />
 
               {/* Evaluated for: the same control as the table's column, in
                   the place a reviewer is most likely to reach for it, having
-                  just read the CV. */}
-              {canMove(detail.application) && !isLockedStatus(detail.application.status) && (
+                  just read the CV. Offered for EVERY candidate a manager of
+                  this page can see, including the ones another division is
+                  assessing, which is the case reassignment exists for. */}
+              {canChangeStatus && !isLockedStatus(detail.application.status) && (
                 <div className="border border-separator p-3 space-y-2">
                   <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
                     Evaluated for <HelpDot page="applications-screening" topic="evaluation-division" />
