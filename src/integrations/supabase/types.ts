@@ -509,6 +509,9 @@ export type Database = {
           first_name: string
           id: string
           interview_division: Database["public"]["Enums"]["org_division"] | null
+          interview_invited_at: string | null
+          interview_reminder_sent_at: string | null
+          interview_reminder2_sent_at: string | null
           linkedin_url: string | null
           offer_deadline: string | null
           offer_division: Database["public"]["Enums"]["org_division"] | null
@@ -547,6 +550,9 @@ export type Database = {
           interview_division?:
             | Database["public"]["Enums"]["org_division"]
             | null
+          interview_invited_at?: string | null
+          interview_reminder_sent_at?: string | null
+          interview_reminder2_sent_at?: string | null
           linkedin_url?: string | null
           offer_deadline?: string | null
           offer_division?: Database["public"]["Enums"]["org_division"] | null
@@ -585,6 +591,9 @@ export type Database = {
           interview_division?:
             | Database["public"]["Enums"]["org_division"]
             | null
+          interview_invited_at?: string | null
+          interview_reminder_sent_at?: string | null
+          interview_reminder2_sent_at?: string | null
           linkedin_url?: string | null
           offer_deadline?: string | null
           offer_division?: Database["public"]["Enums"]["org_division"] | null
