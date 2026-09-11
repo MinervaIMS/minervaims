@@ -154,17 +154,21 @@ export const GUIDE: GuideEntry[] = [
       { id: 'walk', title: 'From one candidate to the next', body: 'The candidate window carries an arrow on either side of the name and a counter between them. They walk the register in the order it is showing, so narrowing the list to one division, one status or one search term narrows what the arrows step through as well. The first candidate has no arrow back and the last none forward. Everything else in the window behaves exactly as it does when a candidate is opened from the table.' },
       { id: 'scope', title: 'Which candidates you see', body: 'The President, the Vice President and the Head of Asset Management see every application. A HEAD OF DIVISION ALSO SEES THE WHOLE INTAKE, so a selection round can be judged as a whole and a candidate who fits another division better can be noticed; the Evaluated for filter narrows the register to their own in one press. Team Leaders and Portfolio Managers see the candidates who named their division or have been handed to it. Moving a candidacy is a different question from reading it: advancing, inviting and reassigning a candidate belong to the division assessing them, so on somebody else\'s candidate a head reads the whole application and can add a note, and the status controls are not offered.' },
       { id: 'documents', title: 'CV and written answer', body: 'Both documents open in the preview panes and can be downloaded. Opening a CV for the first time automatically advances the candidate\'s status to show the application has been seen.' },
+      { id: 'emails', title: 'The emails a candidate has been sent', body: 'Under the candidate, a table of every automatic email the association has sent to their address, newest first, with the date, the time and what became of it. It is there for the commonest question a silent candidacy raises: whether we wrote, when, and whether it arrived. An outcome of "bounced" or "suppressed" against the interview invitation explains the silence completely, and is worth checking before concluding that a candidate is not interested.' },
     ],
   },
   {
     key: 'applications-interview-calendar', section: 'Recruiting', label: 'Interview calendar',
     purpose: 'Interview slots per division. Invited candidates book themselves into open slots.',
-    view: ['See slots and bookings.'],
-    manage: ['Open and close slots and manage bookings for your division.'],
+    view: ['See slots and bookings, and narrow the list to the booked ones.', 'Open the candidate who booked a slot, with their CV, written answer and notes.'],
+    manage: ['Open and close slots and manage bookings for your division.', 'Record the outcome of an interview on the candidate, without leaving this page.'],
     warnings: ['A candidate can only be invited to interview if their division has at least one open slot.'],
     topics: [
       { id: 'slots', title: 'How slots work', body: 'Each slot belongs to a division and holds one candidate. A candidate sees only the open slots of the division they are being evaluated for, and books directly from their own restricted workspace. If that division changes, the slot they were holding is released back to the division they are leaving and they can book only with the new one.' },
       { id: 'bulk', title: 'Opening several slots at once', body: 'The bulk tool creates a run of slots between a start and an end time on one day, all carrying the same meeting link. Ideal for a full interview afternoon.', requires: 'manage' },
+      { id: 'booked', title: 'Seeing who is coming', body: 'The list carries three filters: All, Booked and Available, each with its count, and the line above them says how many slots are taken and how many are still open. Booked is the one to press once the invitations have gone out: it leaves only the interviews that are actually happening.' },
+      { id: 'candidate', title: 'Opening the candidate from their slot', body: 'The name beside a booked slot opens that candidate in full: their details, their CV and written answer, the notes colleagues have left, and the emails the association has sent them. It is the same window Candidates Screening opens, so whatever your role can do there it can do here, including recording the outcome of the interview as soon as it ends. Changing the division a candidate is evaluated for stays in Candidates Screening, because it releases the slot they are holding.' },
+      { id: 'past', title: 'What happens to old slots', body: 'A slot nobody booked is removed once its time has passed: they are opened a morning at a time and most are never taken, and leaving them behind buried this afternoon\'s interview under last semester\'s empty half hours. A slot that WAS booked is never removed automatically, because the booking is the only record of who was interviewed and when; those move to "Interviews already held", below the ones still to come.' },
     ],
   },
   {
@@ -399,11 +403,12 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'ops-auto-emails', section: 'Website', label: 'Automatic emails',
     purpose: 'The automatic email templates the system sends (confirmations, invitations, reminders) and their send log.',
-    view: ['Read templates and the log.'],
+    view: ['Read templates, and search the register of everything sent.'],
     manage: ['Edit templates.'],
     warnings: ['Template changes affect every future automatic email.'],
     topics: [
-      { id: 'log', title: 'The send log', body: 'Every automatic email the system sends is listed with its recipient and outcome, so delivery problems can be spotted quickly.' },
+      { id: 'log', title: 'The sent register', body: 'Every automatic email the system sends is listed with its recipient and outcome, so delivery problems can be spotted quickly. An address that bounced or was suppressed is shown in red with the reason beside it.' },
+      { id: 'log-search', title: 'Searching the register', body: 'The search box matches the recipient\'s address or the email\'s key, and the two filters narrow by which email it was and how it ended: Sent, Bounced, Failed, Suppressed and the rest. The date range takes one day or a span of them. Everything is applied to the WHOLE register rather than to the page on screen, so an address written to last semester is found as easily as one written to this morning.' },
     ],
   },
   {

@@ -21,9 +21,16 @@ import { Recommendation } from '@/components/admin/Recommendation';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listSlots, createSlot, bulkCreateSlots, deleteSlot, clearDivisionSlots,
-  type StaffSlot,
+  isFutureSlot, type StaffSlot,
 } from '@/lib/interviews-api';
 import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
+import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
+import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
+import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
+import {
+  addApplicationNote, reviewerDivisionsOf, canActOnApplication,
+  type ApplicationStatus,
+} from '@/lib/applications-api';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const hhmm = (t: string) => t.slice(0, 5);
@@ -34,7 +41,7 @@ const plus30 = (t: string) => {
 };
 
 export default function InterviewCalendar() {
-  const { session } = useAuth();
+  const { session, roles } = useAuth();
   const { toast } = useToast();
   const access = useAccess();
 
@@ -50,6 +57,64 @@ export default function InterviewCalendar() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [busy, setBusy] = useState(false);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // WHICH SLOTS ARE ON SCREEN.
+  // -------------------------------------------------------------------
+  // "Who is coming, and when" is the question this page is opened with
+  // once the invitations have gone out, and the answer used to be spread
+  // through a list of every slot the division has ever opened, most of
+  // them empty. One press narrows it to the interviews that are actually
+  // booked, and the counts beside the chips answer it without pressing
+  // anything at all.
+  // ═══════════════════════════════════════════════════════════════════
+  const [slotFilter, setSlotFilter] = useState<'all' | 'booked' | 'free'>('all');
+
+  // ═══════════════════════════════════════════════════════════════════
+  // THE CANDIDATE, OPENED FROM THE SLOT THEY BOOKED.
+  // -------------------------------------------------------------------
+  // The same window Candidates Screening opens, with the same hook behind
+  // it, so a candidate read here is a candidate read there: one round
+  // trip, the two documents signed in parallel, the notes, the emails
+  // they have been sent, and the status control if this reader may move
+  // them. An examiner about to interview somebody should not have to go
+  // and find them in another subsection first, and the outcome should be
+  // recordable where the interview is.
+  // ═══════════════════════════════════════════════════════════════════
+  const {
+    openId, detail, cvUrl, answerUrl, loading: detailLoading, docsLoading,
+    open: openCandidate, close: closeCandidate, refresh: refreshCandidate, patch: patchCandidate,
+  } = useCandidateDetail(session);
+
+  const canScreen = access.canView('applications-screening');
+  const canChangeStatus = access.canManage('applications-screening');
+  const canAddNotes = canChangeStatus || access.hasSpecial('applications-screening', 'candidates_notes_only');
+  const myDivisions = useMemo(
+    () => reviewerDivisionsOf(roles as { role: string; division?: string | null }[] | null, access.isFullAccess),
+    [roles, access.isFullAccess],
+  );
+
+  const openCandidateFor = (slot: StaffSlot) => {
+    if (!slot.booking) return;
+    if (!canScreen) {
+      toast({ title: 'Your role cannot open candidate records', description: 'Candidates are read in Recruiting, Candidates Screening.' });
+      return;
+    }
+    openCandidate(slot.booking.application_id);
+  };
+
+  // A status change here can move the candidate out of the booked stage,
+  // so the calendar is re-read rather than guessed at.
+  const onStatusChanged = ({ id, status }: { id: string; status: ApplicationStatus }) => {
+    patchCandidate(id, { status });
+    if (division) load(division);
+  };
+
+  const addNote = async (body: string) => {
+    if (!openId) return;
+    await addApplicationNote(session, openId, body);
+  };
+  const afterNote = async () => { if (openId) await refreshCandidate(openId); };
 
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -83,16 +148,38 @@ export default function InterviewCalendar() {
   }, [division]);
 
   const datesWithSlots = useMemo(() => new Set(slots.map((s) => s.slot_date)), [slots]);
-  // All slots grouped by day (ascending) for the full scrollable overview.
-  const grouped = useMemo(() => {
-    const map = new Map<string, StaffSlot[]>();
-    for (const s of slots) {
-      const list = map.get(s.slot_date) ?? [];
-      list.push(s);
-      map.set(s.slot_date, list);
-    }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [slots]);
+  const bookedCount = useMemo(() => slots.filter((s) => s.booking).length, [slots]);
+  const freeCount = slots.length - bookedCount;
+
+  const shown = useMemo(
+    () => slots.filter((s) => (slotFilter === 'all' ? true : slotFilter === 'booked' ? !!s.booking : !s.booking)),
+    [slots, slotFilter],
+  );
+
+  /**
+   * The slots on screen, grouped by day and split at now.
+   *
+   * UNBOOKED SLOTS IN THE PAST NO LONGER EXIST: the endpoint removes them
+   * when the division's calendar is read, so what remains behind today is
+   * a record of interviews that were actually held. That belongs below
+   * the ones still to come, not above them, which is where an ascending
+   * list of everything had been putting it.
+   */
+  const [upcoming, past] = useMemo(() => {
+    const byDay = (list: StaffSlot[]) => {
+      const map = new Map<string, StaffSlot[]>();
+      for (const s of list) {
+        const day = map.get(s.slot_date) ?? [];
+        day.push(s);
+        map.set(s.slot_date, day);
+      }
+      return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+    };
+    return [
+      byDay(shown.filter((s) => isFutureSlot(s))),
+      byDay(shown.filter((s) => !isFutureSlot(s))).reverse(),
+    ];
+  }, [shown]);
 
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,89 +336,118 @@ export default function InterviewCalendar() {
 
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-baseline justify-between mb-4">
-                <h3 className="font-serif text-lg text-accent">All interview slots</h3>
-                <span className="font-body text-xs text-muted-foreground">{slots.length} slot{slots.length === 1 ? '' : 's'}</span>
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                <h3 className="font-serif text-lg text-accent">Interview slots</h3>
+                <span className="font-body text-xs text-muted-foreground">
+                  {bookedCount} booked · {freeCount} still open
+                </span>
               </div>
+
+              {/* The three ways of reading this calendar. `data-ro`: these
+                  choose what is shown and write nothing, so a reader who
+                  may not manage the calendar keeps them. */}
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {([
+                  ['all', `All (${slots.length})`],
+                  ['booked', `Booked (${bookedCount})`],
+                  ['free', `Available (${freeCount})`],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    data-ro
+                    type="button"
+                    onClick={() => setSlotFilter(key)}
+                    className={`px-3 h-8 border font-body text-xs transition-colors ${
+                      slotFilter === key
+                        ? 'bg-accent text-accent-foreground border-accent'
+                        : 'bg-transparent text-accent border-accent/40 hover:border-accent'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               {slots.length === 0 ? (
                 <p className="font-body text-sm text-muted-foreground py-8 text-center">No slots opened yet. Use “Open a slot” or “Smart planning” to add availability.</p>
+              ) : shown.length === 0 ? (
+                <p className="font-body text-sm text-muted-foreground py-8 text-center">
+                  {slotFilter === 'booked' ? 'No slot has been booked yet.' : 'Every slot is booked.'}
+                </p>
               ) : (
                 <div className="max-h-[64vh] overflow-y-auto pr-1 space-y-5">
-                  {grouped.map(([date, daySlots]) => (
-                    <div key={date}>
-                      {/* Date divider */}
-                      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-1.5 mb-2 border-b border-separator">
-                        <span className="font-body text-xs uppercase tracking-wider text-accent font-semibold">
-                          {format(parseISO(date), 'EEEE, d MMMM yyyy')}
-                        </span>
-                        <span className="font-body text-xs text-muted-foreground ml-2">
-                          {daySlots.filter((s) => s.booking).length}/{daySlots.length} booked
-                        </span>
+                  {upcoming.map(([date, daySlots]) => (
+                    <SlotDay
+                      key={date} date={date} daySlots={daySlots} canManage={canManage}
+                      onRemove={removeSlot} onOpenCandidate={openCandidateFor}
+                    />
+                  ))}
+
+                  {past.length > 0 && (
+                    <div className="pt-2">
+                      {/* WHAT IS LEFT BEHIND TODAY IS A RECORD, NOT A GAP.
+                          Slots nobody booked are removed automatically when
+                          this calendar is read, so everything here is an
+                          interview that was actually held, kept because the
+                          booking is the only record of who was seen and
+                          when. Newest first, and below the ones to come. */}
+                      <div className="border-t border-separator pt-3 mb-2 font-body text-xs uppercase tracking-wider text-muted-foreground">
+                        Interviews already held
                       </div>
-                      <div className="space-y-2">
-                        {daySlots.map((s) => (
-                          <div key={s.id} className="flex items-start justify-between gap-3 border border-separator p-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 font-body font-medium text-foreground">
-                                <Clock className="h-4 w-4 text-accent shrink-0" />
-                                {hhmm(s.start_time)} – {hhmm(s.end_time)}
-                              </div>
-                              {s.examiner_name && (
-                                <div className="mt-1 flex items-center gap-1.5 text-xs font-body text-muted-foreground">
-                                  <User className="h-3.5 w-3.5" /> Examiner: {s.examiner_name}
-                                </div>
-                              )}
-                              {s.meeting_link && (
-                                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1.5 text-xs font-body text-accent hover:underline break-all">
-                                  <Video className="h-3.5 w-3.5 shrink-0" /> Meeting link
-                                </a>
-                              )}
-                              {s.booking ? (
-                                <div className="mt-2 text-xs font-body">
-                                  <span className="inline-block px-2 py-0.5 bg-accent/10 text-accent border border-accent/20">Booked</span>
-                                  <span className="ml-2 text-foreground">{s.booking.candidate_name}</span>
-                                  <span className="ml-1 text-muted-foreground">· {s.booking.candidate_email}</span>
-                                </div>
-                              ) : (
-                                <div className="mt-2 text-xs font-body">
-                                  <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground border border-separator">Available</span>
-                                </div>
-                              )}
-                            </div>
-                            {canManage && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Remove this slot?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      {s.booking
-                                        ? `${s.booking.candidate_name} has booked this slot. Removing it cancels their interview and lets them book again.`
-                                        : 'This interview slot will be removed.'}
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
-                                    <AlertDialogAction className="rounded-none bg-destructive hover:bg-destructive/90" onClick={() => removeSlot(s.id)}>Remove</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                          </div>
+                      <div className="space-y-5 opacity-90">
+                        {past.map(([date, daySlots]) => (
+                          <SlotDay
+                            key={date} date={date} daySlots={daySlots} canManage={canManage}
+                            onRemove={removeSlot} onOpenCandidate={openCandidateFor}
+                          />
                         ))}
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       )}
+
+      {/* The candidate who booked a slot, in full. */}
+      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) closeCandidate(); }}>
+        <DialogContent className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl pr-10">
+              {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
+            </DialogTitle>
+          </DialogHeader>
+          {detailLoading || !detail ? <WorkspaceLoader inline /> : (
+            <CandidateProfile
+              session={session}
+              detail={detail}
+              cvUrl={cvUrl}
+              answerUrl={answerUrl}
+              docsLoading={docsLoading}
+              canAddNotes={canAddNotes}
+              addNote={addNote}
+              onNoteAdded={afterNote}
+              onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}
+            >
+              <CandidateStatusControl
+                session={session}
+                app={detail.application}
+                canChangeStatus={canChangeStatus}
+                canMove={canActOnApplication(detail.application, myDivisions)}
+                onChanged={onStatusChanged}
+                showHelp={false}
+              />
+              <p className="text-xs text-muted-foreground">
+                The interview this candidate booked is in the calendar behind this window. Changing the division
+                they are evaluated for is done in <strong>Recruiting, Candidates Screening</strong>, because it
+                releases the slot they are holding.
+              </p>
+            </CandidateProfile>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Open a single slot */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -396,6 +512,105 @@ export default function InterviewCalendar() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// =====================================================================
+// One day of the calendar, and the slots on it.
+// ---------------------------------------------------------------------
+// Lifted out of the page because the list is drawn twice now, once for
+// what is still to come and once for what has already been held, and two
+// copies of eighty lines of JSX is two places for them to drift apart.
+// =====================================================================
+function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
+  date: string;
+  daySlots: StaffSlot[];
+  canManage: boolean;
+  onRemove: (id: string) => void;
+  onOpenCandidate: (slot: StaffSlot) => void;
+}) {
+  return (
+    <div>
+      {/* Date divider */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-1.5 mb-2 border-b border-separator">
+        <span className="font-body text-xs uppercase tracking-wider text-accent font-semibold">
+          {format(parseISO(date), 'EEEE, d MMMM yyyy')}
+        </span>
+        <span className="font-body text-xs text-muted-foreground ml-2">
+          {daySlots.filter((s) => s.booking).length}/{daySlots.length} booked
+        </span>
+      </div>
+      <div className="space-y-2">
+        {daySlots.map((s) => (
+          <div key={s.id} className="flex items-start justify-between gap-3 border border-separator p-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 font-body font-medium text-foreground">
+                <Clock className="h-4 w-4 text-accent shrink-0" />
+                {hhmm(s.start_time)} – {hhmm(s.end_time)}
+              </div>
+              {s.examiner_name && (
+                <div className="mt-1 flex items-center gap-1.5 text-xs font-body text-muted-foreground">
+                  <User className="h-3.5 w-3.5" /> Examiner: {s.examiner_name}
+                </div>
+              )}
+              {s.meeting_link && (
+                <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1.5 text-xs font-body text-accent hover:underline break-all">
+                  <Video className="h-3.5 w-3.5 shrink-0" /> Meeting link
+                </a>
+              )}
+              {s.booking ? (
+                <div className="mt-2 text-xs font-body">
+                  <span className="inline-block px-2 py-0.5 bg-accent/10 text-accent border border-accent/20">Booked</span>
+                  {/* THE NAME IS THE WAY IN. An examiner reading this list
+                      an hour before the interview wants the candidate's CV,
+                      their written answer and the notes their colleagues
+                      left, and had to go and find them in Candidates
+                      Screening. `data-ro`: opening a candidate is a read,
+                      so the read-only guard leaves it alone. */}
+                  <button
+                    data-ro
+                    type="button"
+                    onClick={() => onOpenCandidate(s)}
+                    title={`Open ${s.booking.candidate_name}`}
+                    className="ml-2 text-accent underline underline-offset-2 hover:no-underline"
+                  >
+                    {s.booking.candidate_name}
+                  </button>
+                  <span className="ml-1 text-muted-foreground">· {s.booking.candidate_email}</span>
+                </div>
+              ) : (
+                <div className="mt-2 text-xs font-body">
+                  <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground border border-separator">Available</span>
+                </div>
+              )}
+            </div>
+            {canManage && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove this slot?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {s.booking
+                        ? `${s.booking.candidate_name} has booked this slot. Removing it cancels their interview and lets them book again.`
+                        : 'This interview slot will be removed.'}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="rounded-none bg-destructive hover:bg-destructive/90" onClick={() => onRemove(s.id)}>Remove</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

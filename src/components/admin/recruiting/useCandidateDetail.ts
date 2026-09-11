@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { getApplication, signDocumentUrl, type ApplicationRow, type ApplicationNote } from '@/lib/applications-api';
+import { getApplication, signDocumentUrl, type ApplicationRow, type ApplicationNote, type ApplicationEmail } from '@/lib/applications-api';
 
 // =====================================================================
 // useCandidateDetail — opening a candidate, quickly and once.
@@ -47,6 +47,12 @@ import { getApplication, signDocumentUrl, type ApplicationRow, type ApplicationN
 export interface CandidateDetail {
   application: ApplicationRow;
   notes: ApplicationNote[];
+  /**
+   * Every automatic email sent to this candidate's address, newest first.
+   * Optional because the send log is optional infrastructure: a workspace
+   * whose endpoint has not been redeployed simply shows no table.
+   */
+  emails?: ApplicationEmail[];
 }
 
 interface Entry {

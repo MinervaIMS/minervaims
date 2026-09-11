@@ -66,6 +66,41 @@ export interface ApplicationNote {
   created_at: string;
 }
 
+/**
+ * One automatic email the association has sent to a candidate's address.
+ *
+ * Read from `email_send_log`, which records the template KEY; the name a
+ * reader knows the email by is resolved server-side into `template_label`
+ * and is null only for a key no template row explains.
+ */
+export interface ApplicationEmail {
+  id: string;
+  template_name: string;
+  template_label: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
+/** How an email's outcome reads, and how it is coloured. */
+export function emailStatusTone(status: string): string {
+  if (status === 'sent') return 'text-green-700';
+  if (status === 'failed' || status === 'bounced' || status === 'complained' || status === 'dlq') return 'text-destructive';
+  if (status === 'suppressed') return 'text-amber-700';
+  return 'text-muted-foreground';
+}
+
+/** What a status means for somebody wondering why a candidate has not replied. */
+export const EMAIL_STATUS_MEANING: Record<string, string> = {
+  sent: 'Delivered to the candidate.',
+  pending: 'Queued, not yet sent.',
+  suppressed: 'Not sent: this address is on the suppression list.',
+  failed: 'The send failed. The candidate did not receive it.',
+  bounced: 'The address rejected it. The candidate did not receive it.',
+  complained: 'Marked as spam by the recipient.',
+  dlq: 'The send failed repeatedly and was set aside.',
+};
+
 export interface ApplicationQuestion {
   division: OrgDivision;
   question: string;
@@ -392,7 +427,10 @@ async function invoke(session: Session | null, body: Record<string, unknown>): P
 export async function listApplications(session: Session | null): Promise<ApplicationRow[]> {
   return (await invoke(session, { action: 'list' })).applications as ApplicationRow[];
 }
-export async function getApplication(session: Session | null, id: string): Promise<{ application: ApplicationRow; notes: ApplicationNote[] }> {
+export async function getApplication(
+  session: Session | null,
+  id: string,
+): Promise<{ application: ApplicationRow; notes: ApplicationNote[]; emails?: ApplicationEmail[] }> {
   return await invoke(session, { action: 'get', id });
 }
 export async function signDocumentUrl(session: Session | null, id: string, kind: 'cv' | 'answer', mode: 'preview' | 'download'): Promise<string> {

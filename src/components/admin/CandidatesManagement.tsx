@@ -26,9 +26,9 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
   listApplications, signDocumentUrl, bulkDocumentUrls,
-  updateApplicationStatus, addApplicationNote, setEvaluationDivision,
+  addApplicationNote, setEvaluationDivision,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
-  isLockedStatus, allowedNextStatuses,
+  isLockedStatus,
   APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
   evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
   reviewerDivisionsOf, canActOnApplication,
@@ -37,8 +37,8 @@ import {
 import { openReportInTab } from '@/lib/open-report';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
+import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
 import { documentTitle } from '@/components/admin/recruiting/document-title';
-import { listSlots, isFutureSlot } from '@/lib/interviews-api';
 import { safeLinkedInUrl } from '@/lib/linkedin';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { zipFromUrls } from '@/lib/zip';
@@ -46,14 +46,6 @@ import { downloadBlob } from '@/lib/file-download';
 
 /** Sentinel used by the second-choice filter for applicants who named none. */
 const NO_SECOND_CHOICE = '__none__';
-
-// Statuses whose selection sends an automatic email to the candidate — these
-// require an explicit confirmation before they are applied (report item 12).
-const EMAIL_ON_STATUS: Record<string, string> = {
-  interview_invitation_sent: 'The candidate will be invited to interview, will gain access to the Interview Calendar, and will receive an interview-invitation email.',
-  rejected: 'The candidate will be moved to “Rejected” and will receive a rejection email (before- or after-interview, chosen automatically).',
-  offer_accepted: 'The candidate will receive a welcome email and be prompted to complete their member profile.',
-};
 
 // =====================================================================
 // BULK DOWNLOAD: ONE ARCHIVE, NOT ONE TAB PER CANDIDATE.
@@ -214,8 +206,6 @@ export default function CandidatesManagement() {
     openId, detail, cvUrl, answerUrl, loading: detailLoading, docsLoading,
     open: openCandidate, close: closeCandidate, refresh: refreshCandidate, patch: patchCandidate,
   } = useCandidateDetail(session);
-  const [pendingStatus, setPendingStatus] = useState<{ id: string; status: ApplicationStatus } | null>(null);
-  const [inviteDivision, setInviteDivision] = useState<OrgDivision | null>(null);
 
   // Changing the division a candidate is evaluated for: the one sanctioned
   // way a candidacy revisits an earlier stage. `pendingEval` holds the row
@@ -331,74 +321,13 @@ export default function CandidatesManagement() {
     } catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
-  const changeStatus = async (id: string, status: ApplicationStatus, division?: OrgDivision | null) => {
-    try {
-      await updateApplicationStatus(session, id, status, division);
-      const who = apps.find((x) => x.id === id);
-      setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status, interview_division: division ?? a.interview_division } : a)));
-      patchCandidate(id, { status, ...(division ? { interview_division: division } : {}) });
-      toast({ title: 'Status updated' });
-    } catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-  };
-
-  // Status changes that send an email need explicit confirmation first.
-  const requestStatusChange = (id: string, status: ApplicationStatus) => {
-    if (EMAIL_ON_STATUS[status]) {
-      // The invitation goes out for the division that is evaluating the
-      // candidate. It used to default to the first choice and offer a
-      // second control to change it, which meant two places could set the
-      // same fact and disagree; the column above is now the one place.
-      if (status === 'interview_invitation_sent' && detail) setInviteDivision(evaluationDivision(detail.application));
-      setPendingStatus({ id, status });
-    } else changeStatus(id, status);
-  };
-
-  // Confirm the pending status change. For "Invited to interview" this enforces
-  // that the chosen division has at least one OPEN interview slot before the
-  // invitation (and its email) can be sent.
-  const [confirming, setConfirming] = useState(false);
-  const confirmPendingStatus = async () => {
-    if (!pendingStatus) return;
-    if (pendingStatus.status === 'interview_invitation_sent') {
-      const division = (inviteDivision ?? (detail ? evaluationDivision(detail.application) : undefined)) as OrgDivision | undefined;
-      if (!division) { toast({ title: 'Choose an interview division first', variant: 'destructive' }); return; }
-      setConfirming(true);
-      try {
-        const res = await listSlots(session, division);
-        // ═════════════════════════════════════════════════════════════
-        // A SLOT THAT HAS ALREADY HAPPENED IS NOT AN OPEN SLOT.
-        // -------------------------------------------------------------
-        // This used to count `is_active && !is_booked` and nothing else,
-        // so a division whose only remaining slots were this morning's
-        // passed the check: the invitation went out, the email told the
-        // candidate to book a time, and the Interview Calendar they
-        // opened was empty. The stage cannot be undone afterwards except
-        // through the division-transfer process.
-        //
-        // The rule is now the same one the candidate's own booking list
-        // uses, and the same one the server enforces before it sends
-        // anything: active, unbooked, and still to come.
-        const open = res.slots.filter((s) => s.is_active && !s.is_booked && isFutureSlot(s)).length;
-        if (open === 0) {
-          const stale = res.slots.filter((s) => s.is_active && !s.is_booked).length;
-          toast({
-            title: 'No interview slot this candidate could book',
-            description: stale > 0
-              ? `Every open slot for ${divisionLabels[division]} is already in the past. Add a future slot in Recruiting, Interview Calendar before inviting this candidate.`
-              : `Open at least one slot for ${divisionLabels[division]} in Recruiting, Interview Calendar before inviting this candidate.`,
-            variant: 'destructive',
-          });
-          return;
-        }
-      } catch (e) {
-        toast({ title: 'Could not verify interview slots', description: e instanceof Error ? e.message : 'Please try again.', variant: 'destructive' });
-        return;
-      } finally { setConfirming(false); }
-      changeStatus(pendingStatus.id, pendingStatus.status, division);
-    } else {
-      changeStatus(pendingStatus.id, pendingStatus.status);
-    }
-    setPendingStatus(null);
+  // The one thing the page still owns about a status change: keeping its
+  // own row and its own cached candidate in step with what was written.
+  // Everything else - the confirmation, the email warning, the check that
+  // an invitation has a bookable slot - lives in CandidateStatusControl.
+  const onStatusChanged = ({ id, status, division }: { id: string; status: ApplicationStatus; division?: OrgDivision | null }) => {
+    setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status, interview_division: division ?? a.interview_division } : a)));
+    patchCandidate(id, { status, ...(division ? { interview_division: division } : {}) });
   };
 
   // Moving a candidacy to a different division. The confirmation is not
@@ -468,6 +397,11 @@ export default function CandidatesManagement() {
       <WorkspacePageHeader
         title="Candidates Screening"
         description="This semester's applications, with their documents, notes and status."
+        // THE THREE DOWNLOADS ARE ONE CONTROL IN THREE VARIANTS. Stacked
+        // in a column they read as three separate errands down the right
+        // of the page; on one line they read as what they are, a choice
+        // between CVs, answers and both.
+        actionColumns="row"
         actions={
           <>
             <BulkDownloadButton
@@ -758,53 +692,16 @@ export default function CandidatesManagement() {
               onNoteAdded={afterNote}
               onError={(m) => toast({ title: 'Something went wrong', description: m, variant: 'destructive' })}
             >
-              {/* Prominent status control */}
-              <div className="border border-accent/30 bg-accent/5 p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs uppercase tracking-wider text-accent font-semibold inline-flex items-center gap-1.5">Candidate status <HelpDot page="applications-screening" topic="status" /></div>
-                  <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(detail.application.status)}`}>{STATUS_LABELS[detail.application.status]}</span>
-                </div>
-                {!canChangeStatus ? (
-                  <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                    You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
-                  </p>
-                ) : !canMove(detail.application) ? (
-                  <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                    This candidate is being assessed by <strong>{divisionLabels[evaluationDivision(detail.application)]}</strong>.
-                    You can read their whole application and add a note that their division will see; moving their
-                    candidacy is theirs to do, or the President's.
-                  </p>
-                ) : isLockedStatus(detail.application.status) ? (
-                  <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-                    This is an offer outcome, managed automatically by the offer process (New Joiners) and the applicant’s response. It cannot be changed here.
-                  </p>
-                ) : (
-                  <>
-                    <Select
-                      key={detail.application.status}
-                      value={undefined}
-                      onValueChange={(v) => requestStatusChange(detail.application.id, v as ApplicationStatus)}
-                    >
-                      <SelectTrigger className="font-body"><SelectValue placeholder="Advance to…" /></SelectTrigger>
-                      <SelectContent>
-                        {allowedNextStatuses(detail.application.status).map((o) => (
-                          <SelectItem key={o.value} value={o.value}>
-                            {o.label}{o.effect === 'action' ? '  ·  sends an email / action' : ''}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      A candidacy only moves <strong>forward</strong>: once a stage is reached it cannot be taken back, so only later stages are offered here. Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking). Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
-                    </p>
-                  </>
-                )}
-                {detail.application.status === 'accepted' && (
-                  <p className="text-xs text-amber-700 border-t border-amber-200 pt-2">
-                    “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until the president sends the final offers to <strong>New Joiners</strong>. Only then are they told they passed the selection.
-                  </p>
-                )}
-              </div>
+              {/* Moving the candidacy. One component, shared with the
+                  Interview Calendar, which can now open the candidate who
+                  booked a slot and record the outcome there. */}
+              <CandidateStatusControl
+                session={session}
+                app={detail.application}
+                canChangeStatus={canChangeStatus}
+                canMove={canMove(detail.application)}
+                onChanged={onStatusChanged}
+              />
 
               {/* Evaluated for: the same control as the table's column, in
                   the place a reviewer is most likely to reach for it, having
@@ -852,38 +749,6 @@ export default function CandidatesManagement() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Confirmation before an email-triggering status change (report item 12). */}
-      <AlertDialog open={!!pendingStatus} onOpenChange={(o) => { if (!o) setPendingStatus(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send this update to the candidate?</AlertDialogTitle>
-            <AlertDialogDescription>
-              By changing this status to “{pendingStatus ? STATUS_LABELS[pendingStatus.status] : ''}”, the candidate moves to the next step and <strong>receives an automatic email</strong>.
-              {pendingStatus && EMAIL_ON_STATUS[pendingStatus.status] ? ` ${EMAIL_ON_STATUS[pendingStatus.status]}` : ''}
-              {' '}Please check the details are correct; this cannot be undone. Are you sure you want to proceed?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {pendingStatus?.status === 'interview_invitation_sent' && detail && (
-            <div className="font-body">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Interview division</div>
-              <div className="border border-separator bg-muted/30 px-3 py-2 text-sm text-foreground">
-                {divisionLabels[evaluationDivision(detail.application)]}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                The division this candidate is being evaluated for, and the only one they will be able to book
-                an interview with. To invite them for a different division, change <strong>Evaluated for</strong> first.
-              </p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel>No, cancel</AlertDialogCancel>
-            <AlertDialogAction disabled={confirming} onClick={(e) => { e.preventDefault(); confirmPendingStatus(); }}>
-              {confirming ? 'Checking…' : 'Yes, proceed'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Changing the evaluation division. Every consequence is named,
           because between them they undo work: a stage already reached, an
