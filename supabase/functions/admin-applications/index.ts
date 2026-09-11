@@ -333,6 +333,13 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         // division that invited is the division that is assessing.
         updates.interview_division = evaluation;
         updates.evaluation_division = evaluation;
+        // When the invitation went out. The hourly deadline job reads this to
+        // remind, once at 24 hours and once at 48, any candidate who has not
+        // booked a slot yet. Booking moves the status on, so a booked
+        // candidate is never reminded.
+        updates.interview_invited_at = new Date().toISOString();
+        updates.interview_reminder_sent_at = null;
+        updates.interview_reminder2_sent_at = null;
 
         // ═══════════════════════════════════════════════════════════
         // AN INVITATION WITHOUT A SLOT TO OFFER IS NOT AN INVITATION.
