@@ -46,8 +46,12 @@ interface Props {
   app: ApplicationRow;
   /** May this reader move candidacies at all (role, and not an archived semester)? */
   canChangeStatus: boolean;
-  /** Is THIS candidacy inside the reader's own divisions? */
-  canMove: boolean;
+  /**
+   * Is THIS candidacy one the reader may ADVANCE? Progression belongs to
+   * the assessing division; moving a candidate to another division does
+   * not, and is offered separately by the page.
+   */
+  canProgress: boolean;
   /** Applied after a successful change, so the host can patch its own rows. */
   onChanged: (change: { id: string; status: ApplicationStatus; division?: OrgDivision | null }) => void;
   /** Screening carries the help dots; other pages have their own help. */
@@ -55,7 +59,7 @@ interface Props {
 }
 
 export function CandidateStatusControl({
-  session, app, canChangeStatus, canMove, onChanged, showHelp = true,
+  session, app, canChangeStatus, canProgress, onChanged, showHelp = true,
 }: Props) {
   const { toast } = useToast();
   const [pendingStatus, setPendingStatus] = useState<ApplicationStatus | null>(null);
@@ -134,11 +138,12 @@ export function CandidateStatusControl({
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
             You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
           </p>
-        ) : !canMove ? (
+        ) : !canProgress ? (
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
             This candidate is being assessed by <strong>{divisionLabels[evaluationDivision(app)]}</strong>.
-            You can read their whole application and add a note that their division will see; moving their
-            candidacy is theirs to do, or the President's.
+            You can read their whole application, add a note their division will see, and move them to
+            another division if they belong in one. Inviting, rejecting and advancing them is theirs to do,
+            or the President's.
           </p>
         ) : isLockedStatus(app.status) ? (
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">

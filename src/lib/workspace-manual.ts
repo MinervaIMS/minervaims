@@ -577,6 +577,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'applications-screening': {
     detail: [
       "This semester's applications, with each candidate's profile, their CV, their written answer, the shared notes and the division actually assessing them.",
+      "Everybody who can open this page sees every application in the semester, whatever their own division: a selection round is judged as a whole. What each role may do differs. Team Leaders and Portfolio Managers read and add notes. The roles that manage the page can move any candidate to a different division, which is what reassignment is for, while advancing, inviting and rejecting stay with the division that is assessing them.",
       "A candidacy only ever moves forward. The status dropdown offers stages later than the current one and nothing earlier, and the server refuses a backward move even when the request is built by hand.",
       "Statuses marked as sending an email notify the candidate the moment they are set, and cannot be recalled. A confirmation dialog always appears first.",
       "Notes are visible to every reviewer with access to this page and are attributed to their author. Previous semesters remain consultable as read-only archives.",

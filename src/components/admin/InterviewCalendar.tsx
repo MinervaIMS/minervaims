@@ -28,7 +28,7 @@ import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDe
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
 import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
 import {
-  addApplicationNote, reviewerDivisionsOf, canActOnApplication,
+  addApplicationNote, reviewerDivisionsOf, canProgressApplication,
   type ApplicationStatus,
 } from '@/lib/applications-api';
 
@@ -435,7 +435,7 @@ export default function InterviewCalendar() {
                 session={session}
                 app={detail.application}
                 canChangeStatus={canChangeStatus}
-                canMove={canActOnApplication(detail.application, myDivisions)}
+                canProgress={canProgressApplication(detail.application, myDivisions)}
                 onChanged={onStatusChanged}
                 showHelp={false}
               />

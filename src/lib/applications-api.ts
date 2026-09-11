@@ -200,33 +200,63 @@ export function allowedEvaluationDivisions(
 }
 
 // =====================================================================
-// WHO MAY READ A CANDIDACY, AND WHO MAY MOVE IT.
+// WHAT A REVIEWER MAY DO, AND TO WHICH CANDIDATES.
 // ---------------------------------------------------------------------
-// Two different questions since heads of division began seeing the whole
-// intake. A head reads every application in the semester; the ones they
-// may ACT on - advance, invite, reassign - are still their own
-// division's. Everybody else reads and acts on exactly the same set.
+// THREE QUESTIONS NOW, AND THE ANSWERS DIFFER:
 //
-// THE SERVER IS THE BOUNDARY AND ENFORCES BOTH (`inScope` and
-// `inWriteScope` in supabase/functions/admin-applications). What these
-// two are for is telling the reviewer BEFORE they act, so a head does not
-// choose a new division for somebody else's candidate and only then read
-// a red toast. They mirror the server's rule line for line; if one moves,
-// move the other.
+//   READING            every reviewer reads every application in the
+//                      semester. There is nothing to compute here: if the
+//                      page opened, the candidate may be read.
+//
+//   MOVING TO ANOTHER  whoever may manage this page may move ANY
+//   DIVISION           candidate. Reassignment exists because a candidate
+//                      is in the wrong place, and the person who notices
+//                      is usually not the division holding them.
+//
+//   ADVANCING,         the same roles, but only for the candidates their
+//   INVITING,          own division is assessing: those acts speak to the
+//   REJECTING          candidate in that division's name, and an
+//                      invitation opens that division's calendar. That is
+//                      the one question below still worth asking, and
+//                      `canProgressApplication` is it.
+//
+// THE SERVER IS THE BOUNDARY AND ENFORCES ALL THREE (`inScope`,
+// `canProgress` and `inWriteScope` in
+// supabase/functions/admin-applications). What this mirror is for is
+// telling the reviewer BEFORE they act, rather than after a red toast. It
+// follows the server's rule line for line; if one moves, move the other.
 // =====================================================================
 
-/** Roles whose candidate scope is their own division (mirrors REVIEW_ROLES). */
+/** Roles scoped to their own division for PROGRESSION (mirrors REVIEW_ROLES). */
 const REVIEWER_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager'];
 
+// =====================================================================
+// UNSCOPED IN RECRUITING IS A WIDER SET THAN "FULL ACCESS".
+// ---------------------------------------------------------------------
+// `useAccess().isFullAccess` means admin and president: the two roles the
+// workspace-wide matrix grants everything to. The recruiting endpoint has
+// always used its own, wider list - `FULL_ACCESS` in
+// supabase/functions/admin-applications - which also holds the VICE
+// PRESIDENT and the HEAD OF ASSET MANAGEMENT.
+//
+// Reading the narrower flag here made the interface disagree with the
+// endpoint about those two: they were shown "this candidate is being
+// assessed by another division" and offered no status control, on
+// candidacies the server would have let them move without complaint.
+// Mirroring the endpoint's own list is what makes the two agree.
+// =====================================================================
+const RECRUITING_UNSCOPED_ROLES = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
+
 /**
- * The divisions this reader may act on, from their role assignments.
- * `null` means every division: the roles with full access to recruiting.
+ * The divisions this reader may progress a candidacy in, from their role
+ * assignments. `null` means every division.
  */
 export function reviewerDivisionsOf(
   roles: { role: string; division?: OrgDivision | string | null }[] | null | undefined,
   isFullAccess: boolean,
 ): OrgDivision[] | null {
   if (isFullAccess) return null;
+  if ((roles || []).some((r) => RECRUITING_UNSCOPED_ROLES.includes(r.role))) return null;
   const own = (roles || [])
     .filter((r) => REVIEWER_ROLES.includes(r.role) && r.division)
     .map((r) => r.division as OrgDivision);
@@ -234,10 +264,13 @@ export function reviewerDivisionsOf(
 }
 
 /**
- * May this reader move this candidacy? `divisions` is what
- * `reviewerDivisionsOf` returned, so `null` is "any".
+ * May this reader ADVANCE, INVITE or REJECT this candidate? `divisions`
+ * is what `reviewerDivisionsOf` returned, so `null` is "any".
+ *
+ * Moving a candidate to another division is NOT this question: that is
+ * open to anybody who may manage the page, for any candidate.
  */
-export function canActOnApplication(
+export function canProgressApplication(
   a: Pick<ApplicationRow, 'first_choice'> & Partial<Pick<ApplicationRow, 'second_choice' | 'evaluation_division'>>,
   divisions: OrgDivision[] | null,
 ): boolean {

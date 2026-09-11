@@ -14,8 +14,19 @@ function roleLabel(role: unknown): string {
 
 // =====================================================================
 // admin-applications — reviewer backend for the Applications pipeline.
-// All reviewer access to applications goes through here (service role),
-// scoped by division. Candidates never reach this function.
+// All reviewer access to applications goes through here (service role).
+// Candidates never reach this function.
+//
+// WHO SEES WHAT, in one place, because it is asked three different ways
+// below and the three answers are no longer the same:
+//   · READING (list, get, sign-url, bulk-urls, add-note): every reviewer
+//     reads every application in the semester.
+//   · MOVING A CANDIDATE TO ANOTHER DIVISION (set-evaluation-division):
+//     the roles with 'manage' on the page - President, Admin, Vice
+//     President, Head of Asset Management, Heads of Division - for any
+//     candidate.
+//   · ADVANCING, INVITING, REJECTING (update-status): those same roles,
+//     but only for the candidates their own division is assessing.
 //
 // Actions: list · get · sign-url · update-status · add-note · bulk-urls
 //          · set-question · convert-to-member
@@ -137,29 +148,29 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     if (!isReviewer) return json({ error: 'Access denied' }, 403);
 
     // =====================================================================
-    // A HEAD OF DIVISION READS THE WHOLE INTAKE.
+    // EVERY REVIEWER READS THE WHOLE INTAKE.
     // ---------------------------------------------------------------------
-    // Heads used to see only the candidates who had named their division or
-    // been handed to it, which meant nobody below the Vice President could
-    // answer the two questions a head actually asks of a screening round:
-    // how strong is this intake overall, and is there somebody in another
-    // division's pile who belongs in mine. Reading is not the risky half of
-    // a candidacy, and a head is accountable for one of the divisions doing
-    // the choosing.
+    // A reviewer used to see only the candidates who had named their own
+    // division or had been handed to it. Heads were let out of that in an
+    // earlier step; team leaders and portfolio managers were not, and the
+    // result was a selection round nobody below a head could judge as a
+    // whole. A team leader sitting in on interviews could not see how the
+    // candidate in front of them compared with the intake, and Portfolio
+    // Management's own team leader - the Portfolio Manager, which is what
+    // that role is - was the last reviewer who could not.
     //
-    // READING IS ALL THIS GRANTS. It widens `inScope`, which governs list,
-    // get, sign-url and bulk-urls. It deliberately does NOT widen who may
-    // MOVE a candidacy: `inWriteScope` below stays on the reviewer's own
-    // divisions, so a head who opens another division's candidate can read
-    // them and leave a note, and cannot advance them, invite them or
-    // reassign them. That boundary matters because `update-status` falls
-    // back to the caller's own division when it is asked to invite somebody
-    // out of scope: without this check, a head opening another division's
-    // candidate and pressing "Invited to interview" would have quietly
-    // moved that candidate into their own division.
+    // So the answer is now the same for all three roles in REVIEW_ROLES:
+    // everybody who may open this page at all reads every application in
+    // the semester. It is the same information the page has always shown
+    // them about their own division, for the rest of it.
+    //
+    // READING IS ALL IT GRANTS, and the grant is deliberately not per-role:
+    // `canProgress` still decides who may move a candidacy through the
+    // process, and it still excludes team leaders and portfolio managers,
+    // whose powers are unchanged to the letter. What widened is the set of
+    // candidates they may read and leave a note on.
     // =====================================================================
-    const SEE_ALL_DIVISIONS_ROLES = ['head_of_division'];
-    const canSeeAllDivisions = canAll || roleNames.some((r) => SEE_ALL_DIVISIONS_ROLES.includes(r));
+    const canSeeAllDivisions = isReviewer;
 
     // May this caller change where a candidate sits in the process?
     const canProgress = canAll || roleNames.some((r) => REVIEW_ROLES.includes(r) && !NOTES_ONLY_ROLES.includes(r));
@@ -182,17 +193,27 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     // =====================================================================
     type ScopedApp = { first_choice: string; second_choice: string | null; evaluation_division?: string | null };
 
-    /** MAY THIS CALLER ACT ON THIS CANDIDACY? Their own divisions, always. */
+    /**
+     * MAY THIS CALLER PROGRESS THIS CANDIDACY?
+     *
+     * Advancing a candidate, inviting them to interview and rejecting them
+     * belong to the division that is assessing them: those acts speak to
+     * the candidate in that division's name, and the invitation opens that
+     * division's calendar. So this stays on the caller's own divisions.
+     *
+     * MOVING A CANDIDATE TO ANOTHER DIVISION IS A DIFFERENT ACT and is no
+     * longer held to this: see `set-evaluation-division`.
+     */
     const inWriteScope = (app: ScopedApp) =>
       canAll
       || reviewerDivisions.includes(app.first_choice)
       || (app.second_choice ? reviewerDivisions.includes(app.second_choice) : false)
       || (app.evaluation_division ? reviewerDivisions.includes(app.evaluation_division) : false);
 
-    /** MAY THIS CALLER READ THIS CANDIDACY? Their own, and for a head, all. */
+    /** MAY THIS CALLER READ THIS CANDIDACY? Every reviewer reads them all. */
     const inScope = (app: ScopedApp) => canSeeAllDivisions || inWriteScope(app);
 
-    const OUT_OF_DIVISION = 'This candidate is being assessed by another division. You can read their application and add a note, but only their own division, the President, the Vice President or the Head of Asset Management can move their candidacy.';
+    const OUT_OF_DIVISION = 'This candidate is being assessed by another division. You can read their application, add a note and move them to another division, but advancing, inviting and rejecting them belong to the division assessing them, to the President, the Vice President or the Head of Asset Management.';
 
     /** The division assessing this candidate right now. */
     const evaluationOf = (app: { evaluation_division?: string | null; interview_division?: string | null; first_choice: string }) =>
@@ -204,9 +225,13 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
     // ── list ───────────────────────────────────────────────────────────────
     if (action === 'list') {
-      let q = supabase.from('applications').select('*').order('created_at', { ascending: false });
-      if (!canSeeAllDivisions) q = q.or(`first_choice.in.(${reviewerDivisions.join(',')}),second_choice.in.(${reviewerDivisions.join(',')}),evaluation_division.in.(${reviewerDivisions.join(',')})`);
-      const { data, error } = await q;
+      // EVERY REVIEWER GETS THE WHOLE SEMESTER. The division filter that
+      // used to be applied here is gone rather than left switched off:
+      // `canSeeAllDivisions` is now true for everybody who reaches this
+      // line, and a filter that can never run is a filter somebody will
+      // one day believe is running.
+      const { data, error } = await supabase.from('applications').select('*')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       // note counts
       const ids = (data || []).map((a: any) => a.id);
@@ -513,8 +538,29 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     // by `update-status` in the ordinary way, naming the new division.
     // =====================================================================
     if (action === 'set-evaluation-division') {
+      // =====================================================================
+      // WHOEVER MAY MOVE A CANDIDACY MAY MOVE ANY CANDIDACY.
+      // ---------------------------------------------------------------------
+      // `canProgress` is already the right set of people and nobody else:
+      // the President and the Admin, the Vice President and the Head of
+      // Asset Management, and the Heads of Division. Those are the roles
+      // the access matrix grants 'manage' on this page, and every other
+      // reviewer is excluded a line above.
+      //
+      // What used to be checked as well was whether the CANDIDATE belonged
+      // to the caller's division, and that was the wrong question for this
+      // action in particular. Reassignment exists precisely because a
+      // candidate is in the wrong place: the person who notices is, by
+      // definition, usually not the division holding them. A head who could
+      // see the whole intake but could only reassign their own share could
+      // take somebody out of their division and never bring anybody in.
+      //
+      // THE REST OF THE PROCESS IS UNCHANGED. Advancing, inviting and
+      // rejecting still belong to the assessing division (`inWriteScope` on
+      // `update-status`), the two-process cap below still holds, and the
+      // move is still recorded in the activity log with both divisions.
+      // =====================================================================
       if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
-      if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const target = typeof body.division === 'string' ? body.division : null;
       if (!target || !EVALUATION_DIVISIONS.includes(target)) {
         return json({ error: 'Choose a valid division to evaluate this candidate for.' }, 400);
@@ -523,8 +569,6 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         .select('id, first_choice, second_choice, first_name, surname, email, interview_division, evaluation_division, evaluation_division_previous, status, user_id')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
-      // Readable is not the same as movable: see `inWriteScope` above.
-      if (!inWriteScope(app)) return json({ error: OUT_OF_DIVISION }, 403);
 
       // An outcome the candidate has already been told about, or acted on,
       // is not something to reopen from here.
