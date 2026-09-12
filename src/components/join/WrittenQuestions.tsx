@@ -1,6 +1,7 @@
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDivisionQuestions } from '@/hooks/useDivisionQuestions';
 import { JOIN_WRITTEN } from '@/lib/join-content';
+import { Info } from 'lucide-react';
 
 /**
  * Block 05. Each division sits in a grey panel that lifts to light purple on
