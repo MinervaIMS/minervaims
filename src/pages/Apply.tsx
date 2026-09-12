@@ -456,7 +456,7 @@ export default function Apply() {
           <p className="text-[13px] font-semibold text-foreground">Document guidelines</p>
           <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">CV</strong>: one page, finance-style layout, your most recent version. PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_CV.pdf</code>.</p>
           {needsAnswer && (
-            <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">Written answer</strong>: a single PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_Answer.pdf</code>. Answer the written question for your first-choice division. MAXIMUM ONE PAGE, plus an Appendix of up toTWO PAGES for any charts and tables. MINIMUM 10pt font.</p>
+            <p className="text-[13px] leading-relaxed text-muted-foreground">• <strong className="text-foreground">Written answer</strong>: a single PDF named <code className="bg-muted px-1 text-foreground">Surname_Name_Answer.pdf</code>. Answer the written question for your first-choice division. Maximum one page, plus an Appendix of up to two pages for any charts and tables. Minimum 10pt font.</p>
           )}
         </div>
 
