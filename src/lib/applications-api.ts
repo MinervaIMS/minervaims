@@ -281,6 +281,53 @@ export function canProgressApplication(
   return false;
 }
 
+// =====================================================================
+// A DIVISION THAT HAS FILLED ITS PLACES.
+// ---------------------------------------------------------------------
+// A round runs for a fortnight, and a division can fill its places in
+// three days. Until now the only way to stop taking applications for it
+// was to close the whole round, so the choice was between reading CVs
+// nobody could accept and shutting four divisions that were still
+// recruiting.
+//
+// `closed_divisions` on `application_settings` records the ones that have
+// stopped early. These two read it, and every surface that offers a
+// division to an APPLICANT goes through them: the form's two selects, the
+// public note on /join, and the endpoint that accepts the submission.
+//
+// WHAT IT DOES NOT TOUCH is the association's own side of the process.
+// `EVALUATION_DIVISIONS` is untouched, so a head can still move a
+// candidate INTO a division that has closed to new applications: the
+// register's places may be full for people applying from outside while
+// somebody already in the round is exactly who that division wants.
+// =====================================================================
+
+/** The divisions on the form that are still taking applications. */
+export function openApplyDivisions(closed: readonly string[] | null | undefined): OrgDivision[] {
+  const shut = new Set(closed ?? []);
+  return APPLY_DIVISIONS.filter((d) => !shut.has(d));
+}
+
+/**
+ * The divisions that have closed early, in the form's own order and with
+ * anything that is not a division on the form dropped. The stored column
+ * is free text, so this is what every reader should print rather than the
+ * raw value.
+ */
+export function closedApplyDivisions(closed: readonly string[] | null | undefined): OrgDivision[] {
+  const shut = new Set(closed ?? []);
+  return APPLY_DIVISIONS.filter((d) => shut.has(d));
+}
+
+/** Is this division still taking applications through the public form? */
+export function isApplyDivisionOpen(
+  division: OrgDivision | '' | null | undefined,
+  closed: readonly string[] | null | undefined,
+): boolean {
+  if (!division) return false;
+  return !(closed ?? []).includes(division);
+}
+
 /** The five a candidate may rank. Media and Operations is not ranked. */
 export const RANKED_APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 

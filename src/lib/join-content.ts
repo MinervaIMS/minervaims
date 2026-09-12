@@ -225,3 +225,44 @@ export function formatOpeningSentence(
   const { date, time } = romeDateTime(startDate);
   return `Applications for ${semesterLabel} will open on ${date} at ${time} CET.`;
 }
+
+// =====================================================================
+// THE DIVISIONS THAT FILLED THEIR PLACES BEFORE THE ROUND ENDED.
+// ---------------------------------------------------------------------
+// A candidate who applied last week and a candidate arriving today see
+// different forms: a division that has filled its places is no longer on
+// it. Saying nothing would leave the second one to notice the absence and
+// draw their own conclusion, which is the worst of the three possible
+// outcomes - the division looks discontinued rather than full.
+//
+// So the page says it, under the block that carries the Apply button, and
+// says it as the good news it is for the people who got in. The sentence
+// names the divisions, so a reader whose division is not in it knows
+// immediately that they can still apply.
+//
+// `null` when nothing has closed early, which is the ordinary case: the
+// paragraph does not exist rather than existing empty.
+// =====================================================================
+
+/** "Equity Research and Macro Research", in the form's own order. */
+function joinList(names: string[]): string {
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+export function formatFilledDivisionsSentence(
+  closedLabels: string[],
+  everyDivisionClosed: boolean,
+): string | null {
+  if (closedLabels.length === 0) return null;
+  if (everyDivisionClosed) {
+    return 'Every division has filled its places ahead of the deadline, so this round has closed early. '
+      + 'Congratulations to the talented students joining the association, and thank you to everybody who applied.';
+  }
+  const list = joinList(closedLabels);
+  const plural = closedLabels.length > 1;
+  return `Places in ${list} have been filled ahead of the deadline, so ${plural ? 'those divisions are' : 'that division is'} `
+    + `no longer taking applications this round. Congratulations to the talented students joining ${plural ? 'them' : 'it'}. `
+    + 'Every other division is still open, and the application form lists the ones you can choose from.';
+}

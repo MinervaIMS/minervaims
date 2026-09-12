@@ -457,6 +457,7 @@ export type Database = {
           applications_open: boolean
           apply_form_url: string
           auto_open: boolean
+          closed_divisions: string[]
           end_date: string | null
           id: string
           semester_label: string
@@ -468,6 +469,7 @@ export type Database = {
           applications_open?: boolean
           apply_form_url?: string
           auto_open?: boolean
+          closed_divisions?: string[]
           end_date?: string | null
           id?: string
           semester_label?: string
@@ -479,6 +481,7 @@ export type Database = {
           applications_open?: boolean
           apply_form_url?: string
           auto_open?: boolean
+          closed_divisions?: string[]
           end_date?: string | null
           id?: string
           semester_label?: string

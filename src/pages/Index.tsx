@@ -165,7 +165,11 @@ const Index = () => {
               className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
               {...HIGH_FETCH_PRIORITY}
             />
-            {appSettings.applicationsOpen && (
+            {/* `acceptingApplications`: the button disappears when the
+                window closes AND when every division has filled its
+                places, which is the same thing to somebody looking for a
+                way in. */}
+            {appSettings.acceptingApplications && (
               <Link
                 to="/join"
                 className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"

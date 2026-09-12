@@ -124,12 +124,21 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'applications-website', section: 'Recruiting', label: 'Application page',
-    purpose: 'Controls the public application window: when applications open and close, and the semester label. Includes a preview of how the Homepage and Join page change.',
-    view: ['See the schedule and the public page preview.'],
-    manage: ['Set the opening and closing date-times and the semester label.'],
-    warnings: ['The website switches automatically at the scheduled times. There is no manual publishing step.'],
+    purpose: 'Controls the public application window: when applications open and close, which divisions are taking applications, and the semester label. Includes a preview of how the Homepage and Join page change.',
+    view: ['See the schedule, the divisions still taking applications, and the public page preview.'],
+    manage: ['Set the opening and closing date-times and the semester label.', 'Close a division early once its places are filled, and reopen it.'],
+    warnings: ['The website switches automatically at the scheduled times. There is no manual publishing step.', 'Closing a division takes effect immediately: it disappears from the application form as soon as the switch is moved.'],
     topics: [
       { id: 'preview', title: 'The open and closed previews', body: 'The preview shows exactly what visitors see in each state: the Homepage gains an Apply now button while the window is open, and the Join page switches its hero band between the open and closed message.' },
+      {
+        id: 'divisions',
+        title: 'Closing one division before the round ends',
+        body: 'The dates decide when the round runs; the switches under them decide who is taking part in it. A division that has filled its places three days into a fortnight has nothing left to offer, and every application it receives afterwards is a candidate who will be turned away and a CV somebody has to read. '
+          + 'SWITCHING ONE OFF TAKES EFFECT AT ONCE. It disappears from the application form as a first and as a second choice, and the Join page prints a line under the Apply block saying its places are filled and congratulating the students joining it. The other divisions carry on exactly as before, and the switch can be moved back at any time. '
+          + 'CLOSING THE LAST ONE ENDS THE ROUND. With every division closed the site behaves exactly as it does after the closing date: the homepage drops its applications button, the Join page shows its closed state and the form refuses submissions. That one asks for confirmation first. '
+          + 'IT CONTROLS THE PUBLIC FORM AND NOTHING ELSE. Candidates already in the process are unaffected, and a Head can still move an applicant INTO a closed division from Candidates Screening: a division whose places are full for people applying from outside may still be exactly the right home for somebody already in the round.',
+        requires: 'manage',
+      },
     ],
   },
   {

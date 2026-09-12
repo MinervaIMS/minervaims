@@ -22,6 +22,27 @@ const corsHeaders = {
 // =====================================================================
 const RESOURCE = 'applications-form';
 
+// =====================================================================
+// CLOSING A DIVISION EARLY IS A DIFFERENT DECISION FROM SETTING A DATE.
+// ---------------------------------------------------------------------
+// The window is scheduled once, by whoever runs the round. Removing a
+// division from the public form part way through is a decision about the
+// association's own intake, taken by the people the Application Page
+// subsection belongs to: the President, the Admin and the Vice President,
+// which is exactly who the matrix grants 'manage' on
+// `applications-website`.
+//
+// It is asked separately rather than folded into the check above, which
+// reads `applications-form` and therefore also admits every Head of
+// Division. A head closing their own division early would be reasonable;
+// a head closing somebody else's would not, and the toggles are all in
+// one page.
+// =====================================================================
+const CLOSURE_RESOURCE = 'applications-website';
+
+/** The divisions the public form offers, and the only ones that can close. */
+const APPLY_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media'];
+
 Deno.serve(audited('admin-settings', async (req, audit) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -81,6 +102,7 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
     audit.actor(user, userRoleNames);
     const canRead = allows(userRoleNames, user.email, RESOURCE, 'view');
     const canManage = allows(userRoleNames, user.email, RESOURCE, 'manage');
+    const canCloseDivisions = allows(userRoleNames, user.email, CLOSURE_RESOURCE, 'manage');
 
     if (!canRead) {
       console.log('User does not have permission. Roles:', userRoleNames);
@@ -172,6 +194,20 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
         }
         if (typeof settings.auto_open === 'boolean') {
           updateData.auto_open = settings.auto_open;
+        }
+        // Divisions that have filled their places. Validated against the
+        // form's own list and de-duplicated, so the column can only ever
+        // hold divisions a candidate could otherwise have applied to.
+        if ('closed_divisions' in settings) {
+          if (!canCloseDivisions) {
+            return new Response(
+              JSON.stringify({ error: 'Closing a division early is reserved for the President, the Admin and the Vice President.' }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+            );
+          }
+          const raw = Array.isArray(settings.closed_divisions) ? settings.closed_divisions : [];
+          const cleaned = APPLY_DIVISIONS.filter((d) => raw.includes(d));
+          updateData.closed_divisions = cleaned;
         }
 
         const { data, error } = await supabaseAdmin
