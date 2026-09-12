@@ -1,7 +1,6 @@
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDivisionQuestions } from '@/hooks/useDivisionQuestions';
 import { JOIN_WRITTEN } from '@/lib/join-content';
-import { Info } from 'lucide-react';
 
 /**
  * Block 05. Each division sits in a grey panel that lifts to light purple on
@@ -20,23 +19,9 @@ export function WrittenQuestions() {
 
   return (
     <div>
-      <div className="max-w-3xl border border-separator border-l-4 border-l-accent bg-muted p-5 md:p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Info className="h-4 w-4 text-accent" aria-hidden="true" />
-          <span className="font-serif text-[11px] uppercase tracking-[0.14em] text-accent">Important</span>
-        </div>
-        <p className="font-body text-body text-muted-foreground mb-3">
-          {JOIN_WRITTEN.lead}
-        </p>
-        <ul className="space-y-2">
-          {JOIN_WRITTEN.constraints.map((constraint, index) => (
-            <li key={index} className="flex gap-3 font-body text-body text-muted-foreground">
-              <span className="text-accent" aria-hidden="true">—</span>
-              <span>{constraint}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+        {JOIN_WRITTEN.lead}
+      </p>
 
       {/*
         None published yet: the neutral line is stated once, above the list,
