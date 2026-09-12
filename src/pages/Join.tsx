@@ -1,6 +1,7 @@
 import AlumniTicker from '@/components/shared/AlumniTicker';
 import { Seo } from '@/components/shared/Seo';
 import ApplicationCta from '@/components/join/ApplicationCta';
+import DivisionsFilledNote from '@/components/join/DivisionsFilledNote';
 import DivisionVideoRail from '@/components/join/DivisionVideoRail';
 import JoinFaq from '@/components/join/JoinFaq';
 import { WorkspaceSection } from '@/components/shared/WorkspaceSection';
@@ -26,14 +27,28 @@ import {
 const Join = () => {
   const { settings, isLoading } = useApplicationSettings();
 
+  // `acceptingApplications` and not `applicationsOpen`: a round whose
+  // divisions have all filled their places is over as far as a visitor is
+  // concerned, and this page then shows exactly the closed state it shows
+  // after the closing date.
   const status = {
-    applicationsOpen: settings.applicationsOpen,
+    applicationsOpen: settings.acceptingApplications,
     semesterLabel: settings.semesterLabel,
     startDate: settings.startDate,
     endDate: settings.endDate,
     isConfigured: settings.isConfigured,
     isLoading,
   };
+
+  // Under each Apply block: which divisions have already filled up.
+  const filledNote = (
+    <DivisionsFilledNote
+      closedDivisions={settings.closedDivisions}
+      scheduleOpen={settings.applicationsOpen}
+      everyDivisionClosed={settings.openDivisions.length === 0}
+      isLoading={isLoading}
+    />
+  );
 
   return (
     <>
@@ -59,6 +74,7 @@ const Join = () => {
             closedBody={JOIN_STATUS_COPY.closedBodyTop}
             headingId="join-status-heading"
           />
+          {filledNote}
         </div>
       </section>
 
@@ -181,6 +197,7 @@ const Join = () => {
             closedBody={JOIN_STATUS_COPY.closedBodyBottom}
             headingId="join-close-heading"
           />
+          {filledNote}
         </div>
       </section>
 

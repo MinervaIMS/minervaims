@@ -25,8 +25,8 @@ import PixelCardSuccess from '@/components/shared/PixelCardSuccess';
 import { WORKSPACE_BASE } from '@/lib/workspace-base';
 import {
   listQuestions, getMyApplication, submitApplication,
-  ACADEMIC_YEAR_LABELS, APPLY_DIVISIONS, RANKED_APPLY_DIVISIONS,
-  applyDivisionLabel, hasWrittenAnswer, hasSecondChoice,
+  ACADEMIC_YEAR_LABELS, RANKED_APPLY_DIVISIONS,
+  applyDivisionLabel, hasWrittenAnswer, hasSecondChoice, isApplyDivisionOpen,
   type AcademicYear, type ApplicationQuestion,
 } from '@/lib/applications-api';
 
@@ -223,6 +223,27 @@ export default function Apply() {
     if (password.length < 8) { toast({ title: 'Choose a password of at least 8 characters', variant: 'destructive' }); return; }
     if (password !== confirm) { toast({ title: 'The two passwords do not match', variant: 'destructive' }); return; }
     if (!cv) { toast({ title: 'Please attach your CV (PDF)', variant: 'destructive' }); return; }
+    // A DIVISION CAN FILL ITS PLACES WHILE THIS FORM IS OPEN. The settings
+    // are read once, when the page loads, so a form left open for an hour
+    // can still be holding a division that has since closed. The endpoint
+    // refuses it either way; this turns a rejection into a sentence that
+    // says which control to change.
+    if (!isApplyDivisionOpen(f.first_choice, settings.closedDivisions)) {
+      toast({
+        title: `${applyDivisionLabel(f.first_choice as OrgDivision)} has filled its places`,
+        description: 'That division stopped taking applications while this form was open. Please choose another first choice.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (f.second_choice && !isApplyDivisionOpen(f.second_choice, settings.closedDivisions)) {
+      toast({
+        title: `${applyDivisionLabel(f.second_choice as OrgDivision)} has filled its places`,
+        description: 'That division stopped taking applications while this form was open. Please choose another second choice, or leave it empty.',
+        variant: 'destructive',
+      });
+      return;
+    }
     // The written answer is required only where the division sets a
     // question. Media and Operations does not, so an applicant to it is
     // never asked for a document that does not exist.
@@ -311,8 +332,10 @@ export default function Apply() {
   if (isLoading || checking) return <Shell><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></Shell>;
 
 
-  // Applications closed — unless an authorised member is previewing the form.
-  if (!settings.applicationsOpen && !(previewMode && isStaff)) {
+  // Applications closed - unless an authorised member is previewing the
+  // form. `acceptingApplications` is false both after the closing date and
+  // when every division has filled its places before it.
+  if (!settings.acceptingApplications && !(previewMode && isStaff)) {
     return <Shell>
       <h1 className="font-serif text-3xl text-accent text-center mb-3">Applications are closed</h1>
       <p className="font-body text-muted-foreground text-center">Recruitment is not open at the moment. Please check back next semester.</p>
@@ -328,7 +351,7 @@ export default function Apply() {
     </Shell>;
   }
 
-  const readOnly = previewMode && !settings.applicationsOpen; // staff preview when closed
+  const readOnly = previewMode && !settings.acceptingApplications; // staff preview when closed
 
   return (
     <Shell>
@@ -417,18 +440,37 @@ export default function Apply() {
               }}
             >
               <SelectTrigger><SelectValue placeholder="Choose a division" /></SelectTrigger>
-              <SelectContent>{APPLY_DIVISIONS.map((d) => <SelectItem key={d} value={d}>{applyDivisionLabel(d)}</SelectItem>)}</SelectContent>
+              {/* ONLY THE DIVISIONS STILL TAKING APPLICATIONS. A division
+                  that has filled its places is absent rather than present
+                  and disabled: an applicant cannot act on it either way,
+                  and the note under these two controls explains where it
+                  went. `settings.openDivisions` is the same list the
+                  endpoint checks the submission against. */}
+              <SelectContent>{settings.openDivisions.map((d) => <SelectItem key={d} value={d}>{applyDivisionLabel(d)}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
           {hasSecondChoice(f.first_choice) && (
             <Field label="Second-choice division (optional)">
               <Select value={f.second_choice} onValueChange={(v) => setF({ ...f, second_choice: v as OrgDivision })}>
                 <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
-                <SelectContent>{RANKED_APPLY_DIVISIONS.filter((d) => d !== f.first_choice).map((d) => <SelectItem key={d} value={d}>{applyDivisionLabel(d)}</SelectItem>)}</SelectContent>
+                <SelectContent>{RANKED_APPLY_DIVISIONS.filter((d) => d !== f.first_choice && settings.openDivisions.includes(d)).map((d) => <SelectItem key={d} value={d}>{applyDivisionLabel(d)}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
           )}
         </div>
+
+        {/* WHY A DIVISION IS MISSING FROM THE LIST ABOVE. Without this the
+            absence reads as a fault, or as a division that no longer
+            exists. It is the same fact /join states under the Apply
+            block, in the place where the applicant meets its consequence. */}
+        {settings.closedDivisions.length > 0 && (
+          <p className="mt-3 font-body text-sm text-muted-foreground">
+            {settings.closedDivisions.map(applyDivisionLabel).join(', ')}{' '}
+            {settings.closedDivisions.length > 1 ? 'have' : 'has'} filled{' '}
+            {settings.closedDivisions.length > 1 ? 'their places' : 'its places'} for {settings.semesterLabel} and{' '}
+            {settings.closedDivisions.length > 1 ? 'are' : 'is'} not taking applications. The divisions above are the ones still open.
+          </p>
+        )}
 
         {/* Division question */}
         <div className="mt-4">

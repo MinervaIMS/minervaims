@@ -23,7 +23,31 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+// =====================================================================
+// THE DIVISIONS THIS FORM ACCEPTS, AND THE TWO RULES THAT GO WITH THEM.
+// ---------------------------------------------------------------------
+// This list held the five research divisions and stopped there, while the
+// form has been offering a sixth for some time: MEDIA AND OPERATIONS, the
+// joint intake, stored as `media`. Every application to it was therefore
+// refused here with "Invalid first-choice division", and would have been
+// refused a few lines further down in any case, because the written
+// answer was required unconditionally and that intake sets no written
+// question for anybody to answer.
+//
+// Both halves are corrected together, because either one alone still
+// refuses the application. The lists mirror `APPLY_DIVISIONS`,
+// `RANKED_APPLY_DIVISIONS` and `NO_WRITTEN_ANSWER_DIVISIONS` in
+// src/lib/applications-api.ts, which is what the form itself reads.
+// =====================================================================
+
+/** Everything the form offers as a first choice. */
+const DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media'];
+
+/** The five a candidate ranks. Only these can be a SECOND choice. */
+const RANKED_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+
+/** Intakes that set no written question, so no answer is asked for. */
+const NO_WRITTEN_ANSWER = ['media'];
 const YEARS = ['bachelor_1', 'bachelor_2', 'bachelor_3', 'master_1', 'master_2', 'exchange'];
 const STUD_EMAIL = /@studbocconi\.it$/i;
 
@@ -98,10 +122,11 @@ Deno.serve(async (req) => {
     );
     if (isStaffAlready) return json({ error: 'Members of the association cannot submit an application.' }, 403);
 
-    // Applications open strictly by the scheduled window.
+    // Applications open strictly by the scheduled window, and a division
+    // may have stopped taking them before the window ends.
     const { data: settings } = await supabase
       .from('application_settings')
-      .select('semester_label, start_date, end_date')
+      .select('semester_label, start_date, end_date, closed_divisions')
       .limit(1).single();
     const now = Date.now();
     const start = settings?.start_date ? new Date(settings.start_date).getTime() : null;
@@ -110,6 +135,24 @@ Deno.serve(async (req) => {
     if (now < start) return json({ error: 'Applications have not opened yet.' }, 403);
     if (now > end) return json({ error: 'Applications have closed.' }, 403);
     const semester = settings!.semester_label as string;
+
+    // =====================================================================
+    // THE DIVISIONS THAT FILLED THEIR PLACES BEFORE THE ROUND ENDED.
+    // ---------------------------------------------------------------------
+    // The form stops offering them, which is where an ordinary applicant
+    // meets this rule. THE RULE ITSELF IS HERE, because the form is a
+    // client: it is read once when the page loads, so a tab left open
+    // through the moment a division closes still holds it, and a request
+    // built by hand never consulted the form at all.
+    //
+    // Intersected with the divisions the form offers, so a stray value in
+    // the column can only ever close something that could be applied to.
+    // =====================================================================
+    const closedDivisions = ((settings?.closed_divisions ?? []) as string[])
+      .filter((d) => DIVISIONS.includes(d));
+    if (closedDivisions.length >= DIVISIONS.length) {
+      return json({ error: 'Applications have closed: every division has filled its places.' }, 403);
+    }
 
     // One application per person per round. A retry that finds the row already
     // there is treated as SUCCESS (idempotent), so a flaky first attempt never
@@ -135,11 +178,22 @@ Deno.serve(async (req) => {
     for (const [k, v] of required) if (!v) return json({ error: `Missing required field: ${k}` }, 400);
     if (!YEARS.includes(fields.academic_year)) return json({ error: 'Invalid academic year.' }, 400);
     if (!DIVISIONS.includes(fields.first_choice)) return json({ error: 'Invalid first-choice division.' }, 400);
-    if (fields.second_choice && !DIVISIONS.includes(fields.second_choice)) return json({ error: 'Invalid second-choice division.' }, 400);
+    if (fields.second_choice && !RANKED_DIVISIONS.includes(fields.second_choice)) return json({ error: 'Invalid second-choice division.' }, 400);
     if (fields.second_choice && fields.second_choice === fields.first_choice) return json({ error: 'Choose two different divisions.' }, 400);
+    if (closedDivisions.includes(fields.first_choice)) {
+      return json({ error: 'That division has filled its places and is no longer taking applications. Please choose another first choice.' }, 409);
+    }
+    if (fields.second_choice && closedDivisions.includes(fields.second_choice)) {
+      return json({ error: 'That division has filled its places and is no longer taking applications. Please choose another second choice, or leave it empty.' }, 409);
+    }
     if (!cv) return json({ error: 'Please attach your CV (PDF).' }, 400);
-    if (!answer) return json({ error: 'Please attach your written answer (PDF).' }, 400);
-    for (const [label, f] of [['CV', cv], ['answer', answer]] as [string, File][]) {
+    // The written answer is required only where the division sets a
+    // question, which is the rule the form already applies: Media and
+    // Operations asks none, so an applicant to it attaches nothing.
+    const answerRequired = !NO_WRITTEN_ANSWER.includes(fields.first_choice);
+    if (answerRequired && !answer) return json({ error: 'Please attach your written answer (PDF).' }, 400);
+    const documents: [string, File][] = answer ? [['CV', cv], ['answer', answer]] : [['CV', cv]];
+    for (const [label, f] of documents) {
       if (f.size > 10 * 1024 * 1024) return json({ error: `${label} must be under 10 MB.` }, 400);
       // Trust the actual bytes, not the client-supplied MIME type or filename:
       // every real PDF starts with the "%PDF-" magic signature.
@@ -149,7 +203,7 @@ Deno.serve(async (req) => {
     }
 
     const cvPath = await uploadPdf(supabase, userId, 'cv', cv);
-    const answerPath = await uploadPdf(supabase, userId, 'answer', answer);
+    const answerPath = answer ? await uploadPdf(supabase, userId, 'answer', answer) : null;
 
     const { data: created, error: insErr } = await supabase.from('applications').insert({
       user_id: userId, semester_label: semester,

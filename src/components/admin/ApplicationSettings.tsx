@@ -7,9 +7,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Lock, Unlock } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { APPLY_DIVISIONS, applyDivisionLabel, closedApplyDivisions } from '@/lib/applications-api';
+import { formatFilledDivisionsSentence } from '@/lib/join-content';
+import type { OrgDivision } from '@/lib/roles';
 import logoWhite from '@/assets/logo-white.svg';
 import { JOIN_STATUS_COPY, formatDeadlineSentence } from '@/lib/join-content';
 import { ApplicationsOpenLabel } from '@/components/shared/ApplicationsOpenLabel';
@@ -34,13 +42,31 @@ function windowState(startLocal: string, endLocal: string): { label: string; ton
 }
 
 const ApplicationSettings = () => {
-  const { session } = useAuth();
+  const { session, roles } = useAuth();
+  const primaryRole = roles?.[0]?.role ?? null;
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ semester_label: '', start_local: '', end_local: '' });
   const [previewOpen, setPreviewOpen] = useState(true);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // THE DIVISIONS THAT HAVE FILLED THEIR PLACES.
+  // -------------------------------------------------------------------
+  // Saved the moment a switch is moved, rather than waiting for the Save
+  // button beside the dates. The dates are a plan, drafted and then
+  // committed; closing a division is a fact that has already happened,
+  // and a switch that has visibly moved but not taken effect is the kind
+  // of control somebody walks away from believing they have used it.
+  //
+  // The one exception is closing the LAST division, which ends the round
+  // for everybody and changes what the whole public site says. That is
+  // confirmed first.
+  // ═══════════════════════════════════════════════════════════════════
+  const [closed, setClosed] = useState<OrgDivision[]>([]);
+  const [savingDivision, setSavingDivision] = useState<OrgDivision | null>(null);
+  const [confirmLast, setConfirmLast] = useState<OrgDivision | null>(null);
 
   useEffect(() => {
     if (!session?.access_token) return;
@@ -49,7 +75,10 @@ const ApplicationSettings = () => {
         const { data } = await callFunction('admin-settings', { body: { action: 'get' }, headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const s = data?.data;
-        if (s) setForm({ semester_label: s.semester_label || '', start_local: toLocal(s.start_date), end_local: toLocal(s.end_date) });
+        if (s) {
+          setForm({ semester_label: s.semester_label || '', start_local: toLocal(s.start_date), end_local: toLocal(s.end_date) });
+          setClosed(closedApplyDivisions(s.closed_divisions));
+        }
       } catch (e) {
         toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
       } finally { setLoading(false); }
@@ -79,6 +108,47 @@ const ApplicationSettings = () => {
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
     } finally { setSaving(false); }
+  };
+
+  /** Write the whole list, which is what the column holds. */
+  const persistClosed = async (next: OrgDivision[], division: OrgDivision, nowClosed: boolean) => {
+    const previous = closed;
+    setSavingDivision(division);
+    setClosed(next);
+    try {
+      const { data, error } = await callFunction('admin-settings', {
+        body: { action: 'update', settings: { closed_divisions: next } }, session,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      logActivity(session, primaryRole, {
+        action: nowClosed ? 'close' : 'open',
+        section: 'Recruiting', subsection: 'Application page',
+        entityType: 'division_applications',
+        entityName: applyDivisionLabel(division),
+        details: { closed_divisions: next },
+      });
+      toast({
+        title: nowClosed
+          ? `${applyDivisionLabel(division)} is no longer taking applications`
+          : `${applyDivisionLabel(division)} is taking applications again`,
+        description: nowClosed
+          ? 'It has been removed from the application form, and the Join page says its places are filled.'
+          : 'It is back on the application form.',
+      });
+    } catch (e) {
+      // The switch goes back where it was: a control that stays moved
+      // after a failed write is a control that is lying.
+      setClosed(previous);
+      toast({ title: 'Could not change the division', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setSavingDivision(null); }
+  };
+
+  const toggleDivision = (division: OrgDivision, open: boolean) => {
+    const next = open ? closed.filter((d) => d !== division) : [...closed, division];
+    // Closing the last one ends the round for everybody: confirm first.
+    if (!open && next.length >= APPLY_DIVISIONS.length) { setConfirmLast(division); return; }
+    persistClosed(closedApplyDivisions(next), division, !open);
   };
 
   if (loading) {
@@ -126,6 +196,77 @@ const ApplicationSettings = () => {
           <Button onClick={save} disabled={saving}>
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : <><Save className="h-4 w-4 mr-2" />Save schedule</>}
           </Button>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════
+            CLOSING ONE DIVISION BEFORE THE ROUND ENDS.
+            -----------------------------------------------------------
+            The dates above decide when the round runs. These decide who
+            is taking part in it. A division that has filled its places
+            three days into a fortnight has nothing left to offer, and
+            every application it receives afterwards is a candidate who
+            will be turned away and a CV somebody has to read.
+            ═══════════════════════════════════════════════════════════ */}
+        <div className="pt-2 border-t border-separator">
+          <h3 className="font-serif text-lg text-accent">Divisions taking applications</h3>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">
+            Switch a division off once its places are filled. It disappears from the application form immediately,
+            and the Join page congratulates the students who got in. Nothing else about the round changes, and it
+            can be switched back on at any time.
+          </p>
+
+          <div className="border border-separator divide-y divide-separator">
+            {APPLY_DIVISIONS.map((d) => {
+              const isClosed = closed.includes(d);
+              const busy = savingDivision === d;
+              return (
+                <div key={d} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="text-foreground">{applyDivisionLabel(d)}</div>
+                    <div className={`text-xs ${isClosed ? 'text-amber-700' : 'text-green-700'}`}>
+                      {isClosed ? 'Places filled, not on the form' : 'Taking applications'}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    {isClosed
+                      ? <Lock className="h-4 w-4 text-amber-700" aria-hidden />
+                      : <Unlock className="h-4 w-4 text-muted-foreground" aria-hidden />}
+                    <Switch
+                      checked={!isClosed}
+                      disabled={busy}
+                      onCheckedChange={(v) => toggleDivision(d, v === true)}
+                      aria-label={`${applyDivisionLabel(d)} is taking applications`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* What the public will read, built by the same function /join
+              calls, so this is the sentence and not a description of it. */}
+          {closed.length > 0 && (
+            <div className="mt-4 border border-separator bg-muted/30 p-3">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">On the Join page, under the Apply block</div>
+              <p className="text-sm text-foreground">
+                {formatFilledDivisionsSentence(closed.map(applyDivisionLabel), closed.length >= APPLY_DIVISIONS.length)}
+              </p>
+            </div>
+          )}
+
+          {closed.length >= APPLY_DIVISIONS.length && (
+            <p className="mt-3 text-sm text-amber-700">
+              Every division is closed, so the whole site shows the round as finished: the homepage drops its
+              applications button and the Join page shows its closed state, exactly as it does after the closing date.
+            </p>
+          )}
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            Closing a division here does not affect the candidates already in the process, and the Heads can still
+            move an applicant into a closed division from <span className="text-foreground">Candidates Screening</span>:
+            this controls the public form, not the association's own assessment.
+          </p>
         </div>
 
         <p className="text-xs text-muted-foreground">
@@ -231,6 +372,34 @@ const ApplicationSettings = () => {
         </p>
       </div>
       </div>
+
+      {/* Closing the LAST division ends the round for everybody. */}
+      <AlertDialog open={!!confirmLast} onOpenChange={(o) => { if (!o) setConfirmLast(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close the last division still open?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmLast ? applyDivisionLabel(confirmLast) : 'This division'} is the only one still taking
+              applications. Closing it ends the round for everybody: the application form stops accepting
+              submissions, the homepage drops its applications button, and the Join page shows the same closed
+              state it shows after the closing date. You can switch any division back on at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it open</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                const d = confirmLast;
+                setConfirmLast(null);
+                if (d) persistClosed(closedApplyDivisions([...closed, d]), d, true);
+              }}
+            >
+              Yes, close the round
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
