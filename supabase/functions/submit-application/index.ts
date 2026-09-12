@@ -113,7 +113,14 @@ Deno.serve(async (req) => {
     if (userErr || !account) return json({ error: 'We could not find your account. Please retry.' }, 400);
 
     // ── Eligibility ──
-    // Domain check temporarily disabled for testing.
+    // The application is only open to Bocconi students, and the address must
+    // be their university one. This also stops a mistyped domain (e.g.
+    // "@srudbocconi.it") from quietly creating a second candidate account.
+    const accountEmail = (account.email || fields.email).trim();
+    if (!STUD_EMAIL.test(accountEmail)) {
+      return json({ error: 'Please apply with your Bocconi student address (name.surname@studbocconi.it).' }, 403);
+    }
+
 
     // Existing members / staff cannot apply.
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', userId);
