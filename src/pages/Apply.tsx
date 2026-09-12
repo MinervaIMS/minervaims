@@ -438,7 +438,7 @@ export default function Apply() {
             <div className="border border-accent/30 bg-accent/5 p-4">
               <div className="text-xs uppercase tracking-[0.08em] font-semibold text-accent mb-1.5">Written question ({applyDivisionLabel(f.first_choice)})</div>
               <p className="text-sm text-foreground leading-relaxed">{questionFor || 'The question for this division will be published shortly.'}</p>
-              <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. You may also answer additional divisions. If you do, combine everything into the same PDF.</p>
+              <p className="text-xs text-muted-foreground mt-2">Answer the question for your first-choice division. Maximum one page, plus an Appendix of up to two pages for any charts and tables. Minimum 10pt font. You may also answer additional divisions. If you do, combine everything into the same PDF.</p>
             </div>
           ) : (
             <div className="border border-accent/30 bg-accent/5 p-4">
