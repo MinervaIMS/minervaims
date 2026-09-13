@@ -847,9 +847,7 @@ export default function CandidatesManagement() {
                         Priority <HelpDot page="applications-screening" topic="priority" />
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Flags this candidate to be looked at first. It appears as a mark beside their
-                        name in the register and is visible to every reviewer. It changes nothing else:
-                        no status moves and the candidate is not told.
+                        Flags this candidate to be looked at first.
                       </p>
                     </div>
                     <Button
