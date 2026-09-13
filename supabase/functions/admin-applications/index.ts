@@ -534,9 +534,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     //     which is what caps this at TWO PROCESSES: once it is set, the
     //     only move on offer is back.
     //
-    // No email is sent by this action. The move alone is not news the
-    // candidate can act on; the invitation that follows is, and it is sent
-    // by `update-status` in the ordinary way, naming the new division.
+    // The candidate is told by email (division_reassignment) once the move
+    // is saved: which division is now assessing them, and that no action is
+    // required. The invitation that follows is sent by `update-status` in
+    // the ordinary way, naming the new division.
     // =====================================================================
     if (action === 'set-priority') {
       // =====================================================================
