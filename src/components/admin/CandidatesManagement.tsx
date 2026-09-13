@@ -611,10 +611,7 @@ export default function CandidatesManagement() {
                     because the column is one icon wide and the mark is
                     already explained wherever it can be set. */}
                 <th className="px-2 py-2 font-normal text-center w-px">
-                  <span className="inline-flex" title="Priority: candidates flagged to be looked at first">
-                    <Zap className="h-3.5 w-3.5 text-destructive" aria-hidden />
-                    <span className="sr-only">Priority</span>
-                  </span>
+                  <ColumnFilter label="Priority" options={priorityOptions} selected={priorityFilter} onChange={setPriorityFilter} />
                 </th>
                 <th className="px-3 py-2 font-normal">
                   <span className="inline-flex items-center gap-1.5">
