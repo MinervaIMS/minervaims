@@ -317,6 +317,7 @@ export default function CandidatesManagement() {
     setStatusFilter([]);
     setYearFilter([]);
     setProgrammeFilter([]);
+    setPriorityFilter([]);
     setSearch('');
   };
 
@@ -333,6 +334,7 @@ export default function CandidatesManagement() {
       .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => programmeFilter.length === 0 || programmeFilter.includes(a.degree_course))
+      .filter((a) => priorityFilter.length === 0 || priorityFilter.includes(a.priority ? 'yes' : 'no'))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
   }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, semKey]);
 
