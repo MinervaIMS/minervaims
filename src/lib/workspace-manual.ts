@@ -641,7 +641,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'events-on-display': {
     detail: [
-      "The days on which the association presents itself, and the slots members have signed up for. The stand runs 10:00 to 19:00 in half-hour slots, and more than one person can take the same slot.",
+      "The days on which the association presents itself, and the slots members have signed up for. The stand runs 10:00am to 7:00pm in half-hour slots, and each slot covers its whole half hour: the 6:30pm slot runs to 7:00pm.",
+      "As many people as want to can take the same slot. Covered is a floor and not a ceiling, so a green slot is still open and still worth joining.",
       "Senior roles open and close a day. Everybody else registers and de-registers themselves, up to 48 hours before it.",
     ],
     related: ['calendar', 'events-create'],
