@@ -431,6 +431,32 @@ export type Database = {
           },
         ]
       }
+      application_priorities: {
+        Row: {
+          application_id: string
+          set_at: string
+          set_by: string | null
+        }
+        Insert: {
+          application_id: string
+          set_at?: string
+          set_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          set_at?: string
+          set_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_priorities_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_questions: {
         Row: {
           division: Database["public"]["Enums"]["org_division"]
@@ -523,7 +549,6 @@ export type Database = {
           offer_role: string | null
           offer_sent_at: string | null
           phone: string
-          priority: boolean
           received_email_sent_at: string | null
           second_choice: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
@@ -565,7 +590,6 @@ export type Database = {
           offer_role?: string | null
           offer_sent_at?: string | null
           phone: string
-          priority?: boolean
           received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
@@ -607,7 +631,6 @@ export type Database = {
           offer_role?: string | null
           offer_sent_at?: string | null
           phone?: string
-          priority?: boolean
           received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label?: string
