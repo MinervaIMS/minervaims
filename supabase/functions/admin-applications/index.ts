@@ -534,9 +534,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     //     which is what caps this at TWO PROCESSES: once it is set, the
     //     only move on offer is back.
     //
-    // No email is sent by this action. The move alone is not news the
-    // candidate can act on; the invitation that follows is, and it is sent
-    // by `update-status` in the ordinary way, naming the new division.
+    // The candidate is told by email (division_reassignment) once the move
+    // is saved: which division is now assessing them, and that no action is
+    // required. The invitation that follows is sent by `update-status` in
+    // the ordinary way, naming the new division.
     // =====================================================================
     if (action === 'set-priority') {
       // =====================================================================
@@ -670,6 +671,20 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           details: { event: 'evaluation_division_change', from: current, to: target, previous_status: app.status },
         });
       } catch (e) { console.error('evaluation division log failed', e); }
+
+      // Tell the candidate which division is now assessing them and that no
+      // action is required. The move is already saved, so a failed enqueue
+      // must never undo it: log and carry on.
+      try {
+        await supabase.rpc('enqueue_app_email', {
+          p_key: 'division_reassignment', p_to: app.email,
+          p_vars: {
+            first_name: app.first_name,
+            from_division: DIV_LABELS[current] || current,
+            to_division: DIV_LABELS[target] || target,
+          },
+        });
+      } catch (e) { console.error('division reassignment email enqueue failed', e); }
 
       return json({ success: true, evaluation_division: target, evaluation_division_previous: current });
     }
