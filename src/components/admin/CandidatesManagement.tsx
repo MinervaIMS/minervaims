@@ -225,6 +225,15 @@ export default function CandidatesManagement() {
   // and no list here could stay complete.
   // =================================================================
   const [programmeFilter, setProgrammeFilter] = useState<string[]>([]);
+  // =================================================================
+  // PRIORITY, THE MARK THAT COULD ONLY BE SCANNED FOR.
+  // -----------------------------------------------------------------
+  // The flash mark flags the candidates to look at first, but the
+  // register could not be narrowed to them: in a long intake, finding
+  // the flagged few meant reading every row. It filters like every
+  // other column now, so "show me the priorities" is one click.
+  // =================================================================
+  const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   // Which candidate's priority marker is being written right now, so the
   // toggle can be disabled for that one row without freezing the page.
   const [priorityBusy, setPriorityBusy] = useState<string | null>(null);
@@ -300,7 +309,7 @@ export default function CandidatesManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (programmeFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (programmeFilter.length > 0 ? 1 : 0) + (priorityFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
     setEvaluationFilter([]);
     setFirstChoiceFilter([]);
