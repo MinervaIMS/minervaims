@@ -184,6 +184,10 @@ export default function Apply() {
 
   const [questions, setQuestions] = useState<ApplicationQuestion[]>([]);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
+  // A withdrawn application still counts: one per person per round, and
+  // withdrawing closes a candidacy rather than reopening the intake. The
+  // gate is the same, but the reason given for it is not.
+  const [withdrew, setWithdrew] = useState(false);
   const [checking, setChecking] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -202,7 +206,11 @@ export default function Apply() {
     (async () => {
       try {
         setQuestions(await listQuestions());
-        if (user) { const mine = await getMyApplication(); setAlreadyApplied(!!mine); }
+        if (user) {
+          const mine = await getMyApplication();
+          setAlreadyApplied(!!mine);
+          setWithdrew(mine?.status === 'withdrawn');
+        }
       } catch { /* ignore */ } finally { setChecking(false); }
     })();
   }, [user]);
@@ -345,8 +353,14 @@ export default function Apply() {
 
   if (alreadyApplied) {
     return <Shell>
-      <h1 className="font-serif text-3xl text-accent text-center mb-3">Application received</h1>
-      <p className="font-body text-muted-foreground text-center mb-6">You have already submitted an application for {settings.semesterLabel}. Applications cannot be edited after submission.</p>
+      <h1 className="font-serif text-3xl text-accent text-center mb-3">
+        {withdrew ? 'Application withdrawn' : 'Application received'}
+      </h1>
+      <p className="font-body text-muted-foreground text-center mb-6">
+        {withdrew
+          ? `You withdrew your application for ${settings.semesterLabel}. Only one application per person is accepted in each round, so a new one cannot be submitted for this intake. You are welcome to apply again in a future round.`
+          : `You have already submitted an application for ${settings.semesterLabel}. Applications cannot be edited after submission.`}
+      </p>
       <div className="text-center"><Button asChild className="font-body"><Link to={WORKSPACE_BASE}>View status</Link></Button></div>
     </Shell>;
   }

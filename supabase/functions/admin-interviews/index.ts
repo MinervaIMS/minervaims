@@ -306,9 +306,16 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         const { data: s } = await supabase.from('interview_slots').select('*').eq('id', booking.slot_id).maybeSingle();
         bookedSlot = s;
       }
-      const invited = !!app.interview_division && (app.status === BOOKABLE_STATUS || app.status === BOOKED_STATUS || !!booking);
+      // A candidate who withdrew is no longer invited to anything, but
+      // "not invited" is not what happened to them and is not what their
+      // page should say. The fact travels so the page can tell them the
+      // truth instead of the default.
+      const withdrawn = app.status === 'withdrawn';
+      const invited = !withdrawn && !!app.interview_division
+        && (app.status === BOOKABLE_STATUS || app.status === BOOKED_STATUS || !!booking);
       return json({
         invited,
+        withdrawn,
         division: app.interview_division,
         status: app.status,
         booking: booking ? { ...booking, slot: bookedSlot } : null,
