@@ -2,44 +2,41 @@
 
 ## What happens today
 
-When a reviewer moves a candidate to be evaluated for another division, the candidacy returns to "To be invited", any interview slot is released, and the move is written to the activity log — but no email is sent. The candidate only hears from Minerva later, at interview invitation or offer.
+The reassignment email now sends, but the copy stored for delivery does not contain the mobile stylesheet or fluid-width email container. The test sent at 15:28 UTC therefore delivered the fixed 600px layout instead of adapting like the other emails.
 
 ## What we'll build
 
-A new automatic email, **"Division reassignment"**, sent to the candidate the moment their evaluation division is changed.
+Correct the existing automatic **"Division reassignment"** email and send a new test.
 
-### 1. New email template
+### 1. Update the email template
 
-A new template `division_reassignment` in `supabase/functions/_shared/transactional-emails.ts`, using the exact same branded shell as the existing emails (purple header band, Minerva logo, footer with legal links and disclaimers). Placeholders: `{{first_name}}`, `{{from_division}}`, `{{to_division}}`.
+Keep the existing branded shell and placeholders. Change the requested sentence exactly to:
+
+> No action is required from you. The new division will review your submitted application and we'll be in touch regarding the next steps.
+
+Add the same purple call-to-action style used by the other application emails, labelled **Check Application Status**, linking to `https://minervaims.org/workspace/applications/status`.
 
 Subject (draft): "Update on your application | Minerva IMS"
 
-Body content, per your instructions:
-- The candidate's application is now being assessed by the **{{to_division}}** division rather than {{from_division}}.
-- The reason: in the division of their first preference, other candidates presented stronger vertical profiles for that specific area.
-- A candidacy can be moved between divisions **only once**, and the move **cannot be undone**.
-- We hope they understand and that they will want to continue the selection process — no action is required from them; the new division will be in touch about next steps.
-- Signed by the Talent Recruiting Team, same footer as the other emails.
+All other wording, branding, sign-off, legal text, and placeholders remain unchanged.
 
-The template also appears on the Settings → Automatic Emails page (the page syncs new code templates into its register automatically), and a migration inserts its row into `auto_email_templates` so it can be sent immediately without waiting for someone to open that page.
+### 2. Make mobile adaptation reliable
 
-### 2. Send trigger
+Apply the existing responsive email transformation before the template is stored for sending. The delivered version will use a fluid-width container, reduced side spacing, readable mobile type, and a full-width-friendly button below 600px.
 
-In the `admin-applications` back-end function, inside the division-reassignment action (`change-evaluation-division`): after the move is saved, enqueue the email through the existing `enqueue_app_email` queue with the candidate's name and both division names. A failure to send is logged but never blocks the reassignment — same pattern as the other automatic emails.
-
-Nothing is sent when the move is refused (already-moved-once cap, final outcome, invalid division), and nothing changes on the Candidate Screening screen itself.
+Update the stored database copy immediately rather than depending on an administrator opening the Automatic Emails page. Keep the delivery trigger and Candidate Screening unchanged.
 
 ### 3. Test send
 
-After deploying, send one real test of the new email to **riccardo.colombo7@studbocconi.it** by queueing it directly with sample data (e.g. from Equity Research to Investment Management), then confirm it left the queue in the email register.
+After deploying, send one new test to **riccardo.colombo7@studbocconi.it** with sample reassignment data. Confirm it reaches `sent`, and verify the queued template now contains the responsive mobile markers, revised sentence, and application-status button.
 
 ## Technical details
 
-- Edit: `supabase/functions/_shared/transactional-emails.ts` (add template)
-- Edit: `supabase/functions/admin-applications/index.ts` (enqueue after successful reassignment, with `from`/`to` division labels)
-- Migration: insert the `division_reassignment` row into `auto_email_templates` (subject/body mirror the code template)
-- Redeploy: `admin-applications` and `admin-auto-emails`
-- Test: one `enqueue_app_email('division_reassignment', 'riccardo.colombo7@studbocconi.it', ...)` call; verify the row in `email_send_log`
+- Edit `supabase/functions/_shared/transactional-emails.ts`: wording and CTA.
+- Use `withResponsiveShell(normalizeEmailLinks(...))` when updating the stored `division_reassignment` body.
+- Update `auto_email_templates` immediately with the transformed template.
+- Redeploy the email-management function if its sync path changes.
+- Queue one `division_reassignment` email to the requested address and verify `email_send_log.status = 'sent'`.
 - No front-end changes
 
 ## Notes
