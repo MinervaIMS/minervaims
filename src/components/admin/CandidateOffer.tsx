@@ -17,7 +17,7 @@ import { divisionLabels, roleLabel as composeRoleLabel, type AppRole } from '@/l
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
-import { acceptOffer, declineOffer, isOfferLive } from '@/lib/applications-api';
+import { acceptOffer, declineOffer, isOfferLive, isWithdrawn } from '@/lib/applications-api';
 
 // =====================================================================
 // CandidateOffer — the applicant's offer, on a page of its own.
@@ -37,6 +37,9 @@ import { acceptOffer, declineOffer, isOfferLive } from '@/lib/applications-api';
 //   declined  - the record of the decision, so it is never ambiguous
 //               whether it went through.
 //   expired   - the offer lapsed; who to speak to.
+//   withdrawn - the candidate stopped their own application, so the
+//               offer was never answered. Not the same as letting it
+//               lapse, and not described as though it were.
 //
 // Every one of those is a fact about their own application, so none of
 // them is hidden. An applicant who declines and then wonders whether
@@ -107,8 +110,13 @@ export default function CandidateOffer() {
   const live = isOfferLive(app);
   const joined = app.status === 'joined' || app.status === 'offer_accepted';
   const declined = app.status === 'offer_declined';
+  // An offer left unanswered because the candidate stopped applying. It is
+  // asked BEFORE `expired`, which is the catch-all below: a withdrawal is
+  // not a missed deadline, and telling somebody who withdrew that they let
+  // their offer lapse would be the page misreading its own record.
+  const withdrawn = isWithdrawn(app);
   // Sent, unanswered, and past its deadline.
-  const expired = !live && !joined && !declined;
+  const expired = !live && !joined && !declined && !withdrawn;
 
   const roleText = app.offer_role
     ? composeRoleLabel(app.offer_role as AppRole, app.offer_division ?? null)
@@ -125,7 +133,8 @@ export default function CandidateOffer() {
         <Card className={live ? 'border-accent/40 bg-accent/5' : joined ? 'border-emerald-200 bg-emerald-50' : ''}>
           <CardContent className="py-6">
             <div className="text-xs uppercase tracking-wider text-accent font-semibold">
-              {live ? 'Your offer' : joined ? 'Offer accepted' : declined ? 'Offer declined' : 'Offer expired'}
+              {live ? 'Your offer' : joined ? 'Offer accepted' : declined ? 'Offer declined'
+                : withdrawn ? 'Application withdrawn' : 'Offer expired'}
             </div>
             <h2 className="mt-1 font-serif text-2xl text-accent">An offer to join Minerva</h2>
 
@@ -258,6 +267,14 @@ export default function CandidateOffer() {
             {declined && (
               <p className="mt-5 text-sm text-muted-foreground">
                 You declined this offer. If that was not what you intended, write to the association as soon as possible: a declined offer cannot be reopened from this page.
+              </p>
+            )}
+
+            {withdrawn && (
+              <p className="mt-5 text-sm text-muted-foreground">
+                You withdrew your application, so this offer is no longer open. The record of what was offered
+                is kept here. If that was not what you intended, write to the association as soon as possible:
+                a withdrawal cannot be reversed from the workspace.
               </p>
             )}
 

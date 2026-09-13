@@ -83,6 +83,26 @@ export default function InterviewCalendarCandidate() {
     return <div><WorkspacePageHeader title="Interview" description="Your interview: book your slot, then everything you need on the day." /><WorkspaceLoader /></div>;
   }
 
+  // WITHDRAWN. Asked before "not invited", because it is not the same
+  // thing: a candidate who stopped their own application may well have
+  // been invited, and telling them they never were would be wrong.
+  if (ctx?.withdrawn) {
+    return (
+      <div>
+        <WorkspacePageHeader title="Interview" description="Your interview: book your slot, then everything you need on the day." />
+        <Card>
+          <CardContent className="py-12 text-center max-w-xl mx-auto">
+            <CalendarClock className="h-10 w-10 mx-auto mb-4 text-muted-foreground/60" />
+            <p className="font-body text-muted-foreground">
+              You have withdrawn your application, so there is no interview to book. Any slot you were holding
+              has been released. Your application status is in <strong>Status</strong>.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Not invited yet.
   if (!ctx?.invited || !ctx.division) {
     return (

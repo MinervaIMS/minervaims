@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { divisionLabels } from '@/lib/roles';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
-import { candidateStatus, isOfferLive, evaluationDivision, isReEvaluated } from '@/lib/applications-api';
+import {
+  candidateStatus, isOfferLive, evaluationDivision, isReEvaluated,
+  canWithdraw, isWithdrawn, withdrawApplication,
+} from '@/lib/applications-api';
 
 // The four candidate-facing stages, in the association's own words.
 //
@@ -39,12 +49,21 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
   // it to decide whether Interview and Offer exist; this page reads it to
   // draw the journey; the Offer page reads it to draw the offer. They
   // share the hook, so there is one request and one truth.
-  const { application: app, loading } = useMyApplication();
+  const { application: app, loading, refresh } = useMyApplication();
+  const { session } = useAuth();
+  const { toast } = useToast();
   const [litCount, setLitCount] = useState(0);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [signature, setSignature] = useState('');
+  const [busy, setBusy] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const cs = app ? candidateStatus(app.status) : null;
   const rejected = cs?.step === 5;
+  // The candidate's own decision to stop. Read from the row rather than
+  // from the step, because it is not an outcome and does not read as one.
+  const withdrawn = isWithdrawn(app);
+  const mayWithdraw = canWithdraw(app);
   // A live offer the candidate can act on. The decision itself lives in
   // the Offer section; this page only says that it is waiting.
   const offerLive = isOfferLive(app);
@@ -53,7 +72,11 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
   // An internal "accepted" (no offer sent yet) must NOT be revealed (report 14).
   const internalAccepted = !!app && app.status === 'accepted' && !app.offer_sent_at;
   // Journey progress: hide an internal acceptance at the interview stage.
-  const targetLit = cs ? (internalAccepted ? 3 : rejected ? 4 : Math.min(cs.step, 4)) : 0;
+  // A withdrawn candidacy lights the whole journey, exactly as a rejected
+  // one does: the process has finished, and the last step says how.
+  const targetLit = cs
+    ? (internalAccepted ? 3 : rejected || withdrawn ? 4 : Math.min(cs.step, 4))
+    : 0;
 
   useEffect(() => {
     if (!targetLit) return;
@@ -65,6 +88,33 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
     for (let i = 1; i <= targetLit; i++) timers.push(window.setTimeout(() => setLitCount(i), 250 + (i - 1) * 400));
     return () => timers.forEach(clearTimeout);
   }, [targetLit]);
+
+  // WHAT COUNTS AS A SIGNATURE, decided exactly as it is for accepting an
+  // offer: two words, and nothing compared against the name on file. This
+  // is a moment of deliberation, not an identity check; the applicant is
+  // already authenticated as themselves. All it guards against is an empty
+  // box submitted by accident.
+  const canSign = signature.trim().split(/\s+/).filter(Boolean).length >= 2;
+
+  const doWithdraw = async () => {
+    setBusy(true);
+    try {
+      await withdrawApplication(session);
+      setWithdrawOpen(false);
+      setSignature('');
+      toast({
+        title: 'Application withdrawn',
+        description: 'Your candidacy is closed and a confirmation is on its way to your email address.',
+      });
+      await refresh();
+    } catch (e) {
+      toast({
+        title: 'Could not withdraw your application',
+        description: e instanceof Error ? e.message : undefined,
+        variant: 'destructive',
+      });
+    } finally { setBusy(false); }
+  };
 
   if (loading) {
     return <div><WorkspacePageHeader title="Application status" description="The current status of your application." /><WorkspaceLoader /></div>;
@@ -78,8 +128,13 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
     );
   }
 
-  const statusLabel = offerLive ? 'You have received an offer to join'
+  const statusLabel = withdrawn ? 'Application withdrawn'
+    : offerLive ? 'You have received an offer to join'
     : internalAccepted ? 'Application under review' : cs.label;
+
+  const withdrawnOn = app.withdrawn_at
+    ? new Date(app.withdrawn_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
 
   // =================================================================
   // THE STATUS IS THE ANSWER, SO IT IS THE THING THAT LOOKS LIKE ONE.
@@ -132,13 +187,14 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
               <div className="mt-1.5 font-serif text-2xl leading-tight text-accent-foreground">{statusLabel}</div>
               <div className="mt-3 border-t border-accent-foreground/20 pt-3 text-xs text-accent-foreground/80">
                 {app.semester_label} intake
-                {reEvaluated && !rejected && (
+                {reEvaluated && !rejected && !withdrawn && (
                   <> · being considered by {divisionLabels[evaluationDivision(app)]}</>
                 )}
+                {withdrawn && withdrawnOn && <> · withdrawn on {withdrawnOn}</>}
               </div>
             </div>
 
-            {offerLive && (
+            {offerLive && !withdrawn && (
               <Card className="border-accent/40 bg-accent/5">
                 <CardContent className="py-6">
                   <div className="text-xs uppercase tracking-wider text-accent font-semibold">Your offer</div>
@@ -165,6 +221,111 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
               </Card>
             )}
 
+            {/* =============================================================
+                WITHDRAWING: THE ONE THING ON THIS PAGE THE CANDIDATE DECIDES.
+                -------------------------------------------------------------
+                Everything else here reports what the association has done.
+                This is the applicant's own decision, so it belongs on the
+                page that is about their candidacy rather than buried in a
+                help article or left to an email nobody answers.
+
+                IT IS QUIET ON PURPOSE. It sits at the foot of the column,
+                outlined rather than filled, below the status and below the
+                offer when there is one. A candidate who wants it will find
+                it; a candidate reading their status will not meet a
+                prominent button inviting them to give up.
+                ============================================================= */}
+            {mayWithdraw && (
+              <Card className="border-separator">
+                <CardContent className="py-5">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Withdrawing</div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    If you no longer wish to be considered, you can withdraw your application at any point.
+                    We will confirm it by email and stop writing to you about this round.
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Only one application per person is accepted in each round, so a withdrawn application
+                    cannot be replaced with a new one for {app.semester_label}. You are welcome to apply again
+                    in a future round.
+                  </p>
+                  <div className="mt-4">
+                    <Dialog open={withdrawOpen} onOpenChange={(o) => { setWithdrawOpen(o); if (!o) setSignature(''); }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" disabled={busy}>Withdraw my application</Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle className="font-serif text-xl">Withdraw your application</DialogTitle>
+                          <DialogDescription>
+                            Your candidacy for {app.semester_label} will be closed, any interview slot you are
+                            holding will be released, and you will hear nothing further about this round. This
+                            cannot be undone, and you cannot apply again in this recruitment cycle.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 font-body">
+                          <div className="border border-separator bg-muted/40 p-3 text-sm">
+                            <div className="text-xs uppercase tracking-wider text-muted-foreground">You are withdrawing</div>
+                            <div className="mt-1 text-foreground">
+                              Your application to {divisionLabels[evaluationDivision(app)]}, {app.semester_label}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="withdraw-signature">Sign by writing your full name</Label>
+                            <Input
+                              id="withdraw-signature"
+                              value={signature}
+                              onChange={(e) => setSignature(e.target.value)}
+                              placeholder="Your full name"
+                              autoComplete="off"
+                              /* The serif at a larger size, because it is a
+                                 signature line and should not look like one
+                                 more form field. The same treatment as the
+                                 offer, because it is the same act. */
+                              className="font-serif text-lg h-12"
+                              onKeyDown={(e) => { if (e.key === 'Enter' && canSign && !busy) doWithdraw(); }}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Writing your name here records your decision to withdraw. It has the same effect
+                              as signing it.
+                            </p>
+                          </div>
+
+                          <div className="flex gap-3 pt-1">
+                            <Button variant="destructive" className="flex-1" disabled={!canSign || busy} onClick={doWithdraw}>
+                              {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Withdrawing</> : 'Sign and withdraw'}
+                            </Button>
+                            <Button variant="outline" disabled={busy} onClick={() => setWithdrawOpen(false)}>Keep my application</Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* THE RECORD OF IT. An applicant who withdraws and then wonders
+                whether it went through should be able to look and see that
+                it did, with the date. */}
+            {withdrawn && (
+              <Card className="border-separator bg-muted/40">
+                <CardContent className="py-5">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Withdrawn</div>
+                  <p className="mt-2 text-sm text-foreground">
+                    You withdrew your application{withdrawnOn ? ` on ${withdrawnOn}` : ''}. Your candidacy for{' '}
+                    {app.semester_label} is closed and we will not write to you about it again.
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Only one application per person is accepted in each round, so a new application cannot be
+                    submitted for this intake. If you did not mean to withdraw, write to the association as soon
+                    as possible: it cannot be reversed from this page.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {app.status === 'joined' && (
               <Card className="border-emerald-200 bg-emerald-50">
                 <CardContent className="py-5">
@@ -183,7 +344,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
               they will look for it. It appears only while the outcome is
               still open: after an offer or a rejection the news is the
               outcome, not the route to it. */}
-          {reEvaluated && !rejected && !offerLive && app.status !== 'joined' && (
+          {reEvaluated && !rejected && !withdrawn && !offerLive && app.status !== 'joined' && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
               <div className="text-sm text-amber-900">
                 You are currently being re-evaluated for another division:{' '}
@@ -203,7 +364,8 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
             {STEPS.map((s, i) => {
               const lit = i < litCount;
               const outcomeStep = i === 3;
-              const label = outcomeStep && rejected ? 'Not selected' : s.t;
+              const label = outcomeStep && withdrawn ? 'Withdrawn'
+                : outcomeStep && rejected ? 'Not selected' : s.t;
               return (
                 <div key={s.t} className={`jstep${lit ? ' lit' : ''}`}>
                   <div className="jrail">
@@ -217,7 +379,9 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                         step that contradicts the notice above it is worse
                         than one that says nothing. */}
                     <div className="jt-d">
-                      {i === 1 && reEvaluated
+                      {outcomeStep && withdrawn
+                        ? `You withdrew your application${withdrawnOn ? ` on ${withdrawnOn}` : ''}, so no decision was taken.`
+                        : i === 1 && reEvaluated && !withdrawn
                         ? `Our Talent Recruiting Team is reading your profile for ${divisionLabels[evaluationDivision(app)]}.`
                         : s.d}
                     </div>

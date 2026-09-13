@@ -45,6 +45,8 @@ export interface StaffSlotsResult {
 
 export interface CandidateContext {
   invited: boolean;
+  /** The candidate stopped their own application. Not the same as never invited. */
+  withdrawn?: boolean;
   division?: OrgDivision | null;
   status?: ApplicationStatus;
   booking?: {

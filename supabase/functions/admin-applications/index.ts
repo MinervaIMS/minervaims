@@ -74,7 +74,19 @@ const STATUSES = [
   'received', 'cv_opened', 'under_review', 'to_be_contacted', 'interview_invitation_sent',
   'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed',
   'accepted', 'rejected', 'offer_accepted', 'offer_declined', 'joined',
+  // LAST IN THE LIST, AND NOT SETTABLE FROM HERE. The forward-only rule
+  // below compares positions in this array, so a state at the end is
+  // reachable from every stage and is a dead end once reached, which is
+  // exactly what a withdrawal is. It is listed so that ordering works and
+  // so a withdrawn candidacy is recognised, never so a reviewer can set
+  // it: withdrawing is the candidate's own act, taken in their own
+  // workspace through applicant-notify, and `update-status` refuses the
+  // value outright.
+  'withdrawn',
 ];
+
+/** A candidacy the candidate has stopped. Nothing is done to it from here. */
+const WITHDRAWN = 'withdrawn';
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
@@ -388,6 +400,19 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       // Readable is not the same as movable: see `inWriteScope` above.
       if (!inWriteScope(app)) return json({ error: OUT_OF_DIVISION }, 403);
 
+      // WITHDRAWING IS NOT A REVIEWER'S DECISION, so it is not a status a
+      // reviewer may set, however this endpoint is called.
+      if (body.status === WITHDRAWN) {
+        return json({ error: 'Only the candidate can withdraw their own application.' }, 400);
+      }
+      // And a candidacy the candidate has stopped is not one to carry on
+      // progressing. The forward-only rule below would already refuse it,
+      // since `withdrawn` is last; it is said plainly here so the reviewer
+      // reads why, rather than being told they are going backwards.
+      if (app.status === WITHDRAWN) {
+        return json({ error: 'This candidate has withdrawn their application. Their candidacy can no longer be moved on.' }, 400);
+      }
+
       const previousStatus = app.status as string;
       // A candidacy only ever moves FORWARD. Once a stage is reached it can
       // never be taken back; the only sanctioned way to redo the interview
@@ -652,6 +677,9 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
       // An outcome the candidate has already been told about, or acted on,
       // is not something to reopen from here.
+      if (app.status === WITHDRAWN) {
+        return json({ error: 'This candidate has withdrawn their application, so it cannot be considered for another division.' }, 400);
+      }
       if (['offer_accepted', 'offer_declined', 'joined'].includes(app.status)) {
         return json({ error: 'This candidacy has reached its final outcome and its division can no longer be changed.' }, 400);
       }
@@ -751,6 +779,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      // A place cannot be offered to somebody who has stopped applying.
+      if (app.status === WITHDRAWN) {
+        return json({ error: 'This candidate has withdrawn their application, so no offer can be sent to them.' }, 400);
+      }
       const role = body.role as string;
       const division = body.division as string;
       if (!role || !division) return json({ error: 'Role and division are required' }, 400);
@@ -829,6 +861,11 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
       const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      // Converting completes the same act as sending the offer, so it is
+      // held to the same rule.
+      if (app.status === WITHDRAWN) {
+        return json({ error: 'This candidate has withdrawn their application, so they cannot be added as a member from here.' }, 400);
+      }
       const role = body.role as string;
       const division = body.division as string;
       if (!role || !division) return json({ error: 'Role and division are required' }, 400);

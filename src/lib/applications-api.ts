@@ -15,7 +15,9 @@ export type AcademicYear = 'bachelor_1' | 'bachelor_2' | 'bachelor_3' | 'master_
 export type ApplicationStatus =
   | 'received' | 'cv_opened' | 'under_review' | 'to_be_contacted' | 'interview_invitation_sent'
   | 'waiting_interview_confirmation' | 'interview_confirmed' | 'interview_completed'
-  | 'accepted' | 'rejected' | 'offer_accepted' | 'offer_declined' | 'joined';
+  | 'accepted' | 'rejected' | 'offer_accepted' | 'offer_declined' | 'joined'
+  // The candidate's own decision to stop their candidacy. See WITHDRAWAL below.
+  | 'withdrawn';
 
 export interface ApplicationRow {
   id: string;
@@ -69,6 +71,8 @@ export interface ApplicationRow {
   offer_role?: string | null;
   offer_division?: OrgDivision | null;
   offer_fee_due?: boolean | null;
+  /** When the candidate withdrew their own application, if they did. */
+  withdrawn_at?: string | null;
 }
 
 export interface ApplicationNote {
@@ -376,6 +380,7 @@ export const STATUS_COLORS: Record<ApplicationStatus, string> = {
   joined: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   rejected: 'bg-red-50 text-red-700 border-red-200',
   offer_declined: 'bg-orange-50 text-orange-700 border-orange-200',
+  withdrawn: 'bg-slate-100 text-slate-700 border-slate-300',
 };
 
 /** Small status pill used in the reviewer table and detail view. */
@@ -388,6 +393,10 @@ export const STATUS_FLOW: ApplicationStatus[] = [
   'received', 'cv_opened', 'under_review', 'to_be_contacted', 'interview_invitation_sent',
   'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed',
   'accepted', 'rejected', 'offer_accepted', 'offer_declined', 'joined',
+  // LAST, AND THAT IS THE POINT. The progression is enforced by comparing
+  // positions in this list, so a state at the end can be reached from any
+  // stage and can never be left. See WITHDRAWAL below.
+  'withdrawn',
 ];
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -399,10 +408,11 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   waiting_interview_confirmation: 'Waiting for interview confirmation', interview_confirmed: 'Interview confirmed',
   interview_completed: 'Interview completed', accepted: 'Accepted', rejected: 'Rejected',
   offer_accepted: 'Offer accepted', offer_declined: 'Offer declined', joined: 'Joined',
+  withdrawn: 'Withdrawn by candidate',
 };
 
 /** Statuses locked from manual change — driven by the offer flow / applicant response. */
-export const LOCKED_STATUSES: ApplicationStatus[] = ['offer_accepted', 'offer_declined', 'joined'];
+export const LOCKED_STATUSES: ApplicationStatus[] = ['offer_accepted', 'offer_declined', 'joined', 'withdrawn'];
 export function isLockedStatus(s: ApplicationStatus): boolean {
   return LOCKED_STATUSES.includes(s);
 }
@@ -485,6 +495,59 @@ export function isOfferLive(a: ApplicationRow | null): boolean {
     && (!a.offer_deadline || new Date(a.offer_deadline) > new Date());
 }
 
+// =====================================================================
+// WITHDRAWAL: the one decision on this page that is the candidate's.
+// ---------------------------------------------------------------------
+// Everything else a candidacy does is decided by the association -
+// reviewed, invited, offered, rejected - and the applicant's part is to
+// wait. Withdrawing is the exception, and the association has no say in
+// it: an applicant who has changed their mind, taken another place or
+// simply has no time this semester should be able to stop the process
+// themselves rather than ignore emails until it lapses.
+//
+// IT IS NOT A REJECTION AND IT IS NOT A DECLINED OFFER. Both of those
+// describe an outcome the association reached, and filing a withdrawal
+// under either would misrepresent, in the association's own register,
+// what actually happened. It is its own state, and it reads as its own
+// state to reviewers.
+//
+// WHAT IT CANNOT DO IS CLEAR THE WAY FOR A SECOND APPLICATION. Only one
+// application per person is accepted in a round, and the row is neither
+// deleted nor hidden: the unique index on (user_id, semester_label)
+// still holds, the public form still finds the row and still refuses a
+// new submission. Withdrawing closes a candidacy; it does not reopen the
+// intake.
+
+/** Has the candidate stopped their own candidacy? */
+export function isWithdrawn(a: Pick<ApplicationRow, 'status'> | null): boolean {
+  return a?.status === 'withdrawn';
+}
+
+/**
+ * Outcomes that have already been reached, by the candidate or by the
+ * association. There is nothing left to withdraw from any of them.
+ */
+const CLOSED_STATUSES: ApplicationStatus[] = [
+  'withdrawn', 'rejected', 'offer_declined', 'offer_accepted', 'joined',
+];
+
+/**
+ * May this candidate withdraw right now?
+ *
+ * "At any point" means at any point while the candidacy is running: from
+ * the moment it is received to the moment an offer is answered, an
+ * applicant can stop. Once it has closed there is nothing to stop, and
+ * an applicant who has already joined is a member, whose leaving is a
+ * different matter with a different process.
+ *
+ * Answered here so the page, the dialog and the server all decide it the
+ * same way; the server asks the question again for itself.
+ */
+export function canWithdraw(a: Pick<ApplicationRow, 'status'> | null): boolean {
+  if (!a) return false;
+  return !CLOSED_STATUSES.includes(a.status);
+}
+
 // Simplified candidate-facing status (report 10.3).
 export function candidateStatus(s: ApplicationStatus): { label: string; step: number } {
   switch (s) {
@@ -501,6 +564,7 @@ export function candidateStatus(s: ApplicationStatus): { label: string; step: nu
     case 'joined': return { label: 'Accepted', step: 4 };
     case 'rejected':
     case 'offer_declined': return { label: 'Not selected', step: 5 };
+    case 'withdrawn': return { label: 'Application withdrawn', step: 6 };
     default: return { label: 'Application received', step: 1 };
   }
 }
@@ -603,6 +667,20 @@ export async function acceptOffer(session: Session | null) {
 }
 export async function declineOffer(session: Session | null) {
   return await invokeNotify(session, { action: 'decline-offer' });
+}
+/**
+ * Withdraw the caller's OWN application.
+ *
+ * Deliberately the same pipeline as accepting an offer: the applicant's
+ * own function, acting only on the applicant's own row, reached with the
+ * applicant's own session. The signature is collected by the dialog for
+ * the same reason it is collected there - so the decision is made
+ * deliberately rather than by a stray click - and, exactly as with
+ * accepting, it is not checked against the name on file. The applicant
+ * is already authenticated as themselves; there is nothing to verify.
+ */
+export async function withdrawApplication(session: Session | null) {
+  return await invokeNotify(session, { action: 'withdraw-application' });
 }
 
 // ── Public / candidate ─────────────────────────────────────────────────

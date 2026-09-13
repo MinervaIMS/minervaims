@@ -16,6 +16,7 @@ function roleLabel(role: unknown): string {
 //   accept-offer → accept a live offer to join; converts to a member and sends
 //                  the welcome email (report 18.5/18.6)
 //   decline-offer → decline a live offer
+//   withdraw-application → the candidate stops their own candidacy
 // All actions act ONLY on the caller's own application.
 // =====================================================================
 
@@ -153,6 +154,64 @@ Deno.serve(async (req) => {
       } catch (e) { console.error('staff decline notice failed', e); }
       return json({ success: true });
 
+    }
+
+    // ── withdraw-application ─────────────────────────────────────────────────
+    // =====================================================================
+    // THE ONE ACTION ON A CANDIDACY THAT BELONGS TO THE CANDIDATE.
+    // ---------------------------------------------------------------------
+    // It lives here, with accepting and declining an offer, because it is
+    // the same kind of act and takes the same route: the applicant's own
+    // session, the applicant's own row, no reviewer involved. The
+    // screening function refuses the status outright, so `withdrawn` can
+    // only ever be written from here.
+    //
+    // WHAT IT DOES NOT DO IS DELETE ANYTHING. The row stays exactly where
+    // it was, visible to interviewers and examiners in Candidate
+    // Screening with its new state, and the unique index on
+    // (user_id, semester_label) keeps holding the one-application rule
+    // for the round.
+    // =====================================================================
+    if (action === 'withdraw-application') {
+      if (!app) return json({ error: 'No application found' }, 404);
+      if (app.status === 'withdrawn') return json({ error: 'This application has already been withdrawn.' }, 400);
+      // An outcome already reached is not something to withdraw from.
+      if (['rejected', 'offer_declined', 'offer_accepted', 'joined'].includes(app.status)) {
+        return json({ error: 'This application has already closed and can no longer be withdrawn.' }, 400);
+      }
+
+      const { error: withdrawError } = await supabase.from('applications')
+        .update({ status: 'withdrawn', withdrawn_at: new Date().toISOString() })
+        .eq('id', app.id);
+      if (withdrawError) {
+        console.error('withdrawal failed', withdrawError);
+        return json({ error: 'The withdrawal could not be recorded. Please try again.' }, 500);
+      }
+
+      // A slot held by somebody who is no longer a candidate is a slot
+      // taken from the division that opened it. Deleting the booking
+      // frees the slot through the existing `interview_booking_delete`
+      // trigger, exactly as a division transfer does.
+      try {
+        await supabase.from('interview_bookings').delete().eq('application_id', app.id);
+      } catch (e) { console.error('releasing the interview booking failed', e); }
+
+      // The division named is the one that was assessing them, which is
+      // what every other candidate-facing email names.
+      const division = (app.evaluation_division || app.interview_division || app.first_choice) as string;
+      try {
+        await supabase.rpc('enqueue_app_email', {
+          p_key: 'application_withdrawn', p_to: app.email,
+          p_vars: {
+            first_name: app.first_name,
+            division_name: DIV_LABELS[division] || division,
+            semester_label: app.semester_label,
+            status_url: STATUS_URL,
+          },
+        });
+      } catch (e) { console.error('withdrawal email enqueue failed', e); }
+
+      return json({ success: true });
     }
 
     // ── notify-received (default) ──────────────────────────────────────────────

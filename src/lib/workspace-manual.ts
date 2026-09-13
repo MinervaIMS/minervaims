@@ -781,6 +781,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Where your application has got to, and what happens next.",
       "The four stages are the association's whole selection process. Only the ones your application has reached are lit.",
+      "It is also where you can withdraw, if you no longer wish to be considered. You sign by writing your name, exactly as you would to accept an offer, and we confirm it by email.",
       "What you submitted, including your documents, is in My Profile. It is not repeated here.",
     ],
     related: ['my-role', 'applications-faqs'],

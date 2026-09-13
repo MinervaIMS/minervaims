@@ -145,6 +145,17 @@ export function CandidateStatusControl({
             another division if they belong in one. Inviting, rejecting and advancing them is theirs to do,
             or the President's.
           </p>
+        ) : app.status === 'withdrawn' ? (
+          /* ASKED BEFORE THE LOCKED BRANCH BELOW. A withdrawal is locked
+             too, but it is not an offer outcome, and the message written
+             for offer outcomes would tell a reviewer something untrue
+             about how this candidacy ended. */
+          <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
+            This candidate withdrew their own application
+            {app.withdrawn_at ? ` on ${new Date(app.withdrawn_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
+            Their application stays here in full, and everything on it can still be read, but the candidacy
+            itself is closed: it cannot be advanced, invited, offered or moved to another division.
+          </p>
         ) : isLockedStatus(app.status) ? (
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
             This is an offer outcome, managed automatically by the offer process (New Joiners) and the applicant’s response. It cannot be changed here.
