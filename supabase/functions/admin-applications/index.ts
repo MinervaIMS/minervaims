@@ -241,7 +241,22 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         const { data: notes } = await supabase.from('application_notes').select('application_id').in('application_id', ids);
         for (const n of notes || []) counts[n.application_id] = (counts[n.application_id] || 0) + 1;
       }
-      return json({ applications: (data || []).map((a: any) => ({ ...a, note_count: counts[a.id] || 0 })) });
+      // THE PRIORITY MARKER LIVES IN ITS OWN TABLE, so that a candidate,
+      // who may read their own application row in full, cannot read a
+      // reviewers' judgement about themselves along with it. It is merged
+      // here as a plain boolean, so the workspace receives the shape it
+      // has always received.
+      const flagged = new Set<string>();
+      if (ids.length) {
+        const { data: prios } = await supabase.from('application_priorities')
+          .select('application_id').in('application_id', ids);
+        for (const p of prios || []) flagged.add(p.application_id);
+      }
+      return json({
+        applications: (data || []).map((a: any) => ({
+          ...a, note_count: counts[a.id] || 0, priority: flagged.has(a.id),
+        })),
+      });
     }
 
     // ── get (single + notes) ────────────────────────────────────────────────
@@ -295,7 +310,13 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         emails = (sent || []).map((r: any) => ({ ...r, template_label: labels[r.template_name] || null }));
       } catch (e) { console.error('reading the candidate email log failed', e); }
 
-      return json({ application: app, notes: notes || [], emails });
+      // The marker, read from its own table and handed over as the field
+      // the workspace expects. See the `list` action above for why it is
+      // not a column on the application itself.
+      const { data: prio } = await supabase.from('application_priorities')
+        .select('application_id').eq('application_id', app.id).maybeSingle();
+
+      return json({ application: { ...app, priority: !!prio }, notes: notes || [], emails });
     }
 
     // ── sign-url (preview/download a document) ───────────────────────────────
@@ -534,10 +555,9 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     //     which is what caps this at TWO PROCESSES: once it is set, the
     //     only move on offer is back.
     //
-    // The candidate is told by email (division_reassignment) once the move
-    // is saved: which division is now assessing them, and that no action is
-    // required. The invitation that follows is sent by `update-status` in
-    // the ordinary way, naming the new division.
+    // No email is sent by this action. The move alone is not news the
+    // candidate can act on; the invitation that follows is, and it is sent
+    // by `update-status` in the ordinary way, naming the new division.
     // =====================================================================
     if (action === 'set-priority') {
       // =====================================================================
@@ -563,16 +583,25 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       const next = body.priority as boolean;
 
       const { data: app } = await supabase.from('applications')
-        .select('id, first_choice, second_choice, first_name, surname, evaluation_division, priority')
+        .select('id, first_choice, second_choice, first_name, surname, evaluation_division')
         .eq('id', body.id).maybeSingle();
       if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
 
-      // Already in the requested state: nothing to write, nothing to log.
-      if (app.priority === next) return json({ success: true, priority: next });
+      const { data: existing } = await supabase.from('application_priorities')
+        .select('application_id').eq('application_id', app.id).maybeSingle();
+      const current = !!existing;
 
-      const { error } = await supabase.from('applications')
-        .update({ priority: next })
-        .eq('id', app.id);
+      // Already in the requested state: nothing to write, nothing to log.
+      if (current === next) return json({ success: true, priority: next });
+
+      // A ROW IS THE FLAG. Setting it records who and when; clearing it
+      // removes the row, so "off" leaves nothing behind to misread.
+      const { error } = next
+        ? await supabase.from('application_priorities')
+            .upsert({ application_id: app.id, set_by: user.id, set_at: new Date().toISOString() },
+                    { onConflict: 'application_id' })
+        : await supabase.from('application_priorities')
+            .delete().eq('application_id', app.id);
       if (error) throw error;
 
       try {
@@ -671,20 +700,6 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           details: { event: 'evaluation_division_change', from: current, to: target, previous_status: app.status },
         });
       } catch (e) { console.error('evaluation division log failed', e); }
-
-      // Tell the candidate which division is now assessing them and that no
-      // action is required. The move is already saved, so a failed enqueue
-      // must never undo it: log and carry on.
-      try {
-        await supabase.rpc('enqueue_app_email', {
-          p_key: 'division_reassignment', p_to: app.email,
-          p_vars: {
-            first_name: app.first_name,
-            from_division: DIV_LABELS[current] || current,
-            to_division: DIV_LABELS[target] || target,
-          },
-        });
-      } catch (e) { console.error('division reassignment email enqueue failed', e); }
 
       return json({ success: true, evaluation_division: target, evaluation_division_previous: current });
     }

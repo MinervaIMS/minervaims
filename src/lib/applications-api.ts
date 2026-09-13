@@ -50,10 +50,14 @@ export interface ApplicationRow {
   /**
    * Screening marker: this candidacy is to be looked at first.
    *
-   * Optional in the type only because the generated Supabase types lag a
-   * migration; the column is NOT NULL with a default of false and
-   * `select('*')` returns it. Read it as `!!a.priority` so a row fetched
-   * before the migration lands simply reads as not prioritised.
+   * NOT A COLUMN ON THE APPLICATION, deliberately. A candidate may read
+   * their own application row in full (row-scoped RLS plus `select('*')`),
+   * and a reviewers' judgement about somebody should not travel inside a
+   * response addressed to them. It is kept in `application_priorities`,
+   * which candidates have no grant on, and the admin-applications
+   * function merges it into the reviewer's copy as this boolean. Absent
+   * on any row that did not come from that function, so read it as
+   * `!!a.priority`.
    */
   priority?: boolean;
   cv_viewed_at: string | null;
