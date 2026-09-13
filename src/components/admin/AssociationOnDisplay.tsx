@@ -11,7 +11,8 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listAod, createAodDay, deleteAodDay, setAodOpen, aodSignup, aodRemoveSignup,
-  AOD_SLOTS, type AodDay, type AodSignup,
+  AOD_SLOTS, AOD_SLOT_MINUTES, formatSlotTime, slotEndTime,
+  type AodDay, type AodSignup,
 } from '@/lib/alumni-aod-api';
 import { semesterOf, semestersInData } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
@@ -35,6 +36,24 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 // Two independent routes, because they answer two different worries:
 // the first is about numbers, the second about breadth. A slot that
 // satisfies either is covered, and the badge says which.
+// =====================================================================
+
+// =====================================================================
+// COVERED IS A FLOOR, NEVER A CEILING.
+// ---------------------------------------------------------------------
+// Nothing on this page caps a slot, and nothing ever has: there is no
+// capacity column, no count check in `admin-aod`, and no constraint in
+// the database beyond one registration per person per slot. The tenth
+// and the twentieth person to register are accepted exactly as the first
+// was, and the Register button stays live on a slot that is already
+// covered.
+//
+// That was true and invisible. A badge that read "Covered", beside a
+// figure written as "3/5", is easy to read as a quota that has been
+// filled, and somebody who reads it that way does not register. So the
+// page now SAYS the rule rather than leaving it to be inferred: the day
+// header states that registration is never capped, and a covered slot
+// still invites more people onto it.
 // =====================================================================
 
 /** Registrations above which a slot is covered on numbers alone. */
@@ -178,6 +197,15 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
         <div>
           <div className="font-serif text-lg text-accent">{new Date(`${day.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
           <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (more than {COVER_BY_HEADCOUNT} people, or all {CORE_DIVISIONS.length} core divisions) <HelpDot page="events-on-display" topic="coverage" /> · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
+          {/* THE TWO FACTS EVERY SLOT ON THIS DAY SHARES, SAID ONCE.
+              How long a slot lasts and whether it can fill up are true of
+              all eighteen of them, so they are stated here rather than
+              repeated eighteen times down the grid. */}
+          <div className="mt-1 text-xs text-muted-foreground">
+            Each slot runs for {AOD_SLOT_MINUTES} minutes, from its start time to the end of the following
+            half hour. There is no limit on how many people can take a slot: the more of us on the stand,
+            the better, so please register even where a slot is already covered.
+          </div>
         </div>
         {isSenior && (
           <div className="flex items-center gap-3">
@@ -195,15 +223,35 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
           const covered = isSlotCovered(people);
           return (
             <div key={slot} className={`bg-background p-3 font-body border-l-2 ${covered ? 'border-emerald-500' : 'border-amber-500'}`}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-foreground">{slot}</span>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded ${covered ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                  {/* Not covered? Say how far along BOTH routes it is, so the
-                      reader can see which one is within reach. */}
+              {/* A SLOT IS A LENGTH OF TIME, NOT AN INSTANT.
+                  It used to be labelled with its start alone, "18:30",
+                  which says when to turn up and nothing at all about when
+                  you may leave. Both ends are now named, with the start
+                  carrying the weight because it is what a person scans
+                  for, and the span between them is drawn beneath. */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-foreground">{formatSlotTime(slot)}</div>
+                  <div className="text-[11px] text-muted-foreground">to {formatSlotTime(slotEndTime(slot))}</div>
+                </div>
+                <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${covered ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {/* The headcount shows in BOTH states. It used to be
+                      replaced by the word "Covered", so the one slot whose
+                      numbers somebody might want to check was the one that
+                      stopped showing them. */}
                   {covered
-                    ? 'Covered'
+                    ? `Covered · ${people.length}`
                     : `${people.length} · ${divCount}/${CORE_DIVISIONS.length} div.`}
                 </span>
+              </div>
+              {/* The half hour itself, drawn: a rule with a tick at each
+                  end, which is how a span of time is marked on a plan.
+                  Decorative only, and hidden from screen readers, because
+                  the two times above already say it in words. */}
+              <div aria-hidden className="mt-1.5 flex items-center gap-1" title={`${AOD_SLOT_MINUTES} minutes`}>
+                <span className={`h-2 w-px ${covered ? 'bg-emerald-500/60' : 'bg-amber-500/60'}`} />
+                <span className={`h-px flex-1 ${covered ? 'bg-emerald-500/35' : 'bg-amber-500/35'}`} />
+                <span className={`h-2 w-px ${covered ? 'bg-emerald-500/60' : 'bg-amber-500/60'}`} />
               </div>
               {/* Registration button: clear, full-width, for everyone. */}
               <div className="mt-2">
@@ -222,6 +270,12 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   {people.length} registered · {divCount} division{divCount === 1 ? '' : 's'} covered
                 </div>
+                {/* Said on the slot itself, and not only in the day header,
+                    because this is the exact spot where a green badge might
+                    otherwise be read as "no more needed". */}
+                {covered && day.registration_open && !mine && (
+                  <div className="text-[11px] text-emerald-700">Covered, and more are still welcome</div>
+                )}
                 {people.length === 0 ? (
                   <span className="text-xs text-amber-600">No one yet</span>
                 ) : people.map((p) => (

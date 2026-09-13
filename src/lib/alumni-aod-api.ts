@@ -96,12 +96,61 @@ export const CALL_STATUS_LABELS: Record<CallStatus, string> = {
 export interface AodDay { id: string; event_date: string; registration_open: boolean; notes: string | null; }
 export interface AodSignup { id: string; day_id: string; slot_time: string; user_id: string | null; member_name: string; division: OrgDivision | null; }
 
-// 30-minute slots from 10:00 to 18:30 (each covers a half hour up to 19:00).
+// =====================================================================
+// THE SLOTS, AND THE DIFFERENCE BETWEEN WHAT IS STORED AND WHAT IS READ.
+// ---------------------------------------------------------------------
+// `AOD_SLOTS` holds the 24-hour keys "10:00" through "18:30", and they
+// are NOT a display format: each one is written verbatim into
+// `aod_signups.slot_time` and is how an existing registration is found
+// again. They are therefore left exactly as they are, forever.
+//
+// What a person reads is a separate question, answered by the helpers
+// below. Changing how the association writes the time of day must never
+// mean rewriting rows, so the two are kept apart on purpose.
+// =====================================================================
+
+/** How long one slot lasts. The whole half hour that follows its start. */
+export const AOD_SLOT_MINUTES = 30;
+
+/** The stored keys. One per half hour from 10:00 to 18:30 inclusive. */
 export const AOD_SLOTS: string[] = (() => {
   const out: string[] = [];
   for (let h = 10; h < 19; h++) { out.push(`${String(h).padStart(2, '0')}:00`); out.push(`${String(h).padStart(2, '0')}:30`); }
   return out;
 })();
+
+/**
+ * A stored "18:30" as the association writes the time of day: "6:30pm".
+ *
+ * Written out here rather than left to `toLocaleTimeString`, which
+ * follows the reader's own locale and would give an Italian browser
+ * "18:30" and a British one "6:30 pm" for the same stand. A rota is read
+ * side by side by people on different machines, so it reads the same on
+ * all of them.
+ */
+export function formatSlotTime(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, '0')}${suffix}`;
+}
+
+/** The stored key of the moment a slot ends: "18:30" gives "19:00". */
+export function slotEndTime(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const total = h * 60 + m + AOD_SLOT_MINUTES;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** A whole slot, start to finish: "6:30pm to 7:00pm". */
+export function formatSlotRange(hhmm: string): string {
+  return `${formatSlotTime(hhmm)} to ${formatSlotTime(slotEndTime(hhmm))}`;
+}
+
+/** When the stand opens and closes, as one phrase: "10:00am to 7:00pm". */
+export const AOD_DAY_HOURS = `${formatSlotTime(AOD_SLOTS[0])} to ${formatSlotTime(slotEndTime(AOD_SLOTS[AOD_SLOTS.length - 1]))}`;
 
   // `any` deliberately, matching what `supabase.functions.invoke` used to
   // hand back: every caller in this module already narrows the shape it

@@ -258,12 +258,14 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'events-on-display', section: 'Events', label: 'Association on Display',
-    purpose: 'Stand coverage planning: the stand runs 10:00 to 19:00 in 30-minute slots. A slot is covered once three people register; the page also shows how many divisions each slot covers. Past sessions stay archived semester by semester.',
-    view: ['Register for or cancel any open slot.', 'See who is registered and which divisions are covered.'],
+    purpose: 'Stand coverage planning: the stand runs 10:00am to 7:00pm in 30-minute slots. A slot is covered once more than eight people have registered for it, or once all five core divisions are represented on it. Past sessions stay archived semester by semester.',
+    view: ['Register for or cancel any open slot, including one that is already covered.', 'See who is registered and which divisions are covered.'],
     manage: ['Open or close registration days; delete a day.'],
     warnings: ['Registrations close automatically 48 hours before the day.'],
     topics: [
-      { id: 'coverage', title: 'Covered and divisions indicators', body: 'A slot turns Covered (green) at three registered people. The divisions counter shows how many different divisions are present in the slot. A well-covered stand represents the whole association, so consider slots where your division is missing.' },
+      { id: 'coverage', title: 'Covered and divisions indicators', body: 'A slot turns Covered (green) by either of two routes: more than eight people have registered for it, which means the stand is staffed whoever happens not to arrive; or all five core divisions are represented on it, which means that whatever a visitor asks about, somebody there does that. Either is enough on its own, and the badge shows how far along both routes an uncovered slot has got. A well-covered stand represents the whole association, so consider slots where your division is missing.' },
+      { id: 'no-cap', title: 'Covered does not mean full', body: 'There is no limit on how many people can register for a slot, and there never has been: the only rule is that one person cannot register twice for the same slot. Covered is a floor, not a ceiling. The Register button stays live on a green slot, the tenth and twentieth people to register are accepted exactly as the first was, and the more of us on the stand at once, the better it goes. If a slot you can make is already covered, register for it anyway.' },
+      { id: 'slot-length', title: 'How long a slot lasts', body: 'Every slot runs for thirty minutes, from its start time to the end of the following half hour: the 6:30pm slot is 6:30pm to 7:00pm. Both ends are printed on the slot, so what you are committing to is the whole half hour and not just the moment it begins. The stand itself runs from 10:00am to 7:00pm, which is eighteen slots.' },
       { id: 'day-controls', title: 'Opening and closing a day', body: 'Senior roles create days and control whether registration is open. Deleting a day removes all its registrations, so use it only for cancelled sessions.', requires: 'manage' },
     ],
   },
