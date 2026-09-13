@@ -336,7 +336,7 @@ export default function CandidatesManagement() {
       .filter((a) => programmeFilter.length === 0 || programmeFilter.includes(a.degree_course))
       .filter((a) => priorityFilter.length === 0 || priorityFilter.includes(a.priority ? 'yes' : 'no'))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, semKey]);
+  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, priorityFilter, semKey]);
 
   // THE FILTERS OFFER WHAT THE FORM OFFERS. The choice filters were built
   // from the five research divisions alone, so the Media and Operations
@@ -352,6 +352,12 @@ export default function CandidatesManagement() {
   const evaluationOptions = EVALUATION_DIVISIONS.map((d) => ({ value: d, label: divisionLabels[d] }));
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
+  // Two options, not one: "only the flagged" and "only the unflagged" are
+  // both real questions, and ticking both reads as no filter at all.
+  const priorityOptions = [
+    { value: 'yes', label: 'Priority' },
+    { value: 'no', label: 'Not priority' },
+  ];
   // The programmes this semester's applicants actually named, in
   // alphabetical order. Built from the semester on screen rather than
   // from every application ever received, so the menu offers what the
