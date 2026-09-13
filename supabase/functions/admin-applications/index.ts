@@ -29,7 +29,8 @@ function roleLabel(role: unknown): string {
 //     but only for the candidates their own division is assessing.
 //
 // Actions: list · get · sign-url · update-status · add-note · bulk-urls
-//          · set-question · convert-to-member
+//          · set-question · convert-to-member · set-evaluation-division
+//          · set-priority
 // =====================================================================
 
 const corsHeaders = {
@@ -537,6 +538,55 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     // candidate can act on; the invitation that follows is, and it is sent
     // by `update-status` in the ordinary way, naming the new division.
     // =====================================================================
+    if (action === 'set-priority') {
+      // =====================================================================
+      // PRIORITY IS A MARKER, NOT A STAGE.
+      // ---------------------------------------------------------------------
+      // It says "look at this one first" and nothing else: it does not move
+      // the candidacy, does not touch the status, and sends no email. So it
+      // is deliberately NOT held to `inWriteScope`, for the same reason
+      // reassignment is not: the person who notices a candidate worth
+      // prioritising is often not in the division currently holding them,
+      // and a head who could see the whole intake but only flag their own
+      // share could not do the one thing the marker is for.
+      //
+      // `canProgress` is exactly the set the workspace offers the toggle to
+      // (President, Admin, Vice President, Head of Asset Management and the
+      // Heads of Division), and this is the enforcement: the control is
+      // hidden for everybody else, and a hidden control is not a permission.
+      // =====================================================================
+      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
+      if (typeof body.priority !== 'boolean') {
+        return json({ error: 'Priority must be on or off.' }, 400);
+      }
+      const next = body.priority as boolean;
+
+      const { data: app } = await supabase.from('applications')
+        .select('id, first_choice, second_choice, first_name, surname, evaluation_division, priority')
+        .eq('id', body.id).maybeSingle();
+      if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+
+      // Already in the requested state: nothing to write, nothing to log.
+      if (app.priority === next) return json({ success: true, priority: next });
+
+      const { error } = await supabase.from('applications')
+        .update({ priority: next })
+        .eq('id', app.id);
+      if (error) throw error;
+
+      try {
+        await supabase.from('activity_logs').insert({
+          user_id: user.id, user_email: user.email || 'unknown', user_role: primaryRole,
+          action: 'update', entity_type: 'application', entity_id: app.id,
+          entity_name: `${app.first_name} ${app.surname}`,
+          section: 'Recruiting', subsection: 'Candidates screening',
+          details: { event: 'priority_change', priority: next },
+        });
+      } catch (e) { console.error('priority log failed', e); }
+
+      return json({ success: true, priority: next });
+    }
+
     if (action === 'set-evaluation-division') {
       // =====================================================================
       // WHOEVER MAY MOVE A CANDIDACY MAY MOVE ANY CANDIDACY.

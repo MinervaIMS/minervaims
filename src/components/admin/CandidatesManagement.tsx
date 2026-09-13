@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { Recommendation } from '@/components/admin/Recommendation';
-import { Download, FileText, Search, MessageSquare, Eye, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, FileText, Search, MessageSquare, Eye, Loader2, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -26,7 +26,7 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
   listApplications, signDocumentUrl, bulkDocumentUrls,
-  addApplicationNote, setEvaluationDivision,
+  addApplicationNote, setEvaluationDivision, setApplicationPriority,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
   isLockedStatus,
   APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
@@ -214,6 +214,20 @@ export default function CandidatesManagement() {
   const [evaluationFilter, setEvaluationFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string[]>([]);
+  // =================================================================
+  // PROGRAMME, THE ONE COLUMN THAT COULD ONLY BE READ.
+  // -----------------------------------------------------------------
+  // The degree course was printed in every row and could not be
+  // narrowed to, so "who is applying from the MSc in Finance" was a
+  // question the register held the answer to and could not be asked.
+  // Its options are built from the intake itself rather than from a
+  // fixed list, because the programme is free text on the public form
+  // and no list here could stay complete.
+  // =================================================================
+  const [programmeFilter, setProgrammeFilter] = useState<string[]>([]);
+  // Which candidate's priority marker is being written right now, so the
+  // toggle can be disabled for that one row without freezing the page.
+  const [priorityBusy, setPriorityBusy] = useState<string | null>(null);
   // Which bulk download is running ('cv' | 'answer' | 'both'), and how far.
   const [bulkBusy, setBulkBusy] = useState<false | 'cv' | 'answer' | 'both'>(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
@@ -233,6 +247,41 @@ export default function CandidatesManagement() {
   const [pendingEval, setPendingEval] = useState<{ app: ApplicationRow; target: OrgDivision } | null>(null);
   const [movingEval, setMovingEval] = useState(false);
 
+  // =================================================================
+  // PRIORITY: A MARKER, AND ONLY THE ROLES THAT MANAGE THIS PAGE.
+  // -----------------------------------------------------------------
+  // It flags a candidacy as one to look at first. It moves nobody, sets
+  // no status and sends nothing, so unlike advancing a candidate it is
+  // offered for EVERY candidate a manager of this page can see, not only
+  // the ones their own division is assessing: noticing that somebody is
+  // worth seeing early is exactly the case that crosses divisions.
+  //
+  // The row is patched in place rather than reloaded: one field changed,
+  // and refetching the semester to learn it is what used to make this
+  // table flash its loader on every small action.
+  // =================================================================
+  const togglePriority = async (a: Pick<ApplicationRow, 'id' | 'first_name' | 'surname' | 'priority'>) => {
+    if (!canChangeStatus || priorityBusy) return;
+    const next = !a.priority;
+    setPriorityBusy(a.id);
+    setApps((prev) => prev.map((x) => (x.id === a.id ? { ...x, priority: next } : x)));
+    patchCandidate(a.id, { priority: next });
+    try {
+      // The edge function writes the activity log entry itself, with the
+      // role the caller actually held server-side, so nothing is logged
+      // from here.
+      await setApplicationPriority(session, a.id, next);
+    } catch (e) {
+      // Put it back exactly as it was: the marker is shared, so a failed
+      // write must not leave one reviewer believing it took.
+      setApps((prev) => prev.map((x) => (x.id === a.id ? { ...x, priority: !next } : x)));
+      patchCandidate(a.id, { priority: !next });
+      toast({ title: 'Could not change the priority', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally {
+      setPriorityBusy(null);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     try { setApps(await listApplications(session)); }
@@ -251,13 +300,14 @@ export default function CandidatesManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (programmeFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
     setEvaluationFilter([]);
     setFirstChoiceFilter([]);
     setSecondChoiceFilter([]);
     setStatusFilter([]);
     setYearFilter([]);
+    setProgrammeFilter([]);
     setSearch('');
   };
 
@@ -273,8 +323,9 @@ export default function CandidatesManagement() {
       .filter((a) => secondChoiceFilter.length === 0 || secondChoiceFilter.includes(a.second_choice ?? NO_SECOND_CHOICE))
       .filter((a) => statusFilter.length === 0 || statusFilter.includes(a.status))
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
+      .filter((a) => programmeFilter.length === 0 || programmeFilter.includes(a.degree_course))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, semKey]);
+  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, semKey]);
 
   // THE FILTERS OFFER WHAT THE FORM OFFERS. The choice filters were built
   // from the five research divisions alone, so the Media and Operations
@@ -290,6 +341,19 @@ export default function CandidatesManagement() {
   const evaluationOptions = EVALUATION_DIVISIONS.map((d) => ({ value: d, label: divisionLabels[d] }));
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
+  // The programmes this semester's applicants actually named, in
+  // alphabetical order. Built from the semester on screen rather than
+  // from every application ever received, so the menu offers what the
+  // table can show and never an option that selects nothing.
+  const programmeOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const a of apps) {
+      if (semesterOf(a.created_at).key !== semKey) continue;
+      const name = (a.degree_course ?? '').trim();
+      if (name) seen.add(name);
+    }
+    return [...seen].sort((x, y) => x.localeCompare(y)).map((name) => ({ value: name, label: name }));
+  }, [apps, semKey]);
 
   // THE LIST IS NO LONGER REFETCHED WHEN A CANDIDATE IS OPENED. Opening a CV
   // advances the status to "CV opened" server-side, and that new status comes
@@ -522,6 +586,19 @@ export default function CandidatesManagement() {
                     how a column is told to take only what it needs.
                     "In" is the header the register already uses. */}
                 <th className="px-2 py-2 font-normal text-center w-px">In</th>
+                {/* PRIORITY, beside the profile and as narrow as its mark.
+                    It is not a stage and not a preference, so it does not
+                    belong among the assessment columns; it is a flag on the
+                    person, which is where the identifying columns are. The
+                    header carries the mark itself rather than a word,
+                    because the column is one icon wide and the mark is
+                    already explained wherever it can be set. */}
+                <th className="px-2 py-2 font-normal text-center w-px">
+                  <span className="inline-flex" title="Priority: candidates flagged to be looked at first">
+                    <Zap className="h-3.5 w-3.5 text-destructive" aria-hidden />
+                    <span className="sr-only">Priority</span>
+                  </span>
+                </th>
                 <th className="px-3 py-2 font-normal">
                   <span className="inline-flex items-center gap-1.5">
                     <ColumnFilter label="Evaluated for" options={evaluationOptions} selected={evaluationFilter} onChange={setEvaluationFilter} />
@@ -531,7 +608,7 @@ export default function CandidatesManagement() {
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="First choice" options={divOptions} selected={firstChoiceFilter} onChange={setFirstChoiceFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Second choice" options={secondChoiceOptions} selected={secondChoiceFilter} onChange={setSecondChoiceFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
-                <th className="px-3 py-2 font-normal">Programme</th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Programme" options={programmeOptions} selected={programmeFilter} onChange={setProgrammeFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
                 <th className="px-3 py-2 font-normal text-center">CV</th>
                 <th className="px-3 py-2 font-normal text-center">Work</th>
@@ -582,6 +659,26 @@ export default function CandidatesManagement() {
                         <span className="text-muted-foreground" aria-label="No LinkedIn profile">-</span>
                       );
                     })()}
+                  </td>
+                  {/* The priority mark. Shown when it is set and left empty
+                      when it is not, so a flagged candidate is found by
+                      scanning one narrow column rather than read out of a
+                      row. It is deliberately NOT a control here: the marker
+                      is set where the candidate is being read, from inside
+                      their own window, so a single mis-click in a long
+                      table cannot change what another reviewer sees. */}
+                  <td className="px-2 py-2 text-center w-px">
+                    {a.priority ? (
+                      <span
+                        className="inline-flex align-middle"
+                        title={`${a.first_name} ${a.surname} is flagged as a priority`}
+                        aria-label="Priority"
+                      >
+                        <Zap className="h-[1.05rem] w-[1.05rem] shrink-0 text-destructive fill-destructive" aria-hidden />
+                      </span>
+                    ) : (
+                      <span className="sr-only">Not a priority</span>
+                    )}
                   </td>
                   {/* Evaluated for. A control where the role can move a
                       candidacy, plain text where it cannot, so a reviewer
@@ -721,6 +818,43 @@ export default function CandidatesManagement() {
                 canProgress={canProgress(detail.application)}
                 onChanged={onStatusChanged}
               />
+
+              {/* PRIORITY, SET WHERE THE CANDIDATE IS READ.
+                  The decision to look at somebody first is taken having just
+                  read them, so the switch lives in their window and the table
+                  only reports it. Offered for every candidate a manager of
+                  this page can see: a head noticing somebody worth seeing
+                  early is usually not in the division holding them. */}
+              {canChangeStatus && (
+                <div className="border border-separator p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+                        Priority <HelpDot page="applications-screening" topic="priority" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Flags this candidate to be looked at first. It appears as a mark beside their
+                        name in the register and is visible to every reviewer. It changes nothing else:
+                        no status moves and the candidate is not told.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={detail.application.priority ? 'default' : 'outline'}
+                      size="sm"
+                      className="font-body shrink-0"
+                      disabled={priorityBusy === detail.application.id}
+                      aria-pressed={!!detail.application.priority}
+                      onClick={() => togglePriority(detail.application)}
+                    >
+                      {priorityBusy === detail.application.id
+                        ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        : <Zap className={`h-4 w-4 mr-2 ${detail.application.priority ? 'fill-current' : ''}`} />}
+                      {detail.application.priority ? 'Priority on' : 'Priority off'}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Evaluated for: the same control as the table's column, in
                   the place a reviewer is most likely to reach for it, having

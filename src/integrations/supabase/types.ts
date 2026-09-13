@@ -523,6 +523,7 @@ export type Database = {
           offer_role: string | null
           offer_sent_at: string | null
           phone: string
+          priority: boolean
           received_email_sent_at: string | null
           second_choice: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
@@ -564,6 +565,7 @@ export type Database = {
           offer_role?: string | null
           offer_sent_at?: string | null
           phone: string
+          priority?: boolean
           received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
@@ -605,6 +607,7 @@ export type Database = {
           offer_role?: string | null
           offer_sent_at?: string | null
           phone?: string
+          priority?: boolean
           received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label?: string

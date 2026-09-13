@@ -47,6 +47,15 @@ export interface ApplicationRow {
   evaluation_division?: OrgDivision | null;
   /** The division the evaluation was last moved away from, or null. */
   evaluation_division_previous?: OrgDivision | null;
+  /**
+   * Screening marker: this candidacy is to be looked at first.
+   *
+   * Optional in the type only because the generated Supabase types lag a
+   * migration; the column is NOT NULL with a default of false and
+   * `select('*')` returns it. Read it as `!!a.priority` so a row fetched
+   * before the migration lands simply reads as not prioritised.
+   */
+  priority?: boolean;
   cv_viewed_at: string | null;
   created_at: string;
   note_count?: number;
@@ -550,6 +559,16 @@ export async function addApplicationNote(session: Session | null, id: string, bo
  */
 export async function setEvaluationDivision(session: Session | null, id: string, division: OrgDivision) {
   return await invoke(session, { action: 'set-evaluation-division', id, division });
+}
+/**
+ * Flag, or unflag, a candidacy as one to look at first.
+ *
+ * A marker and nothing more: it moves nobody, changes no status and sends
+ * no email. Refused server-side for any role that cannot manage Candidate
+ * Screening, so the hidden toggle is not the only thing holding it.
+ */
+export async function setApplicationPriority(session: Session | null, id: string, priority: boolean) {
+  return await invoke(session, { action: 'set-priority', id, priority });
 }
 export async function setDivisionQuestion(session: Session | null, division: OrgDivision, question: string) {
   return await invoke(session, { action: 'set-question', division, question });
