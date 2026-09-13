@@ -879,7 +879,7 @@ export default function CandidatesManagement() {
                     Evaluated for <HelpDot page="applications-screening" topic="evaluation-division" />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Which division is assessing this candidate. It starts as their first choice. If they
+                    Which division is assessing this candidate. If they
                     fit another division better, including one they did not name, change it here: they
                     return to <strong>{STATUS_LABELS.to_be_contacted}</strong> so the new division can invite them,
                     and any interview slot they were holding is released.
