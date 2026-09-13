@@ -556,6 +556,7 @@ export type Database = {
           surname: string
           updated_at: string
           user_id: string | null
+          withdrawn_at: string | null
         }
         Insert: {
           academic_year: string
@@ -597,6 +598,7 @@ export type Database = {
           surname: string
           updated_at?: string
           user_id?: string | null
+          withdrawn_at?: string | null
         }
         Update: {
           academic_year?: string
@@ -638,6 +640,7 @@ export type Database = {
           surname?: string
           updated_at?: string
           user_id?: string | null
+          withdrawn_at?: string | null
         }
         Relationships: []
       }
