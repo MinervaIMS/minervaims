@@ -672,6 +672,20 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         });
       } catch (e) { console.error('evaluation division log failed', e); }
 
+      // Tell the candidate which division is now assessing them and that no
+      // action is required. The move is already saved, so a failed enqueue
+      // must never undo it: log and carry on.
+      try {
+        await supabase.rpc('enqueue_app_email', {
+          p_key: 'division_reassignment', p_to: app.email,
+          p_vars: {
+            first_name: app.first_name,
+            from_division: DIV_LABELS[current] || current,
+            to_division: DIV_LABELS[target] || target,
+          },
+        });
+      } catch (e) { console.error('division reassignment email enqueue failed', e); }
+
       return json({ success: true, evaluation_division: target, evaluation_division_previous: current });
     }
 
