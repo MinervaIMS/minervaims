@@ -14,10 +14,12 @@ import {
 } from '@/components/shared/AuthUI';
 import { PasswordStrengthIndicator } from '@/components/shared/PasswordStrengthIndicator';
 import { WORKSPACE_BASE } from '@/lib/workspace-base';
+import {
+  isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE, EMAIL_PLACEHOLDER, ALLOWED_DOMAINS_SENTENCE,
+} from '@/lib/bocconi-email';
 
 const emailSchema = z.string().email('Please enter a valid email address.');
 const passwordSchema = z.string().min(8, 'Use at least 8 characters.');
-const bocconiEmail = /@(studbocconi\.it|unibocconi\.it)$/i;
 
 type Mode = 'login' | 'signup';
 
@@ -84,8 +86,11 @@ const Auth = () => {
     if (!name.trim()) errs.name = 'Required.';
     if (!surname.trim()) errs.surname = 'Required.';
     if (!emailSchema.safeParse(suEmail).success) errs.email = 'Please enter a valid email address.';
-    // Bocconi-domain restriction temporarily disabled for testing.
-    // else if (!bocconiEmail.test(suEmail)) errs.email = 'Use your @studbocconi.it or @unibocconi.it address.';
+    // THE DOMAIN IS CHECKED BEFORE THE ACCOUNT IS CREATED, so a private
+    // address is a sentence under the field rather than a confirmation
+    // email for an account that will not be allowed to do anything. The
+    // list it reads is the same one the endpoint and the email hook read.
+    else if (!isAllowedBocconiEmail(suEmail)) errs.email = DOMAIN_REJECTED_MESSAGE;
     if (!passwordSchema.safeParse(suPassword).success) errs.password = 'Use at least 8 characters.';
     if (suConfirm !== suPassword) errs.confirm = 'Passwords do not match.';
     if (!terms) errs.terms = 'Please accept the terms to continue.';
@@ -93,10 +98,30 @@ const Auth = () => {
     return Object.keys(errs).length === 0;
   };
 
+  // =====================================================================
+  // A DISABLED BUTTON MUST NEVER BE AN UNEXPLAINED ONE.
+  // ---------------------------------------------------------------------
+  // The domain rule is part of `signupValid` below, which is how every
+  // other rule on this form works: the button stays inert until the form
+  // is complete. The others explain themselves by being visible - two
+  // password fields that differ, an unticked box - and a domain does not.
+  // Somebody typing a private address would meet a button that refuses to
+  // work and no reason anywhere on the page.
+  //
+  // So the reason appears AS THEY TYPE, and only once the address is far
+  // enough along to judge: a well-formed address on a domain that is not
+  // ours. Half-typed input is not corrected at somebody mid-word.
+  // =====================================================================
+  const domainWarning =
+    emailSchema.safeParse(suEmail).success && !isAllowedBocconiEmail(suEmail)
+      ? DOMAIN_REJECTED_MESSAGE
+      : '';
+
   const signupValid =
     name.trim().length > 0 &&
     surname.trim().length > 0 &&
     emailSchema.safeParse(suEmail).success &&
+    isAllowedBocconiEmail(suEmail) &&
     passwordSchema.safeParse(suPassword).success &&
     suConfirm === suPassword &&
     suConfirm.length > 0 &&
@@ -162,11 +187,11 @@ const Auth = () => {
             id="suEmail"
             type="email"
             label="Email"
-            placeholder="name.surname@studbocconi.it"
+            placeholder={EMAIL_PLACEHOLDER}
             value={suEmail}
             onChange={(e) => setSuEmail(e.target.value)}
-            error={suErr.email}
-            hint="The email must be name.surname@studbocconi.it. 3243000@studbocconi.it is not valid for registration."
+            error={suErr.email || domainWarning}
+            hint={`Use your Bocconi address (${ALLOWED_DOMAINS_SENTENCE}), in the form name.surname. A matriculation number such as 3243000@studbocconi.it is not valid for registration.`}
             autoComplete="email"
             disabled={isSubmitting}
           />
@@ -265,7 +290,7 @@ const Auth = () => {
           id="email"
           type="email"
           label="Email"
-          placeholder="name.surname@studbocconi.it"
+          placeholder={EMAIL_PLACEHOLDER}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);

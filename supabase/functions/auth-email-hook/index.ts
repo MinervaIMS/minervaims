@@ -3,6 +3,7 @@ import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { AUTH_SUBJECTS, renderAuthEmail } from '../_shared/auth-emails.ts'
 import { normalizeEmailSubject } from '../_shared/email-subjects.ts'
+import { isAllowedBocconiEmail } from '../_shared/bocconi-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -264,6 +265,50 @@ async function handleWebhook(req: Request): Promise<Response> {
   console.log('Received auth event', { emailType, email: payload.data.email, run_id })
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+  // =====================================================================
+  // A CONFIRMATION IS NEVER POSTED TO AN ADDRESS THAT CANNOT BE ACCEPTED.
+  // ---------------------------------------------------------------------
+  // Both forms check the domain before they create anything, which is
+  // where an ordinary person meets this rule and the only place it can be
+  // explained properly. Both run on the applicant's own machine, though,
+  // and `supabase.auth.signUp` is reachable with nothing but the public
+  // key, so neither is a guarantee. This is.
+  //
+  // ONLY `signup`. Every other action type belongs to an account that
+  // already exists, and refusing those would do real harm rather than
+  // prevent it: `recovery` is somebody resetting a password, and a member
+  // whose address predates this list would be locked out of their own
+  // account by a rule about new registrations. `email_change`,
+  // `magiclink`, `invite` and `reauthentication` are left alone for the
+  // same reason.
+  //
+  // IT IS RECORDED, NOT SILENTLY DROPPED. A row in `email_send_log`
+  // marked `suppressed` is how the rest of the system already describes
+  // an email deliberately not sent, so the Auto emails register answers
+  // "did anything go to this person" the same way it always has, and
+  // somebody who insists they registered can be shown what happened.
+  // =====================================================================
+  if (emailType === 'signup' && !isAllowedBocconiEmail(payload.data.email || '')) {
+    console.log('Signup confirmation suppressed: domain not accepted', { email: payload.data.email, run_id })
+    try {
+      await supabase.from('email_send_log').insert({
+        message_id: crypto.randomUUID(),
+        template_name: emailType,
+        recipient_email: payload.data.email,
+        status: 'suppressed',
+        error_message: 'Not a Bocconi address: no confirmation was sent.',
+      })
+    } catch (e) {
+      console.error('Could not log the suppressed signup', { message: (e as Error).message })
+    }
+    // 200, so the auth server does not retry a decision that will not
+    // change. Nothing is queued and no link receipt is written, so the
+    // account this belonged to can never be confirmed.
+    return new Response(JSON.stringify({ success: true, skipped: 'domain_not_allowed' }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
   const firstName = await resolveFirstName(supabase, payload.data.email)
 
   await recordLinkReceipt(supabase, payload.data.url, emailType, payload.data.email)
