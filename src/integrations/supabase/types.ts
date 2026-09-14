@@ -605,7 +605,6 @@ export type Database = {
           offer_sent_at: string | null
           phone: string
           received_email_sent_at: string | null
-          screening_mark: string
           second_choice: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
           status: string
@@ -649,7 +648,6 @@ export type Database = {
           offer_sent_at?: string | null
           phone: string
           received_email_sent_at?: string | null
-          screening_mark?: string
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
           status?: string
@@ -693,7 +691,6 @@ export type Database = {
           offer_sent_at?: string | null
           phone?: string
           received_email_sent_at?: string | null
-          screening_mark?: string
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label?: string
           status?: string
