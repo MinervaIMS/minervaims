@@ -19,6 +19,46 @@ import { safeLinkedInUrl } from '@/lib/linkedin';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
 // =====================================================================
+// ONE WAY OF WRITING A DATE, FOR EVERY READER OF THIS WINDOW.
+// ---------------------------------------------------------------------
+// These dates were left to `toLocaleDateString(undefined, ...)`, which
+// follows the reader's own browser: an Italian machine wrote "14 set
+// 2026", a British one "14 Sep 2026" and an American one "Sep 14, 2026",
+// for the same note. A candidacy is worked through by a division reading
+// the same thread side by side and comparing what was said when, and a
+// date that changes shape between two people looking at one screen is
+// worth less than a date.
+//
+// DAY, THREE-LETTER MONTH, YEAR, spelled out here rather than asked of
+// `toLocaleDateString`. Even pinned to a locale it is not fixed: the
+// browser's own date tables decide what `month: 'short'` means, and
+// current ones render September as "Sept" under en-GB while older ones
+// render "Sep". A column of dates in which one month is a letter wider
+// than the rest is exactly the kind of small wrongness this window is
+// being tidied to remove, so the twelve names are written down.
+// =====================================================================
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "14 Sep 2026". */
+function longDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+/** "14 Sep", for the one-line entries the workspace writes itself. */
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+/** "16:28". The clock is 24-hour everywhere in the workspace. */
+function hhmm(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// =====================================================================
 // CandidateProfile - everything about a candidate that is the same
 // wherever the candidate is being looked at.
 // ---------------------------------------------------------------------
@@ -72,14 +112,29 @@ interface Props {
   onNoteAdded: () => void | Promise<void>;
   addNote: (body: string) => Promise<void>;
   onError: (message: string) => void;
-  /** Slot for the page's own controls, above the notes. */
+  /**
+   * The priority switch, rendered INSIDE the identity grid rather than in
+   * a card of its own.
+   *
+   * It earns that place by being one bit of state with no explanation
+   * needed: a card for an on/off toggle was a heading, a sentence and a
+   * button to say something a switch says by itself. The page that owns
+   * the write still owns it; only where it sits is decided here.
+   */
+  priorityControl?: React.ReactNode;
+  /**
+   * The controls that MOVE a candidacy, laid out side by side beneath the
+   * identity. Kept a slot rather than built in, because what may be moved
+   * differs by page: Screening offers the division and the status, the
+   * Interview Calendar offers only the status.
+   */
   children?: React.ReactNode;
 }
 
 export function CandidateProfile({
   session, detail, cvUrl, answerUrl, docsLoading,
   canAddNotes, notesAllowedInReadOnly = false,
-  onNoteAdded, addNote, onError, children,
+  onNoteAdded, addNote, onError, children, priorityControl,
 }: Props) {
 
   const [noteText, setNoteText] = useState('');
@@ -173,7 +228,13 @@ export function CandidateProfile({
             Everything else is one line below.
             ============================================================ */}
         <div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
+          {/* THREE COLUMNS, TWO ROWS, IN READING ORDER: what they study and
+              how to look them up, then the two divisions they asked for and
+              whether this one is urgent. "Evaluated for" left this block
+              deliberately - it is not a fact about the candidate but a
+              decision of the association's, and it now stands beside the
+              status, with the control that changes it. */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
             <Info label="Programme" value={app.degree_course} />
             <Info label="Academic year" value={ACADEMIC_YEAR_LABELS[app.academic_year]} />
             <div>
@@ -201,13 +262,11 @@ export function CandidateProfile({
                 <div className="text-muted-foreground">-</div>
               )}
             </div>
-            {/* The evaluation reads under the association's own division
-                names, because it is the association's decision. The two
-                preferences read under the names the APPLICANT saw on the
-                form, where "Media and Operations" is one intake. */}
-            <Info label="Evaluated for" value={divisionLabels[evaluationDivision(app)]} />
+            {/* The two preferences read under the names the APPLICANT saw
+                on the form, where "Media and Operations" is one intake. */}
             <Info label="First choice" value={applyDivisionLabel(app.first_choice)} />
             <Info label="Second choice" value={app.second_choice ? applyDivisionLabel(app.second_choice) : '-'} />
+            {priorityControl}
           </div>
 
           <button
@@ -226,19 +285,22 @@ export function CandidateProfile({
               <Info label="Email" value={app.email} />
               <Info label="Phone" value={app.phone} />
               <Info label="Bocconi ID" value={app.bocconi_id} />
-              <Info label="Submitted" value={new Date(app.created_at).toLocaleString()} />
+              <Info label="Submitted" value={`${longDate(app.created_at)}, ${hhmm(app.created_at)}`} />
               <Info label="LinkedIn address" value={app.linkedin_url || '-'} link={linkedIn || undefined} />
               {app.interview_division && (
                 <Info label="Interviewed by" value={divisionLabels[app.interview_division]} />
               )}
               {app.withdrawn_at && (
-                <Info label="Withdrawn on" value={new Date(app.withdrawn_at).toLocaleString()} />
+                <Info label="Withdrawn on" value={longDate(app.withdrawn_at)} />
               )}
             </div>
           )}
         </div>
 
-        {children}
+        {/* SIDE BY SIDE, because they are read together: which division is
+            judging this candidate, and how far that division has got. One
+            above the other pushed the notes off the screen for no reason. */}
+        {children && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{children}</div>}
 
         <NoteThread
           notes={detail.notes}
@@ -378,7 +440,11 @@ function NoteThread({
         </div>
       )}
 
-      <div className="space-y-2 max-h-[26rem] overflow-y-auto pr-1">
+      {/* Tall enough to read a disagreement without scrolling twice. The
+          documents beside it are 72vh, so the column has the room; capping
+          it at all is only so a candidacy with forty notes cannot push the
+          rest of the window off the screen. */}
+      <div className="space-y-2 max-h-[40rem] overflow-y-auto pr-1">
         {notes.length === 0 && (
           <p className="text-sm text-muted-foreground">
             Nothing recorded yet. Notes are how the division keeps its reasoning where the next reader can find it.
@@ -394,7 +460,7 @@ function NoteThread({
             <div>
               <span className="text-foreground/80">{n.body}</span>
               <span className="ml-1.5 whitespace-nowrap">
-                · {new Date(n.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                · {shortDate(n.created_at)}
               </span>
             </div>
           </div>
@@ -403,7 +469,7 @@ function NoteThread({
             <div className="flex items-baseline justify-between gap-2 mb-1">
               <span className="text-xs font-medium text-foreground">{n.author_name || 'Unknown'}</span>
               <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                {new Date(n.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                {longDate(n.created_at)}
               </span>
             </div>
             <div className="text-sm text-foreground whitespace-pre-wrap break-words">{n.body}</div>
@@ -463,10 +529,10 @@ function EmailHistory({ emails, email }: { emails: ApplicationEmail[] | undefine
                 return (
                   <tr key={m.id} className="border-t border-separator">
                     <td className="px-3 py-2 whitespace-nowrap text-foreground">
-                      {at.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {longDate(m.created_at)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap tabular-nums text-muted-foreground">
-                      {at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      {hhmm(m.created_at)}
                     </td>
                     <td className="px-3 py-2">
                       <span className="text-foreground">{m.template_label || m.template_name}</span>
