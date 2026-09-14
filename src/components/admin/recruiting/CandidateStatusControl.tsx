@@ -127,13 +127,26 @@ export function CandidateStatusControl({
 
   return (
     <>
-      <div className="border border-accent/30 bg-accent/5 p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-wider text-accent font-semibold inline-flex items-center gap-1.5">
-            Candidate status {showHelp && <HelpDot page="applications-screening" topic="status" />}
-          </div>
-          <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(app.status)}`}>{STATUS_LABELS[app.status]}</span>
-        </div>
+      {/* =================================================================
+          THE CONTROL, AND NOTHING ELSE.
+          -----------------------------------------------------------------
+          Four paragraphs used to stand under this dropdown, explaining the
+          forward-only rule, which statuses send an email, where offer
+          outcomes live, and what "Accepted" does not mean. Every word was
+          true and every word was in the way: they were read once, by each
+          reviewer, and then scrolled past a hundred times in a round.
+          They are now in the help topic behind the (?), which is where the
+          workspace puts standing explanations everywhere else, and which a
+          reviewer can open on the day they need it.
+          WHAT STAYS VISIBLE is anything that is true of THIS candidate and
+          not of candidates in general: a warning that only applies to the
+          one in front of you is news, not documentation.
+          ================================================================= */}
+      <ControlCard
+        label="Candidate status"
+        help={showHelp ? <HelpDot page="applications-screening" topic="status" /> : null}
+        badge={<span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(app.status)}`}>{STATUS_LABELS[app.status]}</span>}
+      >
         {!canChangeStatus ? (
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
             You can review this candidate and add notes below, but changing the status is reserved for the President, Vice President and the Heads. Your notes are visible to them.
@@ -176,17 +189,15 @@ export function CandidateStatusControl({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              A candidacy only moves <strong>forward</strong>: once a stage is reached it cannot be taken back, so only later stages are offered here. Statuses marked <strong>“sends an email / action”</strong> notify the applicant or unlock a step (e.g. “Invited to interview” emails them and opens booking). Offer outcomes are handled in <strong>New Joiners</strong> and can’t be set here.
-            </p>
           </>
         )}
+        {/* TRUE OF THIS CANDIDATE, so it stays on the page. */}
         {app.status === 'accepted' && (
-          <p className="text-xs text-amber-700 border-t border-amber-200 pt-2">
-            “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until the president sends the final offers to <strong>New Joiners</strong>. Only then are they told they passed the selection.
+          <p className="text-xs text-amber-700">
+            “Accepted” is <strong>not</strong> yet visible to the candidate. They still see their outcome as pending until the president sends the final offers to <strong>New Joiners</strong>.
           </p>
         )}
-      </div>
+      </ControlCard>
 
       {/* Confirmation before an email-triggering status change. */}
       <AlertDialog open={!!pendingStatus} onOpenChange={(o) => { if (!o) setPendingStatus(null); }}>
@@ -220,6 +231,34 @@ export function CandidateStatusControl({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+/**
+ * The shape every control in this window shares.
+ *
+ * A label, the (?) that holds its explanation, the current value on the
+ * right, and the control underneath. Status, Priority and Evaluated for
+ * were three different shapes doing the same job, each with its own
+ * paragraph of prose; one shape makes the window scannable and puts the
+ * words where the workspace already keeps them.
+ */
+export function ControlCard({ label, help, badge, children }: {
+  label: string;
+  help?: React.ReactNode;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border border-separator p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+          {label}{help}
+        </div>
+        {badge}
+      </div>
+      {children}
+    </div>
   );
 }
 

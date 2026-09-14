@@ -47,6 +47,13 @@ export interface CandidateContext {
   invited: boolean;
   /** The candidate stopped their own application. Not the same as never invited. */
   withdrawn?: boolean;
+  /** How many slots this candidate has taken: the first, plus any change. */
+  bookingsMade?: number;
+  /**
+   * Changes still available. 0 means the booking is final and Cancel is
+   * not offered; the server refuses it either way.
+   */
+  changesLeft?: number;
   division?: OrgDivision | null;
   status?: ApplicationStatus;
   booking?: {

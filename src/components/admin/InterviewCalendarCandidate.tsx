@@ -22,6 +22,7 @@ const hhmm = (t: string) => t.slice(0, 5);
 // Cancellation / rescheduling rules, kept consistent with the invitation email.
 const INTERVIEW_RULES = [
   'You may cancel your slot up to 90 minutes before it begins, from this page.',
+  'A slot can be changed ONCE. After that the time you are holding is final, because every change takes a time back from the division that opened it.',
   'After cancelling you can pick another available slot, but we cannot always guarantee that a cancelled interview can be rescheduled if none remain.',
   'Please book within 72 hours (3 days) of receiving your invitation email.',
   'A short delay of 5 to 10 minutes may occur if a previous interview overruns; thank you for your patience.',
@@ -156,22 +157,43 @@ export default function InterviewCalendarCandidate() {
               </ul>
             </div>
 
+            {/* THE CHANGE IS OFFERED ONLY WHILE THERE IS ONE LEFT.
+                The server refuses a second change either way. Showing the
+                button regardless would mean a candidate cancelling a slot
+                they hold and being told afterwards, which is the one
+                outcome worth designing out: they would have lost the time
+                and gained nothing. When it is spent the page says so
+                instead. */}
             <div className="mt-6 pt-4 border-t border-separator">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="rounded-none" disabled={busy}>Cancel / choose another slot</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
-                    <AlertDialogDescription>You may cancel up to <strong>90 minutes</strong> before your slot begins. Your current slot will be released and you can pick another available time, though we cannot always guarantee a cancelled interview can be rescheduled if none remain.</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-none">Keep it</AlertDialogCancel>
-                    <AlertDialogAction className="rounded-none" onClick={cancel}>Cancel booking</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {ctx.changesLeft === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  You have already changed your slot once, so this time is now final. If you genuinely cannot
+                  attend, write to the association rather than simply not appearing.
+                </p>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="rounded-none" disabled={busy}>Cancel / choose another slot</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        You may cancel up to <strong>90 minutes</strong> before your slot begins. Your current slot
+                        will be released and you can pick another available time, though we cannot always guarantee
+                        a cancelled interview can be rescheduled if none remain.
+                        <br /><br />
+                        <strong>This is the only change you may make.</strong> Once you have booked again, that time
+                        is final.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-none">Keep it</AlertDialogCancel>
+                      <AlertDialogAction className="rounded-none" onClick={cancel}>Cancel booking</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </CardContent>
         </Card>

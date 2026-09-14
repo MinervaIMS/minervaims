@@ -34,6 +34,38 @@ const CORE_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const BOOKABLE_STATUS = 'interview_invitation_sent';
 const BOOKED_STATUS = 'interview_confirmed';
 
+/**
+ * How many times one candidate may take a slot: the first booking, plus
+ * one change. A third is refused.
+ *
+ * Enforced HERE and not in the browser, because the browser is where the
+ * candidate is. The Interview page hides the Cancel button once the
+ * change is spent, which is a courtesy; this is the rule.
+ */
+const MAX_BOOKINGS = 2;
+
+/**
+ * A line the workspace writes into a candidate's notes itself.
+ *
+ * `author_id` is null and the kind is `system`, so the reviewer's notes
+ * can draw it as a fact rather than as somebody's opinion. Failure is
+ * swallowed on purpose: a booking that went through must not be reported
+ * as failed because the note beside it could not be written.
+ */
+async function systemNote(supabase: any, applicationId: string, body: string): Promise<void> {
+  try {
+    await supabase.from('application_notes').insert({
+      application_id: applicationId,
+      author_id: null,
+      author_name: 'Minerva Workspace',
+      body,
+      kind: 'system',
+    });
+  } catch (e) {
+    console.error('system note failed', e);
+  }
+}
+
 const DIV_LABELS: Record<string, string> = {
   equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
   portfolio: 'Portfolio Management', quant: 'Quantitative Research',
@@ -319,6 +351,11 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         division: app.interview_division,
         status: app.status,
         booking: booking ? { ...booking, slot: bookedSlot } : null,
+        // How many slots they have taken, and whether the one change is
+        // spent. The page uses it to say so plainly instead of offering a
+        // Cancel button that the server would refuse.
+        bookingsMade: Number(app.interview_bookings_made ?? 0),
+        changesLeft: Math.max(0, MAX_BOOKINGS - Number(app.interview_bookings_made ?? 0)),
       });
     }
 
@@ -354,6 +391,26 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       const { data: existing } = await supabase.from('interview_bookings').select('id').eq('application_id', app.id).maybeSingle();
       if (existing) return json({ error: 'You already have a booked interview' }, 409);
 
+      // =====================================================================
+      // ONE CHANGE, AND THEN THE TIME IS THE TIME.
+      // ---------------------------------------------------------------------
+      // Slots are shared: every move takes a time back from the division
+      // that opened it and hands it to whoever asks next, and a candidate
+      // rearranging a fourth time is rearranging everybody else's day.
+      // A first booking and one change is enough for a genuine clash and
+      // few enough to plan around.
+      //
+      // COUNTED ON THE APPLICATION, not on the booking, because cancelling
+      // deletes the booking: a count kept there would be reset by the very
+      // act it exists to measure.
+      // =====================================================================
+      const booked = Number(app.interview_bookings_made ?? 0);
+      if (booked >= MAX_BOOKINGS) {
+        return json({
+          error: 'You have already changed your interview slot once, and a slot can only be changed once. Please write to the association if you genuinely cannot make the time you booked.',
+        }, 409);
+      }
+
       const { data: slot } = await supabase.from('interview_slots').select('*').eq('id', body.slot_id).maybeSingle();
       if (!slot || !slot.is_active) return json({ error: 'Slot not available' }, 404);
       if (slot.division !== app.interview_division) return json({ error: 'This slot is for another division' }, 403);
@@ -368,7 +425,24 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         if ((error as any).code === '23505') return json({ error: 'Slot no longer available' }, 409);
         throw error;
       }
-      await supabase.from('applications').update({ status: BOOKED_STATUS }).eq('id', app.id);
+      // The booking stands: count it, and say so in the candidate's own
+      // notes. `booked` was read above, so this writes a known value
+      // rather than reading and adding in two steps.
+      await supabase.from('applications')
+        .update({ status: BOOKED_STATUS, interview_bookings_made: booked + 1 })
+        .eq('id', app.id);
+
+      // THE REVIEWERS LEARN OF IT WHERE THEY ALREADY LOOK. A booking used
+      // to be visible only on the interview calendar, so somebody reading
+      // a candidacy could not see that the interview had been arranged, or
+      // that it had been moved. It is written into the notes, marked as the
+      // workspace's own line rather than a reviewer's opinion.
+      await systemNote(
+        supabase, app.id,
+        booked === 0
+          ? `Interview scheduled for ${formatSlotDate(slot.slot_date)} at ${formatSlotTime(slot.start_time)} (${DIV_LABELS[slot.division] || slot.division}, ${slot.examiner_name || 'examiner to be confirmed'}).`
+          : `Interview booking changed to ${formatSlotDate(slot.slot_date)} at ${formatSlotTime(slot.start_time)} (${DIV_LABELS[slot.division] || slot.division}, ${slot.examiner_name || 'examiner to be confirmed'}). This was the candidate's one permitted change.`,
+      );
 
       // Automatic email: booking confirmation to the candidate.
       try {
@@ -406,6 +480,15 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (!app) return json({ error: 'No application found' }, 404);
       const { data: booking } = await supabase.from('interview_bookings').select('id, slot_id').eq('application_id', app.id).maybeSingle();
       if (!booking) return json({ error: 'No booking to cancel' }, 404);
+      // CANCELLING WHEN THERE IS NO CHANGE LEFT WOULD STRAND THEM. The
+      // booking would go and `book` would then refuse to give them another,
+      // leaving a candidate invited to an interview they can no longer
+      // arrange. Refused here instead, while they still hold the slot.
+      if (Number(app.interview_bookings_made ?? 0) >= MAX_BOOKINGS) {
+        return json({
+          error: 'You have already used your one change of slot, so this booking can no longer be cancelled from here. Please write to the association if you cannot attend.',
+        }, 409);
+      }
       // Read the slot BEFORE the booking goes, so the notice can name the
       // time that has just been given back and the person who opened it.
       const { data: freedSlot } = await supabase.from('interview_slots')

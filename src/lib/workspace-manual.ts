@@ -778,6 +778,14 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     ],
     related: ['reports-archive', 'people-members', 'reports-funds'],
   },
+  'people-invites': {
+    detail: [
+      "Accounts for advisors and alumni, who have left Bocconi and cannot register themselves because new accounts are restricted to the university's three domains.",
+      "An invitation is not a way round that rule. The association creates the account itself and emails a link to set a password; the sign-up form is never involved.",
+      "Once somebody accepts, they are an ordinary account and their access is managed in Settings, Users. This page keeps the record of who invited whom, as what, and when.",
+    ],
+    related: ['people-members', 'people-alumni', 'settings-users'],
+  },
   'applications-status': {
     detail: [
       "Where your application has got to, and what happens next.",
