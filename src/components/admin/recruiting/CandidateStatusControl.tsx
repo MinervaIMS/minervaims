@@ -74,6 +74,30 @@ export function CandidateStatusControl({
   };
 
   // Status changes that send an email need explicit confirmation first.
+  // =====================================================================
+  // THE CURRENT STATUS IS SHOWN ONCE, AND IN THE CONTROL WHEN THERE IS ONE.
+  // ---------------------------------------------------------------------
+  // It used to sit as a badge beside the card's heading while the control
+  // underneath read "Advance to…", so the card carried the status in one
+  // place and a placeholder in another, and the control - the thing a
+  // reviewer looks at - was the half that did not say where the candidate
+  // had got to.
+  //
+  // The pill is now the closed state of the dropdown, which is how the
+  // Evaluated for control beside it already reads. The heading badge is
+  // kept for the four cases where there IS no dropdown (a reader who
+  // cannot change it, another division's candidate, a withdrawal, an
+  // offer outcome), because the status still has to be visible there and
+  // the paragraph in its place cannot carry it.
+  // =====================================================================
+  const statusPill = (
+    <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(app.status)}`}>
+      {STATUS_LABELS[app.status]}
+    </span>
+  );
+  const hasDropdown = canChangeStatus && canProgress
+    && app.status !== 'withdrawn' && !isLockedStatus(app.status);
+
   const requestStatusChange = (status: ApplicationStatus) => {
     if (EMAIL_ON_STATUS[status]) setPendingStatus(status);
     else changeStatus(status);
@@ -145,7 +169,7 @@ export function CandidateStatusControl({
       <ControlCard
         label="Candidate status"
         help={showHelp ? <HelpDot page="applications-screening" topic="status" /> : null}
-        badge={<span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(app.status)}`}>{STATUS_LABELS[app.status]}</span>}
+        badge={hasDropdown ? undefined : statusPill}
       >
         {!canChangeStatus ? (
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
@@ -177,10 +201,14 @@ export function CandidateStatusControl({
           <>
             <Select
               key={app.status}
-              value={undefined}
+              value={app.status}
               onValueChange={(v) => requestStatusChange(v as ApplicationStatus)}
             >
-              <SelectTrigger className="font-body"><SelectValue placeholder="Advance to…" /></SelectTrigger>
+              {/* `SelectValue` is given children, so it prints the pill
+                  rather than looking the value up among the items: the
+                  current status is deliberately NOT one of them, since
+                  only later stages can be chosen. */}
+              <SelectTrigger className="font-body"><SelectValue>{statusPill}</SelectValue></SelectTrigger>
               <SelectContent>
                 {allowedNextStatuses(app.status).map((o) => (
                   <SelectItem key={o.value} value={o.value}>
@@ -251,11 +279,14 @@ export function ControlCard({ label, help, badge, children }: {
 }) {
   return (
     <div className="border border-separator p-3 space-y-2">
+      {/* The label keeps its line and the badge gives way: a heading that
+          wraps to two lines to make room for a status pill reads as two
+          headings, and these cards now sit two to a row. */}
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5 whitespace-nowrap shrink-0">
           {label}{help}
         </div>
-        {badge}
+        {badge && <div className="min-w-0 text-right">{badge}</div>}
       </div>
       {children}
     </div>

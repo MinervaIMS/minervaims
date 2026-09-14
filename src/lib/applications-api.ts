@@ -15,6 +15,10 @@ export type AcademicYear = 'bachelor_1' | 'bachelor_2' | 'bachelor_3' | 'master_
 export type ApplicationStatus =
   | 'received' | 'cv_opened' | 'under_review' | 'to_be_contacted' | 'interview_invitation_sent'
   | 'waiting_interview_confirmation' | 'interview_confirmed' | 'interview_completed'
+  // THE THREE INTERNAL ONES. Workspace-only: nothing is sent, nothing is
+  // unlocked, and the candidate's own page reads all three as the
+  // interview stage. See INTERNAL STATUSES below.
+  | 'on_hold_pre_interview' | 'on_hold_post_interview' | 'plausible_offer' | 'to_be_rejected'
   | 'accepted' | 'rejected' | 'offer_accepted' | 'offer_declined' | 'joined'
   // The candidate's own decision to stop their candidacy. See WITHDRAWAL below.
   | 'withdrawn';
@@ -73,58 +77,59 @@ export interface ApplicationRow {
   offer_fee_due?: boolean | null;
   /** When the candidate withdrew their own application, if they did. */
   withdrawn_at?: string | null;
-  /** The reviewers' own shorthand. See SCREENING MARKS below. */
-  screening_mark?: ScreeningMark;
   /** How many times this candidate has taken an interview slot. */
   interview_bookings_made?: number;
 }
 
 // =====================================================================
-// SCREENING MARKS: the reviewers' shorthand, kept apart from the status.
+// INTERNAL STATUSES: the three the association sees and nobody else.
 // ---------------------------------------------------------------------
-// "To reject" and "Maybe" were asked for as two more candidate statuses.
-// They are not, and the reason is the rule the status column already
-// lives under: a candidacy only ever moves FORWARD, enforced here and
-// again on the server by comparing positions in `STATUS_FLOW`.
+// "On hold", "Plausible offer" and "To be rejected" are decisions taken
+// but not yet acted on. They were first built as a separate MARK field,
+// because the status column only ever moves forward and a note-to-self
+// wants to be settable in any order; the association chose the status
+// list instead, with three states rather than two, knowing what that
+// costs.
 //
-// "Maybe" means "we may yet interview this person if we are short", so a
-// candidate carrying it must still be invitable afterwards. As a status
-// it would occupy a fixed position and forbid every stage before it, and
-// the one thing it exists to allow would be the one thing it prevented.
-// "To reject" is a note to self taken before the decision, not the
-// decision: a reviewer who marks somebody To reject and is overruled
-// must be able to carry on as though nothing had happened.
+// THERE ARE TWO HOLDS, ONE ON EACH SIDE OF THE INTERVIEW, and where each
+// sits is the whole of the design. A status only ever moves forward, so
+// the position of a hold decides what is still possible after it:
 //
-// So a mark is its own field. It is set, changed and cleared in any
-// order, at any stage, and says nothing about where the candidacy has
-// reached. NOTHING IS ATTACHED TO IT: no email, no status move, no
-// unlocked step. It exists to be read by the people doing the reviewing,
-// which is exactly the job the spreadsheet it replaces was doing.
+//   on_hold_pre_interview   sits between "Under review" and "To be
+//                           invited". Everything from the invitation
+//                           onwards is still AHEAD of it, so parking
+//                           somebody here keeps the interview open. This
+//                           is the commonest pause - a CV read, and
+//                           neither an obvious invitation nor an obvious
+//                           refusal - and a single post-interview hold
+//                           could not express it without carrying the
+//                           candidate past the interview for good.
+//
+//   on_hold_post_interview  sits after "Interview completed", beside
+//                           "Plausible offer" and "To be rejected": the
+//                           three decisions taken and not yet acted on.
+//
+// NONE OF THE FOUR IS A DEAD END. Accepted and Rejected are reachable
+// from every one of them, so a decision recorded here can still go
+// either way.
+//
+// NOTHING IS ATTACHED TO ANY OF THEM. They are absent from
+// `EMAIL_ON_STATUS`, so no confirmation is asked for and no email is
+// sent; they unlock nothing; and `candidateStatus` maps all three to the
+// interview stage, so an applicant reading their own page sees exactly
+// what they saw before. That is the whole point: the association can
+// finish deciding before the candidate is told anything.
 // =====================================================================
 
-export type ScreeningMark = 'none' | 'to_reject' | 'maybe';
+/** The four the workspace keeps to itself. */
+export const INTERNAL_STATUSES: ApplicationStatus[] = [
+  'on_hold_pre_interview', 'on_hold_post_interview', 'plausible_offer', 'to_be_rejected',
+];
 
-export const SCREENING_MARK_LABELS: Record<ScreeningMark, string> = {
-  none: 'No mark',
-  to_reject: 'To reject',
-  maybe: 'Maybe',
-};
-
-/** Colour per mark. Muted on purpose: a mark is not an outcome. */
-export const SCREENING_MARK_CLASS: Record<ScreeningMark, string> = {
-  none: 'bg-muted text-muted-foreground border-separator',
-  to_reject: 'bg-rose-50 text-rose-700 border-rose-200',
-  maybe: 'bg-violet-50 text-violet-700 border-violet-200',
-};
-
-/** The mark on a row, defaulting for any row written before the column. */
-export function screeningMark(a: Pick<ApplicationRow, 'screening_mark'> | null | undefined): ScreeningMark {
-  const m = a?.screening_mark;
-  return m === 'to_reject' || m === 'maybe' ? m : 'none';
+/** Is this a status the candidate is never shown? */
+export function isInternalStatus(s: ApplicationStatus): boolean {
+  return INTERNAL_STATUSES.includes(s);
 }
-
-/** The three options, in the order the control offers them. */
-export const SCREENING_MARKS: ScreeningMark[] = ['none', 'maybe', 'to_reject'];
 
 export interface ApplicationNote {
   id: string;
@@ -441,6 +446,14 @@ export const STATUS_COLORS: Record<ApplicationStatus, string> = {
   waiting_interview_confirmation: 'bg-amber-50 text-amber-700 border-amber-200',
   interview_confirmed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   interview_completed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  // The three internal ones share a family of their own, so a reviewer
+  // scanning the register can see at a glance which rows are the
+  // association's own working state rather than a stage the candidate
+  // has been told about.
+  on_hold_pre_interview: 'bg-slate-100 text-slate-700 border-slate-300',
+  on_hold_post_interview: 'bg-slate-100 text-slate-700 border-slate-300',
+  plausible_offer: 'bg-teal-50 text-teal-700 border-teal-200',
+  to_be_rejected: 'bg-rose-50 text-rose-700 border-rose-200',
   accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   offer_accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   joined: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -456,8 +469,17 @@ export function statusBadgeClass(status: ApplicationStatus): string {
 
 // Full internal status list (reviewer-facing), in workflow order.
 export const STATUS_FLOW: ApplicationStatus[] = [
-  'received', 'cv_opened', 'under_review', 'to_be_contacted', 'interview_invitation_sent',
+  'received', 'cv_opened', 'under_review',
+  // BEFORE the invitation, so "To be invited" and the whole interview
+  // stay ahead of it. That placement is the reason this one exists.
+  'on_hold_pre_interview',
+  'to_be_contacted', 'interview_invitation_sent',
   'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed',
+  // Post-interview triage, in the order the association named them. They
+  // are placed here and not earlier because a status only moves forward:
+  // after them, Accepted and Rejected are both still reachable, which is
+  // what makes them a pause rather than an outcome.
+  'on_hold_post_interview', 'plausible_offer', 'to_be_rejected',
   'accepted', 'rejected', 'offer_accepted', 'offer_declined', 'joined',
   // LAST, AND THAT IS THE POINT. The progression is enforced by comparing
   // positions in this list, so a state at the end can be reached from any
@@ -472,7 +494,11 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   // workflow. Only the words a reviewer reads change.
   to_be_contacted: 'To be invited', interview_invitation_sent: 'Interview invitation sent',
   waiting_interview_confirmation: 'Waiting for interview confirmation', interview_confirmed: 'Interview confirmed',
-  interview_completed: 'Interview completed', accepted: 'Accepted', rejected: 'Rejected',
+  interview_completed: 'Interview completed',
+  on_hold_pre_interview: 'On hold pre interview',
+  on_hold_post_interview: 'On hold post interview',
+  plausible_offer: 'Plausible offer', to_be_rejected: 'To be rejected',
+  accepted: 'Accepted', rejected: 'Rejected',
   offer_accepted: 'Offer accepted', offer_declined: 'Offer declined', joined: 'Joined',
   withdrawn: 'Withdrawn by candidate',
 };
@@ -503,11 +529,17 @@ export const MANUAL_STATUSES: { value: ApplicationStatus; label: string; effect:
   { value: 'received', label: STATUS_LABELS.received, effect: 'passive' },
   { value: 'cv_opened', label: STATUS_LABELS.cv_opened, effect: 'passive' },
   { value: 'under_review', label: STATUS_LABELS.under_review, effect: 'passive' },
+  { value: 'on_hold_pre_interview', label: STATUS_LABELS.on_hold_pre_interview, effect: 'passive' },
   { value: 'to_be_contacted', label: STATUS_LABELS.to_be_contacted, effect: 'passive' },
   { value: 'interview_invitation_sent', label: STATUS_LABELS.interview_invitation_sent, effect: 'action' },
   { value: 'waiting_interview_confirmation', label: STATUS_LABELS.waiting_interview_confirmation, effect: 'passive' },
   { value: 'interview_confirmed', label: STATUS_LABELS.interview_confirmed, effect: 'passive' },
   { value: 'interview_completed', label: STATUS_LABELS.interview_completed, effect: 'passive' },
+  // `effect: 'passive'` on all three, which is not a detail: it is what
+  // keeps them out of the confirmation dialog and out of the email path.
+  { value: 'on_hold_post_interview', label: STATUS_LABELS.on_hold_post_interview, effect: 'passive' },
+  { value: 'plausible_offer', label: STATUS_LABELS.plausible_offer, effect: 'passive' },
+  { value: 'to_be_rejected', label: STATUS_LABELS.to_be_rejected, effect: 'passive' },
   { value: 'accepted', label: STATUS_LABELS.accepted, effect: 'passive' },
   { value: 'rejected', label: STATUS_LABELS.rejected, effect: 'action' },
 ];
@@ -618,13 +650,24 @@ export function canWithdraw(a: Pick<ApplicationRow, 'status'> | null): boolean {
 export function candidateStatus(s: ApplicationStatus): { label: string; step: number } {
   switch (s) {
     case 'received': return { label: 'Application received', step: 1 };
+    // EACH INTERNAL STATUS READS AS THE STAGE THE CANDIDATE WAS ALREADY
+    // AT when it was set, which is why there are two groups rather than
+    // one: a pre-interview hold belongs with "under review", a
+    // post-interview one with the interview. Their page must not change
+    // because the association has started deciding. "On hold" in
+    // particular would be read as bad news, and it is not news at all
+    // until somebody acts on it.
     case 'cv_opened':
     case 'under_review':
+    case 'on_hold_pre_interview':
     case 'to_be_contacted': return { label: 'Application under review', step: 2 };
     case 'interview_invitation_sent':
     case 'waiting_interview_confirmation':
     case 'interview_confirmed':
-    case 'interview_completed': return { label: 'Interview stage', step: 3 };
+    case 'interview_completed':
+    case 'on_hold_post_interview':
+    case 'plausible_offer':
+    case 'to_be_rejected': return { label: 'Interview stage', step: 3 };
     case 'accepted':
     case 'offer_accepted':
     case 'joined': return { label: 'Accepted', step: 4 };
@@ -705,17 +748,6 @@ export async function setApplicationPriority(session: Session | null, id: string
   return await invoke(session, { action: 'set-priority', id, priority });
 }
 
-/**
- * Set or clear a reviewer's mark on a candidacy.
- *
- * Deliberately its own endpoint rather than a field on `update-status`:
- * nothing about a mark is a progression, and routing it through the
- * action that sends emails and unlocks steps would put it one typo away
- * from being one.
- */
-export async function setScreeningMark(session: Session | null, id: string, mark: ScreeningMark) {
-  return await invoke(session, { action: 'set-screening-mark', id, mark });
-}
 export async function setDivisionQuestion(session: Session | null, division: OrgDivision, question: string) {
   return await invoke(session, { action: 'set-question', division, question });
 }

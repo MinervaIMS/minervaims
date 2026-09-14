@@ -30,19 +30,9 @@ function roleLabel(role: unknown): string {
 //
 // Actions: list · get · sign-url · update-status · add-note · bulk-urls
 //          · set-question · convert-to-member · set-evaluation-division
-//          · set-priority · set-screening-mark
+//          · set-priority
 // =====================================================================
 
-/**
- * The reviewers' own shorthand, and the three values it may take.
- *
- * NOT A STATUS, and kept out of `STATUSES` on purpose. The status column
- * only ever moves forward; a mark is set, changed and cleared in any
- * order at any stage and decides nothing. Nothing is attached to it: no
- * email, no progression, no unlocked step. Mirrors `ScreeningMark` in
- * src/lib/applications-api.ts.
- */
-const SCREENING_MARKS = ['none', 'to_reject', 'maybe'];
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,8 +72,23 @@ const OFFER_ROLES = ['admin', 'president'];
 // `convert-to-member` completes the same act - it turns an applicant into a
 // member - so it is held to the same rule.
 const STATUSES = [
-  'received', 'cv_opened', 'under_review', 'to_be_contacted', 'interview_invitation_sent',
+  'received', 'cv_opened', 'under_review',
+  // THE FOUR INTERNAL ONES: a pause, or a decision taken and not yet
+  // acted on. Nothing is attached to any of them - they are absent from
+  // every email branch below, and the candidate's own status page reads
+  // each as the stage they were already at.
+  //
+  // THERE ARE TWO HOLDS BECAUSE A STATUS ONLY MOVES FORWARD, so where a
+  // hold sits decides what is still possible after it. This one is
+  // BEFORE the invitation, which leaves the whole interview ahead of a
+  // candidate parked on it. Mirrors STATUS_FLOW in
+  // src/lib/applications-api.ts, which must be changed with it.
+  'on_hold_pre_interview',
+  'to_be_contacted', 'interview_invitation_sent',
   'waiting_interview_confirmation', 'interview_confirmed', 'interview_completed',
+  // And these three are after it: post-interview triage. Accepted and
+  // Rejected stay reachable from all of them, so none is a dead end.
+  'on_hold_post_interview', 'plausible_offer', 'to_be_rejected',
   'accepted', 'rejected', 'offer_accepted', 'offer_declined', 'joined',
   // LAST IN THE LIST, AND NOT SETTABLE FROM HERE. The forward-only rule
   // below compares positions in this array, so a state at the end is
@@ -563,37 +568,6 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
       return json({ success: true });
 
-    }
-
-    // ── set-screening-mark ───────────────────────────────────────────────────
-    // Held to the same rule as the priority marker: the roles that can move
-    // a candidacy can mark one. A mark is a judgement about a candidate that
-    // every reviewer reads, so it is not left to everyone who can open the
-    // page, and it is never left to the candidate, who cannot see it at all.
-    if (action === 'set-screening-mark') {
-      if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
-      const mark = typeof body.mark === 'string' ? body.mark : '';
-      if (!SCREENING_MARKS.includes(mark)) return json({ error: 'Invalid mark' }, 400);
-      const { data: app } = await supabase.from('applications')
-        .select('id, first_name, surname, first_choice, second_choice, evaluation_division, interview_division, screening_mark')
-        .eq('id', body.id).maybeSingle();
-      if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
-
-      const { error } = await supabase.from('applications')
-        .update({ screening_mark: mark }).eq('id', app.id);
-      if (error) throw error;
-
-      try {
-        await supabase.from('activity_logs').insert({
-          user_id: user.id, user_email: user.email || 'unknown', user_role: primaryRole,
-          action: 'update', entity_type: 'application', entity_id: app.id,
-          entity_name: `${app.first_name} ${app.surname}`,
-          section: 'Recruiting', subsection: 'Candidates screening',
-          details: { event: 'screening_mark', from: app.screening_mark ?? 'none', to: mark },
-        });
-      } catch (e) { console.error('activity log failed', e); }
-
-      return json({ success: true, mark });
     }
 
     // ── set-evaluation-division ──────────────────────────────────────────────
