@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 import type { AppRole, OrgDivision } from '@/lib/roles';
+import { isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE } from '@/lib/bocconi-email';
 
 interface Profile {
   id: string;
@@ -269,7 +270,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // Domain check temporarily disabled for testing (any email accepted).
+    // =====================================================================
+    // NOTHING IS CREATED FOR AN ADDRESS THE ASSOCIATION DOES NOT ACCEPT.
+    // ---------------------------------------------------------------------
+    // The sign-up form checks this too, and says it better: it puts the
+    // reason under the field while the address is still being typed. This
+    // is the last line in the browser, so that a future caller of
+    // `signUp` cannot send a confirmation email to a private address by
+    // forgetting to ask first.
+    //
+    // It returns the same shape as a failed `supabase.auth.signUp`, so
+    // every caller handles it through the path it already has.
+    // =====================================================================
+    if (!isAllowedBocconiEmail(email)) {
+      return { error: new Error(DOMAIN_REJECTED_MESSAGE) };
+    }
 
     const redirectUrl = `${window.location.origin}/`;
     

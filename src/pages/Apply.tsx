@@ -23,6 +23,7 @@ import fullLogo from '@/assets/legal-hero-logo.svg';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 import PixelCardSuccess from '@/components/shared/PixelCardSuccess';
 import { WORKSPACE_BASE } from '@/lib/workspace-base';
+import { isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE, EMAIL_PLACEHOLDER, ALLOWED_DOMAINS_SENTENCE } from '@/lib/bocconi-email';
 import {
   listQuestions, getMyApplication, submitApplication,
   ACADEMIC_YEAR_LABELS, RANKED_APPLY_DIVISIONS,
@@ -33,7 +34,10 @@ import {
 // The divisions an applicant may choose now live in `applications-api`,
 // with the rules that go with them (which are ranked, which set a
 // written question). See APPLY_DIVISIONS.
-const STUD_EMAIL = /@studbocconi\.it$/i;
+//
+// The accepted address domains live in `bocconi-email`, which the
+// endpoint mirrors. This file used to hold a `STUD_EMAIL` regular
+// expression of its own, and never called it.
 
 function Shell({ children }: { children: React.ReactNode }) {
   // This page is the backdrop-plus-one-card shape, hand-rolled rather
@@ -227,7 +231,30 @@ export default function Apply() {
     e.preventDefault();
     const required = ['first_name', 'surname', 'bocconi_id', 'email', 'phone', 'degree_course', 'academic_year', 'first_choice'] as const;
     for (const k of required) if (!f[k]) { toast({ title: 'Please complete all required fields', variant: 'destructive' }); return; }
-    // Domain check temporarily disabled for testing (any email accepted).
+    // =====================================================================
+    // THE ADDRESS IS CHECKED BEFORE ANYTHING IS CREATED.
+    // ---------------------------------------------------------------------
+    // This is the whole point of where this line sits. Submitting used to
+    // call `supabase.auth.signUp` first and let the endpoint judge the
+    // address afterwards, so somebody applying from a private address
+    // received a confirmation email, followed it, confirmed an account,
+    // and only then learned that the application behind it had been
+    // refused. An account with nothing attached to it was left behind
+    // each time.
+    //
+    // Nothing is created and nothing is sent until the domain is known to
+    // be one the association accepts. The endpoint asks again for itself,
+    // and the auth email hook refuses to post a confirmation to an
+    // address outside the list whatever asked it to.
+    // =====================================================================
+    if (!isAllowedBocconiEmail(f.email)) {
+      toast({
+        title: 'That address is not a Bocconi one',
+        description: DOMAIN_REJECTED_MESSAGE,
+        variant: 'destructive',
+      });
+      return;
+    }
     if (password.length < 8) { toast({ title: 'Choose a password of at least 8 characters', variant: 'destructive' }); return; }
     if (password !== confirm) { toast({ title: 'The two passwords do not match', variant: 'destructive' }); return; }
     if (!cv) { toast({ title: 'Please attach your CV (PDF)', variant: 'destructive' }); return; }
@@ -397,7 +424,7 @@ export default function Apply() {
         </div>
 
         <SectionKicker>Account credentials</SectionKicker>
-        <Field label="Bocconi email *"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="name.surname@studbocconi.it" /></Field>
+        <Field label="Bocconi email *" hint={`Your university address: ${ALLOWED_DOMAINS_SENTENCE}.`}><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder={EMAIL_PLACEHOLDER} /></Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start mt-4">
           <Field label="Password *">
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
@@ -551,6 +578,14 @@ export default function Apply() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1"><Label className="font-body">{label}</Label>{children}</div>;
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="space-y-1">
+      <Label className="font-body">{label}</Label>
+      {children}
+      {/* Optional, and used only where a field has a rule the applicant
+          cannot guess from its label. */}
+      {hint && <p className="font-body text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
 }

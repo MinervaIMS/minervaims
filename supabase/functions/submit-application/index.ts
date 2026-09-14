@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE } from '../_shared/bocconi-email.ts';
 
 // =====================================================================
 // submit-application — public endpoint for the internal application form.
@@ -11,9 +12,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 // the application fields + documents. There is no separate "sign in first"
 // step and no approval-pending step.
 //
-// A valid applicant is someone whose email is a @studbocconi.it address,
-// who has not already applied in the current round, and who has completed
-// all required fields. Such a person becomes a `candidate` immediately;
+// A valid applicant is someone whose email is on one of the university's
+// domains (see _shared/bocconi-email.ts), who has not already applied in
+// the current round, and who has completed all required fields. Such a person becomes a `candidate` immediately;
 // confirming their email simply verifies the address.
 // =====================================================================
 
@@ -49,7 +50,6 @@ const RANKED_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant']
 /** Intakes that set no written question, so no answer is asked for. */
 const NO_WRITTEN_ANSWER = ['media'];
 const YEARS = ['bachelor_1', 'bachelor_2', 'bachelor_3', 'master_1', 'master_2', 'exchange'];
-const STUD_EMAIL = /@studbocconi\.it$/i;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -113,12 +113,18 @@ Deno.serve(async (req) => {
     if (userErr || !account) return json({ error: 'We could not find your account. Please retry.' }, 400);
 
     // ── Eligibility ──
-    // The application is only open to Bocconi students, and the address must
-    // be their university one. This also stops a mistyped domain (e.g.
-    // "@srudbocconi.it") from quietly creating a second candidate account.
+    // The application is only open to the university's own addresses. This
+    // also stops a mistyped domain (e.g. "@srudbocconi.it") from quietly
+    // creating a second candidate account.
+    //
+    // THE DOMAIN IS READ FROM THE ACCOUNT, not from the form, so the
+    // address judged here is the one the confirmation email would reach.
+    // The list is `_shared/bocconi-email.ts`, which the form and the auth
+    // email hook read too, so the three cannot disagree about who the
+    // university is.
     const accountEmail = (account.email || fields.email).trim();
-    if (!STUD_EMAIL.test(accountEmail)) {
-      return json({ error: 'Please apply with your Bocconi student address (name.surname@studbocconi.it).' }, 403);
+    if (!isAllowedBocconiEmail(accountEmail)) {
+      return json({ error: DOMAIN_REJECTED_MESSAGE }, 403);
     }
 
 
