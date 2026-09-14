@@ -116,6 +116,7 @@ export const NAV: NavSection[] = [
     subItems: [
       { key: 'people-members', slug: 'members', label: 'Members', allowed: (p) => p.can('people-members') },
       { key: 'people-alumni', slug: 'alumni', label: 'Alumni', allowed: (p) => p.can('people-alumni') },
+      { key: 'people-invites', slug: 'invites', label: 'Invites', allowed: (p) => p.can('people-invites') },
     ],
   },
   {

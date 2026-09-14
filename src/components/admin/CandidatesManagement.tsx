@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { Recommendation } from '@/components/admin/Recommendation';
-import { Download, FileText, Search, MessageSquare, Eye, Loader2, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { Download, FileText, Search, MessageSquare, Loader2, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -25,20 +25,19 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
-  listApplications, signDocumentUrl, bulkDocumentUrls,
+  listApplications, bulkDocumentUrls,
   addApplicationNote, setEvaluationDivision, setApplicationPriority,
   ACADEMIC_YEAR_LABELS, STATUS_FLOW, STATUS_LABELS, statusBadgeClass,
-  isLockedStatus,
+  isLockedStatus, screeningMark, setScreeningMark,
+  SCREENING_MARKS, SCREENING_MARK_LABELS, SCREENING_MARK_CLASS, type ScreeningMark,
   APPLY_DIVISIONS, EVALUATION_DIVISIONS, applyDivisionLabel,
   evaluationDivision, allowedEvaluationDivisions, isReEvaluated,
   reviewerDivisionsOf, canProgressApplication,
   type ApplicationRow, type ApplicationStatus, type BulkDocument,
 } from '@/lib/applications-api';
-import { openReportInTab } from '@/lib/open-report';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
-import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
-import { documentTitle } from '@/components/admin/recruiting/document-title';
+import { CandidateStatusControl, ControlCard } from '@/components/admin/recruiting/CandidateStatusControl';
 import { safeLinkedInUrl } from '@/lib/linkedin';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 import { zipFromUrls } from '@/lib/zip';
@@ -234,6 +233,8 @@ export default function CandidatesManagement() {
   // other column now, so "show me the priorities" is one click.
   // =================================================================
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
+  const [markFilter, setMarkFilter] = useState<string[]>([]);
+  const [markBusy, setMarkBusy] = useState<string | null>(null);
   // Which candidate's priority marker is being written right now, so the
   // toggle can be disabled for that one row without freezing the page.
   const [priorityBusy, setPriorityBusy] = useState<string | null>(null);
@@ -309,7 +310,7 @@ export default function CandidatesManagement() {
 
 
   // Every filter on this register, and the way back out of all of them.
-  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (programmeFilter.length > 0 ? 1 : 0) + (priorityFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
+  const activeFilterCount = (evaluationFilter.length > 0 ? 1 : 0) + (firstChoiceFilter.length > 0 ? 1 : 0) + (secondChoiceFilter.length > 0 ? 1 : 0) + (statusFilter.length > 0 ? 1 : 0) + (yearFilter.length > 0 ? 1 : 0) + (programmeFilter.length > 0 ? 1 : 0) + (priorityFilter.length > 0 ? 1 : 0) + (markFilter.length > 0 ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearAllFilters = () => {
     setEvaluationFilter([]);
     setFirstChoiceFilter([]);
@@ -318,6 +319,7 @@ export default function CandidatesManagement() {
     setYearFilter([]);
     setProgrammeFilter([]);
     setPriorityFilter([]);
+    setMarkFilter([]);
     setSearch('');
   };
 
@@ -335,8 +337,9 @@ export default function CandidatesManagement() {
       .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
       .filter((a) => programmeFilter.length === 0 || programmeFilter.includes(a.degree_course))
       .filter((a) => priorityFilter.length === 0 || priorityFilter.includes(a.priority ? 'yes' : 'no'))
+      .filter((a) => markFilter.length === 0 || markFilter.includes(screeningMark(a)))
       .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
-  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, priorityFilter, semKey]);
+  }, [apps, search, evaluationFilter, firstChoiceFilter, secondChoiceFilter, statusFilter, yearFilter, programmeFilter, priorityFilter, markFilter, semKey]);
 
   // THE FILTERS OFFER WHAT THE FORM OFFERS. The choice filters were built
   // from the five research divisions alone, so the Media and Operations
@@ -352,6 +355,7 @@ export default function CandidatesManagement() {
   const evaluationOptions = EVALUATION_DIVISIONS.map((d) => ({ value: d, label: divisionLabels[d] }));
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
+  const markOptions = SCREENING_MARKS.map((m) => ({ value: m, label: SCREENING_MARK_LABELS[m] }));
   // Two options, not one: "only the flagged" and "only the unflagged" are
   // both real questions, and ticking both reads as no filter at all.
   const priorityOptions = [
@@ -412,13 +416,34 @@ export default function CandidatesManagement() {
   const detailPaneRef = useRef<HTMLDivElement>(null);
   useEffect(() => { detailPaneRef.current?.scrollTo({ top: 0 }); }, [openId]);
 
-  // Documents open in a tab that says whose they are, through the same wrapper
-  // the site already uses for reports.
-  const openDoc = async (a: { id: string; first_name: string; surname: string }, kind: 'cv' | 'answer') => {
+  // =====================================================================
+  // SETTING A MARK IS A ONE-FIELD WRITE AND NOTHING ELSE.
+  // ---------------------------------------------------------------------
+  // Optimistic, like the priority marker, and rolled back the same way:
+  // a mark is read constantly while a round is worked through, so it has
+  // to answer instantly, and the only thing at stake if the write fails
+  // is a label. NO EMAIL AND NO STATUS MOVE IS ATTACHED, which is the
+  // whole point of it being its own field. The activity entry is written
+  // server-side, with the role the caller actually held.
+  // =====================================================================
+  const changeMark = async (a: Pick<ApplicationRow, 'id' | 'screening_mark'>, next: ScreeningMark) => {
+    if (!canChangeStatus || markBusy) return;
+    const previous = screeningMark(a);
+    if (next === previous) return;
+    setMarkBusy(a.id);
+    setApps((prev) => prev.map((x) => (x.id === a.id ? { ...x, screening_mark: next } : x)));
+    patchCandidate(a.id, { screening_mark: next });
     try {
-      const url = await signDocumentUrl(session, a.id, kind, 'preview');
-      openReportInTab(documentTitle(a, kind), url);
-    } catch (e) { toast({ title: 'Could not open', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+      await setScreeningMark(session, a.id, next);
+    } catch (e) {
+      setApps((prev) => prev.map((x) => (x.id === a.id ? { ...x, screening_mark: previous } : x)));
+      patchCandidate(a.id, { screening_mark: previous });
+      toast({
+        title: 'Could not change the mark',
+        description: e instanceof Error ? e.message : undefined,
+        variant: 'destructive',
+      });
+    } finally { setMarkBusy(null); }
   };
 
   // The one thing the page still owns about a status change: keeping its
@@ -624,8 +649,11 @@ export default function CandidatesManagement() {
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Programme" options={programmeOptions} selected={programmeFilter} onChange={setProgrammeFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} /></th>
-                <th className="px-3 py-2 font-normal text-center">CV</th>
-                <th className="px-3 py-2 font-normal text-center">Work</th>
+                {/* THE REVIEWERS' OWN SHORTHAND, filterable like everything
+                    else, because the question it answers is "show me the
+                    maybes" and that is a filter. It is NOT the status: see
+                    SCREENING MARKS in applications-api. */}
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Mark" options={markOptions} selected={markFilter} onChange={setMarkFilter} /></th>
                 <th className="px-3 py-2 font-normal text-center"><MessageSquare className="h-3.5 w-3.5 inline" /></th>
                 <th className="px-3 py-2 font-normal text-right">Actions</th>
               </tr>
@@ -737,15 +765,21 @@ export default function CandidatesManagement() {
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={`inline-block px-2 py-0.5 text-xs border ${statusBadgeClass(a.status)}`}>{STATUS_LABELS[a.status]}</span>
                   </td>
-                  <td className="px-3 py-2 text-center">
-                    <button type="button" title="Preview CV" onClick={() => openDoc(a, 'cv')} className="text-muted-foreground hover:text-accent transition-colors">
-                      <Eye className="h-4 w-4 inline" />
-                    </button>
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <button type="button" title="Preview submitted work" onClick={() => openDoc(a, 'answer')} className="text-muted-foreground hover:text-accent transition-colors">
-                      <Eye className="h-4 w-4 inline" />
-                    </button>
+                  {/* THE TWO PREVIEW COLUMNS ARE GONE. They opened a
+                      document in a tab straight from the row, which meant
+                      reading a CV without the candidate it belongs to in
+                      front of you. Both documents are in the candidate's
+                      own window, side by side, which is where they are
+                      actually read; the row keeps its Open button and the
+                      table gets two columns of width back. */}
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {screeningMark(a) === 'none' ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <span className={`inline-block px-2 py-0.5 text-xs border ${SCREENING_MARK_CLASS[screeningMark(a)]}`}>
+                        {SCREENING_MARK_LABELS[screeningMark(a)]}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-center">{a.note_count || ''}</td>
                   {/* `data-ro`: OPENING A CANDIDATE IS A READ. Without it the
@@ -840,32 +874,63 @@ export default function CandidatesManagement() {
                   this page can see: a head noticing somebody worth seeing
                   early is usually not in the division holding them. */}
               {canChangeStatus && (
-                <div className="border border-separator p-3 space-y-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
-                        Priority <HelpDot page="applications-screening" topic="priority" />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Flags this candidate to be looked at first.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant={detail.application.priority ? 'default' : 'outline'}
-                      size="sm"
-                      className="font-body shrink-0"
-                      disabled={priorityBusy === detail.application.id}
-                      aria-pressed={!!detail.application.priority}
-                      onClick={() => togglePriority(detail.application)}
-                    >
-                      {priorityBusy === detail.application.id
-                        ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        : <Zap className={`h-4 w-4 mr-2 ${detail.application.priority ? 'fill-current' : ''}`} />}
-                      {detail.application.priority ? 'Priority on' : 'Priority off'}
-                    </Button>
-                  </div>
-                </div>
+                <ControlCard
+                  label="Priority"
+                  help={<HelpDot page="applications-screening" topic="priority" />}
+                  badge={detail.application.priority
+                    ? <span className="inline-block px-2 py-0.5 text-xs border bg-destructive/10 text-destructive border-destructive/30">On</span>
+                    : <span className="inline-block px-2 py-0.5 text-xs border bg-muted text-muted-foreground border-separator">Off</span>}
+                >
+                  <Button
+                    type="button"
+                    variant={detail.application.priority ? 'default' : 'outline'}
+                    size="sm"
+                    className="font-body w-full"
+                    disabled={priorityBusy === detail.application.id}
+                    aria-pressed={!!detail.application.priority}
+                    onClick={() => togglePriority(detail.application)}
+                  >
+                    {priorityBusy === detail.application.id
+                      ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      : <Zap className={`h-4 w-4 mr-2 ${detail.application.priority ? 'fill-current' : ''}`} />}
+                    {detail.application.priority ? 'Priority on' : 'Priority off'}
+                  </Button>
+                </ControlCard>
+              )}
+
+              {/* ============================================================
+                  THE REVIEWER'S OWN MARK.
+                  ------------------------------------------------------------
+                  "To reject" and "Maybe", set and cleared freely, at any
+                  stage, in any order. NOTHING IS ATTACHED: no email, no
+                  status move, no unlocked step. It is deliberately NOT the
+                  status - see SCREENING MARKS in applications-api for why a
+                  forward-only status could not carry "Maybe" without
+                  forbidding the interview the mark exists to keep open.
+                  ============================================================ */}
+              {canChangeStatus && (
+                <ControlCard
+                  label="Mark"
+                  help={<HelpDot page="applications-screening" topic="screening-mark" />}
+                  badge={screeningMark(detail.application) === 'none'
+                    ? <span className="inline-block px-2 py-0.5 text-xs border bg-muted text-muted-foreground border-separator">No mark</span>
+                    : <span className={`inline-block px-2 py-0.5 text-xs border ${SCREENING_MARK_CLASS[screeningMark(detail.application)]}`}>
+                        {SCREENING_MARK_LABELS[screeningMark(detail.application)]}
+                      </span>}
+                >
+                  <Select
+                    value={screeningMark(detail.application)}
+                    onValueChange={(v) => changeMark(detail.application, v as ScreeningMark)}
+                    disabled={markBusy === detail.application.id}
+                  >
+                    <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SCREENING_MARKS.map((m) => (
+                        <SelectItem key={m} value={m}>{SCREENING_MARK_LABELS[m]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </ControlCard>
               )}
 
               {/* Evaluated for: the same control as the table's column, in
@@ -874,16 +939,10 @@ export default function CandidatesManagement() {
                   this page can see, including the ones another division is
                   assessing, which is the case reassignment exists for. */}
               {canChangeStatus && !isLockedStatus(detail.application.status) && (
-                <div className="border border-separator p-3 space-y-2">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
-                    Evaluated for <HelpDot page="applications-screening" topic="evaluation-division" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Which division is assessing this candidate. If they
-                    fit another division better, including one they did not name, change it here: they
-                    return to <strong>{STATUS_LABELS.to_be_contacted}</strong> so the new division can invite them,
-                    and any interview slot they were holding is released.
-                  </p>
+                <ControlCard
+                  label="Evaluated for"
+                  help={<HelpDot page="applications-screening" topic="evaluation-division" />}
+                >
                   <Select
                     value={evaluationDivision(detail.application)}
                     onValueChange={(v) => {
@@ -904,13 +963,15 @@ export default function CandidatesManagement() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {/* TRUE OF THIS CANDIDATE, so it stays on the page
+                      rather than moving into the help topic. */}
                   {detail.application.evaluation_division_previous && (
                     <p className="text-xs text-amber-700">
                       This candidacy has already been moved once, so it is now fixed to these two divisions.
                       A candidate is never opened in a third.
                     </p>
                   )}
-                </div>
+                </ControlCard>
               )}
             </CandidateProfile>
           )}

@@ -80,6 +80,7 @@ const EditorialCalendar = lazy(() => import('@/components/admin/EditorialCalenda
 const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
 const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
 const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
+const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
 const UserManagement = lazy(() => import('@/components/admin/UserManagement'));
 const RolePermissionsTable = lazy(() => import('@/components/admin/RolePermissionsTable'));
 const MobileViewTable = lazy(() => import('@/components/admin/MobileViewTable'));
@@ -144,6 +145,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'events-on-display': () => import('@/components/admin/AssociationOnDisplay'),
   'people-members': () => import('@/components/admin/MembersManagement'),
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
+  'people-invites': () => import('@/components/admin/InvitesManagement'),
   'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
   'smm-ig': () => import('@/components/admin/ResourceManager'),
   'smm-li': () => import('@/components/admin/ResourceManager'),
@@ -1049,6 +1051,8 @@ const MinervaWorkspace = () => {
         return <MembersManagement />;
       case 'people-alumni':
         return <AlumniManagement />;
+      case 'people-invites':
+        return <InvitesManagement />;
       case 'events-create':
         return <EventCreate />;
       case 'events-forms':

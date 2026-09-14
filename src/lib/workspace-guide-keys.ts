@@ -31,7 +31,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'applications-joiners', 'applications-form',
   'events-create', 'events-forms', 'events-attendance', 'events-archive',
   'events-alumni-calls', 'events-on-display',
-  'people-members', 'people-alumni',
+  'people-members', 'people-alumni', 'people-invites',
   'smm-editorial', 'smm-ads',
   'ops-fee', 'ops-treasury', 'ops-auto-emails',
   'website-pages', 'website-history', 'website-faqs',

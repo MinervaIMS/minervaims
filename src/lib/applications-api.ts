@@ -73,7 +73,58 @@ export interface ApplicationRow {
   offer_fee_due?: boolean | null;
   /** When the candidate withdrew their own application, if they did. */
   withdrawn_at?: string | null;
+  /** The reviewers' own shorthand. See SCREENING MARKS below. */
+  screening_mark?: ScreeningMark;
+  /** How many times this candidate has taken an interview slot. */
+  interview_bookings_made?: number;
 }
+
+// =====================================================================
+// SCREENING MARKS: the reviewers' shorthand, kept apart from the status.
+// ---------------------------------------------------------------------
+// "To reject" and "Maybe" were asked for as two more candidate statuses.
+// They are not, and the reason is the rule the status column already
+// lives under: a candidacy only ever moves FORWARD, enforced here and
+// again on the server by comparing positions in `STATUS_FLOW`.
+//
+// "Maybe" means "we may yet interview this person if we are short", so a
+// candidate carrying it must still be invitable afterwards. As a status
+// it would occupy a fixed position and forbid every stage before it, and
+// the one thing it exists to allow would be the one thing it prevented.
+// "To reject" is a note to self taken before the decision, not the
+// decision: a reviewer who marks somebody To reject and is overruled
+// must be able to carry on as though nothing had happened.
+//
+// So a mark is its own field. It is set, changed and cleared in any
+// order, at any stage, and says nothing about where the candidacy has
+// reached. NOTHING IS ATTACHED TO IT: no email, no status move, no
+// unlocked step. It exists to be read by the people doing the reviewing,
+// which is exactly the job the spreadsheet it replaces was doing.
+// =====================================================================
+
+export type ScreeningMark = 'none' | 'to_reject' | 'maybe';
+
+export const SCREENING_MARK_LABELS: Record<ScreeningMark, string> = {
+  none: 'No mark',
+  to_reject: 'To reject',
+  maybe: 'Maybe',
+};
+
+/** Colour per mark. Muted on purpose: a mark is not an outcome. */
+export const SCREENING_MARK_CLASS: Record<ScreeningMark, string> = {
+  none: 'bg-muted text-muted-foreground border-separator',
+  to_reject: 'bg-rose-50 text-rose-700 border-rose-200',
+  maybe: 'bg-violet-50 text-violet-700 border-violet-200',
+};
+
+/** The mark on a row, defaulting for any row written before the column. */
+export function screeningMark(a: Pick<ApplicationRow, 'screening_mark'> | null | undefined): ScreeningMark {
+  const m = a?.screening_mark;
+  return m === 'to_reject' || m === 'maybe' ? m : 'none';
+}
+
+/** The three options, in the order the control offers them. */
+export const SCREENING_MARKS: ScreeningMark[] = ['none', 'maybe', 'to_reject'];
 
 export interface ApplicationNote {
   id: string;
@@ -81,6 +132,21 @@ export interface ApplicationNote {
   author_name: string | null;
   body: string;
   created_at: string;
+  /**
+   * Who wrote it. `system` is a line the workspace recorded itself, such
+   * as an interview being booked; anything else, including a row written
+   * before this field existed, is a person.
+   *
+   * It matters because the notes carry opinions and are shared with every
+   * reviewer. A fact printed in the same style as an opinion is read as
+   * one, so the two are told apart here and drawn differently.
+   */
+  kind?: 'human' | 'system';
+}
+
+/** Is this note one the workspace wrote itself? */
+export function isSystemNote(n: Pick<ApplicationNote, 'kind'>): boolean {
+  return n.kind === 'system';
 }
 
 /**
@@ -637,6 +703,18 @@ export async function setEvaluationDivision(session: Session | null, id: string,
  */
 export async function setApplicationPriority(session: Session | null, id: string, priority: boolean) {
   return await invoke(session, { action: 'set-priority', id, priority });
+}
+
+/**
+ * Set or clear a reviewer's mark on a candidacy.
+ *
+ * Deliberately its own endpoint rather than a field on `update-status`:
+ * nothing about a mark is a progression, and routing it through the
+ * action that sends emails and unlocks steps would put it one typo away
+ * from being one.
+ */
+export async function setScreeningMark(session: Session | null, id: string, mark: ScreeningMark) {
+  return await invoke(session, { action: 'set-screening-mark', id, mark });
 }
 export async function setDivisionQuestion(session: Session | null, division: OrgDivision, question: string) {
   return await invoke(session, { action: 'set-question', division, question });

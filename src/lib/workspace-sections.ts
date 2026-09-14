@@ -47,7 +47,8 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'events-attendance', label: 'Attendance' }, { key: 'events-archive', label: 'Event archive' },
     { key: 'events-alumni-calls', label: 'Alumni calls' }, { key: 'events-on-display', label: 'Association on Display' } ] },
   { section: 'People', items: [
-    { key: 'people-members', label: 'Members' }, { key: 'people-alumni', label: 'Alumni' } ] },
+    { key: 'people-members', label: 'Members' }, { key: 'people-alumni', label: 'Alumni' },
+    { key: 'people-invites', label: 'Invites' } ] },
   { section: 'Media & Communication', items: [
     { key: 'smm-editorial', label: 'Editorial calendar' }, { key: 'smm-ig', label: 'Instagram' }, { key: 'smm-li', label: 'LinkedIn' },
     { key: 'smm-graphics', label: 'MIMS Graphics' }, { key: 'smm-other', label: 'Other resources' },
