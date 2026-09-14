@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          division: Database["public"]["Enums"]["org_division"] | null
+          email: string
+          full_name: string
+          id: string
+          invited_by: string | null
+          invited_name: string | null
+          last_sent_at: string
+          note: string | null
+          revoked_at: string | null
+          role: string
+          send_count: number
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          division?: Database["public"]["Enums"]["org_division"] | null
+          email: string
+          full_name: string
+          id?: string
+          invited_by?: string | null
+          invited_name?: string | null
+          last_sent_at?: string
+          note?: string | null
+          revoked_at?: string | null
+          role: string
+          send_count?: number
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          division?: Database["public"]["Enums"]["org_division"] | null
+          email?: string
+          full_name?: string
+          id?: string
+          invited_by?: string | null
+          invited_name?: string | null
+          last_sent_at?: string
+          note?: string | null
+          revoked_at?: string | null
+          role?: string
+          send_count?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           action: string
@@ -404,6 +455,7 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          kind: string
         }
         Insert: {
           application_id: string
@@ -412,6 +464,7 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          kind?: string
         }
         Update: {
           application_id?: string
@@ -420,6 +473,7 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          kind?: string
         }
         Relationships: [
           {
@@ -537,6 +591,7 @@ export type Database = {
           first_choice: Database["public"]["Enums"]["org_division"]
           first_name: string
           id: string
+          interview_bookings_made: number
           interview_division: Database["public"]["Enums"]["org_division"] | null
           interview_invited_at: string | null
           interview_reminder_sent_at: string | null
@@ -550,6 +605,7 @@ export type Database = {
           offer_sent_at: string | null
           phone: string
           received_email_sent_at: string | null
+          screening_mark: string
           second_choice: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
           status: string
@@ -577,6 +633,7 @@ export type Database = {
           first_choice: Database["public"]["Enums"]["org_division"]
           first_name: string
           id?: string
+          interview_bookings_made?: number
           interview_division?:
             | Database["public"]["Enums"]["org_division"]
             | null
@@ -592,6 +649,7 @@ export type Database = {
           offer_sent_at?: string | null
           phone: string
           received_email_sent_at?: string | null
+          screening_mark?: string
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label: string
           status?: string
@@ -619,6 +677,7 @@ export type Database = {
           first_choice?: Database["public"]["Enums"]["org_division"]
           first_name?: string
           id?: string
+          interview_bookings_made?: number
           interview_division?:
             | Database["public"]["Enums"]["org_division"]
             | null
@@ -634,6 +693,7 @@ export type Database = {
           offer_sent_at?: string | null
           phone?: string
           received_email_sent_at?: string | null
+          screening_mark?: string
           second_choice?: Database["public"]["Enums"]["org_division"] | null
           semester_label?: string
           status?: string
