@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  ChevronDown, Download, FileText, Loader2, Mail, MessageSquare, Sparkles,
+  ChevronDown, Download, Loader2, Mail, MessageSquare, Sparkles,
 } from 'lucide-react';
 import { divisionLabels } from '@/lib/roles';
 import {
@@ -12,9 +12,8 @@ import {
   isSystemNote,
   type ApplicationEmail,
 } from '@/lib/applications-api';
-import { openReportInTab } from '@/lib/open-report';
 import type { CandidateDetail } from './useCandidateDetail';
-import { documentTitle, documentFileName } from './document-title';
+import { documentFileName } from './document-title';
 import { safeLinkedInUrl } from '@/lib/linkedin';
 import linkedinIcon from '@/assets/linkedin-icon.png';
 
@@ -143,24 +142,6 @@ export function CandidateProfile({
   const [emailsOpen, setEmailsOpen] = useState(false);
   const [downloading, setDownloading] = useState<'cv' | 'answer' | null>(null);
   const app = detail.application;
-
-  /**
-   * OPENED IN A TAB THAT SAYS WHOSE IT IS.
-   *
-   * A signed storage URL ends in an object key, so the browser called the
-   * tab something like `a3f1...-cv.pdf` and a reviewer with four candidates
-   * open could not tell them apart. `openReportInTab` is the wrapper the
-   * whole site already uses for reports: it opens a tab it controls, titles
-   * it, and names the download to match.
-   */
-  const openDoc = async (kind: 'cv' | 'answer') => {
-    try {
-      const url = await signDocumentUrl(session, app.id, kind, 'preview');
-      openReportInTab(documentTitle(app, kind), url);
-    } catch (e) {
-      onError(e instanceof Error ? e.message : 'Could not open the document.');
-    }
-  };
 
   // =====================================================================
   // A DOWNLOAD THAT DOES NOT OPEN A TAB, AND SAVES UNDER A NAME.
@@ -343,7 +324,7 @@ export function CandidateProfile({
           candidate is readable long before either arrives. */}
       <DocPane
         title="CV preview" url={cvUrl} loading={docsLoading}
-        onOpen={() => openDoc('cv')} empty="No CV uploaded"
+        empty="No CV uploaded"
         onDownload={() => downloadDoc('cv')}
         downloading={downloading === 'cv'}
         downloadLabel="Download CV"
@@ -351,7 +332,7 @@ export function CandidateProfile({
       />
       <DocPane
         title="Submitted work preview" url={answerUrl} loading={docsLoading}
-        onOpen={() => openDoc('answer')} empty="No document uploaded"
+        empty="No document uploaded"
         onDownload={() => downloadDoc('answer')}
         downloading={downloading === 'answer'}
         /* "Download answer", not "Download work": the file is the
@@ -555,18 +536,25 @@ function EmailHistory({ emails, email }: { emails: ApplicationEmail[] | undefine
   );
 }
 
-function DocPane({ title, url, loading, onOpen, empty, onDownload, downloading, downloadLabel, savesAs }: {
-  title: string; url: string | null; loading: boolean; onOpen: () => void; empty: string;
+// =====================================================================
+// THE PANE HEADER CARRIES ITS TITLE AND NOTHING ELSE.
+// ---------------------------------------------------------------------
+// It used to carry an "Open" link as well, which opened the document in
+// a second tab. That was written before the document was previewed here
+// at all, and the preview has made it redundant: the pane is 72vh of the
+// actual PDF, with the browser's own zoom and scroll inside it, and the
+// button underneath saves the file. Between them there is nothing left
+// for a third copy in a tab to do except take the reviewer out of the
+// candidate they are reading.
+// =====================================================================
+function DocPane({ title, url, loading, empty, onDownload, downloading, downloadLabel, savesAs }: {
+  title: string; url: string | null; loading: boolean; empty: string;
   onDownload: () => void; downloading: boolean; downloadLabel: string; savesAs: string;
 }) {
   return (
     <div className="min-h-[400px]">
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{title}</div>
-        {/* `data-ro`: this opens the document in a tab, which is a read. */}
-        <button data-ro type="button" onClick={onOpen} className="text-xs text-accent hover:underline inline-flex items-center gap-1">
-          <FileText className="h-3.5 w-3.5" />Open
-        </button>
       </div>
       {url ? (
         <iframe title={title} src={url} className="w-full h-[72vh] border border-separator" />

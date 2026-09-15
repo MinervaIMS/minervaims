@@ -151,28 +151,72 @@ Deno.serve(audited('admin-invites', async (req, audit) => {
         }, 409);
       }
 
-      // Already has an account? Then this is a role change, not an
-      // invitation, and it belongs in Settings where a person is looked at
-      // before their access changes.
+      // =====================================================================
+      // AN ACCOUNT WITH NO INVITATION BEHIND IT IS NOT ALWAYS SOMEBODY ELSE'S.
+      // ---------------------------------------------------------------------
+      // Refusing every address that already has an account is right for a
+      // member or a candidate, and was wrong for the one case this page
+      // creates itself: an invitation whose account and email went out and
+      // whose register row failed to save. That left the address holding an
+      // account nobody could see, and every attempt to put it right was
+      // refused here, on the grounds that the account this page had just
+      // made already existed.
+      //
+      // So the account is looked at rather than merely counted. One that
+      // HAS NEVER BEEN SIGNED IN TO has no history to damage, and an
+      // invitation sent to it is the same act as the one that was supposed
+      // to happen the first time: the register row is written now and the
+      // link is sent again. Anything that has been signed in to is a real
+      // account and is still refused.
+      // =====================================================================
       const { data: profile } = await supabase.from('profiles')
         .select('id').ilike('email', email).maybeSingle();
+
+      let invitedId: string | null = null;
+      let adopted = false;
+
       if (profile?.id) {
-        return json({
-          error: 'This address already has an account. Change what it can do in Settings, Users, rather than inviting it again.',
-        }, 409);
+        let neverUsed = false;
+        try {
+          const { data: got } = await supabase.auth.admin.getUserById(profile.id);
+          neverUsed = !!got?.user && !got.user.last_sign_in_at;
+        } catch (e) {
+          console.error('could not read the existing account', e);
+        }
+        if (!neverUsed) {
+          return json({
+            error: 'This address already has an account that has been used. Change what it can do in Settings, Users, rather than inviting it again.',
+          }, 409);
+        }
+        // Adopt it: the invitation is re-sent below and recorded this time.
+        invitedId = profile.id;
+        adopted = true;
       }
 
       // THE ACCOUNT IS CREATED BY THE AUTH SERVER, which sends the branded
-      // invitation through the same email hook as everything else.
+      // invitation through the same email hook as everything else. Inviting
+      // an address that already has an unused account sends the link again
+      // without creating a second one.
       const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
         data: { full_name: fullName, invited_as: role },
         redirectTo: `${APP_ORIGIN}/workspace`,
       });
       if (inviteError || !invited?.user) {
-        console.error('invite failed', inviteError);
+        // An adopted account may refuse a second invite from the auth
+        // server while the first link is still alive. That is not a
+        // failure: the account is there, the person has a link, and what
+        // was missing was the register row, which is written below.
+        if (!adopted) {
+          console.error('invite failed', inviteError);
+          return json({ error: 'The invitation could not be sent. Please check the address and try again.' }, 400);
+        }
+        console.error('re-invite of an adopted account failed, recording it anyway', inviteError);
+      } else {
+        invitedId = invited.user.id;
+      }
+      if (!invitedId) {
         return json({ error: 'The invitation could not be sent. Please check the address and try again.' }, 400);
       }
-      const invitedId = invited.user.id;
 
       // The role is granted NOW, not when they accept: nothing runs at the
       // moment somebody confirms an email, so an account whose role waited
@@ -197,17 +241,40 @@ Deno.serve(audited('admin-invites', async (req, audit) => {
         last_sent_at: new Date().toISOString(), send_count: 1,
         accepted_at: null, revoked_at: null,
       };
-      // `upsert` on the address, so re-inviting a revoked one reuses its row
-      // rather than failing on the unique index.
-      const { data: saved, error: saveError } = await supabase.from('account_invites')
-        .upsert(row, { onConflict: 'email' }).select().single();
+
+      // =====================================================================
+      // AN INSERT OR AN UPDATE, CHOSEN HERE, AND NOT AN UPSERT.
+      // ---------------------------------------------------------------------
+      // This was `.upsert(row, { onConflict: 'email' })`, and it could never
+      // succeed. `ON CONFLICT (email)` requires a unique index on the COLUMN
+      // `email`; the one on this table is on `lower(email)`, an expression,
+      // which PostgreSQL will not match against it. Every send therefore
+      // ended in 42P10, "there is no unique or exclusion constraint matching
+      // the ON CONFLICT specification" - after the account had been created
+      // and the email sent, which is why the failure was invisible until the
+      // register stayed empty.
+      //
+      // The conflict does not need discovering in any case: `existing` was
+      // read at the top of this action, and a row that is there and not
+      // revoked has already been refused. So there are exactly two cases,
+      // and they are written out. Nothing here depends on the shape of an
+      // index any more.
+      // =====================================================================
+      const saveQuery = existing
+        ? supabase.from('account_invites').update(row).eq('id', existing.id)
+        : supabase.from('account_invites').insert(row);
+      const { data: saved, error: saveError } = await saveQuery.select().single();
       if (saveError) {
         console.error('invite row failed', saveError);
         // The account exists and the email has gone; the register is the
-        // only casualty, so this is reported rather than pretended away.
-        return json({ error: 'The invitation was sent but could not be recorded. Please tell the Admin.' }, 500);
+        // only casualty. Reported rather than pretended away - and no longer
+        // a dead end, because sending to this address again now adopts the
+        // account instead of refusing it.
+        return json({
+          error: 'The invitation was sent but could not be recorded. Send it again from this page: the account will be picked up and the register put right.',
+        }, 500);
       }
-      return json({ success: true, invite: saved });
+      return json({ success: true, invite: saved, adopted });
     }
 
     // ── resend ─────────────────────────────────────────────────────────────
