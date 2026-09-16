@@ -1,9 +1,18 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
+import { buildMemberIndex, matchRegistration, type MemberLike } from '../_shared/member-match.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
 // Actions: list · mark-attended · add-external · remove
+//
+// `list` also RECOGNISES MEMBERS WHO REGISTERED WITHOUT SIGNING IN. The
+// public form does not require an account, so a member who used it is
+// stored with `is_member = false` - that column records whether an
+// account was attached at the moment of registering, not whether the
+// person is one of ours. The register of members is consulted here and
+// the answer travels with each row. See _shared/member-match.ts for how
+// confident each answer is and why an ambiguous name is not a match.
 // =====================================================================
 
 const corsHeaders = {
@@ -38,7 +47,38 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const { data, error } = await supabase.from('event_registrations')
         .select('*').eq('event_id', body.event_id).order('registered_at', { ascending: true });
       if (error) throw error;
-      return json({ registrations: data || [] });
+      const registrations = data || [];
+
+      // ── who among them is a member ──────────────────────────────────────
+      // Read once for the whole list and indexed, so a room of two hundred
+      // costs one query rather than two hundred. A failure here must not
+      // fail the door list: the names still matter more than the labels,
+      // so the rows go out unrecognised rather than not at all.
+      let index = buildMemberIndex([]);
+      try {
+        const { data: members } = await supabase.from('members')
+          .select('id, user_id, first_name, surname, email, division, membership_status');
+        // Expelled accounts are not members and must not be counted as
+        // such on a door list; everybody else on the register is.
+        index = buildMemberIndex(((members || []) as MemberLike[])
+          .filter((m) => m.membership_status !== 'expelled'));
+      } catch (e) {
+        console.error('member index failed; registrations go out unrecognised', e);
+      }
+
+      return json({
+        registrations: registrations.map((r: Record<string, unknown>) => ({
+          ...r,
+          ...matchRegistration(
+            {
+              user_id: (r.user_id as string | null) ?? null,
+              name: (r.name as string | null) ?? null,
+              email: (r.email as string | null) ?? null,
+            },
+            index,
+          ),
+        })),
+      });
     }
     if (action === 'mark-attended') {
       const { error } = await supabase.from('event_registrations')

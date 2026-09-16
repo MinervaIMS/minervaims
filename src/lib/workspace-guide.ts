@@ -233,11 +233,16 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'events-attendance', section: 'Events', label: 'Attendance',
-    purpose: 'Who registered and who actually attended each event; add walk-ins.',
-    view: ['Consult registration and attendance numbers.'],
-    manage: ['Mark attendance and add external attendees.'],
+    purpose: 'Who registered and who actually attended each event; search and filter the door list, and add walk-ins.',
+    view: ['Consult registration and attendance numbers.', 'Search the people registered by name, email or programme, and filter by attendance, by type and by how each person was recognised.'],
+    manage: ['Mark attendance and add external attendees, from a computer or from a phone.'],
+    warnings: ['This is the one page that can be edited from a phone, because attendance is taken at a door. Everywhere else the workspace is read-only on mobile.'],
     topics: [
-      { id: 'walkins', title: 'Walk-ins', body: 'People who attend without registering can be added on the spot, so the attendance record stays complete.', requires: 'manage' },
+      { id: 'recognising-members', title: 'How the list knows who is a member', body: 'The public event form asks for a name and an address and does not require signing in, which is the point of a public event. A member who registers that way is stored with no account attached, and used to be listed as an external guest. Every registration is now checked against the register of members, and the list says HOW it knows, because the three answers are not equally certain. "Signed in" means they used their own account: not a guess at all. "Matched by email" means the address they gave is a member\u2019s address, and an address identifies one person. "Matched by name" means the name matches exactly one member and nothing else confirms it: a good guess, shown in amber so you can tell. '
+        + 'A NAME THAT MATCHES MORE THAN ONE MEMBER IS NOT A MATCH. Two members called the same thing means the register cannot say which of them registered, and crediting the wrong person is worse than saying nothing, so the row is marked Ambiguous and left for you. Filter by "Name is ambiguous" to find them. A name with a middle name in it, or a first name on its own, is also left unmatched on purpose: it is better to list a member as a guest, which anybody can see is wrong, than to quietly count somebody who was not there.' },
+      { id: 'searching', title: 'Finding one person', body: 'The search box reads the name and address they registered with, their programme and affiliation, and ALSO the name on the register, so somebody who put down "M. Rossi" is still found by searching for Mario Rossi. The filters narrow by whether they have been ticked off, by member or guest, and by how they were recognised. The counts above the list always describe the whole event, never the filtered view, so narrowing the list never makes the room look emptier than it is; the CSV, by contrast, exports exactly what is on screen.' },
+      { id: 'on-a-phone', title: 'Taking attendance on a phone', body: 'This page is the one exception to the workspace being read-only on mobile, because attendance is taken standing at a door and there is no desk there. Below the desktop width the table becomes a list of rows with a large tick box on each, so a person can be marked with a thumb, and walk-ins can be added on the spot. Your role still decides what you may do: somebody who can only read this page on a computer can only read it on a phone.', requires: 'manage' },
+      { id: 'walkins', title: 'Walk-ins', body: 'People who attend without registering can be added on the spot, so the attendance record stays complete. Their email address is added to the newsletter.', requires: 'manage' },
     ],
   },
   {

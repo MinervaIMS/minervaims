@@ -3,6 +3,7 @@ import { Menu, X, Globe, LogOut, ChevronDown, ChevronRight, Eye } from 'lucide-r
 import { HelpProvider, PageHelpButton } from '@/components/admin/help/HelpSystem';
 import WorkspaceSearch, { type SearchTarget } from '@/components/admin/WorkspaceSearch';
 import logoWhite from '@/assets/logo-white.svg';
+import { mobilePolicyFor } from '@/lib/mobile-policy';
 
 // =====================================================================
 // Mobile workspace shell. Rendered below the desktop breakpoint INSTEAD
@@ -17,8 +18,10 @@ import logoWhite from '@/assets/logo-white.svg';
 // EVERY SUBSECTION THE ROLE MAY OPEN, OPENS HERE. The shell withholds
 // nothing of its own: what is listed is what `filterNav` allowed, which
 // is the same navigation the desktop draws. What a phone does NOT do is
-// edit, and that is said once in the ribbon below the chip bar and
-// enforced by the `useAccess` mobile cap plus `ReadOnlyRegion`.
+// edit - with the single exception of Attendance, which is taken at a
+// door and nowhere near a desk - and that is said in the ribbon below the
+// chip bar, on the pages it is true of, and enforced by the `useAccess`
+// mobile cap plus `ReadOnlyRegion`. See lib/mobile-policy.ts.
 // =====================================================================
 
 export interface MobileNavSub { key: string; label: string }
@@ -142,9 +145,13 @@ export default function MobileWorkspaceShell({
         </nav>
       )}
 
-      {/* Read-only ribbon. Every page is read-only here, so the notice is
-          the same on all of them; it is dismissible for the session. */}
-      {!ribbonDismissed && (
+      {/* Read-only ribbon, on the pages that ARE read-only here.
+          It used to be unconditional, because every page was. Attendance
+          is now taken from a phone on purpose, and a ribbon saying
+          editing is unavailable, above a list built to be edited, would be
+          the interface contradicting itself in the one place it matters.
+          Dismissible for the session, as before. */}
+      {!ribbonDismissed && mobilePolicyFor(activeSubKey) !== 'full' && (
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-muted/60 border-b border-separator font-body text-xs text-muted-foreground">
           <Eye className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1 min-w-0 truncate">Read-only on mobile. Editing is available on desktop.</span>

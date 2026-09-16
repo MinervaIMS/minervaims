@@ -74,7 +74,58 @@ export interface EventRegistration {
   academic_year: string | null;
   affiliation: string | null;
   registered_at: string;
+
+  // ── Recognised against the register of members ────────────────────────
+  // Added by `admin-event-reg` on every read; see
+  // supabase/functions/_shared/member-match.ts. Optional in the type only
+  // because a row that did not come from that endpoint has no answer.
+  member_match?: MemberMatch;
+  member_name?: string | null;
+  member_division?: OrgDivision | null;
+  member_ambiguous?: boolean;
 }
+
+// =====================================================================
+// A MEMBER WHO REGISTERED WITHOUT SIGNING IN IS STILL A MEMBER.
+// ---------------------------------------------------------------------
+// The public event form asks for a name and an address and does not
+// require an account, which is the point of a public event. `is_member`
+// on the row records only whether an account was attached AT THE MOMENT
+// OF REGISTERING, so a member who used that form is stored as not one,
+// and the door list called them an external guest.
+//
+// The endpoint now asks the register of members instead, and says how it
+// knows. The distinction is kept all the way to the screen because the
+// answers are not equally certain: an account or an address identifies
+// one person, a name is a good guess. A reader taking attendance can see
+// which is which and settle the rest themselves.
+// =====================================================================
+
+/** How a registration was recognised. Mirrors `MemberMatch` on the server. */
+export type MemberMatch = 'account' | 'email' | 'name' | 'none';
+
+/** Is this registration a member of the association, however we know? */
+export function isRecognisedMember(r: Pick<EventRegistration, 'member_match' | 'is_member'>): boolean {
+  // `is_member` still counts: it is the answer for anybody who WAS signed
+  // in, and it remains true of rows written before any of this existed.
+  return (!!r.member_match && r.member_match !== 'none') || !!r.is_member;
+}
+
+/** What to call the evidence, in the reader's words. */
+export const MEMBER_MATCH_LABELS: Record<MemberMatch, string> = {
+  account: 'Signed in',
+  email: 'Matched by email',
+  name: 'Matched by name',
+  none: 'Not a member',
+};
+
+/** How much weight to put on it. */
+export const MEMBER_MATCH_NOTE: Record<MemberMatch, string> = {
+  account: 'They were signed in when they registered, so this is their own account.',
+  email: 'The address they gave is a member\u2019s address, which identifies one person.',
+  name: 'The name matches one member exactly. Nothing else confirms it, so check if it matters.',
+  none: 'Nothing on this registration matches the register of members.',
+};
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   meeting: 'Internal meeting', aperitivo: 'Aperitivo', division_event: 'Division event',
