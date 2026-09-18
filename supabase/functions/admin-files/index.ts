@@ -8,6 +8,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// =====================================================================
+// HOW LONG A REPORT'S DESCRIPTION MAY BE.
+// ---------------------------------------------------------------------
+// It was 2000 characters, and that number rejected ordinary work. An
+// equity research abstract - the team, the company, the industry
+// backdrop, the methodology, the recommendation and the target price,
+// and the credits at the end - runs to well over two thousand
+// characters as a matter of course; the one that reported this was
+// 2308, and it was refused in full with nothing saved.
+//
+// There was never a storage reason for the number. `description` is a
+// Postgres TEXT column with no length constraint of its own, and the
+// event description next door has been allowed 5000 all along. 8000 is
+// roughly twelve hundred words: longer than any abstract anyone has
+// written for this archive, and still a bound rather than an invitation.
+//
+// The client states the same number under the field, so it is visible
+// while the description is being written rather than discovered when it
+// is submitted. If this changes, change REPORT_DESCRIPTION_MAX in
+// src/lib/archive-limits.ts with it.
+// =====================================================================
+const REPORT_DESCRIPTION_MAX = 8000
+
 // Input validation schemas
 const FileMetadataSchema = z.object({
   id: z.string().uuid().optional(),
@@ -16,8 +39,17 @@ const FileMetadataSchema = z.object({
     .max(200, 'Title too long')
     .trim(),
   description: z.string()
-    .max(2000, 'Description too long')
     .trim()
+    // Says WHAT IS WRONG WITH THIS ONE, not that a rule exists: a
+    // refusal a writer can act on names the overshoot. The client turns
+    // this into the sentence in the toast.
+    .refine(
+      (v) => v.length <= REPORT_DESCRIPTION_MAX,
+      (v) => ({
+        message: `too long by ${v.length - REPORT_DESCRIPTION_MAX} characters `
+          + `(${v.length} of a maximum ${REPORT_DESCRIPTION_MAX}). Please shorten it and save again.`,
+      }),
+    )
     .nullable()
     .optional(),
   file_url: z.string()

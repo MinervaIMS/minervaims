@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
+import { REPORT_DESCRIPTION_MAX, describeLength } from '@/lib/archive-limits';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { activeFunds, fundLabels, type Fund } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
@@ -72,6 +73,19 @@ export default function ReportUpload() {
   const submit = async () => {
     if (!form.title.trim() || !form.date || !form.division) { toast({ title: 'Title, date and division are required', variant: 'destructive' }); return; }
     if (!fileUrl) { toast({ title: 'Please attach the report PDF first', variant: 'destructive' }); return; }
+    // Said here, with the text still on screen, rather than after a round
+    // trip that returns nothing a writer can act on.
+    const descriptionLength = describeLength(form.description);
+    if (descriptionLength.over) {
+      toast({
+        title: 'Description is too long',
+        description: `It is ${descriptionLength.length.toLocaleString()} characters and the limit is `
+          + `${REPORT_DESCRIPTION_MAX.toLocaleString()}. Please shorten it by `
+          + `${(descriptionLength.length - REPORT_DESCRIPTION_MAX).toLocaleString()} and save again.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const { data, error } = await callFunction('admin-files', { body: {
@@ -109,7 +123,25 @@ export default function ReportUpload() {
         {/* Details */}
         <div className="space-y-5 min-w-0">
           <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity Research - Q1 2026 sector outlook" /></div>
-          <div className="space-y-1"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="A short summary of what this report covers and its main conclusions." /></div>
+          <div className="space-y-1">
+            <Label>Description</Label>
+            <Textarea
+              rows={6}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="A short summary of what this report covers and its main conclusions."
+            />
+            {/* Appears only once the length is worth knowing about, and
+                turns red where saving would fail. */}
+            {describeLength(form.description).near && (
+              <p
+                className={`font-body text-xs ${describeLength(form.description).over ? 'text-destructive' : 'text-muted-foreground'}`}
+                aria-live="polite"
+              >
+                {describeLength(form.description).text}
+              </p>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>

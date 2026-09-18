@@ -53,31 +53,74 @@ export interface EdgeFailure {
   status?: number;
 }
 
+/** `first name` -> `First name`, for the front of a sentence. */
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /**
- * Zod's `format()` output, flattened into one readable line.
+ * The `details` a refusal carries, flattened into one readable line.
  *
- * A validation refusal arrives as `{ error: 'Validation failed', details:
- * { surname: { _errors: ['Required'] } } }`, and "Validation failed" on
- * its own tells somebody staring at a form of fourteen fields nothing at
- * all. Naming the field is the whole value.
+ * "Validation failed" on its own tells somebody staring at a form of
+ * fourteen fields nothing at all, and "Invalid file data" tells them
+ * less than that. Naming the field, and saying what is wrong with it, is
+ * the whole value - and the server has always sent both.
+ *
+ * TWO SHAPES ARRIVE HERE, because the functions in this project were not
+ * written on the same day:
+ *
+ *   * Zod's `format()`, a nested object of `_errors` arrays, used by
+ *     admin-members, admin-team, admin-treasury and a dozen others;
+ *   * a FLAT ARRAY of `"field: message"` strings, used by admin-files,
+ *     admin-events, admin-readings and admin-auth.
+ *
+ * Only the first was understood. Everything sent by the second group was
+ * silently dropped, which is why saving a report that was too long said
+ * "Invalid file data" and nothing else: the sentence naming the field
+ * and the overshoot was in the response the whole time, one branch away.
  */
 function describeValidation(details: unknown): string | null {
   if (!details || typeof details !== 'object') return null;
   const parts: string[] = [];
-  const walk = (node: Record<string, unknown>, path: string[]) => {
-    for (const [key, value] of Object.entries(node)) {
-      if (key === '_errors') {
-        const errs = Array.isArray(value) ? value.filter((e) => typeof e === 'string') : [];
-        if (errs.length && path.length) parts.push(`${path.join(' ')}: ${errs[0]}`);
+
+  if (Array.isArray(details)) {
+    for (const entry of details) {
+      if (typeof entry === 'string' && entry.trim()) {
+        // "description: too long by 308 characters" -> the field is a
+        // label, so it reads as one.
+        const [head, ...rest] = entry.split(': ');
+        parts.push(rest.length ? `${sentenceCase(head.replace(/[._]/g, ' '))}: ${rest.join(': ')}` : sentenceCase(entry));
         continue;
       }
-      if (value && typeof value === 'object') walk(value as Record<string, unknown>, [...path, key.replace(/_/g, ' ')]);
+      // `{ path, message }`, should any function ever send issues raw.
+      const issue = entry as { path?: unknown; message?: unknown };
+      if (typeof issue?.message === 'string') {
+        const path = Array.isArray(issue.path) ? issue.path.join(' ') : '';
+        parts.push(path ? `${sentenceCase(path.replace(/[._]/g, ' '))}: ${issue.message}` : sentenceCase(issue.message));
+      }
     }
-  };
-  walk(details as Record<string, unknown>, []);
+  } else {
+    const walk = (node: Record<string, unknown>, path: string[]) => {
+      for (const [key, value] of Object.entries(node)) {
+        if (key === '_errors') {
+          const errs = Array.isArray(value) ? value.filter((e) => typeof e === 'string') : [];
+          if (errs.length && path.length) parts.push(`${sentenceCase(path.join(' '))}: ${errs[0]}`);
+          continue;
+        }
+        if (value && typeof value === 'object') walk(value as Record<string, unknown>, [...path, key.replace(/_/g, ' ')]);
+      }
+    };
+    walk(details as Record<string, unknown>, []);
+  }
+
   if (!parts.length) return null;
+  // Each part is its own sentence, so it is punctuated as one: two of
+  // them run together read as a single garbled line otherwise.
+  const sentences = parts.map((p) => (/[.!?]$/.test(p) ? p : `${p}.`));
   // Two named fields is a helpful sentence; nine is a wall.
-  return parts.length <= 2 ? parts.join('; ') : `${parts.slice(0, 2).join('; ')}, and ${parts.length - 2} more`;
+  return sentences.length <= 2
+    ? sentences.join(' ')
+    : `${sentences.slice(0, 2).join(' ')} And ${sentences.length - 2} more.`;
 }
 
 /**
@@ -98,9 +141,16 @@ export async function readEdgeError(error: unknown): Promise<EdgeFailure | null>
   try {
     const body = await (typeof res.clone === 'function' ? res.clone() : res).json();
     const raw = typeof body?.error === 'string' ? body.error : null;
+    // THE DETAIL WINS WHEREVER THERE IS ONE, whatever headline it came
+    // under. It used to be read only when the headline was exactly
+    // "Validation failed", so the same information sent under "Invalid
+    // file data", "Invalid event data", "Invalid reading data" or
+    // "Invalid action" was thrown away - and those headlines are the
+    // ones that need it most, because they name nothing at all.
+    const detail = describeValidation(body?.details);
+    if (detail) return { message: detail, status: res.status };
     if (raw === 'Validation failed') {
-      const detail = describeValidation(body?.details);
-      return { message: detail ? `Some details need correcting. ${detail}` : 'Some of the details are not valid. Please check the form and try again.', status: res.status };
+      return { message: 'Some of the details are not valid. Please check the form and try again.', status: res.status };
     }
     if (raw) return { message: raw, status: res.status };
   } catch {
