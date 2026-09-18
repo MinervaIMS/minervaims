@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
+import { REPORT_DESCRIPTION_MAX, describeLength } from '@/lib/archive-limits';
 import { Edit, Trash2, FileText, Search, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, MoreHorizontal, Loader2, FolderDown, RotateCcw } from 'lucide-react';
 import { divisionLabels, fundLabels, activeFunds, closedFunds, Division, Fund } from '@/lib/types';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
@@ -505,6 +506,24 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       return;
     }
 
+    // STOPPED HERE RATHER THAN BY THE SERVER, because of what happens
+    // three lines below: the dialog closes and the row is replaced
+    // optimistically. A refusal after that point puts the old record back
+    // and the typing is gone, which is precisely how an over-long
+    // description was lost. This refusal keeps the dialog open with the
+    // text still in it.
+    const descriptionLength = describeLength(formData.description);
+    if (descriptionLength.over) {
+      toast({
+        title: "Description is too long",
+        description: `It is ${descriptionLength.length.toLocaleString()} characters and the limit is `
+          + `${REPORT_DESCRIPTION_MAX.toLocaleString()}. Please shorten it by `
+          + `${(descriptionLength.length - REPORT_DESCRIPTION_MAX).toLocaleString()} and save again.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     const action = editingFile ? 'update' : 'create';
     
@@ -796,8 +815,19 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief description of the report"
-                  rows={3}
+                  rows={6}
                 />
+                {/* The count appears once it is worth knowing, and turns
+                    red at the point where saving would fail. Silent for a
+                    two-line description, which is most of them. */}
+                {describeLength(formData.description).near && (
+                  <p
+                    className={`font-body text-xs ${describeLength(formData.description).over ? 'text-destructive' : 'text-muted-foreground'}`}
+                    aria-live="polite"
+                  >
+                    {describeLength(formData.description).text}
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">
