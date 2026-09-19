@@ -2,6 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
+import { readFileField } from '../_shared/form-file.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -290,7 +291,11 @@ Deno.serve(audited('admin-files', async (req, audit) => {
     if (contentType.includes('multipart/form-data')) {
       try {
         const formData = await req.formData()
-        const file = formData.get('file') as File | null
+        // `readFileField` instead of a cast: a field that is not actually a file
+        // now reads as no file at all, which is the refusal below rather than a
+        // crash further down. See _shared/form-file.ts. A real upload is
+        // unaffected.
+        const file = readFileField(formData, 'file')
         const division = formData.get('division') as string | null
         
         if (!file) {

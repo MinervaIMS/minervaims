@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE } from '../_shared/bocconi-email.ts';
+import { readFileField, readTextField } from '../_shared/form-file.ts';
 
 // =====================================================================
 // submit-application — public endpoint for the internal application form.
@@ -77,10 +78,25 @@ Deno.serve(async (req) => {
     );
 
     const form = await req.formData();
-    const get = (k: string) => (form.get(k) as string | null)?.trim() ?? '';
+    // =====================================================================
+    // ASKED, NOT ASSUMED. See _shared/form-file.ts for what these two
+    // replace and why it mattered: `form.get('answer') as File | null` is
+    // a cast that enforces nothing, and when the field arrived as the
+    // text "null" - which is what `FormData.append` makes of a missing
+    // attachment - the PDF check below called `.arrayBuffer()` on a
+    // string and the whole submission became an HTTP 500. Every
+    // application to Media and Operations went that way, because that is
+    // the one intake with no written question and therefore nothing to
+    // attach.
+    //
+    // A real upload is unaffected. Anything else now reads as no file at
+    // all, which lands on the written refusal a few lines down instead of
+    // on a stack trace.
+    // =====================================================================
+    const get = (k: string) => readTextField(form, k);
     const providedUserId = get('user_id');
-    const cv = form.get('cv') as File | null;
-    const answer = form.get('answer') as File | null;
+    const cv = readFileField(form, 'cv');
+    const answer = readFileField(form, 'answer');
 
     const fields = {
       first_name: get('first_name'), surname: get('surname'), bocconi_id: get('bocconi_id'),
@@ -208,10 +224,23 @@ Deno.serve(async (req) => {
     const documents: [string, File][] = answer ? [['CV', cv], ['answer', answer]] : [['CV', cv]];
     for (const [label, f] of documents) {
       if (f.size > 10 * 1024 * 1024) return json({ error: `${label} must be under 10 MB.` }, 400);
+      // An empty attachment is its own mistake and deserves its own
+      // sentence: read as bytes it is simply "not a PDF", which sends
+      // somebody looking for a corrupt file they do not have.
+      if (f.size === 0) return json({ error: `${label} appears to be empty. Please attach the file again.` }, 400);
       // Trust the actual bytes, not the client-supplied MIME type or filename:
-      // every real PDF starts with the "%PDF-" magic signature.
-      const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
-      const magic = String.fromCharCode(...head);
+      // every real PDF starts with the "%PDF-" magic signature. Reading
+      // them is the one step here that touches the upload itself, so a
+      // failure to read is answered rather than thrown: a truncated or
+      // aborted upload is the applicant's problem to retry, not a crash.
+      let magic = '';
+      try {
+        const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
+        magic = String.fromCharCode(...head);
+      } catch (readError) {
+        console.error(`Could not read ${label}:`, readError);
+        return json({ error: `${label} could not be read. Please attach the file again.` }, 400);
+      }
       if (magic !== '%PDF-') return json({ error: `${label} must be a valid PDF file.` }, 400);
     }
 

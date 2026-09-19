@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { readFileField } from '../_shared/form-file.ts';
 
 // =====================================================================
 // admin-resources — reusable file / link / note store (workspace_resources).
@@ -149,7 +150,11 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
-      const file = form.get('file') as File | null;
+      // `readFileField` instead of a cast: a field that is not actually a file
+      // now reads as no file at all, which is the refusal below rather than a
+      // crash further down. See _shared/form-file.ts. A real upload is
+      // unaffected.
+      const file = readFileField(form, 'file');
       if (!file) return json({ error: 'No file provided' }, 400);
       if (file.size > 25 * 1024 * 1024) return json({ error: 'File must be under 25 MB.' }, 400);
       if (!fileTypeAllowed(file)) return json({ error: 'This file type is not allowed. Upload a document, spreadsheet, presentation, PDF, image, CSV or zip.' }, 400);
