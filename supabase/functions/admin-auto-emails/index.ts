@@ -6,6 +6,7 @@ import { LEGACY_KEYS_TO_DISCONNECT, TRANSACTIONAL_TEMPLATES } from '../_shared/t
 import { normalizeEmailSubject } from '../_shared/email-subjects.ts';
 import { normalizeEmailLinks } from '../_shared/email-links.ts';
 import { withResponsiveShell } from '../_shared/email-responsive.ts';
+import { readFileField } from '../_shared/form-file.ts';
 
 // =====================================================================
 // admin-auto-emails — automatic-email templates + the register of emails
@@ -78,7 +79,11 @@ Deno.serve(audited('admin-auto-emails', async (req, audit) => {
     if (contentType.includes('multipart/form-data')) {
       if (!canManage) return json({ error: 'Your role can read the automatic emails but not change them.' }, 403);
       const form = await req.formData();
-      const file = form.get('file') as File | null;
+      // `readFileField` instead of a cast: a field that is not actually a file
+      // now reads as no file at all, which is the refusal below rather than a
+      // crash further down. See _shared/form-file.ts. A real upload is
+      // unaffected.
+      const file = readFileField(form, 'file');
       if (!file) return json({ error: 'No file provided' }, 400);
       if (file.size > 25 * 1024 * 1024) return json({ error: 'File must be under 25 MB.' }, 400);
       if (!fileTypeAllowed(file)) return json({ error: 'This file type is not allowed. Upload a document, spreadsheet, presentation, PDF, image, CSV or zip.' }, 400);

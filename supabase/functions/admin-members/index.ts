@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { readFileField } from '../_shared/form-file.ts';
 
 // Raster images only — SVG is XML and can carry executable script content.
 const ALLOWED_IMAGE_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
@@ -250,7 +251,11 @@ Deno.serve(audited('admin-members', async (req, audit) => {
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
-      const file = formData.get('file') as File | null;
+      // `readFileField` instead of a cast: a field that is not actually a file
+      // now reads as no file at all, which is the refusal below rather than a
+      // crash further down. See _shared/form-file.ts. A real upload is
+      // unaffected.
+      const file = readFileField(formData, 'file');
       if (!file) return json({ error: 'No file provided' }, 400);
       if (!ALLOWED_IMAGE_TYPES.includes((file.type || '').toLowerCase())) return json({ error: 'Only PNG, JPEG, GIF or WEBP images are allowed.' }, 400);
       if (file.size > 5 * 1024 * 1024) return json({ error: 'Image size must be less than 5MB' }, 400);

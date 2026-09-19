@@ -324,10 +324,30 @@ export default function Apply() {
       // 2. Submit the application. The server resolves the account (by id or, on
       //    a retry, by email), creates the row idempotently and reports whether
       //    the email is already verified.
+      // =====================================================================
+      // A MISSING ATTACHMENT IS LEFT OUT, NOT SENT AS THE WORD "null".
+      // ---------------------------------------------------------------------
+      // `FormData.append` takes a string or a Blob and coerces anything
+      // else, so `append('answer', null)` posts the four characters
+      // "null" as the field's value. The server then had a truthy
+      // `answer` that was not a file, read its first five bytes to check
+      // the PDF signature, and threw - which reached the applicant as
+      // "an unexpected error occurred" and stopped the application dead.
+      //
+      // It happened to exactly one group, every time: Media and
+      // Operations sets no written question, so `answer` is deliberately
+      // null for them (see the reset a few hundred lines above). Nobody
+      // else was affected, which is why it looked intermittent.
+      //
+      // The server no longer trusts the field either - see
+      // _shared/form-file.ts - but a form should not send a value it does
+      // not have.
+      // =====================================================================
       const fd = new FormData();
       if (userId) fd.append('user_id', userId);
       Object.entries(f).forEach(([k, v]) => fd.append(k, v));
-      fd.append('cv', cv); fd.append('answer', answer);
+      fd.append('cv', cv);
+      if (answer) fd.append('answer', answer);
 
       let verified = false;
       const attempt = async (): Promise<void> => {
