@@ -5,7 +5,7 @@ import { audited } from '../_shared/activity.ts';
 // admin-aod — Association on Display stand slots (report 9.6).
 //   * A few senior users (full access / Head of Operations) create days
 //     and open/close registration.
-//   * Any habilitated user signs up / removes themselves, up to 48h
+//   * Any habilitated user signs up / removes themselves, up to 24h
 //     before the event day.
 // =====================================================================
 
@@ -19,7 +19,7 @@ function json(body: unknown, status = 200) {
 }
 
 const SENIOR = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations'];
-const HOURS_48 = 48 * 60 * 60 * 1000;
+const HOURS_24 = 24 * 60 * 60 * 1000;
 
 Deno.serve(audited('admin-aod', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -70,7 +70,7 @@ Deno.serve(audited('admin-aod', async (req, audit) => {
       }
     }
 
-    // ── signup / remove (48h rule) ───────────────────────────────────────
+    // ── signup / remove (24h rule) ───────────────────────────────────────
     if (action === 'signup' || action === 'remove-signup') {
       let dayId = body.day_id as string | undefined;
       if (action === 'remove-signup') {
@@ -83,12 +83,12 @@ Deno.serve(audited('admin-aod', async (req, audit) => {
       if (!day) return json({ error: 'Day not found' }, 404);
 
       const eventStart = new Date(`${day.event_date}T00:00:00`).getTime();
-      const within48h = Date.now() > eventStart - HOURS_48;
+      const within24h = Date.now() > eventStart - HOURS_24;
 
       if (action === 'signup') {
         if (!day.registration_open) return json({ error: 'Registration is closed for this day.' }, 403);
-        // Senior roles can still register within 48h; everyone else cannot.
-        if (within48h && !isSenior) return json({ error: 'Registration closes 48 hours before the event.' }, 403);
+        // Senior roles can still register within 24h; everyone else cannot.
+        if (within24h && !isSenior) return json({ error: 'Registration closes 24 hours before the event.' }, 403);
         const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
         const primary = roles.find((r) => r.division && r.division !== 'none' && r.division !== 'board');
         const { error } = await supabase.from('aod_signups').insert({
@@ -102,7 +102,7 @@ Deno.serve(audited('admin-aod', async (req, audit) => {
         return json({ success: true });
       }
       // remove-signup
-      if (within48h && !isSenior) return json({ error: 'You can no longer change your signup (within 48 hours).' }, 403);
+      if (within24h && !isSenior) return json({ error: 'You can no longer change your signup (within 24 hours).' }, 403);
       const { error } = await supabase.from('aod_signups').delete().eq('id', body.id);
       if (error) throw error;
       return json({ success: true });
