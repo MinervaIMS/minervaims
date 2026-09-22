@@ -243,7 +243,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'Open the Calendar and find the event. Hovering it shows the details without opening anything.',
       'Click it. Events with registration open show the details and a registration button.',
       'Register. A confirmation mark then appears next to the event on your Calendar.',
-      'For an Association on Display day, clicking opens the slot sign-up page instead. Registration closes 48 hours before the day.',
+      'For an Association on Display day, clicking opens the slot sign-up page instead. Registration closes 24 hours before the day.',
     ],
   },
   {
@@ -452,7 +452,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Evaluated for', definition: 'The division actually assessing a candidate, as opposed to the two divisions the candidate asked for. It decides which emails they receive, which interview calendar they can book and which division sends an offer.', requires: 'applications-screening' },
   { term: 'Semester label', definition: 'The name of an academic semester, such as "Sep-Jan 2026". It groups the fee collection, the Treasury, the candidate archive and the member snapshot.' },
   { term: 'Exam session break', definition: 'A protected date range during which no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace. Deadlines and reminders remain possible.', requires: 'calendar' },
-  { term: 'Association on Display', definition: 'The recurring day on which the association presents itself, with time slots members sign up for. Registration closes 48 hours before the day.', requires: 'events-on-display' },
+  { term: 'Association on Display', definition: 'The recurring day on which the association presents itself, with time slots members sign up for. Registration closes 24 hours before the day.', requires: 'events-on-display' },
   { term: 'Locked entry', definition: 'A Treasury entry written by the workspace itself, from a fee collection closing or an advertising spend being recorded. It is the record of something that happened elsewhere and cannot be altered here.', requires: 'ops-treasury' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
   { term: 'Activity log', definition: 'The record of every meaningful action with the role held at that moment. It exists for accountability across leadership teams.' },
@@ -643,7 +643,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "The days on which the association presents itself, and the slots members have signed up for. The stand runs 10:00am to 7:00pm in half-hour slots, and each slot covers its whole half hour: the 6:30pm slot runs to 7:00pm.",
       "As many people as want to can take the same slot. Covered is a floor and not a ceiling, so a green slot is still open and still worth joining.",
-      "Senior roles open and close a day. Everybody else registers and de-registers themselves, up to 48 hours before it.",
+      "Senior roles open and close a day. Everybody else registers and de-registers themselves, up to 24 hours before it.",
     ],
     related: ['calendar', 'events-create'],
   },

@@ -5,7 +5,7 @@ import { audited } from '../_shared/activity.ts';
 // admin-aod — Association on Display stand slots (report 9.6).
 //   * A few senior users (full access / Head of Operations) create days
 //     and open/close registration.
-//   * Any habilitated user signs up / removes themselves, up to 48h
+//   * Any habilitated user signs up / removes themselves, up to 24h
 //     before the event day.
 // =====================================================================
 
