@@ -15,7 +15,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useMyApplication } from '@/hooks/useMyApplication';
 import {
   candidateStatus, isOfferLive, evaluationDivision, isReEvaluated,
-  canWithdraw, isWithdrawn, withdrawApplication,
+  canWithdraw, isWithdrawn, withdrawApplication, applyDivisionLabel
 } from '@/lib/applications-api';
 
 // The four candidate-facing stages, in the association's own words.
@@ -188,7 +188,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
               <div className="mt-3 border-t border-accent-foreground/20 pt-3 text-xs text-accent-foreground/80">
                 {app.semester_label} intake
                 {reEvaluated && !rejected && !withdrawn && (
-                  <> · being considered by {divisionLabels[evaluationDivision(app)]}</>
+                  <> · being considered by {applyDivisionLabel(evaluationDivision(app))}</>
                 )}
                 {withdrawn && withdrawnOn && <> · withdrawn on {withdrawnOn}</>}
               </div>
@@ -267,7 +267,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                           <div className="border border-separator bg-muted/40 p-3 text-sm">
                             <div className="text-xs uppercase tracking-wider text-muted-foreground">You are withdrawing</div>
                             <div className="mt-1 text-foreground">
-                              Your application to {divisionLabels[evaluationDivision(app)]}, {app.semester_label}
+                              Your application to {applyDivisionLabel(evaluationDivision(app))}, {app.semester_label}
                             </div>
                           </div>
 
@@ -348,11 +348,11 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
               <div className="text-sm text-amber-900">
                 You are currently being re-evaluated for another division:{' '}
-                <strong>{divisionLabels[evaluationDivision(app)]}</strong>.
+                <strong>{applyDivisionLabel(evaluationDivision(app))}</strong>.
               </div>
               <p className="mt-1.5 text-xs text-amber-800">
                 After reading your application, our reviewers believe this division suits you better than the
-                ones you named. Your candidacy has returned to the review stage so that {divisionLabels[evaluationDivision(app)]}{' '}
+                ones you named. Your candidacy has returned to the review stage so that {applyDivisionLabel(evaluationDivision(app))}{' '}
                 can consider it from the start, and any interview you had booked has been released. Everything
                 you hear from us next will be about this division.
               </p>
@@ -382,7 +382,7 @@ export default function ApplicationStatus({ onOpenOffer }: { onOpenOffer?: () =>
                       {outcomeStep && withdrawn
                         ? `You withdrew your application${withdrawnOn ? ` on ${withdrawnOn}` : ''}, so no decision was taken.`
                         : i === 1 && reEvaluated && !withdrawn
-                        ? `Our Talent Recruiting Team is reading your profile for ${divisionLabels[evaluationDivision(app)]}.`
+                        ? `Our Talent Recruiting Team is reading your profile for ${applyDivisionLabel(evaluationDivision(app))}.`
                         : s.d}
                     </div>
                   </div>

@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { divisionHeadsAndPresident, notifyStaff } from '../_shared/staff-notify.ts';
+import { intakeLabel, placementLabel } from '../_shared/recruiting.ts';
+import { readJsonObject } from '../_shared/request-body.ts';
 
 /** A stored role such as 'senior_analyst' read as a title. */
 function roleLabel(role: unknown): string {
@@ -26,11 +28,11 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const STATUS_URL = 'https://minervaims.org/workspace';
-const DIV_LABELS: Record<string, string> = {
-  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
-  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
-  media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
-};
+// A candidacy is named by its INTAKE, an offer by its PLACEMENT: see
+// _shared/recruiting.ts. An applicant to the joint intake is told they
+// applied to "Media & Communication and Operations", which is what the form
+// showed them; a Media & Communication Analyst is welcomed to "Media &
+// Communication", which is where the role puts them.
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
@@ -51,8 +53,10 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
 
-    const body = await req.json().catch(() => ({}));
-    const action = (body.action as string | undefined) ?? 'notify-received';
+    // An empty or unreadable body still means the default action, as it
+    // always has; a body of `null` or a list no longer crashes on the read.
+    const body = (await readJsonObject(req)) ?? {};
+    const action = typeof body.action === 'string' && body.action ? body.action : 'notify-received';
 
     const { data: app } = await supabase.from('applications')
       .select('*')
@@ -92,7 +96,7 @@ Deno.serve(async (req) => {
           p_key: 'acceptance_received', p_to: app.email,
           p_vars: {
             first_name: app.first_name,
-            division_name: DIV_LABELS[division] || division,
+            division_name: placementLabel(division) || division,
             status_url: STATUS_URL,
           },
         });
@@ -105,7 +109,7 @@ Deno.serve(async (req) => {
           await divisionHeadsAndPresident(supabase, division),
           {
             candidate_name: `${app.first_name} ${app.surname}`,
-            division_name: DIV_LABELS[division] || division,
+            division_name: placementLabel(division) || division,
             offer_role: roleLabel(role),
           },
           `${app.id}:offer_accepted`,
@@ -146,7 +150,7 @@ Deno.serve(async (req) => {
           await divisionHeadsAndPresident(supabase, division),
           {
             candidate_name: `${app.first_name} ${app.surname}`,
-            division_name: DIV_LABELS[division] || division,
+            division_name: (app.offer_division ? placementLabel(division) : intakeLabel(division)) || division,
             offer_role: roleLabel(app.offer_role),
           },
           `${app.id}:offer_declined`,
@@ -204,7 +208,7 @@ Deno.serve(async (req) => {
           p_key: 'application_withdrawn', p_to: app.email,
           p_vars: {
             first_name: app.first_name,
-            division_name: DIV_LABELS[division] || division,
+            division_name: intakeLabel(division) || division,
             semester_label: app.semester_label,
             status_url: STATUS_URL,
           },
@@ -231,7 +235,7 @@ Deno.serve(async (req) => {
       p_key: 'application_received', p_to: app.email,
       p_vars: {
         first_name: app.first_name,
-        division_name: DIV_LABELS[app.first_choice] || app.first_choice,
+        division_name: intakeLabel(app.first_choice) || app.first_choice,
         status_url: STATUS_URL,
       },
     });

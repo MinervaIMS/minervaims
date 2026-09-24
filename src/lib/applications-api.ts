@@ -228,17 +228,67 @@ export const ACADEMIC_YEAR_LABELS: Record<AcademicYear, string> = {
 export const APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media'];
 
 // =====================================================================
+// THE JOINT INTAKE: Media & Communication and Operations, as ONE place to
+// apply to, from the form to the offer.
+// ---------------------------------------------------------------------
+// A candidate for it applies once, is screened once, is invited once and
+// is interviewed once, by either Head. Which of the two divisions they
+// join is decided by the ROLE they are offered at the end, and only
+// there. Until then every surface - the form, the screening table, the
+// interview calendar, the candidate's own pages and every email - calls
+// it by one name.
+//
+// `operations` used to be offered separately as a division to evaluate
+// or interview somebody for, which split the one intake in two. It is no
+// longer offered, and a row that still carries it is read as the joint
+// intake by `intakeDivision`.
+//
+// WHERE A JOINER IS PLACED keeps the register's names (`divisionLabels`):
+// an offer for Media & Communication Analyst says "Media & Communication".
+// The statute makes Operations "an auxiliary division of one person
+// rather than a team" (Art. 22), so there is no Operations role below the
+// Head for an offer to hand out; appointing somebody to Operations is a
+// leadership appointment made in People > Members.
+//
+// Mirrors supabase/functions/_shared/recruiting.ts. Keep them identical.
+// =====================================================================
+
+/** The value the joint intake is stored under. */
+export const JOINT_INTAKE: OrgDivision = 'media';
+
+/** Its name, wherever a candidacy is described. */
+export const JOINT_INTAKE_LABEL = 'Media & Communication and Operations';
+
+/** The five research divisions. */
+export const RESEARCH_APPLY_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+
+/**
+ * The divisions that run a recruitment of their own, with their own
+ * interview calendar: the five research divisions and the joint intake.
+ */
+export const RECRUITING_DIVISIONS: OrgDivision[] = [...RESEARCH_APPLY_DIVISIONS, JOINT_INTAKE];
+
+/** The recruiting division a stored value stands for (`operations` is the joint intake). */
+export function intakeDivision<T extends OrgDivision | null | undefined>(division: T): T {
+  return (division === 'operations' ? JOINT_INTAKE : division) as T;
+}
+
+// =====================================================================
 // THE EVALUATION DIVISION: who is assessing this candidate.
 // ---------------------------------------------------------------------
 // Separate from the two preferences, and wider than them. An applicant
-// ranks the five research divisions, or applies once to the joint Media
-// and Operations intake; an examiner may conclude that somebody belongs
-// in a division nobody named, including Operations on its own, and this
-// is the list that lets them say so.
+// ranks the five research divisions, or applies once to the joint intake;
+// an examiner may conclude that somebody belongs in a division nobody
+// named, and this is the list that lets them say so.
+//
+// It is exactly the recruiting divisions. Operations is not listed on its
+// own any more: it recruits together with Media & Communication, and the
+// split between them is made by the role offered. See the joint intake
+// above.
 //
 // Mirrors EVALUATION_DIVISIONS in supabase/functions/admin-applications.
 // =====================================================================
-export const EVALUATION_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
+export const EVALUATION_DIVISIONS: OrgDivision[] = RECRUITING_DIVISIONS;
 
 /**
  * The division assessing this candidate.
@@ -253,7 +303,7 @@ export const EVALUATION_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'mac
 export function evaluationDivision(
   a: Pick<ApplicationRow, 'first_choice'> & Partial<Pick<ApplicationRow, 'evaluation_division' | 'interview_division'>>,
 ): OrgDivision {
-  return a.evaluation_division || a.interview_division || a.first_choice;
+  return intakeDivision(a.evaluation_division || a.interview_division || a.first_choice);
 }
 
 /**
@@ -316,7 +366,10 @@ export function allowedEvaluationDivisions(
 // =====================================================================
 
 /** Roles scoped to their own division for PROGRESSION (mirrors REVIEW_ROLES). */
-const REVIEWER_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager'];
+const REVIEWER_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager', 'head_of_media', 'head_of_operations'];
+
+/** The two Heads who run the joint intake, whatever division their row carries. */
+const JOINT_INTAKE_HEADS = ['head_of_media', 'head_of_operations'];
 
 // =====================================================================
 // UNSCOPED IN RECRUITING IS A WIDER SET THAN "FULL ACCESS".
@@ -346,8 +399,9 @@ export function reviewerDivisionsOf(
   if (isFullAccess) return null;
   if ((roles || []).some((r) => RECRUITING_UNSCOPED_ROLES.includes(r.role))) return null;
   const own = (roles || [])
-    .filter((r) => REVIEWER_ROLES.includes(r.role) && r.division)
-    .map((r) => r.division as OrgDivision);
+    .filter((r) => REVIEWER_ROLES.includes(r.role))
+    .map((r) => (JOINT_INTAKE_HEADS.includes(r.role) ? JOINT_INTAKE : intakeDivision(r.division as OrgDivision | null)))
+    .filter((d): d is OrgDivision => !!d && RECRUITING_DIVISIONS.includes(d));
   return Array.from(new Set(own));
 }
 
@@ -363,9 +417,9 @@ export function canProgressApplication(
   divisions: OrgDivision[] | null,
 ): boolean {
   if (!divisions) return true;
-  if (divisions.includes(a.first_choice)) return true;
-  if (a.second_choice && divisions.includes(a.second_choice)) return true;
-  if (a.evaluation_division && divisions.includes(a.evaluation_division)) return true;
+  if (divisions.includes(intakeDivision(a.first_choice))) return true;
+  if (a.second_choice && divisions.includes(intakeDivision(a.second_choice))) return true;
+  if (a.evaluation_division && divisions.includes(intakeDivision(a.evaluation_division))) return true;
   return false;
 }
 
@@ -429,12 +483,19 @@ export const hasSecondChoice = (division: OrgDivision | '' | null | undefined): 
   !!division && RANKED_APPLY_DIVISIONS.includes(division);
 
 /**
- * The division's name as an APPLICANT sees it. Everywhere else - the
- * register, the workspace, a member's own profile - keeps `divisionLabels`,
- * which is the association's own naming for its divisions.
+ * The name of the division a CANDIDACY is in: what the applicant chose,
+ * who is assessing them, who interviews them. Used by every recruiting
+ * surface, so the form, the screening table, the calendar and the
+ * candidate's own pages can never name the joint intake three ways.
+ *
+ * Where a joiner is PLACED - the offer, the register, a member's own
+ * profile - keeps `divisionLabels`, the association's names for its
+ * divisions.
  */
-export function applyDivisionLabel(division: OrgDivision): string {
-  return division === 'media' ? 'Media and Operations' : divisionLabels[division];
+export function applyDivisionLabel(division: OrgDivision | null | undefined): string {
+  const d = intakeDivision(division);
+  if (!d) return '';
+  return d === JOINT_INTAKE ? JOINT_INTAKE_LABEL : divisionLabels[d];
 }
 
 export const STATUS_COLORS: Record<ApplicationStatus, string> = {

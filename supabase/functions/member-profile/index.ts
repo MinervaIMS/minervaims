@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { readFileField } from '../_shared/form-file.ts';
+import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
 
 // Raster images only — SVG is XML and can carry executable script content.
 const ALLOWED_IMAGE_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
@@ -110,7 +111,10 @@ Deno.serve(async (req) => {
       return json({ success: true, photo_url: urlData.publicUrl });
     }
 
-    const body = await req.json().catch(() => ({}));
+    // Unreadable still means "no fields", exactly as before; a body that is
+    // JSON but not an object (`null`, a list) now means the same, instead
+    // of throwing on the first property read. See _shared/request-body.ts.
+    const body = ((await readJsonObject(req)) ?? {}) as LooseBody;
     const action: 'get' | 'update' | 'redeem' =
       body.action === 'update' ? 'update' : body.action === 'redeem' ? 'redeem' : 'get';
 

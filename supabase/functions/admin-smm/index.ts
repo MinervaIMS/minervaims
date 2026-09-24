@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
+import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
 // admin-smm — SMM editorial calendar + ads/spending register (report 11).
@@ -110,8 +111,12 @@ Deno.serve(audited('admin-smm', async (req, audit) => {
     audit.actor(user, roles);
     const email = user.email;
 
-    const body = await req.json().catch(() => ({}));
-    const action = body.action as string;
+    // Read as a JSON object, or refused as unreadable: see
+    // _shared/request-body.ts for why a cast was not enough.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return json({ error: UNREADABLE_BODY }, 400);
+    const body = parsedBody as LooseBody;
+    const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
 
     // Each action is checked against ITS OWN subsection, at the level it

@@ -7,11 +7,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { useToast } from '@/hooks/use-toast';
-import { divisionLabels, type OrgDivision } from '@/lib/roles';
+import { type OrgDivision } from '@/lib/roles';
 import {
   updateApplicationStatus, allowedNextStatuses, isLockedStatus,
   STATUS_LABELS, statusBadgeClass, evaluationDivision,
-  type ApplicationRow, type ApplicationStatus,
+  type ApplicationRow, type ApplicationStatus, applyDivisionLabel
 } from '@/lib/applications-api';
 import { listSlots, isFutureSlot } from '@/lib/interviews-api';
 
@@ -132,8 +132,8 @@ export function CandidateStatusControl({
           toast({
             title: 'No interview slot this candidate could book',
             description: stale > 0
-              ? `Every open slot for ${divisionLabels[division]} is already in the past. Add a future slot in Recruiting, Interview Calendar before inviting this candidate.`
-              : `Open at least one slot for ${divisionLabels[division]} in Recruiting, Interview Calendar before inviting this candidate.`,
+              ? `Every open slot for ${applyDivisionLabel(division)} is already in the past. Add a future slot in Recruiting, Interview Calendar before inviting this candidate.`
+              : `Open at least one slot for ${applyDivisionLabel(division)} in Recruiting, Interview Calendar before inviting this candidate.`,
             variant: 'destructive',
           });
           return;
@@ -177,7 +177,7 @@ export function CandidateStatusControl({
           </p>
         ) : !canProgress ? (
           <p className="text-xs text-muted-foreground border border-separator bg-muted/40 p-2">
-            This candidate is being assessed by <strong>{divisionLabels[evaluationDivision(app)]}</strong>.
+            This candidate is being assessed by <strong>{applyDivisionLabel(evaluationDivision(app))}</strong>.
             You can read their whole application, add a note their division will see, and move them to
             another division if they belong in one. Inviting, rejecting and advancing them is theirs to do,
             or the President's.
@@ -242,7 +242,7 @@ export function CandidateStatusControl({
             <div className="font-body">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Interview division</div>
               <div className="border border-separator bg-muted/30 px-3 py-2 text-sm text-foreground">
-                {divisionLabels[evaluationDivision(app)]}
+                {applyDivisionLabel(evaluationDivision(app))}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 The division this candidate is being evaluated for, and the only one they will be able to book

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_shared/request-body.ts';
 
 // =====================================================================
 // register-event — public event registration. Audience-gated:
@@ -92,10 +93,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    const body = await req.json().catch(() => ({}));
-    const eventId = body.event_id as string;
-    const name = (body.name as string | undefined)?.trim();
-    const email = (body.email as string | undefined)?.trim() || userEmail;
+    // THE PUBLIC FORM'S FIELDS ARE READ AS WHAT THEY ARE. These were
+    // `(body.name as string | undefined)?.trim()`: a cast that enforces
+    // nothing, then a string method. Any field arriving as something other
+    // than text - a number, a list, `null` in place of the whole body -
+    // threw, and a visitor registering for an event was told "an
+    // unexpected error occurred". See _shared/request-body.ts. Every
+    // well-formed registration reads exactly as before.
+    const body = await readJsonObject(req);
+    if (!body) return json({ error: UNREADABLE_BODY }, 400);
+    const eventId = textOf(body, 'event_id');
+    const name = optionalTextOf(body, 'name') ?? undefined;
+    const email = optionalTextOf(body, 'email') || userEmail;
 
     if (!eventId) return json({ error: 'Missing event' }, 400);
 
@@ -132,9 +141,9 @@ Deno.serve(async (req) => {
     }
 
     const isBocconi = typeof body.is_bocconi === 'boolean' ? body.is_bocconi : (isMember ? true : null);
-    const programme = (body.programme as string | undefined)?.trim() || null;
-    const academicYear = (body.academic_year as string | undefined)?.trim() || null;
-    const affiliation = (body.affiliation as string | undefined)?.trim() || null;
+    const programme = optionalTextOf(body, 'programme');
+    const academicYear = optionalTextOf(body, 'academic_year');
+    const affiliation = optionalTextOf(body, 'affiliation');
 
     // Dedupe by event + email.
     const { data: existing } = await supabase.from('event_registrations')

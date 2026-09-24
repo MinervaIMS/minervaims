@@ -2,6 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
+import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
 // admin-fees — per-semester membership fee collection (report 12.1).
@@ -84,8 +85,12 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
     const canRead = canManage || allows(roles, user.email, RESOURCE, 'view');
     if (!canRead) return json({ error: 'Access denied' }, 403);
 
-    const body = await req.json().catch(() => ({}));
-    const action = body.action as string;
+    // Read as a JSON object, or refused as unreadable: see
+    // _shared/request-body.ts for why a cast was not enough.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return json({ error: UNREADABLE_BODY }, 400);
+    const body = parsedBody as LooseBody;
+    const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
 
     // `current` and `history` are the two reads. Everything else moves money
@@ -128,12 +133,12 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
     }
 
     if (action === 'open') {
-      const label = (body.semester_label as string)?.trim();
+      const label = textOf(body, 'semester_label');
       if (!label) return json({ error: 'A semester label is required' }, 400);
       const amount = Number(body.fee_amount) || 10;
       if (amount < 10) return json({ error: 'The minimum fee is €10 per semester.' }, 400);
-      const firstDeadline = (body.first_deadline as string)?.trim() || null;
-      const secondDeadline = (body.second_deadline as string)?.trim() || null;
+      const firstDeadline = optionalTextOf(body, 'first_deadline');
+      const secondDeadline = optionalTextOf(body, 'second_deadline');
       if (!firstDeadline) return json({ error: 'A first deadline is required.' }, 400);
       if (secondDeadline && secondDeadline <= firstDeadline) {
         return json({ error: 'The second deadline must be after the first.' }, 400);

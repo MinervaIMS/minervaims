@@ -18,7 +18,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
-import { listApplications, sendOffer, addApplicationNote, evaluationDivision, type ApplicationRow } from '@/lib/applications-api';
+import { listApplications, sendOffer, addApplicationNote, evaluationDivision, applyDivisionLabel, JOINT_INTAKE, type ApplicationRow } from '@/lib/applications-api';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile, CandidateStage } from '@/components/admin/recruiting/CandidateProfile';
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
@@ -54,6 +54,30 @@ const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'port
 // =====================================================================
 const selectedDivision = (a: ApplicationRow): OrgDivision =>
   (a.offer_division as OrgDivision) || evaluationDivision(a);
+
+// =====================================================================
+// THE ROLE AN OFFER STARTS FROM.
+// ---------------------------------------------------------------------
+// The dialog always opened on "Analyst", which is a research role: its
+// division list is the five research divisions. For a candidate from the
+// joint Media & Communication and Operations intake that meant a division
+// field showing an intake the role cannot take, and an offer the server
+// then refused ("Choose one of the five research divisions") until the
+// role was changed by hand.
+//
+// The joint intake is where the split between its two divisions is made,
+// and the one role an offer can hand out there is Media & Communication
+// Analyst: by statute Operations is "an auxiliary division of one person"
+// (Art. 22), and appointing its Head is a leadership appointment made in
+// People > Members, never through an offer. So a joint-intake candidate
+// starts on that role. Anything already saved on the offer still wins.
+// =====================================================================
+const startingRole = (a: ApplicationRow): AppRole =>
+  (a.offer_role as AppRole) || (evaluationDivision(a) === JOINT_INTAKE ? 'media_analyst' : 'analyst');
+
+/** The Division column: where the offer places them, or the intake they are in. */
+const divisionColumn = (a: ApplicationRow): string =>
+  a.offer_division ? divisionLabels[a.offer_division as OrgDivision] : applyDivisionLabel(evaluationDivision(a));
 
 // Human-readable state of the offer for a candidate row.
 function offerState(a: ApplicationRow): { label: string; tone: string; canOffer: boolean; resend: boolean } {
@@ -132,8 +156,13 @@ export default function NewJoiners() {
 
   const openOffer = (a: ApplicationRow) => {
     setTarget(a);
-    setRole((a.offer_role as AppRole) || 'analyst');
-    setDivision(selectedDivision(a));
+    const role0 = startingRole(a);
+    setRole(role0);
+    // The division must be one the starting role can take; a role pinned
+    // to one division (Media & Communication Analyst) takes that one.
+    const allowed = divisionsForRole(role0);
+    const wanted = selectedDivision(a);
+    setDivision(allowed.length === 0 || allowed.includes(wanted) ? wanted : allowed[0]);
     setFeeDue(a.offer_fee_due !== false);
   };
 
@@ -214,7 +243,7 @@ export default function NewJoiners() {
                 return (
                   <tr key={a.id} className="border-t border-separator">
                     <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}</td>
-                    <td className="px-3 py-2">{divisionLabels[selectedDivision(a)]}</td>
+                    <td className="px-3 py-2">{divisionColumn(a)}</td>
                     <td className="px-3 py-2">{a.email}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">

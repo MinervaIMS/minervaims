@@ -238,6 +238,10 @@ Deno.serve(audited('admin-events', async (req, audit) => {
     let body: unknown
     try {
       body = await req.json()
+      // JSON that is not an object (`null`, a list, a number) is as
+      // unreadable as no JSON at all: the line below reads a property
+      // from it, which threw and became a 500. Same 400 as bad JSON.
+      if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('not a JSON object')
     } catch {
       return new Response(
         JSON.stringify({ error: 'Invalid JSON body' }),

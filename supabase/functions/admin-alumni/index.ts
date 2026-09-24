@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,8 +129,13 @@ Deno.serve(audited('admin-alumni', async (req, audit) => {
     const primaryRole = priorityOrder.find(r => userRoleNames.includes(r)) || userRoleNames[0] || 'member';
 
     // Parse request body
-    const body = await req.json();
-    
+    // A body that is not a JSON object is refused as such (400), rather
+    // than failing on the first property read from it and reaching the
+    // catch-all as a 500. See _shared/request-body.ts.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return new Response(JSON.stringify({ error: UNREADABLE_BODY }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const body = parsedBody as LooseBody;
+
     // Validate action
     const actionResult = ActionSchema.safeParse(body.action);
     if (!actionResult.success) {

@@ -89,9 +89,18 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   // partnership cannot be drafted from a summary of it. The Media Analyst
   // is deliberately NOT granted either - the analyst produces the posts,
   // the Head holds the counterpart relationships and the paperwork.
-  head_of_media: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage' },
+  // THE HEAD OF MEDIA & COMMUNICATION AND THE HEAD OF OPERATIONS RECRUIT.
+  // Their two divisions take candidates as one intake ("Media &
+  // Communication and Operations"), and running that intake - screening
+  // it, opening its interview slots, inviting and interviewing its
+  // candidates - is theirs exactly as a Head of Division runs theirs. The
+  // grants below are the Head of Division's recruiting grants, word for
+  // word; the calendar and the endpoint scope both of them to the joint
+  // intake. Offers stay read-only, as for every Head: sending one is the
+  // President's. Mirrored in supabase/functions/_shared/access.ts.
+  head_of_media: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'calendar': 'view', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage' },
   media_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-on-display': 'view', 'smm-editorial': 'view', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view' },
-  head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-on-display': 'manage', 'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view' },
+  head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-on-display': 'manage', 'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view' },
   // =================================================================
   // THE ADVISOR SEES EVERYTHING AND CHANGES NOTHING.
   // -----------------------------------------------------------------
@@ -151,13 +160,13 @@ export const SPECIAL_RULES: SpecialEntry[] = [
   {
     rule: 'offers_readonly',
     resource: 'applications-joiners',
-    roles: ['vice_president', 'head_of_asset_management', 'head_of_division', 'portfolio_manager', 'team_leader'],
+    roles: ['vice_president', 'head_of_asset_management', 'head_of_division', 'head_of_media', 'head_of_operations', 'portfolio_manager', 'team_leader'],
     label: 'View-only: can open Offers to understand the process, but cannot perform any action. Sending, resending and editing an offer is reserved for the President and the Admin, on the server as well as in the interface.',
   },
   {
     rule: 'candidates_all_divisions',
     resource: 'applications-screening',
-    roles: ['head_of_asset_management', 'head_of_division'],
+    roles: ['head_of_asset_management', 'head_of_division', 'head_of_media', 'head_of_operations'],
     label: "Sees candidates from every division, regardless of the applicant's division preference.",
   },
   {
