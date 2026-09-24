@@ -21,7 +21,7 @@ import { Recommendation } from '@/components/admin/Recommendation';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listSlots, createSlot, bulkCreateSlots, deleteSlot, clearDivisionSlots,
-  isFutureSlot, type StaffSlot,
+  isFutureSlot, meetingLinkError, type StaffSlot,
 } from '@/lib/interviews-api';
 import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
@@ -200,6 +200,8 @@ export default function InterviewCalendar() {
     if (!division) return;
     const brk = examBreakFor(form.slot_date);
     if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: no interviews can be scheduled between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
+    const linkError = meetingLinkError(form.meeting_link);
+    if (linkError) { toast({ title: 'A meeting link is required', description: linkError, variant: 'destructive' }); return; }
     setBusy(true);
     try {
       await createSlot(session, { division, ...form });
@@ -215,6 +217,8 @@ export default function InterviewCalendar() {
     if (!division) return;
     const brk = examBreakFor(bulk.slot_date);
     if (brk) { toast({ title: 'Exam session break', description: `${brk.label}: no interviews can be scheduled between ${brk.start_date} and ${brk.end_date}.`, variant: 'destructive' }); return; }
+    const linkError = meetingLinkError(bulk.meeting_link);
+    if (linkError) { toast({ title: 'A meeting link is required', description: linkError, variant: 'destructive' }); return; }
     setBusy(true);
     try {
       const res = await bulkCreateSlots(session, { division, ...bulk });
@@ -289,12 +293,12 @@ export default function InterviewCalendar() {
 
       {canManage && (
         <div className="mb-5">
-          <Recommendation title="Create the Teams meeting link before opening slots">
+          <Recommendation title="Create the meeting link before opening slots">
             <p>
-              When you open interview slots, it is advisable to create and attach a Microsoft Teams meeting link
-              immediately. The practical setup that has worked best: create one single Teams meeting for the whole
-              interview session and configure it so that everyone with the link waits in the lobby and only the host
-              admits people (both options are in the Teams meeting settings).
+              Every slot is opened with its Microsoft Teams or Zoom meeting link: the calendar will not open one
+              without it, because candidates receive the link when they book. The practical setup that has worked
+              best: create one single meeting for the whole interview session and configure it so that everyone with
+              the link waits in the lobby and only the host admits people (both options are in the meeting settings).
             </p>
             <p>
               With one link for all interviews, examiners admit one candidate at a time, only when the previous
@@ -489,8 +493,9 @@ export default function InterviewCalendar() {
               </div>
             </div>
             <div>
-              <Label htmlFor="c-link">Meeting link (optional)</Label>
-              <Input id="c-link" type="url" placeholder="https://…" className="rounded-none" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })} />
+              <Label htmlFor="c-link">Teams or Zoom meeting link *</Label>
+              <Input id="c-link" type="url" required placeholder="https://teams.microsoft.com/… or https://zoom.us/j/…" className="rounded-none" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })} />
+              <p className="text-xs text-muted-foreground mt-1">Required. Candidates receive this link when they book the slot.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" className="rounded-none" onClick={() => setCreateOpen(false)}>Cancel</Button>
@@ -521,8 +526,9 @@ export default function InterviewCalendar() {
               </div>
             </div>
             <div>
-              <Label htmlFor="b-link">Meeting link (optional, applied to all)</Label>
-              <Input id="b-link" type="url" placeholder="https://…" className="rounded-none" value={bulk.meeting_link} onChange={(e) => setBulk({ ...bulk, meeting_link: e.target.value })} />
+              <Label htmlFor="b-link">Teams or Zoom meeting link, applied to every slot *</Label>
+              <Input id="b-link" type="url" required placeholder="https://teams.microsoft.com/… or https://zoom.us/j/…" className="rounded-none" value={bulk.meeting_link} onChange={(e) => setBulk({ ...bulk, meeting_link: e.target.value })} />
+              <p className="text-xs text-muted-foreground mt-1">Required. Candidates receive this link when they book a slot.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" className="rounded-none" onClick={() => setBulkOpen(false)}>Cancel</Button>

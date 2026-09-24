@@ -15,7 +15,7 @@ import { ClearFilters } from '@/components/shared/ClearFilters';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
 import {
-  listEvents, listRegistrations, markAttended, addExternalAttendee, removeRegistration,
+  listEvents, listRegistrations, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
   type EventRow, type EventRegistration, type MemberMatch,
 } from '@/lib/events-api';
@@ -143,8 +143,21 @@ export default function EventAttendance() {
     ambiguous: regs.filter((r) => r.member_ambiguous).length,
   }), [regs]);
 
+  // =================================================================
+  // A WEEK AFTER THE EVENT THE LIST IS THE RECORD. Ticking, adding a
+  // walk-in and removing somebody all stop, here and on the server
+  // (which is what actually refuses them). The list stays readable,
+  // searchable and exportable.
+  // =================================================================
+  const currentEvent = events.find((e) => e.id === eventId) ?? null;
+  const window_ = attendanceWindow(currentEvent?.date);
+  const listClosed = !!currentEvent && !window_.open;
+  const closesLabel = window_.closesOn
+    ? new Date(`${window_.closesOn}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+
   const toggle = async (r: EventRegistration) => {
-    if (busy) return;
+    if (busy || listClosed) return;
     const next = !r.attended;
     setBusy(r.id);
     // Optimistic: at a door the tick has to answer immediately, and the
@@ -265,6 +278,17 @@ export default function EventAttendance() {
           fold, and the first thing a person does at a door is look
           somebody up rather than add them. It is one press away, and the
           press is a big one. */}
+      {listClosed ? (
+        <div className="mb-5 border border-separator bg-muted/40 px-3 py-2.5 font-body text-sm text-muted-foreground" role="status">
+          Attendance for this event closed on <span className="text-foreground">{closesLabel}</span>, a week after it took
+          place. The list below is the record of who attended; it can still be searched and exported.
+        </div>
+      ) : currentEvent && window_.closesOn ? (
+        <p className="mb-2 font-body text-xs text-muted-foreground">
+          Attendance can be recorded until {closesLabel}, a week after the event.
+        </p>
+      ) : null}
+      {!listClosed && (
       <div className="mb-5 font-body">
         {addOpen ? (
           <div className="border border-separator p-3 space-y-2">
@@ -289,6 +313,7 @@ export default function EventAttendance() {
           </Button>
         )}
       </div>
+      )}
 
       {loadingRegs ? <WorkspaceLoader /> : regs.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No registrations yet.</p></CardContent></Card>
@@ -311,7 +336,7 @@ export default function EventAttendance() {
                 <label className="flex items-center pt-0.5 cursor-pointer">
                   <Checkbox
                     checked={r.attended}
-                    disabled={busy === r.id}
+                    disabled={busy === r.id || listClosed}
                     onCheckedChange={() => toggle(r)}
                     className="h-6 w-6"
                     aria-label={`${r.attended ? 'Mark as not attended' : 'Mark as attended'}: ${r.name}`}
@@ -324,6 +349,7 @@ export default function EventAttendance() {
                     {r.email && <span className="text-xs text-muted-foreground break-all">{r.email}</span>}
                   </div>
                 </div>
+                {!listClosed && (
                 <Button
                   variant="ghost" size="icon"
                   className="shrink-0 text-destructive"
@@ -332,6 +358,7 @@ export default function EventAttendance() {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -353,7 +380,7 @@ export default function EventAttendance() {
                     <td className="px-3 py-2 text-center">
                       <Checkbox
                         checked={r.attended}
-                        disabled={busy === r.id}
+                        disabled={busy === r.id || listClosed}
                         onCheckedChange={() => toggle(r)}
                         aria-label={`${r.attended ? 'Mark as not attended' : 'Mark as attended'}: ${r.name}`}
                       />
@@ -370,9 +397,11 @@ export default function EventAttendance() {
                     <td className="px-3 py-2 break-all">{r.email || '-'}</td>
                     <td className="px-3 py-2"><MemberTag reg={r} /></td>
                     <td className="px-3 py-2 text-right">
+                      {!listClosed && (
                       <Button variant="destructive" size="icon" onClick={() => remove(r.id)} aria-label={`Remove ${r.name}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -112,7 +112,10 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         setRegistered(regIds);
         setExamSessions(exams);
         const out: Item[] = [];
-        for (const e of events) { const d = (e.start_at || e.date)?.slice(0, 10); if (d) out.push({ date: d, label: e.title, kind: 'event', event: e }); }
+        // An Association on Display day also has an event (for attendance);
+        // the day is drawn below from `aod_days`, so its event is skipped
+        // here rather than appear twice.
+        for (const e of events) { if (e.aod_day_id) continue; const d = (e.start_at || e.date)?.slice(0, 10); if (d) out.push({ date: d, label: e.title, kind: 'event', event: e }); }
         for (const c of entries) out.push({ date: c.entry_date.slice(0, 10), label: c.title, kind: 'custom', entry: c });
         const { data: aod } = await sb.from('aod_days').select('event_date');
         for (const a of (aod || []) as { event_date: string }[]) out.push({ date: a.event_date, label: 'Association on Display', kind: 'aod' });

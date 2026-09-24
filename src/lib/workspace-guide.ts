@@ -179,7 +179,7 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'Interview slots per division, and one calendar for the joint Media & Communication and Operations intake, run by both of its Heads. Invited candidates book themselves into open slots.',
     view: ['See slots and bookings, and narrow the list to the booked ones.', 'Open the candidate who booked a slot, with their CV, written answer and notes.'],
     manage: ['Open and close slots and manage bookings for your division.', 'Record the outcome of an interview on the candidate, without leaving this page.'],
-    warnings: ['A candidate can only be invited to interview if their division has at least one open slot.'],
+    warnings: ['A candidate can only be invited to interview if their division has at least one open slot.', 'A slot cannot be opened without a Microsoft Teams or Zoom meeting link: candidates receive it when they book.'],
     topics: [
       { id: 'slots', title: 'How slots work', body: 'Each slot belongs to a division and holds one candidate. A candidate sees only the open slots of the division they are being evaluated for, and books directly from their own restricted workspace. If that division changes, the slot they were holding is released back to the division they are leaving and they can book only with the new one.' },
       { id: 'bulk', title: 'Opening several slots at once', body: 'The bulk tool creates a run of slots between a start and an end time on one day, all carrying the same meeting link. Ideal for a full interview afternoon.', requires: 'manage' },
@@ -214,10 +214,10 @@ export const GUIDE: GuideEntry[] = [
     key: 'events-create', section: 'Events', label: 'Create event',
     purpose: 'Create a new event of any type (meeting, aperitivo, guest event, online call and more) with schedule, place and poster.',
     view: ['Read the event form and see what an event needs before it can be created.'],
-    manage: ['Create events; they appear on the Calendar, in the archive and, if enabled, on the public website.'],
+    manage: ['Create events; they appear on the Calendar and in the Event archive, and on the public website if you choose.'],
     topics: [
       { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, association-wide gathering). Alumni calls are not created here: they have their own subsection under Events. Internal types default to staying off the public website; you can change that per event in the Event archive.' },
-      { id: 'archive-visibility', title: 'Archive and website visibility', body: 'When creating the event you choose whether it enters the public archive. Website visibility can also be changed later, per event, from the Event archive.' },
+      { id: 'archive-visibility', title: 'Archive and website visibility', body: 'Every event is recorded in the Event archive. When creating it you choose only whether it is also listed on the public Events page: meetings and online calls start unlisted, every other type starts listed. You can change it at any time, per event, from the Event archive.' },
       { id: 'poster', title: 'Posters', body: 'A poster makes the event stand out in the archive and on the website. JPG, PNG or PDF up to 10 MB; any aspect ratio is accepted.' },
     ],
   },
@@ -225,10 +225,13 @@ export const GUIDE: GuideEntry[] = [
     key: 'events-forms', section: 'Events', label: 'Registration forms',
     purpose: 'Turn registration on for any event, choose the audience, preview the public form and share the link.',
     view: ['Read a registration form and the answers it collects.'],
-    manage: ['Enable or disable registration, pick who can register, copy the public link.'],
-    warnings: ['Registrations flow into Attendance automatically.'],
+    manage: ['Enable or disable registration, pick who can register, copy the public link.', 'Stop or resume the registration reminders of an event, and send yourself a test of them.'],
+    warnings: ['Registrations flow into Attendance automatically.', 'While registration is on, every active member who has not registered receives a reminder two weeks, one week and three days before the event. Stop them from the button next to Preview, for instance when the room is full.'],
     topics: [
       { id: 'audience', title: 'Who can register', body: 'The audience setting decides who may use the registration form: members only, members plus external guests, guests only, or fully public. Pick the narrowest audience that fits the event.', requires: 'manage' },
+      { id: 'reminders', title: 'Registration reminders', body: 'For every event whose registration is on, the workspace emails the Society\'s active members a reminder to register two weeks, one week and three days before the event day. Each reminder goes only to the members who are not on the list at the moment it is sent, so somebody who registers after the first one never receives the second. They are sent between 9:00 and 21:00, Rome time; a reminder whose day is missed goes out the day after, and never later. '
+        + 'STOPPING THEM. The button to the left of Preview stops the reminders of that event, for example once capacity is reached, and the line under the event says who stopped them and when. Resuming sends the ones still ahead; a reminder whose moment passed while they were stopped is not sent late. Turning registration off also holds them. '
+        + 'TESTING. "Send a test" emails the three reminders of that event to one address, exactly as members would receive them, without counting as sent. The wording lives in Operations, Auto emails.', requires: 'manage' },
     ],
   },
   {
@@ -236,12 +239,14 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'Who registered and who actually attended each event; search and filter the door list, and add walk-ins.',
     view: ['Consult registration and attendance numbers.', 'Search the people registered by name, email or programme, and filter by attendance, by type and by how each person was recognised.'],
     manage: ['Mark attendance and add external attendees, from a computer or from a phone.'],
-    warnings: ['This is the one page that can be edited from a phone, because attendance is taken at a door. Everywhere else the workspace is read-only on mobile.'],
+    warnings: ['This is the one page that can be edited from a phone, because attendance is taken at a door. Everywhere else the workspace is read-only on mobile.', 'Attendance closes a week after the event: after that the list can be read and exported, but no longer changed.'],
     topics: [
       { id: 'recognising-members', title: 'How the list knows who is a member', body: 'The public event form asks for a name and an address and does not require signing in, which is the point of a public event. A member who registers that way is stored with no account attached, and used to be listed as an external guest. Every registration is now checked against the register of members, and the list says HOW it knows, because the three answers are not equally certain. "Signed in" means they used their own account: not a guess at all. "Matched by email" means the address they gave is a member\u2019s address, and an address identifies one person. "Matched by name" means the name matches exactly one member and nothing else confirms it: a good guess, shown in amber so you can tell. '
         + 'A NAME THAT MATCHES MORE THAN ONE MEMBER IS NOT A MATCH. Two members called the same thing means the register cannot say which of them registered, and crediting the wrong person is worse than saying nothing, so the row is marked Ambiguous and left for you. Filter by "Name is ambiguous" to find them. A name with a middle name in it, or a first name on its own, is also left unmatched on purpose: it is better to list a member as a guest, which anybody can see is wrong, than to quietly count somebody who was not there.' },
       { id: 'searching', title: 'Finding one person', body: 'The search box reads the name and address they registered with, their programme and affiliation, and ALSO the name on the register, so somebody who put down "M. Rossi" is still found by searching for Mario Rossi. The filters narrow by whether they have been ticked off, by member or guest, and by how they were recognised. The counts above the list always describe the whole event, never the filtered view, so narrowing the list never makes the room look emptier than it is; the CSV, by contrast, exports exactly what is on screen.' },
       { id: 'on-a-phone', title: 'Taking attendance on a phone', body: 'This page is the one exception to the workspace being read-only on mobile, because attendance is taken standing at a door and there is no desk there. Below the desktop width the table becomes a list of rows with a large tick box on each, so a person can be marked with a thumb, and walk-ins can be added on the spot. Your role still decides what you may do: somebody who can only read this page on a computer can only read it on a phone.', requires: 'manage' },
+      { id: 'week', title: 'The list closes after a week', body: 'Ticking, adding somebody who turned up and removing a row are possible until the end of the seventh day after the event, counted on Rome\'s calendar: an event on the 1st can be edited until the end of the 8th. After that the list is the record of who attended; it stays searchable and can still be exported.' },
+      { id: 'aod', title: 'Association on Display', body: 'Every Association on Display day appears here as an event, so the people who actually staffed the stand can be recorded. Everybody who signed up for at least one slot that day is on its list once, as a member; somebody who cancels their last slot leaves the list again, unless they have already been ticked as present. The day itself, its slots and its sign-ups stay on the Association on Display page.' },
       { id: 'walkins', title: 'Walk-ins', body: 'People who attend without registering can be added on the spot, so the attendance record stays complete. Their email address is added to the newsletter.', requires: 'manage' },
     ],
   },
@@ -252,7 +257,7 @@ export const GUIDE: GuideEntry[] = [
     manage: ['Edit or delete events and toggle whether each one appears on the public website.'],
     warnings: ['The website toggle takes effect immediately on the public Events page.'],
     topics: [
-      { id: 'website-toggle', title: 'On website / Not on website', body: 'The toggle controls whether the event is listed on the public Events page. Internal events such as meetings and calls are normally kept off the website; outward-facing events stay on.', requires: 'manage' },
+      { id: 'website-toggle', title: 'The Public website switch', body: 'The switch on each row decides one thing: whether the event is listed on the public Events page of minervaims.org. "Listed" means anybody can see it there; "Not listed" means it is visible only inside the workspace. It never removes the event from this archive, the Calendar or Attendance, and it takes effect immediately. Meetings and online calls start unlisted; every other type starts listed. An event without a poster is shown with the Minerva mark and the line "Events: a core part of the Minerva experience", here and on the website.', requires: 'manage' },
       { id: 'filters', title: 'The type filter', body: 'The type menu offers only the types the archive actually contains, so every option in it returns something. A type the association has never run does not appear, and appears the moment the first event of that type is created. Alumni calls are created in Events, Alumni calls and reach this archive automatically once they are published.' },
     ],
   },

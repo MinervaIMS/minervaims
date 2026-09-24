@@ -627,14 +627,14 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Where a new event is set up: its type, its date, its place, its description and whether registration is open.",
       "Attach a registration form from Events, Registration forms when the event needs to ask registrants something specific. Registrations feed straight into Attendance.",
-      "Alumni calls are created in Events, Alumni calls, not here. Whether an event is recorded in the archive is decided when it is created.",
+      "Alumni calls are created in Events, Alumni calls, not here. Every event appears in the Event archive; whether it is also listed on the public website is chosen when it is created (internal meetings and online calls start unlisted) and can be changed from the archive.",
     ],
     related: ['events-forms', 'events-attendance', 'events-archive'],
   },
   'events-archive': {
     detail: [
-      "The events that were recorded in the archive. Whether an event is recorded is decided when it is created; online calls, guest events and alumni calls are by default.",
-      "Each row shows its type and whether it is published on the public website. Deleting an event from the archive is permanent.",
+      "Every event of every type, including internal meetings, alumni calls and each Association on Display day.",
+      "The Public website switch on each row decides whether that event is listed on the public Events page: Listed means anybody visiting the website sees it, Not listed means it stays in the workspace only. It changes nothing else: registration, reminders and attendance work the same either way. An event without a poster shows the Minerva logo instead. Deleting an event is permanent; Association on Display days are managed from their own page.",
       "The filter offers only the event types the archive actually contains, so every option leads somewhere.",
     ],
     related: ['events-create', 'events-attendance'],

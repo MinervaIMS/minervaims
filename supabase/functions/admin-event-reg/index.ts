@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { buildMemberIndex, matchRegistration, type MemberLike } from '../_shared/member-match.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
+import { attendanceOpen, attendanceClosesOn } from '../_shared/attendance-window.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
@@ -48,6 +49,27 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
 
+    // =====================================================================
+    // THE LIST CLOSES A WEEK AFTER THE EVENT. See _shared/attendance-window.ts.
+    // Every change to it - ticking, adding a walk-in, removing a row - asks
+    // this first, by the event's own date.
+    // =====================================================================
+    const WEEK_DAY = (iso: string) => {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    };
+    const closedError = async (eventId: unknown): Promise<string | null> => {
+      if (typeof eventId !== 'string' || !eventId) return null;
+      const { data: ev } = await supabase.from('events').select('date').eq('id', eventId).maybeSingle();
+      if (!ev?.date || attendanceOpen(ev.date)) return null;
+      return `Attendance for this event closed on ${WEEK_DAY(attendanceClosesOn(ev.date))}, a week after it took place. The list is now the record of who attended.`;
+    };
+    const eventOfRegistration = async (id: unknown): Promise<string | null> => {
+      if (typeof id !== 'string' || !id) return null;
+      const { data } = await supabase.from('event_registrations').select('event_id').eq('id', id).maybeSingle();
+      return data?.event_id ?? null;
+    };
+
     if (action === 'list') {
       const { data, error } = await supabase.from('event_registrations')
         .select('*').eq('event_id', body.event_id).order('registered_at', { ascending: true });
@@ -71,7 +93,12 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         console.error('member index failed; registrations go out unrecognised', e);
       }
 
+      // Whether the list can still be changed, so the page can say so
+      // before anybody tries rather than after.
+      const { data: ev } = await supabase.from('events').select('date').eq('id', body.event_id).maybeSingle();
       return json({
+        attendance_open: ev?.date ? attendanceOpen(ev.date) : true,
+        attendance_closes_on: ev?.date ? attendanceClosesOn(ev.date) : null,
         registrations: registrations.map((r: Record<string, unknown>) => ({
           ...r,
           ...matchRegistration(
@@ -86,12 +113,16 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       });
     }
     if (action === 'mark-attended') {
+      const closed = await closedError(await eventOfRegistration(body.id));
+      if (closed) return json({ error: closed }, 403);
       const { error } = await supabase.from('event_registrations')
         .update({ attended: !!body.attended }).eq('id', body.id);
       if (error) throw error;
       return json({ success: true });
     }
     if (action === 'add-external') {
+      const closed = await closedError(body.event_id);
+      if (closed) return json({ error: closed }, 403);
       const first = textOf(body, 'name');
       const surname = textOf(body, 'surname');
       if (!first) return json({ error: 'Name is required' }, 400);
@@ -110,6 +141,8 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       return json({ success: true });
     }
     if (action === 'remove') {
+      const closed = await closedError(await eventOfRegistration(body.id));
+      if (closed) return json({ error: closed }, 403);
       const { error } = await supabase.from('event_registrations').delete().eq('id', body.id);
       if (error) throw error;
       return json({ success: true });

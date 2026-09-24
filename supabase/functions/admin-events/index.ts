@@ -48,7 +48,10 @@ const EventSchema = z.object({
     .trim()
     .nullable()
     .optional(),
-  event_type: z.enum(['meeting','assembly','aperitivo','division_event','online_call','guest','alumni_call','association_wide','other']).optional(),
+  // 'association_on_display' events are created and kept in step by the
+  // database, one per Association on Display day; they are listed here so
+  // the archive can still switch their website visibility.
+  event_type: z.enum(['meeting','assembly','aperitivo','division_event','online_call','guest','alumni_call','association_wide','association_on_display','other']).optional(),
   division: z.enum(['equity','investment','macro','portfolio','quant','media','operations','board','none']).nullable().optional(),
   start_at: z.string().nullable().optional(),
   end_at: z.string().nullable().optional(),
@@ -58,6 +61,12 @@ const EventSchema = z.object({
   show_on_website: z.boolean().optional(),
   in_archive: z.boolean().optional()
 })
+
+// Internal meetings and online calls start off the public website; every
+// other type starts listed. Applies only when the caller does not say:
+// Create Event now always does, and the archive switch changes it later.
+// Mirrored by WEBSITE_HIDDEN_TYPES in src/lib/events-api.ts.
+const WEBSITE_HIDDEN_TYPES = ['meeting', 'online_call']
 
 // Extra event columns shared by create and update.
 function extraEventCols(v: Record<string, unknown>) {
@@ -69,7 +78,9 @@ function extraEventCols(v: Record<string, unknown>) {
     online: v.online ?? false,
     registration_enabled: v.registration_enabled ?? false,
     registration_audience: v.registration_audience ?? 'members',
-    show_on_website: v.show_on_website ?? true,
+    // Was `?? true`: a caller that did not send the flag published the
+    // event, and Create Event never sent it.
+    show_on_website: v.show_on_website ?? !WEBSITE_HIDDEN_TYPES.includes(String(v.event_type ?? 'other')),
     // Whether the event is recorded in the Events archive. The creator
     // decides; online calls, guest events and alumni calls default to yes.
     in_archive: v.in_archive ?? ['online_call','guest','alumni_call'].includes(String(v.event_type ?? '')),
@@ -287,6 +298,15 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+        // The same for Association on Display: each day opened there has its
+        // event created with it, and a second one made by hand would be a
+        // duplicate with no stand behind it.
+        if (validatedEvent.event_type === 'association_on_display') {
+          return new Response(
+            JSON.stringify({ error: 'Association on Display days are opened from Events > Association on Display, which creates their event.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         const { data, error } = await supabase
           .from('events')
           .insert({
@@ -339,6 +359,37 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
 
         const validatedEvent = eventResult.data
+
+        // =================================================================
+        // AN ASSOCIATION ON DISPLAY DAY'S EVENT IS KEPT IN STEP BY THE DAY.
+        // -----------------------------------------------------------------
+        // Its date, times, title and registrations follow the day in Events >
+        // Association on Display (see the 20260923140100 migration). Only
+        // website visibility is decided here, so the archive switch works
+        // on it like on any other event and nothing else can drift.
+        // =================================================================
+        const { data: linked } = await supabase
+          .from('events').select('id, aod_day_id').eq('id', validatedEvent.id).maybeSingle()
+        if (linked?.aod_day_id) {
+          const { data, error } = await supabase
+            .from('events')
+            .update({ show_on_website: validatedEvent.show_on_website ?? false })
+            .eq('id', validatedEvent.id)
+            .select()
+            .single()
+          if (error) {
+            console.error('Update AoD event error:', error)
+            return new Response(
+              JSON.stringify({ error: 'Failed to update event' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+          return new Response(
+            JSON.stringify({ success: true, event: data }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
         const { data, error } = await supabase
           .from('events')
           .update({
@@ -389,9 +440,19 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // Get event name before deleting for logging
         const { data: existingEvent } = await supabase
           .from('events')
-          .select('title')
+          .select('title, aod_day_id')
           .eq('id', deleteResult.data.id)
           .maybeSingle();
+
+        // Deleting it here would take the day's attendance with it and leave
+        // the day without an event; the day itself is deleted where it was
+        // opened, and its event goes with it.
+        if (existingEvent?.aod_day_id) {
+          return new Response(
+            JSON.stringify({ error: 'This is an Association on Display day. Delete the day from Events > Association on Display; its event and attendance go with it.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
 
         const { error } = await supabase
           .from('events')

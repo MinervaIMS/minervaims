@@ -14,7 +14,7 @@ import {
   Plus, Edit, Trash2, LogOut, X, Loader2,
   ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
-  CalendarDays, ClipboardList, Image as ImageIcon, Globe,
+  CalendarDays, ClipboardList, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
   Presentation, BarChart3, LayoutTemplate, Info, HelpCircle, Star,
 } from 'lucide-react';
@@ -251,6 +251,7 @@ import { useIsDesktop } from '@/hooks/use-desktop';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
 import { downloadCSV } from '@/lib/download-utils';
 import logoWhite from '@/assets/logo-white.svg';
+import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlaceholder';
 
 interface DbEvent {
   id: string;
@@ -272,6 +273,8 @@ interface DbEvent {
   registration_audience?: string | null;
   show_on_website?: boolean | null;
   in_archive?: boolean | null;
+  /** Set on the event an Association on Display day carries. */
+  aod_day_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -646,11 +649,22 @@ const MinervaWorkspace = () => {
   // table draws from. Every option therefore returns at least one row,
   // and the options change by themselves as the association's events do.
   // ══════════════════════════════════════════════════════════════════════
-  const archivedEvents = useMemo(
-    // Only events their creator chose to record in the archive are listed.
-    () => events.filter((event) => event.in_archive !== false),
-    [events],
-  );
+  // ══════════════════════════════════════════════════════════════════════
+  // EVERY EVENT IS IN THE ARCHIVE.
+  // ----------------------------------------------------------------------
+  // It used to list only the events whose creator had ticked "Record this
+  // event in the archive", and most types started with that box unticked.
+  // That hid more than history. Create Event never set website
+  // visibility, the server defaults it to ON, and the public Events page
+  // reads nothing but that flag: an internal meeting created in the usual
+  // way was therefore published on the website AND missing from the one
+  // screen where it could be unpublished.
+  //
+  // The archive is now the whole register. Whether an event is PUBLIC is
+  // one decision, made here with the switch on each row, and it is the
+  // only thing the public page consults.
+  // ══════════════════════════════════════════════════════════════════════
+  const archivedEvents = events;
 
   const filteredEvents = useMemo(() => {
     return archivedEvents.filter((event) => {
@@ -1134,7 +1148,7 @@ const MinervaWorkspace = () => {
     <div>
       <WorkspacePageHeader
         title="Events Archive"
-        description="The events that were recorded in the archive."
+        description="Every event of every type. The Public website switch on each one decides whether it is listed on the public Events page."
         actions={<>
 
           <AlertDialog>
@@ -1301,7 +1315,8 @@ const MinervaWorkspace = () => {
               const typeLabel = EVENT_TYPE_LABELS[(event.event_type as EventType) ?? 'other'] ?? 'Other';
               return (
                 <div key={event.id} className={`flex items-start gap-3 py-3 ${index !== paginatedEvents.length - 1 ? 'border-b border-separator' : ''}`}>
-                  {/* Compact poster thumbnail */}
+                  {/* Compact poster thumbnail; an event without one carries the
+                      association's mark instead of an empty box. */}
                   {event.poster_url ? (
                     isPdf ? (
                       <div className="w-24 h-32 shrink-0 border border-separator bg-muted flex items-center justify-center"><span className="font-serif text-xs">PDF</span></div>
@@ -1309,7 +1324,7 @@ const MinervaWorkspace = () => {
                       <img src={event.poster_url} alt="" className="w-24 h-32 shrink-0 object-cover border border-separator" />
                     )
                   ) : (
-                    <div className="w-24 h-32 shrink-0 border border-separator bg-muted/40 flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>
+                    <EventPosterPlaceholder compact className="w-24 h-32 shrink-0" />
                   )}
                   {/* Details */}
                   <div className="flex-1 min-w-0 font-body">
@@ -1334,12 +1349,48 @@ const MinervaWorkspace = () => {
                   {/* Actions (the archive is read-only in the mobile shell) */}
                   {isDesktop && (
                   <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5 mr-1" title="Show on the public website"><HelpDot page="events-archive" topic="website-toggle" />
+                    {/* THE SWITCH SAYS WHAT IT DOES. It was a bare toggle beside
+                        the edit and delete buttons, and could have meant
+                        anything: published, archived, registration open.
+                        It controls one thing - whether this event is listed
+                        on the public Events page - so it is labelled with
+                        that, in words that change with its state. */}
+                    <label
+                      className="flex items-center gap-2 mr-1 border border-separator px-2.5 py-1.5 cursor-pointer"
+                      title="Shows or hides this event on the public Events page of minervaims.org. It stays in this archive, the Calendar and Attendance either way."
+                    >
+                      <Globe className={`h-3.5 w-3.5 ${onWeb ? 'text-emerald-700' : 'text-muted-foreground'}`} aria-hidden="true" />
+                      <span className="flex flex-col leading-tight">
+                        <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">Public website</span>
+                        <span className={`text-xs ${onWeb ? 'text-emerald-700' : 'text-foreground'}`}>{onWeb ? 'Listed' : 'Not listed'}</span>
+                      </span>
                       {togglingWebsite === event.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                      <Switch checked={onWeb} disabled={togglingWebsite === event.id} onCheckedChange={(v) => toggleWebsite(event, v)} />
-                    </div>
-                    <Button variant="outline" size="icon" onClick={() => openEditDialog(event)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)}><Trash2 className="h-4 w-4" /></Button>
+                      <Switch
+                        checked={onWeb}
+                        disabled={togglingWebsite === event.id}
+                        onCheckedChange={(v) => toggleWebsite(event, v)}
+                        aria-label={onWeb ? `Remove ${event.title} from the public website` : `List ${event.title} on the public website`}
+                      />
+                      <HelpDot page="events-archive" topic="website-toggle" />
+                    </label>
+                    {/* An Association on Display day's event follows the
+                        day: it is moved or deleted with the day, from its
+                        own page, and the server refuses it here. */}
+                    {event.aod_day_id ? (
+                      <button
+                        type="button"
+                        data-ro
+                        onClick={() => goTo('events', 'events-on-display')}
+                        className="text-xs text-accent underline underline-offset-2 max-w-[9rem] text-left"
+                      >
+                        Managed in Association on Display
+                      </button>
+                    ) : (
+                      <>
+                        <Button variant="outline" size="icon" onClick={() => openEditDialog(event)}><Edit className="h-4 w-4" /></Button>
+                        <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </>
+                    )}
                   </div>
                   )}
                 </div>

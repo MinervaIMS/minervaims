@@ -18,6 +18,7 @@ const isPdf = (url?: string | null) => !!url && url.toLowerCase().split("?")[0].
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import eventsBgAsset from "@/assets/MIMS_Events.webp.asset.json";
+import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlaceholder';
 
 interface DbEvent {
   id: string;
@@ -634,11 +635,9 @@ function PastEventRow({
             )}
           </button>
         ) : (
-          <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
-            <span className="font-serif text-xs text-muted-foreground text-center px-2">
-              No poster
-            </span>
-          </div>
+          // The association's mark and one line, in the box a poster would
+          // fill, rather than a grey rectangle saying "No poster".
+          <EventPosterPlaceholder className="w-full aspect-[3/4]" />
         )}
       </div>
 
