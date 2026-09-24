@@ -2262,6 +2262,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      intake_division_label: {
+        Args: { _division: Database["public"]["Enums"]["org_division"] }
+        Returns: string
+      }
+      interview_division_reading: {
+        Args: { _division: Database["public"]["Enums"]["org_division"] }
+        Returns: string
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_board_member: { Args: { _user_id: string }; Returns: boolean }
       is_candidate: { Args: { _user_id: string }; Returns: boolean }
