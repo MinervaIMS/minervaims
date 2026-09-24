@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { readFileField } from '../_shared/form-file.ts';
+import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 // Raster images only — SVG is XML and can carry executable script content.
 const ALLOWED_IMAGE_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
@@ -299,8 +300,13 @@ Deno.serve(audited('admin-team', async (req, audit) => {
     }
 
     // Parse and validate JSON request body
-    const body = await req.json();
-    
+    // A body that is not a JSON object is refused as such (400), rather
+    // than failing on the first property read from it and reaching the
+    // catch-all as a 500. See _shared/request-body.ts.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return new Response(JSON.stringify({ error: UNREADABLE_BODY }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const body = parsedBody as LooseBody;
+
     // Validate action
     const actionResult = ActionSchema.safeParse(body.action);
     if (!actionResult.success) {

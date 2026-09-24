@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
 import { useAccess } from '@/hooks/useAccess';
-import { divisionLabels, type OrgDivision } from '@/lib/roles';
+import { type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { Recommendation } from '@/components/admin/Recommendation';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -29,10 +29,9 @@ import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile
 import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
 import {
   addApplicationNote, reviewerDivisionsOf, canProgressApplication,
+  RECRUITING_DIVISIONS, applyDivisionLabel, intakeDivision,
   type ApplicationStatus,
 } from '@/lib/applications-api';
-
-const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 const hhmm = (t: string) => t.slice(0, 5);
 const plus30 = (t: string) => {
   const [h, m] = t.split(':').map(Number);
@@ -45,10 +44,25 @@ export default function InterviewCalendar() {
   const { toast } = useToast();
   const access = useAccess();
 
-  // Divisions this user may see (full access = all five core divisions).
+  // =================================================================
+  // THE CALENDARS THIS READER MAY OPEN.
+  // -----------------------------------------------------------------
+  // Six, not five: the research divisions and the joint Media &
+  // Communication and Operations intake, which had no calendar at all -
+  // so none of its candidates could ever be offered a time, and the
+  // invitation, which refuses a division with nothing to book, could
+  // never be sent to them.
+  //
+  // A reader scoped to a division sees that division's calendar. The
+  // Head of Operations' own row says `operations`, which is read as the
+  // joint intake, so both of its Heads land on the same calendar. The
+  // server decides who may OPEN slots in it; this only decides which
+  // tabs are drawn.
+  // =================================================================
   const divisionOptions = useMemo<OrgDivision[]>(() => {
-    if (access.isFullAccess || !access.allowedDivisions) return CORE;
-    return CORE.filter((d) => access.allowedDivisions!.includes(d));
+    if (access.isFullAccess || !access.allowedDivisions) return RECRUITING_DIVISIONS;
+    const mine = new Set(access.allowedDivisions.map((d) => intakeDivision(d)));
+    return RECRUITING_DIVISIONS.filter((d) => mine.has(d));
   }, [access.isFullAccess, access.allowedDivisions]);
 
   const [division, setDivision] = useState<OrgDivision | null>(null);
@@ -236,7 +250,12 @@ export default function InterviewCalendar() {
     <div>
       <WorkspacePageHeader
         title="Interview Calendar"
-        description="Interview slots for your division, and who has booked them."
+        // A reader with a single calendar has no tab row to tell them whose
+        // it is, so the line names it. For the joint intake that matters:
+        // two Heads share it, and neither's own division is its name.
+        description={divisionOptions.length === 1
+          ? `Interview slots for ${applyDivisionLabel(divisionOptions[0])}, and who has booked them.`
+          : 'Interview slots for your division, and who has booked them.'}
         actions={canManage ? (
           <>
             <Button variant="outline" className="rounded-none font-body" onClick={() => setCreateOpen(true)}>
@@ -255,7 +274,7 @@ export default function InterviewCalendar() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear the whole calendar?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This removes every interview slot for {divisionLabels[division]}. Candidates who had booked will be able to book again.
+                    This removes every interview slot for {applyDivisionLabel(division)}. Candidates who had booked will be able to book again.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -299,7 +318,7 @@ export default function InterviewCalendar() {
               onClick={() => setDivision(d)}
               className={`px-4 py-2 border font-body text-sm transition-colors ${d === division ? 'bg-accent text-accent-foreground border-accent' : 'bg-transparent text-accent border-accent/40 hover:border-accent'}`}
             >
-              {divisionLabels[d]}
+              {applyDivisionLabel(d)}
             </button>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { buildMemberIndex, matchRegistration, type MemberLike } from '../_shared/member-match.ts';
+import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
@@ -39,8 +40,12 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     const isStaff = user.email === 'as.minerva@unibocconi.it' || roles.some((r) => !['member', 'pending', 'candidate'].includes(r));
     if (!isStaff) return json({ error: 'Access denied' }, 403);
 
-    const body = await req.json().catch(() => ({}));
-    const action = body.action as string;
+    // Read as a JSON object, or refused as unreadable: see
+    // _shared/request-body.ts for why a cast was not enough.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return json({ error: UNREADABLE_BODY }, 400);
+    const body = parsedBody as LooseBody;
+    const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
 
     if (action === 'list') {
@@ -87,11 +92,11 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       return json({ success: true });
     }
     if (action === 'add-external') {
-      const first = (body.name as string | undefined)?.trim();
-      const surname = (body.surname as string | undefined)?.trim() || '';
+      const first = textOf(body, 'name');
+      const surname = textOf(body, 'surname');
       if (!first) return json({ error: 'Name is required' }, 400);
       const fullName = `${first} ${surname}`.trim();
-      const email = (body.email as string | undefined)?.trim() || null;
+      const email = optionalTextOf(body, 'email');
       const { error } = await supabase.from('event_registrations').insert({
         event_id: body.event_id, name: fullName, email,
         is_member: false, is_external: true, attended: !!body.attended, added_by: user.id,

@@ -145,6 +145,7 @@ export const MATRIX: Record<string, Grants> = {
   },
   head_of_media: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
+    'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view',
     'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view',
     'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage',
     'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage',
@@ -158,6 +159,7 @@ export const MATRIX: Record<string, Grants> = {
   },
   head_of_operations: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage',
+    'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view',
     'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage',
     'events-archive': 'manage', 'events-on-display': 'manage',
     'people-members': 'manage', 'people-invites': 'manage', 'people-alumni': 'view',

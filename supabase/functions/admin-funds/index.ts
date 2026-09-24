@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { allows } from '../_shared/access.ts';
+import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
 // admin-funds — fund performance matrix for the active simulated funds.
@@ -66,7 +67,10 @@ Deno.serve(audited('admin-funds', async (req, audit) => {
     const canRead = allows(roles.map((r) => r.role), user.email, RESOURCE, 'view');
     if (!canRead) return json({ error: 'Access denied' }, 403);
 
-    const body = await req.json().catch(() => ({}));
+    // Unreadable still means "no fields", exactly as before; a body that is
+    // JSON but not an object (`null`, a list) now means the same, instead
+    // of throwing on the first property read. See _shared/request-body.ts.
+    const body = ((await readJsonObject(req)) ?? {}) as LooseBody;
     const action = body.action as string;
     audit.request(action, body);
 

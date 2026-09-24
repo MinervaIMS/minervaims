@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
+import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
 
 // =====================================================================
 // admin-aod — Association on Display stand slots (report 9.6).
@@ -38,7 +39,10 @@ Deno.serve(audited('admin-aod', async (req, audit) => {
     const isStaff = isSenior || roles.some((r) => !['member', 'pending', 'candidate'].includes(r.role));
     if (!isStaff) return json({ error: 'Access denied' }, 403);
 
-    const body = await req.json().catch(() => ({}));
+    // Unreadable still means "no fields", exactly as before; a body that is
+    // JSON but not an object (`null`, a list) now means the same, instead
+    // of throwing on the first property read. See _shared/request-body.ts.
+    const body = ((await readJsonObject(req)) ?? {}) as LooseBody;
     const action = body.action as string;
     audit.request(action, body);
 

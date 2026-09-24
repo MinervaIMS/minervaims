@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   ChevronDown, Download, Loader2, Mail, MessageSquare, Sparkles,
 } from 'lucide-react';
-import { divisionLabels } from '@/lib/roles';
 import {
   ACADEMIC_YEAR_LABELS, STATUS_LABELS, statusBadgeClass, signDocumentUrl,
   applyDivisionLabel, evaluationDivision, emailStatusTone, EMAIL_STATUS_MEANING,
@@ -269,7 +268,7 @@ export function CandidateProfile({
               <Info label="Submitted" value={`${longDate(app.created_at)}, ${hhmm(app.created_at)}`} />
               <Info label="LinkedIn address" value={app.linkedin_url || '-'} link={linkedIn || undefined} />
               {app.interview_division && (
-                <Info label="Interviewed by" value={divisionLabels[app.interview_division]} />
+                <Info label="Interviewed by" value={applyDivisionLabel(app.interview_division)} />
               )}
               {app.withdrawn_at && (
                 <Info label="Withdrawn on" value={longDate(app.withdrawn_at)} />

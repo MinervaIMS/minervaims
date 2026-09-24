@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { applyDivisionLabel } from '@/lib/applications-api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -9,7 +10,6 @@ import { Clock, Video, User, CheckCircle2, CalendarClock, Loader2 } from 'lucide
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { divisionLabels } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
@@ -121,7 +121,7 @@ export default function InterviewCalendarCandidate() {
     );
   }
 
-  const divisionName = divisionLabels[ctx.division];
+  const divisionName = applyDivisionLabel(ctx.division);
 
   // Already booked — show the confirmation.
   if (ctx.booking?.slot) {

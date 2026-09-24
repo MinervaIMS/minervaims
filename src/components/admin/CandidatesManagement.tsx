@@ -20,7 +20,7 @@ import { useAccess } from '@/hooks/useAccess';
 import { useIsDesktop } from '@/hooks/use-desktop';
 
 import { logActivity } from '@/lib/activity-log';
-import { divisionLabels, type OrgDivision } from '@/lib/roles';
+import { type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
@@ -345,10 +345,13 @@ export default function CandidatesManagement() {
   // list, under the name the applicant saw.
   const divOptions = APPLY_DIVISIONS.map((d) => ({ value: d, label: applyDivisionLabel(d) }));
   const secondChoiceOptions = [...divOptions, { value: NO_SECOND_CHOICE, label: 'No second choice' }];
-  // The evaluation column is wider still: Operations stands on its own
-  // here, because a candidate can be assessed for it even though the form
-  // recruits Media and Operations as one intake.
-  const evaluationOptions = EVALUATION_DIVISIONS.map((d) => ({ value: d, label: divisionLabels[d] }));
+  // The evaluation column offers the same six intakes the calendar has:
+  // the research divisions and the joint Media & Communication and
+  // Operations intake. Operations used to be offered on its own here,
+  // which split one intake into two calendars and two sets of emails;
+  // which of the two divisions a joiner goes to is decided by the role
+  // they are offered, in Offers.
+  const evaluationOptions = EVALUATION_DIVISIONS.map((d) => ({ value: d, label: applyDivisionLabel(d) }));
   const yearOptions = (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[]).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
   const statusOptions = STATUS_FLOW.map((s) => ({ value: s, label: STATUS_LABELS[s] }));
   // Two options, not one: "only the flagged" and "only the unflagged" are
@@ -431,8 +434,8 @@ export default function CandidatesManagement() {
     try {
       await setEvaluationDivision(session, app.id, target);
       toast({
-        title: `Now evaluated for ${divisionLabels[target]}`,
-        description: `${app.first_name} returns to “${STATUS_LABELS.to_be_contacted}” and can be invited to interview by ${divisionLabels[target]}.`,
+        title: `Now evaluated for ${applyDivisionLabel(target)}`,
+        description: `${app.first_name} returns to “${STATUS_LABELS.to_be_contacted}” and can be invited to interview by ${applyDivisionLabel(target)}.`,
       });
       setPendingEval(null);
       // The server decides the resulting status and the remembered pair, so
@@ -699,19 +702,19 @@ export default function CandidatesManagement() {
                             trigger it only pushed the division name out of
                             its own cell and left it clipped mid-word. */}
                         <SelectTrigger className="h-8 w-[13.5rem] font-body text-sm">
-                          <SelectValue>{divisionLabels[evaluationDivision(a)]}</SelectValue>
+                          <SelectValue>{applyDivisionLabel(evaluationDivision(a))}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {allowedEvaluationDivisions(a).map((d) => (
                             <SelectItem key={d} value={d}>
-                              {divisionLabels[d]}
+                              {applyDivisionLabel(d)}
                               {d === a.first_choice ? ' (first choice)' : d === a.second_choice ? ' (second choice)' : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <span className="text-foreground">{divisionLabels[evaluationDivision(a)]}</span>
+                      <span className="text-foreground">{applyDivisionLabel(evaluationDivision(a))}</span>
                     )}
                     {isReEvaluated(a) && (
                       <div className="mt-0.5 text-[11px] text-amber-700">Re-evaluated, not a stated preference</div>
@@ -865,12 +868,12 @@ export default function CandidatesManagement() {
                     }}
                   >
                     <SelectTrigger className="font-body">
-                      <SelectValue>{divisionLabels[evaluationDivision(detail.application)]}</SelectValue>
+                      <SelectValue>{applyDivisionLabel(evaluationDivision(detail.application))}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {allowedEvaluationDivisions(detail.application).map((d) => (
                         <SelectItem key={d} value={d}>
-                          {divisionLabels[d]}
+                          {applyDivisionLabel(d)}
                           {d === detail.application.first_choice ? ' (first choice)'
                             : d === detail.application.second_choice ? ' (second choice)' : ''}
                         </SelectItem>
@@ -911,16 +914,16 @@ export default function CandidatesManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               Evaluate {pendingEval ? pendingEval.app.first_name : 'this candidate'} for{' '}
-              {pendingEval ? divisionLabels[pendingEval.target] : 'another division'}?
+              {pendingEval ? applyDivisionLabel(pendingEval.target) : 'another division'}?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               {pendingEval ? (
                 <div className="space-y-2">
                   <p>
                     {pendingEval.app.first_name} {pendingEval.app.surname} moves from{' '}
-                    <strong>{divisionLabels[evaluationDivision(pendingEval.app)]}</strong> to{' '}
-                    <strong>{divisionLabels[pendingEval.target]}</strong>. From now on every communication they
-                    receive names {divisionLabels[pendingEval.target]}.
+                    <strong>{applyDivisionLabel(evaluationDivision(pendingEval.app))}</strong> to{' '}
+                    <strong>{applyDivisionLabel(pendingEval.target)}</strong>. From now on every communication they
+                    receive names {applyDivisionLabel(pendingEval.target)}.
                   </p>
                   <ul className="list-disc pl-5 space-y-1">
                     <li>
@@ -929,26 +932,26 @@ export default function CandidatesManagement() {
                     </li>
                     <li>
                       Any interview slot they were holding is released back to the division they are leaving,
-                      and they can only book with {divisionLabels[pendingEval.target]}.
+                      and they can only book with {applyDivisionLabel(pendingEval.target)}.
                     </li>
                     {!pendingEval.app.evaluation_division_previous && (
                       <li>
                         Afterwards this candidacy is fixed to{' '}
-                        <strong>{divisionLabels[evaluationDivision(pendingEval.app)]}</strong> and{' '}
-                        <strong>{divisionLabels[pendingEval.target]}</strong>: those two divisions and no third.
+                        <strong>{applyDivisionLabel(evaluationDivision(pendingEval.app))}</strong> and{' '}
+                        <strong>{applyDivisionLabel(pendingEval.target)}</strong>: those two divisions and no third.
                         You can move them back at any time.
                       </li>
                     )}
                     {pendingEval.app.status === 'rejected' && (
                       <li className="text-amber-700">
                         This candidate has already been rejected and told so. Moving them reopens their
-                        candidacy, and they will hear from {divisionLabels[pendingEval.target]} next.
+                        candidacy, and they will hear from {applyDivisionLabel(pendingEval.target)} next.
                       </li>
                     )}
                   </ul>
                   <p>
                     No email is sent by this change on its own. The invitation you send next is what reaches
-                    them, and it will name {divisionLabels[pendingEval.target]}. The move is recorded in the
+                    them, and it will name {applyDivisionLabel(pendingEval.target)}. The move is recorded in the
                     activity log.
                   </p>
                 </div>

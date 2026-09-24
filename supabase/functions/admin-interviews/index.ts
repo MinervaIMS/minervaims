@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { isBookableSlot, isFutureSlot, nowInAssociationTime } from '../_shared/interview-slots.ts';
 import { audited } from '../_shared/activity.ts';
 import { notifyStaff, slotOpener } from '../_shared/staff-notify.ts';
+import { RECRUITING_DIVISIONS, headedIntakes, intakeLabel, intakeOf, divisionReading } from '../_shared/recruiting.ts';
+import { readJsonObject, UNREADABLE_BODY, isIsoDate, isClockTime, type LooseBody } from '../_shared/request-body.ts';
 
 
 // =====================================================================
@@ -29,7 +31,12 @@ const corsHeaders = {
 
 const FULL_ACCESS = ['admin', 'president', 'vice_president', 'head_of_asset_management'];
 const ADMIN_EMAIL = 'as.minerva@unibocconi.it';
-const CORE_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+// The five research divisions and the joint Media & Communication and
+// Operations intake. It used to be the five alone, which is why the joint
+// intake could never be given a slot, and therefore could never be
+// invited: the invitation refuses a division with nothing to book. See
+// _shared/recruiting.ts.
+const INTERVIEW_DIVISIONS = RECRUITING_DIVISIONS;
 // Statuses at which a candidate may hold/see an interview booking.
 const BOOKABLE_STATUS = 'interview_invitation_sent';
 const BOOKED_STATUS = 'interview_confirmed';
@@ -66,11 +73,8 @@ async function systemNote(supabase: any, applicationId: string, body: string): P
   }
 }
 
-const DIV_LABELS: Record<string, string> = {
-  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
-  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
-  media: 'Media & Communication', operations: 'Operations', board: 'Board',
-};
+/** The name of the intake a slot or a candidacy belongs to. */
+const DIV_LABEL = (division: string) => intakeLabel(division) || division;
 const STATUS_URL = 'https://minervaims.org/workspace';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -121,16 +125,55 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
     const isAdminEmail = user.email === ADMIN_EMAIL;
     const canAll = isAdminEmail || roleNames.some((r) => FULL_ACCESS.includes(r));
 
+    // =====================================================================
     // Divisions the caller can OPEN slots for, and can VIEW.
-    const manageDivisions = roles.filter((r) => r.role === 'head_of_division' && r.division).map((r) => r.division as string);
-    const viewDivisions = roles.filter((r) => ['head_of_division', 'team_leader'].includes(r.role) && r.division).map((r) => r.division as string);
+    // ---------------------------------------------------------------------
+    // A Head of Division runs their division's calendar. The Head of Media
+    // & Communication and the Head of Operations both run the joint intake's
+    // - they used to run none, because only `head_of_division` was read
+    // here. Team Leaders, and the Portfolio Manager who is Portfolio
+    // Management's team leader, READ their division's calendar, which is
+    // what the workspace matrix has always granted them; the Portfolio
+    // Manager was missing here and was refused a page the menu offered.
+    // =====================================================================
+    const manageDivisions = headedIntakes(roles);
+    const viewDivisions = [...new Set([
+      ...manageDivisions,
+      ...roles
+        .filter((r) => (r.role === 'team_leader' || r.role === 'portfolio_manager') && r.division && INTERVIEW_DIVISIONS.includes(r.division))
+        .map((r) => r.division as string),
+    ])];
     const canManage = (division: string) => canAll || manageDivisions.includes(division);
     const canView = (division: string) => canAll || viewDivisions.includes(division);
     const isStaff = canAll || viewDivisions.length > 0;
 
-    const body = await req.json().catch(() => ({}));
-    const action = body.action as string;
+    // A body that is not a JSON object is refused as such, rather than
+    // failing further down on the first property read from it.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return json({ error: UNREADABLE_BODY }, 400);
+    const body = parsedBody as LooseBody;
+    const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
+
+    // =====================================================================
+    // WHAT A SLOT MUST LOOK LIKE BEFORE IT REACHES THE DATABASE.
+    // ---------------------------------------------------------------------
+    // A division that is not a recruiting division, a date that is not a
+    // date or a time that is not a time used to be handed to the insert as
+    // they came, and the database's refusal was rethrown as an HTTP 500 -
+    // "an unexpected error occurred", about a form field. Each is answered
+    // here in words, and a slot must also end after it starts.
+    // =====================================================================
+    const divisionIn = (v: unknown): string | null => {
+      const d = intakeOf(typeof v === 'string' ? v : null);
+      return d && INTERVIEW_DIVISIONS.includes(d) ? d : null;
+    };
+    const slotTimesError = (slot_date: unknown, start_time: unknown, end_time: unknown): string | null => {
+      if (!isIsoDate(slot_date)) return 'Choose a valid date for the slot.';
+      if (!isClockTime(start_time) || !isClockTime(end_time)) return 'Choose a valid start and end time (HH:MM).';
+      if ((end_time as string).slice(0, 5) <= (start_time as string).slice(0, 5)) return 'A slot must end after it starts.';
+      return null;
+    };
 
     // Resolve the caller's display name once (used as examiner_name).
     const displayName = async () => {
@@ -142,11 +185,20 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
     const myApplication = async () => {
       const { data } = await supabase
         .from('applications')
-        .select('id, user_id, first_name, surname, email, status, interview_division')
+        .select('id, user_id, first_name, surname, email, status, interview_division, interview_bookings_made')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+      // `interview_bookings_made` is what the one-change rule counts. It
+      // was not selected, so it read as undefined, the count was always 0,
+      // and the rule never refused anybody: every candidate could move
+      // their interview as often as they liked, and every move was noted
+      // as a first booking. It is selected now.
+      //
+      // A row still carrying `operations` from before the intake was
+      // unified is read as the joint intake, so it finds that calendar.
+      if (data) (data as any).interview_division = intakeOf((data as any).interview_division) || null;
       return data as any;
     };
 
@@ -156,8 +208,9 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
 
     // ── list (slots + bookings for a division) ─────────────────────────────
     if (action === 'list') {
-      const division = body.division as string;
+      const division = divisionIn(body.division);
       if (!isStaff) return json({ error: 'Access denied' }, 403);
+      if (!division) return json({ error: 'Choose a division.' }, 400);
       if (!canView(division)) return json({ error: 'Out of scope' }, 403);
 
       // =====================================================================
@@ -221,14 +274,18 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         for (const b of bookings || []) bookingBySlot[b.slot_id] = b;
       }
       const rows = (slots || []).map((s: any) => ({ ...s, booking: bookingBySlot[s.id] || null }));
-      return json({ slots: rows, canManage: canManage(division), viewDivisions: canAll ? CORE_DIVISIONS : viewDivisions, manageDivisions: canAll ? CORE_DIVISIONS : manageDivisions });
+      return json({ slots: rows, canManage: canManage(division), viewDivisions: canAll ? INTERVIEW_DIVISIONS : viewDivisions, manageDivisions: canAll ? INTERVIEW_DIVISIONS : manageDivisions });
     }
 
     // ── create-slot ────────────────────────────────────────────────────────
     if (action === 'create-slot') {
-      const { division, slot_date, start_time, end_time, meeting_link } = body;
+      const division = divisionIn(body.division);
+      const { slot_date, start_time, end_time } = body;
+      const meeting_link = typeof body.meeting_link === 'string' ? body.meeting_link.trim() : '';
+      if (!division) return json({ error: 'Choose a division.' }, 400);
       if (!canManage(division)) return json({ error: 'You can only open slots for your own division' }, 403);
-      if (!division || !slot_date || !start_time || !end_time) return json({ error: 'Missing fields' }, 400);
+      const timesError = slotTimesError(slot_date, start_time, end_time);
+      if (timesError) return json({ error: timesError }, 400);
       const name = await displayName();
       const { error } = await supabase.from('interview_slots').insert({
         division, slot_date, start_time, end_time,
@@ -244,9 +301,13 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
 
     // ── bulk-create (smart planning: 30-minute slots across a range) ────────
     if (action === 'bulk-create') {
-      const { division, slot_date, start_time, end_time, meeting_link } = body;
+      const division = divisionIn(body.division);
+      const { slot_date, start_time, end_time } = body;
+      const meeting_link = typeof body.meeting_link === 'string' ? body.meeting_link.trim() : '';
+      if (!division) return json({ error: 'Choose a division.' }, 400);
       if (!canManage(division)) return json({ error: 'You can only open slots for your own division' }, 403);
-      if (!division || !slot_date || !start_time || !end_time) return json({ error: 'Missing fields' }, 400);
+      const timesError = slotTimesError(slot_date, start_time, end_time);
+      if (timesError) return json({ error: timesError }, 400);
       const name = await displayName();
       const rows: any[] = [];
       let cur = start_time.slice(0, 5);
@@ -277,9 +338,15 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (!slot) return json({ error: 'Not found' }, 404);
       if (!canManage(slot.division)) return json({ error: 'Out of scope' }, 403);
       const updates: Record<string, unknown> = {};
-      if (body.meeting_link !== undefined) updates.meeting_link = body.meeting_link || null;
+      if (body.meeting_link !== undefined) updates.meeting_link = (typeof body.meeting_link === 'string' && body.meeting_link.trim()) || null;
       // Timing edits are only allowed while the slot is free.
       if (!slot.is_booked) {
+        if (body.slot_date || body.start_time || body.end_time) {
+          const timesError = slotTimesError(
+            body.slot_date || slot.slot_date, body.start_time || slot.start_time, body.end_time || slot.end_time,
+          );
+          if (timesError) return json({ error: timesError }, 400);
+        }
         if (body.slot_date) updates.slot_date = body.slot_date;
         if (body.start_time) updates.start_time = body.start_time;
         if (body.end_time) updates.end_time = body.end_time;
@@ -308,7 +375,8 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
 
     // ── clear-division (remove every slot for a division) ───────────────────
     if (action === 'clear-division') {
-      const division = body.division as string;
+      const division = divisionIn(body.division);
+      if (!division) return json({ error: 'Choose a division.' }, 400);
       if (!canManage(division)) return json({ error: 'Out of scope' }, 403);
       const { data: booked } = await supabase.from('interview_bookings').select('application_id').eq('division', division);
       const { error } = await supabase.from('interview_slots').delete().eq('division', division);
@@ -413,7 +481,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
 
       const { data: slot } = await supabase.from('interview_slots').select('*').eq('id', body.slot_id).maybeSingle();
       if (!slot || !slot.is_active) return json({ error: 'Slot not available' }, 404);
-      if (slot.division !== app.interview_division) return json({ error: 'This slot is for another division' }, 403);
+      if (intakeOf(slot.division) !== intakeOf(app.interview_division)) return json({ error: 'This slot is for another division' }, 403);
       if (slot.is_booked) return json({ error: 'Slot no longer available' }, 409);
 
       const { error } = await supabase.from('interview_bookings').insert({
@@ -440,8 +508,8 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       await systemNote(
         supabase, app.id,
         booked === 0
-          ? `Interview scheduled for ${formatSlotDate(slot.slot_date)} at ${formatSlotTime(slot.start_time)} (${DIV_LABELS[slot.division] || slot.division}, ${slot.examiner_name || 'examiner to be confirmed'}).`
-          : `Interview booking changed to ${formatSlotDate(slot.slot_date)} at ${formatSlotTime(slot.start_time)} (${DIV_LABELS[slot.division] || slot.division}, ${slot.examiner_name || 'examiner to be confirmed'}). This was the candidate's one permitted change.`,
+          ? `Interview scheduled for ${formatSlotDate(slot.slot_date)} at ${formatSlotTime(slot.start_time)} (${DIV_LABEL(slot.division)}, ${slot.examiner_name || 'examiner to be confirmed'}).`
+          : `Interview booking changed to ${formatSlotDate(slot.slot_date)} at ${formatSlotTime(slot.start_time)} (${DIV_LABEL(slot.division)}, ${slot.examiner_name || 'examiner to be confirmed'}). This was the candidate's one permitted change.`,
       );
 
       // Automatic email: booking confirmation to the candidate.
@@ -451,8 +519,9 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
           p_to: app.email,
           p_vars: {
             first_name: app.first_name,
-            division_name: DIV_LABELS[slot.division] || slot.division,
+            division_name: DIV_LABEL(slot.division),
             division_slug: slot.division,
+            division_reading: divisionReading(slot.division),
             interview_date: formatSlotDate(slot.slot_date),
             interview_time: `${formatSlotTime(slot.start_time)} - ${formatSlotTime(slot.end_time)}`,
             examiner_name: slot.examiner_name || 'Admin',
@@ -466,7 +535,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       try {
         await notifyStaff(supabase, 'staff_interview_booked', await slotOpener(supabase, slot), {
           candidate_name: `${app.first_name} ${app.surname}`,
-          division_name: DIV_LABELS[slot.division] || slot.division,
+          division_name: DIV_LABEL(slot.division),
           interview_when: `${formatSlotDate(slot.slot_date)}, ${formatSlotTime(slot.start_time)}–${formatSlotTime(slot.end_time)}`,
         }, `${app.id}:${slot.id}:booked`);
       } catch (e) { console.error('staff booking notice failed', e); }
@@ -502,7 +571,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         try {
           await notifyStaff(supabase, 'staff_interview_released', await slotOpener(supabase, freedSlot), {
             candidate_name: `${app.first_name} ${app.surname}`,
-            division_name: DIV_LABELS[freedSlot.division] || freedSlot.division,
+            division_name: DIV_LABEL(freedSlot.division),
             interview_when: `${formatSlotDate(freedSlot.slot_date)}, ${formatSlotTime(freedSlot.start_time)}–${formatSlotTime(freedSlot.end_time)}`,
           }, `${app.id}:${freedSlot.id}:released`);
         } catch (e) { console.error('staff release notice failed', e); }

@@ -219,6 +219,9 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>;
   try {
     body = await req.json();
+    // JSON that is not an object is refused like JSON that is not JSON:
+    // `body.action` below threw on `null`, outside any handler.
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('not a JSON object');
   } catch {
     return json({ error: 'Invalid JSON body' }, 400);
   }

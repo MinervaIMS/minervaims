@@ -3,6 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
 import { countBookableSlots } from '../_shared/interview-slots.ts';
 import { divisionHeadsAndPresident, notifyStaff } from '../_shared/staff-notify.ts';
+import {
+  JOINT_INTAKE, RECRUITING_DIVISIONS, intakeOf, intakeLabel, placementLabel, divisionReading,
+} from '../_shared/recruiting.ts';
+import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 // A stored role such as 'senior_analyst' read as a title: "Senior Analyst".
 function roleLabel(role: unknown): string {
@@ -46,7 +50,12 @@ const FULL_ACCESS = ['admin', 'president', 'vice_president', 'head_of_asset_mana
 // the documents and the notes, and add a note of their own. Portfolio managers
 // were missing, so every request they made was refused with 403 and the page
 // they could see in the menu did not work at all.
-const REVIEW_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager'];
+// The Head of Media & Communication and the Head of Operations review the
+// joint intake as a Head of Division reviews theirs: see
+// _shared/recruiting.ts. Their division is read as that intake below.
+const REVIEW_ROLES = ['head_of_division', 'team_leader', 'portfolio_manager', 'head_of_media', 'head_of_operations'];
+/** Roles that review the joint intake whatever division their row carries. */
+const JOINT_INTAKE_HEADS = ['head_of_media', 'head_of_operations'];
 
 // Roles that review but must NEVER MOVE A CANDIDACY. They assess and comment;
 // deciding where a candidate sits in the process belongs to the people
@@ -109,11 +118,13 @@ const PUBLIC_ROLES = new Set([
   'media_analyst', 'head_of_operations', 'advisor',
 ]);
 
-const DIV_LABELS: Record<string, string> = {
-  equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
-  portfolio: 'Portfolio Management', quant: 'Quantitative Research',
-  media: 'Media & Communication', operations: 'Operations', board: 'Board', none: '',
-};
+// TWO KINDS OF NAME, and they are not interchangeable (see
+// _shared/recruiting.ts). A CANDIDACY is in an intake - one of the five
+// research divisions, or "Media & Communication and Operations" - and every
+// email about screening, interviews or a rejection names that. An OFFER
+// places somebody in a division of the register, and names that.
+const INTAKE_NAME = (division: string | null | undefined) => intakeLabel(division);
+const PLACEMENT_NAME = (division: string | null | undefined) => placementLabel(division);
 const STATUS_URL = 'https://minervaims.org/workspace';
 // Roles a new joiner may be given. Hard whitelist: the offer flow can never
 // hand out leadership or admin access.
@@ -141,7 +152,12 @@ const INTERVIEW_STAGES = ['interview_invitation_sent', 'waiting_interview_confir
 //
 // Mirrors EVALUATION_DIVISIONS in src/lib/applications-api.ts.
 // =====================================================================
-const EVALUATION_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media', 'operations'];
+//
+// OPERATIONS IS NO LONGER LISTED ON ITS OWN. Media & Communication and
+// Operations recruit as one intake, stored as `media`; which of the two a
+// joiner ends up in is decided by the role they are offered. A request
+// naming `operations` is read as that intake.
+const EVALUATION_DIVISIONS = RECRUITING_DIVISIONS;
 
 /** The status a re-evaluated candidacy returns to: "To be invited". */
 const REEVALUATION_STATUS = 'to_be_contacted';
@@ -172,7 +188,12 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
     const roleNames = roles.map((r) => r.role);
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
     const canAll = isAdminEmail || roleNames.some((r) => FULL_ACCESS.includes(r));
-    const reviewerDivisions = roles.filter((r) => REVIEW_ROLES.includes(r.role) && r.division).map((r) => r.division as string);
+    const reviewerDivisions = [...new Set(
+      roles
+        .filter((r) => REVIEW_ROLES.includes(r.role))
+        .map((r) => (JOINT_INTAKE_HEADS.includes(r.role) ? JOINT_INTAKE : intakeOf(r.division)))
+        .filter((d): d is string => !!d && EVALUATION_DIVISIONS.includes(d)),
+    )];
     const isReviewer = canAll || reviewerDivisions.length > 0;
     if (!isReviewer) return json({ error: 'Access denied' }, 403);
 
@@ -235,9 +256,9 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
      */
     const inWriteScope = (app: ScopedApp) =>
       canAll
-      || reviewerDivisions.includes(app.first_choice)
-      || (app.second_choice ? reviewerDivisions.includes(app.second_choice) : false)
-      || (app.evaluation_division ? reviewerDivisions.includes(app.evaluation_division) : false);
+      || reviewerDivisions.includes(intakeOf(app.first_choice))
+      || (app.second_choice ? reviewerDivisions.includes(intakeOf(app.second_choice)) : false)
+      || (app.evaluation_division ? reviewerDivisions.includes(intakeOf(app.evaluation_division)) : false);
 
     /** MAY THIS CALLER READ THIS CANDIDACY? Every reviewer reads them all. */
     const inScope = (app: ScopedApp) => canSeeAllDivisions || inWriteScope(app);
@@ -246,10 +267,12 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
     /** The division assessing this candidate right now. */
     const evaluationOf = (app: { evaluation_division?: string | null; interview_division?: string | null; first_choice: string }) =>
-      app.evaluation_division || app.interview_division || app.first_choice;
+      intakeOf(app.evaluation_division || app.interview_division || app.first_choice);
 
-    const body = await req.json().catch(() => ({}));
-    const action = body.action as string;
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return json({ error: UNREADABLE_BODY }, 400);
+    const body = parsedBody as LooseBody;
+    const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
 
     // ── list ───────────────────────────────────────────────────────────────
@@ -450,7 +473,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         // an examiner is now allowed to conclude that somebody belongs in
         // a division they never asked for. It must still be a real
         // division and still within the examiner's own scope.
-        const requested = typeof body.interview_division === 'string' ? body.interview_division : null;
+        const requested = typeof body.interview_division === 'string' ? intakeOf(body.interview_division) : null;
         const isRealDivision = !!requested && EVALUATION_DIVISIONS.includes(requested);
         const withinScope = canAll || (requested ? reviewerDivisions.includes(requested) : false);
         if (requested && isRealDivision && withinScope) {
@@ -504,7 +527,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         }
         if (bookable === 0) {
           return json({
-            error: `${DIV_LABELS[evaluation] || evaluation} has no interview slot a candidate could book: every slot is either taken, closed or already past. Open at least one future slot in Recruiting, Interview Calendar, then invite this candidate.`,
+            error: `${INTAKE_NAME(evaluation) || evaluation} has no interview slot a candidate could book: every slot is either taken, closed or already past. Open at least one future slot in Recruiting, Interview Calendar, then invite this candidate.`,
           }, 409);
         }
       }
@@ -521,8 +544,13 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             p_key: 'interview_invitation', p_to: app.email,
             p_vars: {
               first_name: app.first_name,
-              division_name: DIV_LABELS[invitedDivision || ''] || '',
+              division_name: INTAKE_NAME(invitedDivision),
               division_slug: invitedDivision || '',
+              // The "how to prepare" sentence, written for the intake: the
+              // research divisions keep their reports link word for word,
+              // and the joint intake is no longer sent to a page that does
+              // not exist. See _shared/recruiting.ts.
+              division_reading: divisionReading(invitedDivision),
               status_url: STATUS_URL,
             },
           });
@@ -533,7 +561,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             p_to: app.email,
             p_vars: {
               first_name: app.first_name,
-              division_name: DIV_LABELS[evaluation] || '',
+              division_name: INTAKE_NAME(evaluation),
             },
           });
         } else if (body.status === 'offer_accepted' && previousStatus !== 'offer_accepted') {
@@ -541,7 +569,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             p_key: 'acceptance_received', p_to: app.email,
             p_vars: {
               first_name: app.first_name,
-              division_name: DIV_LABELS[(app.offer_division || evaluation) as string] || '',
+              division_name: app.offer_division ? PLACEMENT_NAME(app.offer_division) : INTAKE_NAME(evaluation),
               status_url: STATUS_URL,
             },
           });
@@ -558,7 +586,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             await divisionHeadsAndPresident(supabase, offerDivision),
             {
               candidate_name: `${app.first_name} ${app.surname}`,
-              division_name: DIV_LABELS[offerDivision] || offerDivision || '',
+              division_name: PLACEMENT_NAME(offerDivision) || offerDivision || '',
               offer_role: roleLabel(app.offer_role),
             },
             `${body.id}:offer_accepted`,
@@ -682,7 +710,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       // move is still recorded in the activity log with both divisions.
       // =====================================================================
       if (!canProgress) return json({ error: PROGRESS_DENIED }, 403);
-      const target = typeof body.division === 'string' ? body.division : null;
+      const target = typeof body.division === 'string' ? intakeOf(body.division) : null;
       if (!target || !EVALUATION_DIVISIONS.includes(target)) {
         return json({ error: 'Choose a valid division to evaluate this candidate for.' }, 400);
       }
@@ -705,10 +733,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
       // THE TWO-PROCESS CAP. Once a candidacy has been moved once, the
       // pair of divisions is fixed and the only move left is between them.
-      const previous = app.evaluation_division_previous as string | null;
+      const previous = intakeOf(app.evaluation_division_previous as string | null) || null;
       if (previous && target !== previous) {
         return json({
-          error: `This candidate has already been moved once. They can only be evaluated for ${DIV_LABELS[current]} or ${DIV_LABELS[previous]}; a candidacy is never opened in a third division.`,
+          error: `This candidate has already been moved once. They can only be evaluated for ${INTAKE_NAME(current)} or ${INTAKE_NAME(previous)}; a candidacy is never opened in a third division.`,
         }, 400);
       }
 
@@ -753,7 +781,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
     // ── add-note ───────────────────────────────────────────────────────────
     if (action === 'add-note') {
-      if (!body.body?.trim()) return json({ error: 'Empty note' }, 400);
+      // `body.body?.trim()` called a string method on whatever arrived; a
+      // note that is not text is now simply an empty note.
+      const noteText = typeof body.body === 'string' ? body.body.trim() : '';
+      if (!noteText) return json({ error: 'Empty note' }, 400);
       // `evaluation_division` belongs in this select as much as the two
       // preferences do: a reviewer handed a candidate who named neither of
       // their divisions could open that candidate and then be refused when
@@ -763,7 +794,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
       const { error } = await supabase.from('application_notes').insert({
         application_id: body.id, author_id: user.id,
-        author_name: profile?.full_name || user.email, body: body.body.trim(),
+        author_name: profile?.full_name || user.email, body: noteText,
       });
       if (error) throw error;
       return json({ success: true });
@@ -771,8 +802,18 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
 
     // ── set-question (division head edits their division's question) ─────────
     if (action === 'set-question') {
-      const division = body.division as string;
-      if (!canAll && !reviewerDivisions.includes(division)) return json({ error: 'Out of scope' }, 403);
+      // UNCHANGED IN WHO MAY DO IT. The written questions belong to the
+      // research divisions; the joint intake asks none, and the Heads who
+      // run it now review candidates without being given this page (the
+      // matrix grants them no 'applications-form'). So the scope here is
+      // the reviewer roles as they were before the joint intake joined
+      // them, read straight from the role rows.
+      const questionDivisions = roles
+        .filter((r) => ['head_of_division', 'team_leader', 'portfolio_manager'].includes(r.role) && r.division)
+        .map((r) => r.division as string);
+      const division = typeof body.division === 'string' ? body.division : '';
+      if (!EVALUATION_DIVISIONS.includes(division)) return json({ error: 'Choose a division.' }, 400);
+      if (!canAll && !questionDivisions.includes(division)) return json({ error: 'Out of scope' }, 403);
       // Questions freeze while applications are open: from the scheduled
       // opening until the close no question can change, so every applicant
       // answers the same question.
@@ -787,7 +828,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         }
       }
       const { error } = await supabase.from('application_questions')
-        .upsert({ division, question: body.question ?? '', updated_at: new Date().toISOString(), updated_by: user.id });
+        .upsert({ division, question: typeof body.question === 'string' ? body.question : '', updated_at: new Date().toISOString(), updated_by: user.id });
       if (error) throw error;
       return json({ success: true });
     }
@@ -846,7 +887,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           p_key: 'offer_to_join', p_to: app.email,
           p_vars: {
             first_name: app.first_name,
-            division_name: DIV_LABELS[division] || '',
+            division_name: PLACEMENT_NAME(division),
             acceptance_deadline: deadlineLabel,
             status_url: STATUS_URL,
             deadline: deadlineLabel,
@@ -863,7 +904,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           await divisionHeadsAndPresident(supabase, division),
           {
             candidate_name: `${app.first_name} ${app.surname}`,
-            division_name: DIV_LABELS[division] || division,
+            division_name: PLACEMENT_NAME(division) || division,
             offer_role: roleLabel(role),
             offer_deadline: deadlineLabel,
           },
@@ -921,7 +962,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           p_key: 'acceptance_received', p_to: app.email,
           p_vars: {
             first_name: app.first_name,
-            division_name: DIV_LABELS[(app.offer_division || app.interview_division || app.first_choice) as string] || '',
+            division_name: app.offer_division ? PLACEMENT_NAME(app.offer_division) : INTAKE_NAME(app.interview_division || app.first_choice),
             status_url: STATUS_URL,
           },
         });
@@ -935,7 +976,7 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
           await divisionHeadsAndPresident(supabase, joinDivision),
           {
             candidate_name: `${app.first_name} ${app.surname}`,
-            division_name: DIV_LABELS[joinDivision] || joinDivision,
+            division_name: PLACEMENT_NAME(joinDivision) || joinDivision,
             offer_role: roleLabel(role),
           },
           `${app.id}:offer_accepted`,

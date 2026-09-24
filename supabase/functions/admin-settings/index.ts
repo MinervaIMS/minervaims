@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { audited } from '../_shared/activity.ts';
 import { allows } from '../_shared/access.ts';
+import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -114,7 +115,12 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
 
     console.log('User authorized with roles:', userRoleNames);
 
-    const { action, settings } = await req.json();
+    // A body that is not a JSON object is refused as such (400), rather
+    // than failing on the first property read from it and reaching the
+    // catch-all as a 500. See _shared/request-body.ts.
+    const parsedBody = await readJsonObject(req);
+    if (!parsedBody) return new Response(JSON.stringify({ error: UNREADABLE_BODY }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const { action, settings } = parsedBody as LooseBody;
     audit.request(action, settings ?? {});
     console.log('Action:', action, 'Settings:', settings);
 
