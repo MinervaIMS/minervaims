@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, Loader2, Upload, Archive, Info } from 'lucide-react';
+import { Plus, X, Loader2, Upload, Globe, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
@@ -14,7 +14,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import {
   saveEvent, uploadEventPoster, EVENT_TYPE_LABELS, AUDIENCE_LABELS,
-  DIVISION_REQUIRED_TYPES, DEFAULT_ARCHIVED_TYPES, CREATABLE_TYPES,
+  DIVISION_REQUIRED_TYPES, CREATABLE_TYPES, listedOnWebsiteByDefault,
   type EventType, type RegistrationAudience,
 } from '@/lib/events-api';
 import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
@@ -34,7 +34,7 @@ export default function EventCreate() {
     start_local: '', end_local: '', place: '', online: false,
     moderator: '', description: '', poster_url: '',
     registration_enabled: false, registration_audience: 'members' as RegistrationAudience,
-    in_archive: DEFAULT_ARCHIVED_TYPES.includes('other' as EventType),
+    show_on_website: listedOnWebsiteByDefault('other'),
   });
   const [guests, setGuests] = useState<string[]>(['']);
   const [uploading, setUploading] = useState(false);
@@ -68,10 +68,15 @@ export default function EventCreate() {
         poster_url: form.poster_url || null, event_type: form.event_type, division: form.division || null,
         start_at: new Date(form.start_local).toISOString(), end_at: form.end_local ? new Date(form.end_local).toISOString() : null,
         online: form.online, registration_enabled: form.registration_enabled, registration_audience: form.registration_audience,
-        in_archive: form.in_archive,
+        // Every event is in the archive; whether it is PUBLIC is the one
+        // choice, made here and changeable later from the archive. It used
+        // not to be sent at all, so the server's default published every
+        // new event, internal meetings included.
+        in_archive: true,
+        show_on_website: form.show_on_website,
       });
       toast({ title: 'Event created', description: 'Find it in the Calendar.' });
-      setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members', in_archive: false });
+      setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members', show_on_website: listedOnWebsiteByDefault('other') });
       setGuests(['']);
     } catch (e) { toast({ title: 'Could not create event', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setSaving(false); }
@@ -93,8 +98,8 @@ export default function EventCreate() {
               ...form,
               event_type: v as EventType,
               division: DIVISION_REQUIRED_TYPES.includes(v as EventType) ? form.division : '',
-              // The archive choice follows the type's default until changed.
-              in_archive: DEFAULT_ARCHIVED_TYPES.includes(v as EventType),
+              // The website choice follows the type's default until changed.
+              show_on_website: listedOnWebsiteByDefault(v as EventType),
             })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{CREATABLE_TYPES.map((t) => <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>)}</SelectContent>
@@ -166,23 +171,24 @@ export default function EventCreate() {
           )}
         </div>
 
-        {/* Archive choice - the creator decides whether the event is recorded
-            in Events > Event Archive. Online calls, guest events and alumni
-            calls default to yes; anything can be switched either way. */}
+        {/* Website choice. Every event is recorded in Events > Event Archive;
+            this decides only whether it is also listed on the public Events
+            page. Meetings and online calls start unlisted, everything else
+            listed, and either can be changed now or later in the archive. */}
         <div className="border border-separator p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-2">
-              <Archive className="h-4 w-4 text-accent" />
-              <Label htmlFor="in-archive">Record this event in the archive</Label>
+              <Globe className="h-4 w-4 text-accent" />
+              <Label htmlFor="on-website">Show on the public website</Label>
             </span>
-            <Switch id="in-archive" checked={form.in_archive} onCheckedChange={(v) => setForm({ ...form, in_archive: v })} />
+            <Switch id="on-website" checked={form.show_on_website} onCheckedChange={(v) => setForm({ ...form, show_on_website: v })} />
           </div>
           <p className="text-sm text-muted-foreground flex items-start gap-2">
             <Info className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
-              {form.in_archive
-                ? 'This event will be recorded in Events > Event Archive. It can be removed from the archive later, but removal is permanent and cannot be undone.'
-                : 'This event will not be recorded in the archive. It still appears in the Calendar and can collect registrations.'}
+              {form.show_on_website
+                ? 'This event will be listed on the public Events page of minervaims.org. It is also recorded in Events > Event Archive, where this can be changed at any time.'
+                : 'This event will not be listed on the public website. It is still recorded in Events > Event Archive, appears in the Calendar and can collect registrations.'}
             </span>
           </p>
         </div>

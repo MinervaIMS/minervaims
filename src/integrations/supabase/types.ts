@@ -1098,8 +1098,38 @@ export type Database = {
           },
         ]
       }
+      event_reminder_log: {
+        Row: {
+          event_id: string
+          recipients: number
+          sent_at: string
+          stage: string
+        }
+        Insert: {
+          event_id: string
+          recipients?: number
+          sent_at?: string
+          stage: string
+        }
+        Update: {
+          event_id?: string
+          recipients?: number
+          sent_at?: string
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reminder_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          aod_day_id: string | null
           created_at: string
           created_by: string | null
           date: string
@@ -1116,12 +1146,16 @@ export type Database = {
           poster_url: string | null
           registration_audience: string
           registration_enabled: boolean
+          reminders_paused: boolean
+          reminders_paused_at: string | null
+          reminders_paused_by: string | null
           show_on_website: boolean
           start_at: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          aod_day_id?: string | null
           created_at?: string
           created_by?: string | null
           date: string
@@ -1138,12 +1172,16 @@ export type Database = {
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
+          reminders_paused?: boolean
+          reminders_paused_at?: string | null
+          reminders_paused_by?: string | null
           show_on_website?: boolean
           start_at?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          aod_day_id?: string | null
           created_at?: string
           created_by?: string | null
           date?: string
@@ -1160,12 +1198,23 @@ export type Database = {
           poster_url?: string | null
           registration_audience?: string
           registration_enabled?: boolean
+          reminders_paused?: boolean
+          reminders_paused_at?: string | null
+          reminders_paused_by?: string | null
           show_on_website?: boolean
           start_at?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_aod_day_id_fkey"
+            columns: ["aod_day_id"]
+            isOneToOne: true
+            referencedRelation: "aod_days"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exam_sessions: {
         Row: {
@@ -2253,6 +2302,18 @@ export type Database = {
         Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
         Returns: undefined
       }
+      event_reminder_day: {
+        Args: { p_date: string; p_start_at: string }
+        Returns: string
+      }
+      event_reminder_html: { Args: { p: string }; Returns: string }
+      event_reminder_recipients: {
+        Args: { p_event_id: string }
+        Returns: {
+          email: string
+          first_name: string
+        }[]
+      }
       exam_break_on: { Args: { _d: string }; Returns: string }
       fee_payment_block: { Args: { p_period_id: string }; Returns: string }
       has_role: {
@@ -2320,6 +2381,7 @@ export type Database = {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
       }
+      process_event_registration_reminders: { Args: never; Returns: number }
       process_fee_reminders: { Args: never; Returns: number }
       process_offer_deadlines: { Args: never; Returns: undefined }
       process_profile_reminders: { Args: never; Returns: number }
@@ -2363,6 +2425,10 @@ export type Database = {
           p_role: Database["public"]["Enums"]["app_role"]
         }
         Returns: Record<string, unknown>
+      }
+      send_event_registration_reminder: {
+        Args: { p_event_id: string; p_stage: string; p_test_to?: string }
+        Returns: number
       }
       user_divisions: {
         Args: { _user_id: string }

@@ -7,14 +7,30 @@ import type { Session } from '@supabase/supabase-js';
 import { invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
 
-export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'other';
+export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'association_on_display' | 'other';
 export type RegistrationAudience = 'members' | 'members_external' | 'public';
 
 // Event types for which choosing an organising division is mandatory.
 export const DIVISION_REQUIRED_TYPES: EventType[] = ['division_event', 'alumni_call', 'meeting'];
 // Recording an event in the Events archive is the CREATOR'S choice; these
 // types default the choice to ON (it can be switched either way).
+// No longer read by the archive, which lists every event; kept for callers
+// that still send the flag.
 export const DEFAULT_ARCHIVED_TYPES: EventType[] = ['online_call', 'guest', 'alumni_call'];
+
+// =====================================================================
+// WHICH EVENTS START OFF THE PUBLIC WEBSITE.
+// ---------------------------------------------------------------------
+// Internal meetings and online calls are for members, and the association
+// has always hidden them from the public Events page (the migration that
+// introduced the flag did exactly this to the rows it found). Everything
+// else starts listed. It is a default, shown to the person creating the
+// event and changeable there and later in the archive.
+//
+// Mirrored by WEBSITE_HIDDEN_TYPES in supabase/functions/admin-events.
+// =====================================================================
+export const WEBSITE_HIDDEN_TYPES: EventType[] = ['meeting', 'online_call'];
+export const listedOnWebsiteByDefault = (type: EventType): boolean => !WEBSITE_HIDDEN_TYPES.includes(type);
 // Types that can be created from Events > Create. Alumni calls are excluded:
 // they are created only through Events > Alumni Calls.
 export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_event', 'online_call', 'guest', 'association_wide', 'other'];
@@ -37,6 +53,14 @@ export interface EventRow {
   registration_audience: RegistrationAudience;
   show_on_website: boolean;
   in_archive: boolean;
+  /**
+   * Set on the one event each Association on Display day has. That event is
+   * created and kept in step by the database, and its registrations are the
+   * day's sign-ups; it is edited from Association on Display, not here.
+   */
+  aod_day_id?: string | null;
+  /** Registration reminders stopped for this event (Registration Forms). */
+  reminders_paused?: boolean;
   created_at: string;
 }
 
@@ -130,7 +154,7 @@ export const MEMBER_MATCH_NOTE: Record<MemberMatch, string> = {
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   meeting: 'Internal meeting', aperitivo: 'Aperitivo', division_event: 'Division event',
   online_call: 'Online call', guest: 'Guest event', alumni_call: 'Alumni call',
-  association_wide: 'Association-wide', other: 'Other',
+  association_wide: 'Association-wide', association_on_display: 'Association on Display', other: 'Other',
 };
 export const AUDIENCE_LABELS: Record<RegistrationAudience, string> = {
   members: 'Members only', members_external: 'Members & other students', public: 'Public',
@@ -229,4 +253,71 @@ export function isAssociationMember(roles: { role: string }[] | null | undefined
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function invoke(fn: string, session: Session | null, body: Record<string, unknown>): Promise<any> {
   return invokeFunction(fn, { body: body, session });
+}
+
+
+// =====================================================================
+// THE ATTENDANCE WINDOW: a week after the event, the list is the record.
+// ---------------------------------------------------------------------
+// The mirror of supabase/functions/_shared/attendance-window.ts, which is
+// what actually refuses a change. Counted on Rome's calendar; the whole
+// seventh day is included, so an event on the 1st can be edited until the
+// end of the 8th.
+// =====================================================================
+export const ATTENDANCE_OPEN_DAYS = 7;
+
+function romeToday(at: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(at);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+/** Whether this event's attendance can still be changed, and until when. */
+export function attendanceWindow(eventDate: string | null | undefined, at: Date = new Date()): { open: boolean; closesOn: string | null } {
+  if (!eventDate) return { open: true, closesOn: null };
+  const [y, m, d] = eventDate.slice(0, 10).split('-').map(Number);
+  const closesOn = new Date(Date.UTC(y, m - 1, d + ATTENDANCE_OPEN_DAYS)).toISOString().slice(0, 10);
+  return { open: romeToday(at) <= closesOn, closesOn };
+}
+
+// =====================================================================
+// REGISTRATION REMINDERS (Registration Forms).
+// ---------------------------------------------------------------------
+// Two weeks, one week and three days before an event with an open form,
+// every active member not yet registered receives a reminder. The
+// database sends them; `admin-event-reminders` reports the schedule and
+// stops, resumes or tests them. Shapes mirror
+// supabase/functions/_shared/event-reminders.ts.
+// =====================================================================
+export type ReminderStage = '2w' | '1w' | '3d';
+export type ReminderState = 'sent' | 'scheduled' | 'on_hold' | 'skipped';
+export interface ReminderStageStatus {
+  stage: ReminderStage;
+  label: string;
+  due_on: string;
+  state: ReminderState;
+  sent_at: string | null;
+  recipients: number | null;
+  catching_up?: boolean;
+}
+export interface EventReminderStatus {
+  event_id: string;
+  paused: boolean;
+  paused_at: string | null;
+  paused_by: string | null;
+  stages: ReminderStageStatus[];
+}
+export interface ReminderTestResult { stage: ReminderStage; status: string }
+
+export async function listReminderStatus(session: Session | null): Promise<{ reminders: EventReminderStatus[]; can_manage: boolean }> {
+  const res = await invoke('admin-event-reminders', session, { action: 'status' });
+  return { reminders: res?.reminders || [], can_manage: !!res?.can_manage };
+}
+export function setRemindersPaused(session: Session | null, eventId: string, paused: boolean) {
+  return invoke('admin-event-reminders', session, { action: 'set-paused', event_id: eventId, paused });
+}
+export async function sendReminderTest(session: Session | null, eventId: string, to: string): Promise<{ to: string; results: ReminderTestResult[] }> {
+  return invoke('admin-event-reminders', session, { action: 'send-test', event_id: eventId, to });
 }

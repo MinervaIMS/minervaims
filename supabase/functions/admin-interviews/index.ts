@@ -5,6 +5,7 @@ import { audited } from '../_shared/activity.ts';
 import { notifyStaff, slotOpener } from '../_shared/staff-notify.ts';
 import { RECRUITING_DIVISIONS, headedIntakes, intakeLabel, intakeOf, divisionReading } from '../_shared/recruiting.ts';
 import { readJsonObject, UNREADABLE_BODY, isIsoDate, isClockTime, type LooseBody } from '../_shared/request-body.ts';
+import { meetingLinkError } from '../_shared/meeting-link.ts';
 
 
 // =====================================================================
@@ -286,6 +287,9 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (!canManage(division)) return json({ error: 'You can only open slots for your own division' }, 403);
       const timesError = slotTimesError(slot_date, start_time, end_time);
       if (timesError) return json({ error: timesError }, 400);
+      // A slot is opened with the meeting it is held in. See _shared/meeting-link.ts.
+      const linkError = meetingLinkError(meeting_link);
+      if (linkError) return json({ error: linkError }, 400);
       const name = await displayName();
       const { error } = await supabase.from('interview_slots').insert({
         division, slot_date, start_time, end_time,
@@ -308,6 +312,9 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (!canManage(division)) return json({ error: 'You can only open slots for your own division' }, 403);
       const timesError = slotTimesError(slot_date, start_time, end_time);
       if (timesError) return json({ error: timesError }, 400);
+      // A slot is opened with the meeting it is held in. See _shared/meeting-link.ts.
+      const linkError = meetingLinkError(meeting_link);
+      if (linkError) return json({ error: linkError }, 400);
       const name = await displayName();
       const rows: any[] = [];
       let cur = start_time.slice(0, 5);
@@ -338,7 +345,14 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (!slot) return json({ error: 'Not found' }, 404);
       if (!canManage(slot.division)) return json({ error: 'Out of scope' }, 403);
       const updates: Record<string, unknown> = {};
-      if (body.meeting_link !== undefined) updates.meeting_link = (typeof body.meeting_link === 'string' && body.meeting_link.trim()) || null;
+      // A link can be replaced, never removed: the candidate who booked, or
+      // who will, is sent to it. Slots opened before the link was required
+      // keep whatever they have until somebody edits them.
+      if (body.meeting_link !== undefined) {
+        const linkError = meetingLinkError(body.meeting_link);
+        if (linkError) return json({ error: linkError }, 400);
+        updates.meeting_link = String(body.meeting_link).trim();
+      }
       // Timing edits are only allowed while the slot is free.
       if (!slot.is_booked) {
         if (body.slot_date || body.start_time || body.end_time) {

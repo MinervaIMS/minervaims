@@ -116,6 +116,33 @@ export function isFutureSlot(
   return (slot.start_time ?? '').slice(0, 5) > now.time;
 }
 
+// =====================================================================
+// A slot is opened with the meeting it will be held in.
+// ---------------------------------------------------------------------
+// Required, and it must be a Microsoft Teams or Zoom meeting: candidates
+// receive this link when they book, and a slot without one sent them a
+// confirmation for an interview with nowhere to go. The mirror of
+// supabase/functions/_shared/meeting-link.ts, so the dialog refuses what
+// the server would refuse, in the same words, before anything is sent.
+// =====================================================================
+export const MEETING_HOSTS = ['teams.microsoft.com', 'teams.live.com', 'zoom.us', 'zoom.com'];
+
+/** Why this is not an acceptable meeting link, or null if it is one. */
+export function meetingLinkError(raw: unknown): string | null {
+  const value = typeof raw === 'string' ? raw.trim() : '';
+  if (!value) return 'Add the Microsoft Teams or Zoom link for this interview. Candidates receive it when they book.';
+  let url: URL;
+  try { url = new URL(value); } catch {
+    return 'The meeting link is not a complete web address. Paste the whole link, starting with https://.';
+  }
+  if (url.protocol !== 'https:') return 'The meeting link must start with https://.';
+  const host = url.hostname.toLowerCase();
+  if (!MEETING_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) {
+    return 'Use a Microsoft Teams or Zoom meeting link (teams.microsoft.com, teams.live.com or zoom.us).';
+  }
+  return null;
+}
+
 // ── Staff ────────────────────────────────────────────────────────────────
 export async function listSlots(session: Session | null, division: OrgDivision): Promise<StaffSlotsResult> {
   return await invoke(session, { action: 'list', division });

@@ -212,6 +212,9 @@ export function useDashboardData(): DashboardData {
         safe<EventRow[]>(() => supabase
           .from('events')
           .select('id, title, description, date, place, poster_url, event_type, show_on_website')
+          // Association on Display is read from `aod_days` just below; the
+          // event each day carries for attendance is not a second event.
+          .is('aod_day_id', null)
           .order('date', { ascending: true })),
         safe<{ event_date: string; registration_open: boolean }[]>(() => supabase
           .from('aod_days')

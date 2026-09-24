@@ -70,10 +70,39 @@ const selectedDivision = (a: ApplicationRow): OrgDivision =>
 // Analyst: by statute Operations is "an auxiliary division of one person"
 // (Art. 22), and appointing its Head is a leadership appointment made in
 // People > Members, never through an offer. So a joint-intake candidate
-// starts on that role. Anything already saved on the offer still wins.
+// starts on that role. A role already saved on the offer still wins, but
+// only when it fits the division saved with it: an offer saved as
+// "Analyst" in Media & Communication (the pair the server refuses) would
+// otherwise reopen as an Analyst in Equity Research, the first division
+// that role can take, which is an offer for a different division.
 // =====================================================================
-const startingRole = (a: ApplicationRow): AppRole =>
-  (a.offer_role as AppRole) || (evaluationDivision(a) === JOINT_INTAKE ? 'media_analyst' : 'analyst');
+const startingRole = (a: ApplicationRow): AppRole => {
+  const saved = a.offer_role as AppRole | null;
+  if (saved && !offerPairProblem(saved, selectedDivision(a))) return saved;
+  return evaluationDivision(a) === JOINT_INTAKE ? 'media_analyst' : 'analyst';
+};
+
+// =====================================================================
+// WHICH ROLE MAY BE OFFERED IN WHICH DIVISION, asked before sending.
+// ---------------------------------------------------------------------
+// The mirror of `joinRoleDivisionError` in supabase/functions/
+// admin-applications. The server has always refused a mismatched pair -
+// "Choose one of the five research divisions" for an Analyst in Media &
+// Communication - but the dialog let the pair be chosen and only said so
+// after Send, with the Division field showing nothing at all, because the
+// division it held was not one the role could take. So the dialog now
+// asks the same question first and names the problem under the field.
+// =====================================================================
+const RESEARCH: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
+function offerPairProblem(role: AppRole, division: OrgDivision | ''): string | null {
+  if (!division) return 'Choose the division this role belongs to.';
+  if (role === 'media_analyst') return division === 'media' ? null : 'Media & Communication Analysts always belong to Media & Communication.';
+  if (role === 'portfolio_manager') return division === 'portfolio' ? null : 'Portfolio Manager always belongs to Portfolio Management.';
+  if (role === 'team_leader' && division === 'portfolio') return "Portfolio Management's team leader is the Portfolio Manager role.";
+  return RESEARCH.includes(division)
+    ? null
+    : `${composeRoleLabel(role, null)} is a research role. For Media & Communication, choose "Media & Communication Analyst".`;
+}
 
 /** The Division column: where the offer places them, or the intake they are in. */
 const divisionColumn = (a: ApplicationRow): string =>
@@ -334,11 +363,14 @@ export default function NewJoiners() {
             <div className="space-y-1">
               <Label>Division</Label>
               <Select value={division} onValueChange={(v) => setDivision(v as OrgDivision)} disabled={divisionsForRole(role).length === 1}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Choose a division" /></SelectTrigger>
                 <SelectContent>{divisionsForRole(role).map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}</SelectContent>
               </Select>
               {divisionsForRole(role).length === 1 && (
                 <p className="text-xs text-muted-foreground">{composeRoleLabel(role, null)} always belongs to {divisionLabels[divisionsForRole(role)[0]]}.</p>
+              )}
+              {offerPairProblem(role, division) && (
+                <p className="text-xs text-destructive" role="alert">{offerPairProblem(role, division)}</p>
               )}
             </div>
             <div className="flex items-center justify-between">
@@ -353,7 +385,7 @@ export default function NewJoiners() {
               <span>Sending an offer emails the candidate automatically. You will be asked to confirm.</span>
             </div>
             <div className="flex gap-3 pt-1">
-              <Button className="flex-1" onClick={confirm} disabled={busy}>
+              <Button className="flex-1" onClick={confirm} disabled={busy || !!offerPairProblem(role, division)}>
                 {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending</> : 'Send offer'}
               </Button>
               <Button variant="outline" onClick={() => setTarget(null)}>Cancel</Button>
