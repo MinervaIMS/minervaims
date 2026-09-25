@@ -59,7 +59,7 @@ UPDATE public.applications a
    SET selected_at = COALESCE(
          (SELECT max(l.created_at)
             FROM public.activity_logs l
-           WHERE l.entity_id = a.id::text
+           WHERE l.entity_id = a.id
              AND l.details->>'request' = 'update-status'
              AND l.details->>'outcome' = 'succeeded'
              AND (a.offer_sent_at IS NULL OR l.created_at <= a.offer_sent_at)),
