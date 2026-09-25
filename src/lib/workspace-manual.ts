@@ -634,7 +634,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'events-archive': {
     detail: [
       "Every event of every type, including internal meetings, alumni calls and each Association on Display day.",
-      "The Public website switch on each row decides whether that event is listed on the public Events page: Listed means anybody visiting the website sees it, Not listed means it stays in the workspace only. It changes nothing else: registration, reminders and attendance work the same either way. An event without a poster shows the Minerva logo instead. Deleting an event is permanent; Association on Display days are managed from their own page.",
+      "The Public website switch on each row decides whether that event is listed on the public Events page: Listed means anybody visiting the website sees it, Not listed means it stays in the workspace only. It changes nothing else: registration, reminders and attendance work the same either way. On the public website, an event without a poster shows the full Minerva logo instead. Deleting an event is permanent; Association on Display days are managed from their own page.",
       "The filter offers only the event types the archive actually contains, so every option leads somewhere.",
     ],
     related: ['events-create', 'events-attendance'],

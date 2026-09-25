@@ -68,6 +68,7 @@ export interface EventRow {
   poster_url: string | null;
   event_type: string;
   show_on_website: boolean;
+  registration_enabled?: boolean | null;
 }
 
 export interface AvatarRow { name: string; surname: string; photo_url: string | null }
@@ -105,6 +106,10 @@ export interface LatestUpdate {
   imageUrl: string | null;
   /** Set for the report fallback, so the block can draw the PDF's first page. */
   pdfUrl: string | null;
+  /** Events only: the event, its description, and whether its form is open. */
+  eventId?: string | null;
+  description?: string | null;
+  registrationOpen?: boolean;
 }
 
 export interface DashboardData {
@@ -211,7 +216,7 @@ export function useDashboardData(): DashboardData {
           .order('year', { ascending: true })),
         safe<EventRow[]>(() => supabase
           .from('events')
-          .select('id, title, description, date, place, poster_url, event_type, show_on_website')
+          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled')
           // Association on Display is read from `aod_days` just below; the
           // event each day carries for attendance is not a second event.
           .is('aod_day_id', null)
@@ -463,6 +468,11 @@ export function useDashboardData(): DashboardData {
         date: event.date,
         imageUrl: event.poster_url,
         pdfUrl: null,
+        eventId: event.id,
+        // Shown in place of the poster when there is none; not repeated
+        // when it is already the detail line (an event with no place).
+        description: event.place ? event.description : null,
+        registrationOpen: !!event.registration_enabled,
       };
     }
 

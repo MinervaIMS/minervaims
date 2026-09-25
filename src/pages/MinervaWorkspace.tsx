@@ -14,7 +14,7 @@ import {
   Plus, Edit, Trash2, LogOut, X, Loader2,
   ChevronLeft, ChevronRight, MoreHorizontal, Download, Search,
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
-  CalendarDays, ClipboardList, Globe,
+  CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
   Presentation, BarChart3, LayoutTemplate, Info, HelpCircle, Star,
 } from 'lucide-react';
@@ -251,7 +251,6 @@ import { useIsDesktop } from '@/hooks/use-desktop';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
 import { downloadCSV } from '@/lib/download-utils';
 import logoWhite from '@/assets/logo-white.svg';
-import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlaceholder';
 
 interface DbEvent {
   id: string;
@@ -1324,7 +1323,7 @@ const MinervaWorkspace = () => {
                       <img src={event.poster_url} alt="" className="w-24 h-32 shrink-0 object-cover border border-separator" />
                     )
                   ) : (
-                    <EventPosterPlaceholder compact className="w-24 h-32 shrink-0" />
+                    <div className="w-24 h-32 shrink-0 border border-separator bg-muted/40 flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>
                   )}
                   {/* Details */}
                   <div className="flex-1 min-w-0 font-body">

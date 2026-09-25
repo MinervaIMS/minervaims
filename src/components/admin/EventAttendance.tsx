@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { downloadCSV } from '@/lib/download-utils';
@@ -16,6 +16,7 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
 import {
   listEvents, listRegistrations, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
+  listAttendanceMembers, addMemberAttendee, type AttendanceMember,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
   type EventRow, type EventRegistration, type MemberMatch,
 } from '@/lib/events-api';
@@ -79,6 +80,10 @@ export default function EventAttendance() {
   const [ext, setExt] = useState({ name: '', surname: '', email: '' });
   const [busy, setBusy] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  // The register of members, read once when the walk-in box is first opened.
+  const [roster, setRoster] = useState<AttendanceMember[] | null>(null);
+  const [memberQuery, setMemberQuery] = useState('');
+  const [addingMember, setAddingMember] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [attendedFilter, setAttendedFilter] = useState<string[]>([]);
@@ -168,6 +173,58 @@ export default function EventAttendance() {
       setRegs((p) => p.map((x) => (x.id === r.id ? { ...x, attended: !next } : x)));
       toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
     } finally { setBusy(null); }
+  };
+
+  // =====================================================================
+  // A MEMBER WHO TURNED UP IS FOUND ON THE REGISTER, NOT TYPED IN.
+  // ---------------------------------------------------------------------
+  // Typing a member's name into the guest form filed them as a guest and
+  // put their address on the newsletter. The box now searches the register
+  // first; picking somebody adds them as a member, with their account and
+  // their address, already marked present. If they were on the list they
+  // are simply ticked. The guest form stays underneath for everybody else.
+  // =====================================================================
+  const openAdd = () => {
+    setAddOpen(true);
+    if (roster === null) {
+      listAttendanceMembers(session)
+        .then(setRoster)
+        .catch((e) => {
+          setRoster([]);
+          toast({ title: 'Could not load the members', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+        });
+    }
+  };
+  const closeAdd = () => { setAddOpen(false); setExt({ name: '', surname: '', email: '' }); setMemberQuery(''); };
+
+  const fold = (s: string | null | undefined) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const memberMatches = useMemo(() => {
+    const q = fold(memberQuery);
+    if (!roster || q.length < 2) return [];
+    const words = q.split(/\s+/).filter(Boolean);
+    return roster.filter((m) => {
+      const hay = fold(`${m.first_name} ${m.surname} ${m.email}`);
+      return words.every((w) => hay.includes(w));
+    }).slice(0, 8);
+  }, [roster, memberQuery]);
+
+  // Who among the matches is already on this event's list, and ticked.
+  const listedAs = (m: AttendanceMember): EventRegistration | undefined => {
+    const email = fold(m.email);
+    const name = fold(`${m.first_name} ${m.surname}`);
+    return regs.find((r) => (email && fold(r.email) === email) || (!!r.member_name && fold(r.member_name) === name));
+  };
+
+  const addMember = async (m: AttendanceMember) => {
+    setAddingMember(m.id);
+    try {
+      const res = await addMemberAttendee(session, eventId, m.id);
+      toast({ title: res.already_listed ? `${res.name} marked as present` : `${res.name} added and marked as present` });
+      setMemberQuery('');
+      await loadRegs(eventId);
+    } catch (e) {
+      toast({ title: 'Could not add', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setAddingMember(null); }
   };
 
   const addExt = async () => {
@@ -293,6 +350,48 @@ export default function EventAttendance() {
         {addOpen ? (
           <div className="border border-separator p-3 space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Somebody who turned up</div>
+            <div className="text-sm text-foreground">A member</div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder={roster === null ? 'Loading the members…' : 'Search the members by name or email'}
+                value={memberQuery}
+                onChange={(e) => setMemberQuery(e.target.value)}
+                autoComplete="off"
+                aria-label="Search the members"
+              />
+            </div>
+            {memberQuery.trim().length >= 2 && roster !== null && (
+              memberMatches.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No member matches. If they are not a member, add them as a guest below.</p>
+              ) : (
+                <ul className="border border-separator divide-y divide-separator" aria-label="Matching members">
+                  {memberMatches.map((m) => {
+                    const listed = listedAs(m);
+                    const present = !!listed?.attended;
+                    return (
+                      <li key={m.id} className="flex items-center gap-3 px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm text-foreground truncate">{m.first_name} {m.surname}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {[m.division && m.division !== 'none' ? divisionLabels[m.division] : null, m.email].filter(Boolean).join(' · ')}
+                          </div>
+                        </div>
+                        {present ? (
+                          <span className="text-xs text-emerald-700 inline-flex items-center gap-1"><UserCheck className="h-3.5 w-3.5" />Present</span>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled={!eventId || addingMember === m.id} onClick={() => addMember(m)}>
+                            {addingMember === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : listed ? 'Mark present' : 'Add as present'}
+                          </Button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            )}
+            <div className="pt-2 text-sm text-foreground">A guest who is not a member</div>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.4fr] gap-2">
               <Input placeholder="Name" value={ext.name} onChange={(e) => setExt({ ...ext, name: e.target.value })} autoComplete="off" />
               <Input placeholder="Surname" value={ext.surname} onChange={(e) => setExt({ ...ext, surname: e.target.value })} autoComplete="off" />
@@ -300,15 +399,15 @@ export default function EventAttendance() {
             </div>
             <div className="flex gap-2">
               <Button className="flex-1 sm:flex-none" onClick={addExt} disabled={!eventId || !ext.name.trim()}>
-                <Plus className="h-4 w-4 mr-2" />Add and mark as attended
+                <Plus className="h-4 w-4 mr-2" />Add guest as present
               </Button>
-              <Button data-ro variant="outline" onClick={() => { setAddOpen(false); setExt({ name: '', surname: '', email: '' }); }}>
+              <Button data-ro variant="outline" onClick={closeAdd}>
                 Cancel
               </Button>
             </div>
           </div>
         ) : (
-          <Button variant="outline" className="w-full sm:w-auto" disabled={!eventId} onClick={() => setAddOpen(true)}>
+          <Button variant="outline" className="w-full sm:w-auto" disabled={!eventId} onClick={openAdd}>
             <Plus className="h-4 w-4 mr-2" />Add someone who turned up
           </Button>
         )}

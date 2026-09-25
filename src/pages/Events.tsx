@@ -541,9 +541,9 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full aspect-[4/3] md:min-h-[320px] flex items-center justify-center">
-            <span className="font-serif text-muted-foreground">Event Photo</span>
-          </div>
+          // No photo: the association's full logo and one line about what
+          // events are to Minerva, in place of a grey box saying "Event Photo".
+          <EventPosterPlaceholder framed={false} className="w-full aspect-[4/3] md:min-h-[320px]" />
         )}
         {event.isFlagship && (
           <div className="absolute top-0 left-0 bg-accent text-background font-body text-xs tracking-[0.18em] uppercase px-3 py-1">
