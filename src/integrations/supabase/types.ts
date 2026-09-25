@@ -603,9 +603,12 @@ export type Database = {
           offer_reminder_sent_at: string | null
           offer_role: string | null
           offer_sent_at: string | null
+          offer_withdrawn_at: string | null
+          offer_withdrawn_by: string | null
           phone: string
           received_email_sent_at: string | null
           second_choice: Database["public"]["Enums"]["org_division"] | null
+          selected_at: string | null
           semester_label: string
           status: string
           surname: string
@@ -646,9 +649,12 @@ export type Database = {
           offer_reminder_sent_at?: string | null
           offer_role?: string | null
           offer_sent_at?: string | null
+          offer_withdrawn_at?: string | null
+          offer_withdrawn_by?: string | null
           phone: string
           received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
+          selected_at?: string | null
           semester_label: string
           status?: string
           surname: string
@@ -689,9 +695,12 @@ export type Database = {
           offer_reminder_sent_at?: string | null
           offer_role?: string | null
           offer_sent_at?: string | null
+          offer_withdrawn_at?: string | null
+          offer_withdrawn_by?: string | null
           phone?: string
           received_email_sent_at?: string | null
           second_choice?: Database["public"]["Enums"]["org_division"] | null
+          selected_at?: string | null
           semester_label?: string
           status?: string
           surname?: string

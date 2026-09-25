@@ -84,7 +84,7 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   fee_deadline: 'Sunday, 15 September 2026',
   first_name: 'Jane',
   candidate_name: 'Marco Rossi',
-  interview_when: 'Monday, 21 September 2026, 15:00–15:30',
+  interview_when: 'Monday, 21 September 2026, 15:00–15:30 (30 minutes)',
   offer_role: 'Analyst',
   offer_deadline: '24 Sep 2026, 18:00',
 
