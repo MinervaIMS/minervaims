@@ -1,19 +1,19 @@
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
 
 // =====================================================================
-// What an event without a poster looks like.
+// What an event without a poster looks like ON THE PUBLIC WEBSITE.
 // ---------------------------------------------------------------------
-// It used to be a grey rectangle saying "No poster" on the public Events
-// page, and an image icon in the workspace archive: a gap, announced as a
-// gap. Plenty of the association's events never get a poster - internal
-// meetings, calls, the stand at Association on Display - and now that the
-// archive lists every one of them, the gap would have been most of the
-// page.
+// The public Events page used to show a grey box saying "Event Photo" or
+// "No poster": a gap, announced as a gap. An event without a poster now
+// carries the association's full logo and one line about what events are
+// to Minerva, filling the same box a poster would, so a page mixing both
+// keeps its rhythm.
 //
-// So an event without a poster carries the association's own mark and one
-// line about what events are to Minerva. It fills the same box a poster
-// would, at whatever size that box is, so a list mixing both keeps its
-// rhythm.
+// Public pages only. The workspace keeps its plain image icon: there the
+// thumbnail is a working aid, not a visual, and the full logo repeated
+// down a list of internal events read as noise. The workspace dashboard's
+// event card is the one exception, because it is a showcase like the
+// public page.
 // =====================================================================
 
 export const EVENT_PLACEHOLDER_LINE = 'Events: a core part of the Minerva experience';
@@ -21,14 +21,18 @@ export const EVENT_PLACEHOLDER_LINE = 'Events: a core part of the Minerva experi
 interface Props {
   /** Size and shape come from the caller, exactly as for a poster. */
   className?: string;
-  /** A small thumbnail shows the mark only; the line would be unreadable. */
+  /** A small thumbnail: smaller logo and line. */
   compact?: boolean;
+  /** Draw its own thin frame (default). Off when the surrounding box already has one. */
+  framed?: boolean;
+  /** Colours for a dark background (the dashboard's event card). */
+  onDark?: boolean;
 }
 
-export function EventPosterPlaceholder({ className = '', compact = false }: Props) {
+export function EventPosterPlaceholder({ className = '', compact = false, framed = true, onDark = false }: Props) {
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-3 border border-separator bg-background text-center ${compact ? 'p-2' : 'p-5'} ${className}`}
+      className={`flex flex-col items-center justify-center gap-3 text-center ${framed ? 'border border-separator' : ''} ${onDark ? 'bg-background/95' : 'bg-background'} ${compact ? 'p-2' : 'p-6'} ${className}`}
       role="img"
       aria-label={EVENT_PLACEHOLDER_LINE}
     >
@@ -37,9 +41,9 @@ export function EventPosterPlaceholder({ className = '', compact = false }: Prop
         alt=""
         aria-hidden="true"
         loading="lazy"
-        className={compact ? 'w-full max-w-[72px] h-auto' : 'w-3/4 max-w-[200px] h-auto'}
+        className={compact ? 'w-full max-w-[72px] h-auto' : 'w-1/2 max-w-[220px] h-auto'}
       />
-      <p className={`font-serif text-accent leading-snug ${compact ? 'text-[9px]' : 'text-sm'}`}>
+      <p className={`font-serif text-accent leading-snug ${compact ? 'text-[9px]' : 'text-sm md:text-base'}`}>
         {EVENT_PLACEHOLDER_LINE}
       </p>
     </div>

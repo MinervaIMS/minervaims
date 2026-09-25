@@ -199,6 +199,22 @@ export function markAttended(session: Session | null, id: string, attended: bool
 export function addExternalAttendee(session: Session | null, eventId: string, name: string, surname: string, email: string, attended: boolean) {
   return invoke('admin-event-reg', session, { action: 'add-external', event_id: eventId, name, surname, email, attended });
 }
+// A member who turned up without registering: searched on the register
+// and added as a member (see admin-event-reg, `members` and `add-member`).
+export interface AttendanceMember {
+  id: string;
+  first_name: string | null;
+  surname: string | null;
+  email: string | null;
+  division: OrgDivision | null;
+  membership_status: string | null;
+}
+export async function listAttendanceMembers(session: Session | null): Promise<AttendanceMember[]> {
+  return (await invoke('admin-event-reg', session, { action: 'members' }))?.members || [];
+}
+export async function addMemberAttendee(session: Session | null, eventId: string, memberId: string): Promise<{ already_listed: boolean; name: string }> {
+  return invoke('admin-event-reg', session, { action: 'add-member', event_id: eventId, member_id: memberId });
+}
 export function removeRegistration(session: Session | null, id: string) {
   return invoke('admin-event-reg', session, { action: 'remove', id });
 }

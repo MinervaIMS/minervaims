@@ -5,8 +5,8 @@ import { openCookieSettings } from '@/components/cookies';
 // =====================================================================
 // Cookie Policy, aligned with the Garante's Guidelines on cookies of
 // 10 June 2021 and article 122 of the Italian Privacy Code. The list in
-// section 5 reflects what the website actually sets today; update it
-// whenever a new tool is added.
+// section 5 is every browser storage item the code sets (audited in
+// September 2026, step 73); update it whenever a new one is added.
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -26,7 +26,7 @@ const CookiePolicy = () => (
     <LegalLayout
       title="Cookie Policy"
       description="How this website uses cookies and similar technologies, and how you control them."
-      lastUpdated="July 12th, 2026"
+      lastUpdated="September 25th, 2026"
       currentId="cookies"
       sections={sections}
     >
@@ -44,28 +44,37 @@ const CookiePolicy = () => (
         <p>This website is deliberately minimal in its use of cookies and similar technologies:</p>
         <ul>
           <li>
-            <strong>Strictly necessary items</strong> keep the website secure and functional: they include the item
-            that remembers your cookie choices and, for Workspace users only, the authentication session that keeps
-            you signed in. These are always active.
+            <strong>Strictly necessary items</strong> keep the website secure and working and remember choices you
+            make: the record of your cookie choices, the sign-in session of Workspace users, and a few items that
+            remember what you have already seen or set (for example the introduction animation or the zoom of a
+            calendar). They are set by the website itself, are never read by third parties, and are always active.
           </li>
           <li>
             <strong>Preferences, analytics and external media</strong> categories exist in the consent banner but
-            load only if you enable them. As of the date above, the website sets no third-party analytics or
-            advertising cookies by default; if an analytics tool is adopted in the future it will run only under the
-            analytics consent category and this policy will be updated first.
+            are not in use: the website sets no analytics, advertising or profiling cookies and loads no third-party
+            tracking services. If such a tool is ever adopted, it will run only under the corresponding consent
+            category and this policy will be updated first.
           </li>
         </ul>
+        <p>
+          We checked this in September 2026 by loading the public pages in a clean browser, without making any choice
+          in the banner: no cookie was set, nothing was written to the browser's storage, and the only service
+          contacted other than the website itself was the association's own backend, which serves the page content.
+        </p>
         <p>We do not use cookies for advertising, cross-site tracking or profiling.</p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="legal-basis" number="03" title="Legal Basis and Consent">
         <p>
-          Technical items are used on the basis of our legitimate interest in operating a secure, functional
-          website, and do not require consent. Every non-essential category requires your prior, specific consent,
-          collected through the banner shown on your first visit. Consent is stored on your device so the banner
-          does not reappear at every visit; you can change or withdraw it at any time (section 4), with effect for
-          the future. We keep no server-side record of your identity linked to the consent choice for visitors who
-          are not signed in.
+          Strictly necessary items are exempt from consent under article 122 of the Italian Privacy Code, as they are
+          needed to provide the service you ask for; the underlying processing rests on our legitimate interest in
+          operating a secure, functional website. Every non-essential category requires your prior, specific consent,
+          collected through the banner shown on your first visit, which offers "Reject Non-Essential" and "Accept All"
+          side by side and with the same prominence. Until you choose, only the strictly necessary items are used.
+          Consent is stored on your
+          device so the banner does not reappear at every visit; you can change or withdraw it at any time (section
+          4), with effect for the future. We keep no server-side record of your identity linked to the consent choice
+          for visitors who are not signed in.
         </p>
       </LegalSectionBlock>
 
@@ -85,28 +94,65 @@ const CookiePolicy = () => (
       </LegalSectionBlock>
 
       <LegalSectionBlock id="list" number="05" title="Detailed List" wide>
-        <p>Items currently set by the website:</p>
+        <p>
+          Every item below is first party (set and read only by this website), strictly necessary and exempt from
+          consent. "Local storage" persists until you clear your browser data; "session storage" is erased when you
+          close the tab.
+        </p>
+        <p><strong>On the public website</strong></p>
         <ul>
           <li>
-            <strong>mims-cookie-consent</strong> (local storage, first party). Purpose: remembers the consent
-            choices you made in the banner. Category: strictly necessary. Duration: until you clear your browser
-            data or change your choices.
+            <strong>mims-cookie-consent</strong> (local storage). Remembers the choices you made in the cookie banner.
+            Duration: until you clear your browser data or change your choices.
           </li>
           <li>
-            <strong>Supabase authentication token</strong> (local storage, first party; set only when you sign in to
-            the Workspace). Purpose: keeps your authenticated session active and secure. Category: strictly
-            necessary for the reserved area. Duration: for the session's validity; removed on sign-out.
+            <strong>__mims_intro__</strong> (session storage). Remembers that the introduction animation has been
+            shown, so it is not repeated on every page. Duration: the browser session.
           </li>
           <li>
-            <strong>Hosting security cookies</strong> may be set transiently by our hosting infrastructure to
-            protect the website (for example against abusive traffic). Category: strictly necessary. Duration:
-            short-lived.
+            <strong>__module_reload_attempted__</strong> (session storage). Set only if a page fails to load after
+            the website has been updated, so that it reloads once and not in a loop. Duration: the browser session.
+          </li>
+          <li>
+            <strong>mims_key_figures</strong> and <strong>mims_page_visibility_v1</strong> (local storage). Keep a copy
+            of the website's public figures and of which pages are published, so pages display quickly and
+            consistently. They contain no personal data. Duration: refreshed automatically; until you clear your
+            browser data.
+          </li>
+          <li>
+            <strong>__mims_payofflab_tour__</strong> (local storage). Remembers that you have seen the Payoff Lab
+            guided tour. Duration: until you clear your browser data.
+          </li>
+        </ul>
+        <p><strong>When you sign in (Workspace and application area)</strong></p>
+        <ul>
+          <li>
+            <strong>sb-...-auth-token</strong> (local storage). The authentication session that keeps you signed in
+            securely. Duration: for the session's validity; removed on sign-out.
+          </li>
+          <li>
+            <strong>mims_remember_me</strong> (local storage). Remembers whether you asked to stay signed in.
+            Duration: until you sign out.
+          </li>
+          <li>
+            <strong>mims_auth_link</strong> (session storage). Holds a sign-in or confirmation link you opened from an
+            email while it is being completed. Duration: the browser session.
+          </li>
+          <li>
+            <strong>mims.zoom.workspace</strong>, <strong>mims.zoom.editorial</strong>,{' '}
+            <strong>minerva-dashboard-greeting:...</strong>, <strong>ws-contact-prompted</strong> and{' '}
+            <strong>mims:ws:nav-first-seen</strong> (local or session storage). Remember the zoom you chose for a
+            calendar, which greeting you last saw on the dashboard, and which one-time prompts you have already seen.
+            Duration: until you clear your browser data, or the browser session.
           </li>
         </ul>
         <p>
-          No preferences, analytics or external media items are set today without your consent; the corresponding
-          categories in the banner are reserved for future features and third-party embeds, which will be documented
-          here before use.
+          <strong>Hosting security cookies</strong> may be set transiently by our hosting infrastructure to protect
+          the website (for example against abusive traffic). Category: strictly necessary. Duration: short-lived.
+        </p>
+        <p>
+          No preferences, analytics or external media items are set today; the corresponding categories in the banner
+          are reserved for future features and third-party embeds, which will be documented here before use.
         </p>
       </LegalSectionBlock>
 

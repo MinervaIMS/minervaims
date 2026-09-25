@@ -6,7 +6,7 @@ import { attendanceOpen, attendanceClosesOn } from '../_shared/attendance-window
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
-// Actions: list · mark-attended · add-external · remove
+// Actions: list · mark-attended · add-external · members · add-member · remove
 //
 // `list` also RECOGNISES MEMBERS WHO REGISTERED WITHOUT SIGNING IN. The
 // public form does not require an account, so a member who used it is
@@ -139,6 +139,65 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         catch { /* ignore duplicates */ }
       }
       return json({ success: true });
+    }
+    // =====================================================================
+    // A MEMBER WHO TURNED UP IS ADDED AS A MEMBER.
+    // ---------------------------------------------------------------------
+    // The walk-in form took a name and an address and filed everybody as an
+    // external guest, so a member who came without registering was counted
+    // as a guest and their address was put on the newsletter. The page now
+    // searches the register first (`members`), and a member picked from it
+    // is added here with their account and the address on their record.
+    // If they are already on the list, they are ticked rather than added
+    // twice. Nothing is written to the newsletter for a member.
+    // =====================================================================
+    if (action === 'members') {
+      const { data, error } = await supabase.from('members')
+        .select('id, first_name, surname, email, division, membership_status')
+        .neq('membership_status', 'expelled')
+        .order('surname', { ascending: true });
+      if (error) throw error;
+      return json({
+        members: (data || []).map((m: { id: string; first_name: string | null; surname: string | null; email: string | null; division: string | null; membership_status: string | null }) => ({
+          id: m.id, first_name: m.first_name, surname: m.surname, email: m.email,
+          division: m.division, membership_status: m.membership_status,
+        })),
+      });
+    }
+    if (action === 'add-member') {
+      const closed = await closedError(body.event_id);
+      if (closed) return json({ error: closed }, 403);
+      const eventId = optionalTextOf(body, 'event_id');
+      const memberId = optionalTextOf(body, 'member_id');
+      if (!eventId || !memberId) return json({ error: 'Choose the member to add.' }, 400);
+      const { data: ev } = await supabase.from('events').select('id').eq('id', eventId).maybeSingle();
+      if (!ev) return json({ error: 'This event no longer exists. Reload the page.' }, 404);
+      const { data: m } = await supabase.from('members')
+        .select('id, user_id, first_name, surname, email, membership_status').eq('id', memberId).maybeSingle();
+      if (!m || m.membership_status === 'expelled') return json({ error: 'This person is not on the register of members.' }, 404);
+      const fullName = `${m.first_name || ''} ${m.surname || ''}`.trim() || 'Member';
+      let email: string | null = (m.email || '').trim() || null;
+      if (!email && m.user_id) {
+        const { data: p } = await supabase.from('profiles').select('email').eq('id', m.user_id).maybeSingle();
+        email = (p?.email || '').trim() || null;
+      }
+      // Already on the list, by account or by address: tick them.
+      const { data: existing } = await supabase.from('event_registrations')
+        .select('id, user_id, email').eq('event_id', eventId);
+      const mine = (existing || []).find((r: { user_id: string | null; email: string | null }) =>
+        (m.user_id && r.user_id === m.user_id) || (email && (r.email || '').trim().toLowerCase() === email.toLowerCase()));
+      if (mine) {
+        const { error } = await supabase.from('event_registrations')
+          .update({ attended: true }).eq('id', mine.id);
+        if (error) throw error;
+        return json({ success: true, already_listed: true, name: fullName });
+      }
+      const { error } = await supabase.from('event_registrations').insert({
+        event_id: eventId, user_id: m.user_id || null, name: fullName, email,
+        is_member: true, is_external: false, attended: true, added_by: user.id,
+      });
+      if (error) throw error;
+      return json({ success: true, already_listed: false, name: fullName });
     }
     if (action === 'remove') {
       const closed = await closedError(await eventOfRegistration(body.id));

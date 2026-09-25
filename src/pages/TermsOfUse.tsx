@@ -32,7 +32,7 @@ const TermsOfUse = () => (
     <LegalLayout
       title="Terms of Use"
       description="The rules that govern your use of this website and of the reserved Workspace."
-      lastUpdated="July 12th, 2026"
+      lastUpdated="September 25th, 2026"
       currentId="terms"
       sections={sections}
     >
@@ -112,6 +112,7 @@ const TermsOfUse = () => (
           <li>interfere with the operation of the website, introduce malicious code, or perform denial of service, scraping or bulk-harvesting activity;</li>
           <li>submit false, misleading or unlawful content through forms, applications or registrations, or impersonate another person;</li>
           <li>use contact details published on the website to send unsolicited commercial communications;</li>
+          <li>copy, compile, scrape or reuse the public team pages or the public alumni directory, in whole or in part, to build lists, contact the people listed for commercial or recruitment purposes, or combine their data with other sources;</li>
           <li>use the website in any way that breaches applicable law or the rights of third parties.</li>
         </ul>
       </LegalSectionBlock>
@@ -141,6 +142,30 @@ const TermsOfUse = () => (
           association purposes and may not be copied, disclosed or exploited outside the association, during or
           after membership. Removing or misusing such assets may give rise to liability towards the association and
           its members.
+        </p>
+        <p>
+          <strong>Personal data in the Workspace.</strong> Workspace users who, because of their role, can see the
+          personal data of applicants, members or alumni (for example applications, CVs, evaluation notes, member
+          records, attendance lists or the alumni directory) are authorised by the association to process that data
+          only on its instructions, under article 29 GDPR and article 2-quaterdecies of the Italian Privacy Code. They
+          must:
+        </p>
+        <ul>
+          <li>use the data only for the association task that gives them access to it, and never for personal, commercial or third-party purposes;</li>
+          <li>keep it confidential, during and after their role or membership;</li>
+          <li>not download, copy, forward or export it outside the Workspace unless the task strictly requires it, and delete any such copy as soon as the task is done;</li>
+          <li>not share their credentials, and sign out on shared devices;</li>
+          <li>report immediately to <a href="mailto:as.minerva@unibocconi.it">as.minerva@unibocconi.it</a> any loss, unauthorised access or suspected breach, so that the association can meet its obligations under articles 33 and 34 GDPR.</li>
+        </ul>
+        <p>
+          Breaching these rules may lead to the withdrawal of Workspace access and to the measures provided by the
+          Statute, without prejudice to any liability under the law.
+        </p>
+        <p>
+          <strong>End of access.</strong> Workspace access ends or is reduced when the role or membership that
+          justified it ends. The accounts of former members are closed within the periods set out in the{' '}
+          <a href="/privacy-policy">Privacy Policy</a>, unless the person continues as an alumnus with Workspace
+          access.
         </p>
       </LegalSectionBlock>
 

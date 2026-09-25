@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
+import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlaceholder';
 import AodPromoCard from './AodPromoCard';
 import type { LatestUpdate } from './useDashboardData';
 
@@ -44,10 +45,17 @@ function destination(update: LatestUpdate): { kind: 'workspace'; section: string
       return { kind: 'workspace', section: 'operations', sub: 'ops-fee', label: 'Open membership fees' };
     case 'aod':
       return { kind: 'workspace', section: 'events', sub: 'events-on-display', label: 'Register Participation' };
+    // AN EVENT WHOSE FORM IS OPEN LEADS TO THE FORM. The card is there to
+    // get people into the room, so its action is registering; an event
+    // without a form keeps leading where it always did.
     case 'event-public':
-      return { kind: 'route', to: '/events', label: 'Open the event' };
     case 'event-internal':
-      return { kind: 'workspace', section: 'events', sub: 'events-archive', label: 'Open the event' };
+      if (update.registrationOpen && update.eventId) {
+        return { kind: 'route', to: `/events/${update.eventId}/register`, label: 'Register' };
+      }
+      return update.kind === 'event-public'
+        ? { kind: 'route', to: '/events', label: 'Open the event' }
+        : { kind: 'workspace', section: 'events', sub: 'events-archive', label: 'Open the event' };
     default:
       return { kind: 'external', href: update.pdfUrl ?? '#', label: 'Open the report' };
   }
@@ -69,7 +77,12 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   }
 
   const target = destination(update);
-  const hasImage = !!update.imageUrl || !!update.pdfUrl;
+  // AN EVENT WITHOUT A POSTER still has a cover: the full Minerva logo and
+  // one line about events, as on the public Events page, and its
+  // description is shown with the title so the card says what it is.
+  const isEvent = update.kind === 'event-public' || update.kind === 'event-internal';
+  const posterless = isEvent && !update.imageUrl;
+  const hasImage = !!update.imageUrl || !!update.pdfUrl || posterless;
 
   // ASSOCIATION ON DISPLAY TAKES THE WHOLE CARD. It is the one state that
   // is a promotion rather than a notice, so it gets its own composition
@@ -102,7 +115,13 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   // 297 - because the cap wins over the aspect ratio.
   const cover = (size: string, fit: 'h-full' | 'w-full') => (
     <div className={`shrink-0 flex items-center justify-center ${size}`}>
-      {update.imageUrl ? (
+      {posterless ? (
+        <EventPosterPlaceholder
+          framed={false}
+          compact={fit === 'h-full'}
+          className={`${fit === 'h-full' ? 'h-full w-full' : 'w-full aspect-[3/4]'} rounded-md shadow-[0_6px_18px_-8px_hsl(var(--overlay)/0.6)]`}
+        />
+      ) : update.imageUrl ? (
         // A poster has intrinsic proportions, so `object-contain` inside the
         // box is enough: it fits, centred, undistorted.
         <img
@@ -152,6 +171,10 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   const detail = (cls: string) => (update.detail ? (
     <p className={`min-h-0 overflow-hidden leading-[1.45] text-accent-foreground/80 ${cls}`}>{update.detail}</p>
   ) : null);
+  // The event's own words, where there is no poster to speak for it.
+  const about = (cls: string) => (posterless && update.description ? (
+    <p className={`min-h-0 overflow-hidden leading-[1.5] text-accent-foreground/75 ${cls}`}>{update.description}</p>
+  ) : null);
   const when = (cls: string) => (update.date ? (
     <span className={`shrink-0 text-accent-foreground/70 ${cls}`}>{formatDate(update.date)}</span>
   ) : null);
@@ -194,6 +217,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
 
         {/* THE FULL WIDTH OF THE CARD, not what is left beside a cover. */}
         {detail('mt-3.5 text-[13px] line-clamp-3')}
+        {about('mt-2 text-[13px] line-clamp-4')}
 
         {/* Anchored across the foot: a full-width bar reads as the card's
             action, where a small button floating in purple did not. */}
@@ -221,8 +245,12 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
             anything out of the card. */}
         <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
           {title('text-[24px] line-clamp-2')}
-          {detail('mt-3 text-sm line-clamp-2')}
+          {/* With a description below it, the place keeps one whole line
+              and the description takes what the card has left, fading out
+              at the foot rather than being cut through a line. */}
+          {detail(posterless && update.description ? 'mt-3 text-sm line-clamp-1 shrink-0' : 'mt-3 text-sm line-clamp-2')}
           {when('mt-2.5 block text-[13px]')}
+          {about('mt-3 text-sm flex-1 [mask-image:linear-gradient(to_bottom,black_65%,transparent)]')}
           <div className="mt-auto shrink-0 pt-5">{cta('w-fit')}</div>
         </div>
       </div>
