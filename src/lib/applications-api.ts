@@ -75,6 +75,10 @@ export interface ApplicationRow {
   offer_role?: string | null;
   offer_division?: OrgDivision | null;
   offer_fee_due?: boolean | null;
+  /** When the candidate was selected for an offer (status first became "accepted"). */
+  selected_at?: string | null;
+  /** When the association withdrew the offer, if it did (Offers, "Withdraw offer"). */
+  offer_withdrawn_at?: string | null;
   /** When the candidate withdrew their own application, if they did. */
   withdrawn_at?: string | null;
   /** How many times this candidate has taken an interview slot. */
@@ -818,6 +822,14 @@ export async function convertToMember(session: Session | null, id: string, role:
 /** New Joiners: extend an offer to join (3-day window, 2-day reminder). */
 export async function sendOffer(session: Session | null, id: string, role: string, division: OrgDivision, feeDue: boolean) {
   return await invoke(session, { action: 'send-offer', id, role, division, fee_due: feeDue });
+}
+/**
+ * Withdraw an offer that is ready or awaiting a reply. The candidacy closes
+ * as rejected and the candidate is emailed: "Offer withdrawn" if the offer
+ * had been sent, the post-interview rejection if it had not.
+ */
+export async function withdrawOffer(session: Session | null, id: string): Promise<{ email: 'offer_withdrawn' | 'rejection_post_interview' }> {
+  return await invoke(session, { action: 'withdraw-offer', id });
 }
 
 // ── Candidate offer actions (self-service via applicant-notify) ─────────────

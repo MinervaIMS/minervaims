@@ -89,6 +89,13 @@ function formatSlotDate(iso: string): string {
 function formatSlotTime(t: string): string {
   return (t || '').slice(0, 5); // "HH:MM:SS" -> "HH:MM"
 }
+// "10:00 - 10:15 (15 minutes)": the times and, from them, the length, so an
+// email is right for a fifteen-minute slot as much as for a half hour.
+function formatSlotSpan(start: string, end: string, sep = ' - '): string {
+  const mins = slotLength(start, end);
+  const span = `${formatSlotTime(start)}${sep}${formatSlotTime(end)}`;
+  return mins > 0 ? `${span} (${mins} minutes)` : span;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -96,7 +103,23 @@ function json(body: unknown, status = 200) {
   });
 }
 
-// Add 30 minutes to a "HH:MM" or "HH:MM:SS" time string.
+// =====================================================================
+// SLOT LENGTH. Smart planning cuts a range into slots of 30 minutes (the
+// default, and what it always did) or 15. Nothing else reads a slot's
+// length: every email and every page shows a slot's own start and end,
+// and the booking confirmation states the length from those two times.
+// Mirrored by SLOT_MINUTES in src/lib/interviews-api.ts.
+// =====================================================================
+const SLOT_MINUTES = [30, 15];
+const DEFAULT_SLOT_MINUTES = 30;
+
+// The length of a slot in minutes, from its own times.
+function slotLength(start: string, end: string): number {
+  const toMin = (t: string) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+  return toMin(end) - toMin(start);
+}
+
+// Add minutes to a "HH:MM" or "HH:MM:SS" time string.
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number);
   const total = h * 60 + m + mins;
@@ -303,7 +326,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       return json({ success: true });
     }
 
-    // ── bulk-create (smart planning: 30-minute slots across a range) ────────
+    // ── bulk-create (smart planning: 30- or 15-minute slots across a range) ──
     if (action === 'bulk-create') {
       const division = divisionIn(body.division);
       const { slot_date, start_time, end_time } = body;
@@ -315,14 +338,21 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       // A slot is opened with the meeting it is held in. See _shared/meeting-link.ts.
       const linkError = meetingLinkError(meeting_link);
       if (linkError) return json({ error: linkError }, 400);
+      // Thirty minutes unless fifteen is asked for; anything else is refused
+      // rather than quietly turned into thirty.
+      const slotMinutes = body.slot_minutes === undefined || body.slot_minutes === null
+        ? DEFAULT_SLOT_MINUTES : Number(body.slot_minutes);
+      if (!SLOT_MINUTES.includes(slotMinutes)) {
+        return json({ error: 'Slots can be 30 or 15 minutes long.' }, 400);
+      }
       const name = await displayName();
       const rows: any[] = [];
       let cur = start_time.slice(0, 5);
       const end = end_time.slice(0, 5);
       let guard = 0;
       while (cur < end && guard < 96) {
-        const next = addMinutes(cur, 30);
-        if (next > end) break;
+        const next = addMinutes(cur, slotMinutes);
+        if (next > end || next <= cur) break;
         rows.push({
           division, slot_date, start_time: cur, end_time: next,
           meeting_link: meeting_link || null,
@@ -330,13 +360,26 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         });
         cur = next; guard++;
       }
-      if (!rows.length) return json({ error: 'Time range produces no 30-minute slots' }, 400);
+      if (!rows.length) return json({ error: `Time range produces no ${slotMinutes}-minute slots` }, 400);
+      // NO OVERLAPS IN ONE CALENDAR. Re-running the same range was always
+      // safe (identical start times are ignored below). With two lengths it
+      // no longer would be: fifteen-minute slots over a morning already cut
+      // into half hours would start at :15 and :45 and sit inside them. So a
+      // slot that overlaps one this interviewer already has in this
+      // division's calendar is left out, and the reply says how many.
+      const { data: mine } = await supabase.from('interview_slots')
+        .select('start_time, end_time')
+        .eq('division', division).eq('slot_date', slot_date).eq('examiner_id', user.id);
+      const taken = (mine || []).map((s: { start_time: string; end_time: string }) => [String(s.start_time).slice(0, 5), String(s.end_time).slice(0, 5)]);
+      const fresh = rows.filter((r) => !taken.some(([s, e]) => r.start_time < e && r.end_time > s));
+      const skipped = rows.length - fresh.length;
+      if (!fresh.length) return json({ success: true, created: 0, skipped_overlapping: skipped });
       // Ignore duplicates so re-running a range is safe.
-      const { error, count } = await supabase.from('interview_slots').upsert(rows, {
+      const { error, count } = await supabase.from('interview_slots').upsert(fresh, {
         onConflict: 'division,slot_date,start_time,examiner_id', ignoreDuplicates: true, count: 'exact',
       });
       if (error) throw error;
-      return json({ success: true, created: count ?? rows.length });
+      return json({ success: true, created: count ?? fresh.length, skipped_overlapping: skipped });
     }
 
     // ── update-slot ────────────────────────────────────────────────────────
@@ -537,7 +580,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
             division_slug: slot.division,
             division_reading: divisionReading(slot.division),
             interview_date: formatSlotDate(slot.slot_date),
-            interview_time: `${formatSlotTime(slot.start_time)} - ${formatSlotTime(slot.end_time)}`,
+            interview_time: formatSlotSpan(slot.start_time, slot.end_time),
             examiner_name: slot.examiner_name || 'Admin',
             status_url: STATUS_URL,
           },
@@ -550,7 +593,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         await notifyStaff(supabase, 'staff_interview_booked', await slotOpener(supabase, slot), {
           candidate_name: `${app.first_name} ${app.surname}`,
           division_name: DIV_LABEL(slot.division),
-          interview_when: `${formatSlotDate(slot.slot_date)}, ${formatSlotTime(slot.start_time)}–${formatSlotTime(slot.end_time)}`,
+          interview_when: `${formatSlotDate(slot.slot_date)}, ${formatSlotSpan(slot.start_time, slot.end_time, '–')}`,
         }, `${app.id}:${slot.id}:booked`);
       } catch (e) { console.error('staff booking notice failed', e); }
 
@@ -586,7 +629,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
           await notifyStaff(supabase, 'staff_interview_released', await slotOpener(supabase, freedSlot), {
             candidate_name: `${app.first_name} ${app.surname}`,
             division_name: DIV_LABEL(freedSlot.division),
-            interview_when: `${formatSlotDate(freedSlot.slot_date)}, ${formatSlotTime(freedSlot.start_time)}–${formatSlotTime(freedSlot.end_time)}`,
+            interview_when: `${formatSlotDate(freedSlot.slot_date)}, ${formatSlotSpan(freedSlot.start_time, freedSlot.end_time, '–')}`,
           }, `${app.id}:${freedSlot.id}:released`);
         } catch (e) { console.error('staff release notice failed', e); }
       }

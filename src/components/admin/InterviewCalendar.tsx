@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -22,6 +23,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listSlots, createSlot, bulkCreateSlots, deleteSlot, clearDivisionSlots,
   isFutureSlot, meetingLinkError, type StaffSlot,
+  SLOT_MINUTES, DEFAULT_SLOT_MINUTES, type SlotMinutes,
 } from '@/lib/interviews-api';
 import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
@@ -133,7 +135,8 @@ export default function InterviewCalendar() {
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [form, setForm] = useState({ slot_date: '', start_time: '', end_time: '', meeting_link: '' });
-  const [bulk, setBulk] = useState({ slot_date: '', start_time: '', end_time: '', meeting_link: '' });
+  // SLOT LENGTH: thirty minutes unless the interviewer chooses fifteen.
+  const [bulk, setBulk] = useState({ slot_date: '', start_time: '', end_time: '', meeting_link: '', slot_minutes: 30 as SlotMinutes });
 
   useEffect(() => {
     if (!division && divisionOptions.length > 0) setDivision(divisionOptions[0]);
@@ -222,8 +225,13 @@ export default function InterviewCalendar() {
     setBusy(true);
     try {
       const res = await bulkCreateSlots(session, { division, ...bulk });
-      toast({ title: `${res.created} slot${res.created === 1 ? '' : 's'} opened` });
-      setBulkOpen(false); setBulk({ slot_date: '', start_time: '', end_time: '', meeting_link: '' });
+      toast({
+        title: `${res.created} slot${res.created === 1 ? '' : 's'} of ${bulk.slot_minutes} minutes opened`,
+        description: res.skipped_overlapping
+          ? `${res.skipped_overlapping} left out because ${res.skipped_overlapping === 1 ? 'it' : 'they'} would overlap a slot you already have.`
+          : undefined,
+      });
+      setBulkOpen(false); setBulk({ slot_date: '', start_time: '', end_time: '', meeting_link: '', slot_minutes: 30 });
       await load(division);
     } catch (e) { toast({ title: 'Could not generate slots', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setBusy(false); }
@@ -509,7 +517,7 @@ export default function InterviewCalendar() {
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle className="font-serif text-accent">Smart planning</DialogTitle></DialogHeader>
-          <p className="font-body text-sm text-muted-foreground -mt-2">Generate back-to-back 30-minute slots across a time range for one day.</p>
+          <p className="font-body text-sm text-muted-foreground -mt-2">Generate back-to-back {bulk.slot_minutes}-minute slots across a time range for one day.</p>
           <form onSubmit={submitBulk} className="space-y-4 font-body">
             <div>
               <Label htmlFor="b-date">Date</Label>
@@ -524,6 +532,21 @@ export default function InterviewCalendar() {
                 <Label htmlFor="b-end">To</Label>
                 <Input id="b-end" type="time" className="rounded-none" required value={bulk.end_time} onChange={(e) => setBulk({ ...bulk, end_time: e.target.value })} />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="b-length">Slot length</Label>
+              <Select value={String(bulk.slot_minutes)} onValueChange={(v) => setBulk({ ...bulk, slot_minutes: Number(v) as SlotMinutes })}>
+                <SelectTrigger id="b-length" className="rounded-none"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SLOT_MINUTES.map((m) => (
+                    <SelectItem key={m} value={String(m)}>{m} minutes{m === DEFAULT_SLOT_MINUTES ? ' (default)' : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Every slot in the range gets this length. Candidates see the start and end of their slot, and the booking
+                confirmation email states the length.
+              </p>
             </div>
             <div>
               <Label htmlFor="b-link">Teams or Zoom meeting link, applied to every slot *</Label>

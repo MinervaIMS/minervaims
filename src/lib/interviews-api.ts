@@ -153,10 +153,17 @@ export async function createSlot(
 ) {
   return await invoke(session, { action: 'create-slot', ...slot });
 }
+// Smart planning cuts a range into slots of one of these lengths. Thirty
+// minutes is the default; fifteen is for divisions that run short first
+// interviews. Mirrored by SLOT_MINUTES in supabase/functions/admin-interviews.
+export const SLOT_MINUTES = [30, 15] as const;
+export type SlotMinutes = (typeof SLOT_MINUTES)[number];
+export const DEFAULT_SLOT_MINUTES: SlotMinutes = 30;
+
 export async function bulkCreateSlots(
   session: Session | null,
-  range: { division: OrgDivision; slot_date: string; start_time: string; end_time: string; meeting_link?: string },
-): Promise<{ created: number }> {
+  range: { division: OrgDivision; slot_date: string; start_time: string; end_time: string; meeting_link?: string; slot_minutes?: SlotMinutes },
+): Promise<{ created: number; skipped_overlapping?: number }> {
   return await invoke(session, { action: 'bulk-create', ...range });
 }
 export async function updateSlot(

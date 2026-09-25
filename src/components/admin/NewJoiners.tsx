@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, Mail } from 'lucide-react';
+import { Loader2, Send, Mail, Search, ChevronLeft, ChevronRight, Undo2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ColumnFilter } from '@/components/admin/ColumnFilter';
+import { ClearFilters } from '@/components/shared/ClearFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activity-log';
@@ -18,7 +21,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { useEmailConfirm } from '@/components/admin/EmailConfirmDialog';
-import { listApplications, sendOffer, addApplicationNote, evaluationDivision, applyDivisionLabel, JOINT_INTAKE, type ApplicationRow } from '@/lib/applications-api';
+import { listApplications, sendOffer, withdrawOffer, addApplicationNote, evaluationDivision, applyDivisionLabel, JOINT_INTAKE, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile, CandidateStage } from '@/components/admin/recruiting/CandidateProfile';
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
@@ -108,16 +111,41 @@ function offerPairProblem(role: AppRole, division: OrgDivision | ''): string | n
 const divisionColumn = (a: ApplicationRow): string =>
   a.offer_division ? divisionLabels[a.offer_division as OrgDivision] : applyDivisionLabel(evaluationDivision(a));
 
-// Human-readable state of the offer for a candidate row.
-function offerState(a: ApplicationRow): { label: string; tone: string; canOffer: boolean; resend: boolean } {
-  if (a.status === 'joined') return { label: 'Joined', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', canOffer: false, resend: false };
-  if (a.status === 'offer_declined') return { label: 'Declined / expired', tone: 'bg-orange-50 text-orange-700 border-orange-200', canOffer: true, resend: true };
+// Human-readable state of the offer for a candidate row. `key` is what the
+// Offer filter selects on; `canWithdraw` is true while the offer is open
+// (ready, or sent and not answered), which is when it can be withdrawn.
+type OfferStateKey = 'ready' | 'sent' | 'declined' | 'joined' | 'withdrawn';
+const OFFER_STATE_LABELS: Record<OfferStateKey, string> = {
+  ready: 'Ready to offer', sent: 'Offer sent, awaiting reply', declined: 'Declined / expired', joined: 'Joined', withdrawn: 'Offer withdrawn',
+};
+function offerState(a: ApplicationRow): { key: OfferStateKey; label: string; tone: string; canOffer: boolean; resend: boolean; canWithdraw: boolean } {
+  if (a.status === 'joined') return { key: 'joined', label: 'Joined', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', canOffer: false, resend: false, canWithdraw: false };
+  if (a.offer_withdrawn_at && a.status !== 'accepted') {
+    const on = new Date(a.offer_withdrawn_at).toLocaleDateString();
+    return { key: 'withdrawn', label: `Offer withdrawn · ${on}`, tone: 'bg-red-50 text-red-700 border-red-200', canOffer: true, resend: true, canWithdraw: false };
+  }
+  if (a.status === 'offer_declined') return { key: 'declined', label: 'Declined / expired', tone: 'bg-orange-50 text-orange-700 border-orange-200', canOffer: true, resend: true, canWithdraw: false };
   if (a.status === 'accepted' && a.offer_sent_at) {
     const by = a.offer_deadline ? ` · by ${new Date(a.offer_deadline).toLocaleDateString()}` : '';
-    return { label: `Offer sent · awaiting reply${by}`, tone: 'bg-amber-50 text-amber-700 border-amber-200', canOffer: true, resend: true };
+    return { key: 'sent', label: `Offer sent · awaiting reply${by}`, tone: 'bg-amber-50 text-amber-700 border-amber-200', canOffer: true, resend: true, canWithdraw: true };
   }
-  return { label: 'Ready to offer', tone: 'bg-muted text-muted-foreground border-separator', canOffer: true, resend: false };
+  return { key: 'ready', label: 'Ready to offer', tone: 'bg-muted text-muted-foreground border-separator', canOffer: true, resend: false, canWithdraw: true };
 }
+
+// =====================================================================
+// IN THE ORDER THEY WERE SELECTED. The page used to list offers in the
+// order the applications arrived, which says nothing about an offer. It
+// now lists them by when each candidate was selected for an offer (the
+// moment their status became "accepted"), first selected first: the
+// order in which the offers are to be dealt with. Candidates selected
+// before that moment was recorded fall back on when their offer was sent.
+// =====================================================================
+const selectedTime = (a: ApplicationRow): string => a.selected_at || a.offer_sent_at || a.created_at;
+const shortDate = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+/** Where the offer places them, or the intake they are in: the Division filter's value. */
+const divisionKey = (a: ApplicationRow): string => (a.offer_division as string) || evaluationDivision(a);
 
 export default function NewJoiners() {
   const { session } = useAuth();
@@ -175,13 +203,115 @@ export default function NewJoiners() {
     return list;
   }, [apps]);
 
-  // Accepted candidates (offer ready / sent), those who joined, and declined /
-  // expired offers (which can be re-sent).
+  // Accepted candidates (offer ready / sent), those who joined, declined /
+  // expired offers (which can be re-sent), and withdrawn offers (kept on
+  // the page as the record of what happened, and re-sendable too).
+  // In the order they were selected; see `selectedTime`.
   const joiners = useMemo(
-    () => apps.filter((a) => ['accepted', 'joined', 'offer_declined'].includes(a.status))
-      .filter((a) => semesterOf(a.created_at).key === semKey),
+    () => apps.filter((a) => ['accepted', 'joined', 'offer_declined'].includes(a.status) || !!a.offer_withdrawn_at)
+      .filter((a) => semesterOf(a.created_at).key === semKey)
+      .sort((x, y) => selectedTime(x).localeCompare(selectedTime(y)) || `${x.surname} ${x.first_name}`.localeCompare(`${y.surname} ${y.first_name}`)),
     [apps, semKey],
   );
+
+  // =====================================================================
+  // THE SAME FILTERS AS CANDIDATE SCREENING. A search box over name, email
+  // and Bocconi ID, and a filter in the header of each column that has
+  // values to choose from: Division, Year, Programme and the state of the
+  // offer. Each menu offers only what this semester's offers contain, and
+  // "Clear filters" undoes them all at once.
+  // =====================================================================
+  const [search, setSearch] = useState('');
+  const [divisionFilter, setDivisionFilter] = useState<string[]>([]);
+  const [stateFilter, setStateFilter] = useState<string[]>([]);
+  const [yearFilter, setYearFilter] = useState<string[]>([]);
+  const [programmeFilter, setProgrammeFilter] = useState<string[]>([]);
+  const activeFilterCount = (divisionFilter.length ? 1 : 0) + (stateFilter.length ? 1 : 0) + (yearFilter.length ? 1 : 0)
+    + (programmeFilter.length ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearAllFilters = () => { setDivisionFilter([]); setStateFilter([]); setYearFilter([]); setProgrammeFilter([]); setSearch(''); };
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return joiners
+      .filter((a) => divisionFilter.length === 0 || divisionFilter.includes(divisionKey(a)))
+      .filter((a) => stateFilter.length === 0 || stateFilter.includes(offerState(a).key))
+      .filter((a) => yearFilter.length === 0 || yearFilter.includes(a.academic_year))
+      .filter((a) => programmeFilter.length === 0 || programmeFilter.includes((a.degree_course ?? '').trim()))
+      .filter((a) => !q || `${a.first_name} ${a.surname} ${a.email} ${a.bocconi_id}`.toLowerCase().includes(q));
+  }, [joiners, search, divisionFilter, stateFilter, yearFilter, programmeFilter]);
+
+  const divisionOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const a of joiners) seen.set(divisionKey(a), divisionColumn(a));
+    return [...seen].sort((x, y) => x[1].localeCompare(y[1])).map(([value, label]) => ({ value, label }));
+  }, [joiners]);
+  const stateOptions = useMemo(() => {
+    const present = new Set(joiners.map((a) => offerState(a).key));
+    return (Object.keys(OFFER_STATE_LABELS) as OfferStateKey[]).filter((k) => present.has(k)).map((k) => ({ value: k, label: OFFER_STATE_LABELS[k] }));
+  }, [joiners]);
+  const yearOptions = useMemo(() => {
+    const present = new Set(joiners.map((a) => a.academic_year));
+    return (Object.keys(ACADEMIC_YEAR_LABELS) as (keyof typeof ACADEMIC_YEAR_LABELS)[])
+      .filter((y) => present.has(y)).map((y) => ({ value: y, label: ACADEMIC_YEAR_LABELS[y] }));
+  }, [joiners]);
+  const programmeOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const a of joiners) { const name = (a.degree_course ?? '').trim(); if (name) seen.add(name); }
+    return [...seen].sort((x, y) => x.localeCompare(y)).map((name) => ({ value: name, label: name }));
+  }, [joiners]);
+
+  // =====================================================================
+  // ONE CANDIDATE TO THE NEXT, as in Candidate Screening: the two arrows in
+  // the window's header walk the table in the order it is showing, with
+  // its filters applied. A candidate the filters no longer match has no
+  // neighbours, and both arrows go quiet.
+  // =====================================================================
+  const openIndex = useMemo(() => (openId ? rows.findIndex((r) => r.id === openId) : -1), [rows, openId]);
+  const prevCandidate = openIndex > 0 ? rows[openIndex - 1] : null;
+  const nextCandidate = openIndex >= 0 && openIndex < rows.length - 1 ? rows[openIndex + 1] : null;
+  const detailPaneRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { detailPaneRef.current?.scrollTo({ top: 0 }); }, [openId]);
+
+  // =====================================================================
+  // WITHDRAWING AN OFFER. Possible while the offer is open: ready, or sent
+  // and not yet answered. The candidacy closes and the candidate is told,
+  // with the "Offer withdrawn" email if they had received the offer, or
+  // the usual post-interview rejection if they never had. Confirmed first,
+  // because it emails the candidate and cannot be undone except by sending
+  // a new offer.
+  // =====================================================================
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
+  const withdraw = async (a: ApplicationRow) => {
+    const sent = !!a.offer_sent_at;
+    const ok = await confirmEmail({
+      title: 'Withdraw this offer?',
+      description: (
+        <>
+          <p>
+            The offer to <strong>{a.first_name} {a.surname}</strong> will be withdrawn and their candidacy closed.{' '}
+            {sent
+              ? <>They will receive the <strong>Offer withdrawn</strong> email, and can no longer accept the offer from their workspace.</>
+              : <>The offer was never sent, so they will receive the usual <strong>post-interview rejection</strong> email and will not learn of the offer.</>}
+          </p>
+          <p>This cannot be undone, except by sending them a new offer.</p>
+        </>
+      ),
+      confirmLabel: 'Yes, withdraw the offer',
+    });
+    if (!ok) return;
+    setWithdrawing(a.id);
+    try {
+      await withdrawOffer(session, a.id);
+      toast({
+        title: 'Offer withdrawn',
+        description: `${a.first_name} ${a.surname} has been emailed${sent ? ' that the offer is withdrawn' : ' the rejection'}.`,
+      });
+      await load();
+      if (openId === a.id) await refreshCandidate(a.id);
+    } catch (e) {
+      toast({ title: 'Could not withdraw the offer', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { setWithdrawing(null); }
+  };
 
   const openOffer = (a: ApplicationRow) => {
     setTarget(a);
@@ -238,7 +368,12 @@ export default function NewJoiners() {
         </div>
       )}
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="pl-10 font-body" placeholder="Search by name, email or Bocconi ID" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" />
         <Select value={semKey} onValueChange={setSemKey}>
           <SelectTrigger className="w-[220px] font-body"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -254,26 +389,40 @@ export default function NewJoiners() {
 
       {loading ? <WorkspaceLoader /> : joiners.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">{viewingArchived ? 'No offers were recorded in this semester.' : 'No candidates ready for an offer.'}</p></CardContent></Card>
+      ) : rows.length === 0 ? (
+        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No offers match the current filters.</p></CardContent></Card>
       ) : (
         <div className="max-w-full border border-separator overflow-x-auto">
           <table className="w-full text-left font-body text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
+                <th className="px-3 py-2 font-normal" title="When the candidate was selected for an offer. The list is in this order, first selected first.">Selected</th>
                 <th className="px-3 py-2 font-normal">Name</th>
-                <th className="px-3 py-2 font-normal">Division</th>
-                <th className="px-3 py-2 font-normal">Email</th>
-                <th className="px-3 py-2 font-normal"><span className="inline-flex items-center gap-1.5">Offer <HelpDot page="applications-joiners" topic="offer-flow" /></span></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Division" options={divisionOptions} selected={divisionFilter} onChange={setDivisionFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Year" options={yearOptions} selected={yearFilter} onChange={setYearFilter} /></th>
+                <th className="px-3 py-2 font-normal"><ColumnFilter label="Programme" options={programmeOptions} selected={programmeFilter} onChange={setProgrammeFilter} /></th>
+                <th className="px-3 py-2 font-normal">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ColumnFilter label="Offer" options={stateOptions} selected={stateFilter} onChange={setStateFilter} />
+                    <HelpDot page="applications-joiners" topic="offer-flow" />
+                  </span>
+                </th>
                 <th className="px-3 py-2 font-normal text-right">Action</th>
               </tr>
             </thead>
             <tbody>
-              {joiners.map((a) => {
+              {rows.map((a) => {
                 const st = offerState(a);
                 return (
                   <tr key={a.id} className="border-t border-separator">
-                    <td className="px-3 py-2 text-foreground whitespace-nowrap">{a.first_name} {a.surname}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">{shortDate(selectedTime(a))}</td>
+                    <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                      {a.first_name} {a.surname}
+                      <div className="text-xs text-muted-foreground">{a.email}</div>
+                    </td>
                     <td className="px-3 py-2">{divisionColumn(a)}</td>
-                    <td className="px-3 py-2">{a.email}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{ACADEMIC_YEAR_LABELS[a.academic_year as keyof typeof ACADEMIC_YEAR_LABELS] ?? a.academic_year}</td>
+                    <td className="px-3 py-2">{a.degree_course}</td>
                     <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs border ${st.tone}`}>{st.label}</span></td>
                     <td className="px-3 py-2 text-right">
                       <div className="inline-flex items-center gap-2">
@@ -286,6 +435,17 @@ export default function NewJoiners() {
                             <Send className="h-4 w-4 mr-2" />{st.resend ? 'Resend offer' : 'Send offer'}
                           </Button>
                         )}
+                        {st.canWithdraw && canSendOffers && !viewingArchived && (
+                          <Button
+                            size="sm" variant="outline"
+                            className="text-destructive border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
+                            disabled={withdrawing === a.id}
+                            onClick={() => withdraw(a)}
+                            title="Withdraw this offer and close the candidacy. The candidate is emailed."
+                          >
+                            {withdrawing === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Undo2 className="h-4 w-4 mr-2" />Withdraw</>}
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -295,14 +455,49 @@ export default function NewJoiners() {
           </table>
         </div>
       )}
+      {!loading && joiners.length > 0 && (
+        <p className="font-body text-xs text-muted-foreground mt-3">
+          Showing {rows.length} of {joiners.length} offer{joiners.length !== 1 ? 's' : ''}, in the order the candidates were selected.
+        </p>
+      )}
 
       {/* The candidate, in full, without leaving Offers. */}
       <Dialog open={!!openId} onOpenChange={(o) => { if (!o) closeCandidate(); }}>
-        <DialogContent className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
+        <DialogContent ref={detailPaneRef} className="max-w-[96vw] w-[96vw] max-h-[94vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">
-              {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
-            </DialogTitle>
+            {/* The name, and the way to the candidate on either side of it,
+                exactly as in Candidate Screening. `pr-10` keeps the arrows
+                clear of the window's own close button. */}
+            <div className="flex items-center gap-3 pr-10">
+              <DialogTitle className="font-serif text-2xl min-w-0 truncate">
+                {detail ? `${detail.application.first_name} ${detail.application.surname}` : 'Candidate'}
+              </DialogTitle>
+              {rows.length > 1 && (
+                <div className="ml-auto shrink-0 flex items-center gap-1">
+                  <Button
+                    type="button" variant="outline" size="icon" className="h-8 w-8"
+                    disabled={!prevCandidate}
+                    onClick={() => prevCandidate && openCandidate(prevCandidate.id)}
+                    title={prevCandidate ? `Previous candidate: ${prevCandidate.first_name} ${prevCandidate.surname}` : 'This is the first candidate'}
+                    aria-label="Previous candidate"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="font-body text-xs text-muted-foreground tabular-nums px-1 whitespace-nowrap">
+                    {openIndex >= 0 ? `${openIndex + 1} of ${rows.length}` : `${rows.length} shown`}
+                  </span>
+                  <Button
+                    type="button" variant="outline" size="icon" className="h-8 w-8"
+                    disabled={!nextCandidate}
+                    onClick={() => nextCandidate && openCandidate(nextCandidate.id)}
+                    title={nextCandidate ? `Next candidate: ${nextCandidate.first_name} ${nextCandidate.surname}` : 'This is the last candidate'}
+                    aria-label="Next candidate"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
             <DialogDescription className="font-body">
               The same information the reviewers saw during screening, including their notes. Progression is not changed from here.
             </DialogDescription>
@@ -331,6 +526,19 @@ export default function NewJoiners() {
                   <p className="text-xs text-muted-foreground">
                     Offered as {composeRoleLabel(detail.application.offer_role as AppRole, (detail.application.offer_division as OrgDivision) || null)}.
                   </p>
+                )}
+                {detail.application.selected_at && (
+                  <p className="text-xs text-muted-foreground">Selected for an offer on {shortDate(detail.application.selected_at)}.</p>
+                )}
+                {offerState(detail.application).canWithdraw && canSendOffers && !viewingArchived && (
+                  <Button
+                    size="sm" variant="outline"
+                    className="mt-2 text-destructive border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
+                    disabled={withdrawing === detail.application.id}
+                    onClick={() => withdraw(detail.application)}
+                  >
+                    <Undo2 className="h-4 w-4 mr-2" />Withdraw offer
+                  </Button>
                 )}
               </div>
             </CandidateProfile>

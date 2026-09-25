@@ -860,6 +860,10 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         offer_role: role,
         offer_division: division,
         offer_fee_due: body.fee_due !== false,
+        // An offer sent again after a withdrawal is a live offer: the
+        // withdrawal mark goes. Only written when there is one, so this
+        // update never names a column an older database does not have.
+        ...(app.offer_withdrawn_at ? { offer_withdrawn_at: null, offer_withdrawn_by: null } : {}),
       }).eq('id', app.id);
       if (error) throw error;
 
@@ -913,6 +917,73 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
       } catch (e) { console.error('staff offer notice failed', e); }
       return json({ success: true });
 
+    }
+
+    // =====================================================================
+    // ── withdraw-offer ─────────────────────────────────────────────────────
+    // An offer can be withdrawn while it is still open: the candidate was
+    // selected ("accepted") and has not answered. The candidacy moves to
+    // "rejected", the withdrawal is recorded, and the candidate is told:
+    //
+    //   - offer already sent: the "Offer withdrawn" email, which says the
+    //     offer they received is withdrawn;
+    //   - offer never sent: the usual post-interview rejection, since the
+    //     candidate never learnt of an offer and must not learn of one now.
+    //
+    // Same permission as sending an offer. An answered offer (accepted by
+    // the candidate, declined or expired, or a joiner) is not withdrawn
+    // here: an acceptance has already made them a member.
+    // =====================================================================
+    if (action === 'withdraw-offer') {
+      if (!canOffer) return json({ error: 'Withdrawing an offer is reserved for the President and the Admin.' }, 403);
+      if (!canAll && reviewerDivisions.length === 0) return json({ error: 'Access denied' }, 403);
+      const { data: app } = await supabase.from('applications').select('*').eq('id', body.id).maybeSingle();
+      if (!app || !inScope(app)) return json({ error: 'Not found' }, 404);
+      if (app.status !== 'accepted') {
+        const why: Record<string, string> = {
+          offer_accepted: 'The candidate has already accepted this offer, so it can no longer be withdrawn here.',
+          joined: 'This candidate has already joined the association.',
+          offer_declined: 'This offer was declined or has expired, so there is nothing to withdraw.',
+          rejected: 'This candidacy is already closed.',
+          withdrawn: 'The candidate has withdrawn their application.',
+        };
+        return json({ error: why[app.status] || 'Only an offer that is ready or awaiting a reply can be withdrawn.' }, 400);
+      }
+      const division = (app.offer_division || evaluationOf(app)) as string;
+      if (!canAll && !reviewerDivisions.includes(division)) return json({ error: 'You can only withdraw offers of your own division' }, 403);
+
+      const wasSent = !!app.offer_sent_at;
+      // Conditional on the status still being "accepted", so an offer the
+      // candidate accepts in the same moment is not withdrawn behind them.
+      const { data: changed, error } = await supabase.from('applications').update({
+        status: 'rejected',
+        offer_withdrawn_at: new Date().toISOString(),
+        offer_withdrawn_by: user.id,
+        offer_deadline: null,
+      }).eq('id', app.id).eq('status', 'accepted').select('id');
+      if (error) throw error;
+      if (!changed || changed.length === 0) {
+        return json({ error: 'The offer changed while you were withdrawing it. Reload the page to see its current state.' }, 409);
+      }
+
+      try {
+        if (wasSent) {
+          await supabase.rpc('enqueue_app_email', {
+            p_key: 'offer_withdrawn', p_to: app.email,
+            p_vars: {
+              first_name: app.first_name,
+              division_name: app.offer_division ? PLACEMENT_NAME(app.offer_division) : INTAKE_NAME(evaluationOf(app)),
+            },
+          });
+        } else {
+          await supabase.rpc('enqueue_app_email', {
+            p_key: 'rejection_post_interview', p_to: app.email,
+            p_vars: { first_name: app.first_name, division_name: INTAKE_NAME(evaluationOf(app)) },
+          });
+        }
+      } catch (e) { console.error('withdrawal email enqueue failed', e); }
+
+      return json({ success: true, email: wasSent ? 'offer_withdrawn' : 'rejection_post_interview' });
     }
 
     // ── convert-to-member (New Joiners, report 10.5) ─────────────────────────
