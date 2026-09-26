@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Info, Smartphone, Eye, Check, Monitor } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { SECTIONS } from '@/lib/workspace-sections';
+import { MOBILE_FULL_SUBSECTIONS } from '@/lib/mobile-policy';
 
 // =====================================================================
 // Settings > Mobile view — what the workspace offers on a phone.
@@ -79,7 +80,7 @@ export default function MobileViewTable() {
           <p className="font-body text-sm text-muted-foreground">
             On a phone every editing control is withheld, on every page, for every role including the
             President's. Reading, searching, filtering, previewing a document and downloading all keep
-            working. Changing something is done from a computer.
+            working. Changing something is done from a computer, except on the pages ticked below.
           </p>
         </div>
       </div>
@@ -94,17 +95,20 @@ export default function MobileViewTable() {
             <div className="px-3 py-2.5 flex flex-wrap gap-x-2 gap-y-1.5 font-body text-xs">
               {sec.items.map((it) => {
                 const applicant = APPLICANT_PAGES.has(it.key);
+                const full = !applicant && MOBILE_FULL_SUBSECTIONS.has(it.key);
                 return (
                   <span
                     key={it.key}
-                    title={applicant ? 'The applicant opens this on a desktop' : 'Opens on a phone, read only'}
+                    title={applicant ? 'The applicant opens this on a desktop' : full ? 'Works in full on a phone' : 'Opens on a phone, read only'}
                     className={`inline-flex items-center gap-1.5 border px-2 py-1 ${
                       applicant ? 'border-separator text-muted-foreground' : 'border-separator bg-muted/30'
                     }`}
                   >
                     {applicant
                       ? <Monitor className="h-3 w-3 shrink-0" />
-                      : <Eye className="h-3 w-3 text-amber-700 shrink-0" />}
+                      : full
+                        ? <Check className="h-3 w-3 text-emerald-700 shrink-0" />
+                        : <Eye className="h-3 w-3 text-amber-700 shrink-0" />}
                     {it.label}
                   </span>
                 );
@@ -139,6 +143,11 @@ export default function MobileViewTable() {
             <span className="text-foreground">It applies to the server too.</span> What is withheld here is
             also refused by the edge functions and the database policies behind them, so the rule holds
             however a request is made.
+          </li>
+          <li>
+            <span className="text-foreground">Two pages work in full on a phone</span>, because they are done
+            away from a desk: Attendance, taken at the door of an event, and the GPA converter, whose saved
+            averages are the member's own. Your role still decides what you may do on them.
           </li>
           <li>
             <span className="text-foreground">An applicant is the exception</span>, because their four pages

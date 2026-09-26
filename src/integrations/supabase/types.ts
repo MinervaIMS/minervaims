@@ -881,6 +881,54 @@ export type Database = {
         }
         Relationships: []
       }
+      career_files: {
+        Row: {
+          created_at: string
+          display_order: number
+          file_name: string
+          file_path: string
+          height: number | null
+          id: string
+          kind: string
+          label: string | null
+          mime_type: string | null
+          size_bytes: number | null
+          updated_at: string
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          file_name: string
+          file_path: string
+          height?: number | null
+          id?: string
+          kind: string
+          label?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          file_name?: string
+          file_path?: string
+          height?: number | null
+          id?: string
+          kind?: string
+          label?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
       city_country: {
         Row: {
           alias: string
@@ -1384,6 +1432,45 @@ export type Database = {
           period_month?: string
           updated_at?: string
           ytd_return?: number | null
+        }
+        Relationships: []
+      }
+      gpa_calculations: {
+        Row: {
+          average: number | null
+          courses: Json
+          created_at: string
+          id: string
+          name: string
+          settings: Json
+          system: string
+          total_weight: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average?: number | null
+          courses?: Json
+          created_at?: string
+          id?: string
+          name: string
+          settings?: Json
+          system: string
+          total_weight?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          average?: number | null
+          courses?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          settings?: Json
+          system?: string
+          total_weight?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

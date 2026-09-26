@@ -93,6 +93,9 @@ const NewsletterManagement = lazy(() => import('@/components/admin/NewsletterMan
 const PagesVisibilityManagement = lazy(() => import('@/components/admin/PagesVisibilityManagement'));
 const TestimonialsManagement = lazy(() => import('@/components/admin/TestimonialsManagement'));
 const HistoryManagement = lazy(() => import('@/components/admin/HistoryManagement'));
+const CareerTemplate = lazy(() => import('@/components/admin/career/CareerTemplate'));
+const CareerLinkedIn = lazy(() => import('@/components/admin/career/CareerLinkedIn'));
+const GpaConverter = lazy(() => import('@/components/admin/career/GpaConverter'));
 
 // =====================================================================
 // WARMING THE CHUNKS, SO THE SPLIT COSTS NOTHING TO NAVIGATE.
@@ -168,6 +171,10 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'settings-roles': () => import('@/components/admin/RolePermissionsTable'),
   'settings-mobile': () => import('@/components/admin/MobileViewTable'),
   'settings-activity': () => import('@/components/admin/ActivityManagement'),
+  'career-cv': () => import('@/components/admin/career/CareerTemplate'),
+  'career-cl': () => import('@/components/admin/career/CareerTemplate'),
+  'career-linkedin': () => import('@/components/admin/career/CareerLinkedIn'),
+  'career-gpa': () => import('@/components/admin/career/GpaConverter'),
 };
 
 /** Fetch one page's chunk now. Safe to call repeatedly: the browser and
@@ -1135,6 +1142,14 @@ const MinervaWorkspace = () => {
         return <JoinFaqsManagement />;
       case 'settings-mobile':
         return <MobileViewTable />;
+      case 'career-cv':
+        return <CareerTemplate key="cv" which="cv" />;
+      case 'career-cl':
+        return <CareerTemplate key="cl" which="cl" />;
+      case 'career-linkedin':
+        return <CareerLinkedIn />;
+      case 'career-gpa':
+        return <GpaConverter />;
 
 
 

@@ -62,7 +62,7 @@ export const GUIDE: GuideEntry[] = [
     topics: [
       { id: 'download', title: 'Download my manual', body: 'The download produces a Markdown file containing exactly the manual you see, overview included. Many members prefer to upload it to an AI assistant and ask for a summary, a checklist or a step-by-step walkthrough of one specific task.' },
       { id: 'help-tools', title: 'Help, always in place', body: 'Every workspace page carries a floating question mark that opens the sliding help panel for that page, and many controls carry a small circled question mark that opens the panel directly at the matching topic. The panel shows only what your role can actually do.' },
-      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read. Nothing is withheld that you could see on a computer, and nothing can be edited: each page carries a ribbon saying so, and wide tables are dragged sideways rather than trimmed.' },
+      { id: 'on-mobile', title: 'The workspace on a phone', body: 'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read. Nothing is withheld that you could see on a computer, and nothing can be edited, except on Events, Attendance and Career, GPA converter: every other page carries a ribbon saying so, and wide tables are dragged sideways rather than trimmed.' },
       { id: 'deep-links', title: 'Direct links into the workspace', body: 'A link of the form /admin?section=...&sub=... opens the workspace directly on that subsection, provided your role can see it. Some website buttons use these links to bring you to the right place in one click.' },
     ],
   },
@@ -241,12 +241,12 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'Who registered and who actually attended each event; search and filter the door list, and add walk-ins.',
     view: ['Consult registration and attendance numbers.', 'Search the people registered by name, email or programme, and filter by attendance, by type and by how each person was recognised.'],
     manage: ['Mark attendance, add members who turned up from the register, and add external guests, from a computer or from a phone.'],
-    warnings: ['This is the one page that can be edited from a phone, because attendance is taken at a door. Everywhere else the workspace is read-only on mobile.', 'Attendance closes a week after the event: after that the list can be read and exported, but no longer changed.'],
+    warnings: ['This page can be edited from a phone, because attendance is taken at a door. Apart from the GPA converter, whose saved averages are the member\'s own, everywhere else the workspace is read-only on mobile.', 'Attendance closes a week after the event: after that the list can be read and exported, but no longer changed.'],
     topics: [
       { id: 'recognising-members', title: 'How the list knows who is a member', body: 'The public event form asks for a name and an address and does not require signing in, which is the point of a public event. A member who registers that way is stored with no account attached, and used to be listed as an external guest. Every registration is now checked against the register of members, and the list says HOW it knows, because the three answers are not equally certain. "Signed in" means they used their own account: not a guess at all. "Matched by email" means the address they gave is a member\u2019s address, and an address identifies one person. "Matched by name" means the name matches exactly one member and nothing else confirms it: a good guess, shown in amber so you can tell. '
         + 'A NAME THAT MATCHES MORE THAN ONE MEMBER IS NOT A MATCH. Two members called the same thing means the register cannot say which of them registered, and crediting the wrong person is worse than saying nothing, so the row is marked Ambiguous and left for you. Filter by "Name is ambiguous" to find them. A name with a middle name in it, or a first name on its own, is also left unmatched on purpose: it is better to list a member as a guest, which anybody can see is wrong, than to quietly count somebody who was not there.' },
       { id: 'searching', title: 'Finding one person', body: 'The search box reads the name and address they registered with, their programme and affiliation, and ALSO the name on the register, so somebody who put down "M. Rossi" is still found by searching for Mario Rossi. The filters narrow by whether they have been ticked off, by member or guest, and by how they were recognised. The counts above the list always describe the whole event, never the filtered view, so narrowing the list never makes the room look emptier than it is; the CSV, by contrast, exports exactly what is on screen.' },
-      { id: 'on-a-phone', title: 'Taking attendance on a phone', body: 'This page is the one exception to the workspace being read-only on mobile, because attendance is taken standing at a door and there is no desk there. Below the desktop width the table becomes a list of rows with a large tick box on each, so a person can be marked with a thumb, and walk-ins can be added on the spot. Your role still decides what you may do: somebody who can only read this page on a computer can only read it on a phone.', requires: 'manage' },
+      { id: 'on-a-phone', title: 'Taking attendance on a phone', body: 'This page is an exception to the workspace being read-only on mobile, because attendance is taken standing at a door and there is no desk there. Below the desktop width the table becomes a list of rows with a large tick box on each, so a person can be marked with a thumb, and walk-ins can be added on the spot. Your role still decides what you may do: somebody who can only read this page on a computer can only read it on a phone.', requires: 'manage' },
       { id: 'week', title: 'The list closes after a week', body: 'Ticking, adding somebody who turned up and removing a row are possible until the end of the seventh day after the event, counted on Rome\'s calendar: an event on the 1st can be edited until the end of the 8th. After that the list is the record of who attended; it stays searchable and can still be exported.' },
       { id: 'aod', title: 'Association on Display', body: 'Every Association on Display day appears here as an event, so the people who actually staffed the stand can be recorded. Everybody who signed up for at least one slot that day is on its list once, as a member; somebody who cancels their last slot leaves the list again, unless they have already been ticked as present. The day itself, its slots and its sign-ups stay on the Association on Display page.' },
       { id: 'walkins', title: 'Walk-ins', body: 'People who attend without registering can be added on the spot, so the attendance record stays complete. For a member, search the register in "Somebody who turned up" by name or email and press "Add as present": they are added as a member, with their account and the address on their record, and if they were already on the list they are simply ticked. For anybody else, fill in the guest form underneath; a guest\'s email address is added to the newsletter.', requires: 'manage' },
@@ -442,6 +442,96 @@ export const GUIDE: GuideEntry[] = [
       { id: 'log-search', title: 'Searching the register', body: 'The search box matches the recipient\'s address or the email\'s key, and the two filters narrow by which email it was and how it ended: Sent, Bounced, Failed, Suppressed and the rest. The date range takes one day or a span of them. Everything is applied to the WHOLE register rather than to the page on screen, so an address written to last semester is found as easily as one written to this morning.' },
     ],
   },
+  // ===================================================================
+  // CAREER. Open to every member, advisor and alumnus; never to an
+  // applicant. Each page is read and used at 'view'; the only thing
+  // managed is the files behind them, by the President, the Vice
+  // President and the Head of Operations.
+  // ===================================================================
+  {
+    key: 'career-cv', section: 'Career', label: 'CV template',
+    purpose: 'The association\'s one-page CV template, with the guide to filling it in, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
+    view: [
+      'Read the template in the preview, page by page, and switch between fitting the pages to the column and showing them at their real size.',
+      'Download the template as a Word document (.docx) and open it in Word, Pages or Google Docs.',
+      'Read the disclaimer in full: what the template is, and what it is not.',
+    ],
+    manage: ['Replace the template with a new .docx: every member downloads and previews the new file at once.'],
+    warnings: [
+      'This material is not to be shared outside Minerva. Do not forward it, post it or upload it anywhere outside the society.',
+      'It does not replace Bocconi\'s official CV guidelines or the Career Service: use it on top of them.',
+    ],
+    topics: [
+      { id: 'use', title: 'Using the template', body: 'Download it, open it in Word, Pages or Google Docs, and follow the guidance written into the document itself: every bullet is an action, the method and a quantified result. Before you send it, remove every square bracket and every note in round brackets, keep the GDPR line in the footer, and export it as a one-page PDF named Name_Surname_CV.pdf.' },
+      { id: 'preview', title: 'About the preview', body: 'A browser cannot show a Word document by itself, so the workspace lays the file out as pages, here, without sending it to any outside viewer. The fonts, tabs, bullets, headers and footers of the file are kept. On a small screen the pages are scaled down to fit; press Real size to read them at full size and scroll sideways. If a detail ever looks different from Word, the downloaded file is the reference, and it is the same file.' },
+      { id: 'members-only', title: 'Why it stays inside Minerva', body: 'The template and its guide are internal materials of the association, built from its members\' experience. They are shared with members, advisors and alumni, and with nobody else: please do not pass them on to friends who are not members, or publish them.' },
+      { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. Keep the file name meaningful, because members download it under that name. If the disclaimer in the document changes, ask for the one on this page to be updated too, so the two always say the same.', requires: 'manage' },
+    ],
+  },
+  {
+    key: 'career-cl', section: 'Career', label: 'Cover letter template',
+    purpose: 'The association\'s cover letter template, with the guide to writing each paragraph, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
+    view: [
+      'Read the template in the preview, page by page, and switch between fitting the pages to the column and showing them at their real size.',
+      'Download the template as a Word document (.docx).',
+      'Read the disclaimer in full.',
+    ],
+    manage: ['Replace the template with a new .docx: every member downloads and previews the new file at once.'],
+    warnings: [
+      'This material is not to be shared outside Minerva. Do not forward it, post it or upload it anywhere outside the society.',
+      'It does not replace Bocconi\'s official cover letter guidelines or the Career Service: use it on top of them.',
+    ],
+    topics: [
+      { id: 'use', title: 'Using the template', body: 'Download it and write one job per paragraph: who you are, why this firm, your evidence, how you work with people, and what happens next. Name the exact programme, division, office and year as they appear in the posting, remove every bracket, and export a one-page PDF named Name_Surname_Cover_Letter_Firm.pdf.' },
+      { id: 'preview', title: 'About the preview', body: 'The document is laid out as pages here, in the workspace, without sending it to any outside viewer. On a small screen the pages are scaled down to fit; press Real size to read them at full size. The downloaded file is always the reference.' },
+      { id: 'members-only', title: 'Why it stays inside Minerva', body: 'The template and its guide are internal materials of the association. They are shared with members, advisors and alumni, and with nobody else.' },
+      { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. If the disclaimer in the document changes, ask for the one on this page to be updated too.', requires: 'manage' },
+    ],
+  },
+  {
+    key: 'career-linkedin', section: 'Career', label: 'LinkedIn',
+    purpose: 'Three parts of a LinkedIn profile, done the Minerva way: an About section written from your CV, a profile picture on the Minerva background, and a banner chosen from the association\'s wallpapers.',
+    view: [
+      'Copy the About Section prompt and use it with your CV in an AI chat.',
+      'Copy the Profile Picture prompt, download the Minerva background, and use both with your own photo in an AI that edits images.',
+      'Browse the wallpapers, each shown whole at its own proportions, see the band LinkedIn will show, and download the one you like.',
+    ],
+    manage: ['Replace the portrait background.', 'Add wallpapers, rename them and remove them.'],
+    warnings: [
+      'The prompts are used in AI services outside Minerva. Whatever you attach there, your CV or your photo, is sent to that service: use one you trust and check its privacy settings first.',
+      'Read what the AI gives back before you publish it. You are responsible for what your profile says.',
+    ],
+    topics: [
+      { id: 'about', title: 'The About section', body: 'Press Copy prompt, open an AI chat such as ChatGPT, Claude or Gemini, attach your CV as a PDF, paste the prompt and send it. The prompt asks for a short, first-person text about what you care about and why your experiences belong together, rather than a summary of the CV, and it may ask you a question or two first. Correct anything that is not true or does not sound like you, then paste it into About on LinkedIn. Read the prompt opens the full text if you want to see what it asks for.' },
+      { id: 'portrait', title: 'The profile picture', body: 'You need two images and the prompt. Image 1 is a square photo of yourself in formal clothes, facing the camera, in good light. Image 2 is the Minerva background, downloaded from this card. Open an AI that edits images, attach Image 1 and then Image 2 in that order, paste the prompt and send it. The prompt tells the AI to keep your face exactly as it is and only change the background and framing: check that it did before you upload the result.' },
+      { id: 'wallpaper', title: 'The wallpaper', body: 'Pick a banner from the row of thumbnails; the large picture shows the one selected, whole and uncropped. LinkedIn\'s banner is four times as wide as it is tall, so LinkedIn crops these pictures itself when you upload them: switch on What LinkedIn shows to see the band it keeps by default. Download it, then on LinkedIn open your profile, click the camera on the banner, upload it and drag it to choose the part shown.' },
+      { id: 'copy-fails', title: 'If Copy prompt does not work', body: 'Some browsers refuse access to the clipboard. The page then says so: open Read the prompt, select the text and copy it by hand.' },
+      { id: 'manage-files', title: 'Managing the background and the wallpapers', body: 'The panels at the foot of the Profile Picture and Wallpaper cards are drawn only for the President, the Vice President and the Head of Operations. The background is one file, and a new upload replaces it for everybody. Wallpapers are a list: add one or several at once (JPEG, PNG or WebP, up to 15 MB each), rename the selected one, or remove it. Upload wallpapers as they are, without cropping them: the gallery shows each at its own proportions, and LinkedIn crops them itself.', requires: 'manage' },
+    ],
+  },
+  {
+    key: 'career-gpa', section: 'Career', label: 'GPA converter',
+    purpose: 'Read a grade in the Bocconi system and in the main grading systems of Europe, the UK and North America, and work out, save and compare your weighted averages, including what the next exam will do to them.',
+    view: [
+      'Convert a single grade, a final figure or an average from any supported system into every other, and back.',
+      'Work out a weighted average from your courses, credits and grades, with the Bocconi degree mark base on the /30 scale.',
+      'See what each possible grade in the next exam would do to your average, and which grade you need to reach a target.',
+      'Save your averages to your account, open them again later, and compare up to four side by side.',
+    ],
+    manage: [],
+    warnings: [
+      'Conversions are indicative. There is no official conversion between grading systems: when an application gives you its own table, use that one, and always state your original grade and scale next to a converted figure.',
+    ],
+    topics: [
+      { id: 'convert', title: 'Converting a grade', body: 'Choose the system your grade is in, type the grade (27, 72.5, 3.71; a comma works as well as a point) and choose the system to convert to. The answer is shown large, and the same grade is listed in every other system beside it. Swap turns the question round, so converting a foreign grade into the Bocconi system is one press away. For 30 e lode, type 30 and tick e lode.' },
+      { id: 'methods', title: 'How the conversion works', body: 'Equivalence bands, the default, match grades that mean the same thing in both systems: the pass mark, a satisfactory, good, very good and excellent result, and the top of the scale. A grade between two of these is placed at the same position between the same two in the other system. Where a scale is flat at the top (a US 4.0 covers both excellent and top), the answer is a range and is shown as one. Linear applies the modified Bavarian formula used by German universities: the same share of the way from the pass mark to the best grade. It is official in Germany and stricter than the bands in the middle of most scales.' },
+      { id: 'average', title: 'Working out an average', body: 'Choose the grading system of your courses, then enter each course with its credits and its grade; add as many courses as you need. Rows without credits or a grade are left out. On the /30 scale you choose what 30 e lode counts as: Bocconi counts it as 30, some universities count it as more. The average is shown with the credits and courses counted, the simple (unweighted) average and, on the /30 scale, the degree mark base: the average times 110 divided by 30, before the points the final commission adds. Changing the grading system clears the grades, after asking, because they belong to the old scale.' },
+      { id: 'next', title: 'The next exam', body: 'Enter the credits of the next exam to see, for every grade worth trying, the average it would leave and by how much it moves: green bars raise the average, red bars lower it, and any grade better than your current average raises it. Enter the average you are aiming for to be told the grade you need, rounded to the safe side, or that any passing grade will do, or that one exam of that size cannot get you there.' },
+      { id: 'saved', title: 'Saving and comparing', body: 'Give the calculation a name and press Save. It goes to your account, where only you can read it, so it is there from any device. Open a saved average to carry on: Save changes then updates it and Save as new keeps both. Under Saved, tick up to four to see them side by side: scale, average, band, credits, courses, and each average read on four common scales. A crown marks the highest once every scale is read through the same equivalence bands.' },
+      { id: 'privacy', title: 'Who can see your averages', body: 'Only you. Saved averages are stored in your own rows, and the database refuses them to anybody else, the Board included. The calculation you are working on is also kept in this browser until you save it, so leaving the page does not lose it.' },
+      { id: 'on-phone', title: 'On a phone', body: 'The GPA converter works in full on a phone, saving included: what it saves is your own, not the association\'s.' },
+    ],
+  },
   {
     key: 'settings-users', section: 'Settings', label: 'Users',
     purpose: 'Who has an account and which role and division each person holds. Roles drive everything else in the workspace.',
@@ -468,11 +558,11 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'settings-mobile', section: 'Settings', label: 'Mobile view',
-    purpose: 'What the workspace offers on a phone: every page opens, within your role, and nothing can be edited.',
+    purpose: 'What the workspace offers on a phone: every page opens, within your role, and nothing can be edited except on the two pages done away from a desk.',
     view: ['Consult the table.'],
     manage: [],
     topics: [
-      { id: 'levels', title: 'The rule', body: 'Every subsection opens on a phone and every one of them is read only: the controls that change something are withheld, for everybody, including the President. Which pages you see is still decided by your role, exactly as it is on a computer, because the mobile rule is a cap and never a grant. An applicant is the one exception: their own pages, where they book an interview and answer an offer, are still opened on a computer.' },
+      { id: 'levels', title: 'The rule', body: 'Every subsection opens on a phone and, with two exceptions, every one of them is read only: the controls that change something are withheld, for everybody, including the President. The exceptions are the pages done away from a desk: Events, Attendance, taken at the door of an event, and Career, GPA converter, whose saved averages are the member\'s own. They are ticked in the table. Which pages you see is still decided by your role, exactly as it is on a computer, because the mobile rule is a cap and never a grant. An applicant is a separate case: their own pages, where they book an interview and answer an offer, are still opened on a computer.' },
       { id: 'cap', title: 'A cap, never a grant', body: 'The mobile rule can only take away what a role already has. It cannot open a page a role cannot open, and it applies to everyone including the President. It engages below 1024 pixels wide, which is the same threshold that switches the workspace to its mobile shell.' },
     ],
   },
