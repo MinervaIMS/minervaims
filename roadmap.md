@@ -1,4 +1,4 @@
 - [x] Put the meeting link prominently in interview confirmations.
 - [x] Add a once-only half-hour interview reminder with link.
 - [x] Send division reassignment email after successful evaluation move.
-- [ ] Synchronize stored templates, deploy affected functions, and verify three test emails.
+- [x] Synchronize stored templates, deploy affected functions, and verify three test emails.
