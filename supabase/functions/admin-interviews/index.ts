@@ -583,6 +583,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
             interview_time: formatSlotSpan(slot.start_time, slot.end_time),
             examiner_name: slot.examiner_name || 'Admin',
             status_url: STATUS_URL,
+            meeting_link: String(slot.meeting_link || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
           },
         });
       } catch (e) { console.error('booking confirmation email enqueue failed', e); }
