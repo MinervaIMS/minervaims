@@ -2,3 +2,4 @@
 - [x] Add a once-only half-hour interview reminder with link.
 - [x] Send division reassignment email after successful evaluation move.
 - [x] Synchronize stored templates, deploy affected functions, and verify three test emails.
+- [x] Add a 24-hour attendance reminder to registered event guests (template, job stage, Forms page, test email).
