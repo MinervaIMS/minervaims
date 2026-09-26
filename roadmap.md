@@ -3,3 +3,4 @@
 - [x] Send division reassignment email after successful evaluation move.
 - [x] Synchronize stored templates, deploy affected functions, and verify three test emails.
 - [x] Add a 24-hour attendance reminder to registered event guests (template, job stage, Forms page, test email).
+- [ ] Rename the attendance email to “See you tomorrow” and send a fresh test.
