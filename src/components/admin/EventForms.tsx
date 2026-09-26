@@ -34,7 +34,7 @@ const TEST_STATUS: Record<string, string> = {
   pending: 'queued', sent: 'sent', duplicate: 'held back, the same test was sent less than five minutes ago',
   suppressed: 'not sent, the address is on the suppression list', not_sent: 'not sent, the template is switched off in Auto emails',
 };
-const STAGE_LABEL: Record<string, string> = { '2w': '2 weeks before', '1w': '1 week before', '3d': '3 days before' };
+const STAGE_LABEL: Record<string, string> = { '2w': '2 weeks before', '1w': '1 week before', '3d': '3 days before', '24h_attending': '24 hours before (registered members)' };
 
 export default function EventForms() {
   const { session, user } = useAuth();
@@ -221,7 +221,7 @@ export default function EventForms() {
           <DialogHeader>
             <DialogTitle className="font-serif">Test the reminders</DialogTitle>
             <DialogDescription>
-              Sends the three reminders of {testFor?.title || 'this event'} (2 weeks, 1 week and 3 days before) to one address, exactly as members receive them. A test does not count as sent and changes nothing for members.
+              Sends the reminders of {testFor?.title || 'this event'} (2 weeks, 1 week and 3 days before, and the 24-hour note to registered members) to one address, exactly as members receive them. A test does not count as sent and changes nothing for members.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

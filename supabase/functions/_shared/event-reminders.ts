@@ -17,22 +17,24 @@
 
 import { romeToday } from './attendance-window.ts';
 
-export type ReminderStage = '2w' | '1w' | '3d';
+export type ReminderStage = '2w' | '1w' | '3d' | '24h_attending';
 
 export const REMINDER_STAGES: { stage: ReminderStage; days: number; label: string }[] = [
   { stage: '2w', days: 14, label: '2 weeks before' },
   { stage: '1w', days: 7, label: '1 week before' },
   { stage: '3d', days: 3, label: '3 days before' },
+  { stage: '24h_attending', days: 1, label: '24 hours before, to registered members' },
 ];
 
 export const REMINDER_TEMPLATE_KEY: Record<ReminderStage, string> = {
   '2w': 'ws_event_reminder_2w',
   '1w': 'ws_event_reminder_1w',
   '3d': 'ws_event_reminder_3d',
+  '24h_attending': 'ws_event_reminder_24h_attending',
 };
 
 export function isReminderStage(v: unknown): v is ReminderStage {
-  return v === '2w' || v === '1w' || v === '3d';
+  return v === '2w' || v === '1w' || v === '3d' || v === '24h_attending';
 }
 
 /** The event's day on the association's clock, as YYYY-MM-DD. */

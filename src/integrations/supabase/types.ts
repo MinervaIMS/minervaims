@@ -2314,6 +2314,13 @@ export type Database = {
         Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
         Returns: undefined
       }
+      event_attendance_recipients: {
+        Args: { p_event_id: string }
+        Returns: {
+          email: string
+          first_name: string
+        }[]
+      }
       event_reminder_day: {
         Args: { p_date: string; p_start_at: string }
         Returns: string
