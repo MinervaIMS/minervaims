@@ -580,7 +580,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
             division_slug: slot.division,
             division_reading: divisionReading(slot.division),
             interview_date: formatSlotDate(slot.slot_date),
-            interview_time: formatSlotSpan(slot.start_time, slot.end_time),
+            interview_time: `${formatSlotSpan(slot.start_time, slot.end_time)} (Rome time)`,
             examiner_name: slot.examiner_name || 'Admin',
             status_url: STATUS_URL,
             meeting_link: String(slot.meeting_link || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
