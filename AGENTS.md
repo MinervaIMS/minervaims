@@ -1,0 +1,2 @@
+Use `transactional-emails.ts` as the source for application email HTML; synchronize its responsive output to `auto_email_templates` because the database enqueue function sends the stored copy.
+Use the booking row as the once-only marker for time-based interview reminders; cancelled bookings disappear, so old reminders cannot follow a candidate to a new slot.

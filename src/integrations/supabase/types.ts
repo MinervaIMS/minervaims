@@ -1455,6 +1455,7 @@ export type Database = {
           created_at: string
           division: Database["public"]["Enums"]["org_division"]
           id: string
+          reminder_30m_sent_at: string | null
           slot_id: string
         }
         Insert: {
@@ -1465,6 +1466,7 @@ export type Database = {
           created_at?: string
           division: Database["public"]["Enums"]["org_division"]
           id?: string
+          reminder_30m_sent_at?: string | null
           slot_id: string
         }
         Update: {
@@ -1475,6 +1477,7 @@ export type Database = {
           created_at?: string
           division?: Database["public"]["Enums"]["org_division"]
           id?: string
+          reminder_30m_sent_at?: string | null
           slot_id?: string
         }
         Relationships: [
@@ -2392,6 +2395,7 @@ export type Database = {
       }
       process_event_registration_reminders: { Args: never; Returns: number }
       process_fee_reminders: { Args: never; Returns: number }
+      process_interview_30m_reminders: { Args: never; Returns: number }
       process_offer_deadlines: { Args: never; Returns: undefined }
       process_profile_reminders: { Args: never; Returns: number }
       public_alumni_classes: {
