@@ -307,7 +307,7 @@ export function attendanceWindow(eventDate: string | null | undefined, at: Date 
 // stops, resumes or tests them. Shapes mirror
 // supabase/functions/_shared/event-reminders.ts.
 // =====================================================================
-export type ReminderStage = '2w' | '1w' | '3d';
+export type ReminderStage = '2w' | '1w' | '3d' | '24h_attending';
 export type ReminderState = 'sent' | 'scheduled' | 'on_hold' | 'skipped';
 export interface ReminderStageStatus {
   stage: ReminderStage;
