@@ -9,7 +9,7 @@
 //
 //   "Does this page have help, so should the ? be drawn at all?"
 //
-// Not every page does - thirty-eight of them do - so the question is real
+// Not every page does - forty-three of them do - so the question is real
 // and the button cannot simply be drawn everywhere: it would open an
 // empty panel. This module answers it in a few hundred bytes, the prose
 // is fetched only when the panel is opened, and the workspace opens with
@@ -35,6 +35,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'smm-editorial', 'smm-ads',
   'ops-fee', 'ops-treasury', 'ops-auto-emails',
   'website-pages', 'website-history', 'website-faqs',
+  'career-cv', 'career-cl', 'career-linkedin', 'career-gpa',
   'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity',
   // The applicant's four pages.
   'candidate-my-role', 'applications-status', 'applications-interview',

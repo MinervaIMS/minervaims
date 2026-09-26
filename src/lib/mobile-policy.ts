@@ -44,6 +44,12 @@
 // exception is narrow on purpose: it is a list of one, in one place, and
 // a page is added to it only when it is genuinely done away from a desk.
 //
+// THE GPA CONVERTER IS THE SECOND, for a different reason: what it saves
+// is the member's OWN averages, in rows only they can reach, not anything
+// of the association's. Working out "what do I need in the next exam" is
+// done on the way out of one, and a phone that could compute an average
+// but not keep it would be the rule getting in the way of nothing.
+//
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
 // gets one. A reader with 'view' on Attendance still only reads it, on a
@@ -65,7 +71,7 @@ export const MOBILE_POLICY: MobilePolicy = 'view';
  * The subsections that are done away from a desk, and so keep their
  * writes on a phone. See the exception above before adding to it.
  */
-export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance']);
+export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance', 'career-gpa']);
 
 /** What the given subsection offers on a phone. */
 export function mobilePolicyFor(key?: string | null): MobilePolicy {

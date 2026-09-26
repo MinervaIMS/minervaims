@@ -84,6 +84,7 @@ const PLACE: Record<string, { section: string; subsection: string }> = {
   'admin-alumni': { section: 'People', subsection: 'Alumni' },
   'admin-alumni-calls': { section: 'Events', subsection: 'Alumni calls' },
   'admin-aod': { section: 'Events', subsection: 'Association on Display' },
+  'career-files': { section: 'Career', subsection: 'Templates and LinkedIn files' },
   'admin-applications': { section: 'Recruiting', subsection: 'Candidates screening' },
   'admin-auto-emails': { section: 'Operations', subsection: 'Automatic emails' },
   'admin-calendar': { section: 'General', subsection: 'Calendar' },
@@ -141,6 +142,7 @@ const MUTATES: Record<string, string> = {
   'admin-interviews:cancel': 'delete',
   'admin-auto-emails:save-template': 'update',
   'admin-auto-emails:create-template': 'create',
+  'career-files:rename': 'update',
 };
 
 /** What a write is called in the log, or null when it is a read. */

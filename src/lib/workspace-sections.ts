@@ -59,6 +59,9 @@ export const SECTIONS: WorkspaceSectionMap[] = [
   { section: 'Website', items: [
     { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },
     { key: 'ops-newsletter', label: 'Newsletter' }, { key: 'ops-auto-emails', label: 'Automatic emails' } ] },
+  { section: 'Career', items: [
+    { key: 'career-cv', label: 'CV template' }, { key: 'career-cl', label: 'Cover letter template' },
+    { key: 'career-linkedin', label: 'LinkedIn' }, { key: 'career-gpa', label: 'GPA converter' } ] },
   { section: 'Settings', items: [
     { key: 'settings-users', label: 'Users' }, { key: 'settings-roles', label: 'Role permissions' }, { key: 'settings-mobile', label: 'Mobile view' }, { key: 'settings-activity', label: 'Activity log' } ] },
 ];

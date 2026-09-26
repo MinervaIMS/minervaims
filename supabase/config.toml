@@ -31,6 +31,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.admin-event-reminders]
     verify_jwt = false
+  [functions.career-files]
+    verify_jwt = false
   [functions.admin-alumni-calls]
     verify_jwt = false
   [functions.admin-aod]

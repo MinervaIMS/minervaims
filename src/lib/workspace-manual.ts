@@ -175,7 +175,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'The workspace on a phone',
     body: [
       'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read.',
-      'Nothing is withheld on a phone that you can see on a computer, and nothing at all can be edited from one: every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
+      'Nothing is withheld on a phone that you can see on a computer, and nothing can be edited from one, with two exceptions done away from a desk: Events, Attendance, taken at the door, and Career, GPA converter, whose saved averages are your own. Everywhere else every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
     ],
   },
 ];
@@ -221,6 +221,54 @@ export const COMMON_TASKS: ManualTask[] = [
       'For a specific control, press the small circled question mark beside it. The panel opens at the matching topic.',
       'Everything in the panel is written for your role, so it never describes a button you do not have.',
     ],
+  },
+  {
+    id: 'career-cv',
+    title: 'Prepare your CV with the Minerva template',
+    requires: 'career-cv',
+    level: 'view',
+    steps: [
+      'Open Career, CV Template and read the template in the preview on the right.',
+      'Press Download the CV template and open the .docx in Word, Pages or Google Docs.',
+      'Follow the guidance in the document, remove every bracket, keep the GDPR line in the footer, and export a one-page PDF named Name_Surname_CV.pdf.',
+    ],
+    caution: 'The template is for Minerva members only: do not forward it or publish it.',
+  },
+  {
+    id: 'career-about',
+    title: 'Write your LinkedIn About section',
+    requires: 'career-linkedin',
+    level: 'view',
+    steps: [
+      'Open Career, LinkedIn and press Copy prompt on the About Section card.',
+      'Open an AI chat, attach your CV as a PDF, paste the prompt and send it.',
+      'Correct anything that is not true or does not sound like you, then paste it into About on LinkedIn.',
+    ],
+    caution: 'What you attach is sent to the AI service you use. Choose one you trust.',
+  },
+  {
+    id: 'career-average',
+    title: 'Work out your average and what the next exam needs',
+    requires: 'career-gpa',
+    level: 'view',
+    steps: [
+      'Open Career, GPA Converter and choose Weighted average.',
+      'Enter each course with its credits and its grade, adding rows as needed.',
+      'Under The next exam, enter its credits and the average you are aiming for: the page tells you the grade you need and what every other grade would do.',
+      'Name the calculation and press Save to keep it in your account; compare it later under Saved.',
+    ],
+  },
+  {
+    id: 'career-files',
+    title: 'Update a Career template, the portrait background or the wallpapers',
+    requires: 'career-linkedin',
+    level: 'manage',
+    steps: [
+      'From a computer, open the Career page concerned: CV Template, Cover Letter Template or LinkedIn.',
+      'Use the panel at the foot of the page or card: upload a new .docx for a template, a new image for the background, or add, rename and remove wallpapers.',
+      'The change reaches every member at once. Check the preview afterwards.',
+    ],
+    caution: 'A replaced file is gone for everybody: keep your own copy of the previous version.',
   },
   {
     id: 'check-role',
@@ -434,7 +482,7 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
-    'An alumnus keeps a profile, the Dashboard and the Calendar. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
+    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit and the GPA converter. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
 };
 
 // =====================================================================
@@ -454,6 +502,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Exam session break', definition: 'A protected date range during which no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace. Deadlines and reminders remain possible.', requires: 'calendar' },
   { term: 'Association on Display', definition: 'The recurring day on which the association presents itself, with time slots members sign up for. Registration closes 24 hours before the day.', requires: 'events-on-display' },
   { term: 'Locked entry', definition: 'A Treasury entry written by the workspace itself, from a fee collection closing or an advertising spend being recorded. It is the record of something that happened elsewhere and cannot be altered here.', requires: 'ops-treasury' },
+  { term: 'Equivalence bands', definition: 'The default method of the GPA converter: grades that mean the same thing (pass, good, very good, excellent, top) are matched between two systems, and a grade in between is read at the same position. Indicative, like every conversion.', requires: 'career-gpa' },
+  { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
   { term: 'Activity log', definition: 'The record of every meaningful action with the role held at that moment. It exists for accountability across leadership teams.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
@@ -499,6 +549,21 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     question: 'A candidate was moved to the wrong division.',
     answer: 'Move them back. That is always available. A third division is not offered, because a candidacy runs in at most two selection processes, and both moves are recorded in the activity log.',
     requires: 'applications-screening',
+  },
+  {
+    question: 'The preview of a Career template looks slightly different from Word.',
+    answer: 'The preview is drawn by the browser from the same file, with the fonts your device has. Line breaks can shift by a word where a font is missing. The downloaded file is the reference: open it in Word to see it exactly as it prints.',
+    requires: 'career-cv',
+  },
+  {
+    question: 'Copy prompt did nothing.',
+    answer: 'Your browser refused access to the clipboard, and the page says so. Open Read the prompt under the button, select the text and copy it by hand.',
+    requires: 'career-linkedin',
+  },
+  {
+    question: 'My saved averages are missing on another device.',
+    answer: 'Saved averages are in your account and follow you to any device; the calculation you had not saved yet stays in the browser where you typed it. Press Save to keep it everywhere.',
+    requires: 'career-gpa',
   },
   {
     question: 'An error message says something went wrong but not what.',
@@ -704,7 +769,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'settings-mobile': {
     detail: [
       "What each part of the workspace offers on a phone.",
-      "There is one rule and this page states it: every page opens, within your role, and nothing can be edited. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
+      "There is one rule and this page states it: every page opens, within your role, and nothing can be edited, apart from the two pages ticked in the table, Attendance and the GPA converter. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
     ],
     related: ['settings-roles'],
   },
@@ -801,6 +866,37 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "These are the same answers published at the foot of the public Join page, so nothing here is written for one audience and hidden from the other.",
     ],
     related: ['applications-status'],
+  },
+  'career-cv': {
+    detail: [
+      "The association's one-page CV template, with the guide to filling it in.",
+      "The left half says what the template is, that it stays inside Minerva, and the disclaimer in full, with the download. The right half is the document itself, page by page, scrolling on its own; on a phone the two stack, download first.",
+      "The preview is drawn in the workspace from the same file you download, so nothing is sent to an outside viewer. The downloaded file is always the reference.",
+    ],
+    related: ['career-cl', 'career-linkedin', 'career-gpa'],
+  },
+  'career-cl': {
+    detail: [
+      "The association's cover letter template, with the guide to writing each paragraph.",
+      "Laid out exactly like the CV template: the rule, the disclaimer and the download on the left, the document on the right.",
+    ],
+    related: ['career-cv', 'career-linkedin'],
+  },
+  'career-linkedin': {
+    detail: [
+      "Three cards of equal width, one per part of a profile: the About section, the profile picture and the banner.",
+      "Each card shows what goes in and what comes out, the steps, and the button that does the association's half of the work: a prompt to copy, a background to download, a wallpaper to choose.",
+      "The wallpapers are shown whole, at their own proportions, because LinkedIn crops them itself when they are uploaded.",
+    ],
+    related: ['career-cv', 'my-role'],
+  },
+  'career-gpa': {
+    detail: [
+      "Three views of one tool: Convert a grade, Weighted average and Saved.",
+      "Conversions use equivalence bands by default, or the German linear formula on request, across twenty-two grading systems in Italy, the UK and Ireland, North America and the rest of Europe.",
+      "Saved averages belong to you alone: they are stored in your account, readable by nobody else, and work from a phone as well as a computer.",
+    ],
+    related: ['career-cv', 'career-cl'],
   },
 };
 
