@@ -1782,6 +1782,7 @@ export type Database = {
           issued_at: string
           member_id: string | null
           revoked_at: string | null
+          revoked_by: string | null
           revoked_reason: string | null
           role_label: string
           semester_key: string
@@ -1796,6 +1797,7 @@ export type Database = {
           issued_at?: string
           member_id?: string | null
           revoked_at?: string | null
+          revoked_by?: string | null
           revoked_reason?: string | null
           role_label: string
           semester_key: string
@@ -1810,6 +1812,7 @@ export type Database = {
           issued_at?: string
           member_id?: string | null
           revoked_at?: string | null
+          revoked_by?: string | null
           revoked_reason?: string | null
           role_label?: string
           semester_key?: string
