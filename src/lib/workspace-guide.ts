@@ -90,7 +90,7 @@ export const GUIDE: GuideEntry[] = [
     key: 'career-cv', section: 'Career', label: 'CV template',
     purpose: 'The association\'s one-page CV template, with the guide to filling it in, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
     view: [
-      'Read the template in the preview, page by page, at the full width of the preview (on a small screen, Actual size shows it at its real size).',
+      'Read the template in the preview, page by page: Fit width fills the preview, 100% shows the page at its real size, and Full view opens it large in its own window.',
       'Download the template as a Word document (.docx) and open it in Word, Pages or Google Docs.',
       'Read the disclaimer in full: what the template is, and what it is not.',
     ],
@@ -101,7 +101,7 @@ export const GUIDE: GuideEntry[] = [
     ],
     topics: [
       { id: 'use', title: 'Using the template', body: 'Download it, open it in Word, Pages or Google Docs, and follow the guidance written into the document itself: every bullet is an action, the method and a quantified result. Before you send it, remove every square bracket and every note in round brackets, keep the GDPR line in the footer, and export it as a one-page PDF named Name_Surname_CV.pdf.' },
-      { id: 'preview', title: 'About the preview', body: 'A browser cannot show a Word document by itself, so the workspace lays the file out as pages, here, without sending it to any outside viewer. The pages fill the width of the preview, and the dates and places set on the right margin are placed there exactly as Word places them. On a small screen, where the fitted page is small, press Actual size to read it at full size and scroll sideways. The downloaded file is always the reference: it is the same file.' },
+      { id: 'preview', title: 'About the preview', body: 'A browser cannot show a Word document by itself, so the workspace lays the file out as pages, here, without sending it to any outside viewer. The pages fill the width of the preview, and the dates and places set on the right margin are placed there exactly as Word places them. The bar above the preview offers Fit width (which shows the percentage it uses), 100% for the real size of the page, scrolling sideways where it does not fit, and Full view, which opens the document large in its own window. The downloaded file is always the reference: it is the same file.' },
       { id: 'members-only', title: 'Why it stays inside Minerva, and why downloads are tracked', body: 'The template and its guide are internal materials of the association, built from its members\' experience, and they are for your personal use. They are shared with members, advisors and alumni, and with nobody else: please do not pass them on to friends who are not members, or publish them. Every download is recorded in the activity log, with who downloaded which file and when.' },
       { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the Replace panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. Keep the file name meaningful, because members download it under that name. If the disclaimer in the document changes, ask for the one on this page to be updated too, so the two always say the same.', requires: 'manage' },
     ],
@@ -110,7 +110,7 @@ export const GUIDE: GuideEntry[] = [
     key: 'career-cl', section: 'Career', label: 'Cover letter template',
     purpose: 'The association\'s cover letter template, with the guide to writing each paragraph, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
     view: [
-      'Read the template in the preview, page by page, at the full width of the preview (on a small screen, Actual size shows it at its real size).',
+      'Read the template in the preview, page by page: Fit width fills the preview, 100% shows the page at its real size, and Full view opens it large in its own window.',
       'Download the template as a Word document (.docx).',
       'Read the disclaimer in full.',
     ],
@@ -121,7 +121,7 @@ export const GUIDE: GuideEntry[] = [
     ],
     topics: [
       { id: 'use', title: 'Using the template', body: 'Download it and write one job per paragraph: who you are, why this firm, your evidence, how you work with people, and what happens next. Name the exact programme, division, office and year as they appear in the posting, remove every bracket, and export a one-page PDF named Name_Surname_Cover_Letter_Firm.pdf.' },
-      { id: 'preview', title: 'About the preview', body: 'The document is laid out as pages here, in the workspace, without sending it to any outside viewer, filling the width of the preview. On a small screen, press Actual size to read it at full size. The downloaded file is always the reference.' },
+      { id: 'preview', title: 'About the preview', body: 'The document is laid out as pages here, in the workspace, without sending it to any outside viewer, filling the width of the preview. Use 100% for the real size of the page, or Full view to open it large in its own window. The downloaded file is always the reference.' },
       { id: 'members-only', title: 'Why it stays inside Minerva, and why downloads are tracked', body: 'The template and its guide are internal materials of the association, for your personal use. They are shared with members, advisors and alumni, and with nobody else. Every download is recorded in the activity log.' },
       { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the Replace panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. If the disclaimer in the document changes, ask for the one on this page to be updated too.', requires: 'manage' },
     ],
