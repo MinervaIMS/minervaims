@@ -2488,12 +2488,20 @@ export type Database = {
           first_name: string
         }[]
       }
+      event_person_name_key: { Args: { p_name: string }; Returns: string }
       event_reminder_day: {
         Args: { p_date: string; p_start_at: string }
         Returns: string
       }
       event_reminder_html: { Args: { p: string }; Returns: string }
       event_reminder_recipients: {
+        Args: { p_event_id: string }
+        Returns: {
+          email: string
+          first_name: string
+        }[]
+      }
+      event_thank_you_recipients: {
         Args: { p_event_id: string }
         Returns: {
           email: string
