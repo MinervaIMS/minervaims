@@ -1904,6 +1904,33 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          hidden_at: string | null
+          items: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          hidden_at?: string | null
+          items?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          hidden_at?: string | null
+          items?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_visibility: {
         Row: {
           created_at: string
@@ -2534,6 +2561,7 @@ export type Database = {
         }
         Returns: number
       }
+      my_onboarding_context: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
       pricing_rate_check: {
