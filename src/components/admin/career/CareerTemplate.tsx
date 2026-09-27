@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download, Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -73,6 +74,9 @@ export default function CareerTemplate({ which }: { which: Which }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [zoom, setZoom] = useState<'fit' | 'actual'>('fit');
+  const [fitScale, setFitScale] = useState<number | null>(null);
+  const [fullView, setFullView] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The first load shows the page loader; a refresh after an upload keeps
@@ -127,9 +131,11 @@ export default function CareerTemplate({ which }: { which: Which }) {
   return (
     <CareerPage title={c.title} description={c.description}>
       {loading ? <WorkspaceLoader /> : (
-        <div className="grid grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-12 lg:items-stretch">
+        // The left column has a fixed width on a computer, so every pixel
+        // the window gains goes to the document.
+        <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch">
           {/* ---- Left: the file, the rule, how to use it, the disclaimer ---- */}
-          <div className="min-w-0 flex flex-col gap-4 lg:col-span-5 xl:col-span-4 lg:min-h-0">
+          <div className="min-w-0 flex flex-col gap-4 lg:w-[18rem] lg:shrink-0 2xl:w-[21rem] lg:min-h-0">
             <CareerCard
               title={file ? file.file_name : `The ${c.noun}`}
               subtitle={file ? [sizeLabel(file.size_bytes), `Updated ${updated}`].filter(Boolean).join(' · ') : 'Not uploaded yet'}
@@ -187,16 +193,37 @@ export default function CareerTemplate({ which }: { which: Which }) {
 
           {/* ---- Right: the document itself, scrolling on its own ---- */}
           <section
-            className="min-w-0 flex flex-col rounded-xl border border-separator bg-muted/40 overflow-hidden lg:col-span-7 xl:col-span-8 lg:min-h-0"
+            className="min-w-0 flex flex-col rounded-xl border border-separator bg-muted/40 overflow-hidden lg:flex-1 lg:min-h-0"
             aria-label={`Preview of the ${c.noun}`}
           >
             <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-separator bg-background">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Preview</span>
-              {file && <span className="min-w-0 truncate text-xs text-muted-foreground">{file.file_name}</span>}
+              <span className="shrink-0 text-xs uppercase tracking-wider text-muted-foreground">Preview</span>
+              {file && (
+                // Zoom lives here, in the bar, never on top of the page.
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex items-stretch overflow-hidden rounded-md border border-separator text-xs" role="group" aria-label="Zoom">
+                    <button
+                      type="button" data-ro-allow aria-pressed={zoom === 'fit'} onClick={() => setZoom('fit')}
+                      className={`px-2.5 py-1 transition-colors ${zoom === 'fit' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                    >
+                      Fit width{fitScale ? ` (${Math.round(fitScale * 100)}%)` : ''}
+                    </button>
+                    <button
+                      type="button" data-ro-allow aria-pressed={zoom === 'actual'} onClick={() => setZoom('actual')}
+                      className={`border-l border-separator px-2.5 py-1 transition-colors ${zoom === 'actual' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                    >
+                      100%
+                    </button>
+                  </div>
+                  <Button variant="outline" size="sm" className="hidden h-7 px-2.5 text-xs lg:inline-flex" data-ro-allow onClick={() => setFullView(true)}>
+                    Full view
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="h-[70vh] overflow-auto overscroll-contain lg:h-auto lg:flex-1 lg:min-h-0" data-ro>
               {file ? (
-                <DocxPreview key={file.view_url ?? file.id} url={file.view_url} title={c.title} />
+                <DocxPreview key={file.view_url ?? file.id} url={file.view_url} title={c.title} zoom={zoom} onFitScale={setFitScale} />
               ) : (
                 <div className="h-full min-h-[16rem] flex items-center justify-center p-8 text-center text-sm text-muted-foreground">
                   The preview appears here once the {c.noun} has been uploaded.
@@ -205,6 +232,22 @@ export default function CareerTemplate({ which }: { which: Which }) {
             </div>
           </section>
         </div>
+      )}
+
+      {/* The document large: nearly the whole window, the page at least at
+          its real width wherever the screen allows. */}
+      {file && (
+        <Dialog open={fullView} onOpenChange={setFullView}>
+          <DialogContent className="flex h-[92vh] w-[96vw] max-w-[72rem] flex-col gap-0 overflow-hidden p-0">
+            <DialogHeader className="shrink-0 border-b border-separator px-5 py-3 text-left">
+              <DialogTitle className="font-serif text-lg text-accent">{file.file_name}</DialogTitle>
+              <DialogDescription className="text-xs">For Minerva members only. Downloads are tracked.</DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-auto overscroll-contain bg-muted/40" data-ro>
+              {fullView && <DocxPreview url={file.view_url} title={`${c.title}, full view`} />}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </CareerPage>
   );

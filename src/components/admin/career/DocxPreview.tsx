@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { HElement } from 'docx-preview';
 
@@ -11,7 +11,7 @@ import type { HElement } from 'docx-preview';
 // link. So the document is rendered HERE, by `docx-preview`, which reads
 // the file in the browser and lays it out as A4 pages.
 //
-// THREE THINGS ARE DONE HERE RATHER THAN LEFT TO THE LIBRARY.
+// FOUR THINGS ARE DONE HERE RATHER THAN LEFT TO THE LIBRARY.
 //
 // 1. THE TAB STOPS. A CV puts the dates and places on the right margin
 //    with a right-aligned tab. The library places tabs by measuring the
@@ -27,12 +27,22 @@ import type { HElement } from 'docx-preview';
 //
 // 2. THE WIDTH. The pages are scaled to fill the width of the preview,
 //    up as well as down, so on a wide screen the page is not a narrow
-//    strip in a wide grey box. On a small screen, where filling the width
-//    makes the text small, "Actual size" shows it at its real size.
+//    strip in a wide grey box. The page around it offers "100%" (the real
+//    size of the page, scrolling sideways where it does not fit) and a
+//    full view in a large window.
 //
 // 3. THE WAIT. The document is rendered out of sight and shown only once
 //    it is laid out and fitted, so it appears once, at its final size,
 //    instead of arriving large and then shrinking.
+//
+// 4. THE SCALE SURVIVES THE POINTER. The workspace keeps its panels still
+//    by removing any `transform` from whatever is under the mouse
+//    (`.ws-flat *:hover { transform: none !important }` in index.css). The
+//    pages are scaled with a transform, so that rule snapped them back to
+//    their unscaled, narrower size the moment the pointer crossed them.
+//    The scale is therefore set as an inline `!important` declaration,
+//    the one kind a stylesheet `!important` cannot override. Nothing else
+//    in the workspace is affected.
 //
 // The library is loaded only when a preview is opened, so the rest of
 // the workspace does not carry it.
@@ -185,13 +195,19 @@ async function fontsSettled() {
   await Promise.race([fonts.ready, new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS))]);
 }
 
-export function DocxPreview({ url, title }: { url: string | null; title: string }) {
+export function DocxPreview({ url, title, zoom = 'fit', onFitScale }: {
+  url: string | null;
+  title: string;
+  /** 'fit' fills the width of the preview; 'actual' shows the page at 100%. */
+  zoom?: 'fit' | 'actual';
+  /** Reports the scale that "fit" uses, so the page can say "Fit (72%)". */
+  onFitScale?: (scale: number) => void;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [fitScale, setFitScale] = useState(1);
   const [natural, setNatural] = useState<{ width: number; height: number } | null>(null);
-  const [actualSize, setActualSize] = useState(false);
 
   // Render the document whenever the file changes.
   useEffect(() => {
@@ -257,24 +273,27 @@ export function DocxPreview({ url, title }: { url: string | null; title: string 
     return () => ro.disconnect();
   }, [state, natural]);
 
-  const scale = actualSize ? 1 : fitScale;
-  // "Actual size" is offered only where fitting makes the page clearly smaller.
-  const canZoom = state === 'ready' && fitScale < 0.85;
+  const scale = zoom === 'actual' ? 1 : fitScale;
+  const ready = state === 'ready' && !!natural;
+
+  // Tell the page what "fit" currently means, for its zoom label.
+  useEffect(() => { if (ready) onFitScale?.(fitScale); }, [ready, fitScale, onFitScale]);
+
+  // See 4. above: set outside React's style prop, with priority.
+  useLayoutEffect(() => {
+    const el = pagesRef.current;
+    if (!el) return;
+    if (ready) {
+      el.style.setProperty('transform', `scale(${scale})`, 'important');
+      el.style.setProperty('transform-origin', 'top left', 'important');
+    } else {
+      el.style.removeProperty('transform');
+      el.style.removeProperty('transform-origin');
+    }
+  }, [ready, scale]);
 
   return (
     <div ref={hostRef} className="relative w-full min-w-0 min-h-full" aria-label={`Preview of ${title}`}>
-      {canZoom && (
-        <div className="sticky top-2 z-20 flex justify-end px-2 pointer-events-none h-0">
-          <button
-            type="button" data-ro-allow
-            onClick={() => setActualSize((v) => !v)}
-            className="pointer-events-auto rounded-full border border-separator bg-background/95 px-3 py-1 text-xs text-foreground shadow-sm hover:bg-muted"
-          >
-            {actualSize ? 'Fit to width' : 'Actual size'}
-          </button>
-        </div>
-      )}
-
       {state === 'loading' && (
         <div className="flex h-full min-h-[16rem] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -293,14 +312,14 @@ export function DocxPreview({ url, title }: { url: string | null; title: string 
           is seen. */}
       <div
         style={state === 'ready' && natural
-          ? { width: actualSize ? natural.width : '100%', height: natural.height * scale, overflow: 'hidden' }
+          ? { width: zoom === 'actual' ? natural.width : '100%', height: natural.height * scale, overflow: 'hidden', margin: zoom === 'actual' ? '0 auto' : undefined }
           : { position: 'absolute', left: 0, top: 0, width: '100%', height: 0, overflow: 'hidden', visibility: 'hidden' }}
       >
         <div
           ref={pagesRef}
-          className="career-docx origin-top-left"
+          className="career-docx"
           style={state === 'ready' && natural
-            ? { width: natural.width, transform: `scale(${scale})` }
+            ? { width: natural.width }
             : { width: 'max-content' }}
         />
       </div>
