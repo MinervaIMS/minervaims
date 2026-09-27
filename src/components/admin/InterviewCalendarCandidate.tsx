@@ -12,12 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { formatClockRange } from '@/lib/event-time';
 import {
   getInterviewContext, listAvailableSlots, bookSlot, cancelBooking,
   type CandidateContext, type AvailableSlot,
 } from '@/lib/interviews-api';
 
-const hhmm = (t: string) => t.slice(0, 5);
 
 // Cancellation / rescheduling rules, kept consistent with the invitation email.
 const INTERVIEW_RULES = [
@@ -137,7 +137,7 @@ export default function InterviewCalendarCandidate() {
             </div>
             <div className="space-y-2 text-foreground">
               <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-accent" /> {format(parseISO(s.slot_date), 'EEEE, d MMMM yyyy')}</div>
-              <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-accent" /> {hhmm(s.start_time)} – {hhmm(s.end_time)}</div>
+              <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-accent" /> {formatClockRange(s.start_time, s.end_time, s.slot_date)}</div>
               <div className="flex items-center gap-2"><User className="h-4 w-4 text-accent" /> {divisionName}{s.examiner_name ? ` · ${s.examiner_name}` : ''}</div>
               {s.meeting_link ? (
                 <a href={s.meeting_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-accent hover:underline break-all">
@@ -224,7 +224,7 @@ export default function InterviewCalendarCandidate() {
                       <div key={s.id} className="flex items-center justify-between gap-3 border border-separator p-3">
                         <div>
                           <div className="flex items-center gap-2 font-body font-medium text-foreground">
-                            <Clock className="h-4 w-4 text-accent" /> {hhmm(s.start_time)} – {hhmm(s.end_time)}
+                            <Clock className="h-4 w-4 text-accent" /> {formatClockRange(s.start_time, s.end_time, s.slot_date)}
                           </div>
                           {s.examiner_name && (
                             <div className="mt-1 flex items-center gap-1.5 text-xs font-body text-muted-foreground">

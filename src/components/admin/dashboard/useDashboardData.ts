@@ -7,6 +7,7 @@ import { activeFunds, type Fund } from '@/lib/types';
 import type { OrgDivision } from '@/lib/roles';
 import { isFeeExempt } from '@/lib/membership-fee';
 import { semesterOrdinal, type GreetingVars } from './greetings';
+import { formatTimeRange } from '@/lib/event-time';
 
 // =====================================================================
 // useDashboardData — every figure on the Dashboard, from live data.
@@ -69,6 +70,8 @@ export interface EventRow {
   event_type: string;
   show_on_website: boolean;
   registration_enabled?: boolean | null;
+  start_at?: string | null;
+  end_at?: string | null;
 }
 
 export interface AvatarRow { name: string; surname: string; photo_url: string | null }
@@ -102,6 +105,8 @@ export interface LatestUpdate {
   title: string;
   detail: string | null;
   date: string | null;
+  /** Events with a time of day: "6:30 pm to 8:00 pm CEST". */
+  time?: string | null;
   /** Event poster. Reports have no cover column; the block renders the PDF. */
   imageUrl: string | null;
   /** Set for the report fallback, so the block can draw the PDF's first page. */
@@ -216,7 +221,7 @@ export function useDashboardData(): DashboardData {
           .order('year', { ascending: true })),
         safe<EventRow[]>(() => supabase
           .from('events')
-          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled')
+          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled, start_at, end_at')
           // Association on Display is read from `aod_days` just below; the
           // event each day carries for attendance is not a second event.
           .is('aod_day_id', null)
@@ -466,6 +471,7 @@ export function useDashboardData(): DashboardData {
         title: event.title,
         detail: event.place || event.description,
         date: event.date,
+        time: event.start_at ? formatTimeRange(event.start_at, event.end_at) : null,
         imageUrl: event.poster_url,
         pdfUrl: null,
         eventId: event.id,

@@ -67,10 +67,11 @@ const CARD_ROUTES_EXACT = new Set([
   "/access-denied",
   "/apply",
   "/application-check-email",
+  "/verify",
 ]);
 // Card layouts on dynamic paths (cannot live in the exact set above):
 // the event registration form shares the same white-card-over-beams layout.
-const CARD_ROUTE_PATTERNS = [/^\/events\/[^/]+\/register$/];
+const CARD_ROUTE_PATTERNS = [/^\/events\/[^/]+\/register$/, /^\/verify\/[^/]+$/];
 
 const NAV_TRANSITION_MS = 200;
 const NAV_EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";

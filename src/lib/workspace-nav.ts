@@ -177,6 +177,7 @@ export const NAV: NavSection[] = [
       { key: 'settings-roles', slug: 'role-permissions', label: 'Role Permissions', allowed: (p) => p.can('settings-roles') },
       { key: 'settings-mobile', slug: 'mobile-view', label: 'Mobile View', allowed: (p) => p.can('settings-mobile') },
       { key: 'settings-activity', slug: 'activity-log', label: 'Activity Log', allowed: (p) => p.can('settings-activity') },
+      { key: 'settings-certificates', slug: 'certificates', label: 'Certificates', allowed: (p) => p.can('settings-certificates') },
     ],
   },
   {

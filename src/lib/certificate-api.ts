@@ -24,6 +24,40 @@ export interface CertificateStatus {
   role_label: string | null;
   /** This semester's certificate for the current role, if already issued. */
   certificate: CertificateSummary | null;
+  /** The Board withdrew this role and semester's certificate. */
+  withdrawn?: boolean;
+}
+
+// ── The register (Settings, Certificates) ───────────────────────────────
+export type RegisterStatus = 'valid' | 'withdrawn' | 'expelled';
+
+export interface RegisterEntry {
+  id: string;
+  code: string;
+  holder_name: string;
+  role_label: string;
+  semester_key: string;
+  semester_label: string;
+  issued_at: string;
+  status: RegisterStatus;
+  withdrawn_at: string | null;
+  withdrawn_reason: string | null;
+  withdrawn_by: string | null;
+}
+
+export async function certificateRegister(session: Session | null): Promise<{ certificates: RegisterEntry[]; can_manage: boolean }> {
+  const res = await invokeFunction<{ certificates: RegisterEntry[]; can_manage: boolean }>(
+    'membership-certificate', { body: { action: 'register' }, session },
+  );
+  return { certificates: res?.certificates ?? [], can_manage: !!res?.can_manage };
+}
+
+export function withdrawCertificate(session: Session | null, id: string, reason: string) {
+  return invokeFunction('membership-certificate', { body: { action: 'withdraw', id, reason }, session });
+}
+
+export function restoreCertificate(session: Session | null, id: string) {
+  return invokeFunction('membership-certificate', { body: { action: 'restore', id }, session });
 }
 
 export interface CertificateCheck {

@@ -64,5 +64,5 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },
     { key: 'ops-newsletter', label: 'Newsletter' }, { key: 'ops-auto-emails', label: 'Automatic emails' } ] },
   { section: 'Settings', items: [
-    { key: 'settings-users', label: 'Users' }, { key: 'settings-roles', label: 'Role permissions' }, { key: 'settings-mobile', label: 'Mobile view' }, { key: 'settings-activity', label: 'Activity log' } ] },
+    { key: 'settings-users', label: 'Users' }, { key: 'settings-roles', label: 'Role permissions' }, { key: 'settings-mobile', label: 'Mobile view' }, { key: 'settings-activity', label: 'Activity log' }, { key: 'settings-certificates', label: 'Certificates' } ] },
 ];

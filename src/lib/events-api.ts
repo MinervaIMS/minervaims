@@ -98,6 +98,8 @@ export interface EventRegistration {
   academic_year: string | null;
   affiliation: string | null;
   registered_at: string;
+  /** When the person's ticket was scanned at the door (Attendance, Scan tickets). */
+  checked_in_at?: string | null;
 
   // ── Recognised against the register of members ────────────────────────
   // Added by `admin-event-reg` on every read; see
@@ -193,6 +195,18 @@ export async function uploadEventPoster(file: File): Promise<string> {
 export async function listRegistrations(session: Session | null, eventId: string): Promise<EventRegistration[]> {
   return (await invoke('admin-event-reg', session, { action: 'list', event_id: eventId })).registrations;
 }
+// ── Check-in at the door ───────────────────────────────────────────────
+// The QR code of a registration's ticket, scanned in Attendance. See
+// supabase/functions/_shared/checkin.ts.
+export type CheckinResult =
+  | { result: 'checked_in' | 'already'; id: string; name: string; member: boolean; checked_in_at: string | null }
+  | { result: 'other_event'; name: string; event_title: string | null; event_date: string | null }
+  | { result: 'unknown' | 'not_a_ticket' };
+
+export function checkInTicket(session: Session | null, eventId: string, token: string): Promise<CheckinResult> {
+  return invoke('admin-event-reg', session, { action: 'checkin', event_id: eventId, token });
+}
+
 export function markAttended(session: Session | null, id: string, attended: boolean) {
   return invoke('admin-event-reg', session, { action: 'mark-attended', id, attended });
 }

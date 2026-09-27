@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Search } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { formatStamp } from '@/lib/event-time';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
@@ -120,6 +121,7 @@ const entityLabels: Record<string, string> = {
   calendar: 'calendar entry',
   'career-files': 'Career file',
   'membership-certificate': 'membership certificate',
+  'brand-kit': 'design system package',
   events: 'event',
   'event-reg': 'event registration',
   fees: 'fee collection',
@@ -327,16 +329,8 @@ export default function ActivityManagement() {
     return pages;
   };
 
-  const formatDateTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // On Rome's clock with the zone named, like every time in the workspace.
+  const formatDateTime = (dateStr: string) => formatStamp(dateStr);
 
   if (isLoading) {
     return (

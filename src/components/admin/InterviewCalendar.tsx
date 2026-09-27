@@ -29,12 +29,12 @@ import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calenda
 import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDetail';
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
 import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
+import { formatClockRange } from '@/lib/event-time';
 import {
   addApplicationNote, reviewerDivisionsOf, canProgressApplication,
   RECRUITING_DIVISIONS, applyDivisionLabel, intakeDivision,
   type ApplicationStatus,
 } from '@/lib/applications-api';
-const hhmm = (t: string) => t.slice(0, 5);
 const plus30 = (t: string) => {
   const [h, m] = t.split(':').map(Number);
   const tot = h * 60 + m + 30;
@@ -491,12 +491,12 @@ export default function InterviewCalendar() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="c-start">Start</Label>
+                <Label htmlFor="c-start">Start (Rome time)</Label>
                 <Input id="c-start" type="time" className="rounded-none" required value={form.start_time}
                   onChange={(e) => setForm({ ...form, start_time: e.target.value, end_time: e.target.value ? plus30(e.target.value) : '' })} />
               </div>
               <div>
-                <Label htmlFor="c-end">End</Label>
+                <Label htmlFor="c-end">End (Rome time)</Label>
                 <Input id="c-end" type="time" className="rounded-none" required value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
               </div>
             </div>
@@ -525,11 +525,11 @@ export default function InterviewCalendar() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="b-start">From</Label>
+                <Label htmlFor="b-start">From (Rome time)</Label>
                 <Input id="b-start" type="time" className="rounded-none" required value={bulk.start_time} onChange={(e) => setBulk({ ...bulk, start_time: e.target.value })} />
               </div>
               <div>
-                <Label htmlFor="b-end">To</Label>
+                <Label htmlFor="b-end">To (Rome time)</Label>
                 <Input id="b-end" type="time" className="rounded-none" required value={bulk.end_time} onChange={(e) => setBulk({ ...bulk, end_time: e.target.value })} />
               </div>
             </div>
@@ -595,7 +595,7 @@ function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
             <div className="min-w-0">
               <div className="flex items-center gap-2 font-body font-medium text-foreground">
                 <Clock className="h-4 w-4 text-accent shrink-0" />
-                {hhmm(s.start_time)} – {hhmm(s.end_time)}
+                {formatClockRange(s.start_time, s.end_time, s.slot_date)}
               </div>
               {s.examiner_name && (
                 <div className="mt-1 flex items-center gap-1.5 text-xs font-body text-muted-foreground">

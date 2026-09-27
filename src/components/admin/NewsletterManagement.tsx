@@ -22,6 +22,7 @@ import { logActivity } from '@/lib/activity-log';
 import { useToast } from '@/hooks/use-toast';
 import { downloadCSV } from '@/lib/download-utils';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { formatStamp } from '@/lib/event-time';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
@@ -182,7 +183,7 @@ export default function NewsletterManagement() {
                 {paged.map((s) => (
                   <tr key={s.id} className="border-t border-separator">
                     <td className="px-3 py-2 text-foreground">{s.email}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{new Date(s.subscribed_at).toLocaleString()}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatStamp(s.subscribed_at)}</td>
                     <td className="px-3 py-2">{s.source}</td>
                     <td className="px-3 py-2 text-right">
                       <AlertDialog>

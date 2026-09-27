@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
-import { rolesOf } from '../_shared/access.ts';
-import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
+import { allows, rolesOf } from '../_shared/access.ts';
+import { readJsonObject, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { renderCertificate } from './pdf.ts';
 import {
   boardSignatories, certificateFileName, ineligibility, newCode, normaliseCode, roleLabel, semesterOf,
@@ -20,6 +20,15 @@ import {
 //   verify   (anyone)   what a certificate number certifies: name, role,
 //                       semester, issue date and whether it is valid.
 //                       No account needed, nothing else disclosed
+//   register (Settings, Certificates: 'view')   every certificate issued
+//   withdraw (Settings, Certificates: 'manage') withdraw one, with a reason
+//   restore  (Settings, Certificates: 'manage') undo a withdrawal
+//
+// The register is the President's, the Admin's and the Vice President's
+// (access matrix key `settings-certificates`). A withdrawn certificate
+// reads "No longer valid" on the verification page, and its holder cannot
+// download a replacement for the same role and semester: that would undo
+// the withdrawal. A new role, or a new semester, is a new certificate.
 //
 // A certificate is for an ACTIVE member of the Society, in the role they
 // hold now, for the current semester only: no history of roles or events.
@@ -93,8 +102,73 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
     if (authError || !user) return json({ error: 'Invalid token' }, 401);
     const { data: roleRows } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
-    audit.actor(user, rolesOf(roleRows));
+    const roles = rolesOf(roleRows);
+    audit.actor(user, roles);
     audit.request(action, {});
+
+    // ── the register ─────────────────────────────────────────────────────
+    if (action === 'register' || action === 'withdraw' || action === 'restore') {
+      if (!allows(roles, user.email, 'settings-certificates', 'view')) return json({ error: 'Access denied' }, 403);
+      const canManage = allows(roles, user.email, 'settings-certificates', 'manage');
+
+      if (action === 'register') {
+        const { data: rows, error } = await supabase.from('membership_certificates')
+          .select('id, code, user_id, member_id, holder_name, role_label, semester_key, semester_label, issued_at, revoked_at, revoked_reason, revoked_by')
+          .order('issued_at', { ascending: false }).limit(3000);
+        if (error) throw error;
+        const list = (rows || []) as (CertificateRow & { revoked_reason: string | null; revoked_by: string | null })[];
+        const memberIds = [...new Set(list.map((r) => r.member_id).filter(Boolean))] as string[];
+        const expelled = new Set<string>();
+        if (memberIds.length) {
+          const { data: ms } = await supabase.from('members').select('id, membership_status').in('id', memberIds);
+          for (const x of (ms || []) as { id: string; membership_status: string }[]) if (x.membership_status === 'expelled') expelled.add(x.id);
+        }
+        const revokers = [...new Set(list.map((r) => r.revoked_by).filter(Boolean))] as string[];
+        const names = new Map<string, string>();
+        if (revokers.length) {
+          const { data: ps } = await supabase.from('members').select('user_id, first_name, surname').in('user_id', revokers);
+          for (const x of (ps || []) as { user_id: string; first_name: string | null; surname: string | null }[]) {
+            names.set(x.user_id, [x.first_name, x.surname].filter(Boolean).join(' '));
+          }
+        }
+        return json({
+          can_manage: canManage,
+          certificates: list.map((r) => ({
+            id: r.id, code: r.code, holder_name: r.holder_name, role_label: r.role_label,
+            semester_key: r.semester_key, semester_label: r.semester_label, issued_at: r.issued_at,
+            status: r.revoked_at ? 'withdrawn' : (r.member_id && expelled.has(r.member_id) ? 'expelled' : 'valid'),
+            withdrawn_at: r.revoked_at, withdrawn_reason: r.revoked_reason,
+            withdrawn_by: r.revoked_by ? (names.get(r.revoked_by) || 'A former officer') : null,
+          })),
+        });
+      }
+
+      if (!canManage) return json({ error: 'Only the President and the Vice President can withdraw or restore a certificate.' }, 403);
+      const id = optionalTextOf(body, 'id');
+      if (!id) return json({ error: 'Choose a certificate.' }, 400);
+      const { data: cert } = await supabase.from('membership_certificates')
+        .select('id, code, holder_name, revoked_at').eq('id', id).maybeSingle();
+      if (!cert) return json({ error: 'This certificate no longer exists. Reload the page.' }, 404);
+
+      if (action === 'withdraw') {
+        const reason = (optionalTextOf(body, 'reason') || '').trim();
+        if (reason.length < 3) return json({ error: 'Say why the certificate is withdrawn: the reason is kept in the register.' }, 400);
+        if (reason.length > 300) return json({ error: 'Keep the reason under 300 characters.' }, 400);
+        if (cert.revoked_at) return json({ error: 'This certificate is already withdrawn.' }, 409);
+        const { error } = await supabase.from('membership_certificates')
+          .update({ revoked_at: new Date().toISOString(), revoked_reason: reason, revoked_by: user.id }).eq('id', id);
+        if (error) throw error;
+        audit.subject(`Withdrawn: ${cert.holder_name} (${cert.code})`, id);
+        return json({ success: true });
+      }
+
+      if (!cert.revoked_at) return json({ error: 'This certificate is not withdrawn.' }, 409);
+      const { error } = await supabase.from('membership_certificates')
+        .update({ revoked_at: null, revoked_reason: null, revoked_by: null }).eq('id', id);
+      if (error) throw error;
+      audit.subject(`Restored: ${cert.holder_name} (${cert.code})`, id);
+      return json({ success: true });
+    }
 
     const { data: member } = await supabase.from('members').select(MEMBER_COLUMNS).eq('user_id', user.id).maybeSingle();
     const m = (member || null) as MemberRow | null;
@@ -111,11 +185,24 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
       return ((data || [])[0] as CertificateRow | undefined) ?? null;
     };
 
+    // A certificate the Board withdrew for this role and semester is not
+    // replaced by downloading again.
+    const withdrawn = async (): Promise<boolean> => {
+      if (!m || !role) return false;
+      const { data } = await supabase.from('membership_certificates')
+        .select('id').eq('user_id', user.id).eq('semester_key', semester.key).eq('role_label', role)
+        .not('revoked_at', 'is', null).limit(1);
+      return (data || []).length > 0;
+    };
+    const WITHDRAWN = 'Your certificate for this role and semester has been withdrawn by the Board. For any question, write to as.minerva@unibocconi.it.';
+
     if (action === 'status') {
       const existing = refusal ? null : await current();
+      const blocked = !refusal && !existing && await withdrawn();
       return json({
-        eligible: !refusal, reason: refusal,
+        eligible: !refusal && !blocked, reason: refusal || (blocked ? WITHDRAWN : null),
         semester_label: semester.label, role_label: refusal ? null : role,
+        withdrawn: blocked,
         certificate: existing ? summary(existing) : null,
       });
     }
@@ -123,6 +210,7 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
     if (action === 'issue') {
       if (refusal || !m || !role) return json({ error: refusal || 'No certificate can be issued for this account.' }, 403);
       let cert = await current();
+      if (!cert && await withdrawn()) return json({ error: WITHDRAWN }, 403);
       if (!cert) {
         const { data: boardRows } = await supabase.from('members').select(MEMBER_COLUMNS).eq('membership_status', 'active');
         const board = boardSignatories((boardRows || []) as MemberRow[]);

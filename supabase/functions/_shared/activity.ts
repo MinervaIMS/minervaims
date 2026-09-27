@@ -86,6 +86,7 @@ const PLACE: Record<string, { section: string; subsection: string }> = {
   'admin-aod': { section: 'Events', subsection: 'Association on Display' },
   'career-files': { section: 'Career', subsection: 'Templates and LinkedIn files' },
   'membership-certificate': { section: 'General', subsection: 'My profile' },
+  'brand-kit': { section: 'Media & Communication', subsection: 'Brand & design' },
   'admin-applications': { section: 'Recruiting', subsection: 'Candidates screening' },
   'admin-auto-emails': { section: 'Operations', subsection: 'Automatic emails' },
   'admin-calendar': { section: 'General', subsection: 'Calendar' },
@@ -149,6 +150,14 @@ const MUTATES: Record<string, string> = {
   'career-files:download': 'download',
   // Also a read recorded on purpose: who took a certificate, and when.
   'membership-certificate:issue': 'download',
+  // Settings, Certificates: the register of certificates.
+  'membership-certificate:withdraw': 'update',
+  'membership-certificate:restore': 'update',
+  // The door scanner ticks somebody as present.
+  'admin-event-reg:checkin': 'update',
+  // The design system package: who took it, and who replaced it.
+  'brand-kit:download': 'download',
+  'brand-kit:upload-url': 'upload',
 };
 
 /** What a write is called in the log, or null when it is a read. */

@@ -89,6 +89,7 @@ const HowToUse = lazy(() => import('@/components/admin/HowToUse'));
 const ApplicationSettings = lazy(() => import('@/components/admin/ApplicationSettings'));
 const ReadingsManagement = lazy(() => import('@/components/admin/ReadingsManagement'));
 const ActivityManagement = lazy(() => import('@/components/admin/ActivityManagement'));
+const CertificateRegister = lazy(() => import('@/components/admin/CertificateRegister'));
 const NewsletterManagement = lazy(() => import('@/components/admin/NewsletterManagement'));
 const PagesVisibilityManagement = lazy(() => import('@/components/admin/PagesVisibilityManagement'));
 const TestimonialsManagement = lazy(() => import('@/components/admin/TestimonialsManagement'));
@@ -172,6 +173,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'settings-roles': () => import('@/components/admin/RolePermissionsTable'),
   'settings-mobile': () => import('@/components/admin/MobileViewTable'),
   'settings-activity': () => import('@/components/admin/ActivityManagement'),
+  'settings-certificates': () => import('@/components/admin/CertificateRegister'),
   'career-cv': () => import('@/components/admin/career/CareerTemplate'),
   'career-cl': () => import('@/components/admin/career/CareerTemplate'),
   'career-linkedin': () => import('@/components/admin/career/CareerLinkedIn'),
@@ -260,6 +262,7 @@ import { primaryAssignment, roleLabel as composeRoleLabel } from '@/lib/roles';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import MobileWorkspaceShell from '@/components/admin/MobileWorkspaceShell';
 import { downloadCSV } from '@/lib/download-utils';
+import { formatEventWhen } from '@/lib/event-time';
 import logoWhite from '@/assets/logo-white.svg';
 
 interface DbEvent {
@@ -1113,6 +1116,8 @@ const MinervaWorkspace = () => {
         return <RolePermissionsTable />;
       case 'settings-activity':
         return <ActivityManagement />;
+      case 'settings-certificates':
+        return <CertificateRegister />;
       case 'smm-editorial':
         return <EditorialCalendar />;
       case 'smm-ads':
@@ -1357,7 +1362,7 @@ const MinervaWorkspace = () => {
                     </div>
                     <h3 className="font-serif text-lg text-foreground truncate">{event.title}</h3>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(event.date).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })} · {event.place}
+                      {formatEventWhen(event, { weekday: false })} · {event.place}
                     </div>
                     {(event.moderator || (event.guest && event.guest.length > 0)) && (
                       <div className="text-xs text-muted-foreground mt-1 truncate">

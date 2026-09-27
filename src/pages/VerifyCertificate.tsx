@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AuthLayout from '@/components/shared/AuthLayout';
-import { AuthButton, AuthErrorBanner, AuthField } from '@/components/shared/AuthUI';
+import { AuthButton, AuthErrorBanner, AuthField, AuthLink } from '@/components/shared/AuthUI';
 import { verifyCertificate, verifyPath, type CertificateCheck } from '@/lib/certificate-api';
 
 // =====================================================================
@@ -13,6 +13,12 @@ import { verifyCertificate, verifyPath, type CertificateCheck } from '@/lib/cert
 // issued, the issue date, and whether it is still valid. Nothing else about
 // the member is held against a certificate number, so nothing else can be
 // shown. The page is not indexed: it is reached from a certificate.
+//
+// ONE SCREEN. On a computer the page does not scroll, under the site's
+// transparent navigation, like the other card pages. Once a certificate
+// has been checked the main button leads to the Society's homepage, which
+// is where a recruiter or a partner goes next; checking another number is
+// the small link beneath it.
 // =====================================================================
 
 const INK = '#141414';
@@ -22,9 +28,9 @@ const HAIRLINE = '#E0E0E0';
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-4 py-2.5" style={{ borderTop: `1px solid ${HAIRLINE}` }}>
+    <div className="flex gap-4 py-2" style={{ borderTop: `1px solid ${HAIRLINE}` }}>
       <div className="font-body shrink-0 uppercase" style={{ width: '34%', fontSize: '11px', letterSpacing: '0.09em', color: MUTED, paddingTop: '2px' }}>{label}</div>
-      <div className="font-body min-w-0 break-words" style={{ fontSize: '14.5px', color: INK, lineHeight: 1.45 }}>{value}</div>
+      <div className="font-body min-w-0 break-words" style={{ fontSize: '14px', color: INK, lineHeight: 1.45 }}>{value}</div>
     </div>
   );
 }
@@ -66,7 +72,9 @@ export default function VerifyCertificate() {
     <AuthLayout
       title="Verify a certificate"
       cardTitle="Verify a certificate"
-      cardSubtitle="Enter the number printed on a Minerva certificate of membership, or scan its QR code."
+      cardSubtitle={result?.found ? undefined : 'Enter the number printed on a Minerva certificate of membership, or scan its QR code.'}
+      fitScreen
+      lockupHeight={92}
     >
       {checking && (
         <div className="flex items-center justify-center gap-2 py-4 font-body" style={{ color: MUTED, fontSize: '14px' }}>
@@ -77,9 +85,9 @@ export default function VerifyCertificate() {
       {!checking && failed && <AuthErrorBanner>{failed}</AuthErrorBanner>}
 
       {!checking && result?.found && (
-        <div className="mb-6">
+        <div className="mb-5">
           <div
-            className="font-body mb-4 text-center uppercase"
+            className="font-body mb-3 text-center uppercase"
             style={{
               padding: '9px 12px', fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.14em',
               color: result.valid ? '#fff' : '#B23B3B',
@@ -97,7 +105,7 @@ export default function VerifyCertificate() {
             <Row label="Issued" value={issued} />
             <Row label="Number" value={result.code ?? ''} />
           </div>
-          <p className="font-body mt-4" style={{ fontSize: '12.5px', color: MUTED, lineHeight: 1.6 }}>
+          <p className="font-body mt-3" style={{ fontSize: '12.5px', color: MUTED, lineHeight: 1.55 }}>
             {result.valid
               ? 'This certificate was issued by Minerva Investment Management Society and attests membership in the role and semester shown. The Society operates independently of Bocconi University.'
               : 'This certificate was issued by Minerva Investment Management Society but has since been withdrawn. For any question, write to as.minerva@unibocconi.it.'}
@@ -113,20 +121,31 @@ export default function VerifyCertificate() {
         </AuthErrorBanner>
       )}
 
-      <form onSubmit={submit}>
-        <AuthField
-          id="certificate-number"
-          label="Certificate number"
-          placeholder="MIMS-26F-7K3Q-9D2X"
-          autoComplete="off"
-          spellCheck={false}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <AuthButton type="submit" disabled={checking || !input.trim()}>
-          Check the certificate
-        </AuthButton>
-      </form>
+      {!checking && result?.found ? (
+        <div>
+          <AuthButton type="button" onClick={() => navigate('/')}>
+            Continue to the homepage
+          </AuthButton>
+          <div className="mt-3.5 text-center">
+            <AuthLink onClick={() => { setInput(''); navigate('/verify'); }}>Check another number</AuthLink>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={submit}>
+          <AuthField
+            id="certificate-number"
+            label="Certificate number"
+            placeholder="MIMS-26F-7K3Q-9D2X"
+            autoComplete="off"
+            spellCheck={false}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <AuthButton type="submit" disabled={checking || !input.trim()}>
+            Check the certificate
+          </AuthButton>
+        </form>
+      )}
     </AuthLayout>
   );
 }

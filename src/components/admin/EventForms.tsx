@@ -14,6 +14,7 @@ import { logActivity } from '@/lib/activity-log';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { formatClock, formatEventWhen } from '@/lib/event-time';
 import {
   listEvents, saveEvent, listReminderStatus, setRemindersPaused, sendReminderTest, AUDIENCE_LABELS,
   type EventRow, type RegistrationAudience, type EventReminderStatus, type ReminderStageStatus, type ReminderTestResult, type ThankYouStatus,
@@ -40,7 +41,7 @@ const STAGE_LABEL: Record<string, string> = { '2w': '2 weeks before', '1w': '1 w
 function thankYouText(t: ThankYouStatus): string {
   if (t.state === 'sent') return `sent ${t.sent_at ? shortDay(t.sent_at.slice(0, 10)) : ''} to ${t.recipients ?? 0}`;
   if (t.state === 'waiting') return 'due, it goes out the morning after attendance is taken';
-  return `${shortDay(t.due_on)} at 9:00`;
+  return `${shortDay(t.due_on)} at ${formatClock('09:00', t.due_on)}`;
 }
 
 export default function EventForms() {
@@ -168,7 +169,7 @@ export default function EventForms() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 font-body">
                   <div className="flex-1 min-w-0">
                     <div className="text-foreground font-medium truncate">{ev.title}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(ev.start_at || ev.date).toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">{formatEventWhen(ev, { month: 'short' })}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground inline-flex items-center gap-1.5">Registration <HelpDot page="events-forms" topic="audience" /></span>

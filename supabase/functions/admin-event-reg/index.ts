@@ -3,10 +3,16 @@ import { audited } from '../_shared/activity.ts';
 import { buildMemberIndex, matchRegistration, type MemberLike } from '../_shared/member-match.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { attendanceOpen, attendanceClosesOn } from '../_shared/attendance-window.ts';
+import { allows } from '../_shared/access.ts';
+import { tokenFromScan } from '../_shared/checkin.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
-// Actions: list · mark-attended · add-external · members · add-member · remove
+// Actions: list · mark-attended · add-external · members · add-member · remove · checkin
+//
+// `checkin` is the door scanner: the QR code of a registration's ticket
+// (see _shared/checkin.ts) ticks that person as present. It needs full
+// access to Events, Attendance, as ticking by hand does in the page.
 //
 // `list` also RECOGNISES MEMBERS WHO REGISTERED WITHOUT SIGNING IN. The
 // public form does not require an account, so a member who used it is
@@ -99,7 +105,9 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       return json({
         attendance_open: ev?.date ? attendanceOpen(ev.date) : true,
         attendance_closes_on: ev?.date ? attendanceClosesOn(ev.date) : null,
-        registrations: registrations.map((r: Record<string, unknown>) => ({
+        // The ticket's token stays on the server: the list never needs it,
+        // and a page showing it would make every ticket copyable.
+        registrations: registrations.map(({ checkin_token: _ticket, ...r }: Record<string, unknown>) => ({
           ...r,
           ...matchRegistration(
             {
@@ -111,6 +119,44 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           ),
         })),
       });
+    }
+    if (action === 'checkin') {
+      if (!allows(roles, user.email, 'events-attendance', 'manage')) {
+        return json({ error: 'Only people with full access to Attendance can check people in.' }, 403);
+      }
+      const eventId = optionalTextOf(body, 'event_id');
+      if (!eventId) return json({ error: 'Choose the event first.' }, 400);
+      const token = tokenFromScan(body.token);
+      if (!token) return json({ result: 'not_a_ticket' });
+      const { data: reg } = await supabase.from('event_registrations')
+        .select('id, event_id, user_id, name, email, attended, checked_in_at')
+        .eq('checkin_token', token).maybeSingle();
+      if (!reg) return json({ result: 'unknown' });
+      if (reg.event_id !== eventId) {
+        const { data: other } = await supabase.from('events').select('title, date').eq('id', reg.event_id).maybeSingle();
+        return json({ result: 'other_event', name: reg.name, event_title: other?.title ?? null, event_date: other?.date ?? null });
+      }
+      const closed = await closedError(eventId);
+      if (closed) return json({ error: closed }, 403);
+
+      // Member or guest, the same way the door list decides it.
+      let member = false;
+      try {
+        const { data: members } = await supabase.from('members')
+          .select('id, user_id, first_name, surname, email, division, membership_status');
+        const index = buildMemberIndex(((members || []) as MemberLike[]).filter((m) => m.membership_status !== 'expelled'));
+        member = matchRegistration({ user_id: reg.user_id ?? null, name: reg.name ?? null, email: reg.email ?? null }, index).member_match !== 'none';
+      } catch { /* recognised as a guest */ }
+
+      audit.subject(reg.name, reg.id);
+      if (reg.attended) {
+        return json({ result: 'already', id: reg.id, name: reg.name, member, checked_in_at: reg.checked_in_at ?? null });
+      }
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('event_registrations')
+        .update({ attended: true, checked_in_at: now }).eq('id', reg.id);
+      if (error) throw error;
+      return json({ result: 'checked_in', id: reg.id, name: reg.name, member, checked_in_at: now });
     }
     if (action === 'mark-attended') {
       const closed = await closedError(await eventOfRegistration(body.id));
