@@ -39,7 +39,7 @@ const NotFound = () => {
         <p className="font-body text-body-lg text-muted-foreground mb-8 max-w-md">
           You&rsquo;ve just discovered a genuine Black Swan event. This page has vanished faster
           than market liquidity in 2008, but discovering rare anomalies is exactly what we thrive
-          on. Let&rsquo;s redeploy that capital to the Home page.
+          on. You should consider joining Minerva Investment Management Society.
         </p>
         <Link
           to="/"
