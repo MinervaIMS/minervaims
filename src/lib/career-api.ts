@@ -22,9 +22,9 @@ export interface CareerFile {
   width: number | null;
   height: number | null;
   updated_at: string;
-  /** Signed links, valid for one hour. */
+  /** Signed link for showing the file, valid for one hour. Downloads go
+   *  through `downloadCareerFile`, which records them. */
   view_url: string | null;
-  download_url: string | null;
 }
 
 export interface CareerFiles {
@@ -70,6 +70,18 @@ export async function renameCareerFile(session: Session | null, id: string, labe
 
 export async function deleteCareerFile(session: Session | null, id: string): Promise<void> {
   await invokeFunction('career-files', { body: { action: 'delete', id }, session });
+}
+
+/**
+ * Download a Career file. The link is issued by the edge function at the
+ * moment of the click, and the download is recorded in the activity log:
+ * the templates tell members that downloads are tracked, and this is what
+ * makes that true.
+ */
+export async function downloadCareerFile(session: Session | null, file: Pick<CareerFile, 'id' | 'file_name'>): Promise<void> {
+  const res = await invokeFunction<{ url: string; file_name?: string }>('career-files', { body: { action: 'download', id: file.id }, session });
+  if (!res?.url) throw new Error('The download could not be prepared. Please try again.');
+  downloadFrom(res.url, res.file_name || file.file_name);
 }
 
 /** Download through a link, keeping the page where it is. */

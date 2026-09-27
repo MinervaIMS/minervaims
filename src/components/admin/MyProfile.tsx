@@ -18,6 +18,8 @@ import {
   roleGuideFor, MEMBERSHIP_RULES, promotionFor, MERIT_NOTE, MERIT_FACTORS,
 } from '@/lib/statute-extracts';
 import { getMyMember, updateMyProfile, uploadMyPhoto, type MemberRow } from '@/lib/members-api';
+import { normalizeLinkedInProfile } from '@/lib/linkedin';
+import { workspacePath } from '@/lib/workspace-nav';
 import { getMyApplication, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { useIsDesktop } from '@/hooks/use-desktop';
@@ -144,13 +146,14 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
 
 export default function MyProfile() {
   const { user, session } = useAuth();
-  const { primaryRole, primaryDivision, isCandidate } = useAccess();
+  const { primaryRole, primaryDivision, isCandidate, canView } = useAccess();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<MemberRow | null>(null);
   const [candidateApp, setCandidateApp] = useState<ApplicationRow | null>(null);
   const [phone, setPhone] = useState('');
+  const [linkedin, setLinkedin] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -171,6 +174,7 @@ export default function MyProfile() {
         if (!active) return;
         setMember(res.member);
         setPhone(res.member?.phone ?? '');
+        setLinkedin(res.member?.linkedin_url ?? '');
         setPhotoUrl(res.member?.photo_url ?? null);
         // Candidates have no member record; load their application to complete
         // the profile (name, LinkedIn, phone, etc.).
@@ -227,10 +231,13 @@ export default function MyProfile() {
 
   const handleSave = async () => {
     if (phone.trim().length < 3) { toast({ title: 'Phone number required', description: 'A phone number is required and cannot be removed.', variant: 'destructive' }); return; }
+    const li = normalizeLinkedInProfile(linkedin);
+    if (li.error) { toast({ title: 'Check your LinkedIn link', description: li.error, variant: 'destructive' }); return; }
     setSaving(true);
     try {
-      const updated = await updateMyProfile(session, { phone: phone.trim(), photo_url: photoUrl });
+      const updated = await updateMyProfile(session, { phone: phone.trim(), photo_url: photoUrl, linkedin_url: li.url });
       setMember(updated);
+      setLinkedin(updated?.linkedin_url ?? '');
       toast({ title: 'Profile updated' });
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -381,7 +388,12 @@ export default function MyProfile() {
 
   const missingPhone = !!member && phone.trim().length < 3;
   const missingEmail = !email;
-  const dirty = !!member && (phone.trim() !== (member.phone ?? '') || (photoUrl ?? '') !== (member.photo_url ?? ''));
+  const dirty = !!member && (phone.trim() !== (member.phone ?? '') || (photoUrl ?? '') !== (member.photo_url ?? '')
+    || linkedin.trim() !== (member.linkedin_url ?? ''));
+  const linkedinError = linkedin.trim() ? normalizeLinkedInProfile(linkedin).error : undefined;
+  // The Career tools are offered to the roles that can open them.
+  const careerHints = canView('career-linkedin');
+  const careerLinkedIn = workspacePath('career', 'career-linkedin');
   const promotion = primaryRole ? promotionFor(primaryRole) : null;
 
   // --- left column: who you are ---------------------------------------
@@ -461,6 +473,14 @@ export default function MyProfile() {
               three. The wrapping guard on `Field` stays as the last
               resort for an unusually long address.
               ========================================================= */}
+          {/* Beside the photograph, on its own line so it reads in full. */}
+          {careerHints && (
+            <p className="-mt-2 text-xs leading-relaxed text-muted-foreground border-l-2 border-accent pl-2.5">
+              Need a professional photo? Create one on the Minerva background in{' '}
+              <Link to={careerLinkedIn} className="text-accent underline underline-offset-2">Career, LinkedIn</Link>.
+            </p>
+          )}
+
           <Field label="Email" value={email} />
 
           {/* The one editable field, on the one surface that may edit it.
@@ -496,6 +516,45 @@ export default function MyProfile() {
             <Field label="Phone number" value={phone || '-'} />
           )}
 
+          {/* The LinkedIn link: editable on a computer, like the phone. It is
+              shown on the public Members page, so only a linkedin.com address
+              is accepted (here and again by the server). */}
+          {isDesktop ? (
+            <div className="min-w-0">
+              <Label
+                htmlFor="linkedin"
+                className="mb-1 block text-xs font-normal uppercase leading-normal tracking-wider text-muted-foreground"
+              >
+                LinkedIn profile
+              </Label>
+              <Input
+                id="linkedin"
+                value={linkedin}
+                onChange={(e) => setLinkedin(e.target.value)}
+                placeholder="https://www.linkedin.com/in/your-name"
+                aria-invalid={!!linkedinError}
+                aria-describedby="linkedin-hint"
+                className={`h-9 text-sm ${linkedinError ? 'border-destructive' : ''}`}
+              />
+              <p id="linkedin-hint" className={`mt-1.5 text-xs ${linkedinError ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {linkedinError ?? 'Optional. Shown on the public Members page.'}
+              </p>
+              {careerHints && (
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground border-l-2 border-accent pl-2.5">
+                  Refine your profile with the About prompt, the photo and the banner in{' '}
+                  <Link to={careerLinkedIn} className="text-accent underline underline-offset-2">Career, LinkedIn</Link>.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="min-w-0">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">LinkedIn profile</div>
+              {member.linkedin_url
+                ? <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-accent underline">{member.linkedin_url}</a>
+                : <div className="text-sm text-foreground">Not set</div>}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-x-5 gap-y-4 pt-1">
             <Field label="Role" value={roleText} />
             <Field label="Division" value={divisionText} />
@@ -507,13 +566,13 @@ export default function MyProfile() {
             </Button>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Editing your phone number and picture is available on desktop.
+              Editing your phone number, LinkedIn link and picture is available on desktop.
             </p>
           )}
 
           <p className="text-xs text-muted-foreground leading-relaxed border-t border-separator pt-4">
             Your name, email and role come from the association register and are maintained by the
-            President or the Admin. Your picture is also used on the public Members page.
+            President or the Admin. Your picture and LinkedIn link are also shown on the public Members page.
           </p>
         </div>
       ) : (

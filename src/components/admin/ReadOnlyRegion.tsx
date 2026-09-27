@@ -158,14 +158,14 @@ const ROOTS = '[data-ws-pane], [role="dialog"], [role="alertdialog"]';
 // nothing to protect, and dimming it communicates a restriction that
 // does not exist.
 //
-// The four Career pages are the same: every member reads them at 'view',
+// The Career pages are the same: every member reads them at 'view',
 // and what they do there (download a template, copy a prompt, pick a
 // wallpaper, work out and save their OWN averages) changes nothing of the
 // association's. The one write that is the association's, replacing a
 // file, is drawn only for the President, the Vice President and the Head
 // of Operations, and the `career-files` function checks it again.
 // =====================================================================
-const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa']);
+const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-gmat', 'career-ib']);
 
 function sweep() {
   document.querySelectorAll<HTMLElement>(ROOTS).forEach((root) => {

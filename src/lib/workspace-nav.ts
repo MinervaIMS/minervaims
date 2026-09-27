@@ -76,6 +76,22 @@ export const NAV: NavSection[] = [
     subItems: [],
   },
   {
+    // CAREER: tools for the member's own applications - the association's
+    // CV and cover letter templates, LinkedIn guidance, a GPA converter, and
+    // two pages announced for the end of the semester. Open to every member
+    // role, advisors and alumni; never to applicants. It sits right under
+    // My Profile because it is about the member, not about the association.
+    key: 'career', slug: 'career', label: 'Career', Icon: Briefcase,
+    subItems: [
+      { key: 'career-cv', slug: 'cv-template', label: 'CV Template', allowed: (p) => p.can('career-cv') },
+      { key: 'career-cl', slug: 'cover-letter-template', label: 'Cover Letter Template', allowed: (p) => p.can('career-cl') },
+      { key: 'career-linkedin', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('career-linkedin') },
+      { key: 'career-gpa', slug: 'gpa-converter', label: 'GPA Converter', allowed: (p) => p.can('career-gpa') },
+      { key: 'career-gmat', slug: 'gmat-resources', label: 'GMAT Resources', allowed: (p) => p.can('career-gmat') },
+      { key: 'career-ib', slug: 'ib-questions', label: 'IB Questions', allowed: (p) => p.can('career-ib') },
+    ],
+  },
+  {
     key: 'calendar', slug: 'calendar', label: 'Calendar', Icon: CalendarDays,
     subItems: [],
   },
@@ -151,19 +167,6 @@ export const NAV: NavSection[] = [
       { key: 'website-faqs', slug: 'faqs', label: 'FAQs', allowed: (p) => p.can('website-faqs') },
       { key: 'ops-newsletter', slug: 'newsletter', label: 'Newsletter', allowed: (p) => p.can('ops-newsletter') },
       { key: 'ops-auto-emails', slug: 'automatic-emails', label: 'Automatic Emails', allowed: (p) => p.can('ops-auto-emails') },
-    ],
-  },
-
-  {
-    // CAREER: tools for the member's own applications - the association's
-    // CV and cover letter templates, LinkedIn guidance and a GPA converter.
-    // Open to every member role, advisors and alumni; never to applicants.
-    key: 'career', slug: 'career', label: 'Career', Icon: Briefcase,
-    subItems: [
-      { key: 'career-cv', slug: 'cv-template', label: 'CV Template', allowed: (p) => p.can('career-cv') },
-      { key: 'career-cl', slug: 'cover-letter-template', label: 'Cover Letter Template', allowed: (p) => p.can('career-cl') },
-      { key: 'career-linkedin', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('career-linkedin') },
-      { key: 'career-gpa', slug: 'gpa-converter', label: 'GPA Converter', allowed: (p) => p.can('career-gpa') },
     ],
   },
 

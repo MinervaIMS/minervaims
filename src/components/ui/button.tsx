@@ -12,6 +12,8 @@ const buttonVariants = cva(
         default: "bg-background text-accent border border-accent shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "bg-background text-accent border border-accent shadow-none hover:bg-accent hover:text-background hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)]",
+        // Filled in the accent colour, for the one action a page is for.
+        solid: "bg-accent text-accent-foreground border border-accent shadow-none hover:bg-accent/90 hover:shadow-[0_4px_10px_rgba(0,0,0,0.15)]",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "text-muted-foreground hover:bg-accent/10 hover:text-accent",
         link: "text-accent underline-offset-4 hover:underline",

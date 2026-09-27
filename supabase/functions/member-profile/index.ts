@@ -13,7 +13,7 @@ const ALLOWED_IMAGE_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','i
 //              It NEVER silently creates a member — redemption is explicit.
 //   * redeem : claims a chosen placeholder, or creates a new member from
 //              the user's name + role assignment.
-//   * update : edits ONLY the user's phone + photo (report 3).
+//   * update : edits ONLY the user's phone, photo and LinkedIn link.
 // The admin role is treated as a user, not a member: no member is created
 // or surfaced for it.
 // =====================================================================
@@ -24,10 +24,17 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// The LinkedIn link is PUBLISHED: the member row is projected onto the
+// public Members page (team_members), so only a linkedin.com address over
+// https is accepted. An empty value clears it.
+const LINKEDIN_PROFILE = /^https:\/\/([a-z0-9-]+\.)*linkedin\.com(\/|$)/i;
+
 const UpdateSchema = z.object({
   phone: z.string().trim().min(3, 'Phone number is required').max(40),
   photo_url: z.string().max(500).nullable().optional()
     .refine((v) => !v || v.startsWith('http://') || v.startsWith('https://'), 'Photo URL must be a valid URL'),
+  linkedin_url: z.string().trim().max(300).nullable().optional()
+    .refine((v) => !v || LINKEDIN_PROFILE.test(v), 'The LinkedIn link must be a linkedin.com address'),
 });
 
 const RedeemSchema = z.object({
@@ -224,17 +231,23 @@ Deno.serve(async (req) => {
       return json({ member: created });
     }
 
-    // ── UPDATE (phone + photo only) ────────────────────────────────────────
+    // ── UPDATE (phone, photo and LinkedIn link only) ───────────────────────
     const member = await findLinked();
     if (!member) return json({ error: 'No member record to update' }, 404);
 
     const parsed = UpdateSchema.safeParse(body);
-    if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
+    if (!parsed.success) {
+      // A refused LinkedIn link says so, rather than a bare "validation failed".
+      const linkedInIssue = parsed.error.issues.find((i) => i.path[0] === 'linkedin_url');
+      return json({ error: linkedInIssue ? linkedInIssue.message : 'Validation failed', details: parsed.error.format() }, 400);
+    }
 
     // photo_url: undefined keeps the current value; null clears it (delete).
     const nextPhoto = 'photo_url' in body ? (parsed.data.photo_url ?? null) : member.photo_url;
+    // linkedin_url: the same rule. Absent keeps it; empty or null clears it.
+    const nextLinkedIn = 'linkedin_url' in body ? (parsed.data.linkedin_url || null) : member.linkedin_url;
     const { data: updated, error } = await supabase.from('members')
-      .update({ phone: parsed.data.phone, photo_url: nextPhoto })
+      .update({ phone: parsed.data.phone, photo_url: nextPhoto, linkedin_url: nextLinkedIn })
       .eq('id', member.id).eq('user_id', user.id).select().single();
     if (error) throw error;
     return json({ success: true, member: updated });

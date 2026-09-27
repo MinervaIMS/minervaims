@@ -96,6 +96,7 @@ const HistoryManagement = lazy(() => import('@/components/admin/HistoryManagemen
 const CareerTemplate = lazy(() => import('@/components/admin/career/CareerTemplate'));
 const CareerLinkedIn = lazy(() => import('@/components/admin/career/CareerLinkedIn'));
 const GpaConverter = lazy(() => import('@/components/admin/career/GpaConverter'));
+const CareerComingSoon = lazy(() => import('@/components/admin/career/CareerComingSoon'));
 
 // =====================================================================
 // WARMING THE CHUNKS, SO THE SPLIT COSTS NOTHING TO NAVIGATE.
@@ -175,6 +176,8 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'career-cl': () => import('@/components/admin/career/CareerTemplate'),
   'career-linkedin': () => import('@/components/admin/career/CareerLinkedIn'),
   'career-gpa': () => import('@/components/admin/career/GpaConverter'),
+  'career-gmat': () => import('@/components/admin/career/CareerComingSoon'),
+  'career-ib': () => import('@/components/admin/career/CareerComingSoon'),
 };
 
 /** Fetch one page's chunk now. Safe to call repeatedly: the browser and
@@ -1150,6 +1153,10 @@ const MinervaWorkspace = () => {
         return <CareerLinkedIn />;
       case 'career-gpa':
         return <GpaConverter />;
+      case 'career-gmat':
+        return <CareerComingSoon key="gmat" which="gmat" />;
+      case 'career-ib':
+        return <CareerComingSoon key="ib" which="ib" />;
 
 
 

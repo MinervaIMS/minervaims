@@ -143,6 +143,9 @@ const MUTATES: Record<string, string> = {
   'admin-auto-emails:save-template': 'update',
   'admin-auto-emails:create-template': 'create',
   'career-files:rename': 'update',
+  // A read, recorded on purpose: the Career templates tell members that
+  // downloads are tracked.
+  'career-files:download': 'download',
 };
 
 /** What a write is called in the log, or null when it is a read. */

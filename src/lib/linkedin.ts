@@ -63,3 +63,28 @@ export function safeLinkedInUrl(value: string | null | undefined): string | null
     return null;
   }
 }
+
+/**
+ * A member's own LinkedIn profile link, as typed into My Profile.
+ *
+ * Stricter than `safeLinkedInUrl` on purpose: this one is PUBLISHED on
+ * the Members page, so it must be a LinkedIn address and nothing else.
+ * An empty field is a valid answer (it clears the link); a missing scheme
+ * is added; `http` becomes `https`; anything whose host is not LinkedIn's
+ * is refused with a sentence saying what is expected.
+ */
+export function normalizeLinkedInProfile(value: string | null | undefined): { url: string | null; error?: string } {
+  const raw = (value ?? '').trim();
+  if (!raw) return { url: null };
+  const safe = safeLinkedInUrl(raw);
+  if (!safe) return { url: null, error: 'Enter the address of your LinkedIn profile, for example https://www.linkedin.com/in/your-name.' };
+  const url = new URL(safe);
+  const host = url.hostname.toLowerCase();
+  if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) {
+    return { url: null, error: 'The link must be a linkedin.com address, for example https://www.linkedin.com/in/your-name.' };
+  }
+  url.protocol = 'https:';
+  const out = url.toString();
+  if (out.length > 300) return { url: null, error: 'That link is too long.' };
+  return { url: out };
+}

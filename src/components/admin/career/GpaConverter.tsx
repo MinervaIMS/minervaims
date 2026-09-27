@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeftRight, Calculator, Bookmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { CareerPage } from '@/components/admin/career/CareerPage';
 import { DEFAULT_AVERAGE_SETTINGS } from '@/lib/career/grading';
 import {
   listSavedCalculations, saveCalculation, deleteCalculation, type SavedCalculation,
@@ -140,31 +139,35 @@ export default function GpaConverter() {
 
   const startNew = () => setDraft(freshDraft(draft.system, draft.settings));
 
+  // The three views stay mounted; the one on screen fills the page.
+  const view = (m: Mode) => (mode === m ? 'lg:flex lg:min-h-0 lg:flex-1 lg:flex-col' : 'hidden');
+
   return (
-    <div>
-      <WorkspacePageHeader
-        title="GPA Converter"
-        description="Read a grade in the Bocconi system and the main systems of Europe, the UK and North America, and work out, save and compare your weighted averages."
-      />
-      <Segmented<Mode>
-        value={mode} onChange={setMode} label="GPA Converter view" nowrap
-        className="mb-5 w-full sm:w-auto sm:inline-flex"
-        options={[
-          { value: 'convert', label: <><ArrowLeftRight className="h-4 w-4" /><span>Convert a grade</span></> },
-          { value: 'average', label: <><Calculator className="h-4 w-4" /><span>Weighted average</span></> },
-          { value: 'saved', label: <><Bookmark className="h-4 w-4" /><span>Saved{saved && saved.length ? ` (${saved.length})` : ''}</span></> },
-        ]}
-      />
-      <div className={mode === 'convert' ? '' : 'hidden'}><GradeConvert /></div>
-      <div className={mode === 'average' ? '' : 'hidden'}>
+    <CareerPage
+      title="GPA Converter"
+      description="Convert your grades for applications abroad, track your weighted average and see what the next exam needs."
+      toolbar={(
+        <Segmented<Mode>
+          value={mode} onChange={setMode} label="GPA Converter view" nowrap
+          className="w-full sm:w-auto sm:inline-flex"
+          options={[
+            { value: 'convert', label: 'Convert a grade' },
+            { value: 'average', label: 'Weighted average' },
+            { value: 'saved', label: `Saved${saved && saved.length ? ` (${saved.length})` : ''}` },
+          ]}
+        />
+      )}
+    >
+      <div className={view('convert')}><GradeConvert /></div>
+      <div className={view('average')}>
         <AverageCalculator draft={draft} setDraft={setDraft} onSave={save} saving={saving} onNew={startNew} />
       </div>
-      <div className={mode === 'saved' ? '' : 'hidden'}>
+      <div className={view('saved')}>
         <SavedAverages
           saved={saved} error={savedError} onOpen={open} onDelete={remove}
           deletingId={deletingId} currentId={draft.id} onStart={() => setMode('average')}
         />
       </div>
-    </div>
+    </CareerPage>
   );
 }

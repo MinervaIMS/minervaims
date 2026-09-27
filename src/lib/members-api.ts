@@ -141,7 +141,7 @@ export async function getMyMember(session: Session | null): Promise<MyProfileRes
 
 export async function updateMyProfile(
   session: Session | null,
-  input: { phone: string; photo_url?: string | null },
+  input: { phone: string; photo_url?: string | null; linkedin_url?: string | null },
 ): Promise<MemberRow> {
   const { data, error } = await callFunction('member-profile', { body: { action: 'update', ...input }, session: session });
   if (error) throw error;
