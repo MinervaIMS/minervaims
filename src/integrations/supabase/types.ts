@@ -1773,6 +1773,59 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_certificates: {
+        Row: {
+          board: Json
+          code: string
+          holder_name: string
+          id: string
+          issued_at: string
+          member_id: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          role_label: string
+          semester_key: string
+          semester_label: string
+          user_id: string
+        }
+        Insert: {
+          board?: Json
+          code: string
+          holder_name: string
+          id?: string
+          issued_at?: string
+          member_id?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          role_label: string
+          semester_key: string
+          semester_label: string
+          user_id: string
+        }
+        Update: {
+          board?: Json
+          code?: string
+          holder_name?: string
+          id?: string
+          issued_at?: string
+          member_id?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          role_label?: string
+          semester_key?: string
+          semester_label?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_certificates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_fees: {
         Row: {
           amount: number | null
