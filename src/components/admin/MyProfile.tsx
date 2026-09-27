@@ -25,6 +25,7 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { CandidateDocRow } from '@/components/admin/recruiting/CandidateDocRow';
+import { certificateStatus, downloadCertificate, verifyPath, type CertificateStatus } from '@/lib/certificate-api';
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -158,6 +159,10 @@ export default function MyProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // The membership certificate. Read on its own: if it cannot be read, the
+  // card simply does not appear and the rest of the page is unaffected.
+  const [certificate, setCertificate] = useState<CertificateStatus | null>(null);
+  const [issuing, setIssuing] = useState(false);
 
   const roleText = primaryRole ? composeRoleLabel(primaryRole, primaryDivision) : isCandidate ? 'Candidate' : 'No role';
   const divisionText = primaryDivision && primaryDivision !== 'none' ? divisionLabels[primaryDivision] : 'Board';
@@ -190,6 +195,28 @@ export default function MyProfile() {
     })();
     return () => { active = false; };
   }, [session, toast, isCandidate]);
+
+  useEffect(() => {
+    let active = true;
+    if (isCandidate) return;
+    certificateStatus(session)
+      .then((s) => { if (active) setCertificate(s); })
+      .catch((e) => console.error('Could not read the membership certificate', e));
+    return () => { active = false; };
+  }, [session, isCandidate]);
+
+  const handleCertificate = async () => {
+    setIssuing(true);
+    try {
+      const issued = await downloadCertificate(session);
+      setCertificate((c) => (c ? { ...c, certificate: issued } : c));
+      toast({ title: 'Certificate downloaded', description: `Certificate ${issued.code}, ${issued.semester_label}.` });
+    } catch (e) {
+      toast({ title: 'Could not prepare the certificate', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally {
+      setIssuing(false);
+    }
+  };
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast({ title: 'Please choose an image', variant: 'destructive' }); return; }
@@ -687,6 +714,42 @@ export default function MyProfile() {
     </ProfileCard>
   );
 
+  // THE CERTIFICATE. Only for a member who can have one: nobody else sees
+  // the card, so the page is unchanged for applicants, advisors and alumni.
+  // The download is a read, so it works on a phone as well (`data-ro`).
+  const certificateCard = certificate?.eligible ? (
+    <ProfileCard
+      title="Membership Certificate"
+      className="lg:shrink-0"
+      action={
+        <Button
+          data-ro
+          size="sm"
+          disabled={issuing}
+          onClick={handleCertificate}
+          className="font-body bg-accent text-accent-foreground border border-accent hover:bg-background hover:text-accent"
+        >
+          {issuing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}
+          Download PDF
+        </Button>
+      }
+    >
+      <p className="text-sm text-foreground/85 leading-relaxed">
+        Your role as {certificate.role_label} in {certificate.semester_label}, certified in a PDF signed by the
+        President and the Vice President. Anyone can confirm it at minervaims.org/verify.
+      </p>
+      {certificate.certificate && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Certificate {certificate.certificate.code}, issued{' '}
+          {new Date(certificate.certificate.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.{' '}
+          <Link data-ro to={verifyPath(certificate.certificate.code)} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
+            Check it
+          </Link>
+        </p>
+      )}
+    </ProfileCard>
+  ) : null;
+
   const promotionCard = (
     // Criteria, appointment note and statute references: the tallest of the
     // three cards in the right-hand column, and the other one that scrolls.
@@ -799,6 +862,7 @@ export default function MyProfile() {
             it away on a short screen. */}
         <div className="lg:col-span-3 min-w-0 space-y-4 lg:flex lg:flex-col lg:space-y-0 lg:gap-4 lg:min-h-0">
           {statuteCard}
+          {certificateCard}
           {promotionCard}
         </div>
       </div>

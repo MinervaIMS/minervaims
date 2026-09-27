@@ -1773,6 +1773,59 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_certificates: {
+        Row: {
+          board: Json
+          code: string
+          holder_name: string
+          id: string
+          issued_at: string
+          member_id: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          role_label: string
+          semester_key: string
+          semester_label: string
+          user_id: string
+        }
+        Insert: {
+          board?: Json
+          code: string
+          holder_name: string
+          id?: string
+          issued_at?: string
+          member_id?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          role_label: string
+          semester_key: string
+          semester_label: string
+          user_id: string
+        }
+        Update: {
+          board?: Json
+          code?: string
+          holder_name?: string
+          id?: string
+          issued_at?: string
+          member_id?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          role_label?: string
+          semester_key?: string
+          semester_label?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_certificates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_fees: {
         Row: {
           amount: number | null
@@ -1848,6 +1901,33 @@ export type Database = {
           source?: string
           subscribed_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          hidden_at: string | null
+          items: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          hidden_at?: string | null
+          items?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          hidden_at?: string | null
+          items?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2408,12 +2488,20 @@ export type Database = {
           first_name: string
         }[]
       }
+      event_person_name_key: { Args: { p_name: string }; Returns: string }
       event_reminder_day: {
         Args: { p_date: string; p_start_at: string }
         Returns: string
       }
       event_reminder_html: { Args: { p: string }; Returns: string }
       event_reminder_recipients: {
+        Args: { p_event_id: string }
+        Returns: {
+          email: string
+          first_name: string
+        }[]
+      }
+      event_thank_you_recipients: {
         Args: { p_event_id: string }
         Returns: {
           email: string
@@ -2481,6 +2569,7 @@ export type Database = {
         }
         Returns: number
       }
+      my_onboarding_context: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
       pricing_rate_check: {

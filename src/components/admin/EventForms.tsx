@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, BellOff, Copy, Eye, Send } from 'lucide-react';
+import { Bell, BellOff, Copy, Eye, Mail, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
@@ -16,7 +16,7 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import {
   listEvents, saveEvent, listReminderStatus, setRemindersPaused, sendReminderTest, AUDIENCE_LABELS,
-  type EventRow, type RegistrationAudience, type EventReminderStatus, type ReminderStageStatus, type ReminderTestResult,
+  type EventRow, type RegistrationAudience, type EventReminderStatus, type ReminderStageStatus, type ReminderTestResult, type ThankYouStatus,
 } from '@/lib/events-api';
 
 // '2026-10-01' → '1 Oct'. The date is a calendar day, so it is read at noon
@@ -34,7 +34,14 @@ const TEST_STATUS: Record<string, string> = {
   pending: 'queued', sent: 'sent', duplicate: 'held back, the same test was sent less than five minutes ago',
   suppressed: 'not sent, the address is on the suppression list', not_sent: 'not sent, the template is switched off in Auto emails',
 };
-const STAGE_LABEL: Record<string, string> = { '2w': '2 weeks before', '1w': '1 week before', '3d': '3 days before', '24h_attending': '24 hours before (registered members)' };
+const STAGE_LABEL: Record<string, string> = { '2w': '2 weeks before', '1w': '1 week before', '3d': '3 days before', '24h_attending': '24 hours before (registered members)', thank_you: 'Thank-you to guests' };
+
+// The thank-you the morning after, to the guests who attended.
+function thankYouText(t: ThankYouStatus): string {
+  if (t.state === 'sent') return `sent ${t.sent_at ? shortDay(t.sent_at.slice(0, 10)) : ''} to ${t.recipients ?? 0}`;
+  if (t.state === 'waiting') return 'due, it goes out the morning after attendance is taken';
+  return `${shortDay(t.due_on)} at 9:00`;
+}
 
 export default function EventForms() {
   const { session, user } = useAuth();
@@ -46,6 +53,7 @@ export default function EventForms() {
   const [canManageReminders, setCanManageReminders] = useState(false);
   const [busyReminder, setBusyReminder] = useState<string | null>(null);
   const [testFor, setTestFor] = useState<EventRow | null>(null);
+  const [testThankYou, setTestThankYou] = useState(false);
   const [testTo, setTestTo] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState<ReminderTestResult[] | null>(null);
@@ -121,8 +129,9 @@ export default function EventForms() {
     } finally { setBusyReminder(null); }
   };
 
-  const openTest = (ev: EventRow) => {
+  const openTest = (ev: EventRow, thankYou = false) => {
     setTestFor(ev);
+    setTestThankYou(thankYou);
     setTestTo(user?.email || '');
     setTestResults(null);
   };
@@ -131,7 +140,7 @@ export default function EventForms() {
     if (!testFor) return;
     setTesting(true);
     try {
-      const res = await sendReminderTest(session, testFor.id, testTo.trim());
+      const res = await sendReminderTest(session, testFor.id, testTo.trim(), testThankYou ? 'thank_you' : undefined);
       setTestResults(res.results || []);
     } catch (e) {
       toast({ title: 'Could not send the test', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -142,7 +151,7 @@ export default function EventForms() {
 
   return (
     <div>
-      <WorkspacePageHeader title="Registration Forms" description="Registration forms, the links that point at them, and the reminders members receive to register." />
+      <WorkspacePageHeader title="Registration Forms" description="Registration forms, the links that point at them, the reminders members receive to register and the thank-you guests receive after attending." />
 
       {loading ? <WorkspaceLoader /> : ordered.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No events yet. Create one in Events → Create.</p></CardContent></Card>
@@ -153,6 +162,7 @@ export default function EventForms() {
             const ahead = (rem?.stages || []).filter((s) => s.state === 'scheduled' || s.state === 'on_hold');
             const sent = (rem?.stages || []).filter((s) => s.state === 'sent');
             const showReminders = ev.registration_enabled && !!rem && (ahead.length > 0 || sent.length > 0);
+            const thanks = rem?.thank_you && rem.thank_you.state !== 'not_sent' ? rem.thank_you : null;
             return (
               <Card key={ev.id}><CardContent className="py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 font-body">
@@ -210,6 +220,21 @@ export default function EventForms() {
                     )}
                   </div>
                 )}
+                {thanks && (
+                  <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5 text-foreground">
+                      <Mail className="h-3.5 w-3.5" />
+                      Thank-you to guests who attended
+                      <HelpDot page="events-forms" topic="thank-you" />
+                    </span>
+                    <span>{thankYouText(thanks)}</span>
+                    {canChangeReminders && (
+                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev, true)}>
+                        <Send className="h-3 w-3 mr-1" />Send a test
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent></Card>
             );
           })}
@@ -219,9 +244,11 @@ export default function EventForms() {
       <Dialog open={!!testFor} onOpenChange={(o) => { if (!o) setTestFor(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">Test the reminders</DialogTitle>
+            <DialogTitle className="font-serif">{testThankYou ? 'Test the thank-you' : 'Test the reminders'}</DialogTitle>
             <DialogDescription>
-              Sends the reminders of {testFor?.title || 'this event'} (2 weeks, 1 week and 3 days before, and the 24-hour note to registered members) to one address, exactly as members receive them. A test does not count as sent and changes nothing for members.
+              {testThankYou
+                ? `Sends the thank-you of ${testFor?.title || 'this event'} to one address, exactly as guests who attended receive it, signed by the President. A test does not count as sent and changes nothing for guests.`
+                : `Sends the reminders of ${testFor?.title || 'this event'} (2 weeks, 1 week and 3 days before, and the 24-hour note to registered members) to one address, exactly as members receive them. A test does not count as sent and changes nothing for members.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

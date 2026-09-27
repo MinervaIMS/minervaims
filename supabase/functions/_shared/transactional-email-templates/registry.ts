@@ -99,6 +99,7 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   role_description: 'Responsibilities and access are defined in the Workspace.',
   role_name: 'Analyst',
   semester_label: 'Fall 2026',
+  signature_title: 'President, on behalf of the Board of Directors',
   signoff_line_1: 'The Operations Team',
   signoff_line_2: 'Minerva IMS Workspace System',
   signoff_opener: 'Kind regards,',

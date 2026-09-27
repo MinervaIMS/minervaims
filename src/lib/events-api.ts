@@ -318,14 +318,24 @@ export interface ReminderStageStatus {
   recipients: number | null;
   catching_up?: boolean;
 }
+// The thank-you the morning after, to the guests who attended and are not
+// members. `waiting`: due, but nobody has been marked as attended yet.
+export type ThankYouState = 'sent' | 'scheduled' | 'waiting' | 'not_sent';
+export interface ThankYouStatus {
+  due_on: string;
+  state: ThankYouState;
+  sent_at: string | null;
+  recipients: number | null;
+}
 export interface EventReminderStatus {
   event_id: string;
   paused: boolean;
   paused_at: string | null;
   paused_by: string | null;
   stages: ReminderStageStatus[];
+  thank_you?: ThankYouStatus | null;
 }
-export interface ReminderTestResult { stage: ReminderStage; status: string }
+export interface ReminderTestResult { stage: ReminderStage | 'thank_you'; status: string }
 
 export async function listReminderStatus(session: Session | null): Promise<{ reminders: EventReminderStatus[]; can_manage: boolean }> {
   const res = await invoke('admin-event-reminders', session, { action: 'status' });
@@ -334,6 +344,6 @@ export async function listReminderStatus(session: Session | null): Promise<{ rem
 export function setRemindersPaused(session: Session | null, eventId: string, paused: boolean) {
   return invoke('admin-event-reminders', session, { action: 'set-paused', event_id: eventId, paused });
 }
-export async function sendReminderTest(session: Session | null, eventId: string, to: string): Promise<{ to: string; results: ReminderTestResult[] }> {
-  return invoke('admin-event-reminders', session, { action: 'send-test', event_id: eventId, to });
+export async function sendReminderTest(session: Session | null, eventId: string, to: string, stage?: 'thank_you'): Promise<{ to: string; results: ReminderTestResult[] }> {
+  return invoke('admin-event-reminders', session, { action: 'send-test', event_id: eventId, to, ...(stage ? { stage } : {}) });
 }

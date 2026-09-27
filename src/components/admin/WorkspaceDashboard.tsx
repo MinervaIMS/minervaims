@@ -13,6 +13,9 @@ import DashboardGreeting from '@/components/admin/dashboard/DashboardGreeting';
 import FundPerformanceBlock from '@/components/admin/dashboard/FundPerformanceBlock';
 import CurrentUpdateBlock from '@/components/admin/dashboard/CurrentUpdateBlock';
 import ResearchByDivisionBlock from '@/components/admin/dashboard/ResearchByDivisionBlock';
+import OnboardingChecklistBlock from '@/components/admin/dashboard/OnboardingChecklistBlock';
+import { useOnboarding } from '@/components/admin/dashboard/useOnboarding';
+import { useAuth } from '@/contexts/AuthContext';
 import AlumniGrowthBlock from '@/components/admin/dashboard/AlumniGrowthBlock';
 import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
 
@@ -22,6 +25,8 @@ import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
 //   greeting, centred
 //   Reports | Readings | Members | Alumni Network
 //   research by division (40%)  |  current update (60%)
+//     (a new member sees "Getting started" in the research card's place
+//      until the checklist is done or hidden)
 //   fund performance (35%) | reports mix (25%) | alumni growth (40%)
 //
 // THE WHOLE PAGE IS ONE DESKTOP SCREEN. The root is a height-bounded
@@ -76,6 +81,8 @@ export default function WorkspaceDashboard({ onNavigate }: {
   onNavigate?: (section: string, sub: string | null) => void;
 }) {
   const data = useDashboardData();
+  const { user } = useAuth();
+  const onboarding = useOnboarding(user?.id ?? null);
   const reduced = useReducedMotion();
   const visible = usePageVisible();
   // BOTH BREAKPOINTS ARE ANSWERED ON THE FIRST RENDER, never in an effect
@@ -186,7 +193,9 @@ export default function WorkspaceDashboard({ onNavigate }: {
   // arriving on it. Every query runs in parallel, so waiting for the name
   // costs nothing beyond the slowest of them.
   // =================================================================
-  if (!data.greetingReady) return <div className="h-full"><WorkspaceLoader /></div>;
+  // The getting started checklist is part of that one load: whether it
+  // replaces the research card is known before the page appears.
+  if (!data.greetingReady || !onboarding.settled) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
     <div className={`flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0${painted ? '' : ' dash-paused'}`}>
@@ -251,12 +260,22 @@ export default function WorkspaceDashboard({ onNavigate }: {
             the only card that asks the reader to do something, and it was
             arriving under three charts. */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3 lg:min-h-[clamp(210px,25vh,300px)]">
-          <div className="dash-enter order-2 lg:order-1 h-[264px] lg:h-auto min-h-0" style={enter(4)}>
-            <ResearchByDivisionBlock
-              rows={data.divisionCounts}
-              currentLabel={data.semester.label}
-              previousLabel={data.previous.label}
-            />
+          {/* The checklist needs more height than the chart on a phone,
+              where the card is sized rather than shared. */}
+          <div className={`dash-enter order-2 lg:order-1 ${onboarding.show ? 'h-[300px]' : 'h-[264px]'} lg:h-auto min-h-0`} style={enter(4)}>
+            {onboarding.show ? (
+              <OnboardingChecklistBlock
+                onboarding={onboarding}
+                onNavigate={onNavigate}
+                canOpenArchive={access.canView('reports-archive')}
+              />
+            ) : (
+              <ResearchByDivisionBlock
+                rows={data.divisionCounts}
+                currentLabel={data.semester.label}
+                previousLabel={data.previous.label}
+              />
+            )}
           </div>
           {/* Taller on a phone than the other cards. It is the only one
               that carries a sentence, a picture and an action at once,

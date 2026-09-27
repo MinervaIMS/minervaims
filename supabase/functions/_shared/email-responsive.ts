@@ -66,7 +66,8 @@ function applyBucket(html: string, b: Bucket): string {
 export function withResponsiveShell(html: string): string {
   if (!html || typeof html !== 'string') return html;
   // Guard against double-application (idempotent for retries / re-previews).
-  if (html.includes('class="mims-shell"')) return html;
+  // A body shelled before the dark-mode header existed still gets it.
+  if (html.includes('class="mims-shell"')) return withDarkModeHeader(html);
 
   let out = html;
   // 1. Inject responsive stylesheet into <head> (fall back to prepending if absent).
@@ -81,5 +82,72 @@ export function withResponsiveShell(html: string): string {
   out = out.replace(PAD_CELL_RE, '<td class="mims-pad" style="padding:$1"');
   // 4. Add font-size class hooks so the media query can override inline sizes.
   for (const b of BUCKETS) out = applyBucket(out, b);
+  return withDarkModeHeader(out);
+}
+
+// =====================================================================
+// THE HEADER IN DARK MODE.
+// ---------------------------------------------------------------------
+// The emails ask to stay light ("light only"), and Apple Mail does. Some
+// clients darken them anyway: Outlook recolours the text (the dark purple
+// society name turns pink) and leaves the transparent purple logo on a
+// dark background, where it cannot be seen; the Gmail apps do the same.
+//
+// Three layers, each safe where the others do not apply:
+// 1. The default logo carries a thin white outline. On the white header
+//    it is invisible, so light mode looks exactly as before; where a
+//    client darkens the page without reading any CSS (the Gmail apps),
+//    the outline keeps the logo readable.
+// 2. Outlook marks what it darkened with [data-ogsc]. There, the white
+//    logo replaces the purple one and the society name is set in white.
+// 3. Clients that read the dark-mode media query get the same white logo
+//    and name on a deep purple masthead that continues the strip above
+//    it, so they read on whatever background the client paints.
+// The white logo is hidden inline and wrapped away from Outlook for
+// Windows, so a client that strips the <style> block never shows it.
+// Its own <style> block: a client that rejects one rule drops that block
+// only, never the responsive one.
+// =====================================================================
+
+export const EMAIL_LOGO_LIGHT_URL = 'https://minervaims.org/email/minerva-logo-light.png';
+export const EMAIL_LOGO_DARK_URL = 'https://minervaims.org/email/minerva-logo-dark.png';
+
+const LEGACY_LOGO_URL =
+  'https://minervaims.org/__l5e/assets-v1/c3b55bfa-5266-4923-984e-74243ab40e3b/minerva-email-logo.png';
+
+const DARK_STYLE = `<style>
+@media (prefers-color-scheme: dark){
+  .mims-mast{background:#1F0F4D!important;border-bottom-color:#1F0F4D!important;}
+  .mims-rule{border-left-color:#5E5288!important;}
+  .mims-logo-light{display:none!important;}
+  .mims-logo-dark{display:block!important;max-height:none!important;max-width:none!important;overflow:visible!important;}
+  .mims-brand{color:#FFFFFF!important;}
+}
+[data-ogsc] .mims-logo-light{display:none!important;}
+[data-ogsc] .mims-logo-dark{display:block!important;max-height:none!important;max-width:none!important;overflow:visible!important;}
+[data-ogsc] .mims-brand{color:#FFFFFF!important;}
+</style>`;
+
+const LOGO_IMG =
+  `<img src="${LEGACY_LOGO_URL}" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" />`;
+const LOGO_PAIR =
+  `<img class="mims-logo-light" src="${EMAIL_LOGO_LIGHT_URL}" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" />` +
+  `<!--[if !mso]><!--><div class="mims-logo-dark" style="display:none;max-height:0;max-width:0;overflow:hidden;mso-hide:all;">` +
+  `<img src="${EMAIL_LOGO_DARK_URL}" width="60" height="60" alt="Minerva IMS" style="display:block;width:60px;height:60px;border:0;" />` +
+  `</div><!--<![endif]-->`;
+
+const MAST_CELL = '<td class="mims-pad" style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">';
+const RULE_CELL = '<td style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">';
+const BRAND_DIV =
+  `<div class="mims-hero-title" style="font-family:'Times New Roman',Georgia,serif;font-size:21px;line-height:1.29;color:#1F0F4D;letter-spacing:.005em;">Minerva Investment`;
+
+export function withDarkModeHeader(html: string): string {
+  if (!html || typeof html !== 'string') return html;
+  if (html.includes('mims-logo-dark') || !html.includes(LOGO_IMG)) return html;
+  let out = html.split(LOGO_IMG).join(LOGO_PAIR);
+  out = out.split(MAST_CELL).join('<td class="mims-pad mims-mast" style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">');
+  out = out.split(RULE_CELL).join('<td class="mims-rule" style="vertical-align:middle;border-left:1px solid #E0E0E0;padding-left:14px;">');
+  out = out.split(BRAND_DIV).join(BRAND_DIV.replace('class="mims-hero-title"', 'class="mims-hero-title mims-brand"'));
+  out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, `${DARK_STYLE}\n</head>`) : `${DARK_STYLE}\n${out}`;
   return out;
 }
