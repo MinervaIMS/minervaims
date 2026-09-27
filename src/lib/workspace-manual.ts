@@ -283,6 +283,18 @@ export const COMMON_TASKS: ManualTask[] = [
     ],
   },
   {
+    id: 'membership-certificate',
+    title: 'Download your certificate of membership',
+    requires: 'my-role',
+    level: 'view',
+    steps: [
+      'Open General, My Profile. Active members see the Membership Certificate card.',
+      'Press Download PDF. The certificate states your name, your current role and the semester, and is signed by the President and the Vice President on behalf of the Board of Directors.',
+      'Share the PDF. Whoever receives it can check its number or scan its QR code at minervaims.org/verify, without an account.',
+    ],
+    caution: 'It certifies the role you hold now, for this semester. After a change of role, download it again.',
+  },
+  {
     id: 'register-event',
     title: 'Register for an event',
     requires: 'calendar',
@@ -505,6 +517,9 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Equivalence bands', definition: 'The default method of the GPA converter: grades that mean the same thing (pass, good, very good, excellent, top) are matched between two systems, and a grade in between is read at the same position. Indicative, like every conversion.', requires: 'career-gpa' },
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
+  { term: 'Certificate number', definition: 'The number printed on a certificate of membership, such as MIMS-26F-7K3Q-9D2X: the Society, the semester (26F is Fall 2026) and eight random characters. It is what minervaims.org/verify checks.' },
+  { term: 'Getting started', definition: 'The five-step checklist a member starting out sees on the Dashboard in the place of Research by division, until the steps are done or the card is hidden.' },
+  { term: 'Thank-you to guests', definition: 'The email the President sends, the morning after an event, to the guests marked as attended who are not members.', requires: 'events-attendance' },
   { term: 'Activity log', definition: 'The record of every meaningful action with the role held at that moment. It exists for accountability across leadership teams.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
 ];
@@ -812,6 +827,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Every automatic email the workspace can send, with its layout, its subject line, when it fires and who receives it, together with the log of what was actually sent.",
       "The templates are maintained in code; this page is where they are read and their delivery checked.",
+      "In dark mode the logo and the society name turn white where the mail app allows it, and the logo keeps a thin white outline where it does not, so it is always visible.",
+      "The thank-you to guests goes out the morning after an event to the attendees who are not members. Switching its template off here stops it.",
     ],
     related: ['applications-screening', 'ops-newsletter'],
   },
@@ -832,6 +849,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'my-role': {
     detail: [
       "Your own record: your card, the brief describing what your role covers, and the link to the association statute.",
+      "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify.",
       "Your role and division are assigned by the President or the association account. You cannot change your own role from any page, and the server enforces that as well as the interface.",
     ],
     related: ['welcome', 'people-members'],
@@ -840,6 +858,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "A summary of the association's semester, identical for every member: research output, people, and fund performance, always against the semester before.",
       "Nothing here needs maintaining. Every figure is computed from the registers the workspace already holds.",
+      "A member starting out in an analyst, media analyst, senior analyst, team leader or portfolio manager role sees Getting started in the place of Research by division: five steps that tick themselves as they are done and can be ticked by hand. Once all are done, or the card is hidden, the chart returns.",
     ],
     related: ['reports-archive', 'people-members', 'reports-funds'],
   },

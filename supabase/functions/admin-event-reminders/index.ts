@@ -3,9 +3,10 @@ import { audited } from '../_shared/activity.ts';
 import { allows, rolesOf } from '../_shared/access.ts';
 import { readJsonObject, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import {
-  REMINDER_STAGES, REMINDER_TEMPLATE_KEY, eventDay, isReminderStage, reminderSchedule,
-  type ReminderLogRow, type ReminderStage,
+  REMINDER_STAGES, REMINDER_TEMPLATE_KEY, THANK_YOU_STAGE, THANK_YOU_TEMPLATE_KEY, addDays, eventDay, isReminderStage,
+  reminderSchedule, thankYouSchedule, type ReminderLogRow, type ReminderStage,
 } from '../_shared/event-reminders.ts';
+import { romeToday } from '../_shared/attendance-window.ts';
 
 // =====================================================================
 // admin-event-reminders: the registration reminders of Registration Forms.
@@ -13,8 +14,12 @@ import {
 //
 //   status      the schedule of every event that can have reminders
 //   set-paused  stop, or resume, the reminders of one event
-//   send-test   send the three reminders of one event to one address,
-//               without touching the real schedule
+//   send-test   send the reminders of one event to one address, without
+//               touching the real schedule; with stage 'thank_you', the
+//               thank-you to guests instead
+//
+// `status` also reports the thank-you each event sends the morning after
+// to the guests who attended (see _shared/event-reminders.ts).
 //
 // Reading needs the Registration Forms page; changing anything needs full
 // access to it (`events-forms` at 'manage'), the same people who open and
@@ -65,6 +70,19 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
         list.push(r);
         byEvent.set(r.event_id, list);
       }
+      // Whether attendance has been taken, for the events whose thank-you
+      // is due now: only those are asked, so the answer stays small.
+      const today = romeToday();
+      const recent = (events || []).filter((e: { start_at: string | null; date: string | null }) => {
+        const d = eventDay(e.start_at, e.date);
+        return !!d && d < today && d >= addDays(today, -2);
+      }).map((e: { id: string }) => e.id);
+      const attended = new Set<string>();
+      if (recent.length) {
+        const { data: marks } = await supabase.from('event_registrations')
+          .select('event_id').in('event_id', recent).eq('attended', true);
+        for (const m of (marks || []) as { event_id: string }[]) attended.add(m.event_id);
+      }
       // Who stopped them, by name, so the page can say so.
       const pausedBy = [...new Set((events || []).map((e: { reminders_paused_by: string | null }) => e.reminders_paused_by).filter(Boolean))] as string[];
       const names = new Map<string, string>();
@@ -84,6 +102,9 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
         paused_by: e.reminders_paused_by ? (names.get(e.reminders_paused_by) || null) : null,
         stages: reminderSchedule(eventDay(e.start_at, e.date), byEvent.get(e.id) || [], {
           paused: !!e.reminders_paused, registrationEnabled: !!e.registration_enabled,
+        }),
+        thank_you: thankYouSchedule(eventDay(e.start_at, e.date), byEvent.get(e.id) || [], {
+          attendanceTaken: attended.has(e.id), today,
         }),
       }));
       return json({ reminders, can_manage: canManage });
@@ -112,7 +133,9 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
     if (action === 'send-test') {
       const to = (optionalTextOf(body, 'to') || user.email || '').trim();
       if (!EMAIL_RE.test(to) || to.length > 255) return json({ error: 'Enter a valid email address for the test.' }, 400);
-      const stages: ReminderStage[] = isReminderStage(body.stage) ? [body.stage] : REMINDER_STAGES.map((s) => s.stage);
+      const stages: (ReminderStage | typeof THANK_YOU_STAGE)[] = body.stage === THANK_YOU_STAGE ? [THANK_YOU_STAGE]
+        : isReminderStage(body.stage) ? [body.stage] : REMINDER_STAGES.map((s) => s.stage);
+      const templateOf = (s: ReminderStage | typeof THANK_YOU_STAGE) => (s === THANK_YOU_STAGE ? THANK_YOU_TEMPLATE_KEY : REMINDER_TEMPLATE_KEY[s]);
       const startedAt = new Date(Date.now() - 1000).toISOString();
       for (const stage of stages) {
         const { error } = await supabase.rpc('send_event_registration_reminder', {
@@ -126,12 +149,12 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
       // is switched off in Auto emails.
       const { data: logged } = await supabase.from('email_send_log')
         .select('template_name, status, created_at')
-        .in('template_name', stages.map((s) => REMINDER_TEMPLATE_KEY[s]))
+        .in('template_name', stages.map(templateOf))
         .ilike('recipient_email', to)
         .gte('created_at', startedAt)
         .order('created_at', { ascending: false });
       const results = stages.map((stage) => {
-        const row = (logged || []).find((l: { template_name: string }) => l.template_name === REMINDER_TEMPLATE_KEY[stage]);
+        const row = (logged || []).find((l: { template_name: string }) => l.template_name === templateOf(stage));
         return { stage, status: row ? row.status : 'not_sent' };
       });
       return json({ success: true, to, results });

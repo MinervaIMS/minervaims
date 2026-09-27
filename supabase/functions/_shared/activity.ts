@@ -85,6 +85,7 @@ const PLACE: Record<string, { section: string; subsection: string }> = {
   'admin-alumni-calls': { section: 'Events', subsection: 'Alumni calls' },
   'admin-aod': { section: 'Events', subsection: 'Association on Display' },
   'career-files': { section: 'Career', subsection: 'Templates and LinkedIn files' },
+  'membership-certificate': { section: 'General', subsection: 'My profile' },
   'admin-applications': { section: 'Recruiting', subsection: 'Candidates screening' },
   'admin-auto-emails': { section: 'Operations', subsection: 'Automatic emails' },
   'admin-calendar': { section: 'General', subsection: 'Calendar' },
@@ -146,6 +147,8 @@ const MUTATES: Record<string, string> = {
   // A read, recorded on purpose: the Career templates tell members that
   // downloads are tracked.
   'career-files:download': 'download',
+  // Also a read recorded on purpose: who took a certificate, and when.
+  'membership-certificate:issue': 'download',
 };
 
 /** What a write is called in the log, or null when it is a read. */

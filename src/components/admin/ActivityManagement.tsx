@@ -119,6 +119,7 @@ const entityLabels: Record<string, string> = {
   'auto-emails': 'automatic email',
   calendar: 'calendar entry',
   'career-files': 'Career file',
+  'membership-certificate': 'membership certificate',
   events: 'event',
   'event-reg': 'event registration',
   fees: 'fee collection',

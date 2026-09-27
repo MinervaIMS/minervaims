@@ -46,7 +46,7 @@ export function eventDay(startAt: string | null | undefined, date: string | null
   return date ? String(date).slice(0, 10) : null;
 }
 
-function addDays(iso: string, n: number): string {
+export function addDays(iso: string, n: number): string {
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
@@ -93,4 +93,53 @@ export function reminderSchedule(
       catching_up: state === 'scheduled' && today > dueOn,
     };
   });
+}
+
+// =====================================================================
+// The thank-you to the guests who attended.
+// ---------------------------------------------------------------------
+// Sent by the same database job (migration 20260927100300_event_thank_you
+// _email.sql): the morning after the event, from 09:00 Rome time, to every
+// attendee who is not a member. If attendance has not been taken by then,
+// it waits for the next morning; after that it is not sent. It does not
+// depend on "Stop reminders" nor on the form being open.
+// =====================================================================
+
+export const THANK_YOU_STAGE = 'thank_you';
+export const THANK_YOU_TEMPLATE_KEY = 'ws_event_thank_you';
+
+export type ThankYouState = 'sent' | 'scheduled' | 'waiting' | 'not_sent';
+
+export interface ThankYouStatus {
+  /** The morning it is due: the day after the event. */
+  due_on: string;
+  state: ThankYouState;
+  sent_at: string | null;
+  recipients: number | null;
+}
+
+/**
+ * `waiting` is a thank-you that is due but held because nobody has been
+ * marked as attended yet; `not_sent` is one whose last morning has passed.
+ */
+export function thankYouSchedule(
+  day: string | null,
+  log: ReminderLogRow[],
+  opts: { attendanceTaken: boolean; today?: string; afterMorning?: boolean },
+): ThankYouStatus | null {
+  if (!day) return null;
+  const today = opts.today ?? romeToday();
+  // The job sends it between 9:00 and 12:00 Rome time.
+  const afterMorning = opts.afterMorning
+    ?? Number(new Date().toLocaleString('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', hour12: false })) >= 12;
+  const dueOn = addDays(day, 1);
+  const sent = log.find((l) => l.stage === THANK_YOU_STAGE);
+  let state: ThankYouState;
+  if (sent) state = 'sent';
+  else if (today > addDays(day, 2) || (today === addDays(day, 2) && afterMorning)) state = 'not_sent';
+  else if (today >= dueOn && !opts.attendanceTaken) state = 'waiting';
+  else state = 'scheduled';
+  // Past its first morning and not sent: it goes on the second one.
+  const goesOn = state === 'scheduled' && (today > dueOn || (today === dueOn && afterMorning)) ? addDays(day, 2) : dueOn;
+  return { due_on: goesOn, state, sent_at: sent?.sent_at ?? null, recipients: sent ? sent.recipients : null };
 }
