@@ -35,10 +35,11 @@ export const GUIDE: GuideEntry[] = [
     key: 'my-role', section: 'General', label: 'My profile',
     purpose: 'Your personal page in one column: your card (name, contacts, role, division and photo) first, then a brief describing what your role covers, closing with the link to the statute. This is what colleagues see about you.',
     view: ['Read your profile, check which role and division you hold, and read your role brief.', 'Open the association statute from the link at the bottom of the page.'],
-    manage: ['Update your contact details and photo.'],
+    manage: ['Update your phone number, your LinkedIn profile link and your photo, from a computer.'],
     warnings: ['Applicants cannot change personal data after submitting the application form.'],
     topics: [
       { id: 'role-shown', title: 'Where your role comes from', body: 'Your role and division are assigned by the President or Admin in Settings, Users. If something looks wrong, contact them: you cannot change your own role, from any page, and the server enforces this.' },
+      { id: 'linkedin-link', title: 'Your LinkedIn link', body: 'Add the address of your LinkedIn profile under Personal Information and press Save changes, from a computer. It must be a linkedin.com address, and it is shown on the public Members page next to your photo. The notes beside your photo and your LinkedIn link lead to Career, LinkedIn, where you can write an About section, create a professional photo on the Minerva background and download a banner.' },
       { id: 'role-brief', title: 'Your role brief', body: 'Below your card, the brief summarises what your role is responsible for and which parts of the workspace it unlocks. It is generated from the same access rules that drive the workspace, so it always matches reality.' },
     ],
   },
@@ -78,6 +79,108 @@ export const GUIDE: GuideEntry[] = [
       { id: 'exam-breaks', title: 'Exam session breaks', body: 'An exam session break is a protected date range: while it lasts, no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace, so events land when the student community can actually attend. Deadlines and reminders remain possible. Breaks are shaded on the calendar and enforced by the database itself.', requires: 'manage' },
       { id: 'casa', title: 'CASA Committee meetings', body: 'A special entry type visible ONLY to the members of the board of directors and the admin account; other members never see it. Use it for the association\'s CASA committee appointments. The restriction is enforced at database level, not just visually.', requires: 'manage' },
     ],
+  },
+  // ===================================================================
+  // CAREER. Open to every member, advisor and alumnus; never to an
+  // applicant. Each page is read and used at 'view'; the only thing
+  // managed is the files behind them, by the President, the Vice
+  // President and the Head of Operations.
+  // ===================================================================
+  {
+    key: 'career-cv', section: 'Career', label: 'CV template',
+    purpose: 'The association\'s one-page CV template, with the guide to filling it in, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
+    view: [
+      'Read the template in the preview, page by page, at the full width of the preview (on a small screen, Actual size shows it at its real size).',
+      'Download the template as a Word document (.docx) and open it in Word, Pages or Google Docs.',
+      'Read the disclaimer in full: what the template is, and what it is not.',
+    ],
+    manage: ['Replace the template with a new .docx: every member downloads and previews the new file at once.'],
+    warnings: [
+      'This material is for your personal use and is not to be shared outside Minerva. Downloads are tracked: each one is recorded in the activity log with your name.',
+      'It does not replace Bocconi\'s official CV guidelines or the Career Service: use it on top of them.',
+    ],
+    topics: [
+      { id: 'use', title: 'Using the template', body: 'Download it, open it in Word, Pages or Google Docs, and follow the guidance written into the document itself: every bullet is an action, the method and a quantified result. Before you send it, remove every square bracket and every note in round brackets, keep the GDPR line in the footer, and export it as a one-page PDF named Name_Surname_CV.pdf.' },
+      { id: 'preview', title: 'About the preview', body: 'A browser cannot show a Word document by itself, so the workspace lays the file out as pages, here, without sending it to any outside viewer. The pages fill the width of the preview, and the dates and places set on the right margin are placed there exactly as Word places them. On a small screen, where the fitted page is small, press Actual size to read it at full size and scroll sideways. The downloaded file is always the reference: it is the same file.' },
+      { id: 'members-only', title: 'Why it stays inside Minerva, and why downloads are tracked', body: 'The template and its guide are internal materials of the association, built from its members\' experience, and they are for your personal use. They are shared with members, advisors and alumni, and with nobody else: please do not pass them on to friends who are not members, or publish them. Every download is recorded in the activity log, with who downloaded which file and when.' },
+      { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the Replace panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. Keep the file name meaningful, because members download it under that name. If the disclaimer in the document changes, ask for the one on this page to be updated too, so the two always say the same.', requires: 'manage' },
+    ],
+  },
+  {
+    key: 'career-cl', section: 'Career', label: 'Cover letter template',
+    purpose: 'The association\'s cover letter template, with the guide to writing each paragraph, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
+    view: [
+      'Read the template in the preview, page by page, at the full width of the preview (on a small screen, Actual size shows it at its real size).',
+      'Download the template as a Word document (.docx).',
+      'Read the disclaimer in full.',
+    ],
+    manage: ['Replace the template with a new .docx: every member downloads and previews the new file at once.'],
+    warnings: [
+      'This material is for your personal use and is not to be shared outside Minerva. Downloads are tracked: each one is recorded in the activity log with your name.',
+      'It does not replace Bocconi\'s official cover letter guidelines or the Career Service: use it on top of them.',
+    ],
+    topics: [
+      { id: 'use', title: 'Using the template', body: 'Download it and write one job per paragraph: who you are, why this firm, your evidence, how you work with people, and what happens next. Name the exact programme, division, office and year as they appear in the posting, remove every bracket, and export a one-page PDF named Name_Surname_Cover_Letter_Firm.pdf.' },
+      { id: 'preview', title: 'About the preview', body: 'The document is laid out as pages here, in the workspace, without sending it to any outside viewer, filling the width of the preview. On a small screen, press Actual size to read it at full size. The downloaded file is always the reference.' },
+      { id: 'members-only', title: 'Why it stays inside Minerva, and why downloads are tracked', body: 'The template and its guide are internal materials of the association, for your personal use. They are shared with members, advisors and alumni, and with nobody else. Every download is recorded in the activity log.' },
+      { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the Replace panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. If the disclaimer in the document changes, ask for the one on this page to be updated too.', requires: 'manage' },
+    ],
+  },
+  {
+    key: 'career-linkedin', section: 'Career', label: 'LinkedIn',
+    purpose: 'Three parts of a LinkedIn profile, done the Minerva way: an About section written from your CV, a profile picture on the Minerva background, and a banner chosen from the association\'s wallpapers.',
+    view: [
+      'Copy the About Section prompt and use it with your CV in an AI chat. The prompt is copied, not displayed.',
+      'Copy the Profile Picture prompt, download the Minerva background, and use both with your own photo in an AI that edits images.',
+      'Browse the wallpapers, each shown whole at its own proportions, switch on LinkedIn view to see what LinkedIn keeps, and download the one you like.',
+    ],
+    manage: ['Replace the portrait background.', 'Add wallpapers, rename them and remove them.'],
+    warnings: [
+      'The prompts are used in AI services outside Minerva. Whatever you attach there, your CV or your photo, is sent to that service: use one you trust and check its privacy settings first.',
+      'Read what the AI gives back before you publish it. You are responsible for what your profile says.',
+    ],
+    topics: [
+      { id: 'about', title: 'The About section', body: 'Press Copy prompt, open an AI chat such as ChatGPT, Claude or Gemini, attach your CV as a PDF, paste the prompt and send it. The prompt asks for a short, first-person text about what you care about and why your experiences belong together, rather than a summary of the CV, and it may ask you a question or two first. Correct anything that is not true or does not sound like you, then paste it into About on LinkedIn. The prompt is copied whole and is not shown on the page: paste it into the chat to read it.' },
+      { id: 'portrait', title: 'The profile picture', body: 'You need two images and the prompt. Image 1 is a square photo of yourself in formal clothes, facing the camera, in good light. Image 2 is the Minerva background, downloaded from this card. Open an AI that edits images, attach Image 1 and then Image 2 in that order, paste the prompt and send it. The prompt tells the AI to keep your face exactly as it is and only change the background and framing: check that it did before you upload the result.' },
+      { id: 'wallpaper', title: 'The wallpaper', body: 'Pick a banner from the thumbnails beside the picture; the picture shows the one selected, whole and uncropped. LinkedIn\'s banner is four times as wide as it is tall, so LinkedIn crops these pictures itself when you upload them: switch on LinkedIn view to shade the part it cuts away. Download it, then on LinkedIn click the camera on your banner, upload it and drag it into place.' },
+      { id: 'copy-fails', title: 'If Copy prompt does not work', body: 'Some browsers refuse access to the clipboard, and the page then says so. Allow clipboard access for the workspace in the browser settings, or use another browser.' },
+      { id: 'manage-files', title: 'Managing the background and the wallpapers', body: 'The Profile Picture and Wallpaper cards carry a Manage button, shown only to the President, the Vice President and the Head of Operations and only on a computer. For the background it opens a window with the current image and an upload that replaces it for everybody. For the wallpapers it lists them all: add one or several at once (JPEG, PNG or WebP, up to 15 MB each), rename one by editing its name and pressing Save, or remove one after a confirmation. Upload wallpapers as they are, without cropping: the page shows each at its own proportions, and LinkedIn crops them itself.', requires: 'manage' },
+    ],
+  },
+  {
+    key: 'career-gpa', section: 'Career', label: 'GPA converter',
+    purpose: 'Read a grade in the Bocconi system and in the main grading systems of Europe, the UK and North America, and work out, save and compare your weighted averages, including what the next exam will do to them.',
+    view: [
+      'Convert a single grade, a final figure or an average from any supported system into every other, and back.',
+      'Work out a weighted average from your courses, credits and grades, with the Bocconi degree mark base on the /30 scale.',
+      'See what each possible grade in the next exam would do to your average, and which grade you need to reach a target.',
+      'Save your averages to your account, open them again later, and compare up to four side by side.',
+    ],
+    manage: [],
+    warnings: [
+      'Conversions are indicative. There is no official conversion between grading systems: when an application gives you its own table, use that one, and always state your original grade and scale next to a converted figure.',
+    ],
+    topics: [
+      { id: 'convert', title: 'Converting a grade', body: 'Choose the system your grade is in, type the grade (27, 72.5, 3.71; a comma works as well as a point) and choose the system to convert to. The answer is shown large, and the same grade is listed in every other system beside it. Swap turns the question round, so converting a foreign grade into the Bocconi system is one press away. For 30 e lode, type 30 and tick e lode.' },
+      { id: 'methods', title: 'How the conversion works', body: 'Equivalence bands, the default, match grades that mean the same thing in both systems: the pass mark, a satisfactory, good, very good and excellent result, and the top of the scale. A grade between two of these is placed at the same position between the same two in the other system. Where a scale is flat at the top (a US 4.0 covers both excellent and top), the answer is a range and is shown as one. Linear applies the modified Bavarian formula used by German universities: the same share of the way from the pass mark to the best grade. It is official in Germany and stricter than the bands in the middle of most scales.' },
+      { id: 'average', title: 'Working out an average', body: 'Choose the grading system of your courses, then enter each course with its credits and its grade; add as many courses as you need. Rows without credits or a grade are left out. On the /30 scale you choose what 30 e lode counts as: Bocconi counts it as 30, some universities count it as more. The average is shown with the credits and courses counted, the simple (unweighted) average and, on the /30 scale, the degree mark base: the average times 110 divided by 30, before the points the final commission adds. Changing the grading system clears the grades, after asking, because they belong to the old scale.' },
+      { id: 'next', title: 'The next exam', body: 'Enter the credits of the next exam to see, for every grade worth trying, the average it would leave and by how much it moves: green bars raise the average, red bars lower it, and any grade better than your current average raises it. Enter the average you are aiming for to be told the grade you need, rounded to the safe side, or that any passing grade will do, or that one exam of that size cannot get you there.' },
+      { id: 'saved', title: 'Saving and comparing', body: 'Give the calculation a name and press Save. It goes to your account, where only you can read it, so it is there from any device. Open a saved average to carry on: Save changes then updates it and Save as new keeps both. Under Saved, tick up to four to see them side by side: scale, average, band, credits, courses, and each average read on four common scales. A crown marks the highest once every scale is read through the same equivalence bands.' },
+      { id: 'privacy', title: 'Who can see your averages', body: 'Only you. Saved averages are stored in your own rows, and the database refuses them to anybody else, the Board included. The calculation you are working on is also kept in this browser until you save it, so leaving the page does not lose it.' },
+      { id: 'on-phone', title: 'On a phone', body: 'The GPA converter works in full on a phone, saving included: what it saves is your own, not the association\'s.' },
+    ],
+  },
+  {
+    key: 'career-gmat', section: 'Career', label: 'GMAT resources',
+    purpose: 'Coming by the end of the semester: study material and guidance for the GMAT, selected by the association and gathered in one place.',
+    view: ['See what the page will hold and when it opens.'],
+    manage: [],
+  },
+  {
+    key: 'career-ib', section: 'Career', label: 'IB questions',
+    purpose: 'Coming by the end of the semester: the technical and behavioural questions asked in investment banking interviews, collected in one place.',
+    view: ['See what the page will hold and when it opens.'],
+    manage: [],
   },
   {
     key: 'reports-upload', section: 'Reports', label: 'Upload report',
@@ -440,96 +543,6 @@ export const GUIDE: GuideEntry[] = [
     topics: [
       { id: 'log', title: 'The sent register', body: 'Every automatic email the system sends is listed with its recipient and outcome, so delivery problems can be spotted quickly. An address that bounced or was suppressed is shown in red with the reason beside it.' },
       { id: 'log-search', title: 'Searching the register', body: 'The search box matches the recipient\'s address or the email\'s key, and the two filters narrow by which email it was and how it ended: Sent, Bounced, Failed, Suppressed and the rest. The date range takes one day or a span of them. Everything is applied to the WHOLE register rather than to the page on screen, so an address written to last semester is found as easily as one written to this morning.' },
-    ],
-  },
-  // ===================================================================
-  // CAREER. Open to every member, advisor and alumnus; never to an
-  // applicant. Each page is read and used at 'view'; the only thing
-  // managed is the files behind them, by the President, the Vice
-  // President and the Head of Operations.
-  // ===================================================================
-  {
-    key: 'career-cv', section: 'Career', label: 'CV template',
-    purpose: 'The association\'s one-page CV template, with the guide to filling it in, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
-    view: [
-      'Read the template in the preview, page by page, and switch between fitting the pages to the column and showing them at their real size.',
-      'Download the template as a Word document (.docx) and open it in Word, Pages or Google Docs.',
-      'Read the disclaimer in full: what the template is, and what it is not.',
-    ],
-    manage: ['Replace the template with a new .docx: every member downloads and previews the new file at once.'],
-    warnings: [
-      'This material is not to be shared outside Minerva. Do not forward it, post it or upload it anywhere outside the society.',
-      'It does not replace Bocconi\'s official CV guidelines or the Career Service: use it on top of them.',
-    ],
-    topics: [
-      { id: 'use', title: 'Using the template', body: 'Download it, open it in Word, Pages or Google Docs, and follow the guidance written into the document itself: every bullet is an action, the method and a quantified result. Before you send it, remove every square bracket and every note in round brackets, keep the GDPR line in the footer, and export it as a one-page PDF named Name_Surname_CV.pdf.' },
-      { id: 'preview', title: 'About the preview', body: 'A browser cannot show a Word document by itself, so the workspace lays the file out as pages, here, without sending it to any outside viewer. The fonts, tabs, bullets, headers and footers of the file are kept. On a small screen the pages are scaled down to fit; press Real size to read them at full size and scroll sideways. If a detail ever looks different from Word, the downloaded file is the reference, and it is the same file.' },
-      { id: 'members-only', title: 'Why it stays inside Minerva', body: 'The template and its guide are internal materials of the association, built from its members\' experience. They are shared with members, advisors and alumni, and with nobody else: please do not pass them on to friends who are not members, or publish them.' },
-      { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. Keep the file name meaningful, because members download it under that name. If the disclaimer in the document changes, ask for the one on this page to be updated too, so the two always say the same.', requires: 'manage' },
-    ],
-  },
-  {
-    key: 'career-cl', section: 'Career', label: 'Cover letter template',
-    purpose: 'The association\'s cover letter template, with the guide to writing each paragraph, shown page by page beside the disclaimer that goes with it. It is for Minerva members only.',
-    view: [
-      'Read the template in the preview, page by page, and switch between fitting the pages to the column and showing them at their real size.',
-      'Download the template as a Word document (.docx).',
-      'Read the disclaimer in full.',
-    ],
-    manage: ['Replace the template with a new .docx: every member downloads and previews the new file at once.'],
-    warnings: [
-      'This material is not to be shared outside Minerva. Do not forward it, post it or upload it anywhere outside the society.',
-      'It does not replace Bocconi\'s official cover letter guidelines or the Career Service: use it on top of them.',
-    ],
-    topics: [
-      { id: 'use', title: 'Using the template', body: 'Download it and write one job per paragraph: who you are, why this firm, your evidence, how you work with people, and what happens next. Name the exact programme, division, office and year as they appear in the posting, remove every bracket, and export a one-page PDF named Name_Surname_Cover_Letter_Firm.pdf.' },
-      { id: 'preview', title: 'About the preview', body: 'The document is laid out as pages here, in the workspace, without sending it to any outside viewer. On a small screen the pages are scaled down to fit; press Real size to read them at full size. The downloaded file is always the reference.' },
-      { id: 'members-only', title: 'Why it stays inside Minerva', body: 'The template and its guide are internal materials of the association. They are shared with members, advisors and alumni, and with nobody else.' },
-      { id: 'replace', title: 'Replacing the template', body: 'Upload a new .docx from the panel at the foot of the left column. It replaces the current file for every member at once, and the preview follows. If the disclaimer in the document changes, ask for the one on this page to be updated too.', requires: 'manage' },
-    ],
-  },
-  {
-    key: 'career-linkedin', section: 'Career', label: 'LinkedIn',
-    purpose: 'Three parts of a LinkedIn profile, done the Minerva way: an About section written from your CV, a profile picture on the Minerva background, and a banner chosen from the association\'s wallpapers.',
-    view: [
-      'Copy the About Section prompt and use it with your CV in an AI chat.',
-      'Copy the Profile Picture prompt, download the Minerva background, and use both with your own photo in an AI that edits images.',
-      'Browse the wallpapers, each shown whole at its own proportions, see the band LinkedIn will show, and download the one you like.',
-    ],
-    manage: ['Replace the portrait background.', 'Add wallpapers, rename them and remove them.'],
-    warnings: [
-      'The prompts are used in AI services outside Minerva. Whatever you attach there, your CV or your photo, is sent to that service: use one you trust and check its privacy settings first.',
-      'Read what the AI gives back before you publish it. You are responsible for what your profile says.',
-    ],
-    topics: [
-      { id: 'about', title: 'The About section', body: 'Press Copy prompt, open an AI chat such as ChatGPT, Claude or Gemini, attach your CV as a PDF, paste the prompt and send it. The prompt asks for a short, first-person text about what you care about and why your experiences belong together, rather than a summary of the CV, and it may ask you a question or two first. Correct anything that is not true or does not sound like you, then paste it into About on LinkedIn. Read the prompt opens the full text if you want to see what it asks for.' },
-      { id: 'portrait', title: 'The profile picture', body: 'You need two images and the prompt. Image 1 is a square photo of yourself in formal clothes, facing the camera, in good light. Image 2 is the Minerva background, downloaded from this card. Open an AI that edits images, attach Image 1 and then Image 2 in that order, paste the prompt and send it. The prompt tells the AI to keep your face exactly as it is and only change the background and framing: check that it did before you upload the result.' },
-      { id: 'wallpaper', title: 'The wallpaper', body: 'Pick a banner from the row of thumbnails; the large picture shows the one selected, whole and uncropped. LinkedIn\'s banner is four times as wide as it is tall, so LinkedIn crops these pictures itself when you upload them: switch on What LinkedIn shows to see the band it keeps by default. Download it, then on LinkedIn open your profile, click the camera on the banner, upload it and drag it to choose the part shown.' },
-      { id: 'copy-fails', title: 'If Copy prompt does not work', body: 'Some browsers refuse access to the clipboard. The page then says so: open Read the prompt, select the text and copy it by hand.' },
-      { id: 'manage-files', title: 'Managing the background and the wallpapers', body: 'The panels at the foot of the Profile Picture and Wallpaper cards are drawn only for the President, the Vice President and the Head of Operations. The background is one file, and a new upload replaces it for everybody. Wallpapers are a list: add one or several at once (JPEG, PNG or WebP, up to 15 MB each), rename the selected one, or remove it. Upload wallpapers as they are, without cropping them: the gallery shows each at its own proportions, and LinkedIn crops them itself.', requires: 'manage' },
-    ],
-  },
-  {
-    key: 'career-gpa', section: 'Career', label: 'GPA converter',
-    purpose: 'Read a grade in the Bocconi system and in the main grading systems of Europe, the UK and North America, and work out, save and compare your weighted averages, including what the next exam will do to them.',
-    view: [
-      'Convert a single grade, a final figure or an average from any supported system into every other, and back.',
-      'Work out a weighted average from your courses, credits and grades, with the Bocconi degree mark base on the /30 scale.',
-      'See what each possible grade in the next exam would do to your average, and which grade you need to reach a target.',
-      'Save your averages to your account, open them again later, and compare up to four side by side.',
-    ],
-    manage: [],
-    warnings: [
-      'Conversions are indicative. There is no official conversion between grading systems: when an application gives you its own table, use that one, and always state your original grade and scale next to a converted figure.',
-    ],
-    topics: [
-      { id: 'convert', title: 'Converting a grade', body: 'Choose the system your grade is in, type the grade (27, 72.5, 3.71; a comma works as well as a point) and choose the system to convert to. The answer is shown large, and the same grade is listed in every other system beside it. Swap turns the question round, so converting a foreign grade into the Bocconi system is one press away. For 30 e lode, type 30 and tick e lode.' },
-      { id: 'methods', title: 'How the conversion works', body: 'Equivalence bands, the default, match grades that mean the same thing in both systems: the pass mark, a satisfactory, good, very good and excellent result, and the top of the scale. A grade between two of these is placed at the same position between the same two in the other system. Where a scale is flat at the top (a US 4.0 covers both excellent and top), the answer is a range and is shown as one. Linear applies the modified Bavarian formula used by German universities: the same share of the way from the pass mark to the best grade. It is official in Germany and stricter than the bands in the middle of most scales.' },
-      { id: 'average', title: 'Working out an average', body: 'Choose the grading system of your courses, then enter each course with its credits and its grade; add as many courses as you need. Rows without credits or a grade are left out. On the /30 scale you choose what 30 e lode counts as: Bocconi counts it as 30, some universities count it as more. The average is shown with the credits and courses counted, the simple (unweighted) average and, on the /30 scale, the degree mark base: the average times 110 divided by 30, before the points the final commission adds. Changing the grading system clears the grades, after asking, because they belong to the old scale.' },
-      { id: 'next', title: 'The next exam', body: 'Enter the credits of the next exam to see, for every grade worth trying, the average it would leave and by how much it moves: green bars raise the average, red bars lower it, and any grade better than your current average raises it. Enter the average you are aiming for to be told the grade you need, rounded to the safe side, or that any passing grade will do, or that one exam of that size cannot get you there.' },
-      { id: 'saved', title: 'Saving and comparing', body: 'Give the calculation a name and press Save. It goes to your account, where only you can read it, so it is there from any device. Open a saved average to carry on: Save changes then updates it and Save as new keeps both. Under Saved, tick up to four to see them side by side: scale, average, band, credits, courses, and each average read on four common scales. A crown marks the highest once every scale is read through the same equivalence bands.' },
-      { id: 'privacy', title: 'Who can see your averages', body: 'Only you. Saved averages are stored in your own rows, and the database refuses them to anybody else, the Board included. The calculation you are working on is also kept in this browser until you save it, so leaving the page does not lose it.' },
-      { id: 'on-phone', title: 'On a phone', body: 'The GPA converter works in full on a phone, saving included: what it saves is your own, not the association\'s.' },
     ],
   },
   {

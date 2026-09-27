@@ -82,7 +82,7 @@ export function Segmented<T extends string>({
  * stands out.
  */
 export function EverySystem({
-  from, value, method, highlight, only,
+  from, value, method, highlight, only, twoColumns = false,
 }: {
   from: GradingSystem;
   value: number;
@@ -90,14 +90,19 @@ export function EverySystem({
   highlight?: string;
   /** Show only these systems (by id), in this order. */
   only?: string[];
+  /** On a wide card, set the regions side by side (from `xl`). */
+  twoColumns?: boolean;
 }) {
   const groups = only
     ? [{ region: null as string | null, list: only.map((id) => SYSTEM_BY_ID[id]).filter(Boolean) }]
     : REGIONS.map((r) => ({ region: r as string | null, list: SYSTEMS.filter((s) => s.region === r) }));
   return (
-    <div className="divide-y divide-separator">
+    <div className={twoColumns ? 'xl:columns-2 xl:gap-8' : 'divide-y divide-separator'}>
       {groups.map((g) => (
-        <div key={g.region ?? 'featured'} className="py-2 first:pt-0 last:pb-0">
+        <div
+          key={g.region ?? 'featured'}
+          className={twoColumns ? 'break-inside-avoid pb-3 mb-1 border-b border-separator last:border-b-0' : 'py-2 first:pt-0 last:pb-0'}
+        >
           {g.region && <div className="text-[11px] uppercase tracking-wider text-accent font-serif mb-1">{g.region}</div>}
           <ul>
             {g.list.map((s) => {

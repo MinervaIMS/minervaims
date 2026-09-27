@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Calculator, Plus, Trash2, TrendingUp, Save, Loader2, FilePlus2, Lock } from 'lucide-react';
+import { Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -143,14 +143,20 @@ export default function AverageCalculator({
   const maxAbs = Math.max(0.0001, ...whatIf.map((w) => Math.abs(w.delta)));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:items-start">
-      <div className="lg:col-span-3 min-w-0 space-y-4">
+    // ON A COMPUTER THE THREE CARDS FILL THE SCREEN AND SCROLL INSIDE.
+    // From `xl` they stand side by side, a third each; between `lg` and `xl` the courses
+    // and the next exam share the left column, one above the other (the
+    // wrapper is `xl:contents`, so from `xl` its two cards are grid items
+    // of their own). Below `lg` everything stacks.
+    <div className="grid grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-12 lg:grid-rows-[minmax(0,1fr)]">
+      <div className="min-w-0 flex flex-col gap-4 lg:col-span-7 lg:min-h-0 xl:contents">
         {/* ---------------- Courses ---------------- */}
         <CareerCard
           title="Your courses"
           subtitle={draft.id ? `Editing: ${draft.name || 'untitled'}` : 'Credits and grades'}
-          icon={<Calculator className="h-5 w-5" />}
           action={<HelpDot page="career-gpa" topic="average" />}
+          scroll
+          className="lg:flex-1 xl:col-span-4"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
             <Field label="Grading system" htmlFor="avg-system">
@@ -168,17 +174,18 @@ export default function AverageCalculator({
             )}
           </div>
 
-          {/* Column heads, from `sm` up. */}
-          <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_6rem_9rem_2.25rem] gap-2 px-0.5 mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+          {/* One line per course only where the card is wide (2xl); below
+              that, the name above and credits and grade under it. */}
+          <div className="hidden 2xl:grid grid-cols-[minmax(0,1fr)_6rem_9rem_2.25rem] gap-2 px-0.5 mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
             <span>Course</span><span>Credits</span><span>Grade</span><span />
           </div>
-          <ul className="space-y-3 sm:space-y-2">
+          <ul className="space-y-3 2xl:space-y-2">
             {draft.courses.map((c, i) => (
-              <li key={c.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] sm:grid-cols-[minmax(0,1fr)_6rem_9rem_2.25rem] gap-2 items-center rounded-lg sm:rounded-none border sm:border-0 border-separator p-2.5 sm:p-0">
+              <li key={c.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] 2xl:grid-cols-[minmax(0,1fr)_6rem_9rem_2.25rem] gap-2 items-center rounded-lg 2xl:rounded-none border 2xl:border-0 border-separator p-2.5 2xl:p-0">
                 <Input
                   value={c.name} placeholder={`Course ${i + 1}`} aria-label="Course name" maxLength={120}
                   onChange={(e) => setRow(c.id, { name: e.target.value })}
-                  className="col-span-3 sm:col-span-1"
+                  className="col-span-3 2xl:col-span-1"
                 />
                 <NumberCell value={c.weight} onChange={(n) => setRow(c.id, { weight: n })} label="Credits" placeholder="Credits" invalid={c.weight !== null && c.weight <= 0} />
                 <GradeInput s={s} row={c} lodeValue={draft.settings.lodeValue} onChange={(p) => setRow(c.id, p)} />
@@ -190,7 +197,7 @@ export default function AverageCalculator({
           </ul>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <Button variant="outline" size="sm" onClick={addRow} disabled={draft.courses.length >= 200}>
-              <Plus className="h-4 w-4 mr-2" />Add a course
+              Add a course
             </Button>
             <span className="text-xs text-muted-foreground">Rows without credits or a grade are left out.</span>
           </div>
@@ -208,8 +215,9 @@ export default function AverageCalculator({
         <CareerCard
           title="The next exam"
           subtitle="What it does to your average"
-          icon={<TrendingUp className="h-5 w-5" />}
           action={<HelpDot page="career-gpa" topic="next" />}
+          scroll
+          className="lg:flex-1 xl:col-span-4"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Its credits" htmlFor="next-weight">
@@ -263,8 +271,8 @@ export default function AverageCalculator({
       </div>
 
       {/* ---------------- The average, and saving it ---------------- */}
-      <div className="lg:col-span-2 min-w-0 lg:sticky lg:top-4">
-        <CareerCard title="Your average" subtitle={s.name}>
+      <div className="min-w-0 flex lg:col-span-5 lg:min-h-0 xl:col-span-4">
+        <CareerCard title="Your average" subtitle={s.name} scroll>
           <div className={`rounded-lg p-4 sm:p-5 ${avg.average !== null ? 'bg-accent text-accent-foreground' : 'bg-muted/50'}`} aria-live="polite">
             <div className="text-[11px] uppercase tracking-wider opacity-80">Weighted average</div>
             {avg.average !== null ? (
@@ -313,8 +321,8 @@ export default function AverageCalculator({
               />
             </Field>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => onSave(false)} disabled={saving || avg.average === null} className="flex-1 min-w-[8rem]">
-                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              <Button variant="solid" onClick={() => onSave(false)} disabled={saving || avg.average === null} className="flex-1 min-w-[8rem]">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {draft.id ? 'Save changes' : 'Save'}
               </Button>
               {draft.id && (
@@ -324,9 +332,9 @@ export default function AverageCalculator({
               )}
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3.5 w-3.5" />Saved to your account, visible only to you.</span>
+              <span className="text-xs text-muted-foreground">Saved to your account, visible only to you.</span>
               <Button variant="ghost" size="sm" onClick={onNew} className="shrink-0 text-muted-foreground">
-                <FilePlus2 className="h-4 w-4 mr-1.5" />New
+                New
               </Button>
             </div>
           </div>

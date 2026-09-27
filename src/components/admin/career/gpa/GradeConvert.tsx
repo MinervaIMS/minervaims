@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowDownUp, ArrowLeftRight } from 'lucide-react';
+import { ArrowDownUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -58,13 +58,13 @@ export default function GradeConvert() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:items-start">
+    <div className="grid grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-12 lg:items-stretch">
       <CareerCard
         title="Your grade"
         subtitle="A final figure, an exam or an average"
-        icon={<ArrowLeftRight className="h-5 w-5" />}
         action={<HelpDot page="career-gpa" topic="convert" />}
-        className="lg:col-span-2"
+        className="lg:col-span-5 xl:col-span-4"
+        scroll
       >
         <div className="space-y-4">
           <Field label="From" htmlFor="gpa-from">
@@ -145,23 +145,6 @@ export default function GradeConvert() {
             <SystemSelect id="gpa-to" value={toId} onChange={setToId} label="The system to convert to" />
           </Field>
 
-          {/* The answer, large. */}
-          <div
-            className={`rounded-lg p-4 sm:p-5 ${result && !result.fail ? 'bg-accent text-accent-foreground' : 'bg-muted/50 text-foreground'}`}
-            aria-live="polite"
-          >
-            <div className="text-[11px] uppercase tracking-wider opacity-80">In {to.name}</div>
-            {result ? (
-              <>
-                <div className="mt-1 font-serif text-3xl sm:text-4xl leading-tight tabular-nums">{result.text}</div>
-                {!result.fail && <div className="mt-1 text-sm opacity-90">{result.band}</div>}
-                {result.fail && <div className="mt-1 text-sm text-muted-foreground">The grade is below the pass mark of {from.name}.</div>}
-              </>
-            ) : (
-              <div className="mt-1 text-sm text-muted-foreground">Enter a grade to see it here.</div>
-            )}
-          </div>
-
           <Field
             label="Method"
             hint={method === 'bands'
@@ -179,13 +162,32 @@ export default function GradeConvert() {
       <CareerCard
         title="In every system"
         subtitle={valid ? `${lode && from.honours ? from.honours.label : raw.trim()} in ${from.name}` : 'Enter a grade'}
-        className="lg:col-span-3"
+        className="lg:col-span-7 xl:col-span-8"
+        scroll
       >
-        {valid ? (
-          <EverySystem from={from} value={value!} method={method} highlight={toId} />
-        ) : (
-          <p className="text-sm text-muted-foreground py-6 text-center">The conversions appear here as soon as the grade is valid.</p>
-        )}
+        {/* The answer, large, above the full list. */}
+        <div
+          className={`rounded-lg p-4 sm:p-5 ${result && !result.fail ? 'bg-accent text-accent-foreground' : 'bg-muted/50 text-foreground'}`}
+          aria-live="polite"
+        >
+          <div className="text-[11px] uppercase tracking-wider opacity-80">In {to.name}</div>
+          {result ? (
+            <>
+              <div className="mt-1 font-serif text-3xl sm:text-4xl leading-tight tabular-nums">{result.text}</div>
+              {!result.fail && <div className="mt-1 text-sm opacity-90">{result.band}</div>}
+              {result.fail && <div className="mt-1 text-sm text-muted-foreground">The grade is below the pass mark of {from.name}.</div>}
+            </>
+          ) : (
+            <div className="mt-1 text-sm text-muted-foreground">Enter a grade to see it here.</div>
+          )}
+        </div>
+        <div className="mt-5">
+          {valid ? (
+            <EverySystem from={from} value={value!} method={method} highlight={toId} twoColumns />
+          ) : (
+            <p className="text-sm text-muted-foreground py-6 text-center">The conversions appear here as soon as the grade is valid.</p>
+          )}
+        </div>
         <div className="mt-4 pt-4 border-t border-separator"><Caveat /></div>
       </CareerCard>
     </div>

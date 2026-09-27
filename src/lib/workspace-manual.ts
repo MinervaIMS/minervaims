@@ -265,7 +265,7 @@ export const COMMON_TASKS: ManualTask[] = [
     level: 'manage',
     steps: [
       'From a computer, open the Career page concerned: CV Template, Cover Letter Template or LinkedIn.',
-      'Use the panel at the foot of the page or card: upload a new .docx for a template, a new image for the background, or add, rename and remove wallpapers.',
+      'For a template, use the Replace panel at the foot of the left column. For the portrait background or the wallpapers, press Manage on the card: upload a new background, or add, rename and remove wallpapers.',
       'The change reaches every member at once. Check the preview afterwards.',
     ],
     caution: 'A replaced file is gone for everybody: keep your own copy of the previous version.',
@@ -557,7 +557,7 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
   },
   {
     question: 'Copy prompt did nothing.',
-    answer: 'Your browser refused access to the clipboard, and the page says so. Open Read the prompt under the button, select the text and copy it by hand.',
+    answer: 'Your browser refused access to the clipboard, and the page says so. Allow clipboard access for the workspace in the browser settings, or use another browser. The prompts are copied, not shown on the page.',
     requires: 'career-linkedin',
   },
   {
@@ -872,6 +872,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The association's one-page CV template, with the guide to filling it in.",
       "The left half says what the template is, that it stays inside Minerva, and the disclaimer in full, with the download. The right half is the document itself, page by page, scrolling on its own; on a phone the two stack, download first.",
       "The preview is drawn in the workspace from the same file you download, so nothing is sent to an outside viewer. The downloaded file is always the reference.",
+      "The page fits the screen: the left column and the preview scroll on their own. Downloads are recorded in the activity log, which is why the page says they are tracked.",
     ],
     related: ['career-cl', 'career-linkedin', 'career-gpa'],
   },
@@ -885,7 +886,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'career-linkedin': {
     detail: [
       "Three cards of equal width, one per part of a profile: the About section, the profile picture and the banner.",
-      "Each card shows what goes in and what comes out, the steps, and the button that does the association's half of the work: a prompt to copy, a background to download, a wallpaper to choose.",
+      "Each card has the same four rows at the same heights: what goes in and what comes out, one line on what it needs, the steps, and the buttons that do the association's half of the work: a prompt to copy, a background to download, a wallpaper to choose.",
       "The wallpapers are shown whole, at their own proportions, because LinkedIn crops them itself when they are uploaded.",
     ],
     related: ['career-cv', 'my-role'],

@@ -7,12 +7,16 @@ import { readJsonObject, optionalTextOf, UNREADABLE_BODY, type LooseBody } from 
 // =====================================================================
 // career-files: the files of the Career section.
 // ---------------------------------------------------------------------
-//   list    (JSON)       the files of the requested kinds, each with a
-//                        preview link and a download link valid one hour
-//   upload  (multipart)  replace the CV or cover letter template or the
-//                        portrait background, or add a wallpaper
-//   rename  (JSON)       change a wallpaper's label
-//   delete  (JSON)       remove a wallpaper, or a single-file kind
+//   list      (JSON)       the files of the requested kinds, each with a
+//                          preview link valid one hour
+//   download  (JSON)       a one-minute download link for one file. It is
+//                          RECORDED in the activity log: the templates
+//                          tell members that downloads are tracked, and
+//                          this is the only way a download link is issued
+//   upload    (multipart)  replace the CV or cover letter template or the
+//                          portrait background, or add a wallpaper
+//   rename    (JSON)       change a wallpaper's label
+//   delete    (JSON)       remove a wallpaper, or a single-file kind
 //
 // The bucket is PRIVATE: the templates are for members only. Reading
 // needs the Career subsection the file belongs to ('view'); changing it
@@ -164,18 +168,36 @@ Deno.serve(audited('career-files', async (req, audit) => {
       if (error) throw error;
       const files = [];
       for (const r of (data || []) as Row[]) {
-        const [{ data: view }, { data: download }] = await Promise.all([
-          supabase.storage.from(BUCKET).createSignedUrl(r.file_path, 3600),
-          supabase.storage.from(BUCKET).createSignedUrl(r.file_path, 3600, { download: r.file_name }),
-        ]);
+        // A viewing link only. Downloading asks for its own link below, so
+        // that every download is recorded.
+        const { data: view } = await supabase.storage.from(BUCKET).createSignedUrl(r.file_path, 3600);
         files.push({
           id: r.id, kind: r.kind, label: r.label, file_name: r.file_name, mime_type: r.mime_type,
           size_bytes: r.size_bytes, width: r.width, height: r.height, updated_at: r.updated_at,
-          view_url: view?.signedUrl ?? null, download_url: download?.signedUrl ?? null,
+          view_url: view?.signedUrl ?? null,
         });
       }
       const can_manage = Object.fromEntries(kinds.map((k) => [k, canManage(k)]));
       return json({ files, can_manage });
+    }
+
+    // ── download ─────────────────────────────────────────────────────────
+    // Anyone who may read the file may download it; the audit wrapper
+    // records who, what and when (MUTATES maps this action to 'download').
+    if (action === 'download') {
+      const id = optionalTextOf(body, 'id');
+      if (!id) return json({ error: 'Choose a file.' }, 400);
+      const { data: row } = await supabase.from('career_files').select('id, kind, file_path, file_name').eq('id', id).maybeSingle();
+      if (!row) return json({ error: 'This file no longer exists. Reload the page.' }, 404);
+      if (!canRead(row.kind as Kind)) return json({ error: 'Access denied' }, 403);
+      audit.subject(row.file_name, row.id);
+      const { data: signed, error } = await supabase.storage.from(BUCKET)
+        .createSignedUrl(row.file_path, 60, { download: row.file_name });
+      if (error || !signed?.signedUrl) {
+        console.error('career download link failed', error);
+        return json({ error: 'The download could not be prepared. Please try again.' }, 500);
+      }
+      return json({ url: signed.signedUrl, file_name: row.file_name });
     }
 
     // ── rename / delete ──────────────────────────────────────────────────
