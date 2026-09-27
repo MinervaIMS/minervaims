@@ -1102,6 +1102,8 @@ export type Database = {
           added_by: string | null
           affiliation: string | null
           attended: boolean
+          checked_in_at: string | null
+          checkin_token: string | null
           email: string | null
           event_id: string
           id: string
@@ -1118,6 +1120,8 @@ export type Database = {
           added_by?: string | null
           affiliation?: string | null
           attended?: boolean
+          checked_in_at?: string | null
+          checkin_token?: string | null
           email?: string | null
           event_id: string
           id?: string
@@ -1134,6 +1138,8 @@ export type Database = {
           added_by?: string | null
           affiliation?: string | null
           attended?: boolean
+          checked_in_at?: string | null
+          checkin_token?: string | null
           email?: string | null
           event_id?: string
           id?: string
@@ -2487,10 +2493,13 @@ export type Database = {
       event_attendance_recipients: {
         Args: { p_event_id: string }
         Returns: {
+          checkin_token: string
           email: string
           first_name: string
         }[]
       }
+      event_checkin_block: { Args: { p_token: string }; Returns: string }
+      event_clock: { Args: { p_at: string; p_zone?: boolean }; Returns: string }
       event_person_name_key: { Args: { p_name: string }; Returns: string }
       event_reminder_day: {
         Args: { p_date: string; p_start_at: string }
@@ -2511,6 +2520,7 @@ export type Database = {
           first_name: string
         }[]
       }
+      event_zone: { Args: { p_at: string }; Returns: string }
       exam_break_on: { Args: { _d: string }; Returns: string }
       fee_payment_block: { Args: { p_period_id: string }; Returns: string }
       has_role: {
