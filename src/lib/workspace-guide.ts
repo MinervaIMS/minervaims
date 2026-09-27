@@ -43,7 +43,8 @@ export const GUIDE: GuideEntry[] = [
       { id: 'certificate', title: 'Your certificate of membership', body: 'Active members see a Membership Certificate card. Download PDF gives a one-page certificate on the Society\'s letterhead: your name, the role you hold now and the current semester, a short description of the Society, the statement that it is independent of Bocconi University, and the signatures of the President and the Vice President on behalf of the Board of Directors of the semester. It certifies the current role only: no history of roles or events. '
         + 'THE NUMBER. Each certificate carries a number such as MIMS-26F-7K3Q-9D2X and a QR code. Anybody you show it to can check it at minervaims.org/verify, without an account: the page confirms the name, the role, the semester and the issue date, and whether it is still valid, and nothing else. '
         + 'DOWNLOADING AGAIN gives the same certificate with the same number. A new role during the semester gives a new certificate; a new semester gives a new one too. A certificate stops being valid if it is withdrawn or its holder is expelled. Every download is recorded in the activity log. '
-        + 'WHO. Active members in any role, the Board included. Applicants, advisors, alumni and members on exchange or on a pause do not see the card.' },
+        + 'WHO. Active members in any role, the Board included. Applicants, advisors, alumni and members on exchange or on a pause do not see the card. '
+        + 'WITHDRAWN. If the President or the Vice President withdraws your certificate in Settings, Certificates, the card says so and gives the reason, and no certificate can be downloaded for that role and semester until it is restored. Anybody checking the number sees that it is no longer valid.' },
       { id: 'role-brief', title: 'Your role brief', body: 'Below your card, the brief summarises what your role is responsible for and which parts of the workspace it unlocks. It is generated from the same access rules that drive the workspace, so it always matches reality.' },
     ],
   },
@@ -83,6 +84,7 @@ export const GUIDE: GuideEntry[] = [
     topics: [
       { id: 'colors', title: 'What the colours mean', body: 'Each colour marks a type of item: association events, Association on Display days, alumni calls, application windows, fee deadlines and custom entries. The legend above the calendar lists them all.' },
       { id: 'register', title: 'Registering from the calendar', body: 'Events with open registration are clickable. A dialog shows the details and a registration button; once registered you will see a confirmation mark next to the event.' },
+      { id: 'times', title: 'Every time is Rome time', body: 'Across the workspace a time is written one way: the twelve-hour clock with the time zone named, such as 6:30 pm CEST. The zone is always Rome\'s (CET in winter, CEST in summer), whatever your own computer or phone is set to, so two people comparing an event from different countries read the same thing. The same applies when you type a time: an event created or edited at 18:30 is 6:30 pm in Milan. Hover over an event on the calendar to see its full date and time.' },
       { id: 'exam-breaks', title: 'Exam session breaks', body: 'An exam session break is a protected date range: while it lasts, no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace, so events land when the student community can actually attend. Deadlines and reminders remain possible. Breaks are shaded on the calendar and enforced by the database itself.', requires: 'manage' },
       { id: 'casa', title: 'CASA Committee meetings', body: 'A special entry type visible ONLY to the members of the board of directors and the admin account; other members never see it. Use it for the association\'s CASA committee appointments. The restriction is enforced at database level, not just visually.', requires: 'manage' },
     ],
@@ -331,6 +333,7 @@ export const GUIDE: GuideEntry[] = [
       { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, association-wide gathering). Alumni calls are not created here: they have their own subsection under Events. Internal types default to staying off the public website; you can change that per event in the Event archive.' },
       { id: 'archive-visibility', title: 'Archive and website visibility', body: 'Every event is recorded in the Event archive. When creating it you choose only whether it is also listed on the public Events page: meetings and online calls start unlisted, every other type starts listed. You can change it at any time, per event, from the Event archive.' },
       { id: 'poster', title: 'Posters', body: 'A poster makes the event stand out in the archive and on the website. JPG, PNG or PDF up to 10 MB; any aspect ratio is accepted.' },
+      { id: 'rome-time', title: 'Start and end are Rome time', body: 'Type the start and the end as they are on the clock in Milan, even if you are abroad: the event is then shown everywhere as, for example, 6:30 pm to 8:00 pm CEST, and the emails to registered people say the same.', requires: 'manage' },
     ],
   },
   {
@@ -341,21 +344,21 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['Registrations flow into Attendance automatically.', 'While registration is on, every active member who has not registered receives a reminder two weeks, one week and three days before the event. Stop them from the button next to Preview, for instance when the room is full.', 'The morning after an event, every guest marked as attended who is not a member receives a thank-you from the President. Take attendance on the day.'],
     topics: [
       { id: 'audience', title: 'Who can register', body: 'The audience setting decides who may use the registration form: members only, members plus external guests, guests only, or fully public. Pick the narrowest audience that fits the event.', requires: 'manage' },
-      { id: 'reminders', title: 'Registration reminders', body: 'For every event whose registration is on, the workspace emails the Society\'s active members a reminder to register two weeks, one week and three days before the event day. Each reminder goes only to the members who are not on the list at the moment it is sent, so somebody who registers after the first one never receives the second. They are sent between 9:00 and 21:00, Rome time; a reminder whose day is missed goes out the day after, and never later. '
+      { id: 'reminders', title: 'Registration reminders', body: 'For every event whose registration is on, the workspace emails the Society\'s active members a reminder to register two weeks, one week and three days before the event day. Each reminder goes only to the members who are not on the list at the moment it is sent, so somebody who registers after the first one never receives the second. They are sent between 9:00 am and 9:00 pm, Rome time; a reminder whose day is missed goes out the day after, and never later. '
         + 'STOPPING THEM. The button to the left of Preview stops the reminders of that event, for example once capacity is reached, and the line under the event says who stopped them and when. Resuming sends the ones still ahead; a reminder whose moment passed while they were stopped is not sent late. Turning registration off also holds them. '
         + 'TESTING. "Send a test" emails the three reminders of that event to one address, exactly as members would receive them, without counting as sent. The wording lives in Operations, Auto emails.', requires: 'manage' },
-      { id: 'thank-you', title: 'The thank-you to guests', body: 'The morning after an event, from 9:00 Rome time, everybody marked as attended in Attendance who is NOT a member receives one email: thanks for joining us, signed by the President by name on behalf of the Board of Directors, with where to follow the Society (the published reports, LinkedIn, Instagram and the public events). It carries no slides, no material and no survey, and it goes to nobody else: not to members, not to speakers, not to people who registered but did not come. '
+      { id: 'thank-you', title: 'The thank-you to guests', body: 'The morning after an event, from 9:00 am Rome time, everybody marked as attended in Attendance who is NOT a member receives one email: thanks for joining us, signed by the President by name on behalf of the Board of Directors, with where to follow the Society (the published reports, LinkedIn, Instagram and the public events). It carries no slides, no material and no survey, and it goes to nobody else: not to members, not to speakers, not to people who registered but did not come. '
         + 'NOT A MEMBER is decided generously: a registration that carries a member\'s account, address or name is left out, alumni included, because leaving a guest out costs nothing and thanking a Head of Division as a guest would not do. '
-        + 'ATTENDANCE DECIDES. The email reads the attendance list at 9:00. If nobody has been marked yet, it waits and goes out the next morning instead, once people are ticked; after that it is not sent. People ticked after it has gone do not receive it. Association on Display days have no thank-you. '
+        + 'ATTENDANCE DECIDES. The email reads the attendance list at 9:00 am. If nobody has been marked yet, it waits and goes out the next morning instead, once people are ticked; after that it is not sent. People ticked after it has gone do not receive it. Association on Display days have no thank-you. '
         + 'The line under each event shows when it goes out, or when it went and to how many. "Stop reminders" does not affect it; the email is switched off, like every automatic email, in Operations, Automatic emails. "Send a test" sends it to one address without counting as sent.' },
     ],
   },
   {
     key: 'events-attendance', section: 'Events', label: 'Attendance',
-    purpose: 'Who registered and who actually attended each event; search and filter the door list, and add walk-ins.',
+    purpose: 'Who registered and who actually attended each event; scan tickets at the door, search and filter the door list, and add walk-ins.',
     view: ['Consult registration and attendance numbers.', 'Search the people registered by name, email or programme, and filter by attendance, by type and by how each person was recognised.'],
-    manage: ['Mark attendance, add members who turned up from the register, and add external guests, from a computer or from a phone.'],
-    warnings: ['Guests ticked as attended who are not members receive a thank-you from the President the next morning at 9:00, so attendance is best taken on the day. See Registration forms, The thank-you to guests.', 'This page can be edited from a phone, because attendance is taken at a door. Apart from the GPA converter, whose saved averages are the member\'s own, everywhere else the workspace is read-only on mobile.', 'Attendance closes a week after the event: after that the list can be read and exported, but no longer changed.'],
+    manage: ['Scan the entry codes people bring on their phone, with the camera of a phone or a laptop, and they are ticked as present.', 'Mark attendance by hand, add members who turned up from the register, and add external guests, from a computer or from a phone.', 'The Media Analyst has full access here too, to help Operations at the door.'],
+    warnings: ['Guests ticked as attended who are not members receive a thank-you from the President the next morning at 9:00 am, so attendance is best taken on the day. See Registration forms, The thank-you to guests.', 'This page can be edited from a phone, because attendance is taken at a door. Apart from the GPA converter, whose saved averages are the member\'s own, everywhere else the workspace is read-only on mobile.', 'Attendance closes a week after the event: after that the list can be read and exported, but no longer changed.'],
     topics: [
       { id: 'recognising-members', title: 'How the list knows who is a member', body: 'The public event form asks for a name and an address and does not require signing in, which is the point of a public event. A member who registers that way is stored with no account attached, and used to be listed as an external guest. Every registration is now checked against the register of members, and the list says HOW it knows, because the three answers are not equally certain. "Signed in" means they used their own account: not a guess at all. "Matched by email" means the address they gave is a member\u2019s address, and an address identifies one person. "Matched by name" means the name matches exactly one member and nothing else confirms it: a good guess, shown in amber so you can tell. '
         + 'A NAME THAT MATCHES MORE THAN ONE MEMBER IS NOT A MATCH. Two members called the same thing means the register cannot say which of them registered, and crediting the wrong person is worse than saying nothing, so the row is marked Ambiguous and left for you. Filter by "Name is ambiguous" to find them. A name with a middle name in it, or a first name on its own, is also left unmatched on purpose: it is better to list a member as a guest, which anybody can see is wrong, than to quietly count somebody who was not there.' },
@@ -363,6 +366,8 @@ export const GUIDE: GuideEntry[] = [
       { id: 'on-a-phone', title: 'Taking attendance on a phone', body: 'This page is an exception to the workspace being read-only on mobile, because attendance is taken standing at a door and there is no desk there. Below the desktop width the table becomes a list of rows with a large tick box on each, so a person can be marked with a thumb, and walk-ins can be added on the spot. Your role still decides what you may do: somebody who can only read this page on a computer can only read it on a phone.', requires: 'manage' },
       { id: 'week', title: 'The list closes after a week', body: 'Ticking, adding somebody who turned up and removing a row are possible until the end of the seventh day after the event, counted on Rome\'s calendar: an event on the 1st can be edited until the end of the 8th. After that the list is the record of who attended; it stays searchable and can still be exported.' },
       { id: 'aod', title: 'Association on Display', body: 'Every Association on Display day appears here as an event, so the people who actually staffed the stand can be recorded. Everybody who signed up for at least one slot that day is on its list once, as a member; somebody who cancels their last slot leaves the list again, unless they have already been ticked as present. The day itself, its slots and its sign-ups stay on the Association on Display page.' },
+      { id: 'scan', title: 'Scanning tickets at the door', body: 'Every registration now comes with an entry code: a QR code in the confirmation email, sent again in the reminder the day before (people who registered before this change receive theirs there). At the door, choose the event, press Scan tickets and allow the camera. Hold each code in front of it: the person is ticked as present at once, with the time, and the panel shows their name in purple, or in amber if they were already checked in, or in red if the code belongs to another event or is not a ticket. The count of people scanned stays on screen and the camera turns off when you close the window. '
+        + 'TICKING BY HAND IS UNCHANGED. Somebody without their phone, a walk-in, or a code that will not read: find them in the list and tick the box, exactly as before. The two can be mixed freely, and a person ticked by hand shows no scan time. Online events have no door and no code, so the button is not shown for them. Scanning follows the same rules as ticking: it needs full access to this page, and it stops when the list closes a week after the event.', requires: 'manage' },
       { id: 'walkins', title: 'Walk-ins', body: 'People who attend without registering can be added on the spot, so the attendance record stays complete. For a member, search the register in "Somebody who turned up" by name or email and press "Add as present": they are added as a member, with their account and the address on their record, and if they were already on the list they are simply ticked. For anybody else, fill in the guest form underneath; a guest\'s email address is added to the newsletter.', requires: 'manage' },
     ],
   },
@@ -388,21 +393,21 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'events-on-display', section: 'Events', label: 'Association on Display',
-    purpose: 'Stand coverage planning: the stand runs 10:00am to 7:00pm in 30-minute slots. A slot is covered once more than eight people have registered for it, or once all five core divisions are represented on it. Past sessions stay archived semester by semester.',
+    purpose: 'Stand coverage planning: the stand runs 10:00 am to 7:00 pm, Rome time, in 30-minute slots. A slot is covered once more than eight people have registered for it, or once all five core divisions are represented on it. Past sessions stay archived semester by semester.',
     view: ['Register for or cancel any open slot, including one that is already covered.', 'See who is registered and which divisions are covered.'],
     manage: ['Open or close registration days; delete a day.'],
     warnings: ['Registrations close automatically 24 hours before the day.'],
     topics: [
       { id: 'coverage', title: 'Covered and divisions indicators', body: 'A slot turns Covered (green) by either of two routes: more than eight people have registered for it, which means the stand is staffed whoever happens not to arrive; or all five core divisions are represented on it, which means that whatever a visitor asks about, somebody there does that. Either is enough on its own, and the badge shows how far along both routes an uncovered slot has got. A well-covered stand represents the whole association, so consider slots where your division is missing.' },
       { id: 'no-cap', title: 'Covered does not mean full', body: 'There is no limit on how many people can register for a slot, and there never has been: the only rule is that one person cannot register twice for the same slot. Covered is a floor, not a ceiling. The Register button stays live on a green slot, the tenth and twentieth people to register are accepted exactly as the first was, and the more of us on the stand at once, the better it goes. If a slot you can make is already covered, register for it anyway.' },
-      { id: 'slot-length', title: 'How long a slot lasts', body: 'Every slot runs for thirty minutes, from its start time to the end of the following half hour: the 6:30pm slot is 6:30pm to 7:00pm. Both ends are printed on the slot, so what you are committing to is the whole half hour and not just the moment it begins. The stand itself runs from 10:00am to 7:00pm, which is eighteen slots.' },
+      { id: 'slot-length', title: 'How long a slot lasts', body: 'Every slot runs for thirty minutes, from its start time to the end of the following half hour: the 6:30 pm slot is 6:30 pm to 7:00 pm. Both ends are printed on the slot, so what you are committing to is the whole half hour and not just the moment it begins. The stand itself runs from 10:00 am to 7:00 pm, Rome time, which is eighteen slots.' },
       { id: 'day-controls', title: 'Opening and closing a day', body: 'Senior roles create days and control whether registration is open. Deleting a day removes all its registrations, so use it only for cancelled sessions.', requires: 'manage' },
     ],
   },
   {
     key: 'people-members', section: 'People', label: 'Members',
     purpose: 'The association register: members and advisors, each with THE one role that drives their workspace permissions everywhere. Also holds the semester registers: frozen snapshots of who officially belonged to the association each semester.',
-    view: ['Browse the directory and consult past semester registers.', 'Portfolio managers, team leaders, senior analysts and analysts see the people of their own division (names, search and filters).'],
+    view: ['Browse the directory and consult past semester registers.', 'Portfolio managers, team leaders, senior analysts and analysts see the people of their own division (names, search and filters).', 'The Head of Media and Communication and the Media Analyst read the whole register, to prepare member features, introductions and event communications. They cannot change it.'],
     manage: ['Add, edit, move to alumni or expel members.'],
     warnings: ['Expelling a member removes their access immediately and deletes the account after one month.', 'Semester registers are frozen history and never change.', 'Roles are assigned only by the President and the association account, and nobody can ever change their own role, from any page.'],
     topics: [
@@ -416,7 +421,7 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'people-alumni', section: 'People', label: 'Alumni',
     purpose: 'The alumni directory: who they are, where they work and how to reach them.',
-    view: ['Browse and search alumni.'],
+    view: ['Browse and search alumni.', 'The Head of Media and Communication and the Media Analyst can read the directory, for alumni features and event communications. They cannot change it.'],
     manage: ['Add, edit and remove alumni records.'],
     topics: [
       { id: 'quality', title: 'Keeping the directory current', body: 'Company and role information powers alumni calls and the public alumni highlights, so update records whenever you learn about a move.' },
@@ -425,7 +430,7 @@ export const GUIDE: GuideEntry[] = [
   {
     key: 'smm-editorial', section: 'Media & Communication', label: 'Editorial calendar',
     purpose: 'Plan social content: what is published, where and when.',
-    view: ['Consult the plan.'], manage: ['Create, move and complete editorial items.'],
+    view: ['Consult the plan.'], manage: ['Create, move and complete editorial items. The Media Analyst has full access, like the Head of Media and Communication.'],
     topics: [
       { id: 'planning', title: 'Planning items', body: 'Each item represents one piece of content with its channel and date. Move items as plans change; completing an item records that the content went out.' },
     ]
@@ -451,9 +456,11 @@ export const GUIDE: GuideEntry[] = [
       { id: 'scope', title: 'What belongs here', body: 'Anything that supports communication but has no home of its own: press material, photography, third-party mentions. If a category grows, it earns its own subsection.' },
     ]
   },
-  { key: 'smm-brand', section: 'Media & Communication', label: 'Design System', purpose: 'The association\'s visual identity: fonts, colours, logo usage and design rules.', view: ['Consult the design references.'], manage: ['Maintain the design references.'],
+  { key: 'smm-brand', section: 'Media & Communication', label: 'Design System', purpose: 'The association\'s visual identity in full: the design system as the package describes it (colours, type, logos, layout, components, motion, voice) and the whole package to download.', view: ['Read the design system chapter by chapter, with the logos, type scale, colours and shadows drawn live.', 'Download the complete package as a ZIP: artwork, templates, fonts and the guide.'], manage: ['Upload a new edition of the package, which replaces the one every member downloads.'],
     topics: [
-      { id: 'usage', title: 'Using the design system', body: 'Colours, typefaces, spacing and logo rules are recorded here so that everything the Society publishes reads as one voice. It is a reference: it is not edited from this page.' },
+      { id: 'usage', title: 'Using the design system', body: 'Colours, typefaces, spacing and logo rules are recorded here so that everything the Society publishes reads as one voice. The text of this page is the package\'s own guide (its README), shown as the package ships it, so the page and the download never disagree. The contents list jumps to any chapter.' },
+      { id: 'package', title: 'The complete package', body: 'Download the ZIP gives the whole design system: the guide, the logos in every version, the colour and type tokens, the templates and the font files. It is for members only and stays inside Minerva: it contains the Society\'s artwork and licensed fonts, so it is kept privately, each download goes through a link that works for one minute, and every download is recorded in the activity log. '
+        + 'A NEW EDITION. The Head of Media and Communication, the President and the Vice President can press Replace the package and choose the new ZIP (up to 50 MB): it replaces the previous one for everybody at once, and the card shows its size and the date. When the guide inside changes, ask for the page text to be updated as well, so the two keep saying the same.' },
     ]
   },
   {
@@ -602,6 +609,17 @@ export const GUIDE: GuideEntry[] = [
       { id: 'filters', title: 'Filtering and export', body: 'Combine the action, user, section and date filters to investigate a specific question, then export the filtered result to CSV if you need to share or archive it.' },
     ],
   },
+  {
+    key: 'settings-certificates', section: 'Settings', label: 'Certificates',
+    purpose: 'The register of every certificate of membership the Society has issued: number, holder, role, semester, issue date and whether it is still valid.',
+    view: ['Search by number or name, filter by semester and status, and open the public check of any certificate.'],
+    manage: ['Withdraw a certificate, with a reason, so that it stops being valid; restore one withdrawn by mistake.'],
+    warnings: ['A withdrawn certificate reads as no longer valid to anybody who checks its number at minervaims.org/verify, at once. The holder cannot download a new one for the same role and semester until it is restored.', 'Only the President and the Vice President (and the association account) open this page. Advisors do not see it.'],
+    topics: [
+      { id: 'register', title: 'Reading the register', body: 'Every certificate a member has downloaded is listed once, newest first, with its number, the holder, the role and semester it certifies and the day it was issued. Status is Valid, Withdrawn (with the date, who withdrew it and the reason) or Holder expelled, which follows on its own from an expulsion and is not changed here. Each number is a link to the same public page that anybody holding the number sees.' },
+      { id: 'withdraw', title: 'Withdrawing and restoring', body: 'Withdraw asks for a short reason (three to three hundred characters), which is recorded with your name and shown to the holder on their profile. The public check then says the certificate is no longer valid. Restore reverses it: the certificate is valid again, with the same number, and the holder can download it again. Both are recorded in the activity log.', requires: 'manage' },
+    ],
+  },
   // ===================================================================
   // THE APPLICANT'S OWN HELP.
   // -------------------------------------------------------------------
@@ -643,6 +661,7 @@ export const GUIDE: GuideEntry[] = [
     warnings: [
       'An invitation creates a real account the moment it is sent. Revoking withdraws the access it carried, but the record of it is kept.',
       'Only advisors and alumni can be invited. Every other role is granted in Settings, Users, to an account that already exists.',
+      'Only the President and the Vice President can open this page and send invitations; advisors can read it. Every other role does not see it.',
     ],
     topics: [
       { id: 'how-it-works', title: 'Why this page exists', body: 'New accounts are restricted to the university\u2019s three domains, which is right for students and wrong for advisors and alumni: both have left Bocconi, and the address they now use is their own. An invitation is not a way round that rule, it is a different thing entirely. Nobody signs up: the association creates the account itself and the invited person receives an email with a link to set a password. The sign-up form is not involved and no link or code lets an uninvited person past the domain rule.' },

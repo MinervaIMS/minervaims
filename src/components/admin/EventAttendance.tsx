@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine } from 'lucide-react';
+import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { downloadCSV } from '@/lib/download-utils';
@@ -14,6 +15,7 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
+import { formatEventWhen, formatTime } from '@/lib/event-time';
 import {
   listEvents, listRegistrations, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
   listAttendanceMembers, addMemberAttendee, type AttendanceMember,
@@ -69,6 +71,9 @@ function matchOf(r: EventRegistration): MemberMatch {
   return r.is_member ? 'account' : 'none';
 }
 
+/** The time a ticket was scanned, on the association's clock: "6:42 pm CEST". */
+const scannedAt = (iso: string) => formatTime(iso);
+
 export default function EventAttendance() {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -80,6 +85,7 @@ export default function EventAttendance() {
   const [ext, setExt] = useState({ name: '', surname: '', email: '' });
   const [busy, setBusy] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   // The register of members, read once when the walk-in box is first opened.
   const [roster, setRoster] = useState<AttendanceMember[] | null>(null);
   const [memberQuery, setMemberQuery] = useState('');
@@ -277,7 +283,7 @@ export default function EventAttendance() {
           {/* Standard filter format: no label above the field. */}
           <Select value={eventId} onValueChange={setEventId}>
             <SelectTrigger className="font-body"><SelectValue placeholder="Select an event…" /></SelectTrigger>
-            <SelectContent>{events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {new Date(e.start_at || e.date).toLocaleDateString()}</SelectItem>)}</SelectContent>
+            <SelectContent>{events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title} - {formatEventWhen(e, { weekday: false, month: 'short' })}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <Button data-ro variant="outline" className="font-body shrink-0" disabled={rows.length === 0} onClick={exportCsv}>
@@ -407,9 +413,20 @@ export default function EventAttendance() {
             </div>
           </div>
         ) : (
-          <Button variant="outline" className="w-full sm:w-auto" disabled={!eventId} onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-2" />Add someone who turned up
-          </Button>
+          // SCAN FIRST, BY HAND ALWAYS. The scanner reads the ticket in a
+          // registrant's email; the tick boxes below and the walk-in form
+          // stay exactly as they were. An online event has no door.
+          <div className="flex flex-col sm:flex-row gap-2">
+            {!currentEvent?.online && (
+              <Button variant="solid" className="w-full sm:w-auto" disabled={!eventId} onClick={() => setScanOpen(true)}>
+                <ScanLine className="h-4 w-4 mr-2" />Scan tickets
+              </Button>
+            )}
+            <Button variant="outline" className="w-full sm:w-auto" disabled={!eventId} onClick={openAdd}>
+              <Plus className="h-4 w-4 mr-2" />Add someone who turned up
+            </Button>
+            {!currentEvent?.online && <HelpDot page="events-attendance" topic="scan" />}
+          </div>
         )}
       </div>
       )}
@@ -442,7 +459,10 @@ export default function EventAttendance() {
                   />
                 </label>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm text-foreground break-words">{r.name}</div>
+                  <div className="text-sm text-foreground break-words">
+                    {r.name}
+                    {r.attended && r.checked_in_at && <span className="ml-1.5 text-xs text-muted-foreground">scanned {scannedAt(r.checked_in_at)}</span>}
+                  </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <MemberTag reg={r} />
                     {r.email && <span className="text-xs text-muted-foreground break-all">{r.email}</span>}
@@ -486,6 +506,7 @@ export default function EventAttendance() {
                     </td>
                     <td className="px-3 py-2 text-foreground">
                       {r.name}
+                      {r.attended && r.checked_in_at && <span className="ml-1.5 text-xs text-muted-foreground">scanned {scannedAt(r.checked_in_at)}</span>}
                       {/* The name on the REGISTER, when it differs from what
                           they typed. "M. Rossi" on the door, Mario Rossi on
                           the books, and the reader can see both. */}
@@ -508,6 +529,15 @@ export default function EventAttendance() {
             </table>
           </div>
         </>
+      )}
+      {eventId && (
+        <CheckinScanner
+          open={scanOpen}
+          onOpenChange={setScanOpen}
+          eventId={eventId}
+          eventTitle={currentEvent?.title ?? ''}
+          onCheckedIn={(id, at) => setRegs((p) => p.map((x) => (x.id === id ? { ...x, attended: true, checked_in_at: at ?? x.checked_in_at } : x)))}
+        />
       )}
     </div>
   );

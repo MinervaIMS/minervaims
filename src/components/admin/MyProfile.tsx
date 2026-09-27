@@ -22,6 +22,7 @@ import { normalizeLinkedInProfile } from '@/lib/linkedin';
 import { workspacePath } from '@/lib/workspace-nav';
 import { getMyApplication, ACADEMIC_YEAR_LABELS, type ApplicationRow } from '@/lib/applications-api';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { formatStamp } from '@/lib/event-time';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { CandidateDocRow } from '@/components/admin/recruiting/CandidateDocRow';
@@ -363,7 +364,7 @@ export default function MyProfile() {
                 {app?.interview_division && (
                   <Field label="Interview division" value={divisionLabels[app.interview_division]} />
                 )}
-                <Field label="Submitted" value={app ? new Date(app.created_at).toLocaleString('en-GB') : ''} />
+                <Field label="Submitted" value={app ? formatStamp(app.created_at) : ''} />
               </div>
             </ProfileCard>
           </div>
@@ -717,7 +718,11 @@ export default function MyProfile() {
   // THE CERTIFICATE. Only for a member who can have one: nobody else sees
   // the card, so the page is unchanged for applicants, advisors and alumni.
   // The download is a read, so it works on a phone as well (`data-ro`).
-  const certificateCard = certificate?.eligible ? (
+  const certificateCard = certificate?.withdrawn ? (
+    <ProfileCard title="Membership Certificate" className="lg:shrink-0">
+      <p className="text-sm text-foreground/85 leading-relaxed">{certificate.reason}</p>
+    </ProfileCard>
+  ) : certificate?.eligible ? (
     <ProfileCard
       title="Membership Certificate"
       className="lg:shrink-0"

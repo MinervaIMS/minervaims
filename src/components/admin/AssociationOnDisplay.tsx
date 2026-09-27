@@ -16,6 +16,7 @@ import {
 } from '@/lib/alumni-aod-api';
 import { semesterOf, semestersInData } from '@/lib/semester';
 import { logActivity } from '@/lib/activity-log';
+import { formatDay, zoneOnDate } from '@/lib/event-time';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 
 // =====================================================================
@@ -167,7 +168,7 @@ export default function AssociationOnDisplay() {
                         </tr>
                         {pastDays.filter((d) => semesterOf(d.event_date).key === sem.key).map((d) => (
                           <tr key={d.id} className="border-t border-separator">
-                            <td className="px-3 py-2">{new Date(`${d.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                            <td className="px-3 py-2">{formatDay(`${d.event_date}T12:00:00Z`)}</td>
                             <td className="px-3 py-2">{coverageCount(d.id)} / {AOD_SLOTS.length}</td>
                           </tr>
                         ))}
@@ -195,7 +196,7 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
     <div className="border border-separator">
       <div className="flex items-center justify-between px-4 py-3 bg-muted/40 font-body">
         <div>
-          <div className="font-serif text-lg text-accent">{new Date(`${day.event_date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          <div className="font-serif text-lg text-accent">{formatDay(`${day.event_date}T12:00:00Z`)}</div>
           <div className="text-xs text-muted-foreground">{coverage}/{AOD_SLOTS.length} slots covered (more than {COVER_BY_HEADCOUNT} people, or all {CORE_DIVISIONS.length} core divisions) <HelpDot page="events-on-display" topic="coverage" /> · {day.registration_open ? 'Registration open' : 'Registration closed'}</div>
           {/* THE TWO FACTS EVERY SLOT ON THIS DAY SHARES, SAID ONCE.
               How long a slot lasts and whether it can fill up are true of
@@ -203,7 +204,7 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
               repeated eighteen times down the grid. */}
           <div className="mt-1 text-xs text-muted-foreground">
             Each slot runs for {AOD_SLOT_MINUTES} minutes, from its start time to the end of the following
-            half hour. There is no limit on how many people can take a slot: the more of us on the stand,
+            half hour, on Rome time ({zoneOnDate(day.event_date)}). There is no limit on how many people can take a slot: the more of us on the stand,
             the better, so please register even where a slot is already covered.
           </div>
         </div>
@@ -232,7 +233,7 @@ function DayBlock({ day, isSenior, userId, signupsFor, busySlot, onSignup, onRem
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-foreground">{formatSlotTime(slot)}</div>
-                  <div className="text-[11px] text-muted-foreground">to {formatSlotTime(slotEndTime(slot))}</div>
+                  <div className="text-[11px] text-muted-foreground">to {formatSlotTime(slotEndTime(slot))} {zoneOnDate(day.event_date)}</div>
                 </div>
                 <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${covered ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                   {/* The headcount shows in BOTH states. It used to be

@@ -36,6 +36,7 @@ const CALENDAR_LEGEND: LegendItem[] = [
   { swatch: 'bg-muted border border-separator', label: 'Exam session break: no events accepted' },
 ];
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { formatEventWhen, romeWall, romeWallToIso, romeYmd, zoneOnDate } from '@/lib/event-time';
 import { listEvents, registerForEvent, myEventRegistrationIds, saveEvent, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
 import {
   listCalendarEntries, saveCalendarEntry, deleteCalendarEntry, CALENDAR_ENTRY_LABELS,
@@ -115,7 +116,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         // An Association on Display day also has an event (for attendance);
         // the day is drawn below from `aod_days`, so its event is skipped
         // here rather than appear twice.
-        for (const e of events) { if (e.aod_day_id) continue; const d = (e.start_at || e.date)?.slice(0, 10); if (d) out.push({ date: d, label: e.title, kind: 'event', event: e }); }
+        for (const e of events) { if (e.aod_day_id) continue; const d = e.start_at ? romeYmd(e.start_at) : e.date?.slice(0, 10); if (d) out.push({ date: d, label: e.title, kind: 'event', event: e }); }
         for (const c of entries) out.push({ date: c.entry_date.slice(0, 10), label: c.title, kind: 'custom', entry: c });
         const { data: aod } = await sb.from('aod_days').select('event_date');
         for (const a of (aod || []) as { event_date: string }[]) out.push({ date: a.event_date, label: 'Association on Display', kind: 'aod' });
@@ -193,16 +194,10 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   };
 
   // ── Editing an event from the grid ───────────────────────────────────
-  /** Local time as the two form fields want it: 'YYYY-MM-DD' and 'HH:MM'. */
+  /** Rome's time as the two form fields want it: 'YYYY-MM-DD' and 'HH:MM'. */
   const splitWhen = (iso: string | null, fallbackDate: string) => {
-    if (!iso) return { date: fallbackDate, time: '' };
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return { date: fallbackDate, time: '' };
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return {
-      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-      time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-    };
+    const w = romeWall(iso);
+    return w.date ? w : { date: fallbackDate, time: '' };
   };
 
   const openEventEdit = (event: EventRow) => {
@@ -226,21 +221,18 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     if (!place.trim()) { toast({ title: 'A place is required', variant: 'destructive' }); return; }
     if (endTime && !time) { toast({ title: 'Give a start time before an end time', variant: 'destructive' }); return; }
 
-    // A local wall-clock time typed by a member becomes an instant here,
-    // once, so the whole application reads the same one afterwards.
-    const localIso = (d: string, t: string) => {
-      const made = new Date(`${d}T${t}`);
-      return Number.isNaN(made.getTime()) ? null : made.toISOString();
-    };
-    const start_at = time ? localIso(date, time) : null;
+    // A wall-clock time typed on Rome's clock becomes an instant here, once,
+    // so the whole application reads the same one afterwards, wherever the
+    // member typing it happens to be.
+    const start_at = time ? romeWallToIso(date, time) : null;
     let end_at: string | null = null;
     if (endTime) {
-      end_at = localIso(date, endTime);
+      end_at = romeWallToIso(date, endTime);
       // An end before the start is an event that runs past midnight.
       if (start_at && end_at && end_at <= start_at) {
-        const next = new Date(`${date}T${endTime}`);
-        next.setDate(next.getDate() + 1);
-        end_at = next.toISOString();
+        const next = new Date(`${date}T12:00:00Z`);
+        next.setUTCDate(next.getUTCDate() + 1);
+        end_at = romeWallToIso(next.toISOString().slice(0, 10), endTime);
       }
     }
 
@@ -479,7 +471,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                             title={it.label}
                             meta={<>
                               <PreviewRow label="Kind" value={kindLabel} />
-                              <PreviewRow label="When" value={date} />
+                              <PreviewRow label="When" value={isEvent ? formatEventWhen(it.event!) : date} />
                               <PreviewRow label="Where" value={isCustom ? it.entry!.location : isEvent ? it.event!.place : undefined} />
                               <PreviewRow label="Details" value={isCustom ? it.entry!.description : undefined} />
                               <PreviewRow label="Registered" value={isReg ? 'You are registered' : undefined} />
@@ -561,7 +553,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                 <Input value={eventForm.place} onChange={(e) => setEventForm({ ...eventForm, place: e.target.value })} placeholder="e.g. Room 3-E4-SR03, Via Roentgen 1" />
               </div>
               <p className="text-xs text-muted-foreground">
-                Leave the times empty for an all-day event. {EVENT_TYPE_LABELS[eventForm.event.event_type]}
+                Times are Rome time ({zoneOnDate(eventForm.date || new Date().toISOString())}). Leave them empty for an all-day event. {EVENT_TYPE_LABELS[eventForm.event.event_type]}
                 {eventForm.event.registration_enabled ? ' · registration is open for this event' : ''}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
@@ -673,7 +665,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
           <DialogHeader>
             <DialogTitle className="font-serif">{regEvent?.title}</DialogTitle>
             <DialogDescription className="font-body">
-              {regEvent && new Date(regEvent.start_at || regEvent.date).toLocaleString()}{regEvent?.place ? ` · ${regEvent.place}` : ''}
+              {regEvent && formatEventWhen(regEvent)}{regEvent?.place ? ` · ${regEvent.place}` : ''}
             </DialogDescription>
           </DialogHeader>
           {regEvent && (

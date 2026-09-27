@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
+import { clock12 } from '@/lib/event-time';
 
 export type CallStatus = 'planned' | 'invited' | 'accepted' | 'completed' | 'declined';
 
@@ -120,20 +121,18 @@ export const AOD_SLOTS: string[] = (() => {
 })();
 
 /**
- * A stored "18:30" as the association writes the time of day: "6:30pm".
+ * A stored "18:30" as the workspace writes the time of day: "6:30 pm".
  *
  * Written out here rather than left to `toLocaleTimeString`, which
  * follows the reader's own locale and would give an Italian browser
  * "18:30" and a British one "6:30 pm" for the same stand. A rota is read
  * side by side by people on different machines, so it reads the same on
- * all of them.
+ * all of them. The slots are on Rome's clock; the page names the zone once.
  */
 export function formatSlotTime(hhmm: string): string {
   const [h, m] = hhmm.split(':').map(Number);
   if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
-  const suffix = h >= 12 ? 'pm' : 'am';
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${String(m).padStart(2, '0')}${suffix}`;
+  return clock12(h, m);
 }
 
 /** The stored key of the moment a slot ends: "18:30" gives "19:00". */
@@ -144,12 +143,12 @@ export function slotEndTime(hhmm: string): string {
   return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
-/** A whole slot, start to finish: "6:30pm to 7:00pm". */
+/** A whole slot, start to finish: "6:30 pm to 7:00 pm". */
 export function formatSlotRange(hhmm: string): string {
   return `${formatSlotTime(hhmm)} to ${formatSlotTime(slotEndTime(hhmm))}`;
 }
 
-/** When the stand opens and closes, as one phrase: "10:00am to 7:00pm". */
+/** When the stand opens and closes, as one phrase: "10:00 am to 7:00 pm". */
 export const AOD_DAY_HOURS = `${formatSlotTime(AOD_SLOTS[0])} to ${formatSlotTime(slotEndTime(AOD_SLOTS[AOD_SLOTS.length - 1]))}`;
 
   // `any` deliberately, matching what `supabase.functions.invoke` used to

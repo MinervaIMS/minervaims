@@ -6,6 +6,7 @@ import { Eye, Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
+import { formatStamp } from '@/lib/event-time';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
@@ -299,7 +300,7 @@ export default function AutoEmails() {
               <tbody>
                 {pagedLog.map((l) => (
                   <tr key={l.id} className="border-t border-separator">
-                    <td className="px-3 py-2 whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatStamp(l.created_at)}</td>
                     <td className="px-3 py-2">
                       <span className="text-foreground">{l.template_label || l.template_name}</span>
                       {l.template_label && <span className="text-xs text-muted-foreground ml-2">{l.template_name}</span>}

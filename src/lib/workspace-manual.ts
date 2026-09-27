@@ -295,6 +295,19 @@ export const COMMON_TASKS: ManualTask[] = [
     caution: 'It certifies the role you hold now, for this semester. After a change of role, download it again.',
   },
   {
+    id: 'withdraw-certificate',
+    title: 'Withdraw a certificate of membership',
+    requires: 'settings-certificates',
+    level: 'manage',
+    steps: [
+      'Open Settings, Certificates and find the certificate by its number or the holder\'s name. Filter by semester or status to narrow the list.',
+      'Press Withdraw and write the reason: it is recorded with your name and shown to the holder on their profile.',
+      'Confirm. Anybody who checks the number at minervaims.org/verify now reads that it is no longer valid, and the holder cannot download a new one for that role and semester.',
+      'If it was a mistake, press Restore on the same row: the certificate is valid again, with the same number.',
+    ],
+    caution: 'Withdrawing takes effect publicly at once. Both actions are recorded in the activity log.',
+  },
+  {
     id: 'register-event',
     title: 'Register for an event',
     requires: 'calendar',
@@ -392,9 +405,23 @@ export const COMMON_TASKS: ManualTask[] = [
       'Open Events, Create event and set the type, date, place and description.',
       'Turn registration on if members or guests should be able to register, and attach a registration form from Events, Registration forms if the event needs specific answers.',
       'Check the Calendar: the date must not fall in an exam session break or on an Italian public holiday, and the calendar will refuse it if it does.',
+      'Type the start and end on Rome\'s clock: the event is shown everywhere as, for example, 6:30 pm to 8:00 pm CEST.',
       'After the event, record who came in Events, Attendance.',
       'The event then reads in Events, Event archive.',
     ],
+  },
+  {
+    id: 'scan-tickets',
+    title: 'Check people in at the door',
+    requires: 'events-attendance',
+    level: 'manage',
+    steps: [
+      'Open Events, Attendance on a phone or a laptop and choose the event.',
+      'Press Scan tickets and allow the camera. Everybody registered has an entry code in their confirmation email and in the reminder the day before.',
+      'Hold each code in front of the camera: the name appears and the person is ticked as present, with the time. Amber means they were already checked in; red means the code is for another event or is not a ticket.',
+      'For anybody without their code, find them in the list and tick the box by hand; add walk-ins with "Add someone who turned up".',
+    ],
+    caution: 'Guests ticked as present who are not members receive the thank-you the next morning, so check people in on the day.',
   },
   {
     id: 'collect-fees',
@@ -420,6 +447,18 @@ export const COMMON_TASKS: ManualTask[] = [
       'To correct a mistake, record a second entry that offsets it and says why.',
     ],
     caution: 'Every entry is permanent and logged.',
+  },
+  {
+    id: 'design-package',
+    title: 'Download or update the design system package',
+    requires: 'smm-brand',
+    level: 'view',
+    steps: [
+      'Open Social Media, Design System.',
+      'Press Download the ZIP: the whole design system, with the guide, logos, templates and fonts. The link works for one minute and the download is recorded.',
+      'To publish a new edition (Head of Media and Communication, President, Vice President), press Replace the package and choose the new ZIP, up to 50 MB.',
+    ],
+    caution: 'The package contains licensed fonts and the Society\'s artwork: keep it inside Minerva.',
   },
   {
     id: 'plan-post',
@@ -472,7 +511,7 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   president:
     'The President holds the association. Every subsection is open at full access, including the ones nothing else reaches: granting and removing roles, the role permissions table, the activity log, and sending an offer to a candidate. The presidency is also the only role that can change another President, and it cannot change its own role.',
   vice_president:
-    'The Vice President runs the association alongside the President and can reach almost all of it. The deliberate exceptions are the machinery of access itself, which is readable but not editable, and the sending of offers, which stays with the President. Verification of the fee collection is a Vice President responsibility.',
+    'The Vice President runs the association alongside the President and can reach almost all of it. The deliberate exceptions are the machinery of access itself, which is readable but not editable, and the sending of offers, which stays with the President. Verification of the fee collection is a Vice President responsibility, and so, with the President, are the invitations to advisors and alumni and the register of certificates of membership.',
   head_of_asset_management:
     'The Head of Asset Management leads the research effort across every division: the reports, the templates, the fund performances and the recruiting of researchers. Candidate screening is open for every division regardless of what the applicant asked for, because the Head is choosing where a person fits. The media and operations sections are readable, so the Head can see what is being published and what the association is spending, without editing either.',
   head_of_division:
@@ -486,11 +525,11 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   analyst:
     'An Analyst writes research. The archive, the templates, the people registers and the readings are all readable, and the Dashboard shows how the division is doing against the semester before.',
   head_of_media:
-    'The Head of Media and Communication owns everything the association says publicly outside its research: the editorial calendar, the platform libraries, the brand and design system, and the paid advertising register. External relations and the statute and documents are managed here too, because an announcement of a partnership cannot be drafted from a summary of it.',
+    'The Head of Media and Communication owns everything the association says publicly outside its research: the editorial calendar, the platform libraries, the brand and design system with its downloadable package, and the paid advertising register. External relations and the statute and documents are managed here too, because an announcement of a partnership cannot be drafted from a summary of it. The member register and the alumni directory are readable, so member and alumni features and event communications start from the real record.',
   media_analyst:
-    'A Media Analyst produces the material: the Instagram, LinkedIn, graphics and other libraries are theirs to manage. The editorial calendar, the brand system and the advertising register are read rather than edited, because the plan and the budget belong to the Head.',
+    'A Media Analyst produces the material: the Instagram, LinkedIn, graphics and other libraries are theirs to manage, and so is the editorial calendar, the plan they work to every week. The brand system and the advertising register are read rather than edited, because the identity and the budget belong to the Head. At events, a Media Analyst can take attendance and scan tickets at the door alongside Operations, and the member register and alumni directory are readable for features and communications.',
   head_of_operations:
-    'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ.',
+    'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ. Invitations to advisors and alumni are sent by the President and the Vice President.',
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
@@ -517,6 +556,9 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Equivalence bands', definition: 'The default method of the GPA converter: grades that mean the same thing (pass, good, very good, excellent, top) are matched between two systems, and a grade in between is read at the same position. Indicative, like every conversion.', requires: 'career-gpa' },
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
+  { term: 'Entry code', definition: 'The QR code in an event confirmation email and in the reminder the day before. It identifies one registration, carries no personal data, and is scanned at the door in Events, Attendance to tick the person as present.', requires: 'events-attendance' },
+  { term: 'Rome time', definition: 'The clock every time in the workspace is written on, with its zone named: CET in winter, CEST in summer, as in 6:30 pm CEST. What you type is read on the same clock, wherever you are.' },
+  { term: 'Withdrawn certificate', definition: 'A certificate of membership the President or the Vice President has withdrawn, with a reason, in Settings, Certificates. Its number reads as no longer valid at minervaims.org/verify until it is restored.', requires: 'settings-certificates' },
   { term: 'Certificate number', definition: 'The number printed on a certificate of membership, such as MIMS-26F-7K3Q-9D2X: the Society, the semester (26F is Fall 2026) and eight random characters. It is what minervaims.org/verify checks.' },
   { term: 'Getting started', definition: 'The five-step checklist a member starting out sees on the Dashboard in the place of Research by division, until the steps are done or the card is hidden.' },
   { term: 'Thank-you to guests', definition: 'The email the President sends, the morning after an event, to the guests marked as attended who are not members.', requires: 'events-attendance' },
@@ -693,6 +735,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The public Team page is written from this register automatically. A person appears there only if three things are true at once: their profile is marked to show on the website, their membership status is one that is published, and their role is one the public page carries.",
       "Only the President and the association account can assign or change a role. Nobody can change their own, from any page.",
       "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
+      "The Head of Media and Communication and the Media Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
     ],
     related: ['settings-users', 'people-alumni', 'ops-fee'],
   },
@@ -703,11 +746,28 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     ],
     related: ['events-alumni-calls', 'people-members'],
   },
+  'events-attendance': {
+    detail: [
+      "Who registered for each event and who actually came. Every registration carries an entry code, sent as a QR code in the confirmation email and again the day before; Scan tickets reads it with the camera of a phone or a laptop and ticks the person as present, with the time.",
+      "Ticking by hand works exactly as before and can be mixed with scanning: somebody without their code is found in the list and ticked. Online events have no door, so they have no code and no scanner.",
+      "The Media Analyst can take attendance and scan alongside Operations. The list closes a week after the event; after that it is the record and can still be exported.",
+    ],
+    related: ['events-forms', 'events-create', 'events-archive'],
+  },
+  'smm-brand': {
+    detail: [
+      "The design system of the Society, as the package itself describes it: the guide inside the package is shown here chapter by chapter, with the logos, the type scale, the colours and the shadows drawn live beside the text.",
+      "Download the ZIP gives the whole package: the guide, every logo, the tokens, the templates and the font files. It stays inside Minerva because it contains the Society's artwork and licensed fonts, and every download is recorded.",
+      "A new edition is published by uploading its ZIP, which replaces the previous one for everybody at once.",
+    ],
+    related: ['smm-graphics', 'smm-editorial'],
+  },
   'events-create': {
     detail: [
       "Where a new event is set up: its type, its date, its place, its description and whether registration is open.",
       "Attach a registration form from Events, Registration forms when the event needs to ask registrants something specific. Registrations feed straight into Attendance.",
       "Alumni calls are created in Events, Alumni calls, not here. Every event appears in the Event archive; whether it is also listed on the public website is chosen when it is created (internal meetings and online calls start unlisted) and can be changed from the archive.",
+      "Start and end are typed on Rome's clock, wherever you are, and every page and email then shows them the same way, as 6:30 pm to 8:00 pm CEST.",
     ],
     related: ['events-forms', 'events-attendance', 'events-archive'],
   },
@@ -721,7 +781,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'events-on-display': {
     detail: [
-      "The days on which the association presents itself, and the slots members have signed up for. The stand runs 10:00am to 7:00pm in half-hour slots, and each slot covers its whole half hour: the 6:30pm slot runs to 7:00pm.",
+      "The days on which the association presents itself, and the slots members have signed up for. The stand runs 10:00 am to 7:00 pm, Rome time, in half-hour slots, and each slot covers its whole half hour: the 6:30 pm slot runs to 7:00 pm.",
       "As many people as want to can take the same slot. Covered is a floor and not a ceiling, so a green slot is still open and still worth joining.",
       "Senior roles open and close a day. Everybody else registers and de-registers themselves, up to 24 hours before it.",
     ],
@@ -765,6 +825,13 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Applicants are not here. They live in Recruiting, Candidates screening until they accept an offer.",
     ],
     related: ['people-members', 'settings-roles', 'settings-activity'],
+  },
+  'settings-certificates': {
+    detail: [
+      "Every certificate of membership the Society has issued, with its number, the holder, the role and semester it certifies, the day it was issued and whether it is still valid.",
+      "The President and the Vice President can withdraw a certificate, with a reason, and restore it. A withdrawn certificate reads as no longer valid to anybody who checks the number, at once; a certificate whose holder has been expelled reads the same way on its own.",
+    ],
+    related: ['my-role', 'people-members', 'settings-activity'],
   },
   'settings-activity': {
     detail: [
@@ -867,6 +934,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Accounts for advisors and alumni, who have left Bocconi and cannot register themselves because new accounts are restricted to the university's three domains.",
       "An invitation is not a way round that rule. The association creates the account itself and emails a link to set a password; the sign-up form is never involved.",
       "Once somebody accepts, they are an ordinary account and their access is managed in Settings, Users. This page keeps the record of who invited whom, as what, and when.",
+      "Only the President and the Vice President open this page and send invitations; advisors can read it.",
     ],
     related: ['people-members', 'people-alumni', 'settings-users'],
   },

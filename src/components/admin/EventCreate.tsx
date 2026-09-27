@@ -19,6 +19,7 @@ import {
 } from '@/lib/events-api';
 import { listExamSessions, examSessionOn, type ExamSession } from '@/lib/calendar-api';
 import { useEffect } from 'react';
+import { romeLocalToIso } from '@/lib/event-time';
 
 // Only the five core research divisions organise events (Media and Operations
 // do not; Operations events are association-wide, not divisional).
@@ -60,13 +61,17 @@ export default function EventCreate() {
     if (!form.online && !form.place.trim()) { toast({ title: 'Add a location (or mark the event online)', variant: 'destructive' }); return; }
     if (divisionRequired && !form.division) { toast({ title: 'Choose the organising division', description: 'This event type requires a division.', variant: 'destructive' }); return; }
     if (examBreak) { toast({ title: 'Exam session break', description: `${examBreak.label}: the calendar does not accept events between ${examBreak.start_date} and ${examBreak.end_date}. Pick a date when the community can attend.`, variant: 'destructive' }); return; }
+    // Typed on Rome's clock, whoever types it and wherever they are.
+    const startAt = romeLocalToIso(form.start_local);
+    const endAt = form.end_local ? romeLocalToIso(form.end_local) : null;
+    if (!startAt || (form.end_local && !endAt)) { toast({ title: 'Check the start and end times', description: 'One of them could not be read. Pick the date and time again.', variant: 'destructive' }); return; }
     setSaving(true);
     try {
       await saveEvent(session, {
         title: form.title, date: form.start_local.slice(0, 10), place: form.online ? (form.place || 'Online') : form.place,
         moderator: form.moderator || null, guest: guests.filter((g) => g.trim()), description: form.description || null,
         poster_url: form.poster_url || null, event_type: form.event_type, division: form.division || null,
-        start_at: new Date(form.start_local).toISOString(), end_at: form.end_local ? new Date(form.end_local).toISOString() : null,
+        start_at: startAt, end_at: endAt,
         online: form.online, registration_enabled: form.registration_enabled, registration_audience: form.registration_audience,
         // Every event is in the archive; whether it is PUBLIC is the one
         // choice, made here and changeable later from the archive. It used
@@ -114,8 +119,8 @@ export default function EventCreate() {
               </Select>
             </div>
           )}
-          <div className="space-y-1"><Label>Starts *</Label><Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} /></div>
-          <div className="space-y-1"><Label>Ends</Label><Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} /></div>
+          <div className="space-y-1"><Label>Starts (Rome time) *</Label><Input type="datetime-local" value={form.start_local} onChange={(e) => setForm({ ...form, start_local: e.target.value })} /></div>
+          <div className="space-y-1"><Label>Ends (Rome time)</Label><Input type="datetime-local" value={form.end_local} onChange={(e) => setForm({ ...form, end_local: e.target.value })} /></div>
         </div>
 
         {examBreak && (

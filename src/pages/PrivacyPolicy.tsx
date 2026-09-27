@@ -43,7 +43,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="September 25th, 2026"
+      lastUpdated="September 28th, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -108,12 +108,16 @@ const PrivacyPolicy = () => (
           <li>
             <strong>Event registrations and attendance:</strong> name, email address and, where relevant, whether you
             are a Bocconi student and your programme, affiliation, whether you attended, and a record of the
-            registration reminders sent for the event.
+            registration reminders sent for the event; a personal check-in code, shown as a QR code in your
+            registration emails, and the time it was scanned at the entrance; and, for guests who attended and are not
+            members, a record of the thank-you email sent the day after the event.
           </li>
           <li>
             <strong>Members:</strong> identification and contact details, division and role, membership status and
             history, membership fee records, photograph where provided, LinkedIn profile, and the semester registers
-            of members.
+            of members; the certificates of membership you choose to download (name, role, semester, issue date,
+            certificate number and, if it happens, the date and reason of a withdrawal); and your progress in the
+            Getting started checklist of the Workspace, which only you can see.
           </li>
           <li>
             <strong>Alumni:</strong> name and surname, graduation year, current employer, job area, city and LinkedIn
@@ -165,9 +169,16 @@ const PrivacyPolicy = () => (
             where applicable, article 6(1)(c), and legitimate interest in orderly administration, article 6(1)(f).
           </li>
           <li>
-            <strong>Event management</strong> (registration, reminders, attendance): measures you request when
-            registering, article 6(1)(b), and legitimate interest in organising events well and safely, article
-            6(1)(f).
+            <strong>Event management</strong> (registration, reminders, check-in at the entrance, attendance):
+            measures you request when registering, article 6(1)(b), and legitimate interest in organising events well
+            and safely, article 6(1)(f). <strong>Thank-you email to guests who attended:</strong> legitimate interest
+            in thanking participants and keeping them informed about the association's activities, article 6(1)(f);
+            it is sent once, and you can object at any time.
+          </li>
+          <li>
+            <strong>Certificates of membership</strong> (issuing a certificate you request and confirming it to the
+            people you show it to): performance of the association relationship at your request, article 6(1)(b),
+            and legitimate interest in preventing forged or outdated certificates, article 6(1)(f).
           </li>
           <li>
             <strong>Newsletter:</strong> your consent, article 6(1)(a), when you subscribe through a newsletter form;
@@ -240,8 +251,10 @@ const PrivacyPolicy = () => (
         </p>
         <p>
           Transactional emails (application confirmations, interview invitations, offer notifications, event
-          registration confirmations and reminders to members, membership fee notices, account emails) are sent
-          because they are necessary for the process or the membership concerned and do not depend on the newsletter.
+          registration confirmations with your check-in code and reminders to members, membership fee notices,
+          account emails) are sent because they are necessary for the process or the membership concerned and do not
+          depend on the newsletter. The check-in code in these emails contains no personal data: it is a random
+          number that only the association's staff can use, to mark you as present at the entrance.
         </p>
       </LegalSectionBlock>
 
@@ -281,6 +294,16 @@ const PrivacyPolicy = () => (
           Actions performed inside the Workspace are recorded in an activity log (author, role held at the time,
           action, affected item, timestamp) used for accountability and security. Users are informed of this inside
           the Workspace; the log is visible only to roles with the corresponding permission.
+        </p>
+        <p>
+          <strong>Certificates of membership.</strong> An active member can download from the Workspace a
+          certificate of the role they hold in the current semester. Each certificate carries a number and a QR code.
+          Anyone who has the number can confirm the certificate at <a href="/verify">minervaims.org/verify</a>, which
+          shows only the holder's name, the role, the semester, the issue date and whether the certificate is still
+          valid: nothing else about the member is disclosed, and the page is not indexed by search engines. The number
+          reaches only the people the member chooses to show the certificate to. The President and the Vice
+          President can withdraw a certificate, for example one issued with a wrong role; a withdrawn certificate is
+          then shown as no longer valid.
         </p>
       </LegalSectionBlock>
 
@@ -406,7 +429,8 @@ const PrivacyPolicy = () => (
           </li>
           <li>
             <strong>Visitors of the website,</strong> only for the information published on the public team pages
-            and the public alumni directory (sections 9 and 10).
+            and the public alumni directory (sections 9 and 10), and, for a certificate of membership, only the
+            people who have its number, which the member chooses to share (section 8).
           </li>
           <li>
             <strong>Università Bocconi and its student association bodies,</strong> only where required by the
@@ -469,7 +493,13 @@ const PrivacyPolicy = () => (
           </li>
           <li>
             <strong>Event registrations and attendance:</strong> twelve months after the event, unless connected to
-            accounting records; aggregate figures (such as the number of attendees) are kept without names.
+            accounting records; aggregate figures (such as the number of attendees) are kept without names. The
+            check-in code and the time of check-in are deleted together with the registration.
+          </li>
+          <li>
+            <strong>Certificates of membership:</strong> for as long as the member's Workspace account exists, so
+            that a certificate can still be confirmed after the semester it refers to; deleted together with the
+            account. The Getting started checklist is deleted together with the account.
           </li>
           <li>
             <strong>Newsletter:</strong> until you unsubscribe or object, plus a permanent suppression record to honour

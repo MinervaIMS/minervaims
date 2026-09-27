@@ -15,6 +15,7 @@ import type { CandidateDetail } from './useCandidateDetail';
 import { documentFileName } from './document-title';
 import { safeLinkedInUrl } from '@/lib/linkedin';
 import linkedinIcon from '@/assets/linkedin-icon.png';
+import { formatTime } from '@/lib/event-time';
 
 // =====================================================================
 // ONE WAY OF WRITING A DATE, FOR EVERY READER OF THIS WINDOW.
@@ -49,11 +50,9 @@ function shortDate(iso: string): string {
   if (Number.isNaN(d.getTime())) return '';
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
-/** "16:28". The clock is 24-hour everywhere in the workspace. */
+/** "4:28 pm CEST": every time in the workspace is on Rome's clock, zone named. */
 function hhmm(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return formatTime(iso);
 }
 
 // =====================================================================

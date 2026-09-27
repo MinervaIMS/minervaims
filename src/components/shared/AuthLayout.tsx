@@ -24,6 +24,14 @@ interface AuthLayoutProps {
    * and the form it leads into read as one continuous journey.
    */
   background?: 'workspace' | 'application';
+  /**
+   * One screen, on a computer and on a phone: the page never scrolls, and a
+   * card taller than the window scrolls inside itself instead. Phones get a
+   * little less padding so the usual card fits whole.
+   */
+  fitScreen?: boolean;
+  /** Height of the logo at the top of the card, in pixels (default 138). */
+  lockupHeight?: number;
 }
 
 /**
@@ -37,6 +45,7 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({
   title, children, cardTitle, cardSubtitle, align = 'center', background = 'workspace',
+  fitScreen = false, lockupHeight = 138,
 }: AuthLayoutProps) {
   // This shell IS the "backdrop plus one white card" shape, so every page
   // built on it drops the site footer: the backdrop already fills the
@@ -50,9 +59,11 @@ export function AuthLayout({
           half-finished flow in results under a dozen near-identical
           titles. */}
       <Seo title={title} description={`${title} for the Minerva Investment Management Society workspace.`} noindex />
-      <div className="w-full flex flex-col bg-background" style={{ minHeight: '100vh' }}>
+      {/* One screen: the dynamic viewport height, so a phone's address bar
+          never pushes the foot of the page below the fold. */}
+      <div className={`w-full flex flex-col bg-background${fitScreen ? ' h-[100dvh] overflow-hidden' : ''}`} style={fitScreen ? undefined : { minHeight: '100vh' }}>
         {/* Form panel */}
-        <main className="relative flex-1 flex items-center justify-center px-6 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] pb-12 lg:pb-[7.5vh] overflow-hidden" style={{ backgroundColor: '#05030F' }}>
+        <main className={`relative flex-1 flex items-center justify-center px-6 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))] ${fitScreen ? 'pb-6 lg:pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.4))] lg:pb-[3vh]' : 'pb-12 lg:pb-[7.5vh]'} overflow-hidden`} style={{ backgroundColor: '#05030F' }}>
           <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
             {background === 'application' ? (
               <ApplyBackground />
@@ -72,19 +83,21 @@ export function AuthLayout({
           {/* z-[55]: over the navigation, under the overlay layer at z-[70].
               See the layer scale at the top of index.css. */}
           <div
-            className="relative z-[55] w-full max-w-md bg-background"
+            className={`relative z-[55] w-full max-w-md bg-background${fitScreen
+              ? ' px-[22px] py-7 sm:px-8 sm:py-[38px] lg:py-[30px] max-h-[calc(100dvh-84px-env(safe-area-inset-top)-3.5rem)] lg:max-h-[calc(100dvh-84px-env(safe-area-inset-top)-1rem-3vh)] overflow-y-auto'
+              : ''}`}
             style={{
               borderRadius: 0,
-              padding: '38px 32px',
+              ...(fitScreen ? {} : { padding: '38px 32px' }),
               boxShadow: '0 20px 60px -20px rgba(31, 15, 77, 0.18)',
             }}
           >
-            <div className="flex justify-center mb-7">
+            <div className={`flex justify-center ${lockupHeight < 138 ? 'mb-5' : 'mb-7'}`}>
               <img
                 src={fullLogo}
                 alt="Minerva Investment Management Society"
                 className="card-lockup"
-                style={{ '--lockup-h': '138px' } as CSSProperties}
+                style={{ '--lockup-h': `${lockupHeight}px` } as CSSProperties}
               />
             </div>
 

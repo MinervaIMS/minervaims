@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { checkinBlock } from '../_shared/checkin.ts';
+import { formatEventTime } from '../_shared/event-time.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_shared/request-body.ts';
 
 // =====================================================================
@@ -52,15 +54,6 @@ function formatEventDate(startAt: string | null, date: string | null): string {
   return new Intl.DateTimeFormat('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ROME,
   }).format(d);
-}
-function hhmm(iso: string): string {
-  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: ROME }).format(new Date(iso));
-}
-function formatEventTime(startAt: string | null, endAt: string | null): string {
-  if (!startAt || isNaN(new Date(startAt).getTime())) return 'To be confirmed';
-  const start = hhmm(startAt);
-  if (endAt && !isNaN(new Date(endAt).getTime())) return `${start} – ${hhmm(endAt)}`;
-  return start;
 }
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -163,6 +156,19 @@ Deno.serve(async (req) => {
       catch { /* ignore duplicates */ }
     }
 
+    // The ticket for the door: the registration's own check-in code, as a
+    // QR image in the email. An online event has no door, so no ticket.
+    // Read on its own, so that anything unexpected here costs the email its
+    // ticket and never the registration or the email itself.
+    let checkin = '';
+    if (!ev.online) {
+      try {
+        const { data: row } = await supabase.from('event_registrations')
+          .select('checkin_token').eq('event_id', eventId).ilike('email', email).maybeSingle();
+        checkin = checkinBlock(Deno.env.get('SUPABASE_URL') || '', (row as { checkin_token?: string } | null)?.checkin_token);
+      } catch (e) { console.error('check-in code unavailable', e); }
+    }
+
     // Confirmation of the registration, with the event's details.
     try {
       await supabase.rpc('enqueue_app_email', {
@@ -175,6 +181,7 @@ Deno.serve(async (req) => {
           event_time: formatEventTime(ev.start_at, ev.end_at),
           event_location: ev.online ? 'Online' : (ev.place || 'To be confirmed'),
           description_block: descriptionBlock(ev.description),
+          checkin_block: checkin,
         },
       });
     } catch (e) { console.error('registration confirmation email failed', e); }

@@ -176,7 +176,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
     <p className={`min-h-0 overflow-hidden leading-[1.5] text-accent-foreground/75 ${cls}`}>{update.description}</p>
   ) : null);
   const when = (cls: string) => (update.date ? (
-    <span className={`shrink-0 text-accent-foreground/70 ${cls}`}>{formatDate(update.date)}</span>
+    <span className={`shrink-0 text-accent-foreground/70 ${cls}`}>{formatDate(update.date)}{update.time ? `, ${update.time}` : ''}</span>
   ) : null);
   // The site's button language: white fill and purple label, and on hover the
   // full inversion to the deep purple with a white border. No icon: the
