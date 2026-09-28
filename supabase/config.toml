@@ -39,6 +39,8 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.brand-kit]
     verify_jwt = false
+  [functions.event-ics]
+    verify_jwt = false
   [functions.admin-alumni-calls]
     verify_jwt = false
   [functions.admin-aod]

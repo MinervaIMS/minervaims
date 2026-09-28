@@ -1,10 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { checkinBlock } from '../_shared/checkin.ts';
-import { formatEventTime } from '../_shared/event-time.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_shared/request-body.ts';
 
 // =====================================================================
-// register-event — public event registration. Audience-gated:
+// register-event: public event registration. Actions:
+//   (none)    register; when the event has a limit of places and it is
+//             full, the person joins the waiting list instead
+//   lookup    what a cancel link (?t=) refers to, for the cancel page
+//   cancel    "Can't make it": by the link's token, or signed in with the
+//             event id (the workspace Calendar). Frees the place, which the
+//             database gives at once to the first person waiting
+//             (promote_event_waitlist, migration 20260929090000).
+// Every email goes through public.send_event_notice, which builds it with
+// the person's own ticket, "Add to calendar" and cancel links.
+//
+// Registration is audience-gated:
 //   members            → must be signed in and be an association member
 //   members_external   → members or external students (name + email)
 //   guests / public    → anyone (name + email)
@@ -37,35 +46,17 @@ function isValidEmail(e: string | null | undefined): e is string {
   return typeof e === 'string' && e.length >= 3 && e.length <= 255 && EMAIL_RE.test(e);
 }
 
-// ---------------------------------------------------------------------
-// Confirmation-email helpers. Dates and times are shown in Europe/Rome,
-// which is the timezone every attendee reads the event in.
-// ---------------------------------------------------------------------
-const ROME = 'Europe/Rome';
-function firstNameOf(full: string): string {
-  const first = full.trim().split(/\s+/)[0] || '';
-  return first || 'there';
-}
-function formatEventDate(startAt: string | null, date: string | null): string {
-  const iso = startAt || (date ? `${date}T12:00:00Z` : null);
-  if (!iso) return 'To be confirmed';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return 'To be confirmed';
-  return new Intl.DateTimeFormat('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ROME,
-  }).format(d);
-}
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-// The description is optional: when absent the whole paragraph row is omitted
-// rather than left as an empty gap in the email.
-function descriptionBlock(description: string | null): string {
-  const text = (description || '').trim();
-  if (!text) return '';
-  return `<tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">${escapeHtml(text)}</p></td></tr>`;
-}
+const TOKEN_RE = /^[a-f0-9]{32}$/;
 
+/** Has the event begun (or, for an all-day event, is its day over)? */
+function hasStarted(ev: { start_at: string | null; date: string | null }): boolean {
+  if (ev.start_at) return Date.parse(ev.start_at) <= Date.now();
+  if (ev.date) {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+    return ev.date.slice(0, 10) < today;
+  }
+  return false;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -95,6 +86,80 @@ Deno.serve(async (req) => {
     // well-formed registration reads exactly as before.
     const body = await readJsonObject(req);
     if (!body) return json({ error: UNREADABLE_BODY }, 400);
+    const action = optionalTextOf(body, 'action') || 'register';
+
+    // ── The cancel link: what it is, and cancelling ────────────────────
+    if (action === 'lookup' || action === 'cancel') {
+      const token = (optionalTextOf(body, 't') || '').toLowerCase();
+      const byAccount = !token && !!userId;
+      if (!byAccount && token !== 'sample' && !TOKEN_RE.test(token)) {
+        return json({ error: 'This link is not complete. Open it again from your email.' }, 400);
+      }
+      if (token === 'sample') {
+        return json({ kind: 'sample' });
+      }
+      type Reg = { id: string; event_id: string; name: string; email: string | null; attended: boolean };
+      let reg: Reg | null = null;
+      let wait: { id: string; event_id: string; name: string; email: string; created_at: string } | null = null;
+      if (byAccount) {
+        const evId = textOf(body, 'event_id');
+        if (!evId) return json({ error: 'Missing event' }, 400);
+        const { data: r } = await supabase.from('event_registrations')
+          .select('id, event_id, name, email, attended').eq('event_id', evId).eq('user_id', userId).maybeSingle();
+        reg = r as Reg | null;
+        if (!reg) {
+          const { data: w } = await supabase.from('event_waitlist')
+            .select('id, event_id, name, email, created_at').eq('event_id', evId).eq('user_id', userId).maybeSingle();
+          wait = w;
+        }
+      } else {
+        const { data: r } = await supabase.from('event_registrations')
+          .select('id, event_id, name, email, attended').eq('cancel_token', token).maybeSingle();
+        reg = r as Reg | null;
+        if (!reg) {
+          const { data: w } = await supabase.from('event_waitlist')
+            .select('id, event_id, name, email, created_at').eq('token', token).maybeSingle();
+          wait = w;
+        }
+      }
+      if (!reg && !wait) return json({ kind: 'gone' });
+      const evId = (reg ?? wait)!.event_id;
+      const { data: ev } = await supabase.from('events')
+        .select('id, title, date, start_at, end_at, place, online, aod_day_id').eq('id', evId).maybeSingle();
+      if (!ev) return json({ kind: 'gone' });
+      const event = { id: ev.id, title: ev.title, date: ev.date, start_at: ev.start_at, end_at: ev.end_at, place: ev.place, online: ev.online };
+      let position: number | null = null;
+      if (wait) {
+        const { count } = await supabase.from('event_waitlist').select('id', { count: 'exact', head: true })
+          .eq('event_id', evId).lte('created_at', wait.created_at);
+        position = count ?? null;
+      }
+      const started = hasStarted(ev);
+      const name = (reg ?? wait)!.name;
+
+      if (action === 'lookup') {
+        return json({ kind: reg ? 'registration' : 'waitlist', event, name, attended: !!reg?.attended, started, position });
+      }
+      // Cancelling.
+      if (ev.aod_day_id) return json({ error: 'Association on Display is managed from its own page in the workspace.' }, 409);
+      if (reg?.attended) return json({ error: 'You have already been checked in at this event.' }, 409);
+      if (started) return json({ error: 'This event has already started, so there is nothing to cancel.' }, 409);
+      if (reg) {
+        const { error } = await supabase.from('event_registrations').delete().eq('id', reg.id);
+        if (error) throw error;
+        if (reg.email) {
+          try {
+            const { error: notice1 } = await supabase.rpc('send_event_notice', { p_kind: 'cancelled', p_event_id: evId, p_email: reg.email, p_name: name });
+            if (notice1) console.error('event email not queued', notice1.message);
+          } catch (e) { console.error('cancellation email failed', e); }
+        }
+        return json({ success: true, cancelled: 'registration', event });
+      }
+      const { error } = await supabase.from('event_waitlist').delete().eq('id', wait!.id);
+      if (error) throw error;
+      return json({ success: true, cancelled: 'waitlist', event });
+    }
+
     const eventId = textOf(body, 'event_id');
     const name = optionalTextOf(body, 'name') ?? undefined;
     const email = optionalTextOf(body, 'email') || userEmail;
@@ -138,16 +203,42 @@ Deno.serve(async (req) => {
     const academicYear = optionalTextOf(body, 'academic_year');
     const affiliation = optionalTextOf(body, 'affiliation');
 
-    // Dedupe by event + email.
+    // Dedupe by event + email, on the list and in the queue.
     const { data: existing } = await supabase.from('event_registrations')
       .select('id').eq('event_id', eventId).ilike('email', email).maybeSingle();
     if (existing) return json({ success: true, alreadyRegistered: true });
+    const waitingPosition = async (): Promise<number | null> => {
+      const { data: w } = await supabase.from('event_waitlist')
+        .select('created_at').eq('event_id', eventId).ilike('email', email).maybeSingle();
+      if (!w) return null;
+      const { count } = await supabase.from('event_waitlist').select('id', { count: 'exact', head: true })
+        .eq('event_id', eventId).lte('created_at', (w as { created_at: string }).created_at);
+      return count ?? 1;
+    };
+    const already = await waitingPosition();
+    if (already) return json({ success: true, waitlisted: true, alreadyWaiting: true, position: already });
 
-    const { error } = await supabase.from('event_registrations').insert({
+    const row = {
       event_id: eventId, user_id: userId, name: displayName, email,
       is_member: isMember, is_external: !isMember,
       is_bocconi: isBocconi, programme, academic_year: academicYear, affiliation,
-    });
+    };
+    const { error } = await supabase.from('event_registrations').insert(row);
+    // FULL: the database refused the place (EVENT_FULL, migration
+    // 20260929090000). The person joins the waiting list instead.
+    if (error && /EVENT_FULL/.test(error.message || '')) {
+      const { error: wErr } = await supabase.from('event_waitlist').insert({ ...row, name: displayName || email });
+      if (wErr && wErr.code !== '23505') throw wErr;
+      if (!isMember && email) {
+        try { await supabase.from('newsletter_subscribers').insert({ email, consent: true, source: 'event' }); }
+        catch { /* ignore duplicates */ }
+      }
+      try {
+        const { error: notice2 } = await supabase.rpc('send_event_notice', { p_kind: 'waitlist_joined', p_event_id: eventId, p_email: email });
+        if (notice2) console.error('event email not queued', notice2.message);
+      } catch (e) { console.error('waiting list email failed', e); }
+      return json({ success: true, waitlisted: true, position: await waitingPosition() });
+    }
     if (error) throw error;
 
     // External (non-member) registrants are added to the newsletter.
@@ -156,34 +247,11 @@ Deno.serve(async (req) => {
       catch { /* ignore duplicates */ }
     }
 
-    // The ticket for the door: the registration's own check-in code, as a
-    // QR image in the email. An online event has no door, so no ticket.
-    // Read on its own, so that anything unexpected here costs the email its
-    // ticket and never the registration or the email itself.
-    let checkin = '';
-    if (!ev.online) {
-      try {
-        const { data: row } = await supabase.from('event_registrations')
-          .select('checkin_token').eq('event_id', eventId).ilike('email', email).maybeSingle();
-        checkin = checkinBlock(Deno.env.get('SUPABASE_URL') || '', (row as { checkin_token?: string } | null)?.checkin_token);
-      } catch (e) { console.error('check-in code unavailable', e); }
-    }
-
-    // Confirmation of the registration, with the event's details.
+    // The confirmation, with the ticket for the door, "Add to calendar"
+    // and the "Can't make it?" link, built by the database from the row.
     try {
-      await supabase.rpc('enqueue_app_email', {
-        p_key: 'event_registration_confirmation',
-        p_to: email,
-        p_vars: {
-          first_name: firstNameOf(displayName || ''),
-          event_title: ev.title || 'Minerva IMS event',
-          event_date: formatEventDate(ev.start_at, ev.date),
-          event_time: formatEventTime(ev.start_at, ev.end_at),
-          event_location: ev.online ? 'Online' : (ev.place || 'To be confirmed'),
-          description_block: descriptionBlock(ev.description),
-          checkin_block: checkin,
-        },
-      });
+      const { error: notice3 } = await supabase.rpc('send_event_notice', { p_kind: 'confirmation', p_event_id: eventId, p_email: email });
+      if (notice3) console.error('event email not queued', notice3.message);
     } catch (e) { console.error('registration confirmation email failed', e); }
 
     return json({ success: true });

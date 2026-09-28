@@ -75,6 +75,21 @@ export function certificateStatus(session: Session | null): Promise<CertificateS
   return invokeFunction<CertificateStatus>('membership-certificate', { body: { action: 'status' }, session });
 }
 
+function pdfBlob(base64: string): Blob {
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: 'application/pdf' });
+}
+
+/** The certificate as its holder downloads it, for the register's preview. */
+export async function previewCertificate(session: Session | null, id: string): Promise<{ blob: Blob; fileName: string }> {
+  const res = await invokeFunction<{ file_name: string; pdf: string }>(
+    'membership-certificate', { body: { action: 'preview', id }, session },
+  );
+  return { blob: pdfBlob(res.pdf), fileName: res.file_name };
+}
+
 /** Asks for the PDF and saves it. Returns what was certified. */
 export async function downloadCertificate(session: Session | null): Promise<CertificateSummary> {
   const res = await invokeFunction<{ certificate: CertificateSummary; file_name: string; pdf: string }>(

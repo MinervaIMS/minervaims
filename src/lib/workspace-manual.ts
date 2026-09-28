@@ -315,7 +315,8 @@ export const COMMON_TASKS: ManualTask[] = [
     steps: [
       'Open the Calendar and find the event. Hovering it shows the details without opening anything.',
       'Click it. Events with registration open show the details and a registration button.',
-      'Register. A confirmation mark then appears next to the event on your Calendar.',
+      'Register. A confirmation mark then appears next to the event on your Calendar, and the same dialog offers Add to calendar and Cancel my registration.',
+      'If the event is full you join the waiting list instead, and are registered and emailed at once if a place opens up.',
       'For an Association on Display day, clicking opens the slot sign-up page instead. Registration closes 24 hours before the day.',
     ],
   },
@@ -411,14 +412,29 @@ export const COMMON_TASKS: ManualTask[] = [
     ],
   },
   {
+    id: 'event-places',
+    title: 'Limit the places of an event',
+    requires: 'events-forms',
+    level: 'manage',
+    steps: [
+      'Open Events, Registration forms. With registration on, type the number of places next to Places and press Save (or set it in Create event).',
+      'Once it is full, the registration page offers Join the waiting list, and each person who joins receives an email with their position.',
+      'When somebody cancels from the link in their email, or you remove a row in Attendance, the first person waiting is registered and emailed their ticket at once.',
+      'To remove the limit, empty the field and press Save: everybody waiting is given a place.',
+      'Use Test the registration emails to see the four emails in your own inbox before the event.',
+    ],
+    caution: 'Leave Places empty for no limit: that is the default, and nothing changes for such an event. Nothing moves once the event has started.',
+  },
+  {
     id: 'scan-tickets',
     title: 'Check people in at the door',
     requires: 'events-attendance',
     level: 'manage',
     steps: [
       'Open Events, Attendance on a phone or a laptop and choose the event.',
-      'Press Scan tickets and allow the camera. Everybody registered has an entry code in their confirmation email and in the reminder the day before.',
-      'Hold each code in front of the camera: the name appears and the person is ticked as present, with the time. Amber means they were already checked in; red means the code is for another event or is not a ticket.',
+      'Press Scan tickets: the scanner fills the screen and asks for the camera; allow it. Everybody registered has an entry code in their confirmation email and in the reminder the day before.',
+      'Hold each code inside the frame: the panel turns green with the name and the person is ticked as present, with the time. Amber means they were already checked in; red means the code is for another event or is not a ticket. The panel clears itself for the next person.',
+      'If the camera will not open, follow the steps the scanner shows (on an iPhone: Safari, page menu, Website Settings, Camera, Allow), or press Take a photo: it opens the phone\'s camera app and reads the photo instead.',
       'For anybody without their code, find them in the list and tick the box by hand; add walk-ins with "Add someone who turned up".',
     ],
     caution: 'Guests ticked as present who are not members receive the thank-you the next morning, so check people in on the day.',
@@ -556,6 +572,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Equivalence bands', definition: 'The default method of the GPA converter: grades that mean the same thing (pass, good, very good, excellent, top) are matched between two systems, and a grade in between is read at the same position. Indicative, like every conversion.', requires: 'career-gpa' },
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
+  { term: 'Places', definition: 'The number of people an event can take, set in Events, Registration forms. Empty means no limit, which is the default.', requires: 'events-forms' },
+  { term: 'Waiting list', definition: 'The queue for an event whose places are taken. When a place frees up, the first person waiting is registered and emailed their ticket at once. Never once the event has started.', requires: 'events-attendance' },
   { term: 'Entry code', definition: 'The QR code in an event confirmation email and in the reminder the day before. It identifies one registration, carries no personal data, and is scanned at the door in Events, Attendance to tick the person as present.', requires: 'events-attendance' },
   { term: 'Rome time', definition: 'The clock every time in the workspace is written on, with its zone named: CET in winter, CEST in summer, as in 6:30 pm CEST. What you type is read on the same clock, wherever you are.' },
   { term: 'Withdrawn certificate', definition: 'A certificate of membership the President or the Vice President has withdrawn, with a reason, in Settings, Certificates. Its number reads as no longer valid at minervaims.org/verify until it is restored.', requires: 'settings-certificates' },
@@ -736,6 +754,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Only the President and the association account can assign or change a role. Nobody can change their own, from any page.",
       "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
       "The Head of Media and Communication and the Media Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
+      "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken.",
     ],
     related: ['settings-users', 'people-alumni', 'ops-fee'],
   },
@@ -748,6 +767,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'events-attendance': {
     detail: [
+      "For an event with a limited number of places, the line above the list shows the places taken and the people waiting, and the waiting list is shown under the register, in order. A place freed here goes to the first person waiting at once.",
       "Who registered for each event and who actually came. Every registration carries an entry code, sent as a QR code in the confirmation email and again the day before; Scan tickets reads it with the camera of a phone or a laptop and ticks the person as present, with the time.",
       "Ticking by hand works exactly as before and can be mixed with scanning: somebody without their code is found in the list and ticked. Online events have no door, so they have no code and no scanner.",
       "The Media Analyst can take attendance and scan alongside Operations. The list closes a week after the event; after that it is the record and can still be exported.",
@@ -828,6 +848,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'settings-certificates': {
     detail: [
+      "Preview on each row shows the certificate exactly as its holder downloads it, with a Download PDF button.",
       "Every certificate of membership the Society has issued, with its number, the holder, the role and semester it certifies, the day it was issued and whether it is still valid.",
       "The President and the Vice President can withdraw a certificate, with a reason, and restore it. A withdrawn certificate reads as no longer valid to anybody who checks the number, at once; a certificate whose holder has been expelled reads the same way on its own.",
     ],

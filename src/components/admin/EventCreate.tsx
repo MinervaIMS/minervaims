@@ -34,7 +34,7 @@ export default function EventCreate() {
     title: '', event_type: 'other' as EventType, division: '' as OrgDivision | '',
     start_local: '', end_local: '', place: '', online: false,
     moderator: '', description: '', poster_url: '',
-    registration_enabled: false, registration_audience: 'members' as RegistrationAudience,
+    registration_enabled: false, registration_audience: 'members' as RegistrationAudience, places: '',
     show_on_website: listedOnWebsiteByDefault('other'),
   });
   const [guests, setGuests] = useState<string[]>(['']);
@@ -61,6 +61,10 @@ export default function EventCreate() {
     if (!form.online && !form.place.trim()) { toast({ title: 'Add a location (or mark the event online)', variant: 'destructive' }); return; }
     if (divisionRequired && !form.division) { toast({ title: 'Choose the organising division', description: 'This event type requires a division.', variant: 'destructive' }); return; }
     if (examBreak) { toast({ title: 'Exam session break', description: `${examBreak.label}: the calendar does not accept events between ${examBreak.start_date} and ${examBreak.end_date}. Pick a date when the community can attend.`, variant: 'destructive' }); return; }
+    const placesNumber = form.places.trim() ? Number(form.places) : null;
+    if (form.registration_enabled && form.places.trim() && (!Number.isInteger(placesNumber) || (placesNumber ?? 0) < 1)) {
+      toast({ title: 'Check the number of places', description: 'Use a whole number, or leave it empty for no limit.', variant: 'destructive' }); return;
+    }
     // Typed on Rome's clock, whoever types it and wherever they are.
     const startAt = romeLocalToIso(form.start_local);
     const endAt = form.end_local ? romeLocalToIso(form.end_local) : null;
@@ -73,6 +77,8 @@ export default function EventCreate() {
         poster_url: form.poster_url || null, event_type: form.event_type, division: form.division || null,
         start_at: startAt, end_at: endAt,
         online: form.online, registration_enabled: form.registration_enabled, registration_audience: form.registration_audience,
+        // Empty is no limit, the default: the field is sent only when filled in.
+        ...(form.registration_enabled && placesNumber ? { capacity: placesNumber } : {}),
         // Every event is in the archive; whether it is PUBLIC is the one
         // choice, made here and changeable later from the archive. It used
         // not to be sent at all, so the server's default published every
@@ -81,7 +87,7 @@ export default function EventCreate() {
         show_on_website: form.show_on_website,
       });
       toast({ title: 'Event created', description: 'Find it in the Calendar.' });
-      setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members', show_on_website: listedOnWebsiteByDefault('other') });
+      setForm({ title: '', event_type: 'other', division: '', start_local: '', end_local: '', place: '', online: false, moderator: '', description: '', poster_url: '', registration_enabled: false, registration_audience: 'members', places: '', show_on_website: listedOnWebsiteByDefault('other') });
       setGuests(['']);
     } catch (e) { toast({ title: 'Could not create event', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setSaving(false); }
@@ -172,6 +178,14 @@ export default function EventCreate() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{(Object.keys(AUDIENCE_LABELS) as RegistrationAudience[]).map((a) => <SelectItem key={a} value={a}>{AUDIENCE_LABELS[a]}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+          )}
+          {form.registration_enabled && (
+            <div className="space-y-1">
+              <Label htmlFor="places" className="inline-flex items-center gap-1.5">Places <HelpDot page="events-forms" topic="places" /></Label>
+              <Input id="places" type="number" inputMode="numeric" min={1} step={1} className="w-40" value={form.places}
+                onChange={(e) => setForm({ ...form, places: e.target.value })} placeholder="No limit" />
+              <p className="text-xs text-muted-foreground">Leave empty for no limit. With a number, people who register once it is full join a waiting list, and take a place as soon as one frees up.</p>
             </div>
           )}
         </div>

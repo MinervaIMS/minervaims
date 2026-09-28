@@ -59,7 +59,9 @@ const EventSchema = z.object({
   registration_enabled: z.boolean().optional(),
   registration_audience: z.enum(['members','members_external','guests','public']).optional(),
   show_on_website: z.boolean().optional(),
-  in_archive: z.boolean().optional()
+  in_archive: z.boolean().optional(),
+  // The number of places; null for no limit (the default).
+  capacity: z.number().int('Places must be a whole number').min(1, 'At least one place').max(10000, 'Too many places').nullable().optional()
 })
 
 // Internal meetings and online calls start off the public website; every
@@ -84,6 +86,12 @@ function extraEventCols(v: Record<string, unknown>) {
     // Whether the event is recorded in the Events archive. The creator
     // decides; online calls, guest events and alumni calls default to yes.
     in_archive: v.in_archive ?? ['online_call','guest','alumni_call'].includes(String(v.event_type ?? '')),
+    // WRITTEN ONLY WHEN SENT. Several pages save an event by listing its
+    // fields (the archive's website switch among them) and do not know
+    // about places; reading "not sent" as "no limit" would lift the limit,
+    // and hand every place on the waiting list out, at the flick of a
+    // switch. Absent, the column keeps its value.
+    ...(v.capacity !== undefined ? { capacity: v.capacity } : {}),
   }
 }
 

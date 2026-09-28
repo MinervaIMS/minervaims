@@ -76,6 +76,54 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       return data?.event_id ?? null;
     };
 
+    // =====================================================================
+    // EVENTS ATTENDED, PER MEMBER, FOR PEOPLE, MEMBERS.
+    // How many of the semester's events each member attended, out of those
+    // held so far. For the roles with full access to Members only.
+    //   * Counted: events of the semester up to today, not Association on
+    //     Display days (a stand, staffed by sign-up), and only those where
+    //     attendance was taken (somebody ticked), so an event nobody
+    //     recorded does not count against anybody.
+    //   * Attended: ticked or scanned in, recognised by their account or
+    //     by the address on their member record.
+    // =====================================================================
+    if (action === 'member-attendance') {
+      if (!allows(roles, user.email, 'people-members', 'manage')) return json({ error: 'Access denied' }, 403);
+      const DAY = /^\d{4}-\d{2}-\d{2}$/;
+      const from = typeof body.from === 'string' && DAY.test(body.from) ? body.from : null;
+      const to = typeof body.to === 'string' && DAY.test(body.to) ? body.to : null;
+      if (!from || !to || from > to) return json({ error: 'Choose a semester.' }, 400);
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+      const until = to < today ? to : today;
+      const { data: evs, error: evErr } = await supabase.from('events')
+        .select('id, date, aod_day_id').gte('date', from).lte('date', until).is('aod_day_id', null);
+      if (evErr) throw evErr;
+      const ids = ((evs || []) as { id: string }[]).map((e) => e.id);
+      const attendedBy = new Map<string, Set<string>>(); // event id -> keys of attendees
+      if (ids.length) {
+        for (let i = 0; i < ids.length; i += 200) {
+          const { data: regs, error } = await supabase.from('event_registrations')
+            .select('event_id, user_id, email').in('event_id', ids.slice(i, i + 200)).eq('attended', true);
+          if (error) throw error;
+          for (const r of (regs || []) as { event_id: string; user_id: string | null; email: string | null }[]) {
+            const set = attendedBy.get(r.event_id) ?? new Set<string>();
+            if (r.user_id) set.add(`u:${r.user_id}`);
+            if (r.email) set.add(`e:${r.email.trim().toLowerCase()}`);
+            attendedBy.set(r.event_id, set);
+          }
+        }
+      }
+      const held = [...attendedBy.keys()];
+      const { data: members, error: mErr } = await supabase.from('members').select('id, user_id, email');
+      if (mErr) throw mErr;
+      const counts: Record<string, number> = {};
+      for (const m of (members || []) as { id: string; user_id: string | null; email: string | null }[]) {
+        const keys = [m.user_id ? `u:${m.user_id}` : null, m.email ? `e:${m.email.trim().toLowerCase()}` : null].filter(Boolean) as string[];
+        counts[m.id] = held.filter((ev) => keys.some((k) => attendedBy.get(ev)!.has(k))).length;
+      }
+      return json({ total: held.length, from, to: until, counts });
+    }
+
     if (action === 'list') {
       const { data, error } = await supabase.from('event_registrations')
         .select('*').eq('event_id', body.event_id).order('registered_at', { ascending: true });
@@ -101,13 +149,25 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
 
       // Whether the list can still be changed, so the page can say so
       // before anybody tries rather than after.
-      const { data: ev } = await supabase.from('events').select('date').eq('id', body.event_id).maybeSingle();
+      const { data: ev } = await supabase.from('events').select('*').eq('id', body.event_id).maybeSingle();
+      // Who is waiting for a place, in order. Read on its own: before the
+      // waiting list exists (or if it fails) the door list is unaffected.
+      let waitlist: Record<string, unknown>[] = [];
+      try {
+        const { data: w } = await supabase.from('event_waitlist')
+          .select('id, name, email, is_member, programme, affiliation, created_at')
+          .eq('event_id', body.event_id).order('created_at', { ascending: true });
+        waitlist = (w || []) as Record<string, unknown>[];
+      } catch (e) { console.error('waiting list unavailable', e); }
       return json({
         attendance_open: ev?.date ? attendanceOpen(ev.date) : true,
         attendance_closes_on: ev?.date ? attendanceClosesOn(ev.date) : null,
         // The ticket's token stays on the server: the list never needs it,
         // and a page showing it would make every ticket copyable.
-        registrations: registrations.map(({ checkin_token: _ticket, ...r }: Record<string, unknown>) => ({
+        capacity: (ev as { capacity?: number | null } | null)?.capacity ?? null,
+        waitlist,
+        // The cancel link's token stays on the server for the same reason.
+        registrations: registrations.map(({ checkin_token: _ticket, cancel_token: _cancel, ...r }: Record<string, unknown>) => ({
           ...r,
           ...matchRegistration(
             {

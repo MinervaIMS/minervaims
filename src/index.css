@@ -1687,3 +1687,13 @@ input[type='search']::-webkit-search-cancel-button {
 @media (max-width: 767px) {
   .card-lockup { height: calc(var(--lockup-h) * 0.85); }
 }
+
+/* The ticket scanner's sweeping line (Events, Attendance). */
+@keyframes mims-scan {
+  0%, 100% { top: 8%; }
+  50% { top: 92%; }
+}
+.mims-scanline { top: 8%; animation: mims-scan 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mims-scanline { animation: none; top: 50%; }
+}

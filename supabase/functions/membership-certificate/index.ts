@@ -107,7 +107,7 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
     audit.request(action, {});
 
     // ── the register ─────────────────────────────────────────────────────
-    if (action === 'register' || action === 'withdraw' || action === 'restore') {
+    if (action === 'register' || action === 'withdraw' || action === 'restore' || action === 'preview') {
       if (!allows(roles, user.email, 'settings-certificates', 'view')) return json({ error: 'Access denied' }, 403);
       const canManage = allows(roles, user.email, 'settings-certificates', 'manage');
 
@@ -141,6 +141,29 @@ Deno.serve(audited('membership-certificate', async (req, audit) => {
             withdrawn_by: r.revoked_by ? (names.get(r.revoked_by) || 'A former officer') : null,
           })),
         });
+      }
+
+      // A preview is the certificate exactly as its holder downloads it:
+      // drawn again from what was stored when it was issued, signatories
+      // included. Reading it changes nothing, so it is not recorded.
+      if (action === 'preview') {
+        const pid = optionalTextOf(body, 'id');
+        if (!pid) return json({ error: 'Choose a certificate.' }, 400);
+        const { data: row } = await supabase.from('membership_certificates')
+          .select('id, code, user_id, member_id, holder_name, role_label, semester_key, semester_label, board, issued_at, revoked_at')
+          .eq('id', pid).maybeSingle();
+        if (!row) return json({ error: 'This certificate no longer exists. Reload the page.' }, 404);
+        const c = row as CertificateRow;
+        const pdf = await renderCertificate({
+          code: c.code,
+          holderName: c.holder_name,
+          roleLabel: c.role_label,
+          semesterLabel: c.semester_label,
+          issuedAt: c.issued_at && !Number.isNaN(Date.parse(c.issued_at)) ? new Date(c.issued_at) : new Date(),
+          board: Array.isArray(c.board) ? c.board : [],
+          verifyUrl: `${SITE}/verify/${c.code}`,
+        });
+        return json({ file_name: certificateFileName(c.holder_name, c.semester_label), pdf: toBase64(pdf) });
       }
 
       if (!canManage) return json({ error: 'Only the President and the Vice President can withdraw or restore a certificate.' }, 403);
