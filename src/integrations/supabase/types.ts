@@ -1102,6 +1102,7 @@ export type Database = {
           added_by: string | null
           affiliation: string | null
           attended: boolean
+          cancel_token: string | null
           checked_in_at: string | null
           checkin_token: string | null
           email: string | null
@@ -1120,6 +1121,7 @@ export type Database = {
           added_by?: string | null
           affiliation?: string | null
           attended?: boolean
+          cancel_token?: string | null
           checked_in_at?: string | null
           checkin_token?: string | null
           email?: string | null
@@ -1138,6 +1140,7 @@ export type Database = {
           added_by?: string | null
           affiliation?: string | null
           attended?: boolean
+          cancel_token?: string | null
           checked_in_at?: string | null
           checkin_token?: string | null
           email?: string | null
@@ -1190,9 +1193,66 @@ export type Database = {
           },
         ]
       }
+      event_waitlist: {
+        Row: {
+          academic_year: string | null
+          affiliation: string | null
+          created_at: string
+          email: string
+          event_id: string
+          id: string
+          is_bocconi: boolean | null
+          is_external: boolean
+          is_member: boolean
+          name: string
+          programme: string | null
+          token: string
+          user_id: string | null
+        }
+        Insert: {
+          academic_year?: string | null
+          affiliation?: string | null
+          created_at?: string
+          email: string
+          event_id: string
+          id?: string
+          is_bocconi?: boolean | null
+          is_external?: boolean
+          is_member?: boolean
+          name: string
+          programme?: string | null
+          token?: string
+          user_id?: string | null
+        }
+        Update: {
+          academic_year?: string | null
+          affiliation?: string | null
+          created_at?: string
+          email?: string
+          event_id?: string
+          id?: string
+          is_bocconi?: boolean | null
+          is_external?: boolean
+          is_member?: boolean
+          name?: string
+          programme?: string | null
+          token?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_waitlist_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           aod_day_id: string | null
+          capacity: number | null
           created_at: string
           created_by: string | null
           date: string
@@ -1219,6 +1279,7 @@ export type Database = {
         }
         Insert: {
           aod_day_id?: string | null
+          capacity?: number | null
           created_at?: string
           created_by?: string | null
           date: string
@@ -1245,6 +1306,7 @@ export type Database = {
         }
         Update: {
           aod_day_id?: string | null
+          capacity?: number | null
           created_at?: string
           created_by?: string | null
           date?: string
@@ -2490,17 +2552,44 @@ export type Database = {
         Args: { p_dedupe?: string; p_key: string; p_to: string; p_vars?: Json }
         Returns: undefined
       }
+      event_as_json: { Args: { p_event_id: string }; Returns: Json }
       event_attendance_recipients: {
         Args: { p_event_id: string }
         Returns: {
+          cancel_token: string
           checkin_token: string
           email: string
           first_name: string
         }[]
       }
+      event_calendar_block: { Args: { p_event: string }; Returns: string }
+      event_cancel_block: {
+        Args: { p_event: string; p_kind: string; p_token: string }
+        Returns: string
+      }
       event_checkin_block: { Args: { p_token: string }; Returns: string }
       event_clock: { Args: { p_at: string; p_zone?: boolean }; Returns: string }
+      event_notice_enqueue: {
+        Args: {
+          p_cancel?: string
+          p_checkin?: string
+          p_ev: Json
+          p_first: string
+          p_kind: string
+          p_position?: number
+          p_to: string
+        }
+        Returns: undefined
+      }
       event_person_name_key: { Args: { p_name: string }; Returns: string }
+      event_places: {
+        Args: { p_event_id: string }
+        Returns: {
+          capacity: number
+          taken: number
+          waiting: number
+        }[]
+      }
       event_reminder_day: {
         Args: { p_date: string; p_start_at: string }
         Returns: string
@@ -2519,6 +2608,10 @@ export type Database = {
           email: string
           first_name: string
         }[]
+      }
+      event_when_text: {
+        Args: { p_end: string; p_start: string }
+        Returns: string
       }
       event_zone: { Args: { p_at: string }; Returns: string }
       exam_break_on: { Args: { _d: string }; Returns: string }
@@ -2594,6 +2687,7 @@ export type Database = {
       process_interview_30m_reminders: { Args: never; Returns: number }
       process_offer_deadlines: { Args: never; Returns: undefined }
       process_profile_reminders: { Args: never; Returns: number }
+      promote_event_waitlist: { Args: { p_event_id: string }; Returns: number }
       public_alumni_classes: {
         Args: never
         Returns: {
@@ -2634,6 +2728,19 @@ export type Database = {
           p_role: Database["public"]["Enums"]["app_role"]
         }
         Returns: Record<string, unknown>
+      }
+      send_event_notice: {
+        Args: {
+          p_email: string
+          p_event_id: string
+          p_kind: string
+          p_name?: string
+        }
+        Returns: undefined
+      }
+      send_event_notice_tests: {
+        Args: { p_event_id?: string; p_to: string }
+        Returns: number
       }
       send_event_registration_reminder: {
         Args: { p_event_id: string; p_stage: string; p_test_to?: string }
