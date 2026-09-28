@@ -15,12 +15,13 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
-import { formatEventWhen, formatTime } from '@/lib/event-time';
+import { formatEventWhen, formatStamp, formatTime } from '@/lib/event-time';
+import { requestCamera } from '@/lib/camera';
 import {
-  listEvents, listRegistrations, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
+  listEvents, listRegistrationsFull, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
   listAttendanceMembers, addMemberAttendee, type AttendanceMember,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
-  type EventRow, type EventRegistration, type MemberMatch,
+  type EventRow, type WaitlistEntry, type EventRegistration, type MemberMatch,
 } from '@/lib/events-api';
 
 // =====================================================================
@@ -86,6 +87,10 @@ export default function EventAttendance() {
   const [busy, setBusy] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  // An event with a limit of places: the limit and who is waiting, in order.
+  const [capacity, setCapacity] = useState<number | null>(null);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [cameraRequest, setCameraRequest] = useState<Promise<MediaStream> | null>(null);
   // The register of members, read once when the walk-in box is first opened.
   const [roster, setRoster] = useState<AttendanceMember[] | null>(null);
   const [memberQuery, setMemberQuery] = useState('');
@@ -110,7 +115,12 @@ export default function EventAttendance() {
   const loadRegs = async (id: string) => {
     if (!id) return;
     setLoadingRegs(true);
-    try { setRegs(await listRegistrations(session, id)); }
+    try {
+      const res = await listRegistrationsFull(session, id);
+      setRegs(res.registrations);
+      setCapacity(res.capacity);
+      setWaitlist(res.waitlist);
+    }
     catch (e) { toast({ title: 'Failed to load attendees', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoadingRegs(false); }
   };
@@ -245,7 +255,12 @@ export default function EventAttendance() {
   };
 
   const remove = async (id: string) => {
-    try { await removeRegistration(session, id); setRegs((p) => p.filter((x) => x.id !== id)); }
+    try {
+      await removeRegistration(session, id);
+      setRegs((p) => p.filter((x) => x.id !== id));
+      // A freed place goes to the first person waiting: read the list again.
+      if (waitlist.length) loadRegs(eventId);
+    }
     catch (e) { toast({ title: 'Could not remove', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
   };
 
@@ -316,6 +331,7 @@ export default function EventAttendance() {
 
       <p className="font-body text-sm text-muted-foreground mb-2">
         {counts.attended}/{counts.total} attended · {counts.members} members · {counts.guests} guests
+        {capacity !== null && <> · {counts.total} of {capacity} places taken{waitlist.length ? `, ${waitlist.length} waiting` : ''}</>}
         {activeFilterCount > 0 && <> · showing {rows.length}</>}
       </p>
 
@@ -418,7 +434,16 @@ export default function EventAttendance() {
           // stay exactly as they were. An online event has no door.
           <div className="flex flex-col sm:flex-row gap-2">
             {!currentEvent?.online && (
-              <Button variant="solid" className="w-full sm:w-auto" disabled={!eventId} onClick={() => setScanOpen(true)}>
+              <Button
+                variant="solid" className="w-full sm:w-auto" disabled={!eventId}
+                // The camera is asked for here, in the tap itself: see src/lib/camera.ts.
+                onClick={() => {
+                  const req = requestCamera();
+                  req.catch(() => undefined);
+                  setCameraRequest(req);
+                  setScanOpen(true);
+                }}
+              >
                 <ScanLine className="h-4 w-4 mr-2" />Scan tickets
               </Button>
             )}
@@ -530,12 +555,37 @@ export default function EventAttendance() {
           </div>
         </>
       )}
+      {/* THE WAITING LIST, in the order places are given. Nobody here is on
+          the door list: when a place frees up the first person is moved
+          across and emailed their ticket, by the database, at once. */}
+      {waitlist.length > 0 && (
+        <div className="mt-6">
+          <h3 className="font-serif text-lg text-accent inline-flex items-center gap-2">
+            Waiting list <span className="font-body text-sm text-muted-foreground">({waitlist.length})</span>
+            <HelpDot page="events-attendance" topic="waitlist" />
+          </h3>
+          <ol className="mt-2 border border-separator divide-y divide-separator font-body text-sm">
+            {waitlist.map((w, i) => (
+              <li key={w.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2">
+                <span className="w-6 tabular-nums text-muted-foreground">{i + 1}.</span>
+                <span className="text-foreground">{w.name}</span>
+                <span className="text-muted-foreground break-all">{w.email}</span>
+                <span className="text-xs text-muted-foreground">{w.is_member ? 'Member' : 'Guest'}{w.programme || w.affiliation ? ` · ${w.programme || w.affiliation}` : ''}</span>
+                <span className="ml-auto text-xs text-muted-foreground">joined {formatStamp(w.created_at)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {eventId && (
         <CheckinScanner
           open={scanOpen}
-          onOpenChange={setScanOpen}
+          onClose={() => { setScanOpen(false); setCameraRequest(null); }}
           eventId={eventId}
           eventTitle={currentEvent?.title ?? ''}
+          cameraRequest={cameraRequest}
+          stats={{ checkedIn: regs.filter((x) => x.attended).length, total: regs.length }}
           onCheckedIn={(id, at) => setRegs((p) => p.map((x) => (x.id === id ? { ...x, attended: true, checked_in_at: at ?? x.checked_in_at } : x)))}
         />
       )}

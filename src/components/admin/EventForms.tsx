@@ -35,13 +35,43 @@ const TEST_STATUS: Record<string, string> = {
   pending: 'queued', sent: 'sent', duplicate: 'held back, the same test was sent less than five minutes ago',
   suppressed: 'not sent, the address is on the suppression list', not_sent: 'not sent, the template is switched off in Auto emails',
 };
-const STAGE_LABEL: Record<string, string> = { '2w': '2 weeks before', '1w': '1 week before', '3d': '3 days before', '24h_attending': '24 hours before (registered members)', thank_you: 'Thank-you to guests' };
+const STAGE_LABEL: Record<string, string> = {
+  '2w': '2 weeks before', '1w': '1 week before', '3d': '3 days before', '24h_attending': '24 hours before (registered members)', thank_you: 'Thank-you to guests',
+  confirmation: 'Registration confirmed', waitlist_joined: 'On the waiting list', waitlist_promoted: 'A place has opened up', cancelled: 'Registration cancelled',
+};
 
 // The thank-you the morning after, to the guests who attended.
 function thankYouText(t: ThankYouStatus): string {
   if (t.state === 'sent') return `sent ${t.sent_at ? shortDay(t.sent_at.slice(0, 10)) : ''} to ${t.recipients ?? 0}`;
   if (t.state === 'waiting') return 'due, it goes out the morning after attendance is taken';
   return `${shortDay(t.due_on)} at ${formatClock('09:00', t.due_on)}`;
+}
+
+// ── Places: a number, or empty for no limit ─────────────────────────
+function PlacesEditor({ ev, disabled, onSave }: { ev: EventRow; disabled: boolean; onSave: (capacity: number | null) => Promise<void> | void }) {
+  const current = ev.capacity ?? null;
+  const [value, setValue] = useState(current ? String(current) : '');
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setValue(current ? String(current) : ''); }, [current]);
+  const parsed = value.trim() ? Number(value) : null;
+  const valid = parsed === null || (Number.isInteger(parsed) && parsed >= 1 && parsed <= 10000);
+  const changed = parsed !== current;
+  const save = async () => {
+    if (!valid || !changed) return;
+    setSaving(true);
+    try { await onSave(parsed); } finally { setSaving(false); }
+  };
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={`places-${ev.id}`} className="text-sm text-muted-foreground font-normal inline-flex items-center gap-1.5">Places <HelpDot page="events-forms" topic="places" /></Label>
+      <Input id={`places-${ev.id}`} type="number" inputMode="numeric" min={1} step={1} className="h-9 w-24" placeholder="No limit"
+        value={value} disabled={disabled || saving} aria-invalid={!valid}
+        onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') save(); }} />
+      {changed && valid && !disabled && (
+        <Button size="sm" variant="solid" className="h-9" onClick={save} disabled={saving}>Save</Button>
+      )}
+    </div>
+  );
 }
 
 export default function EventForms() {
@@ -54,7 +84,10 @@ export default function EventForms() {
   const [canManageReminders, setCanManageReminders] = useState(false);
   const [busyReminder, setBusyReminder] = useState<string | null>(null);
   const [testFor, setTestFor] = useState<EventRow | null>(null);
-  const [testThankYou, setTestThankYou] = useState(false);
+  // Which emails the test sends: the reminders, the thank-you, or the
+  // registration emails (confirmation, waiting list, place opened, cancelled).
+  const [testKind, setTestKind] = useState<'reminders' | 'thank_you' | 'notices'>('reminders');
+  const testThankYou = testKind === 'thank_you';
   const [testTo, setTestTo] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState<ReminderTestResult[] | null>(null);
@@ -95,6 +128,8 @@ export default function EventForms() {
         start_at: ev.start_at, end_at: ev.end_at, online: ev.online,
         registration_enabled: patch.registration_enabled ?? ev.registration_enabled,
         registration_audience: patch.registration_audience ?? ev.registration_audience,
+        // Places are sent only when changed here: absent keeps the limit.
+        ...(patch.capacity !== undefined ? { capacity: patch.capacity } : {}),
         // Preserve settings this page does not expose, so an update here can
         // never silently reset them.
         show_on_website: ev.show_on_website,
@@ -130,9 +165,9 @@ export default function EventForms() {
     } finally { setBusyReminder(null); }
   };
 
-  const openTest = (ev: EventRow, thankYou = false) => {
+  const openTest = (ev: EventRow, kind: 'reminders' | 'thank_you' | 'notices' = 'reminders') => {
     setTestFor(ev);
-    setTestThankYou(thankYou);
+    setTestKind(kind);
     setTestTo(user?.email || '');
     setTestResults(null);
   };
@@ -141,7 +176,7 @@ export default function EventForms() {
     if (!testFor) return;
     setTesting(true);
     try {
-      const res = await sendReminderTest(session, testFor.id, testTo.trim(), testThankYou ? 'thank_you' : undefined);
+      const res = await sendReminderTest(session, testFor.id, testTo.trim(), testKind === 'reminders' ? undefined : testKind);
       setTestResults(res.results || []);
     } catch (e) {
       toast({ title: 'Could not send the test', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -194,8 +229,14 @@ export default function EventForms() {
                           </Button>
                         )
                       )}
+                      <PlacesEditor ev={ev} disabled={!access.canManage('events-forms')} onSave={(capacity) => update(ev, { capacity })} />
                       <Button variant="outline" size="sm" onClick={() => preview(ev.id)}><Eye className="h-4 w-4 mr-2" />Preview</Button>
                       <Button variant="outline" size="sm" onClick={() => copyLink(ev.id)}><Copy className="h-4 w-4 mr-2" />Link</Button>
+                      {canChangeReminders && (
+                        <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev, 'notices')}>
+                          <Send className="h-3 w-3 mr-1" />Test the registration emails
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -230,7 +271,7 @@ export default function EventForms() {
                     </span>
                     <span>{thankYouText(thanks)}</span>
                     {canChangeReminders && (
-                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev, true)}>
+                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => openTest(ev, 'thank_you')}>
                         <Send className="h-3 w-3 mr-1" />Send a test
                       </Button>
                     )}
@@ -245,9 +286,11 @@ export default function EventForms() {
       <Dialog open={!!testFor} onOpenChange={(o) => { if (!o) setTestFor(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">{testThankYou ? 'Test the thank-you' : 'Test the reminders'}</DialogTitle>
+            <DialogTitle className="font-serif">{testKind === 'notices' ? 'Test the registration emails' : testThankYou ? 'Test the thank-you' : 'Test the reminders'}</DialogTitle>
             <DialogDescription>
-              {testThankYou
+              {testKind === 'notices'
+                ? `Sends the four registration emails of ${testFor?.title || 'this event'} to one address: the confirmation (with a sample entry code, Add to calendar and the Can't make it link), on the waiting list, a place has opened up, and registration cancelled. Their links are samples, so nothing is registered or cancelled.`
+                : testThankYou
                 ? `Sends the thank-you of ${testFor?.title || 'this event'} to one address, exactly as guests who attended receive it, signed by the President. A test does not count as sent and changes nothing for guests.`
                 : `Sends the reminders of ${testFor?.title || 'this event'} (2 weeks, 1 week and 3 days before, and the 24-hour note to registered members) to one address, exactly as members receive them. A test does not count as sent and changes nothing for members.`}
             </DialogDescription>

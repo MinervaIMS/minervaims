@@ -1,88 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useHideSiteFooter } from '@/components/layout/ChromeContext';
-import { Seo } from '@/components/shared/Seo';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CalendarDays, MapPin, Users } from 'lucide-react';
+import { Loader2, CalendarDays, MapPin, Users, Ticket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { registerForEvent, isAssociationMember, EVENT_TYPE_LABELS, type EventRow } from '@/lib/events-api';
+import { registerForEvent, isAssociationMember, eventPlaces, EVENT_TYPE_LABELS, type EventRow, type EventPlaces } from '@/lib/events-api';
+import { formatEventWhen } from '@/lib/event-time';
+import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import { BOCCONI_PROGRAMMES } from '@/lib/bocconi';
 import { ACADEMIC_YEAR_LABELS, type AcademicYear } from '@/lib/applications-api';
-import fullLogoAsset from '@/assets/mims-full-logo-color.png.asset.json';
-import Beams from '@/components/shared/Beams';
+import { EventCardShell } from '@/components/events/EventCardShell';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
 
-// =====================================================================
-// Shell — the navy stage, the beams field and the white card.
-// ---------------------------------------------------------------------
-// THIS LIVES AT MODULE SCOPE, AND THAT IS THE WHOLE POINT.
-//
-// It used to be declared inside EventRegister's body. A component
-// declared during a render is a NEW COMPONENT TYPE on every render, and
-// React does not reconcile two different types: it unmounts the old
-// subtree and mounts a fresh one. Every field in this form is state on
-// EventRegister, so every keystroke, every checkbox, every dropdown
-// selection re-rendered the page - and each of those re-renders threw
-// away the entire shell, including <Beams>, and built it again.
-//
-// Beams is a WebGL canvas. Destroying and recreating it means a new
-// context, a new compile, a new first frame: the background blinked out
-// and faded back in on every interaction with the form. That is the
-// flash. Nothing about the visual concept changes here; the component
-// simply keeps its identity, so React updates the card's children in
-// place and never touches the canvas again after the first mount.
-// =====================================================================
-const Shell = ({ children }: { children: React.ReactNode }) => (
-  <>
-    <Seo title="Event Registration" description="Register for an event held by Minerva Investment Management Society." noindex />
-    {/* THE CARD STARTS BELOW THE NAVIGATION, which it did not.
-        This shell centred the card in the viewport with 48px of padding, so
-        on any card taller than the screen - which is every event with a
-        description - the top of the card came to rest at 48px while the
-        fixed header occupies the first 84. The card was drawn over the
-        navigation and the event's own eyebrow and title sat under it.
-        The application form already solves this correctly; this is the same
-        measure: start at the top, and clear the header plus a band of space,
-        including the iOS safe area. */}
-    <div
-      className="relative min-h-screen w-full flex items-start justify-center overflow-hidden px-4 pb-12 pt-[calc(84px+env(safe-area-inset-top)+theme(spacing.8))]"
-      style={{ backgroundColor: '#05030F' }}
-    >
-      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
-        <Beams
-          beamWidth={8.4}
-          beamHeight={30}
-          beamNumber={38}
-          lightColor="#afa2d2"
-          speed={2}
-          noiseIntensity={0.6}
-          scale={0.2}
-          rotation={30}
-        />
-      </div>
-      {/* Flat white card per the Minerva Forms design. */}
-      {/* z-[55]: over the navigation, under the overlay layer at z-[70].
-          See the layer scale at the top of index.css. */}
-      <div className="relative z-[55] w-full max-w-[640px] bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
-        <div className="flex justify-center mb-6"><img
-          src={fullLogoAsset.url}
-          alt="Minerva Investment Management Society"
-          className="card-lockup"
-          style={{ '--lockup-h': '118px' } as React.CSSProperties}
-        /></div>
-        {children}
-      </div>
-    </div>
-  </>
-);
+// The navy stage, the beams field and the white card: see
+// src/components/events/EventCardShell.tsx.
+const Shell = EventCardShell;
 
 export default function EventRegister() {
   // This page is the backdrop-plus-one-card shape, hand-rolled rather
@@ -94,7 +34,9 @@ export default function EventRegister() {
   const [event, setEvent] = useState<EventRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<null | { kind: 'registered' | 'waitlist'; position?: number | null; already?: boolean }>(null);
+  // Places left, for an event with a limit; null when there is no limit.
+  const [places, setPlaces] = useState<EventPlaces | null>(null);
 
   const [firstName, setFirstName] = useState('');
   const [surname, setSurname] = useState('');
@@ -110,6 +52,7 @@ export default function EventRegister() {
       try {
         const { data } = await sb.from('events').select('*').eq('id', id).maybeSingle();
         setEvent((data as EventRow) ?? null);
+        if (data && id) setPlaces(await eventPlaces(id));
       } finally { setLoading(false); }
     })();
   }, [id]);
@@ -168,8 +111,8 @@ export default function EventRegister() {
         academic_year: needsDetails && isBocconi ? (academicYear || undefined) : undefined,
         affiliation: needsDetails && !isBocconi ? affiliation.trim() : undefined,
       });
-      setDone(true);
-      toast({ title: (res as { alreadyRegistered?: boolean }).alreadyRegistered ? 'You are already registered' : 'Registration confirmed' });
+      const r = res as { alreadyRegistered?: boolean; waitlisted?: boolean; alreadyWaiting?: boolean; position?: number | null };
+      setDone(r.waitlisted ? { kind: 'waitlist', position: r.position ?? null, already: !!r.alreadyWaiting } : { kind: 'registered', already: !!r.alreadyRegistered });
     } catch (err) { toast({ title: 'Could not register', description: err instanceof Error ? err.message : undefined, variant: 'destructive' }); }
     finally { setSubmitting(false); }
   };
@@ -182,14 +125,30 @@ export default function EventRegister() {
       <p className="font-body text-muted-foreground text-center">Registration is not open for this event.</p></Shell>;
   }
 
-  if (done) {
-    return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">You are registered</h1>
-      <p className="font-body text-muted-foreground text-center">Thank you for registering for {event.title}.</p>
+  if (done?.kind === 'waitlist') {
+    return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">You are on the waiting list</h1>
+      <p className="font-body text-muted-foreground text-center max-w-[460px] mx-auto">
+        {done.already ? 'You were already on the waiting list for ' : `${event.title} is full at the moment, so you have been added to the waiting list for `}
+        <span className="text-foreground">{event.title}</span>{done.position ? `: you are number ${done.position}` : ''}. If a place opens up, it goes to the first person on the list, and we will email you at once to confirm it, with your entry code.
+      </p>
       <div className="text-center"><Link to="/events" className="inline-block mt-6 text-accent underline font-body">Back to events</Link></div></Shell>;
   }
 
+  if (done) {
+    return <Shell><h1 className="font-serif text-2xl text-accent mb-3 text-center">{done.already ? 'You are already registered' : 'You are registered'}</h1>
+      <p className="font-body text-muted-foreground text-center max-w-[460px] mx-auto">
+        Thank you for registering for <span className="text-foreground">{event.title}</span>. {done.already ? 'Your confirmation email has your entry code.' : 'A confirmation with your entry code is on its way to your inbox.'}
+      </p>
+      <div className="flex flex-col items-center gap-3 mt-6">
+        <AddToCalendar eventId={event.id} size="default" />
+        <Link to="/events" className="text-accent underline font-body">Back to events</Link>
+      </div></Shell>;
+  }
+
   const membersOnly = event.registration_audience === 'members';
-  const when = new Date(event.start_at || event.date).toLocaleString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const when = formatEventWhen(event);
+  const left = places ? Math.max(0, places.capacity - places.taken) : null;
+  const full = left === 0;
 
   return (
     <Shell>
@@ -203,6 +162,11 @@ export default function EventRegister() {
         <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{when}</div>
         {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{event.place}</div>}
         {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
+        {left !== null && (
+          <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />
+            {full ? <span>Full. You can join the waiting list below.</span> : <span>{left === 1 ? '1 place left' : `${left} places left`}</span>}
+          </div>
+        )}
       </div>
       {/* THE DESCRIPTION READS LEFT, not centred. Centring is right for a
           title and for the two or three words of a status line; a paragraph
@@ -310,7 +274,7 @@ export default function EventRegister() {
             className="relative w-full mt-1 py-3.5 font-serif text-lg border border-accent bg-accent text-accent-foreground hover:bg-white hover:text-accent transition-colors duration-200 disabled:opacity-70"
           >
             <span className="relative z-[2]">
-              {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Registering</span> : 'Register'}
+              {submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{full ? 'Joining' : 'Registering'}</span> : full ? 'Join the waiting list' : 'Register'}
             </span>
           </button>
         </form>

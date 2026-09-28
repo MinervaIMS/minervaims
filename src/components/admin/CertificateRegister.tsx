@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Download, Eye, Loader2, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +19,7 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import {
-  certificateRegister, restoreCertificate, verifyPath, withdrawCertificate,
+  certificateRegister, previewCertificate, restoreCertificate, verifyPath, withdrawCertificate,
   type RegisterEntry, type RegisterStatus,
 } from '@/lib/certificate-api';
 
@@ -54,6 +56,29 @@ export default function CertificateRegister() {
   const [reason, setReason] = useState('');
   const [restoring, setRestoring] = useState<RegisterEntry | null>(null);
   const [busy, setBusy] = useState(false);
+  // The certificate open in the preview, drawn from the PDF itself.
+  const [preview, setPreview] = useState<{ entry: RegisterEntry; url: string | null; fileName: string; error: string | null } | null>(null);
+
+  const openPreview = async (entry: RegisterEntry) => {
+    setPreview({ entry, url: null, fileName: '', error: null });
+    try {
+      const { blob, fileName } = await previewCertificate(session, entry.id);
+      const url = URL.createObjectURL(blob);
+      setPreview((p) => (p && p.entry.id === entry.id ? { ...p, url, fileName } : (URL.revokeObjectURL(url), p)));
+    } catch (e) {
+      setPreview((p) => (p && p.entry.id === entry.id ? { ...p, error: e instanceof Error ? e.message : 'The certificate could not be drawn.' } : p));
+    }
+  };
+  const closePreview = () => setPreview((p) => { if (p?.url) URL.revokeObjectURL(p.url); return null; });
+  const savePreview = () => {
+    if (!preview?.url) return;
+    const a = document.createElement('a');
+    a.href = preview.url;
+    a.download = preview.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   const load = useCallback(async () => {
     try {
@@ -193,13 +218,18 @@ export default function CertificateRegister() {
                       </p>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2">
+                    <Button data-ro variant="outline" size="sm" onClick={() => openPreview(r)} aria-label={`Preview certificate ${r.code}`}>
+                      <Eye className="h-4 w-4 mr-1.5" />Preview
+                    </Button>
                     {canManage && r.status === 'valid' && (
                       <Button variant="outline" size="sm" onClick={() => { setReason(''); setWithdrawing(r); }}>Withdraw</Button>
                     )}
                     {canManage && r.status === 'withdrawn' && (
                       <Button variant="outline" size="sm" onClick={() => setRestoring(r)}>Restore</Button>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -207,6 +237,37 @@ export default function CertificateRegister() {
           </table>
         </div>
       )}
+
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o) closePreview(); }}>
+        <DialogContent className="max-w-3xl w-[calc(100vw-2rem)] max-h-[92dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">{preview?.entry.holder_name}</DialogTitle>
+            <DialogDescription className="font-body">
+              {preview ? `${preview.entry.code} · ${preview.entry.role_label} · ${preview.entry.semester_label} · ${STATUS_LABEL[preview.entry.status]}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          {/* The certificate exactly as its holder downloads it. A withdrawn
+              one still shows what it said; the status above says it no
+              longer holds. */}
+          <div className="border border-separator bg-muted/30">
+            {preview?.error ? (
+              <p className="p-6 text-sm text-destructive">{preview.error}</p>
+            ) : preview?.url ? (
+              <PdfThumbnail url={preview.url} renderWidth={1100} className="w-full" alt={`Certificate ${preview.entry.code}`} />
+            ) : (
+              <div className="flex aspect-[1/1.414] items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />Drawing the certificate…
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button data-ro variant="outline" onClick={closePreview}>Close</Button>
+            <Button data-ro variant="solid" onClick={savePreview} disabled={!preview?.url}>
+              <Download className="h-4 w-4 mr-2" />Download PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!withdrawing} onOpenChange={(o) => { if (!o && !busy) setWithdrawing(null); }}>
         <AlertDialogContent>

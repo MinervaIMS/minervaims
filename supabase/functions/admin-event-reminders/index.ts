@@ -133,6 +133,31 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
     if (action === 'send-test') {
       const to = (optionalTextOf(body, 'to') || user.email || '').trim();
       if (!EMAIL_RE.test(to) || to.length > 255) return json({ error: 'Enter a valid email address for the test.' }, 400);
+      // The registration emails: confirmation, waiting list, a place that
+      // opened up, cancellation. All four at once, with sample links, built
+      // exactly as the real ones (send_event_notice_tests).
+      if (body.stage === 'notices') {
+        const startedAtN = new Date(Date.now() - 1000).toISOString();
+        const { error } = await supabase.rpc('send_event_notice_tests', { p_to: to, p_event_id: eventId });
+        if (error) throw error;
+        const keys: Record<string, string> = {
+          confirmation: 'event_registration_confirmation', waitlist_joined: 'event_waitlist_joined',
+          waitlist_promoted: 'event_waitlist_promoted', cancelled: 'event_registration_cancelled',
+        };
+        const { data: logged } = await supabase.from('email_send_log')
+          .select('template_name, status, created_at')
+          .in('template_name', Object.values(keys))
+          .ilike('recipient_email', to)
+          .gte('created_at', startedAtN)
+          .order('created_at', { ascending: false });
+        return json({
+          success: true, to,
+          results: Object.entries(keys).map(([stage, key]) => {
+            const row = (logged || []).find((l: { template_name: string }) => l.template_name === key);
+            return { stage, status: row ? row.status : 'not_sent' };
+          }),
+        });
+      }
       const stages: (ReminderStage | typeof THANK_YOU_STAGE)[] = body.stage === THANK_YOU_STAGE ? [THANK_YOU_STAGE]
         : isReminderStage(body.stage) ? [body.stage] : REMINDER_STAGES.map((s) => s.stage);
       const templateOf = (s: ReminderStage | typeof THANK_YOU_STAGE) => (s === THANK_YOU_STAGE ? THANK_YOU_TEMPLATE_KEY : REMINDER_TEMPLATE_KEY[s]);

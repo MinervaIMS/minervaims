@@ -19,6 +19,8 @@ import {
 import { divisionHasTeams, teamsFor, teamFieldLabel } from '@/lib/division-teams';
 import { MEMBERS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { downloadCSV } from '@/lib/download-utils';
+import { memberEventAttendance } from '@/lib/events-api';
+import { currentSemester } from '@/lib/semester';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -72,6 +74,19 @@ export default function MembersManagement() {
   const access = useAccess();
   const { toast } = useToast();
   const canEdit = access.canEdit('people-members');
+  // EVENTS ATTENDED THIS SEMESTER: for the roles with full access to Members
+  // only. Of the semester's events held so far where attendance was taken
+  // (Association on Display days aside), how many each member attended.
+  const seesAttendance = access.canManage('people-members');
+  const [attendance, setAttendance] = useState<{ total: number; counts: Record<string, number>; label: string } | null>(null);
+  useEffect(() => {
+    if (!seesAttendance) return;
+    const sem = currentSemester();
+    memberEventAttendance(session, sem.start, sem.end)
+      .then((r) => setAttendance({ total: r.total, counts: r.counts, label: sem.label }))
+      .catch(() => setAttendance(null));
+  }, [seesAttendance, session]);
+  const attendedOf = (id: string) => (attendance ? `${attendance.counts[id] ?? 0}/${attendance.total}` : '');
   // ROLE AUTHORITY: only the President and the association (admin) account
   // assign or change roles, anywhere in the workspace. Other managers can
   // maintain the register's data but never touch roles (the server enforces
@@ -369,6 +384,7 @@ export default function MembersManagement() {
       role: composeRoleLabel(m.role, m.division), phone: m.phone ?? '', email: m.email ?? '',
       linkedin_url: m.linkedin_url ?? '', membership_status: m.membership_status,
       on_website: m.is_public ? 'yes' : 'no',
+      ...(seesAttendance && attendance ? { events_attended: attendedOf(m.id) } : {}),
     }));
     downloadCSV(flat, [
       { key: 'first_name', header: 'First name' }, { key: 'surname', header: 'Surname' },
@@ -376,6 +392,7 @@ export default function MembersManagement() {
       { key: 'phone', header: 'Phone' }, { key: 'email', header: 'Email' },
       { key: 'linkedin_url', header: 'LinkedIn' }, { key: 'membership_status', header: 'Membership' },
       { key: 'on_website', header: 'On public website' },
+      ...(seesAttendance && attendance ? [{ key: 'events_attended' as const, header: `Events attended (${attendance.label})` }] : []),
     ], 'members-register.csv');
     toast({ title: 'Download started' });
   };
@@ -441,6 +458,11 @@ export default function MembersManagement() {
                 {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Phone</th>}
                 {!limitedToOwnDivision && <th className="px-3 py-2 font-normal">Email</th>}
                 <th className="px-3 py-2 font-normal text-center">In</th>
+                {seesAttendance && (
+                  <th className="px-3 py-2 font-normal whitespace-nowrap" title={attendance ? `Events attended out of the ${attendance.total} held so far in ${attendance.label} with attendance taken` : 'Events attended this semester'}>
+                    <span className="inline-flex items-center gap-1.5">Events <HelpDot page="people-members" topic="events-attended" /></span>
+                  </th>
+                )}
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Membership" options={membershipOptions} selected={membershipFilter} onChange={setMembershipFilter} /></th>
                 <th className="px-3 py-2 font-normal"><ColumnFilter label="Public" options={VISIBILITY_OPTIONS} selected={visibilityFilter} onChange={setVisibilityFilter} /></th>
                 {canEdit && <th className="px-3 py-2 font-normal text-right">Actions</th>}
@@ -468,6 +490,11 @@ export default function MembersManagement() {
                       </a>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
+                  {seesAttendance && (
+                    <td className="px-3 py-2 whitespace-nowrap tabular-nums text-muted-foreground" title={attendance ? `${attendance.counts[m.id] ?? 0} of ${attendance.total} events held so far in ${attendance.label}` : undefined}>
+                      {attendance ? <><span className="text-foreground">{attendance.counts[m.id] ?? 0}</span>/{attendance.total}</> : '-'}
+                    </td>
+                  )}
                   <td className="px-3 py-2">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</td>
                   {/* Public visibility as a column of its own, so the register
                       can be read and filtered by who the website shows. */}

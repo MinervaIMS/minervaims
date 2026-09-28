@@ -61,6 +61,8 @@ export interface EventRow {
   aod_day_id?: string | null;
   /** Registration reminders stopped for this event (Registration Forms). */
   reminders_paused?: boolean;
+  /** Number of places; null or absent for no limit (the default). */
+  capacity?: number | null;
   created_at: string;
 }
 
@@ -82,6 +84,8 @@ export interface EventInput {
   registration_audience?: RegistrationAudience;
   show_on_website?: boolean;
   in_archive?: boolean;
+  /** Sent only when set in the form: absent keeps the event's limit as it is. */
+  capacity?: number | null;
 }
 
 export interface EventRegistration {
@@ -171,9 +175,29 @@ export async function listEvents(): Promise<EventRow[]> {
   return (data || []) as EventRow[];
 }
 
+/**
+ * The events YOU are registered for. Your own rows only: staff can read
+ * every registration, and used to see every event with any registration
+ * marked as theirs.
+ */
 export async function myEventRegistrationIds(): Promise<Set<string>> {
-  const { data } = await sb.from('event_registrations').select('event_id');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new Set();
+  const { data } = await sb.from('event_registrations').select('event_id').eq('user_id', user.id);
   return new Set(((data || []) as { event_id: string }[]).map((r) => r.event_id));
+}
+
+/** The events you are waiting for a place at. Empty before the waiting list exists. */
+export async function myEventWaitlistIds(): Promise<Set<string>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new Set();
+    const { data, error } = await sb.from('event_waitlist').select('event_id').eq('user_id', user.id);
+    if (error) return new Set();
+    return new Set(((data || []) as { event_id: string }[]).map((r) => r.event_id));
+  } catch {
+    return new Set();
+  }
 }
 
 export function saveEvent(session: Session | null, event: EventInput) {
@@ -193,7 +217,65 @@ export async function uploadEventPoster(file: File): Promise<string> {
 
 // Registration & attendance
 export async function listRegistrations(session: Session | null, eventId: string): Promise<EventRegistration[]> {
-  return (await invoke('admin-event-reg', session, { action: 'list', event_id: eventId })).registrations;
+  return (await listRegistrationsFull(session, eventId)).registrations;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  name: string;
+  email: string;
+  is_member: boolean;
+  programme: string | null;
+  affiliation: string | null;
+  created_at: string;
+}
+
+/** The door list, the number of places and who is waiting, in order. */
+export async function listRegistrationsFull(session: Session | null, eventId: string): Promise<{ registrations: EventRegistration[]; capacity: number | null; waitlist: WaitlistEntry[] }> {
+  const res = await invoke('admin-event-reg', session, { action: 'list', event_id: eventId });
+  return { registrations: res.registrations ?? [], capacity: res.capacity ?? null, waitlist: res.waitlist ?? [] };
+}
+
+/** Events attended per member (by member id), out of those held so far in the range. Full access to Members only. */
+export function memberEventAttendance(session: Session | null, from: string, to: string): Promise<{ total: number; from: string; to: string; counts: Record<string, number> }> {
+  return invoke('admin-event-reg', session, { action: 'member-attendance', from, to });
+}
+
+// ── Places, the waiting list and "Can't make it" ──────────────────────
+export interface EventPlaces { capacity: number; taken: number; waiting: number }
+
+/** Places left, for an event with a limit and registration open; null otherwise. */
+export async function eventPlaces(eventId: string): Promise<EventPlaces | null> {
+  try {
+    const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }).rpc('event_places', { p_event_id: eventId });
+    if (error) return null;
+    const row = (Array.isArray(data) ? data[0] : data) as EventPlaces | undefined;
+    return row && row.capacity ? row : null;
+  } catch {
+    return null;
+  }
+}
+
+export interface CancelLookup {
+  kind: 'registration' | 'waitlist' | 'gone' | 'sample';
+  event?: { id: string; title: string; date: string | null; start_at: string | null; end_at: string | null; place: string | null; online: boolean };
+  name?: string;
+  attended?: boolean;
+  started?: boolean;
+  position?: number | null;
+}
+
+export function lookupCancelLink(token: string): Promise<CancelLookup> {
+  return invoke('register-event', null, { action: 'lookup', t: token });
+}
+
+export function cancelByLink(token: string): Promise<{ cancelled: 'registration' | 'waitlist' }> {
+  return invoke('register-event', null, { action: 'cancel', t: token });
+}
+
+/** Signed in, from the Calendar: cancel your registration or leave the waiting list. */
+export function cancelMyRegistration(session: Session | null, eventId: string): Promise<{ cancelled: 'registration' | 'waitlist' }> {
+  return invoke('register-event', session, { action: 'cancel', event_id: eventId });
 }
 // ── Check-in at the door ───────────────────────────────────────────────
 // The QR code of a registration's ticket, scanned in Attendance. See
@@ -358,6 +440,6 @@ export async function listReminderStatus(session: Session | null): Promise<{ rem
 export function setRemindersPaused(session: Session | null, eventId: string, paused: boolean) {
   return invoke('admin-event-reminders', session, { action: 'set-paused', event_id: eventId, paused });
 }
-export async function sendReminderTest(session: Session | null, eventId: string, to: string, stage?: 'thank_you'): Promise<{ to: string; results: ReminderTestResult[] }> {
+export async function sendReminderTest(session: Session | null, eventId: string, to: string, stage?: 'thank_you' | 'notices'): Promise<{ to: string; results: ReminderTestResult[] }> {
   return invoke('admin-event-reminders', session, { action: 'send-test', event_id: eventId, to, ...(stage ? { stage } : {}) });
 }

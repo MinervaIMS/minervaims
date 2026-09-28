@@ -37,7 +37,8 @@ const CALENDAR_LEGEND: LegendItem[] = [
 ];
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { formatEventWhen, romeWall, romeWallToIso, romeYmd, zoneOnDate } from '@/lib/event-time';
-import { listEvents, registerForEvent, myEventRegistrationIds, saveEvent, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
+import { listEvents, registerForEvent, myEventRegistrationIds, myEventWaitlistIds, cancelMyRegistration, saveEvent, EVENT_TYPE_LABELS, AUDIENCE_LABELS, type EventRow } from '@/lib/events-api';
+import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import {
   listCalendarEntries, saveCalendarEntry, deleteCalendarEntry, CALENDAR_ENTRY_LABELS,
   listExamSessions, saveExamSession, deleteExamSession, examSessionOn,
@@ -87,6 +88,9 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
+  // Events you are waiting for a place at (an event with a limit, full).
+  const [waiting, setWaiting] = useState<Set<string>>(new Set());
+  const [cancelling, setCancelling] = useState(false);
   const [regEvent, setRegEvent] = useState<EventRow | null>(null);
   const [registering, setRegistering] = useState(false);
   const [entryForm, setEntryForm] = useState<EntryForm | null>(null);
@@ -111,6 +115,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
           listExamSessions().catch(() => [] as ExamSession[]),
         ]);
         setRegistered(regIds);
+        myEventWaitlistIds().then(setWaiting);
         setExamSessions(exams);
         const out: Item[] = [];
         // An Association on Display day also has an event (for attendance);
@@ -347,12 +352,30 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     if (!regEvent) return;
     setRegistering(true);
     try {
-      await registerForEvent(session, { event_id: regEvent.id });
-      setRegistered((p) => new Set(p).add(regEvent.id));
-      toast({ title: 'Registered' });
-      setRegEvent(null);
+      const res = await registerForEvent(session, { event_id: regEvent.id }) as { waitlisted?: boolean; position?: number | null };
+      if (res?.waitlisted) {
+        setWaiting((p) => new Set(p).add(regEvent.id));
+        toast({ title: 'You are on the waiting list', description: `The event is full${res.position ? `: you are number ${res.position}` : ''}. If a place opens up you are registered and emailed at once.` });
+      } else {
+        setRegistered((p) => new Set(p).add(regEvent.id));
+        toast({ title: 'Registered', description: 'Your confirmation, with your entry code, is on its way to your inbox.' });
+      }
     } catch (e) { toast({ title: 'Could not register', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setRegistering(false); }
+  };
+
+  // "Can't make it": your registration, or your place in the queue.
+  const doCancel = async () => {
+    if (!regEvent) return;
+    setCancelling(true);
+    try {
+      const res = await cancelMyRegistration(session, regEvent.id);
+      const drop = (p: Set<string>) => { const n = new Set(p); n.delete(regEvent.id); return n; };
+      setRegistered(drop);
+      setWaiting(drop);
+      toast({ title: res.cancelled === 'waitlist' ? 'You have left the waiting list' : 'Registration cancelled', description: res.cancelled === 'waitlist' ? undefined : 'Thank you for letting us know: your place can go to somebody else.' });
+    } catch (e) { toast({ title: 'Could not cancel', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
+    finally { setCancelling(false); }
   };
 
   if (loading) return <div><WorkspacePageHeader title="Calendar" description="Events, deadlines and meetings." /><WorkspaceLoader /></div>;
@@ -474,7 +497,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                               <PreviewRow label="When" value={isEvent ? formatEventWhen(it.event!) : date} />
                               <PreviewRow label="Where" value={isCustom ? it.entry!.location : isEvent ? it.event!.place : undefined} />
                               <PreviewRow label="Details" value={isCustom ? it.entry!.description : undefined} />
-                              <PreviewRow label="Registered" value={isReg ? 'You are registered' : undefined} />
+                              <PreviewRow label="Registered" value={isReg ? 'You are registered' : isEvent && waiting.has(it.event!.id) ? 'On the waiting list' : undefined} />
                               <PreviewRow
                                 label="Action"
                                 value={isEditableEvent ? 'Click to edit this event'
@@ -675,11 +698,29 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
               {/* The calendar is fully functional on mobile too, so event
                   registration works from any device. */}
               {registered.has(regEvent.id) ? (
-                <div className="flex items-center gap-2 text-emerald-700"><CalendarClock className="h-4 w-4" />You are registered for this event.</div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-emerald-700"><CalendarClock className="h-4 w-4" />You are registered for this event.</div>
+                  <div className="flex flex-wrap gap-2">
+                    <AddToCalendar eventId={regEvent.id} />
+                    <Button data-ro variant="outline" size="sm" onClick={doCancel} disabled={cancelling}>
+                      {cancelling ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Cancel my registration
+                    </Button>
+                  </div>
+                </div>
+              ) : waiting.has(regEvent.id) ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700"><CalendarClock className="h-4 w-4" />You are on the waiting list. If a place opens up you are registered and emailed at once.</div>
+                  <Button data-ro variant="outline" size="sm" onClick={doCancel} disabled={cancelling}>
+                    {cancelling ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Leave the waiting list
+                  </Button>
+                </div>
               ) : (
-                <Button data-ro className="w-full" onClick={doRegister} disabled={registering}>
-                  {registering ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering</> : 'Register for this event'}
-                </Button>
+                <div className="space-y-2">
+                  <Button data-ro className="w-full" onClick={doRegister} disabled={registering}>
+                    {registering ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering</> : 'Register for this event'}
+                  </Button>
+                  <AddToCalendar eventId={regEvent.id} variant="ghost" className="w-full" />
+                </div>
               )}
             </div>
           )}

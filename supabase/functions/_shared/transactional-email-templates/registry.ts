@@ -7,6 +7,10 @@
 import * as React from 'npm:react@18.3.1'
 import { Body, Head, Html } from 'npm:@react-email/components@0.0.22'
 import { TRANSACTIONAL_TEMPLATES } from '../transactional-emails.ts'
+import { emailCalendarBlock, emailCancelBlock } from '../calendar.ts'
+
+// The project the preview links point at, as the emails' own links do.
+const PREVIEW_SUPABASE_URL = 'https://asjudzdgsccacpjbzsue.supabase.co'
 import { normalizeEmailSubject } from '../email-subjects.ts'
 import { normalizeEmailLinks } from '../email-links.ts'
 import { withResponsiveShell } from '../email-responsive.ts'
@@ -58,6 +62,10 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   body_paragraph_3: 'Please refer to the Workspace for any operational details.',
   call_description: 'A structured conversation with alumni on career paths and technical preparation.',
   checkin_block: '',
+  calendar_block: emailCalendarBlock(PREVIEW_SUPABASE_URL, 'sample'),
+  cancel_block: emailCancelBlock('sample', 'sample', 'registration'),
+  waitlist_position: '3',
+  register_url: 'https://minervaims.org/events',
   closing_line: 'Thank you for your attention.',
   cta_label: 'Open the Workspace',
   cta_url: 'https://minervaims.org/auth',
