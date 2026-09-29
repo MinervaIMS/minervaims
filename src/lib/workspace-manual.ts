@@ -313,11 +313,12 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'calendar',
     level: 'view',
     steps: [
-      'Open the Calendar and find the event. Hovering it shows the details without opening anything.',
-      'Click it. Events with registration open show the details and a registration button.',
-      'Register. A confirmation mark then appears next to the event on your Calendar, and the same dialog offers Add to calendar and Cancel my registration.',
-      'If the event is full you join the waiting list instead, and are registered and emailed at once if a place opens up.',
-      'For an Association on Display day, clicking opens the slot sign-up page instead. Registration closes 24 hours before the day.',
+      'Open the Calendar. "Register for events", at the top, lists every upcoming event you can still sign up for, soonest first, with the day, the time, the place, who it is open to and the places left.',
+      'Press Register beside the event. That is all: your details come from your account. Press the event\'s name first if you want to read the details.',
+      'Your confirmation email arrives with your entry code (a QR code) and Add to calendar. The event moves to "Your upcoming events" and shows a green tick on the calendar.',
+      'If the event is full the button reads Join the waiting list: you are registered and emailed at once if a place opens up.',
+      'Can\'t make it? Open the event and press Cancel, so your place goes to somebody else. "How registration works" explains the four steps from the button to the door.',
+      'For an Association on Display day, its panel opens the slot sign-up page instead. Registration closes 24 hours before the day.',
     ],
   },
   {
@@ -484,11 +485,22 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'smm-editorial',
     level: 'manage',
     steps: [
-      'Open Media and Communication, Editorial calendar and double-click the day it should go out.',
+      'Open Media and Communication, Editorial calendar and press New item, or the "+" on the day it should go out (double-clicking the day works too).',
       'Write what is being promoted.',
       'Under "Where it goes", select every destination it goes to. Instagram and LinkedIn together is one item, not two.',
       'Pick the format for each destination separately. The same piece can be a reel on Instagram and a post on LinkedIn.',
-      'Set who is responsible and the status, and mark it as paid advertising if it is.',
+      'Set who is responsible and the status, and mark it as paid advertising if it is. If it promotes an event, choose the event under "For an event".',
+    ],
+  },
+  {
+    id: 'move-post',
+    title: 'Reschedule a post or move it along',
+    requires: 'smm-editorial',
+    level: 'manage',
+    steps: [
+      'On a computer, drag the item to another day of the month, or into Unscheduled to take its date away.',
+      'In Board, drag a card to another column to change its status: Idea, Scheduled, In progress, Published or Cancelled.',
+      'Without dragging: open the item and change its date or status, then Save changes.',
     ],
   },
   {
@@ -676,9 +688,9 @@ export interface PageDetail {
 export const PAGE_DETAIL: Record<string, PageDetail> = {
   'calendar': {
     detail: [
-      "Everything the association has scheduled appears here in one grid: events, Association on Display days, alumni calls, the application window and, for members who owe it, the membership fee deadline. Each is coloured by what it is, and the colour key lists them all.",
-      "The grid has three sizes. Small shows most of a term at once and is the default, because planning a semester needs to see a semester; Large gives a busy week the room to be read. The choice is remembered for this calendar only.",
-      "Double-click any day to add your own entry. Hovering an entry shows it in full without opening anything, which is what a month cell three words wide cannot do on its own.",
+      "Register for events comes first: every upcoming event still open to you, with its Register button, beside the events you are already registered or waiting for. How registration works lays out the four steps from the button to the door.",
+      "Below it, one month at a time with Today and the arrows, as a month grid or as an agenda (a list by day, which a phone shows first). The chips above it are both the filters and the key: Events, Association on Display, Alumni calls, Deadlines and Team entries, each with its colour and icon. A ticket marks an event open to register, a green tick one you are registered for, an hourglass one you are waiting for.",
+      "Any item opens a panel with its details and what you can do: register, join the waiting list, add it to your own calendar or cancel. Roles that edit the calendar also find Edit details there, and add their own entries with Add entry or the + on a day.",
       "No event can be scheduled during an exam session break or on an Italian public holiday. Both are shaded, and the restriction is enforced by the database, so it holds however the entry is created.",
     ],
     related: ['events-create', 'events-on-display', 'events-alumni-calls'],
@@ -686,8 +698,9 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'smm-editorial': {
     detail: [
       "The Media team's plan: what is going out, when, where it goes and in what format, who is responsible, its status and whether it is paid advertising.",
-      "One item can go to several destinations at once, each with its own format, because a single piece of work is a single record even when it runs as a reel on Instagram and a post on LinkedIn. A chip on the calendar is split into the colours of the destinations it carries.",
-      "Double-click a day to add. Hover an item to read it in full, including its notes. The three sizes work exactly as they do on the main Calendar and are remembered separately.",
+      "Three views of the same plan: Month (the dates, with the association's own events shown faintly on their days), Board (one column per status, from Idea to Published) and List (everything in date order, the easiest read on a phone). Items without a date wait in Unscheduled.",
+      "Each item shows its status by its style and icon, and where it goes by the platform icons. One item can go to several destinations, each with its own format, and can be linked to the event it promotes.",
+      "On a computer the Media team drags items to reschedule them or to change their status; the same can be done from the item itself. Other roles, and every role on a phone, read the plan without changing it.",
     ],
     related: ['smm-ig', 'smm-li', 'smm-ads', 'events-create'],
   },
