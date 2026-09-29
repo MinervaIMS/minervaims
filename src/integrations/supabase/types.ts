@@ -1788,6 +1788,8 @@ export type Database = {
           membership_status: string
           phone: string | null
           photo_url: string | null
+          profile_email_count: number
+          profile_email_semester: string | null
           profile_email_sent_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           surname: string
@@ -1810,6 +1812,8 @@ export type Database = {
           membership_status?: string
           phone?: string | null
           photo_url?: string | null
+          profile_email_count?: number
+          profile_email_semester?: string | null
           profile_email_sent_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           surname: string
@@ -1832,6 +1836,8 @@ export type Database = {
           membership_status?: string
           phone?: string | null
           photo_url?: string | null
+          profile_email_count?: number
+          profile_email_semester?: string | null
           profile_email_sent_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           surname?: string
@@ -2688,6 +2694,11 @@ export type Database = {
       process_interview_30m_reminders: { Args: never; Returns: number }
       process_offer_deadlines: { Args: never; Returns: undefined }
       process_profile_reminders: { Args: never; Returns: number }
+      profile_missing_block: {
+        Args: { p_linkedin: boolean; p_phone: boolean; p_photo: boolean }
+        Returns: string
+      }
+      profile_photo_help_block: { Args: never; Returns: string }
       promote_event_waitlist: { Args: { p_event_id: string }; Returns: number }
       public_alumni_classes: {
         Args: never
@@ -2731,6 +2742,7 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      semester_key: { Args: { p_day: string }; Returns: string }
       send_event_notice: {
         Args: {
           p_email: string
@@ -2748,6 +2760,7 @@ export type Database = {
         Args: { p_event_id: string; p_stage: string; p_test_to?: string }
         Returns: number
       }
+      send_profile_reminder_test: { Args: { p_to: string }; Returns: number }
       user_divisions: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["org_division"][]
