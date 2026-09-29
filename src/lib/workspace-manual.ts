@@ -129,7 +129,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'How the media plan fits together',
     body: [
       'The editorial calendar is the plan: what is going out, when, where it goes and in what format, who is responsible, its status and whether it is paid. One item can go to several destinations at once, with its own format in each, because a single piece of work is a single record even when it is a reel on Instagram and a post on LinkedIn.',
-      'The libraries beside it hold the material: the Instagram, LinkedIn, graphics and other archives, and the brand and design system that says how the association presents itself.',
+      'The libraries beside it hold the material. Brand & Social brings together the Instagram and LinkedIn libraries and the design system that says how the association presents itself, as three tabs of one page; MIMS Graphics and Other resources hold the rest. Every library works the same way: search, type filters, pictures shown as pictures, bulk upload and ZIP downloads.',
       'Advertising and spending is a register of paid promotion. Recording a spend there posts the cost to the Treasury automatically, once, on the date it was incurred, so the media budget and the association\'s accounts cannot drift apart. Editing the description of an existing spend never posts a second time.',
     ],
     requires: 'smm-editorial',
@@ -335,13 +335,27 @@ export const COMMON_TASKS: ManualTask[] = [
   {
     id: 'publish-material',
     title: 'Add material to a platform library',
-    requires: 'smm-ig',
+    requires: 'smm-social',
     level: 'manage',
     steps: [
-      'Open the library the material belongs to: Instagram, LinkedIn, MIMS Graphics or Other resources.',
-      'Upload the file, or add the link, with a title that will still mean something to somebody else in six months.',
-      'Star the few that are in active use so they stay at the top of the list.',
+      'Open the library the material belongs to: Social Media, Brand & Social (the Instagram or LinkedIn tab), MIMS Graphics or Other resources.',
+      'Drop the files anywhere on the page, or press Upload files and choose them: several at once is fine. Each is listed with a title read from its name; change any title that would not mean something to somebody else in six months.',
+      'Press Upload. Each file shows its own progress and becomes its own item; one that fails keeps its place with the reason and Retry.',
+      'For a caption, a link or a post that needs its text beside its pictures, use New item instead, or open an item and Edit it to add the caption.',
+      'Pin the few that are in active use so they stay at the top of the library.',
       'If the material is going out on a date, add it to the Editorial calendar as well, so the plan and the material agree.',
+    ],
+  },
+  {
+    id: 'find-file',
+    title: 'Find a file and take it with you',
+    requires: 'reports-templates',
+    level: 'view',
+    steps: [
+      'Open the library: Reports, Templates & repositories (or any other library, they all work the same way).',
+      'Type part of its title, its file name or who added it into the search. Narrow with a type chip, such as Spreadsheets, or a division.',
+      'Open the item to preview the file full screen, copy its text or open its link.',
+      'Download it from the row, or tick several items and press Download as ZIP to take them all at once.',
     ],
   },
   {
@@ -473,7 +487,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'smm-brand',
     level: 'view',
     steps: [
-      'Open Social Media, Design System.',
+      'Open Social Media, Brand & Social, and choose the Design System tab.',
       'Press Download the ZIP: the whole design system, with the guide, logos, templates and fonts. The link works for one minute and the download is recorded.',
       'To publish a new edition (Head of Media and Communication, President, Vice President), press Replace the package and choose the new ZIP, up to 50 MB.',
     ],
@@ -702,7 +716,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Each item shows its status by its style and icon, and where it goes by the platform icons. One item can go to several destinations, each with its own format, and can be linked to the event it promotes.",
       "On a computer the Media team drags items to reschedule them or to change their status; the same can be done from the item itself. Other roles, and every role on a phone, read the plan without changing it.",
     ],
-    related: ['smm-ig', 'smm-li', 'smm-ads', 'events-create'],
+    related: ['smm-social', 'smm-graphics', 'smm-ads', 'events-create'],
   },
   'smm-ads': {
     detail: [
@@ -790,13 +804,34 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     ],
     related: ['events-forms', 'events-create', 'events-archive'],
   },
-  'smm-brand': {
+  'smm-social': {
     detail: [
-      "The design system of the Society, as the package itself describes it: the guide inside the package is shown here chapter by chapter, with the logos, the type scale, the colours and the shadows drawn live beside the text.",
-      "Download the ZIP gives the whole package: the guide, every logo, the tokens, the templates and the font files. It stays inside Minerva because it contains the Society's artwork and licensed fonts, and every download is recorded.",
-      "A new edition is published by uploading its ZIP, which replaces the previous one for everybody at once.",
+      "Instagram, LinkedIn and the Design System, which used to be three separate pages, are the three tabs of this one. Each tab keeps its own access: you see the tabs your role may open, and what you may change is decided tab by tab. The tab is part of the address, and the old addresses of the three pages open the matching tab.",
+      "The Instagram and LinkedIn tabs are libraries of material ready to post: pictures, videos, captions and links. Captions can be copied in one press and show their length against the platform's limit (2,200 characters on Instagram, 3,000 on LinkedIn).",
+      "The Design System tab is the design system of the Society, as the package itself describes it: the guide inside the package, chapter by chapter, with the logos, the type scale, the colours and the shadows drawn live beside the text. Download the ZIP gives the whole package, which stays inside Minerva because it contains the Society's artwork and licensed fonts; every download is recorded. A new edition is published by uploading its ZIP, which replaces the previous one for everybody at once.",
     ],
-    related: ['smm-graphics', 'smm-editorial'],
+    related: ['smm-editorial', 'smm-graphics', 'smm-other'],
+  },
+  'smm-graphics': {
+    detail: [
+      "The Society's graphic assets as a picture library: every image shows as itself, and every other file as a tile with its type written on it. Search, filter by type, preview full screen, and download one file or several at once as a ZIP.",
+      "The Media team adds assets by dropping many files at once; each becomes its own item, titled from its name. Put the editable file next to the export whenever there is one.",
+    ],
+    related: ['smm-social', 'smm-editorial'],
+  },
+  'reports-templates': {
+    detail: [
+      "Your division's working material in one searchable library: model and report templates, code repositories, links and reference notes. General material, meant for every division, stays in view whichever division is chosen.",
+      "Search by title, file name or author, narrow by type (Spreadsheets, Presentations, Links...), open an item to preview its file, and download one item or several at once as a ZIP. Those who manage the library upload many files at once, each becoming its own item in the chosen division.",
+    ],
+    related: ['reports-upload', 'reports-archive'],
+  },
+  'ops-external': {
+    detail: [
+      "Every partner, sponsor and institution the Society deals with: the contacts, the agreements and the links that go with each, so a relationship survives the change of board.",
+      "Search by name, address or note. A telephone number calls and an address writes in one tap, and the button on each row copies the address. Agreements and documents are previewed and downloaded from the entry itself.",
+    ],
+    related: ['ops-docs', 'ops-treasury'],
   },
   'events-create': {
     detail: [

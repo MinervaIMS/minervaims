@@ -139,11 +139,11 @@ export const NAV: NavSection[] = [
     key: 'smm', slug: 'social-media', label: 'Social Media', Icon: ImageIcon,
     subItems: [
       { key: 'smm-editorial', slug: 'editorial-calendar', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
-      { key: 'smm-ig', slug: 'instagram', label: 'Instagram', allowed: (p) => p.can('smm-ig') },
-      { key: 'smm-li', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('smm-li') },
+      // Instagram, LinkedIn and the Design System are one page with three
+      // tabs. Each tab keeps its own permission; see MERGED_SUBSECTIONS.
+      { key: 'smm-social', slug: 'brand-and-social', label: 'Brand & Social', allowed: (p) => p.can('smm-social') },
       { key: 'smm-graphics', slug: 'graphics', label: 'MIMS Graphics', allowed: (p) => p.can('smm-graphics') },
       { key: 'smm-other', slug: 'other-resources', label: 'Other Resources', allowed: (p) => p.can('smm-other') },
-      { key: 'smm-brand', slug: 'design-system', label: 'Design System', allowed: (p) => p.can('smm-brand') },
       { key: 'smm-ads', slug: 'ads-and-spending', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
     ],
   },
@@ -185,6 +185,45 @@ export const NAV: NavSection[] = [
     subItems: [],
   },
 ];
+
+// =====================================================================
+// SUBSECTIONS THAT BECAME TABS.
+// ---------------------------------------------------------------------
+// Instagram, LinkedIn and Design System were three subsections of Social
+// Media; they are now the three tabs of Brand & Social. Their keys stay,
+// because they are what the access matrix, the server, the search index
+// and the Role permissions table speak in, and their old addresses stay,
+// because they have been bookmarked and sent. Both lead to the new page
+// with the right tab open.
+// =====================================================================
+export interface MergedSubsection {
+  /** The page that now holds it. */
+  key: string;
+  /** Its tab on that page, as written in `?tab=`. */
+  tab: string;
+  /** The section it lived in, and its old URL segment. */
+  sectionKey: string;
+  slug: string;
+  label: string;
+}
+
+export const MERGED_SUBSECTIONS: Record<string, MergedSubsection> = {
+  'smm-ig': { key: 'smm-social', tab: 'instagram', sectionKey: 'smm', slug: 'instagram', label: 'Instagram' },
+  'smm-li': { key: 'smm-social', tab: 'linkedin', sectionKey: 'smm', slug: 'linkedin', label: 'LinkedIn' },
+  'smm-brand': { key: 'smm-social', tab: 'design-system', sectionKey: 'smm', slug: 'design-system', label: 'Design System' },
+};
+
+/** The tabs of a merged page, in order: `{ tab, resource }`. */
+export function tabsOf(pageKey: string): { tab: string; resource: string; label: string }[] {
+  return Object.entries(MERGED_SUBSECTIONS)
+    .filter(([, m]) => m.key === pageKey)
+    .map(([resource, m]) => ({ tab: m.tab, resource, label: m.label }));
+}
+
+/** The resource key behind a tab of a merged page, or null. */
+export function resourceForTab(pageKey: string, tab: string | null | undefined): string | null {
+  return tabsOf(pageKey).find((t) => t.tab === tab)?.resource ?? null;
+}
 
 export function filterNav(permissions: Permissions): NavSection[] {
   return NAV
@@ -299,6 +338,8 @@ for (const s of ALL_SECTIONS) for (const si of s.subItems) if (!SECTION_BY_SUB_K
  * produces an ugly URL rather than a broken one.
  */
 export function workspacePath(sectionKey: string, subKey?: string | null): string {
+  const merged = subKey ? MERGED_SUBSECTIONS[subKey] : undefined;
+  if (merged) return `${workspacePath(merged.sectionKey, merged.key)}?tab=${merged.tab}`;
   const section = SECTION_BY_KEY.get(sectionKey);
   const sectionSlug = section?.slug ?? sectionKey;
   if (!subKey) return `${WORKSPACE_BASE}/${sectionSlug}`;
@@ -313,6 +354,7 @@ export function workspacePath(sectionKey: string, subKey?: string | null): strin
  * `?section=…&sub=…` links sent out in emails months ago.
  */
 export function workspacePathForKeys(sectionKey?: string | null, subKey?: string | null): string {
+  if (subKey && MERGED_SUBSECTIONS[subKey]) return workspacePath(MERGED_SUBSECTIONS[subKey].sectionKey, subKey);
   if (subKey) {
     const owner = SECTION_BY_SUB_KEY.get(subKey);
     if (owner) return workspacePath(owner.key, subKey);
@@ -346,8 +388,9 @@ export function parseWorkspaceUrl(pathname: string): { sectionSlug: string | nul
 }
 
 export type WorkspaceResolution =
-  /** The viewer may open this, and here is what to render. */
-  | { status: 'ok'; sectionKey: string; subKey: string | null }
+  /** The viewer may open this, and here is what to render. `tab` is set
+   *  when an old address named what is now a tab of a merged page. */
+  | { status: 'ok'; sectionKey: string; subKey: string | null; tab?: string }
   /** It exists, but not for this role. `label` names it, for the notice. */
   | { status: 'forbidden'; label: string }
   /** No such section or subsection, for anybody. */
@@ -377,6 +420,13 @@ export function resolveWorkspaceTarget(
     if (!subSlug) return { status: 'ok', sectionKey: section.key, subKey: section.subItems[0]?.key ?? null };
     const sub = section.subItems.find((si) => si.slug === subSlug);
     if (sub) return { status: 'ok', sectionKey: section.key, subKey: sub.key };
+    // An old address of what is now a tab: open the page on that tab.
+    const merged = Object.values(MERGED_SUBSECTIONS).find((m) => m.sectionKey === section.key && m.slug === subSlug);
+    if (merged) {
+      const page = section.subItems.find((si) => si.key === merged.key);
+      if (page) return { status: 'ok', sectionKey: section.key, subKey: page.key, tab: merged.tab };
+      return { status: 'forbidden', label: `${section.label} / ${merged.label}` };
+    }
     // The section is open to this viewer; the subsection inside it is not.
     const full = ALL_SECTIONS.find((s) => s.slug === sectionSlug);
     const known = full?.subItems.find((si) => si.slug === subSlug);
@@ -386,6 +436,8 @@ export function resolveWorkspaceTarget(
   const full = ALL_SECTIONS.find((s) => s.slug === sectionSlug);
   if (!full) return { status: 'unknown' };
   if (!subSlug) return { status: 'forbidden', label: full.label };
+  const mergedHere = Object.values(MERGED_SUBSECTIONS).find((m) => m.sectionKey === full.key && m.slug === subSlug);
+  if (mergedHere) return { status: 'forbidden', label: `${full.label} / ${mergedHere.label}` };
   const known = full.subItems.find((si) => si.slug === subSlug);
   return known
     ? { status: 'forbidden', label: `${full.label} / ${known.label}` }

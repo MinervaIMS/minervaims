@@ -3,6 +3,7 @@ import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { readFileField } from '../_shared/form-file.ts';
 import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
+import { allows } from '../_shared/access.ts';
 
 // =====================================================================
 // admin-resources — reusable file / link / note store (workspace_resources).
@@ -20,6 +21,9 @@ const SourceSchema = z.object({
   kind: z.enum(['text', 'link', 'file', 'phone', 'email']),
   value: z.string().min(1).max(10000),
   label: z.string().max(300).nullable().optional(),
+  // The file's size in bytes, recorded by the library at upload so it can
+  // say "2.4 MB" beside the name. Optional: older files have none.
+  size: z.number().int().nonnegative().max(1024 * 1024 * 1024).nullable().optional(),
 });
 
 const ResourceSchema = z.object({
@@ -65,7 +69,31 @@ function deriveLegacy(sources: { kind: string; value: string }[]) {
 
 // Roles that can manage resources across all divisions/categories.
 const MANAGE_ALL = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_media', 'head_of_operations'];
-const SCOPED = ['head_of_division', 'portfolio_manager', 'team_leader', 'analyst', 'media_analyst'];
+// Senior analysts manage their division's templates in the matrix and were
+// missing here, so every save of theirs was refused as out of scope.
+const SCOPED = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'media_analyst'];
+
+// =====================================================================
+// WHICH LIBRARY IS WHICH SUBSECTION.
+// ---------------------------------------------------------------------
+// Every write used to be allowed to any staff member for a "General"
+// item, whatever the library: the check was the division, never the
+// subsection. The workspace hid the buttons from roles that only read a
+// library, but the function itself did not ask. Writes now ask the access
+// matrix for the subsection the library belongs to, exactly as the
+// navigation does, so a role that reads Instagram cannot write to it by
+// calling the function directly. Nobody who can manage a library in the
+// workspace loses anything.
+// =====================================================================
+const CATEGORY_RESOURCE: Record<string, string> = {
+  reports_templates: 'reports-templates',
+  smm_instagram: 'smm-ig',
+  smm_linkedin: 'smm-li',
+  smm_graphics: 'smm-graphics',
+  smm_other: 'smm-other',
+  external_relations: 'ops-external',
+  operations_statuto: 'ops-docs',
+};
 
 const DIV_LABELS: Record<string, string> = {
   equity: 'Equity Research', investment: 'Investment Research', macro: 'Macro Research',
@@ -106,6 +134,9 @@ const ALLOWED_MIME = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  // Short clips for the social libraries (reels, stories). Still within the
+  // 25 MB ceiling, and never executed by a browser.
+  'video/mp4', 'video/quicktime', 'video/webm',
 ]);
 const BLOCKED_EXT = /\.(html?|xhtml|svg|js|mjs|php|sh|exe|bat|htm)$/i;
 function fileTypeAllowed(file: File): boolean {
@@ -142,6 +173,16 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     const isStaff = canAll || scopedDivisions.length > 0 || roles.some((r) => !['member', 'pending', 'candidate'].includes(r.role));
     if (!isStaff) return json({ error: 'Access denied' }, 403);
 
+    const roleNames = roles.map((r) => r.role);
+    /** May this person write to the library `category` belongs to? */
+    const managesCategory = (category: string | null | undefined): boolean => {
+      const resource = category ? CATEGORY_RESOURCE[category] : undefined;
+      // A category no subsection owns is left to the division rule it
+      // always had, so nothing that exists today stops working.
+      if (!resource) return true;
+      return allows(roleNames, user.email, resource, 'manage');
+    };
+
     const authorName = (await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.email;
     // The uploader's role at the time of upload, shown next to their name.
     const primary = [...roles].sort((a, b) => (ROLE_RANK[a.role] ?? 99) - (ROLE_RANK[b.role] ?? 99))[0];
@@ -157,6 +198,10 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
       // unaffected.
       const file = readFileField(form, 'file');
       if (!file) return json({ error: 'No file provided' }, 400);
+      // Only somebody who can add to at least one library may store a file.
+      if (!Object.values(CATEGORY_RESOURCE).some((res) => allows(roleNames, user.email, res, 'manage'))) {
+        return json({ error: 'You cannot add files to this library.' }, 403);
+      }
       if (file.size > 25 * 1024 * 1024) return json({ error: 'File must be under 25 MB.' }, 400);
       if (!fileTypeAllowed(file)) return json({ error: 'This file type is not allowed. Upload a document, spreadsheet, presentation, PDF, image, CSV or zip.' }, 400);
       const safe = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -189,8 +234,9 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
 
     if (action === 'delete') {
       const id = body.id as string;
-      const { data: existing } = await supabase.from('workspace_resources').select('division').eq('id', id).maybeSingle();
+      const { data: existing } = await supabase.from('workspace_resources').select('division, category').eq('id', id).maybeSingle();
       if (existing && !inScope(existing.division)) return json({ error: 'Out of scope' }, 403);
+      if (existing && !managesCategory(existing.category)) return json({ error: 'You can only read this library.' }, 403);
       const { error } = await supabase.from('workspace_resources').delete().eq('id', id);
       if (error) throw error;
       return json({ success: true });
@@ -203,6 +249,7 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
       const { data: existing } = await supabase.from('workspace_resources').select('division, category').eq('id', id).maybeSingle();
       if (!existing) return json({ error: 'Not found' }, 404);
       if (!inScope(existing.division)) return json({ error: 'Out of scope' }, 403);
+      if (!managesCategory(existing.category)) return json({ error: 'You can only read this library.' }, 403);
       if (want) {
         const { count } = await supabase.from('workspace_resources')
           .select('id', { count: 'exact', head: true })
@@ -218,6 +265,12 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     if (!parsed.success) return json({ error: 'Validation failed', details: parsed.error.format() }, 400);
     const r = parsed.data;
     if (!inScope(r.division)) return json({ error: 'You can only manage resources in your division' }, 403);
+    if (!managesCategory(r.category)) return json({ error: 'You can only read this library.' }, 403);
+    if (r.id) {
+      // An edit may not move an item out of a library its author cannot write to.
+      const { data: before } = await supabase.from('workspace_resources').select('category, division').eq('id', r.id).maybeSingle();
+      if (before && (!managesCategory(before.category) || !inScope(before.division))) return json({ error: 'You can only read this library.' }, 403);
+    }
 
     // Enforce the per-kind caps and the minimum-one-source rule server-side.
     const counts: Record<string, number> = {};
@@ -230,7 +283,9 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
         return json({ error: `At most ${limit} ${noun} per item.` }, 400);
       }
     }
-    if (!r.description || !r.description.trim()) return json({ error: 'A description is required.' }, 400);
+    // The description is optional. It was required, which made adding ten
+    // pictures ten descriptions; the library now leads with the title, the
+    // type and the preview, and a note is added where it helps.
 
     // Enforce the five-favourite cap when creating/updating a starred item.
     if (r.is_favourite) {
@@ -243,7 +298,7 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     const legacy = deriveLegacy(r.sources);
     const payload = {
       category: r.category, division: r.division, type: legacy.type, title: r.title,
-      description: r.description ?? null,
+      description: r.description && r.description.trim() ? r.description.trim() : null,
       sources: r.sources,
       file_url: legacy.file_url, link_url: legacy.link_url, body: legacy.body,
       is_favourite: r.is_favourite ?? false,

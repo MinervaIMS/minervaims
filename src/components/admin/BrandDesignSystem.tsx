@@ -243,7 +243,7 @@ function PackageCard() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 max-w-3xl">
           <h2 className="font-serif text-subheading text-accent leading-tight inline-flex items-center gap-2">
-            The complete design system <HelpDot page="smm-brand" topic="package" />
+            The complete design system <HelpDot page="smm-social" topic="package" />
           </h2>
           <p className="mt-2 text-small text-muted-foreground">
             Everything below, and everything it refers to: the tokens and stylesheets, the React components, the
@@ -283,13 +283,19 @@ function PackageCard() {
   );
 }
 
-export default function BrandDesignSystem() {
+/**
+ * `embedded`: drawn as the Design System tab of Brand & Social, whose own
+ * header already names the page, so this one does not repeat it.
+ */
+export default function BrandDesignSystem({ embedded = false }: { embedded?: boolean }) {
   return (
     <div>
-      <WorkspacePageHeader
-        title="Brand & Design"
-        description="The association's visual identity, chapter by chapter, and the complete design system to download."
-      />
+      {!embedded && (
+        <WorkspacePageHeader
+          title="Brand & Design"
+          description="The association's visual identity, chapter by chapter, and the complete design system to download."
+        />
+      )}
 
       {/* Provenance first: a reference that does not say what it is a
           reference TO cannot be trusted as current. */}

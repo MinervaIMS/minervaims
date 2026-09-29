@@ -77,7 +77,7 @@ const MembershipFee = lazy(() => import('@/components/admin/MembershipFee'));
 const Treasury = lazy(() => import('@/components/admin/Treasury'));
 const AutoEmails = lazy(() => import('@/components/admin/AutoEmails'));
 const EditorialCalendar = lazy(() => import('@/components/admin/EditorialCalendar'));
-const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
+const BrandSocial = lazy(() => import('@/components/admin/BrandSocial'));
 const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
 const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
 const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
@@ -152,11 +152,9 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
   'people-invites': () => import('@/components/admin/InvitesManagement'),
   'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
-  'smm-ig': () => import('@/components/admin/ResourceManager'),
-  'smm-li': () => import('@/components/admin/ResourceManager'),
+  'smm-social': () => import('@/components/admin/BrandSocial'),
   'smm-graphics': () => import('@/components/admin/ResourceManager'),
   'smm-other': () => import('@/components/admin/ResourceManager'),
-  'smm-brand': () => import('@/components/admin/BrandDesignSystem'),
   'smm-ads': () => import('@/components/admin/AdsRegister'),
   'ops-fee': () => import('@/components/admin/MembershipFee'),
   'ops-treasury': () => import('@/components/admin/Treasury'),
@@ -249,7 +247,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { WorkspaceAccessNotice } from '@/components/admin/WorkspaceAccessNotice';
 import {
   NAV, candidateNav, filterNav, workspacePath, parseWorkspaceUrl,
-  resolveWorkspaceTarget, WORKSPACE_BASE,
+  resolveWorkspaceTarget, WORKSPACE_BASE, MERGED_SUBSECTIONS, tabsOf,
   type NavSection,
 } from '@/lib/workspace-nav';
 
@@ -398,6 +396,17 @@ const MinervaWorkspace = () => {
   const activeSectionKey = resolution.status === 'ok' ? resolution.sectionKey : null;
   const activeSubKey = resolution.status === 'ok' ? resolution.subKey : null;
 
+  // A PAGE WITH TABS (Brand & Social) keeps its tab in the address,
+  // `?tab=instagram`, so a tab can be linked to and the back button
+  // returns to it. The tab shown is the one asked for if this reader may
+  // open it, otherwise the first one they may: never an empty tab.
+  const pageTabs = useMemo(
+    () => (activeSubKey ? tabsOf(activeSubKey).filter((t) => access.canView(t.resource)) : []),
+    [activeSubKey, access],
+  );
+  const requestedTab = useMemo(() => new URLSearchParams(location.search).get('tab'), [location.search]);
+  const activeTab = pageTabs.find((t) => t.tab === requestedTab) ?? pageTabs[0] ?? null;
+
   /**
    * Go somewhere in the workspace.
    *
@@ -442,7 +451,8 @@ const MinervaWorkspace = () => {
     }
     if (resolution.status === 'ok') {
       const canonical = workspacePath(resolution.sectionKey, resolution.subKey);
-      if (canonical !== location.pathname) navigate(canonical, { replace: true });
+      // An old address of what is now a tab keeps its tab on the way over.
+      if (canonical !== location.pathname) navigate(resolution.tab ? `${canonical}?tab=${resolution.tab}` : canonical, { replace: true });
     }
   }, [navReady, visibleNav.length, resolution, homePath, location.pathname, navigate]);
 
@@ -941,7 +951,9 @@ const MinervaWorkspace = () => {
   // My Profile, How to use) is keyed by the section itself, so those are
   // covered too rather than falling through as "not read-only".
   // ══════════════════════════════════════════════════════════════════════
-  const openResource = activeSubKey ?? activeSectionKey;
+  // On a page with tabs, the tab decides: a Media Analyst manages the
+  // Instagram tab and reads the Design System tab of the same page.
+  const openResource = activeTab?.resource ?? activeSubKey ?? activeSectionKey;
   // A CANDIDATE IS NEVER A READER OF SOMEBODY ELSE'S RECORD. Their pages are
   // granted at 'view' because a candidate manages nothing of the association's,
   // but those pages are their OWN application: booking an interview slot and
@@ -997,6 +1009,11 @@ const MinervaWorkspace = () => {
   // switch to it, and let the help panel open on the matching topic when
   // the hit was a help topic rather than a page.
   const openSearchTarget = (target: SearchTarget) => {
+    // Instagram, LinkedIn and Design System are tabs now: open the tab.
+    if (MERGED_SUBSECTIONS[target.key]) {
+      navigate(workspacePath(MERGED_SUBSECTIONS[target.key].sectionKey, target.key));
+      return;
+    }
     const section = NAV.find((s) => s.subItems.some((si) => si.key === target.key))
       ?? NAV.find((s) => s.key === target.key);
     if (!section) return;
@@ -1066,10 +1083,11 @@ const MinervaWorkspace = () => {
         return <ResourceManager
           category="reports_templates"
           title="Templates & repositories"
-          description="Useful division material: text, files, links and code repositories. Star up to five favourites to pin them on top; each item shows who added it and when."
+          description="Your division's working material: model templates, report templates, code repositories and reference notes. Find one by name, type or division; each shows who added it and when."
           restrictDivisions={access.allowedDivisions}
           canViewOtherDivisions={access.canViewOtherDivisions}
           canManage={access.canManage('reports-templates')}
+          flavour="documents"
         />;
       case 'reports-funds':
         return <FundsPerformances />;
@@ -1122,26 +1140,28 @@ const MinervaWorkspace = () => {
         return <EditorialCalendar />;
       case 'smm-ads':
         return <AdsRegister />;
-      case 'smm-ig':
-        return <ResourceManager category="smm_instagram" title="Instagram" description="Reusable Instagram material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
-      case 'smm-li':
-        return <ResourceManager category="smm_linkedin" title="LinkedIn" description="Reusable LinkedIn material: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
+      case 'smm-social':
+        return (
+          <BrandSocial
+            tabs={pageTabs}
+            activeTab={activeTab?.tab ?? null}
+            onTab={(tab) => navigate(`${location.pathname}?tab=${tab}`, { replace: true })}
+          />
+        );
       case 'smm-graphics':
-        return <ResourceManager category="smm_graphics" title="MIMS Graphics" description="The association's graphic assets: logos, marks and ready-to-use graphic files. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="smm_graphics" title="MIMS Graphics" description="The association's graphic assets: logos, marks, templates and ready-to-use graphics. Pictures show as pictures; find one by name or type, preview it full screen and download it." divisions={['none']} canManage={access.canManage('smm-graphics')} flavour="graphics" />;
       case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other Resources" description="Other reusable communication material: text, files, links and code." divisions={['none']} />;
-      case 'smm-brand':
-        return <BrandDesignSystem />;
+        return <ResourceManager category="smm_other" title="Other Resources" description="Other reusable communication material: press material, photography, mentions, anything without a library of its own." divisions={['none']} canManage={access.canManage('smm-other')} />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':
         return <Treasury />;
       case 'ops-external':
-        return <ResourceManager category="external_relations" title="External Relations" description="A flexible repository for external relationships: text, files, links and code. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="external_relations" title="External Relations" description="Every partner, sponsor and institution the Society deals with: their contacts, agreements, files and links, kept for the next board." divisions={['none']} canManage={access.canManage('ops-external')} flavour="contacts" />;
       case 'ops-auto-emails':
         return <AutoEmails />;
       case 'ops-docs':
-        return <ResourceManager category="operations_statuto" title="Statute & Documents" description="Official association documents: the statute, drafts, university and CASA approval documents, and the Statute Bible. Star up to five favourites to pin them on top." divisions={['none']} />;
+        return <ResourceManager category="operations_statuto" title="Statute & Documents" description="Official association documents: the statute, drafts, university and CASA approval documents, and the Statute Bible. Pin the current versions so they are found first." divisions={['none']} canManage={access.canManage('ops-docs')} flavour="documents" />;
       case 'ops-newsletter':
         return <NewsletterManagement />;
       case 'website-pages':
