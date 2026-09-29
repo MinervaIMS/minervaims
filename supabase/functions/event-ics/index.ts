@@ -1,11 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import {
-  buildIcs, googleUrl, icsFileName, outlookUrl, SAMPLE_EVENT, SITE, type CalendarEvent,
+  buildIcs, googleUrl, icsFileName, interviewAsEvent, outlookUrl, SAMPLE_EVENT, SITE, type CalendarEvent,
 } from '../_shared/calendar.ts';
+import { intakeLabel } from '../_shared/recruiting.ts';
 
 // =====================================================================
 // event-ics: "Add to calendar", for one event.
 // GET ?e=<event id>[&to=google|outlook|outlookcom]
+//     ?i=<interview booking id>&who=candidate|examiner[&to=…]
+//
+// An interview booking is read with its slot: the candidate's entry is
+// titled with the division, the examiner's with the candidate's name, and
+// both carry the Teams or Zoom link. The booking id is known only to the
+// two of them (it is in their emails and their workspace), and the entry
+// holds nothing beyond what those already show them.
 //
 // Public, because the links sit in emails and on the registration page
 // and are opened without signing in. It reads the event as it is NOW, so
@@ -24,10 +32,31 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const id = url.searchParams.get('e') || '';
+    const interviewId = url.searchParams.get('i') || '';
+    const who = url.searchParams.get('who') === 'examiner' ? 'examiner' : 'candidate';
     const to = url.searchParams.get('to') || 'ics';
 
     let ev: CalendarEvent | null = null;
-    if (id === 'sample') {
+    if (interviewId === 'sample') {
+      const d = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+      ev = interviewAsEvent({ bookingId: 'sample', divisionLabel: 'Equity Research', candidateName: 'Sample Candidate', examinerName: 'Sample Examiner', slotDate: d, startTime: '18:30', endTime: '19:00', meetingLink: 'https://teams.microsoft.com/' }, who);
+    } else if (UUID.test(interviewId)) {
+      const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: b } = await supabase.from('interview_bookings')
+        .select('id, candidate_name, division, slot_id').eq('id', interviewId).maybeSingle();
+      if (b) {
+        const { data: slot } = await supabase.from('interview_slots')
+          .select('slot_date, start_time, end_time, meeting_link, examiner_name, division').eq('id', b.slot_id).maybeSingle();
+        if (slot) {
+          ev = interviewAsEvent({
+            bookingId: b.id, divisionLabel: intakeLabel(slot.division) || String(slot.division || ''),
+            candidateName: b.candidate_name || 'Candidate', examinerName: slot.examiner_name ?? null,
+            slotDate: String(slot.slot_date), startTime: String(slot.start_time), endTime: String(slot.end_time),
+            meetingLink: slot.meeting_link ?? null,
+          }, who);
+        }
+      }
+    } else if (id === 'sample') {
       ev = SAMPLE_EVENT();
     } else if (UUID.test(id)) {
       const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);

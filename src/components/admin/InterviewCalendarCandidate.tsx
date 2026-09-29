@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { formatClockRange } from '@/lib/event-time';
+import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import {
   getInterviewContext, listAvailableSlots, bookSlot, cancelBooking,
   type CandidateContext, type AvailableSlot,
@@ -147,6 +148,10 @@ export default function InterviewCalendarCandidate() {
                 <div className="flex items-center gap-2 text-muted-foreground"><Video className="h-4 w-4" /> A member of the association will share the meeting link before the interview.</div>
               )}
             </div>
+            {/* The interview in your own calendar, with the meeting link. */}
+            {ctx.booking.id && (
+              <div className="mt-4"><AddToCalendar interview={{ bookingId: ctx.booking.id, who: 'candidate' }} /></div>
+            )}
             {/* Cancellation & rescheduling rules: mirrors the invitation email. */}
             <div className="mt-6 pt-4 border-t border-separator">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Cancellation &amp; rescheduling</div>

@@ -451,6 +451,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
             </td>
           </tr>
           <tr><td style="padding:6px 40px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F5F5;"><tr><td style="padding:20px 18px;"><p style="margin:0 0 14px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1F0F4D;">Your online meeting link</p><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#1F0F4D" style="background:#1F0F4D;"><a class="mims-btn" href="{{meeting_link}}" style="display:inline-block;padding:15px 24px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;color:#FFFFFF;text-decoration:none;">Join online interview</a></td></tr></table><p style="margin:14px 0 0;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#141414;">Or copy the link:<br /><a href="{{meeting_link}}" style="color:#1F0F4D;word-break:break-all;overflow-wrap:anywhere;">{{meeting_link}}</a></p></td></tr></table></td></tr>
+          {{calendar_block}}
           <tr><td style="padding:6px 40px 2px;"><p style="margin:0 0 10px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1F0F4D;">How to prepare</p></td></tr>
           <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">The interview questions, topics and our recommendations are available on the <a href="https://minervaims.org/join" style="color:#1F0F4D;">Join</a> page. {{division_reading}}</p></td></tr>
           <tr><td style="padding:6px 40px 2px;"><p style="margin:0 0 10px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1F0F4D;">Rescheduling &amp; cancellations</p></td></tr>
@@ -1048,7 +1049,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   {
     key: "ws_complete_profile",
     name: "Workspace \u00b7 complete your profile",
-    subject: "Please complete your Workspace profile | Minerva IMS",
+    subject: "Your profile is missing a few details | Minerva IMS",
     body: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -1057,13 +1058,13 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="color-scheme" content="light only" />
   <meta name="supported-color-schemes" content="light only" />
-  <title>Action needed: complete your Workspace profile | Minerva IMS</title>
+  <title>Your profile is missing a few details | Minerva IMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
   <!--[if mso]><style>body,table,td,p,a{font-family:Georgia,'Times New Roman',serif !important;}</style><![endif]-->
 </head>
 <body style="margin:0;padding:0;background:#F5F5F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:#F5F5F5;">Some information is missing from your Minerva Workspace profile.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:#F5F5F5;">Your profile is missing a few details: here is what, and how to add them.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F5F5;">
     <tr>
       <td align="center" style="padding:32px 16px;">
@@ -1082,11 +1083,14 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
               </table>
             </td>
           </tr>
-          <tr><td style="padding:30px 40px 20px;"><h1 style="margin:0;font-family:'EB Garamond','Times New Roman',Georgia,serif;font-size:29px;line-height:1.2;font-weight:400;letter-spacing:-0.01em;color:#141414;">Please complete your profile</h1></td></tr>
+          <tr><td style="padding:30px 40px 20px;"><h1 style="margin:0;font-family:'EB Garamond','Times New Roman',Georgia,serif;font-size:29px;line-height:1.2;font-weight:400;letter-spacing:-0.01em;color:#141414;">Your profile is missing a few details</h1></td></tr>
           <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">Dear {{first_name}},</p></td></tr>
-          <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">Your Minerva Workspace profile is <strong>missing some information</strong>. Keeping it complete helps the Society run smoothly and keeps our records accurate.</p></td></tr>
-          <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">It takes only a few minutes. Log in and open your profile to fill in the missing details.</p></td></tr>
+          <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">Your profile in the Minerva Workspace is what your colleagues see about you, and your photo appears on the public Members page of minervaims.org. It is still missing the following:</p></td></tr>
+          {{missing_block}}
+          {{photo_help_block}}
+          <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">It takes a few minutes. Open My Profile in the Workspace, from a computer, and add what is missing.</p></td></tr>
           <tr><td style="padding:8px 40px 28px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#1F0F4D" style="background:#1F0F4D;"><a href="https://minervaims.org/workspace/my-profile" style="display:inline-block;padding:15px 34px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:#ffffff;text-decoration:none;">Complete my profile</a></td></tr></table></td></tr>
+          <tr><td style="padding:0 40px 4px;"><p style="margin:0 0 16px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.7;color:#737373;">This reminder is sent at most twice a semester, at least two weeks apart, and stops as soon as your profile is complete.</p></td></tr>
           <tr><td style="padding:14px 40px 4px;"><p style="margin:0 0 4px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">Best regards,</p><p style="margin:0;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#141414;">The Operations Team</p><p style="margin:0;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#141414;">Minerva IMS Workspace System</p></td></tr>
           <tr><td style="padding:30px 40px 0;"><div style="border-top:1px solid #E0E0E0;font-size:0;line-height:0;">&nbsp;</div></td></tr>
           <tr>
@@ -2034,6 +2038,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
           <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">{{candidate_name}}, a candidate invited to interview for the <strong>{{division_name}}</strong> division, has booked one of the interview slots you opened.</p></td></tr>
           <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">The slot is now marked as taken in the Interview Calendar and is no longer offered to other candidates. No action is required from you unless the arrangements need to change.</p></td></tr>
           <tr><td style="padding:4px 40px 26px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid #1F0F4D;border-bottom:1px solid #E0E0E0;"><tr><td style="padding:11px 0;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#737373;width:38%;vertical-align:top;">Candidate</td><td style="padding:11px 0 11px 16px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#141414;vertical-align:top;">{{candidate_name}}</td></tr><tr><td style="padding:11px 0;border-top:1px solid #E0E0E0;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#737373;width:38%;vertical-align:top;">Interview</td><td style="padding:11px 0 11px 16px;border-top:1px solid #E0E0E0;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#141414;vertical-align:top;">{{interview_when}}</td></tr></table></td></tr>
+          {{calendar_block}}
           <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">The full calendar for your division, including who holds which slot, is available in the Workspace.</p></td></tr>
           <tr><td style="padding:8px 40px 28px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#1F0F4D" style="background:#1F0F4D;"><a href="https://minervaims.org/workspace/applications/interview-calendar" style="display:inline-block;padding:15px 34px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:#ffffff;text-decoration:none;">Open Interview Calendar</a></td></tr></table></td></tr>
           <tr><td style="padding:0 40px;"><p style="margin:0 0 18px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#141414;">You will receive a further notice if this candidate releases or changes the slot.</p></td></tr>

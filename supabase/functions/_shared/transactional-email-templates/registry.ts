@@ -8,6 +8,7 @@ import * as React from 'npm:react@18.3.1'
 import { Body, Head, Html } from 'npm:@react-email/components@0.0.22'
 import { TRANSACTIONAL_TEMPLATES } from '../transactional-emails.ts'
 import { emailCalendarBlock, emailCancelBlock } from '../calendar.ts'
+import { PROFILE_MISSING_SAMPLE, PROFILE_PHOTO_HELP_SAMPLE } from '../profile-email-sample.ts'
 
 // The project the preview links point at, as the emails' own links do.
 const PREVIEW_SUPABASE_URL = 'https://asjudzdgsccacpjbzsue.supabase.co'
@@ -65,6 +66,8 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   calendar_block: emailCalendarBlock(PREVIEW_SUPABASE_URL, 'sample'),
   cancel_block: emailCancelBlock('sample', 'sample', 'registration'),
   waitlist_position: '3',
+  missing_block: PROFILE_MISSING_SAMPLE,
+  photo_help_block: PROFILE_PHOTO_HELP_SAMPLE,
   register_url: 'https://minervaims.org/events',
   closing_line: 'Thank you for your attention.',
   cta_label: 'Open the Workspace',
@@ -93,7 +96,8 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   fee_deadline: 'Sunday, 15 September 2026',
   first_name: 'Jane',
   candidate_name: 'Marco Rossi',
-  interview_when: 'Monday, 21 September 2026, 15:00–15:30 (30 minutes)',
+  interview_when: 'Monday, 21 September 2026, 3:00 pm to 3:30 pm CEST (30 minutes)',
+  interview_time: '3:00 pm to 3:30 pm CEST (30 minutes)',
   offer_role: 'Analyst',
   offer_deadline: '24 Sep 2026, 18:00',
 

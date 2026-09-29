@@ -8,11 +8,20 @@ import { tokenFromScan } from '../_shared/checkin.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
-// Actions: list · mark-attended · add-external · members · add-member · remove · checkin
+// Actions: list · mark-attended · add-external · members · add-member · remove · checkin · door-status
 //
 // `checkin` is the door scanner: the QR code of a registration's ticket
 // (see _shared/checkin.ts) ticks that person as present. It needs full
 // access to Events, Attendance, as ticking by hand does in the page.
+// Several phones can scan the same event at once: the tick is one
+// conditional update, so when two phones read the same ticket together
+// exactly one of them says "checked in" and the other says "already".
+// A scan saved on a phone without signal arrives later with `scanned_at`,
+// the moment it was read at the door, which becomes the check-in time.
+//
+// `door-status` is what the scanners poll to share one live count: who is
+// ticked, and when, for one event. Small on purpose, no names or member
+// matching, so it can be asked every few seconds.
 //
 // `list` also RECOGNISES MEMBERS WHO REGISTERED WITHOUT SIGNING IN. The
 // public form does not require an account, so a member who used it is
@@ -56,7 +65,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     audit.request(action, body);
 
     // =====================================================================
-    // THE LIST CLOSES A WEEK AFTER THE EVENT. See _shared/attendance-window.ts.
+    // THE LIST CLOSES TWO WEEKS AFTER THE EVENT. See _shared/attendance-window.ts.
     // Every change to it - ticking, adding a walk-in, removing a row - asks
     // this first, by the event's own date.
     // =====================================================================
@@ -68,7 +77,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       if (typeof eventId !== 'string' || !eventId) return null;
       const { data: ev } = await supabase.from('events').select('date').eq('id', eventId).maybeSingle();
       if (!ev?.date || attendanceOpen(ev.date)) return null;
-      return `Attendance for this event closed on ${WEEK_DAY(attendanceClosesOn(ev.date))}, a week after it took place. The list is now the record of who attended.`;
+      return `Attendance for this event closed on ${WEEK_DAY(attendanceClosesOn(ev.date))}, two weeks after it took place. The list is now the record of who attended.`;
     };
     const eventOfRegistration = async (id: unknown): Promise<string | null> => {
       if (typeof id !== 'string' || !id) return null;
@@ -80,10 +89,10 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     // EVENTS ATTENDED, PER MEMBER, FOR PEOPLE, MEMBERS.
     // How many of the semester's events each member attended, out of those
     // held so far. For the roles with full access to Members only.
-    //   * Counted: events of the semester up to today, not Association on
-    //     Display days (a stand, staffed by sign-up), and only those where
-    //     attendance was taken (somebody ticked), so an event nobody
-    //     recorded does not count against anybody.
+    //   * Counted: events of the semester up to today, Association on
+    //     Display days included, and only those where attendance was taken
+    //     (somebody ticked), so an event nobody recorded does not count
+    //     against anybody.
     //   * Attended: ticked or scanned in, recognised by their account or
     //     by the address on their member record.
     // =====================================================================
@@ -96,7 +105,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
       const until = to < today ? to : today;
       const { data: evs, error: evErr } = await supabase.from('events')
-        .select('id, date, aod_day_id').gte('date', from).lte('date', until).is('aod_day_id', null);
+        .select('id, date').gte('date', from).lte('date', until);
       if (evErr) throw evErr;
       const ids = ((evs || []) as { id: string }[]).map((e) => e.id);
       const attendedBy = new Map<string, Set<string>>(); // event id -> keys of attendees
@@ -212,11 +221,42 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       if (reg.attended) {
         return json({ result: 'already', id: reg.id, name: reg.name, member, checked_in_at: reg.checked_in_at ?? null });
       }
-      const now = new Date().toISOString();
-      const { error } = await supabase.from('event_registrations')
-        .update({ attended: true, checked_in_at: now }).eq('id', reg.id);
+      // The moment of the scan: now, or, for a scan kept on a phone without
+      // signal, the moment it was read (within the last day, never ahead).
+      let at = new Date();
+      if (typeof body.scanned_at === 'string') {
+        const t = new Date(body.scanned_at);
+        const age = Date.now() - t.getTime();
+        if (!Number.isNaN(t.getTime()) && age < 24 * 3600 * 1000 && age > -2 * 60 * 1000) at = age < 0 ? new Date() : t;
+      }
+      const stamp = at.toISOString();
+      // Only a row not yet ticked is ticked: of two phones scanning the same
+      // ticket at the same moment, one changes the row and the other finds
+      // it already done.
+      const { data: changed, error } = await supabase.from('event_registrations')
+        .update({ attended: true, checked_in_at: stamp }).eq('id', reg.id).eq('attended', false).select('id');
       if (error) throw error;
-      return json({ result: 'checked_in', id: reg.id, name: reg.name, member, checked_in_at: now });
+      if (!changed || changed.length === 0) {
+        const { data: now } = await supabase.from('event_registrations').select('checked_in_at').eq('id', reg.id).maybeSingle();
+        return json({ result: 'already', id: reg.id, name: reg.name, member, checked_in_at: now?.checked_in_at ?? null });
+      }
+      return json({ result: 'checked_in', id: reg.id, name: reg.name, member, checked_in_at: stamp });
+    }
+    if (action === 'door-status') {
+      if (!allows(roles, user.email, 'events-attendance', 'manage')) {
+        return json({ error: 'Only people with full access to Attendance can check people in.' }, 403);
+      }
+      const eventId = optionalTextOf(body, 'event_id');
+      if (!eventId) return json({ error: 'Choose the event first.' }, 400);
+      const { data, error } = await supabase.from('event_registrations')
+        .select('id, attended, checked_in_at').eq('event_id', eventId);
+      if (error) throw error;
+      const rows = (data || []) as { id: string; attended: boolean | null; checked_in_at: string | null }[];
+      return json({
+        rows: rows.map((r) => ({ id: r.id, attended: !!r.attended, checked_in_at: r.checked_in_at ?? null })),
+        checked_in: rows.filter((r) => r.attended).length,
+        total: rows.length,
+      });
     }
     if (action === 'mark-attended') {
       const closed = await closedError(await eventOfRegistration(body.id));

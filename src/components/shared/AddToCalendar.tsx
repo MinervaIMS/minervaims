@@ -3,7 +3,7 @@ import { Button, type ButtonProps } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { calendarLinks } from '@/lib/calendar-links';
+import { calendarLinks, interviewCalendarLinks } from '@/lib/calendar-links';
 
 // =====================================================================
 // "Add to calendar": one button, the calendar of your choice.
@@ -15,14 +15,16 @@ import { calendarLinks } from '@/lib/calendar-links';
 //   Other apps       the .ics file, for any other calendar
 // =====================================================================
 
-export function AddToCalendar({ eventId, variant = 'outline', size = 'sm', className = '', label = 'Add to calendar' }: {
-  eventId: string;
+export function AddToCalendar({ eventId, interview, variant = 'outline', size = 'sm', className = '', label = 'Add to calendar' }: {
+  /** An event, or (instead) an interview booking. */
+  eventId?: string;
+  interview?: { bookingId: string; who: 'candidate' | 'examiner' };
   variant?: ButtonProps['variant'];
   size?: ButtonProps['size'];
   className?: string;
   label?: string;
 }) {
-  const links = calendarLinks(eventId);
+  const links = interview ? interviewCalendarLinks(interview.bookingId, interview.who) : calendarLinks(eventId ?? '');
   const item = (href: string, text: string, newTab: boolean) => (
     <DropdownMenuItem asChild>
       <a href={href} {...(newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="cursor-pointer font-body">{text}</a>

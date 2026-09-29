@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine } from 'lucide-react';
+import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff } from 'lucide-react';
 import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,11 +17,12 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
 import { formatEventWhen, formatStamp, formatTime } from '@/lib/event-time';
 import { requestCamera } from '@/lib/camera';
+import { flushQueue, queuedScans } from '@/lib/checkin-queue';
 import {
   listEvents, listRegistrationsFull, markAttended, addExternalAttendee, removeRegistration, attendanceWindow,
   listAttendanceMembers, addMemberAttendee, type AttendanceMember,
   isRecognisedMember, MEMBER_MATCH_LABELS, MEMBER_MATCH_NOTE,
-  type EventRow, type WaitlistEntry, type EventRegistration, type MemberMatch,
+  type EventRow, type WaitlistEntry, type EventRegistration, type MemberMatch, type DoorStatus,
 } from '@/lib/events-api';
 
 // =====================================================================
@@ -126,6 +127,88 @@ export default function EventAttendance() {
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (eventId) loadRegs(eventId); }, [eventId]);
+
+  // ── several phones at one door ───────────────────────────────────────
+  // While the scanner is open it reports who is in according to the
+  // server (see CheckinScanner). A tick made on another phone is copied
+  // into this list; a row this list has never seen (a walk-in added
+  // elsewhere) or one removed elsewhere reloads the list quietly.
+  const regsRef = useRef(regs);
+  regsRef.current = regs;
+  const reloadingRef = useRef(false);
+  const eventIdRef = useRef(eventId);
+  eventIdRef.current = eventId;
+  const quietReload = useCallback(async (id: string) => {
+    if (reloadingRef.current) return;
+    reloadingRef.current = true;
+    try {
+      const res = await listRegistrationsFull(session, id);
+      // Another event chosen meanwhile: this list is not the one on screen.
+      if (eventIdRef.current !== id) return;
+      setRegs(res.registrations);
+      setCapacity(res.capacity);
+      setWaitlist(res.waitlist);
+    } catch { /* the next report tries again */ }
+    finally { reloadingRef.current = false; }
+  }, [session]);
+  const applyStatus = useCallback((status: DoorStatus) => {
+    const local = regsRef.current;
+    const byId = new Map(status.rows.map((r) => [r.id, r]));
+    if (status.rows.some((r) => !local.some((x) => x.id === r.id)) || local.some((x) => !byId.has(x.id))) {
+      if (eventId) quietReload(eventId);
+      return;
+    }
+    if (!local.some((x) => { const r = byId.get(x.id)!; return r.attended !== !!x.attended || (r.checked_in_at ?? null) !== (x.checked_in_at ?? null); })) return;
+    setRegs((p) => p.map((x) => {
+      const r = byId.get(x.id);
+      return r ? { ...x, attended: r.attended, checked_in_at: r.checked_in_at } : x;
+    }));
+  }, [eventId, quietReload]);
+
+  // ── tickets scanned without signal ───────────────────────────────────
+  // Kept on this phone (src/lib/checkin-queue.ts) and sent by the scanner
+  // when the connection returns. If the scanner was closed first, the page
+  // sends them: on opening the event, when the phone comes back online,
+  // or from "Send now".
+  const [savedScans, setSavedScans] = useState(0);
+  const [sendingSaved, setSendingSaved] = useState(false);
+  const sendSaved = useCallback(async (id: string, quiet = false) => {
+    if (!id || !queuedScans(id).length) { setSavedScans(0); return; }
+    setSendingSaved(true);
+    try {
+      const rep = await flushQueue(session, id);
+      const done = [...rep.checkedIn, ...rep.already];
+      if (done.length) {
+        const at = new Map(done.map((x) => [x.id, x.at]));
+        setRegs((p) => p.map((x) => (at.has(x.id) ? { ...x, attended: true, checked_in_at: at.get(x.id) ?? x.checked_in_at } : x)));
+      }
+      const sent = done.length + rep.problems.length;
+      if (sent) {
+        toast({
+          title: `${sent === 1 ? '1 saved ticket' : `${sent} saved tickets`} sent`,
+          description: [
+            rep.checkedIn.length ? `${rep.checkedIn.length} checked in` : '',
+            rep.already.length ? `${rep.already.length} already in` : '',
+            ...rep.problems,
+          ].filter(Boolean).join('. '),
+          variant: rep.problems.length ? 'destructive' : undefined,
+        });
+      } else if (!quiet && rep.left) {
+        toast({ title: 'Still no connection', description: 'The tickets stay saved on this phone. Try again when you have signal.' });
+      }
+    } finally {
+      setSavedScans(queuedScans(id).length);
+      setSendingSaved(false);
+    }
+  }, [session, toast]);
+  useEffect(() => {
+    if (!eventId || scanOpen) return;
+    setSavedScans(queuedScans(eventId).length);
+    if (queuedScans(eventId).length && navigator.onLine !== false) sendSaved(eventId, true);
+    const onOnline = () => sendSaved(eventId, true);
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [eventId, scanOpen, sendSaved]);
 
   // ── searching and filtering ──────────────────────────────────────────
   // THE SEARCH READS THE MEMBER'S NAME TOO, not only what they typed. A
@@ -330,7 +413,7 @@ export default function EventAttendance() {
       <ClearFilters count={activeFilterCount} onClear={clearAllFilters} size="sm" className="mb-3" />
 
       <p className="font-body text-sm text-muted-foreground mb-2">
-        {counts.attended}/{counts.total} attended · {counts.members} members · {counts.guests} guests
+        {counts.attended}/{counts.total} attended · {counts.members} {counts.members === 1 ? 'member' : 'members'} · {counts.guests} {counts.guests === 1 ? 'guest' : 'guests'}
         {capacity !== null && <> · {counts.total} of {capacity} places taken{waitlist.length ? `, ${waitlist.length} waiting` : ''}</>}
         {activeFilterCount > 0 && <> · showing {rows.length}</>}
       </p>
@@ -359,12 +442,12 @@ export default function EventAttendance() {
           press is a big one. */}
       {listClosed ? (
         <div className="mb-5 border border-separator bg-muted/40 px-3 py-2.5 font-body text-sm text-muted-foreground" role="status">
-          Attendance for this event closed on <span className="text-foreground">{closesLabel}</span>, a week after it took
+          Attendance for this event closed on <span className="text-foreground">{closesLabel}</span>, two weeks after it took
           place. The list below is the record of who attended; it can still be searched and exported.
         </div>
       ) : currentEvent && window_.closesOn ? (
         <p className="mb-2 font-body text-xs text-muted-foreground">
-          Attendance can be recorded until {closesLabel}, a week after the event.
+          Attendance can be recorded until {closesLabel}, two weeks after the event.
         </p>
       ) : null}
       {!listClosed && (
@@ -454,6 +537,19 @@ export default function EventAttendance() {
           </div>
         )}
       </div>
+      )}
+
+      {savedScans > 0 && !scanOpen && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-2 border border-separator border-l-4 border-l-accent bg-accent/5 px-4 py-3 font-body text-sm" role="status">
+          <CloudOff className="hidden sm:block h-4 w-4 shrink-0 text-accent" aria-hidden />
+          <p className="flex-1 text-foreground">
+            {savedScans === 1 ? '1 ticket scanned without signal is' : `${savedScans} tickets scanned without signal are`} saved on this phone.
+            They are sent by themselves when the connection returns.
+          </p>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled={sendingSaved} onClick={() => sendSaved(eventId)}>
+            {sendingSaved ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}Send now
+          </Button>
+        </div>
       )}
 
       {loadingRegs ? <WorkspaceLoader /> : regs.length === 0 ? (
@@ -587,6 +683,7 @@ export default function EventAttendance() {
           cameraRequest={cameraRequest}
           stats={{ checkedIn: regs.filter((x) => x.attended).length, total: regs.length }}
           onCheckedIn={(id, at) => setRegs((p) => p.map((x) => (x.id === id ? { ...x, attended: true, checked_in_at: at ?? x.checked_in_at } : x)))}
+          onStatus={applyStatus}
         />
       )}
     </div>

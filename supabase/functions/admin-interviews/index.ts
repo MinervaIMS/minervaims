@@ -2,6 +2,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { isBookableSlot, isFutureSlot, nowInAssociationTime } from '../_shared/interview-slots.ts';
 import { audited } from '../_shared/activity.ts';
+import { emailInterviewCalendarBlock } from '../_shared/calendar.ts';
+import { romeZone } from '../_shared/event-time.ts';
 import { notifyStaff, slotOpener } from '../_shared/staff-notify.ts';
 import { RECRUITING_DIVISIONS, headedIntakes, intakeLabel, intakeOf, divisionReading } from '../_shared/recruiting.ts';
 import { readJsonObject, UNREADABLE_BODY, isIsoDate, isClockTime, type LooseBody } from '../_shared/request-body.ts';
@@ -86,14 +88,20 @@ function formatSlotDate(iso: string): string {
   const dt = new Date(Date.UTC(y, m - 1, d));
   return `${WEEKDAYS[dt.getUTCDay()]}, ${d} ${MONTHS[m - 1]} ${y}`;
 }
+// "18:30:00" -> "6:30 pm": the twelve-hour clock the whole workspace uses.
 function formatSlotTime(t: string): string {
-  return (t || '').slice(0, 5); // "HH:MM:SS" -> "HH:MM"
+  const m = /^(\d{1,2}):(\d{2})/.exec(t || '');
+  if (!m) return (t || '').slice(0, 5);
+  const h = Number(m[1]);
+  return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${h >= 12 ? 'pm' : 'am'}`;
 }
-// "10:00 - 10:15 (15 minutes)": the times and, from them, the length, so an
-// email is right for a fifteen-minute slot as much as for a half hour.
-function formatSlotSpan(start: string, end: string, sep = ' - '): string {
+// "10:00 am to 10:15 am CET (15 minutes)": the times on Rome's clock with
+// the zone of that day, and the length, so an email is right for a
+// fifteen-minute slot as much as for a half hour.
+function formatSlotSpan(start: string, end: string, date: string): string {
   const mins = slotLength(start, end);
-  const span = `${formatSlotTime(start)}${sep}${formatSlotTime(end)}`;
+  const zone = romeZone(new Date(`${String(date).slice(0, 10)}T12:00:00Z`));
+  const span = `${formatSlotTime(start)} to ${formatSlotTime(end)} ${zone}`;
   return mins > 0 ? `${span} (${mins} minutes)` : span;
 }
 
@@ -293,7 +301,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (ids.length) {
         const { data: bookings } = await supabase
           .from('interview_bookings')
-          .select('slot_id, candidate_name, candidate_email, application_id')
+          .select('id, slot_id, candidate_name, candidate_email, application_id')
           .in('slot_id', ids);
         for (const b of bookings || []) bookingBySlot[b.slot_id] = b;
       }
@@ -541,11 +549,12 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
       if (intakeOf(slot.division) !== intakeOf(app.interview_division)) return json({ error: 'This slot is for another division' }, 403);
       if (slot.is_booked) return json({ error: 'Slot no longer available' }, 409);
 
-      const { error } = await supabase.from('interview_bookings').insert({
+      const { data: made, error } = await supabase.from('interview_bookings').insert({
         slot_id: slot.id, application_id: app.id, candidate_user_id: user.id,
         candidate_name: `${app.first_name} ${app.surname}`, candidate_email: app.email,
         division: app.interview_division,
-      });
+      }).select('id').maybeSingle();
+      const bookingId = (made as { id?: string } | null)?.id ?? '';
       if (error) {
         if ((error as any).code === '23505') return json({ error: 'Slot no longer available' }, 409);
         throw error;
@@ -580,7 +589,9 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
             division_slug: slot.division,
             division_reading: divisionReading(slot.division),
             interview_date: formatSlotDate(slot.slot_date),
-            interview_time: `${formatSlotSpan(slot.start_time, slot.end_time)} (Rome time)`,
+            interview_time: formatSlotSpan(slot.start_time, slot.end_time, slot.slot_date),
+            // "Add to your calendar", with the meeting link, for the candidate.
+            calendar_block: bookingId ? emailInterviewCalendarBlock(Deno.env.get('SUPABASE_URL') || '', bookingId, 'candidate') : '',
             examiner_name: slot.examiner_name || 'Admin',
             status_url: STATUS_URL,
             meeting_link: String(slot.meeting_link || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
@@ -594,7 +605,9 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
         await notifyStaff(supabase, 'staff_interview_booked', await slotOpener(supabase, slot), {
           candidate_name: `${app.first_name} ${app.surname}`,
           division_name: DIV_LABEL(slot.division),
-          interview_when: `${formatSlotDate(slot.slot_date)}, ${formatSlotSpan(slot.start_time, slot.end_time, '–')}`,
+          interview_when: `${formatSlotDate(slot.slot_date)}, ${formatSlotSpan(slot.start_time, slot.end_time, slot.slot_date)}`,
+          // The same for the examiner who opened the slot.
+          calendar_block: bookingId ? emailInterviewCalendarBlock(Deno.env.get('SUPABASE_URL') || '', bookingId, 'examiner') : '',
         }, `${app.id}:${slot.id}:booked`);
       } catch (e) { console.error('staff booking notice failed', e); }
 
@@ -630,7 +643,7 @@ Deno.serve(audited('admin-interviews', async (req, audit) => {
           await notifyStaff(supabase, 'staff_interview_released', await slotOpener(supabase, freedSlot), {
             candidate_name: `${app.first_name} ${app.surname}`,
             division_name: DIV_LABEL(freedSlot.division),
-            interview_when: `${formatSlotDate(freedSlot.slot_date)}, ${formatSlotSpan(freedSlot.start_time, freedSlot.end_time, '–')}`,
+            interview_when: `${formatSlotDate(freedSlot.slot_date)}, ${formatSlotSpan(freedSlot.start_time, freedSlot.end_time, freedSlot.slot_date)}`,
           }, `${app.id}:${freedSlot.id}:released`);
         } catch (e) { console.error('staff release notice failed', e); }
       }

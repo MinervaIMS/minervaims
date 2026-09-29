@@ -20,3 +20,9 @@ export function calendarLinks(eventId: string): CalendarLinks {
     ics: base,
   };
 }
+
+/** The same links for an interview booking: the candidate's entry, or the examiner's. */
+export function interviewCalendarLinks(bookingId: string, who: 'candidate' | 'examiner'): CalendarLinks {
+  const base = `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/event-ics?i=${encodeURIComponent(bookingId)}&who=${who}`;
+  return { apple: base, google: `${base}&to=google`, outlook: `${base}&to=outlook`, outlookcom: `${base}&to=outlookcom`, ics: base };
+}
