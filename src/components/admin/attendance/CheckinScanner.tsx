@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { AlertTriangle, Camera, CameraOff, CheckCircle2, Flashlight, Loader2, ScanLine, X, XCircle } from 'lucide-react';
+import { AlertTriangle, Camera, CameraOff, CheckCircle2, CloudOff, CloudUpload, Flashlight, Loader2, ScanLine, X, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { checkInTicket, type CheckinResult } from '@/lib/events-api';
+import { checkInTicket, doorStatus, type CheckinResult, type DoorStatus } from '@/lib/events-api';
+import { flushQueue, isConnectionError, queueScan, queuedScans, ticketToken } from '@/lib/checkin-queue';
 import { formatTime } from '@/lib/event-time';
 import {
   CameraProblem, isIosNonSafari, platform, requestCamera, stopStream, type CameraProblemKind,
@@ -27,6 +28,16 @@ import { createQrReader, readQrFromFile, type QrReader } from '@/lib/qr-decode';
 // what to do, and "Take a photo of the ticket" opens the phone's camera app
 // instead, which needs no permission from the browser; the photo is read
 // the same way. The list underneath keeps its tick boxes for everybody else.
+//
+// SEVERAL PHONES, ONE COUNT. While the scanner is open it asks the server
+// every few seconds who is in (`door-status`), so the count and the list
+// include the tickets scanned on the other phones at the same event, and a
+// ticket scanned twice at two doors is "already checked in" on the second.
+//
+// NO SIGNAL, NO STOP. A ticket that cannot reach the server for lack of a
+// connection is kept on this phone with the time it was read, and the panel
+// says "Saved on this phone". The scans are sent by themselves as soon as
+// the connection is back. See src/lib/checkin-queue.ts.
 // =====================================================================
 
 type Outcome =
@@ -34,16 +45,20 @@ type Outcome =
   | { kind: 'already'; name: string; at: string | null }
   | { kind: 'other'; name: string; event: string | null }
   | { kind: 'invalid'; text: string }
-  | { kind: 'error'; text: string };
+  | { kind: 'error'; text: string }
+  | { kind: 'saved'; again: boolean }
+  | { kind: 'synced'; text: string };
 
 type Phase = { kind: 'starting' } | { kind: 'live' } | { kind: 'blocked'; problem: CameraProblemKind };
 
 export interface ScannerStats { checkedIn: number; total: number }
 
 // How long an answer stays on screen before the panel is ready again.
-const HOLD_MS: Record<Outcome['kind'], number> = { ok: 2200, already: 3500, other: 4000, invalid: 3500, error: 4000 };
+const HOLD_MS: Record<Outcome['kind'], number> = { ok: 2200, already: 3500, other: 4000, invalid: 3500, error: 4000, saved: 2600, synced: 5000 };
+// How often the count is refreshed from the other phones, and saved scans retried.
+const POLL_MS = 4000;
 
-export default function CheckinScanner({ open, onClose, eventId, eventTitle, cameraRequest, stats, onCheckedIn }: {
+export default function CheckinScanner({ open, onClose, eventId, eventTitle, cameraRequest, stats, onCheckedIn, onStatus }: {
   open: boolean;
   onClose: () => void;
   eventId: string;
@@ -52,6 +67,8 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
   cameraRequest: Promise<MediaStream> | null;
   stats: ScannerStats;
   onCheckedIn: (id: string, checkedInAt: string | null) => void;
+  /** Who is in according to the server, every few seconds while open. */
+  onStatus?: (status: DoorStatus) => void;
 }) {
   const { session } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -68,14 +85,29 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
   const [torch, setTorch] = useState<{ supported: boolean; on: boolean }>({ supported: false, on: false });
   const [readingPhoto, setReadingPhoto] = useState(false);
   const [slowStart, setSlowStart] = useState(false);
+  const [offline, setOffline] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
+  const [waiting, setWaiting] = useState(0);
 
   // The page hands a new callback on every render (each scan re-renders it),
   // so it is read through a ref: the camera depends on the request alone and
   // is never closed and reopened by the scan it has just made.
   const onCheckedInRef = useRef(onCheckedIn);
-  onCheckedInRef.current = onCheckedIn;
+  onCheckedInRef.current = (id: string, at: string | null) => { lastLocalRef.current = Date.now(); onCheckedIn(id, at); };
+  // When this phone last ticked somebody, so an older shared count is not applied over it.
+  const lastLocalRef = useRef(0);
+  const onStatusRef = useRef(onStatus);
+  onStatusRef.current = onStatus;
 
-  const reader = useCallback(() => (readerRef.current ??= createQrReader()), []);
+  // A reader that failed to load (no signal at that moment) is asked for
+  // again next time rather than remembered as failed.
+  const reader = useCallback(() => {
+    if (!readerRef.current) {
+      const r = createQrReader();
+      r.catch(() => { if (readerRef.current === r) readerRef.current = null; });
+      readerRef.current = r;
+    }
+    return readerRef.current;
+  }, []);
 
   // Each opening starts from the request the page made in its tap.
   useEffect(() => {
@@ -83,15 +115,34 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
       setRequest(cameraRequest);
       setOutcome(null);
       setScanned(0);
+      setWaiting(queuedScans(eventId).length);
       lastRef.current = { text: '', at: 0 };
+      // Loaded now, while there is signal, so photos can be read without it.
+      reader().catch(() => undefined);
     }
-  }, [open, cameraRequest]);
+  }, [open, cameraRequest, eventId, reader]);
 
   const handle = useCallback(async (text: string) => {
+    const token = ticketToken(text);
+    if (!token) {
+      setOutcome({ kind: 'invalid', text: 'This code is not a Minerva ticket.' });
+      return;
+    }
+    // Without signal the ticket is kept on the phone at once, rather than
+    // after a wait for a request that cannot arrive.
+    const keep = () => {
+      const fresh = queueScan(eventId, token);
+      setWaiting(queuedScans(eventId).length);
+      setOffline(true);
+      setOutcome({ kind: 'saved', again: !fresh });
+      navigator.vibrate?.(fresh ? [30, 40, 30] : [40, 60, 40]);
+    };
+    if (navigator.onLine === false) { keep(); return; }
     busyRef.current = true;
     setChecking(true);
     try {
-      const r: CheckinResult = await checkInTicket(session, eventId, text);
+      const r: CheckinResult = await checkInTicket(session, eventId, token);
+      setOffline(false);
       if (r.result === 'checked_in') {
         setOutcome({ kind: 'ok', name: r.name, member: r.member });
         setScanned((c) => c + 1);
@@ -109,7 +160,8 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
         setOutcome({ kind: 'invalid', text: 'This code is not a Minerva ticket.' });
       }
     } catch (e) {
-      setOutcome({ kind: 'error', text: e instanceof Error ? e.message : 'The ticket could not be checked. Try again.' });
+      if (isConnectionError(e)) keep();
+      else setOutcome({ kind: 'error', text: e instanceof Error ? e.message : 'The ticket could not be checked. Try again.' });
     } finally {
       setChecking(false);
       busyRef.current = false;
@@ -117,6 +169,70 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
   }, [session, eventId]);
   const handleRef = useRef(handle);
   handleRef.current = handle;
+
+  // ── The shared count, and the scans kept without signal ─────────────
+  // Every few seconds while open and in view: send what was kept (oldest
+  // first), then ask who is in. Any answer from the server means the
+  // connection is back; no answer means it is not.
+  const sync = useCallback(async () => {
+    if (document.visibilityState === 'hidden') return;
+    if (navigator.onLine === false) { setOffline(true); return; }
+    if (queuedScans(eventId).length) {
+      const rep = await flushQueue(session, eventId);
+      setWaiting(queuedScans(eventId).length);
+      [...rep.checkedIn, ...rep.already].forEach((x) => onCheckedInRef.current(x.id, x.at));
+      if (rep.checkedIn.length) setScanned((c) => c + rep.checkedIn.length);
+      const sent = rep.checkedIn.length + rep.already.length + rep.problems.length;
+      if (sent) {
+        const parts = [
+          rep.checkedIn.length ? `${rep.checkedIn.length} checked in` : '',
+          rep.already.length ? `${rep.already.length} already in` : '',
+          ...rep.problems,
+        ].filter(Boolean);
+        // Shown when the panel is free, so it never covers a fresh answer.
+        setOutcome((o) => o ?? { kind: 'synced', text: `${sent === 1 ? '1 saved ticket' : `${sent} saved tickets`} sent: ${parts.join(', ')}` });
+      }
+      if (rep.left) { setOffline(true); return; }
+    }
+    try {
+      const asked = Date.now();
+      const status = await doorStatus(session, eventId);
+      setOffline(false);
+      // An answer overtaken by a scan on this phone is older than what the
+      // page already shows; the next one includes the scan.
+      if (lastLocalRef.current <= asked) onStatusRef.current?.(status);
+    } catch (e) {
+      if (isConnectionError(e)) setOffline(true);
+    }
+  }, [session, eventId]);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    let timer = 0;
+    let busy = false;
+    // One round at a time: a connection that returns in the middle of a
+    // round does not start a second one beside it.
+    const loop = async () => {
+      window.clearTimeout(timer);
+      if (busy) return;
+      busy = true;
+      await sync().catch(() => undefined);
+      busy = false;
+      if (alive) timer = window.setTimeout(loop, POLL_MS);
+    };
+    loop();
+    const goOnline = () => { loop(); };
+    const goOffline = () => setOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, [open, sync]);
 
   // An answer clears itself, so the panel is ready for the next person.
   useEffect(() => {
@@ -242,6 +358,8 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
     switch (outcome.kind) {
       case 'ok': return { tone: 'ok', icon: <CheckCircle2 className="h-7 w-7" />, title: outcome.name, text: `Checked in · ${outcome.member ? 'Member' : 'Guest'}` };
       case 'already': return { tone: 'warn', icon: <AlertTriangle className="h-7 w-7" />, title: outcome.name, text: `Already checked in${outcome.at ? ` at ${formatTime(outcome.at)}` : ''}` };
+      case 'saved': return { tone: 'saved', icon: <CloudOff className="h-7 w-7" />, title: outcome.again ? 'Already saved on this phone' : 'Saved on this phone', text: 'No signal. The ticket is sent by itself when the connection returns.' };
+      case 'synced': return { tone: 'saved', icon: <CloudUpload className="h-7 w-7" />, title: 'Back online', text: outcome.text };
       case 'other': return { tone: 'bad', icon: <XCircle className="h-7 w-7" />, title: outcome.name, text: `This ticket is for another event${outcome.event ? `: ${outcome.event}` : ''}.` };
       default: return { tone: 'bad', icon: <XCircle className="h-7 w-7" />, title: 'Not checked in', text: outcome.text };
     }
@@ -251,8 +369,12 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
     ok: 'border-emerald-600 bg-emerald-600 text-white',
     warn: 'border-amber-500 bg-amber-50 text-amber-900',
     bad: 'border-destructive bg-destructive/10 text-destructive',
+    saved: 'border-accent bg-accent/10 text-foreground',
   };
-  const frameCls = outcome?.kind === 'ok' ? 'border-emerald-400' : outcome?.kind === 'already' ? 'border-amber-400' : outcome ? 'border-red-400' : 'border-white';
+  const frameCls = outcome?.kind === 'ok' ? 'border-emerald-400'
+    : outcome?.kind === 'already' ? 'border-amber-400'
+      : outcome?.kind === 'saved' || outcome?.kind === 'synced' ? 'border-sky-300'
+        : outcome ? 'border-red-400' : 'border-white';
   const pct = stats.total ? Math.min(100, Math.round((stats.checkedIn / stats.total) * 100)) : 0;
 
   return (
@@ -353,6 +475,16 @@ export default function CheckinScanner({ open, onClose, eventId, eventTitle, cam
                 <span>{scanned === 1 ? '1 scanned now' : `${scanned} scanned now`}</span>
               </div>
               <div className="mt-1.5 h-1 bg-muted" aria-hidden><div className="h-1 bg-accent transition-all" style={{ width: `${pct}%` }} /></div>
+              <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground" aria-live="polite">
+                <span className={`mt-[5px] h-1.5 w-1.5 shrink-0 ${offline ? 'bg-amber-500' : 'bg-emerald-600'}`} aria-hidden />
+                <span>
+                  {offline
+                    ? `No signal. ${waiting === 1 ? '1 ticket saved on this phone' : `${waiting} tickets saved on this phone`}, sent when the connection returns.`
+                    : waiting
+                      ? `Sending ${waiting === 1 ? '1 saved ticket' : `${waiting} saved tickets`}…`
+                      : 'Live: the count includes every phone scanning this event.'}
+                </span>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2">

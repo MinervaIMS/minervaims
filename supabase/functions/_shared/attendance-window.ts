@@ -1,21 +1,22 @@
 // =====================================================================
-// Attendance is recorded for a week, and then it is the record.
+// Attendance is recorded for two weeks, and then it is the record.
 // ---------------------------------------------------------------------
 // The list is taken at the door and tidied in the days after: a walk-in
-// added, a name ticked that was missed. A week is enough for that. After
-// it, the list is what happened, and changes to it were more often
-// accidents than corrections - a tap on the wrong row of an old event.
+// added, a name ticked that was missed. Two weeks leaves time for that
+// even around exams and holidays. After it, the list is what happened,
+// and changes to it were more often accidents than corrections - a tap on
+// the wrong row of an old event.
 //
 // So ticking, unticking, adding a walk-in and removing somebody are all
-// refused once seven days have passed since the event's date. The day
-// counts on the association's clock, Rome's, and the whole seventh day is
-// included: an event on the 1st can be edited until the end of the 8th.
+// refused once fourteen days have passed since the event's date. The day
+// counts on the association's clock, Rome's, and the whole fourteenth day
+// is included: an event on the 1st can be edited until the end of the 15th.
 //
 // Mirrored by `attendanceWindow` in src/lib/events-api.ts, so the page
 // shows the list as closed before anybody tries.
 // =====================================================================
 
-export const ATTENDANCE_OPEN_DAYS = 7;
+export const ATTENDANCE_OPEN_DAYS = 14;
 
 /** Today's date on the association's clock, as YYYY-MM-DD. */
 export function romeToday(at: Date = new Date()): string {

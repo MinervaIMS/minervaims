@@ -26,6 +26,8 @@ export interface InterviewSlot {
 }
 
 export interface SlotBooking {
+  /** Present once the server sends it (step 81); used for "Add to calendar". */
+  id?: string;
   slot_id: string;
   candidate_name: string;
   candidate_email: string;

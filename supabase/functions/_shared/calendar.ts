@@ -36,6 +36,9 @@ export interface CalendarEvent {
   online: boolean | null;
   description: string | null;
   updated_at?: string | null;
+  /** An interview is not an event: its own page and its own calendar id. */
+  url?: string;
+  uid?: string;
 }
 
 export type CalendarTarget = 'ics' | 'google' | 'outlook' | 'outlookcom';
@@ -73,7 +76,7 @@ function span(ev: CalendarEvent): { allDay: boolean; start: Date; end: Date } | 
 const utcStamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 const dayStamp = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
 const location = (ev: CalendarEvent) => (ev.online ? 'Online' : (ev.place || '').trim());
-const pageUrl = (ev: CalendarEvent) => (ev.id === 'sample' ? SITE : `${SITE}/events/${ev.id}/register`);
+const pageUrl = (ev: CalendarEvent) => ev.url ?? (ev.id === 'sample' ? SITE : `${SITE}/events/${ev.id}/register`);
 const details = (ev: CalendarEvent) => [(ev.description || '').trim(), `Minerva Investment Management Society: ${pageUrl(ev)}`].filter(Boolean).join('\n\n');
 
 export function googleUrl(ev: CalendarEvent): string | null {
@@ -136,7 +139,7 @@ export function buildIcs(ev: CalendarEvent, now: Date = new Date()): string | nu
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:event-${ev.id}@minervaims.org`,
+    `UID:${ev.uid ?? `event-${ev.id}`}@minervaims.org`,
     // A later version of the same event replaces the earlier one.
     `SEQUENCE:${Math.max(0, Math.floor(updated / 60000) - 29_000_000)}`,
     `DTSTAMP:${utcStamp(now)}`,
@@ -171,7 +174,20 @@ const SEP = '<span style="color:#D9D9D9;"> &nbsp;&middot;&nbsp; </span>';
 
 export function emailCalendarBlock(supabaseUrl: string, eventId: string): string {
   if (!/^([0-9a-f-]{36}|sample)$/.test(eventId)) return '';
-  const base = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/event-ics?e=${eventId}`;
+  return calendarRow(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/event-ics?e=${eventId}`);
+}
+
+/**
+ * "Add to your calendar" for an interview booking: the candidate's entry
+ * (who=candidate) or the examiner's (who=examiner). The link reads the
+ * booking when it is opened, so a changed slot adds the new time.
+ */
+export function emailInterviewCalendarBlock(supabaseUrl: string, bookingId: string, who: 'candidate' | 'examiner'): string {
+  if (!/^([0-9a-f-]{36}|sample)$/.test(bookingId)) return '';
+  return calendarRow(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/event-ics?i=${bookingId}&amp;who=${who}`);
+}
+
+function calendarRow(base: string): string {
   return '<tr><td class="mims-pad" style="padding:0 40px 24px;">'
     + `<p class="mims-xsmall" style="margin:0 0 6px;${FONT}font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#737373;">Add to your calendar</p>`
     + `<p class="mims-body" style="margin:0;${FONT}font-size:15px;line-height:1.9;color:#141414;">`
@@ -189,4 +205,58 @@ export function emailCancelBlock(eventId: string, token: string, kind: 'registra
     ? `No longer able to come? <a href="${url}" style="${LINK}">Leave the waiting list</a>.`
     : `Can&rsquo;t make it? <a href="${url}" style="${LINK}">Cancel your registration</a>, so that somebody else can take your place.`;
   return `<tr><td class="mims-pad" style="padding:0 40px;"><p class="mims-small" style="margin:0 0 18px;${FONT}font-size:13px;line-height:1.7;color:#737373;">${text}</p></td></tr>`;
+}
+
+
+// ── Interviews ───────────────────────────────────────────────────────
+// A slot is stored as a date and wall-clock times typed on Rome's clock.
+
+/** A date and a wall-clock time on Rome's clock, as an instant. */
+export function romeWallToDate(ymd: string, hhmm: string): Date | null {
+  const dm = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || '');
+  const tm = /^(\d{1,2}):(\d{2})/.exec(hhmm || '');
+  if (!dm || !tm) return null;
+  const wall = Date.UTC(Number(dm[1]), Number(dm[2]) - 1, Number(dm[3]), Number(tm[1]), Number(tm[2]));
+  const offsetAt = (ms: number) => {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(ms));
+    const g = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+    return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute')) - ms;
+  };
+  let at = wall - offsetAt(wall);
+  at = wall - offsetAt(at);
+  return new Date(at);
+}
+
+export interface InterviewForCalendar {
+  bookingId: string;
+  divisionLabel: string;
+  candidateName: string;
+  examinerName: string | null;
+  slotDate: string;
+  startTime: string;
+  endTime: string;
+  meetingLink: string | null;
+}
+
+/** An interview as a calendar entry, for the candidate or for the examiner. */
+export function interviewAsEvent(i: InterviewForCalendar, who: 'candidate' | 'examiner'): CalendarEvent | null {
+  const start = romeWallToDate(i.slotDate, i.startTime);
+  const end = romeWallToDate(i.slotDate, i.endTime);
+  if (!start) return null;
+  const link = (i.meetingLink || '').trim();
+  const lines = who === 'candidate'
+    ? [`Your interview with Minerva Investment Management Society (${i.divisionLabel}).`, i.examinerName ? `Examiner: ${i.examinerName}.` : '', link ? `Join: ${link}` : '']
+    : [`Interview with ${i.candidateName}, ${i.divisionLabel}.`, link ? `Join: ${link}` : ''];
+  return {
+    id: i.bookingId,
+    uid: `interview-${i.bookingId}-${who}`,
+    url: 'https://minervaims.org/workspace',
+    title: who === 'candidate' ? `Minerva IMS interview: ${i.divisionLabel}` : `Interview: ${i.candidateName} (${i.divisionLabel})`,
+    start_at: start.toISOString(),
+    end_at: end && end > start ? end.toISOString() : null,
+    date: i.slotDate.slice(0, 10),
+    place: link || 'Online',
+    online: false,
+    description: lines.filter(Boolean).join('\n'),
+  };
 }

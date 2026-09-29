@@ -30,6 +30,7 @@ import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDe
 import { CandidateProfile } from '@/components/admin/recruiting/CandidateProfile';
 import { CandidateStatusControl } from '@/components/admin/recruiting/CandidateStatusControl';
 import { formatClockRange } from '@/lib/event-time';
+import { AddToCalendar } from '@/components/shared/AddToCalendar';
 import {
   addApplicationNote, reviewerDivisionsOf, canProgressApplication,
   RECRUITING_DIVISIONS, applyDivisionLabel, intakeDivision,
@@ -626,6 +627,11 @@ function SlotDay({ date, daySlots, canManage, onRemove, onOpenCandidate }: {
                     {s.booking.candidate_name}
                   </button>
                   <span className="ml-1 text-muted-foreground">· {s.booking.candidate_email}</span>
+                  {s.booking.id && (
+                    <div className="mt-2">
+                      <AddToCalendar interview={{ bookingId: s.booking.id, who: 'examiner' }} className="h-7 text-xs" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="mt-2 text-xs font-body">

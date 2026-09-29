@@ -285,8 +285,19 @@ export type CheckinResult =
   | { result: 'other_event'; name: string; event_title: string | null; event_date: string | null }
   | { result: 'unknown' | 'not_a_ticket' };
 
-export function checkInTicket(session: Session | null, eventId: string, token: string): Promise<CheckinResult> {
-  return invoke('admin-event-reg', session, { action: 'checkin', event_id: eventId, token });
+/** `scannedAt`: for a scan kept on the phone without signal, when it was read at the door. */
+export function checkInTicket(session: Session | null, eventId: string, token: string, scannedAt?: string): Promise<CheckinResult> {
+  return invoke('admin-event-reg', session, { action: 'checkin', event_id: eventId, token, ...(scannedAt ? { scanned_at: scannedAt } : {}) });
+}
+
+/** Who is in, for every phone scanning the same event: polled by the scanner. */
+export interface DoorStatus {
+  rows: { id: string; attended: boolean; checked_in_at: string | null }[];
+  checked_in: number;
+  total: number;
+}
+export function doorStatus(session: Session | null, eventId: string): Promise<DoorStatus> {
+  return invoke('admin-event-reg', session, { action: 'door-status', event_id: eventId });
 }
 
 export function markAttended(session: Session | null, id: string, attended: boolean) {
@@ -369,14 +380,14 @@ async function invoke(fn: string, session: Session | null, body: Record<string, 
 
 
 // =====================================================================
-// THE ATTENDANCE WINDOW: a week after the event, the list is the record.
+// THE ATTENDANCE WINDOW: two weeks after the event, the list is the record.
 // ---------------------------------------------------------------------
 // The mirror of supabase/functions/_shared/attendance-window.ts, which is
 // what actually refuses a change. Counted on Rome's calendar; the whole
-// seventh day is included, so an event on the 1st can be edited until the
-// end of the 8th.
+// fourteenth day is included, so an event on the 1st can be edited until
+// the end of the 15th.
 // =====================================================================
-export const ATTENDANCE_OPEN_DAYS = 7;
+export const ATTENDANCE_OPEN_DAYS = 14;
 
 function romeToday(at: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-GB', {

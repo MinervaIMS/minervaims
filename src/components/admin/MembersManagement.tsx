@@ -76,7 +76,7 @@ export default function MembersManagement() {
   const canEdit = access.canEdit('people-members');
   // EVENTS ATTENDED THIS SEMESTER: for the roles with full access to Members
   // only. Of the semester's events held so far where attendance was taken
-  // (Association on Display days aside), how many each member attended.
+  // (Association on Display days included), how many each member attended.
   const seesAttendance = access.canManage('people-members');
   const [attendance, setAttendance] = useState<{ total: number; counts: Record<string, number>; label: string } | null>(null);
   useEffect(() => {
