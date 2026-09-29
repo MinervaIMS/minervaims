@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
-import { CalendarDays, Columns3, Inbox, List, Plus, Euro, CalendarPlus } from 'lucide-react';
+import { CalendarDays, CalendarRange, Columns3, Inbox, List, Plus, Euro, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,7 @@ import {
 } from '@/lib/smm-api';
 import { listEvents, type EventRow } from '@/lib/events-api';
 import { formatEventWhen } from '@/lib/event-time';
-import { addDays, longDay, monthTitle, sameMonth, shortDay, todayYmd } from '@/lib/calendar-dates';
+import { addDays, addMonths, longDay, monthTitle, quarterTitle, sameMonth, shortDay, todayYmd } from '@/lib/calendar-dates';
 import { CalendarToolbar, EmptyState, FilterChip, MonthGrid } from '@/components/admin/calendar/CalendarKit';
 import { useMedia, useStoredChoice } from '@/components/admin/calendar/calendar-hooks';
 import { eventDay } from '@/components/admin/calendar/calendar-model';
@@ -42,8 +42,12 @@ import { Destinations, StatusBadge } from '@/components/admin/editorial/Editoria
 // always be done from the item itself, without dragging (WCAG 2.5.7).
 // =====================================================================
 
-type View = 'month' | 'board' | 'list';
-const VIEWS = ['month', 'board', 'list'] as const;
+type View = 'month' | 'quarter' | 'board' | 'list';
+const VIEWS = ['month', 'quarter', 'board', 'list'] as const;
+
+// What this session last loaded, shown at once on a return visit and then
+// replaced by a fresh copy (see the effect in the component).
+let cache: { items: EditorialItem[]; events: EventRow[] } | null = null;
 
 const itemDay = (i: EditorialItem) => (i.scheduled_date ? i.scheduled_date.slice(0, 10) : null);
 
@@ -74,15 +78,23 @@ export default function EditorialCalendar() {
   const [dropCol, setDropCol] = useState<string | null>(null);
 
   const load = async () => {
-    try { setItems(await listEditorial(session)); }
+    try {
+      const got = await listEditorial(session);
+      setItems(got);
+      cache = { items: got, events: cache?.events ?? [] };
+    }
     catch (e) { toast({ title: 'Failed to load the plan', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
   };
   useEffect(() => {
+    // Shown at once from this session's last load, then refreshed.
+    if (cache) { setItems(cache.items); setEvents(cache.events); setLoading(false); }
     load();
-    listEvents().then(setEvents).catch(() => setEvents([]));
+    listEvents().then((ev) => { setEvents(ev); if (cache) cache = { ...cache, events: ev }; }).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // A move or a status change made here is kept in the copy too.
+  useEffect(() => { if (cache && !loading) cache = { ...cache, items }; }, [items, loading]);
 
   // ── Filtering ───────────────────────────────────────────────────────
   const passes = (i: EditorialItem) =>
@@ -96,7 +108,8 @@ export default function EditorialCalendar() {
     return m;
   }, [visible]);
   const unscheduled = visible.filter((i) => !i.scheduled_date);
-  const monthItems = items.filter((i) => { const d = itemDay(i); return d && sameMonth(d, cursor); });
+  const shownMonths = view === 'quarter' ? [cursor, addMonths(cursor, 1), addMonths(cursor, 2)] : [cursor];
+  const monthItems = items.filter((i) => { const d = itemDay(i); return d && shownMonths.some((m) => sameMonth(d, m)); });
   const statusCount = (s: EditorialStatus) => monthItems.filter((i) => i.status === s).length;
   const eventsByDay = useMemo(() => {
     const m: Record<string, EventRow[]> = {};
@@ -199,7 +212,7 @@ export default function EditorialCalendar() {
     </Popover>
   );
 
-  const renderDay = (d: string) => {
+  const renderDay = (d: string, dense = false) => {
     const list = byDay[d] || [];
     const evs = showEvents ? eventsByDay[d] || [] : [];
     if (!wide) {
@@ -212,7 +225,7 @@ export default function EditorialCalendar() {
         </span>
       );
     }
-    const max = evs.length ? 2 : 3;
+    const max = (evs.length ? 2 : 3) - (dense ? 1 : 0);
     const shown = list.slice(0, max);
     const more = list.length - shown.length;
     return (
@@ -308,11 +321,13 @@ export default function EditorialCalendar() {
           onCursor={(d) => setCursor(`${d.slice(0, 7)}-01`)}
           views={[
             { value: 'month', label: 'Month', icon: <CalendarDays className="h-4 w-4" /> },
+            { value: 'quarter', label: '3 months', icon: <CalendarRange className="h-4 w-4" /> },
             { value: 'board', label: 'Board', icon: <Columns3 className="h-4 w-4" /> },
             { value: 'list', label: 'List', icon: <List className="h-4 w-4" /> },
           ]}
           view={view}
           onView={setView}
+          title={view === 'quarter' ? quarterTitle(cursor) : undefined}
           extra={<HelpDot page="smm-editorial" topic="planning" />}
         />
 
@@ -330,9 +345,10 @@ export default function EditorialCalendar() {
           <FilterChip active={showEvents} icon={<CalendarDays className="h-3.5 w-3.5 text-accent" />} label="Association events" onToggle={() => setShowEvents((v) => !v)} />
         </div>
 
-        {view === 'month' && (
+        {(view === 'month' || view === 'quarter') && (
           <div className="grid grid-cols-1 gap-4 min-[1600px]:grid-cols-[minmax(0,1fr)_16rem]">
-            <div className="min-w-0 space-y-4">
+            <div className="min-w-0 space-y-4" data-calendar-scope>
+              {view === 'month' ? (
               <MonthGrid
                 cursor={cursor}
                 selected={selected}
@@ -345,6 +361,25 @@ export default function EditorialCalendar() {
                 onDayDrop={canEdit ? (d, id) => patch(id, { scheduled_date: d }, `Moved to ${shortDay(d)}`) : undefined}
                 compact={!wide}
               />
+              ) : shownMonths.map((m) => (
+                <div key={m}>
+                  <h3 className="mb-2 font-serif text-xl text-accent">{monthTitle(m)}</h3>
+              <MonthGrid
+                cursor={m}
+                selected={selected}
+                onSelect={setSelected}
+                onCursor={(d) => setCursor(`${d.slice(0, 7)}-01`)}
+                renderDay={(d) => renderDay(d, true)}
+                dayClass={() => 'group/day'}
+                dayLabel={(d) => { const n = (byDay[d] || []).length; const ev = (eventsByDay[d] || []).length; return [n ? `${n} ${n === 1 ? 'item' : 'items'}` : 'nothing planned', ev ? `${ev} association event${ev > 1 ? 's' : ''}` : ''].filter(Boolean).join(', '); }}
+                onDayDoubleClick={canEdit ? (d) => openNew(d) : undefined}
+                onDayDrop={canEdit ? (d, id) => patch(id, { scheduled_date: d }, `Moved to ${shortDay(d)}`) : undefined}
+                compact={!wide}
+                cellMinHeight="min-h-[88px]"
+                hideOutside
+              />
+                </div>
+              ))}
               {!wide && selected && (
                 <div className="border border-separator">
                   <h3 className="bg-muted/60 px-4 py-2 font-body text-[13px] font-semibold">{longDay(selected)}</h3>

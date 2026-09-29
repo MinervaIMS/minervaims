@@ -87,6 +87,16 @@ export function monthTitle(ymd: string): string {
   return fmt(ymd, { month: 'long', year: 'numeric' });
 }
 
+/** "September to November 2026", or "December 2026 to February 2027". */
+export function quarterTitle(firstMonth: string): string {
+  const last = addMonths(firstMonth, 2);
+  const a = fmt(firstMonth, { month: 'long' });
+  const b = fmt(last, { month: 'long' });
+  return firstMonth.slice(0, 4) === last.slice(0, 4)
+    ? `${a} to ${b} ${last.slice(0, 4)}`
+    : `${a} ${firstMonth.slice(0, 4)} to ${b} ${last.slice(0, 4)}`;
+}
+
 /** "Thursday 1 October 2026". */
 export function longDay(ymd: string): string {
   return `${fmt(ymd, { weekday: 'long' })} ${fmt(ymd, { day: 'numeric', month: 'long', year: 'numeric' })}`;

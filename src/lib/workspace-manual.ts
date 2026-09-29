@@ -689,7 +689,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'calendar': {
     detail: [
       "Register for events comes first: every upcoming event still open to you, with its Register button, beside the events you are already registered or waiting for. How registration works lays out the four steps from the button to the door.",
-      "Below it, one month at a time with Today and the arrows, as a month grid or as an agenda (a list by day, which a phone shows first). The chips above it are both the filters and the key: Events, Association on Display, Alumni calls, Deadlines and Team entries, each with its colour and icon. A ticket marks an event open to register, a green tick one you are registered for, an hourglass one you are waiting for.",
+      "Below it, the calendar: one month, three months (the current one and the two after it) or an agenda (a list by day, which a phone shows first), with Today and the arrows to move. The chips above it are both the filters and the key: Events, Association on Display, Alumni calls, Deadlines and Team entries, each with its colour and icon. A ticket marks an event open to register, a green tick one you are registered for, an hourglass one you are waiting for.",
       "Any item opens a panel with its details and what you can do: register, join the waiting list, add it to your own calendar or cancel. Roles that edit the calendar also find Edit details there, and add their own entries with Add entry or the + on a day.",
       "No event can be scheduled during an exam session break or on an Italian public holiday. Both are shaded, and the restriction is enforced by the database, so it holds however the entry is created.",
     ],
@@ -698,7 +698,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'smm-editorial': {
     detail: [
       "The Media team's plan: what is going out, when, where it goes and in what format, who is responsible, its status and whether it is paid advertising.",
-      "Three views of the same plan: Month (the dates, with the association's own events shown faintly on their days), Board (one column per status, from Idea to Published) and List (everything in date order, the easiest read on a phone). Items without a date wait in Unscheduled.",
+      "Four views of the same plan: Month (the dates, with the association's own events shown faintly on their days), 3 months (the current month and the two after it), Board (one column per status, from Idea to Published) and List (everything in date order, the easiest read on a phone). Items without a date wait in Unscheduled.",
       "Each item shows its status by its style and icon, and where it goes by the platform icons. One item can go to several destinations, each with its own format, and can be linked to the event it promotes.",
       "On a computer the Media team drags items to reschedule them or to change their status; the same can be done from the item itself. Other roles, and every role on a phone, read the plan without changing it.",
     ],
