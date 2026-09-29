@@ -2527,6 +2527,7 @@ export type Database = {
       claim_member_account: { Args: never; Returns: Json }
       cleanup_expelled_members: { Args: never; Returns: number }
       cleanup_expired_candidates: { Args: never; Returns: number }
+      clock12: { Args: { p_time: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2722,6 +2723,7 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["team_position"]
       }
+      rome_stamp12: { Args: { p_at: string }; Returns: string }
       roster_access_pair: {
         Args: {
           p_division: Database["public"]["Enums"]["org_division"]
