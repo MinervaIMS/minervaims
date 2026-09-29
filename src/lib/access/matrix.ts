@@ -240,7 +240,23 @@ export function isDeniedForRole(role: AppRole, resource: ResourceKey): boolean {
   return ROLE_DENY[normalizeRole(role)]?.includes(resource) ?? false;
 }
 
+// =====================================================================
+// Pages made of other subsections.
+// ---------------------------------------------------------------------
+// Brand & Social is one page with three tabs, Instagram, LinkedIn and the
+// Design System, and each tab keeps its own row in the matrix: those rows
+// are what the Role permissions table shows and what the server enforces.
+// The page itself opens for anybody who may open at least one of them, at
+// the highest level they hold on any, and each tab then applies its own.
+// It grants nothing a role did not already have.
+// =====================================================================
+export const COMBINED_RESOURCES: Record<ResourceKey, ResourceKey[]> = {
+  'smm-social': ['smm-ig', 'smm-li', 'smm-brand'],
+};
+
 export function resolveLevel(roles: AppRole[], resource: ResourceKey): AccessLevel {
+  const parts = COMBINED_RESOURCES[resource];
+  if (parts) return parts.reduce<AccessLevel>((lvl, part) => maxLevel(lvl, resolveLevel(roles, part)), 'none');
   let level: AccessLevel = 'none';
   for (const raw of roles) {
     const role = normalizeRole(raw);

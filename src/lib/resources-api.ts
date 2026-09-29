@@ -27,6 +27,8 @@ export interface ResourceSource {
   value: string;
   /** Optional label — e.g. the original file name, a link title, "Office". */
   label?: string | null;
+  /** A file's size in bytes, recorded at upload. Absent on older files. */
+  size?: number | null;
 }
 
 export interface ResourceRow {
@@ -137,6 +139,79 @@ export async function signResourceFile(session: Session | null, file_url: string
   const data = await invoke(session, { action: 'sign', file_url });
   return data.url as string;
 }
+/**
+ * Short-lived signed URLs for many stored files at once, for thumbnails.
+ *
+ * Read straight from storage, which lets staff read this bucket, in ONE
+ * request however many pictures the library shows. A failure is not an
+ * error for the reader: the library draws the file's type instead of its
+ * picture, so this resolves to whatever it could sign.
+ */
+export async function signResourceFiles(paths: string[], expiresIn = 3600): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(paths.filter(Boolean)));
+  if (unique.length === 0) return {};
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bucket = (supabase as any).storage.from('workspace-resources');
+    const { data, error } = await bucket.createSignedUrls(unique, expiresIn);
+    if (error || !Array.isArray(data)) return {};
+    const out: Record<string, string> = {};
+    for (const row of data as { path?: string | null; signedUrl?: string | null; error?: string | null }[]) {
+      if (row?.path && row.signedUrl && !row.error) out[row.path] = row.signedUrl;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Upload one file and report how far it has got.
+ *
+ * The functions client cannot report progress, so this goes to the same
+ * function the same way the report upload does, with XMLHttpRequest, whose
+ * upload events are the only honest progress a browser gives. Where the
+ * address of the functions is not known it falls back to the plain upload,
+ * which reports 0 and then 100.
+ */
+export function uploadResourceFileWithProgress(
+  session: Session | null,
+  file: File,
+  onProgress?: (fraction: number) => void,
+  signal?: AbortSignal,
+): Promise<string> {
+  const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? '';
+  if (!base || typeof XMLHttpRequest === 'undefined' || !session?.access_token) {
+    onProgress?.(0);
+    return uploadResourceFile(session, file).then((url) => { onProgress?.(1); return url; });
+  }
+  return new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${base.replace(/\/$/, '')}/functions/v1/admin-resources`);
+    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+    if (key) xhr.setRequestHeader('apikey', key);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total > 0) onProgress?.(Math.min(0.99, e.loaded / e.total)); };
+    xhr.onload = () => {
+      let body: { file_url?: string; error?: string } | null = null;
+      try { body = JSON.parse(xhr.responseText); } catch { body = null; }
+      if (xhr.status >= 200 && xhr.status < 300 && body?.file_url) { onProgress?.(1); resolve(body.file_url); return; }
+      reject(new Error(body?.error || (xhr.status === 413 ? 'The file is too large.' : 'The upload did not complete. Please try again.')));
+    };
+    xhr.onerror = () => reject(new Error(navigator.onLine === false
+      ? 'You appear to be offline. Check your connection and try again.'
+      : 'The workspace could not reach the server. Check your connection and try again.'));
+    xhr.onabort = () => reject(new DOMException('Upload cancelled', 'AbortError'));
+    if (signal) {
+      if (signal.aborted) { xhr.abort(); return; }
+      signal.addEventListener('abort', () => xhr.abort(), { once: true });
+    }
+    const fd = new FormData();
+    fd.append('file', file);
+    xhr.send(fd);
+  });
+}
+
 export async function uploadResourceFile(session: Session | null, file: File): Promise<string> {
   const fd = new FormData();
   fd.append('file', file);

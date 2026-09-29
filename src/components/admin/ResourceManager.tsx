@@ -1,29 +1,70 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+// =====================================================================
+// THE FILE LIBRARY.
+// ---------------------------------------------------------------------
+// One component draws every library in the workspace: the Instagram and
+// LinkedIn tabs of Brand & Social, MIMS Graphics, Other resources,
+// Templates & repositories, External relations and Statute & documents.
+// They are one store (workspace_resources), one set of permissions and
+// now one way of working, so learning one teaches all of them.
+//
+// WHAT A READER NEEDS FIRST IS TO FIND THE RIGHT FILE, so the page is
+// built around that: a search over titles, notes, texts, file names and
+// authors; one row of type filters with their counts (Images 12, PDFs
+// and documents 3), offering only the types the library holds; a sort;
+// and a choice of Grid, where pictures show as pictures, or List, where
+// many items can be scanned in a column. Whatever was chosen is kept
+// while the workspace stays open, so opening an item and coming back
+// finds the library exactly as it was left.
+//
+// WHICH FILE IS WHICH is answered on the card itself: the picture or a
+// type tile (icon, colour and extension together), the title, the size
+// and who added it when. Opening an item shows everything it holds, with
+// a preview, a download and a copy button where each applies.
+//
+// ADDING IS DONE IN BULK. Files dropped anywhere on the library, or
+// chosen with Upload files, are listed with a title read from each name,
+// uploaded a few at a time with their own progress, and each becomes its
+// own item. New item remains for the item that is not a file: a caption,
+// a link, a contact.
+//
+// SEVERAL AT ONCE. Tick items to download them together as one ZIP or,
+// for those who manage the library, to remove them together.
+//
+// The read-only rule is unchanged: on a phone, and for roles that read a
+// library without managing it, every writing control is absent, while
+// search, filters, preview, copy and download keep working.
+// =====================================================================
+
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { Download, FolderOpen, Loader2, Plus, SearchX, Trash2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, ExternalLink, FileText, StickyNote, Link2, Loader2, Upload, Star, X, Eye, Download, Phone, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { logActivity } from '@/lib/activity-log';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
+import { friendlyError } from '@/lib/errors';
 import {
-  listResources, saveResource, deleteResource, uploadResourceFile, setResourceFavourite, signResourceFile,
-  MAX_FAVOURITES, SOURCE_LIMITS, type ResourceRow, type ResourceSource,
+  deleteResource, setResourceFavourite, signResourceFile, MAX_FAVOURITES, type ResourceRow, type ResourceSource,
 } from '@/lib/resources-api';
-import { downloadTitled, extensionOf } from '@/lib/file-download';
-import { previewLink } from '@/lib/link-label';
+import {
+  ACCEPT_ATTR, filesOf, fold, itemFilters, matchesQuery, searchText, sortItems, LIBRARY_FILTERS, type LibraryFilter,
+} from '@/lib/library-files';
+import { downloadBlob, downloadTitled, safeFileName } from '@/lib/file-download';
+import { zipFromUrls } from '@/lib/zip';
+import { Chip, GridCard, ListRow, SearchBox, SortSelect, ViewSwitch, type QuickHandlers } from '@/components/admin/library/LibraryParts';
+import { ItemSheet } from '@/components/admin/library/ItemSheet';
+import { FilePreview, type PreviewState } from '@/components/admin/library/FilePreview';
+import { UploadDialog } from '@/components/admin/library/UploadDialog';
+import { ItemEditor } from '@/components/admin/library/ItemEditor';
+import {
+  FLAVOUR_VIEW, useLibraryChoices, useLibraryItems, useThumbnails, type LibraryFlavour,
+} from '@/components/admin/library/library-data';
 
 interface Props {
   /** Resource bucket, e.g. 'reports_templates', 'smm_instagram', 'external_relations'. */
@@ -38,741 +79,490 @@ interface Props {
   canViewOtherDivisions?: boolean;
   /** May the viewer create / edit / delete items here? (false = read-only.) */
   canManage?: boolean;
+  /** What the library is for: its starting view and how texts are called. */
+  flavour?: LibraryFlavour;
+  /** Drawn inside another page (a tab): no page header of its own. */
+  embedded?: boolean;
 }
 
 const DEFAULT_DIVISIONS: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'none'];
-// Per-kind caps, read from the one table the server enforces.
-const MAX_TEXTS = SOURCE_LIMITS.text;
-const MAX_LINKS = SOURCE_LIMITS.link;
-const MAX_FILES = SOURCE_LIMITS.file;
-const MAX_PHONES = SOURCE_LIMITS.phone;
-const MAX_EMAILS = SOURCE_LIMITS.email;
 
-/**
- * Is this attachment a picture? See the preview dialog at the foot of the
- * file for why it matters.
- *
- * The stored name is asked first and the URL second, because the URL is a
- * signed storage key: it carries the right extension, but the name the
- * member gave the file is the one they recognise and the one that is
- * certain to be intact. Anything unrecognised is not a picture, which is
- * the safe answer: it keeps the iframe, which handles every other kind of
- * file the library accepts.
- */
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'svg', 'bmp', 'heic', 'heif'];
-
-function isImageAttachment(label: string, url: string): boolean {
-  const fromLabel = label.match(/\.([a-z0-9]{1,8})$/i)?.[1];
-  const ext = (fromLabel ?? extensionOf(url, '')).toLowerCase();
-  return IMAGE_EXTENSIONS.includes(ext);
+/** Copy to the clipboard, with the old route for browsers without the API. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
 }
 
-interface FileEntry { value: string; label: string }
-/**
- * A link and, optionally, what to call it.
- *
- * The label is almost always left blank: previewLink reads a good one out of
- * the URL. It exists for the cases the URL cannot describe - a share link with
- * an opaque id, an internal tool - where the person adding it knows the answer
- * and nothing else does.
- */
-interface LinkEntry { value: string; label: string }
-/** A telephone number or an address, with an optional note of whose it is. */
-interface ContactEntry { value: string; label: string }
-
-interface FormState {
-  id: string | null;
-  division: OrgDivision;
-  title: string;
-  description: string;
-  texts: string[];
-  links: LinkEntry[];
-  files: FileEntry[];
-  phones: ContactEntry[];
-  emails: ContactEntry[];
-  is_favourite: boolean;
-}
-
-const emptyForm = (division: OrgDivision): FormState => ({
-  id: null, division, title: '', description: '', texts: [''], links: [], files: [],
-  phones: [], emails: [], is_favourite: false,
-});
-
-/**
- * One telephone number or email address, with an optional note of whose it is.
- *
- * The note is the second field on the row rather than a line beneath it: a
- * contact is naturally two short things side by side, and stacking them would
- * have repeated the mistake the link editor is being corrected for.
- */
-function ContactRow({ entry, valuePlaceholder, labelPlaceholder, inputMode, onChange, onRemove }: {
-  entry: ContactEntry;
-  valuePlaceholder: string;
-  labelPlaceholder: string;
-  inputMode: 'tel' | 'email';
-  onChange: (next: ContactEntry) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="flex gap-2 min-w-0">
-      <Input
-        className="min-w-0 flex-[3]"
-        type={inputMode === 'email' ? 'email' : 'tel'}
-        inputMode={inputMode}
-        value={entry.value}
-        onChange={(e) => onChange({ ...entry, value: e.target.value })}
-        placeholder={valuePlaceholder}
-        aria-label={inputMode === 'email' ? 'Email address' : 'Telephone number'}
-      />
-      <Input
-        className="min-w-0 flex-[2] text-sm"
-        value={entry.label}
-        onChange={(e) => onChange({ ...entry, label: e.target.value })}
-        placeholder={labelPlaceholder}
-        aria-label="Whose it is (optional)"
-      />
-      <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={onRemove}><X className="h-4 w-4" /></Button>
-    </div>
-  );
+/** Names inside a ZIP must be unique: "logo.png", "logo (2).png". */
+function uniqueNames(names: string[]): string[] {
+  const seen = new Map<string, number>();
+  return names.map((n) => {
+    const key = n.toLowerCase();
+    const k = (seen.get(key) ?? 0) + 1;
+    seen.set(key, k);
+    if (k === 1) return n;
+    const m = n.match(/^(.*?)(\.[a-z0-9]{1,8})?$/i);
+    return `${m?.[1] ?? n} (${k})${m?.[2] ?? ''}`;
+  });
 }
 
 export default function ResourceManager({
   category, title, description, divisions = DEFAULT_DIVISIONS,
   restrictDivisions = null, canViewOtherDivisions = true, canManage = true,
+  flavour = 'general', embedded = false,
 }: Props) {
   const { session } = useAuth();
-  // Repositories are consultable but read-only in the mobile shell.
-  const isDesktop = useIsDesktop();
-  canManage = canManage && isDesktop;
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
-  // Quick look: a signed URL rendered in place, so a file can be checked
-  // without leaving the page or committing to a download.
-  const [preview, setPreview] = useState<{ url: string; label: string } | null>(null);
-  const [previewBusy, setPreviewBusy] = useState<string | null>(null);
-  const [downloadBusy, setDownloadBusy] = useState<string | null>(null);
+  // Libraries are consultable but read-only in the mobile shell.
+  const isDesktop = useIsDesktop();
+  const manage = canManage && isDesktop;
 
-  // Division scoping. When `restrictDivisions` is set this instance holds
-  // per-division material: users who cannot view other divisions only ever
-  // see their own division's items (plus shared "General" items), and can
-  // only create in their own division.
+  // ---- Division scoping (unchanged rules) ------------------------------
+  // When `restrictDivisions` is set this instance holds per-division
+  // material: users who cannot view other divisions only ever see their
+  // own division's items (plus shared "General" items), and can only
+  // create in their own division.
   const scoped = !!restrictDivisions && restrictDivisions.length > 0;
   const lockedToOwn = scoped && !canViewOtherDivisions;
   const homeDivision = restrictDivisions?.[0];
-  const viewable: OrgDivision[] = scoped ? [...(restrictDivisions as OrgDivision[]), 'none'] : divisions;
+  const viewable: OrgDivision[] = useMemo(
+    () => (scoped ? [...(restrictDivisions as OrgDivision[]), 'none'] : divisions),
+    [scoped, restrictDivisions, divisions],
+  );
   const createDivisions = scoped ? divisions.filter((d) => viewable.includes(d)) : divisions;
   const createDefault: OrgDivision = (scoped ? homeDivision : undefined) ?? divisions[0];
-
-  const [items, setItems] = useState<ResourceRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>(scoped && canViewOtherDivisions && homeDivision ? homeDivision : 'all');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<ResourceRow | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<FormState>(emptyForm(createDefault));
-  // Which link row has its name field open. Only one at a time: the field is
-  // an override, not part of filling the row in.
-  const [namingLink, setNamingLink] = useState<number | null>(null);
-
   const showDivisions = (lockedToOwn ? viewable : divisions).filter((d) => d !== 'none');
+  const [divFilter, setDivFilter] = useState<OrgDivision | 'all'>(scoped && canViewOtherDivisions && homeDivision ? homeDivision : 'all');
 
-  const load = async () => {
-    setLoading(true);
-    try { setItems(await listResources(category)); }
-    catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-    finally { setLoading(false); }
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [category]);
+  // ---- Data -----------------------------------------------------------
+  const onLoadError = useCallback((e: unknown) => {
+    toast({ title: 'The library could not be loaded', description: friendlyError(e), variant: 'destructive' });
+  }, [toast]);
+  const { items, setItems, loading, reload } = useLibraryItems(category, onLoadError);
+  const [choices, update] = useLibraryChoices(category, { view: FLAVOUR_VIEW[flavour], sort: 'newest', filter: 'all', query: '' });
 
-  const visible = useMemo(
+  // Several saves in a row (a bulk upload) refresh the list once.
+  const reloadTimer = useRef<number | null>(null);
+  const reloadSoon = useCallback(() => {
+    if (reloadTimer.current) window.clearTimeout(reloadTimer.current);
+    reloadTimer.current = window.setTimeout(() => { reloadTimer.current = null; reload(); }, 350);
+  }, [reload]);
+  useEffect(() => () => { if (reloadTimer.current) window.clearTimeout(reloadTimer.current); }, []);
+
+  // Everything this reader may see, before their own filters.
+  const inScope = useMemo(
     () => items.filter((i) => {
-      // Juniors never see other divisions' material.
       if (lockedToOwn && !viewable.includes(i.division)) return false;
-      return divFilter === 'all' || i.division === divFilter;
+      // General material belongs to every division, so it stays in view
+      // whichever division is chosen.
+      return divFilter === 'all' || i.division === divFilter || i.division === 'none';
     }),
-    [items, divFilter, lockedToOwn, viewable],
+    [items, lockedToOwn, viewable, divFilter],
   );
-  const favourites = useMemo(() => visible.filter((i) => i.is_favourite), [visible]);
-  const rest = useMemo(() => visible.filter((i) => !i.is_favourite), [visible]);
+  const haystacks = useMemo(() => new Map(inScope.map((i) => [i.id, searchText(i)])), [inScope]);
+  const queried = useMemo(
+    () => (choices.query.trim() ? inScope.filter((i) => matchesQuery(haystacks.get(i.id) ?? '', choices.query)) : inScope),
+    [inScope, haystacks, choices.query],
+  );
+  // Counts follow the search, so each chip says what pressing it would show.
+  const counts = useMemo(() => {
+    const c: Partial<Record<LibraryFilter, number>> = {};
+    for (const i of queried) for (const f of itemFilters(i)) c[f] = (c[f] ?? 0) + 1;
+    return c;
+  }, [queried]);
+  const offeredFilters = LIBRARY_FILTERS.filter((f) => (counts[f.key] ?? 0) > 0 || choices.filter === f.key);
+  const results = useMemo(() => {
+    const typed = choices.filter === 'all' ? queried : queried.filter((i) => itemFilters(i).has(choices.filter as LibraryFilter));
+    const sorted = sortItems(typed, choices.sort);
+    return [...sorted.filter((i) => i.is_favourite), ...sorted.filter((i) => !i.is_favourite)];
+  }, [queried, choices.filter, choices.sort]);
+  const pinned = results.filter((i) => i.is_favourite);
+  const others = results.filter((i) => !i.is_favourite);
   const favouriteCount = items.filter((i) => i.is_favourite).length;
+  const filtersActive = !!choices.query.trim() || choices.filter !== 'all';
+  const existingNames = useMemo(() => new Set(items.flatMap((i) => filesOf(i).map((f) => fold(f.label || '')))), [items]);
 
-  const openCreate = () => { setForm(emptyForm(createDefault)); setNamingLink(null); setDialogOpen(true); };
-  const openEdit = (r: ResourceRow) => {
-    setForm({
-      id: r.id, division: r.division, title: r.title, description: r.description ?? '',
-      texts: r.sources.filter((s) => s.kind === 'text').map((s) => s.value),
-      links: r.sources.filter((s) => s.kind === 'link').map((s) => ({ value: s.value, label: s.label ?? '' })),
-      files: r.sources.filter((s) => s.kind === 'file').map((s) => ({ value: s.value, label: s.label || 'File' })),
-      phones: r.sources.filter((s) => s.kind === 'phone').map((s) => ({ value: s.value, label: s.label ?? '' })),
-      emails: r.sources.filter((s) => s.kind === 'email').map((s) => ({ value: s.value, label: s.label ?? '' })),
-      is_favourite: r.is_favourite,
+  const thumbs = useThumbnails(results);
+
+  // ---- Selection --------------------------------------------------------
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    // Items that left the view leave the selection.
+    setSelected((prev) => {
+      const ids = new Set(results.map((r) => r.id));
+      const next = new Set([...prev].filter((id) => ids.has(id)));
+      return next.size === prev.size ? prev : next;
     });
-    setNamingLink(null);
-    setDialogOpen(true);
-  };
+  }, [results]);
+  const toggle = (id: string, on: boolean) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (on) next.add(id); else next.delete(id);
+    return next;
+  });
+  const selectedItems = results.filter((r) => selected.has(r.id));
 
-  const handleUpload = async (file: File) => {
-    if (form.files.length >= MAX_FILES) { toast({ title: `At most ${MAX_FILES} files per item.`, variant: 'destructive' }); return; }
-    setUploading(true);
+  // ---- Dialogs and panels ---------------------------------------------
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openItem = results.find((r) => r.id === openId) ?? items.find((r) => r.id === openId) ?? null;
+  const openIndex = openItem ? results.findIndex((r) => r.id === openItem.id) : -1;
+  const [editor, setEditor] = useState<{ open: boolean; item: ResourceRow | null }>({ open: false, item: null });
+  const [upload, setUpload] = useState<{ open: boolean; files: File[] }>({ open: false, files: [] });
+  const [toRemove, setToRemove] = useState<ResourceRow[] | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [zipProgress, setZipProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const fail = useCallback((t: string, e?: unknown) => {
+    toast({ title: t, description: e ? friendlyError(e) : undefined, variant: 'destructive' });
+  }, [toast]);
+
+  // ---- Actions ----------------------------------------------------------
+  const downloadFile = async (file: ResourceSource) => {
+    setBusy(file.value);
     try {
-      const url = await uploadResourceFile(session, file);
-      setForm((p) => ({ ...p, files: [...p.files, { value: url, label: file.name }] }));
-      toast({ title: 'File added' });
-    } catch (e) { toast({ title: 'Upload failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-    finally { setUploading(false); }
+      const url = await signResourceFile(session, file.value);
+      await downloadTitled(url, (file.label || 'file').replace(/\.[a-z0-9]{1,8}$/i, ''), 'pdf');
+    } catch (e) { fail('Could not download the file', e); } finally { setBusy(null); }
   };
 
-  // Build the sources array from whichever fields the user filled — the kind of
-  // each source is inferred here, so there is no manual "type" selector.
-  const buildSources = (f: FormState): ResourceSource[] => [
-    ...f.texts.map((t) => t.trim()).filter(Boolean).map((t) => ({ kind: 'text' as const, value: t })),
-    ...f.links
-      .map((l) => ({ value: l.value.trim(), label: l.label.trim() }))
-      .filter((l) => l.value)
-      .map((l) => ({ kind: 'link' as const, value: l.value, label: l.label || null })),
-    ...f.files.map((file) => ({ kind: 'file' as const, value: file.value, label: file.label })),
-    ...f.phones
-      .map((c) => ({ value: c.value.trim(), label: c.label.trim() }))
-      .filter((c) => c.value)
-      .map((c) => ({ kind: 'phone' as const, value: c.value, label: c.label || null })),
-    ...f.emails
-      .map((c) => ({ value: c.value.trim(), label: c.label.trim() }))
-      .filter((c) => c.value)
-      .map((c) => ({ kind: 'email' as const, value: c.value, label: c.label || null })),
-  ];
-
-  const save = async () => {
-    const sources = buildSources(form);
-    if (!form.title.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
-    if (!form.description.trim()) { toast({ title: 'A description is required', variant: 'destructive' }); return; }
-    if (sources.length < 1) { toast({ title: 'Add at least one text, link, file, telephone number or email address', variant: 'destructive' }); return; }
-    setSaving(true);
+  /** Several files into one ZIP, a folder per item that holds more than one. */
+  const downloadZip = async (list: ResourceRow[], name: string, busyKey: string) => {
+    const files = list.flatMap((it) => {
+      const own = filesOf(it);
+      return own.map((f) => ({ path: f.value, name: own.length > 1 ? `${safeFileName(it.title)}/${f.label || 'file'}` : (f.label || safeFileName(it.title)) }));
+    });
+    if (files.length === 0) { fail('Nothing to download', new Error('The selected items hold links, texts or contacts, not files.')); return; }
+    setBusy(busyKey);
+    setZipProgress({ done: 0, total: files.length });
     try {
-      await saveResource(session, {
-        id: form.id ?? undefined, category, division: form.division,
-        title: form.title.trim(), description: form.description.trim(), sources, is_favourite: form.is_favourite,
-      });
-      toast({ title: form.id ? 'Updated' : 'Added' });
-      setDialogOpen(false);
-      await load();
-    } catch (e) { toast({ title: 'Could not save', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-    finally { setSaving(false); }
+      const signed = await Promise.all(files.map((f) => signResourceFile(session, f.path)));
+      const names = uniqueNames(files.map((f) => f.name));
+      const { blob, failed } = await zipFromUrls(names.map((n, i) => ({ name: n, url: signed[i] })), (done, total) => setZipProgress({ done, total }));
+      downloadBlob(blob, `${safeFileName(name)}.zip`);
+      if (failed.length) toast({ title: `${failed.length} file${failed.length === 1 ? '' : 's'} could not be added`, description: `The ZIP holds the rest. Missing: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '...' : ''}`, variant: 'destructive' });
+    } catch (e) { fail('Could not prepare the ZIP', e); } finally { setBusy(null); setZipProgress(null); }
   };
 
-  const toggleFavourite = async (r: ResourceRow) => {
-    const next = !r.is_favourite;
+  const downloadItem = (item: ResourceRow) => {
+    const own = filesOf(item);
+    if (own.length === 1) downloadFile(own[0]);
+    else if (own.length > 1) downloadZip([item], item.title, item.id);
+  };
+
+  const copy = async (text: string, what: string) => {
+    toast(await copyText(text) ? { title: `${what} copied` } : { title: 'Could not copy', description: 'Select the text and copy it by hand.', variant: 'destructive' });
+  };
+
+  const quick: QuickHandlers = { onDownload: downloadItem, onCopy: copy };
+
+  const showPreview = async (item: ResourceRow, index: number) => {
+    const files = filesOf(item).map((f) => ({ value: f.value, label: f.label || 'File' }));
+    setPreview({ files, index, url: null });
+    try {
+      const url = await signResourceFile(session, files[index].value);
+      setPreview((p) => (p && p.files[p.index]?.value === files[index].value ? { ...p, url } : p));
+    } catch (e) { setPreview(null); fail('Could not open the preview', e); }
+  };
+  const stepPreview = async (index: number) => {
+    if (!preview) return;
+    const file = preview.files[index];
+    setPreview({ ...preview, index, url: null });
+    try {
+      const url = await signResourceFile(session, file.value);
+      setPreview((p) => (p && p.files[p.index]?.value === file.value ? { ...p, url } : p));
+    } catch (e) { fail('Could not open the preview', e); }
+  };
+
+  const togglePin = async (item: ResourceRow) => {
+    const next = !item.is_favourite;
     if (next && favouriteCount >= MAX_FAVOURITES) {
-      toast({ title: `You can pin at most ${MAX_FAVOURITES} favourites here.`, variant: 'destructive' });
+      fail(`At most ${MAX_FAVOURITES} items can be pinned here`, new Error('Unpin one first.'));
       return;
     }
-    setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, is_favourite: next } : x)));
-    try { await setResourceFavourite(session, r.id, next); }
-    catch (e) { toast({ title: 'Could not update', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); load(); }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try { await deleteResource(session, deleteTarget.id);setDeleteTarget(null); await load(); toast({ title: 'Removed' }); }
-    catch (e) { toast({ title: 'Could not delete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-  };
-
-  const openFile = async (fileUrl: string) => {
-    try { const url = await signResourceFile(session, fileUrl); window.open(url, '_blank', 'noopener'); }
-    catch (e) { toast({ title: 'Could not open the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-  };
-
-  /** Quick look at an attachment, in place. */
-  const previewFile = async (fileUrl: string, label: string) => {
-    setPreviewBusy(fileUrl);
-    try { setPreview({ url: await signResourceFile(session, fileUrl), label }); }
-    catch (e) { toast({ title: 'Could not open the preview', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
-    finally { setPreviewBusy(null); }
-  };
-
-  /** Save an attachment under its own name, not the storage key. */
-  const downloadFile = async (fileUrl: string, label: string) => {
-    setDownloadBusy(fileUrl);
+    setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, is_favourite: next } : x)));
     try {
-      const url = await signResourceFile(session, fileUrl);
-      await downloadTitled(url, label.replace(/\.[a-z0-9]{1,8}$/i, ''), 'pdf');
-    } catch (e) {
-      toast({ title: 'Could not download the file', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { setDownloadBusy(null); }
+      await setResourceFavourite(session, item.id, next);
+      toast({ title: next ? 'Pinned to the top' : 'Unpinned' });
+    } catch (e) { fail('Could not update', e); reload(); }
   };
 
-  // ── Sub-editors for each source kind ──────────────────────────────────────
-  const setTexts = (texts: string[]) => setForm((p) => ({ ...p, texts }));
-  const setLinks = (links: LinkEntry[]) => setForm((p) => ({ ...p, links }));
-  const setPhones = (phones: ContactEntry[]) => setForm((p) => ({ ...p, phones }));
-  const setEmails = (emails: ContactEntry[]) => setForm((p) => ({ ...p, emails }));
-
-  const summaryIcons = (r: ResourceRow) => {
-    const t = r.sources.filter((s) => s.kind === 'text').length;
-    const l = r.sources.filter((s) => s.kind === 'link').length;
-    const f = r.sources.filter((s) => s.kind === 'file').length;
-    const ph = r.sources.filter((s) => s.kind === 'phone').length;
-    const em = r.sources.filter((s) => s.kind === 'email').length;
-    return (
-      <span className="text-xs text-muted-foreground inline-flex items-center gap-2">
-        {t > 0 && <span className="inline-flex items-center gap-0.5"><StickyNote className="h-3.5 w-3.5" />{t}</span>}
-        {l > 0 && <span className="inline-flex items-center gap-0.5"><Link2 className="h-3.5 w-3.5" />{l}</span>}
-        {f > 0 && <span className="inline-flex items-center gap-0.5"><FileText className="h-3.5 w-3.5" />{f}</span>}
-        {ph > 0 && <span className="inline-flex items-center gap-0.5"><Phone className="h-3.5 w-3.5" />{ph}</span>}
-        {em > 0 && <span className="inline-flex items-center gap-0.5"><Mail className="h-3.5 w-3.5" />{em}</span>}
-      </span>
-    );
+  const confirmRemove = async () => {
+    if (!toRemove) return;
+    setRemoving(true);
+    let ok = 0;
+    const errors: string[] = [];
+    for (const it of toRemove) {
+      try { await deleteResource(session, it.id); ok += 1; } catch (e) { errors.push(`${it.title}: ${friendlyError(e)}`); }
+    }
+    setRemoving(false);
+    setToRemove(null);
+    if (openId && toRemove.some((t) => t.id === openId)) setOpenId(null);
+    setSelected(new Set());
+    await reload();
+    if (errors.length) fail(`${errors.length} could not be removed`, new Error(errors[0]));
+    else toast({ title: ok === 1 ? 'Removed' : `${ok} items removed` });
   };
 
-  const ItemCard = ({ r }: { r: ResourceRow }) => (
-    <Card><CardContent className="py-4">
-      <div className="flex items-start justify-between gap-4 font-body">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-foreground flex-wrap">
-            <span className="truncate font-medium">{r.title}</span>
-            {r.division !== 'none' && <span className="text-xs text-muted-foreground">· {divisionLabels[r.division]}</span>}
-            {summaryIcons(r)}
-          </div>
-          {r.description && <p className="text-sm text-muted-foreground mt-1">{r.description}</p>}
+  // ---- Dropping files anywhere on the library ------------------------
+  const [dropping, setDropping] = useState(false);
+  const dragDepth = useRef(0);
+  const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
+  const dropProps = manage ? {
+    onDragEnter: (e: DragEvent) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth.current += 1; setDropping(true); },
+    onDragOver: (e: DragEvent) => { if (hasFiles(e)) e.preventDefault(); },
+    onDragLeave: () => { dragDepth.current = Math.max(0, dragDepth.current - 1); if (dragDepth.current === 0) setDropping(false); },
+    onDrop: (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current = 0;
+      setDropping(false);
+      const files = Array.from(e.dataTransfer.files ?? []);
+      if (files.length) setUpload({ open: true, files });
+    },
+  } : {};
+  const pickRef = useRef<HTMLInputElement>(null);
 
-          {/* Text sources */}
-          {r.sources.filter((s) => s.kind === 'text').map((s, i) => (
-            <p key={`t${i}`} className="text-sm text-foreground mt-2 whitespace-pre-wrap border-l-2 border-separator pl-3">{s.value}</p>
-          ))}
+  // ---- Drawing ----------------------------------------------------------
+  const actions = manage ? (
+    <>
+      <Button variant="solid" className="font-body" onClick={() => pickRef.current?.click()}><Upload className="h-4 w-4" />Upload files</Button>
+      <Button variant="outline" className="font-body" onClick={() => setEditor({ open: true, item: null })}><Plus className="h-4 w-4" />New item</Button>
+    </>
+  ) : undefined;
 
-          {/* LINKS SAY WHERE THEY GO. Every link used to render the same
-              word, so a list of six was six identical labels and the only
-              way to find out what any of them was, was to open it. The
-              label is read out of the URL - the publication from the host,
-              the subject from the path - and the address is printed under
-              it so it can be checked before it is opened. Nothing about the
-              anchor changes: same href, same target, same new tab. See
-              lib/link-label.ts. */}
-          {r.sources.filter((s) => s.kind === 'link').length > 0 && (
-            <ul className="mt-2 space-y-1.5">
-              {r.sources.filter((s) => s.kind === 'link').map((s, i) => {
-                const preview = previewLink(s.value, s.label);
-                return (
-                  <li key={`l${i}`} className="flex items-start gap-2 text-sm">
-                    <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-[3px]" />
-                    <span className="min-w-0">
-                      <a
-                        href={s.value}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent underline underline-offset-2 inline-flex items-baseline gap-1"
-                        title={s.value}
-                      >
-                        <span className="break-words">{preview.label}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0 self-center" />
-                      </a>
-                      {/* The source, then the address. When the label already
-                          IS the source - a link whose path says nothing - the
-                          line drops to the address alone rather than printing
-                          the same name twice. */}
-                      {!preview.raw && (
-                        <span className="block text-xs text-muted-foreground truncate">
-                          {preview.label === preview.source ? preview.domain : `${preview.source} · ${preview.domain}`}
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+  const itemProps = (r: ResourceRow) => ({
+    item: r,
+    thumbs,
+    selected: selected.has(r.id),
+    onSelect: (v: boolean) => toggle(r.id, v),
+    onOpen: () => setOpenId(r.id),
+    busy: busy === r.id || filesOf(r).some((f) => f.value === busy),
+    handlers: quick,
+    showDivision: showDivisions.length > 1,
+  });
 
-          {/* Attachments: every file carries its own quick look and download. */}
-          {r.sources.filter((s) => s.kind === 'file').length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {r.sources.filter((s) => s.kind === 'file').map((s, i) => (
-                <li key={`f${i}`} className="flex items-center gap-2 flex-wrap text-sm">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  {/* THE NAME TAKES THE WIDTH THE ROW ACTUALLY HAS.
-                      It was capped at `max-w-[16rem]`, so "Statuto Minerva
-                      Investment Management Society.pdf" was cut to
-                      "Statuto Minerva Investment Managem…" on a card 700px
-                      wide with 400 of them empty. A fixed cap cannot know
-                      how much room a row has; `flex-1` with `min-w-0` is
-                      exactly the measurement it was standing in for, so
-                      the name now runs to the full width available and is
-                      shortened only when it genuinely will not fit. The
-                      `title` puts the whole name one hover away for the
-                      handful of cases where it still has to be. */}
-                  <span
-                    className="min-w-0 flex-1 truncate text-foreground"
-                    title={s.label || `File ${i + 1}`}
-                  >
-                    {s.label || `File ${i + 1}`}
-                  </span>
-                  <button type="button" onClick={() => previewFile(s.value, s.label || `File ${i + 1}`)}
-                    className="shrink-0 text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
-                    disabled={previewBusy === s.value}>
-                    {previewBusy === s.value ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}Preview
-                  </button>
-                  <button type="button" onClick={() => downloadFile(s.value, s.label || `File ${i + 1}`)}
-                    className="shrink-0 text-accent underline inline-flex items-center gap-1 disabled:opacity-60"
-                    disabled={downloadBusy === s.value}>
-                    {downloadBusy === s.value ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}Download
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+  const renderGroup = (list: ResourceRow[]) => (choices.view === 'grid' ? (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      {list.map((r) => <GridCard key={r.id} {...itemProps(r)} selecting={selected.size > 0} />)}
+    </div>
+  ) : (
+    <ul className="border-t border-separator">
+      {list.map((r) => <ListRow key={r.id} {...itemProps(r)} />)}
+    </ul>
+  ));
 
-          {/* CONTACTS ARE LIVE, not printed. A telephone number on a phone
-              and an address anywhere are both one tap from doing what they
-              are for, so they carry `tel:` and `mailto:` rather than sitting
-              as text somebody has to copy. The optional note ("Office",
-              "Head of Operations") is what makes three numbers on one item
-              tell you which is which. */}
-          {(r.sources.some((s) => s.kind === 'phone') || r.sources.some((s) => s.kind === 'email')) && (
-            <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
-              {r.sources.filter((s) => s.kind === 'phone').map((s, i) => (
-                <li key={`p${i}`} className="flex items-center gap-1.5 text-sm min-w-0">
-                  <Phone aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <a href={`tel:${s.value.replace(/[^\d+]/g, '')}`} className="text-accent underline underline-offset-2 truncate">{s.value}</a>
-                  {s.label && <span className="text-xs text-muted-foreground truncate">· {s.label}</span>}
-                </li>
-              ))}
-              {r.sources.filter((s) => s.kind === 'email').map((s, i) => (
-                <li key={`e${i}`} className="flex items-center gap-1.5 text-sm min-w-0">
-                  <Mail aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <a href={`mailto:${s.value}`} className="text-accent underline underline-offset-2 truncate">{s.value}</a>
-                  {s.label && <span className="text-xs text-muted-foreground truncate">· {s.label}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
+  const groupHeading = (text: string) => (
+    <h2 className="mb-2 font-body text-xs uppercase tracking-wider text-muted-foreground">{text}</h2>
+  );
 
-          <div className="text-xs text-muted-foreground mt-2">
-            {r.author_name || 'Unknown'}{r.author_role ? `, ${r.author_role}` : ''} · {new Date(r.created_at).toLocaleDateString()}
+  const libraryName = title;
+
+  return (
+    <div className="relative" {...dropProps}>
+      {embedded ? (
+        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <p className="max-w-2xl font-body text-body text-muted-foreground">{description}</p>
+          {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
+        </div>
+      ) : (
+        <WorkspacePageHeader title={title} description={description} actions={actions} actionColumns="row" />
+      )}
+      <input ref={pickRef} type="file" multiple accept={ACCEPT_ATTR} className="hidden"
+        onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ''; if (files.length) setUpload({ open: true, files }); }} />
+
+      {/* ---- Toolbar ---------------------------------------------------- */}
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <SearchBox value={choices.query} onChange={(query) => update({ query })}
+            placeholder={flavour === 'contacts' ? 'Search names, emails, notes' : 'Search titles, files, texts, authors'} />
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1 sm:flex-none"><SortSelect value={choices.sort} onChange={(sort) => update({ sort })} /></div>
+            <ViewSwitch value={choices.view} onChange={(view) => update({ view })} />
           </div>
         </div>
-        {canManage && (
-          <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="icon" title={r.is_favourite ? 'Unpin favourite' : 'Pin as favourite'} onClick={() => toggleFavourite(r)}>
-              <Star className={`h-4 w-4 ${r.is_favourite ? 'fill-accent text-accent' : ''}`} />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
-            <Button variant="destructive" size="icon" onClick={() => setDeleteTarget(r)}><Trash2 className="h-4 w-4" /></Button>
+        {showDivisions.length > 1 && (
+          <div role="group" aria-label="Division" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            <Chip active={divFilter === 'all'} onClick={() => setDivFilter('all')}>All divisions</Chip>
+            {showDivisions.map((d) => <Chip key={d} active={divFilter === d} onClick={() => setDivFilter(d)}>{divisionLabels[d]}</Chip>)}
+          </div>
+        )}
+        {offeredFilters.length > 1 && (
+          <div role="group" aria-label="Type" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            <Chip active={choices.filter === 'all'} onClick={() => update({ filter: 'all' })} count={queried.length}>All</Chip>
+            {offeredFilters.map((f) => (
+              <Chip key={f.key} active={choices.filter === f.key} onClick={() => update({ filter: choices.filter === f.key ? 'all' : f.key })} count={counts[f.key] ?? 0}>{f.label}</Chip>
+            ))}
+          </div>
+        )}
+        {!loading && items.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-[13px] text-muted-foreground" aria-live="polite">
+            <span>
+              {filtersActive ? `${results.length} of ${inScope.length} ${inScope.length === 1 ? 'item' : 'items'}` : `${inScope.length} ${inScope.length === 1 ? 'item' : 'items'}`}
+              {favouriteCount > 0 && ` · ${favouriteCount} of ${MAX_FAVOURITES} pinned`}
+            </span>
+            {filtersActive && (
+              <button type="button" data-ro onClick={() => update({ query: '', filter: 'all' })} className="inline-flex items-center gap-1 text-accent underline underline-offset-2">
+                <X className="h-3.5 w-3.5" />Clear search and filters
+              </button>
+            )}
+            {manage && <span className="hidden lg:inline">Tip: drop files anywhere on this page to upload them.</span>}
           </div>
         )}
       </div>
-    </CardContent></Card>
-  );
 
-  return (
-    <div>
-      <WorkspacePageHeader title={title} description={description} actions={
-        canManage ? <Button className="font-body" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Add item</Button> : undefined
-      } />
-
-      {showDivisions.length > 1 && (
-        <div className="mb-6">
-          {/* Standard filter format: no label above the field. */}
-          <Select value={divFilter} onValueChange={(v) => setDivFilter(v as OrgDivision | 'all')}>
-            <SelectTrigger className="min-w-[200px] font-body"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All divisions</SelectItem>
-              {showDivisions.map((d) => <SelectItem key={d} value={d}>{divisionLabels[d]}</SelectItem>)}
-            </SelectContent>
-          </Select>
+      {/* ---- Selection bar ------------------------------------------------ */}
+      {selected.size > 0 && (
+        <div className="sticky top-0 z-20 mb-4 flex flex-wrap items-center gap-2 border border-accent bg-background px-3 py-2 font-body shadow-sm" role="region" aria-label="Selected items">
+          <span className="mr-1 text-sm text-foreground">{selected.size} selected</span>
+          {selected.size < results.length && (
+            <Button data-ro variant="ghost" size="sm" onClick={() => setSelected(new Set(results.map((r) => r.id)))}>Select all {results.length} shown</Button>
+          )}
+          <Button variant="outline" size="sm" disabled={busy === 'selection'} onClick={() => downloadZip(selectedItems, `${libraryName} ${new Date().toISOString().slice(0, 10)}`, 'selection')}>
+            {busy === 'selection' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {busy === 'selection' && zipProgress ? `Preparing ${zipProgress.done} of ${zipProgress.total}` : 'Download as ZIP'}
+          </Button>
+          {manage && (
+            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setToRemove(selectedItems)}>
+              <Trash2 className="h-4 w-4" />Remove
+            </Button>
+          )}
+          <Button data-ro variant="ghost" size="sm" className="ml-auto" onClick={() => setSelected(new Set())}><X className="h-4 w-4" />Clear selection</Button>
         </div>
       )}
 
-      {loading ? <WorkspaceLoader /> : visible.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><p className="font-body text-muted-foreground">No items yet.</p></CardContent></Card>
+      {/* ---- Results ------------------------------------------------------ */}
+      {loading ? <WorkspaceLoader /> : items.length === 0 || inScope.length === 0 ? (
+        <div className="border border-dashed border-separator px-5 py-12 text-center font-body">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center bg-accent/5 text-accent"><FolderOpen className="h-6 w-6" /></div>
+          <p className="font-serif text-xl text-foreground">{items.length === 0 ? `Nothing in ${libraryName} yet` : 'Nothing for this division yet'}</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            {manage
+              ? 'Drop files here or choose them: each becomes its own item, titled from its name. Use New item for a caption, a link or a contact.'
+              : 'Material added by the team appears here, ready to preview and download.'}
+          </p>
+          {actions && <div className="mt-5 flex flex-wrap justify-center gap-2">{actions}</div>}
+        </div>
+      ) : results.length === 0 ? (
+        <div className="border border-dashed border-separator px-5 py-10 text-center font-body">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center bg-accent/5 text-accent"><SearchX className="h-6 w-6" /></div>
+          <p className="font-serif text-xl text-foreground">Nothing matches</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            {choices.query.trim() ? `No item mentions "${choices.query.trim()}"${choices.filter !== 'all' ? ' with this type' : ''}.` : 'No item of this type.'} Try fewer words, or another type.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <Button data-ro variant="outline" onClick={() => update({ query: '', filter: 'all' })}>Clear search and filters</Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-6">
-          {favourites.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 text-accent mb-2"><Star className="h-4 w-4 fill-accent" /><span className="font-body text-xs uppercase tracking-wider">Favourites ({favouriteCount}/{MAX_FAVOURITES})</span></div>
-              <div className="space-y-3">{favourites.map((r) => <ItemCard key={r.id} r={r} />)}</div>
-            </div>
-          )}
-          <div className="space-y-3">{rest.map((r) => <ItemCard key={r.id} r={r} />)}</div>
+          {pinned.length > 0 && <section>{groupHeading(`Pinned (${pinned.length})`)}{renderGroup(pinned)}</section>}
+          {others.length > 0 && <section>{pinned.length > 0 && groupHeading(filtersActive ? 'Other results' : 'Everything else')}{renderGroup(others)}</section>}
         </div>
       )}
 
-      {/* =================================================================
-          THE ITEM EDITOR.
-          -----------------------------------------------------------------
-          It was a 512px column on a 1440px screen, and everything in it
-          suffered for that: a file called "Relazione su attivita ed
-          iniziative Minerva Investment Management Society.pdf" had nowhere
-          to go, the source rows stacked into a very tall scroll, and the
-          dialog grew a horizontal scrollbar of its own.
-
-          It is now a two-column composition on a laptop. The width is not
-          spent on making the same column wider - the left side carries what
-          the item IS (division, title, description) and the right side
-          carries what it CONTAINS, so both are visible at once and the
-          dialog is shorter as well as wider. `min-w-0` runs the whole way
-          down both columns, which is what actually stops a long filename
-          pushing the dialog sideways.
-
-          It is deliberately not full-screen: 64rem on a wide display, and
-          `min(96vw, ...)` so it never exceeds the viewport. Below `lg` it
-          collapses to the single column it always was.
-          ================================================================= */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[min(96vw,64rem)] max-w-[min(96vw,64rem)] max-h-[92vh] flex flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-separator">
-            <DialogTitle className="font-serif">{form.id ? 'Edit item' : 'Add item'}</DialogTitle>
-          </DialogHeader>
-
-          {/* Only this middle band scrolls, so Save and Cancel stay put and
-              the header stays legible however long the item becomes. */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 font-body">
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,10fr)] gap-6">
-
-              {/* ---- What the item is ---------------------------------- */}
-              <div className="min-w-0 space-y-4">
-                {createDivisions.length > 1 && (
-                  <div className="space-y-1">
-                    <Label>Division</Label>
-                    <Select value={form.division} onValueChange={(v) => setForm({ ...form, division: v as OrgDivision })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{createDivisions.map((d) => <SelectItem key={d} value={d}>{d === 'none' ? 'General' : divisionLabels[d]}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-1"><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Equity DCF model template" /></div>
-                <div className="space-y-1">
-                  <Label>Description *</Label>
-                  <Textarea rows={5} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What is it and when to use it?" />
-                </div>
-
-                {/* Texts sit with the description: they are prose too. */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="flex items-center gap-1.5"><StickyNote className="h-4 w-4" />Texts ({form.texts.filter((t) => t.trim()).length}/{MAX_TEXTS})</Label>
-                    {form.texts.length < MAX_TEXTS && <Button type="button" variant="ghost" size="sm" onClick={() => setTexts([...form.texts, ''])}><Plus className="h-3.5 w-3.5 mr-1" />Add text</Button>}
-                  </div>
-                  {form.texts.map((t, i) => (
-                    <div key={i} className="flex gap-2 min-w-0">
-                      <Textarea rows={2} className="min-w-0" value={t} onChange={(e) => setTexts(form.texts.map((x, j) => (j === i ? e.target.value : x)))} placeholder="Write the note or content here." />
-                      <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => setTexts(form.texts.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ---- What the item contains ---------------------------- */}
-              <div className="min-w-0 rounded-md border border-separator p-4 space-y-5">
-                <p className="text-xs text-muted-foreground">
-                  Any mix of links, files, telephone numbers and email addresses, plus the texts on the left.
-                  At least one in total; nothing here is required on its own.
-                </p>
-
-                {/* Links.
-                    THE GENERATED NAME IS NOT A SECOND FIELD. It used to be a
-                    full-width input directly under the URL, with its own
-                    explanatory line beneath - three boxed rows for one link,
-                    which read as two links half-filled in. It is now one
-                    quiet line stating what the item will read, with a Rename
-                    control that reveals the input only when somebody actually
-                    wants to override it. The naming itself is unchanged. */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="flex items-center gap-1.5"><Link2 className="h-4 w-4" />Links / repos ({form.links.filter((l) => l.value.trim()).length}/{MAX_LINKS})</Label>
-                    {form.links.length < MAX_LINKS && <Button type="button" variant="ghost" size="sm" onClick={() => setLinks([...form.links, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add link</Button>}
-                  </div>
-                  {form.links.map((l, i) => {
-                    const preview = l.value.trim() ? previewLink(l.value, l.label) : null;
-                    const naming = namingLink === i || l.label.trim().length > 0;
-                    return (
-                      <div key={i} className="min-w-0 space-y-1.5">
-                        <div className="flex gap-2 min-w-0">
-                          <Input
-                            className="min-w-0"
-                            value={l.value}
-                            onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))}
-                            placeholder="https://github.com/… or https://drive.google.com/…"
-                            aria-label="Link address"
-                          />
-                          <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => { setLinks(form.links.filter((_, j) => j !== i)); setNamingLink(null); }}><X className="h-4 w-4" /></Button>
-                        </div>
-
-                        {preview && (
-                          <div className="pr-11 min-w-0">
-                            {naming ? (
-                              <Input
-                                autoFocus={namingLink === i}
-                                value={l.label}
-                                onChange={(e) => setLinks(form.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-                                onBlur={() => setNamingLink(null)}
-                                placeholder={preview.label}
-                                className="h-8 text-sm"
-                                aria-label="What this link should be called"
-                              />
-                            ) : (
-                              <p className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-                                <span className="truncate">
-                                  Will show as <span className="text-foreground">{preview.label}</span>
-                                  {!preview.raw && preview.label !== preview.source && ` · ${preview.source}`}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => setNamingLink(i)}
-                                  className="shrink-0 text-accent underline underline-offset-2 hover:text-accent/80"
-                                >
-                                  Rename
-                                </button>
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Files */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Files ({form.files.length}/{MAX_FILES})</Label>
-                    <div>
-                      <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
-                      {form.files.length < MAX_FILES && (
-                        <Button type="button" variant="ghost" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-                          {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Uploading</> : <><Upload className="h-3.5 w-3.5 mr-1" />Add file</>}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  {form.files.map((f, i) => (
-                    // `min-w-0` on the row AND `break-words` on the name: a
-                    // long filename now wraps inside the dialog instead of
-                    // widening it. This is what produced the sideways bar.
-                    <div key={i} className="flex items-start gap-2 text-sm min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <span className="min-w-0 flex-1 break-words leading-snug" title={f.label}>{f.label}</span>
-                      <Button type="button" variant="ghost" size="icon" className="shrink-0 -mt-1" onClick={() => setForm((p) => ({ ...p, files: p.files.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Telephone numbers */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="flex items-center gap-1.5"><Phone className="h-4 w-4" />Telephone ({form.phones.filter((c) => c.value.trim()).length}/{MAX_PHONES})</Label>
-                    {form.phones.length < MAX_PHONES && <Button type="button" variant="ghost" size="sm" onClick={() => setPhones([...form.phones, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add number</Button>}
-                  </div>
-                  {form.phones.map((c, i) => (
-                    <ContactRow
-                      key={i}
-                      entry={c}
-                      valuePlaceholder="+39 02 5836 …"
-                      labelPlaceholder="Whose number (optional)"
-                      inputMode="tel"
-                      onChange={(next) => setPhones(form.phones.map((x, j) => (j === i ? next : x)))}
-                      onRemove={() => setPhones(form.phones.filter((_, j) => j !== i))}
-                    />
-                  ))}
-                </div>
-
-                {/* Email addresses */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="flex items-center gap-1.5"><Mail className="h-4 w-4" />Email ({form.emails.filter((c) => c.value.trim()).length}/{MAX_EMAILS})</Label>
-                    {form.emails.length < MAX_EMAILS && <Button type="button" variant="ghost" size="sm" onClick={() => setEmails([...form.emails, { value: '', label: '' }])}><Plus className="h-3.5 w-3.5 mr-1" />Add address</Button>}
-                  </div>
-                  {form.emails.map((c, i) => (
-                    <ContactRow
-                      key={i}
-                      entry={c}
-                      valuePlaceholder="name@unibocconi.it"
-                      labelPlaceholder="Whose address (optional)"
-                      inputMode="email"
-                      onChange={(next) => setEmails(form.emails.map((x, j) => (j === i ? next : x)))}
-                      onRemove={() => setEmails(form.emails.filter((_, j) => j !== i))}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+      {/* ---- Dropping ------------------------------------------------------ */}
+      {dropping && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center border-2 border-dashed border-accent bg-background/85">
+          <div className="text-center font-body">
+            <Upload className="mx-auto mb-2 h-8 w-8 text-accent" />
+            <p className="font-serif text-xl text-accent">Drop to upload to {libraryName}</p>
+            <p className="text-sm text-muted-foreground">You can check the titles before anything is sent.</p>
           </div>
+        </div>
+      )}
 
-          {/* The action bar never scrolls away. */}
-          <div className="shrink-0 flex gap-3 px-6 py-4 border-t border-separator bg-background">
-            <Button className="flex-1 sm:flex-none sm:min-w-[10rem]" onClick={save} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving</> : 'Save'}</Button>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ItemSheet
+        item={openItem}
+        thumbs={thumbs}
+        flavour={flavour}
+        canManage={manage}
+        busy={busy}
+        position={openIndex >= 0 ? { index: openIndex, total: results.length } : null}
+        onStep={(d) => { if (openIndex >= 0 && results.length) setOpenId(results[(openIndex + d + results.length) % results.length].id); }}
+        onClose={() => setOpenId(null)}
+        handlers={{
+          onPreview: showPreview,
+          onDownloadFile: downloadFile,
+          onDownloadAll: (it) => downloadZip([it], it.title, it.id),
+          onCopy: copy,
+          onEdit: (it) => setEditor({ open: true, item: it }),
+          onPin: togglePin,
+          onDelete: (it) => setToRemove([it]),
+        }}
+      />
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+      <FilePreview
+        state={preview}
+        onClose={() => setPreview(null)}
+        onIndex={stepPreview}
+        onDownload={(f) => downloadFile({ kind: 'file', value: f.value, label: f.label })}
+      />
+
+      {manage && (
+        <>
+          <UploadDialog
+            open={upload.open}
+            onOpenChange={(open) => setUpload((u) => ({ ...u, open }))}
+            files={upload.files}
+            libraryName={libraryName}
+            category={category}
+            divisions={createDivisions}
+            defaultDivision={createDefault}
+            existingNames={existingNames}
+            session={session}
+            onSaved={reloadSoon}
+          />
+          <ItemEditor
+            open={editor.open}
+            item={editor.item}
+            onOpenChange={(open) => setEditor((s) => ({ ...s, open }))}
+            libraryName={libraryName}
+            category={category}
+            flavour={flavour}
+            divisions={createDivisions}
+            defaultDivision={createDefault}
+            session={session}
+            onSaved={(message) => { toast({ title: message }); reload(); }}
+            onError={fail}
+          />
+        </>
+      )}
+
+      <AlertDialog open={!!toRemove} onOpenChange={(o) => { if (!o && !removing) setToRemove(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove "{deleteTarget?.title}"?</AlertDialogTitle>
-            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>{toRemove && toRemove.length === 1 ? `Remove "${toRemove[0].title}"?` : `Remove ${toRemove?.length ?? 0} items?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toRemove && toRemove.length > 1 ? `${toRemove.slice(0, 4).map((t) => t.title).join(', ')}${toRemove.length > 4 ? ' and others' : ''}. ` : ''}
+              Removing takes them out of {libraryName} for everybody. This cannot be undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Remove</AlertDialogAction>
+            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmRemove(); }} disabled={removing}>
+              {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}Remove
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          A QUICK LOOK, AT THE SIZE OF THE SCREEN IT IS ON.
-
-          IT WAS TOO SMALL. `max-w-5xl` capped the panel at 64rem, so a
-          1512px laptop gave it two thirds of the width and a wider
-          monitor barely half, with the rest of the screen dimmed and
-          empty. A preview exists to be looked at, so it now takes the
-          window: 96 by 94 per cent of it, capped at 1600px so it does
-          not stretch into an unreadable band on an ultrawide.
-
-          AND THE PICTURE WAS TOO BIG. An `<iframe>` pointed at an image
-          is not a viewer: the browser builds a document around the file
-          and lays it out at its natural size, so a 2000px graphic in a
-          900px frame arrived cropped at the top left with two
-          scrollbars, which is the "too zoomed in" that was reported. It
-          also cannot be scrolled sensibly, because the frame scrolls
-          rather than the page.
-
-          A picture is therefore drawn as a picture. `object-contain`
-          inside the frame fits the whole of it, at whatever proportions
-          it has, and never enlarges one that is already smaller than the
-          box. PDFs and everything else keep the iframe, where the
-          browser's own viewer already fits the page to the width.
-          ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-[1600px] w-[96vw] h-[94vh] flex flex-col gap-3 p-5">
-          <DialogHeader className="shrink-0">
-            <DialogTitle className="font-serif truncate pr-8">{preview?.label}</DialogTitle>
-          </DialogHeader>
-          {preview && (
-            <>
-              <div className="flex-1 min-h-0 border border-separator bg-muted/20">
-                {isImageAttachment(preview.label, preview.url) ? (
-                  <div className="h-full w-full flex items-center justify-center p-3">
-                    <img
-                      src={preview.url}
-                      alt={preview.label}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <iframe title={`preview-${preview.label}`} src={preview.url} className="w-full h-full block" />
-                )}
-              </div>
-              <div className="shrink-0 flex justify-end gap-2 font-body">
-                <Button variant="outline" onClick={() => window.open(preview.url, '_blank', 'noopener')}>
-                  <ExternalLink className="h-4 w-4 mr-2" />Open in a new tab
-                </Button>
-                <Button onClick={() => downloadTitled(preview.url, preview.label.replace(/\.[a-z0-9]{1,8}$/i, ''), 'pdf')}>
-                  <Download className="h-4 w-4 mr-2" />Download
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
