@@ -180,19 +180,21 @@ export async function listEvents(): Promise<EventRow[]> {
  * every registration, and used to see every event with any registration
  * marked as theirs.
  */
-export async function myEventRegistrationIds(): Promise<Set<string>> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return new Set();
-  const { data } = await sb.from('event_registrations').select('event_id').eq('user_id', user.id);
+export async function myEventRegistrationIds(userId?: string | null): Promise<Set<string>> {
+  // The caller usually knows who is signed in already; asking the auth
+  // server again costs a round trip before the real query can start.
+  const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+  if (!uid) return new Set();
+  const { data } = await sb.from('event_registrations').select('event_id').eq('user_id', uid);
   return new Set(((data || []) as { event_id: string }[]).map((r) => r.event_id));
 }
 
 /** The events you are waiting for a place at. Empty before the waiting list exists. */
-export async function myEventWaitlistIds(): Promise<Set<string>> {
+export async function myEventWaitlistIds(userId?: string | null): Promise<Set<string>> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new Set();
-    const { data, error } = await sb.from('event_waitlist').select('event_id').eq('user_id', user.id);
+    const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!uid) return new Set();
+    const { data, error } = await sb.from('event_waitlist').select('event_id').eq('user_id', uid);
     if (error) return new Set();
     return new Set(((data || []) as { event_id: string }[]).map((r) => r.event_id));
   } catch {

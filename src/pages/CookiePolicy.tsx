@@ -46,7 +46,7 @@ const CookiePolicy = () => (
           <li>
             <strong>Strictly necessary items</strong> keep the website secure and working and remember choices you
             make: the record of your cookie choices, the sign-in session of Workspace users, and a few items that
-            remember what you have already seen or set (for example the introduction animation or the zoom of a
+            remember what you have already seen or set (for example the introduction animation or the view of a
             calendar). They are set by the website itself, are never read by third parties, and are always active.
           </li>
           <li>
@@ -141,7 +141,7 @@ const CookiePolicy = () => (
           <li>
             <strong>mims.zoom.workspace</strong>, <strong>mims.zoom.editorial</strong>,{' '}
             <strong>minerva-dashboard-greeting:...</strong>, <strong>ws-contact-prompted</strong> and{' '}
-            <strong>mims:ws:nav-first-seen</strong> (local or session storage). Remember the zoom you chose for a
+            <strong>mims:ws:nav-first-seen</strong> (local or session storage). Remember the view you chose for a
             calendar, which greeting you last saw on the dashboard, and which one-time prompts you have already seen.
             Duration: until you clear your browser data, or the browser session.
           </li>

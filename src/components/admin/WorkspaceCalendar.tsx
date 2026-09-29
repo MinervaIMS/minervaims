@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarClock, CalendarDays, CircleCheck, Hourglass, List, Loader2, Plus, Ticket, Trash2, CalendarX2 } from 'lucide-react';
+import { CalendarClock, CalendarDays, CalendarRange, CircleCheck, Hourglass, List, Loader2, Plus, Ticket, Trash2, CalendarX2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +27,7 @@ import {
   type CalendarEntry, type CalendarEntryType, type ExamSession,
 } from '@/lib/calendar-api';
 import { italianHolidays, italianHolidayOn } from '@/lib/italian-holidays';
-import { longDay, monthTitle, relativeDay, sameMonth, shortDay, todayYmd } from '@/lib/calendar-dates';
+import { addMonths, longDay, monthTitle, quarterTitle, relativeDay, sameMonth, shortDay, todayYmd } from '@/lib/calendar-dates';
 import { CalendarToolbar, EmptyState, FilterChip, MonthGrid } from '@/components/admin/calendar/CalendarKit';
 import { useMedia, useStoredChoice } from '@/components/admin/calendar/calendar-hooks';
 import { AgendaRow, ItemChip, RegisterButton } from '@/components/admin/calendar/CalendarItems';
@@ -66,11 +66,76 @@ const emptyEntry = (date = ''): EntryForm => ({ id: null, title: '', description
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as { from: (t: string) => any };
 
-type View = 'month' | 'agenda';
-const VIEWS = ['month', 'agenda'] as const;
+type View = 'month' | 'quarter' | 'agenda';
+const VIEWS = ['month', 'quarter', 'agenda'] as const;
 
 /** A day shaded as an exam session break: stripes, not only a colour. */
 const BREAK_BG = '[background-image:repeating-linear-gradient(135deg,rgba(0,0,0,0.045)_0,rgba(0,0,0,0.045)_5px,transparent_5px,transparent_11px)]';
+
+interface CalendarData { items: CalItem[]; events: EventRow[]; registered: Set<string>; waiting: Set<string>; exams: ExamSession[] }
+
+// The last load of this session, for an instant return visit (see below).
+let cache: { key: string; data: CalendarData } | null = null;
+
+// =====================================================================
+// EVERYTHING THE CALENDAR NEEDS, ASKED FOR AT ONCE.
+// ---------------------------------------------------------------------
+// The load used to wait for each answer before asking the next question:
+// events, then Association on Display, then alumni calls, then the
+// application window, then the fee, then the member, then their fee, one
+// round trip after another. They are independent, so they now go out
+// together and the page waits only for the slowest. Only the "have you
+// paid?" check depends on another answer, and it runs only for a member
+// who could still owe the fee after its first deadline.
+// =====================================================================
+async function fetchCalendarData(userId: string | null, feeExempt: boolean): Promise<CalendarData> {
+  const [events, registered, waiting, entries, exams, aodRes, callsRes, settingsRes, feeRes, meRes] = await Promise.all([
+    listEvents(),
+    myEventRegistrationIds(userId),
+    myEventWaitlistIds(userId),
+    listCalendarEntries().catch(() => [] as CalendarEntry[]),
+    listExamSessions().catch(() => [] as ExamSession[]),
+    sb.from('aod_days').select('id, event_date'),
+    sb.from('alumni_calls').select('planned_date, division'),
+    sb.from('application_settings').select('start_date, end_date, semester_label').limit(1).maybeSingle(),
+    // Membership fee: association-wide, never an advisor's.
+    feeExempt ? Promise.resolve({ data: null }) : sb.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    feeExempt || !userId ? Promise.resolve({ data: null }) : sb.from('members').select('id').eq('user_id', userId).maybeSingle(),
+  ]);
+  const out: CalItem[] = [];
+  // An Association on Display day also has an event (for attendance); the
+  // day is drawn from `aod_days`, so its event is skipped here.
+  for (const e of events) {
+    if (e.aod_day_id) continue;
+    const d = eventDay(e);
+    if (d) out.push({ key: `e-${e.id}`, date: d, kind: 'event', title: e.title, sort: e.start_at || `${d}T00:00`, event: e });
+  }
+  for (const c of entries) out.push({ key: `c-${c.id}`, date: c.entry_date.slice(0, 10), kind: 'custom', title: c.title, sort: `${c.entry_date.slice(0, 10)}T00:01`, entry: c });
+  for (const a of ((aodRes as { data: unknown }).data || []) as { id?: string; event_date: string }[]) {
+    out.push({ key: `a-${a.id ?? a.event_date}`, date: a.event_date, kind: 'aod', title: 'Association on Display', sort: `${a.event_date}T00:02` });
+  }
+  // Alumni calls are labelled by the ORGANISING DIVISION: a call can invite
+  // several alumni, and a single alumnus name may be empty.
+  (((callsRes as { data: unknown }).data || []) as { planned_date: string | null; division: OrgDivision | null }[]).forEach((c, i) => {
+    if (c.planned_date) out.push({ key: `l-${i}`, date: c.planned_date.slice(0, 10), kind: 'alumni', title: c.division ? `Alumni call: ${divisionLabels[c.division]}` : 'Alumni call', sort: `${c.planned_date}T00:03` });
+  });
+  const settings = (settingsRes as { data: { start_date?: string; end_date?: string; semester_label?: string } | null }).data;
+  if (settings?.start_date) out.push({ key: 'app-open', date: settings.start_date.slice(0, 10), kind: 'application', title: 'Applications open', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.start_date.slice(0, 10)}T00:04` });
+  if (settings?.end_date) out.push({ key: 'app-close', date: settings.end_date.slice(0, 10), kind: 'application', title: 'Applications close', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.end_date.slice(0, 10)}T00:04` });
+  const fee = (feeRes as { data: { id: string; first_deadline?: string; second_deadline?: string; semester_label?: string } | null }).data;
+  if (fee?.first_deadline) {
+    out.push({ key: 'fee-1', date: fee.first_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee deadline', note: fee.semester_label, sort: `${fee.first_deadline.slice(0, 10)}T00:05` });
+    // The final deadline appears once the first has passed, and only to a
+    // member who has not yet paid.
+    const me = (meRes as { data: { id: string } | null }).data;
+    if (fee.second_deadline && todayYmd() > fee.first_deadline.slice(0, 10) && me?.id) {
+      const { data: myFee } = await sb.from('membership_fees').select('paid').eq('period_id', fee.id).eq('member_id', me.id).maybeSingle();
+      if (myFee && !myFee.paid) out.push({ key: 'fee-2', date: fee.second_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee: final deadline', note: fee.semester_label, sort: `${fee.second_deadline.slice(0, 10)}T00:05` });
+    }
+  }
+  out.sort((a, b) => (a.date === b.date ? a.sort.localeCompare(b.sort) : a.date.localeCompare(b.date)));
+  return { items: out, events, registered, waiting, exams };
+}
 
 export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (section: string, sub: string) => void } = {}) {
   const { session, roles } = useAuth();
@@ -121,67 +186,41 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     setPlaces((p) => ({ ...p, ...Object.fromEntries(got) }));
   };
 
+  const hydrated = useRef(false);
+  const apply = (d: CalendarData) => {
+    hydrated.current = true;
+    setItems(d.items);
+    setRegistered(d.registered);
+    setWaiting(d.waiting);
+    setExamSessions(d.exams);
+  };
+
   const load = async () => {
     try {
-      const [events, regIds, entries, exams] = await Promise.all([
-        listEvents(), myEventRegistrationIds(), listCalendarEntries().catch(() => []),
-        listExamSessions().catch(() => [] as ExamSession[]),
-      ]);
-      setRegistered(regIds);
-      myEventWaitlistIds().then(setWaiting);
-      setExamSessions(exams);
-      const out: CalItem[] = [];
-      // An Association on Display day also has an event (for attendance);
-      // the day is drawn from `aod_days`, so its event is skipped here.
-      for (const e of events) {
-        if (e.aod_day_id) continue;
-        const d = eventDay(e);
-        if (d) out.push({ key: `e-${e.id}`, date: d, kind: 'event', title: e.title, sort: e.start_at || `${d}T00:00`, event: e });
-      }
-      for (const c of entries) out.push({ key: `c-${c.id}`, date: c.entry_date.slice(0, 10), kind: 'custom', title: c.title, sort: `${c.entry_date.slice(0, 10)}T00:01`, entry: c });
-      const { data: aod } = await sb.from('aod_days').select('id, event_date');
-      for (const a of (aod || []) as { id?: string; event_date: string }[]) {
-        out.push({ key: `a-${a.id ?? a.event_date}`, date: a.event_date, kind: 'aod', title: 'Association on Display', sort: `${a.event_date}T00:02` });
-      }
-      // Alumni calls are labelled by the ORGANISING DIVISION: a call can
-      // invite several alumni, and a single alumnus name may be empty.
-      const { data: calls } = await sb.from('alumni_calls').select('planned_date, division');
-      (calls || []).forEach((c: { planned_date: string | null; division: OrgDivision | null }, i: number) => {
-        if (c.planned_date) out.push({ key: `l-${i}`, date: c.planned_date.slice(0, 10), kind: 'alumni', title: c.division ? `Alumni call: ${divisionLabels[c.division]}` : 'Alumni call', sort: `${c.planned_date}T00:03` });
-      });
-      const { data: settings } = await sb.from('application_settings').select('start_date, end_date, semester_label').limit(1).maybeSingle();
-      if (settings?.start_date) out.push({ key: 'app-open', date: settings.start_date.slice(0, 10), kind: 'application', title: 'Applications open', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.start_date.slice(0, 10)}T00:04` });
-      if (settings?.end_date) out.push({ key: 'app-close', date: settings.end_date.slice(0, 10), kind: 'application', title: 'Applications close', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.end_date.slice(0, 10)}T00:04` });
-
-      // Membership fee: association-wide, never an advisor's.
-      const { data: fee } = feeExempt
-        ? { data: null }
-        : await sb.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
-      if (fee?.first_deadline) {
-        out.push({ key: 'fee-1', date: fee.first_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee deadline', note: fee.semester_label, sort: `${fee.first_deadline.slice(0, 10)}T00:05` });
-        // The final deadline appears once the first has passed, and only
-        // to a member who has not yet paid.
-        if (fee.second_deadline) {
-          const firstPassed = todayYmd() > fee.first_deadline.slice(0, 10);
-          let unpaid = false;
-          if (firstPassed && session?.user?.id) {
-            const { data: me } = await sb.from('members').select('id').eq('user_id', session.user.id).maybeSingle();
-            if (me?.id) {
-              const { data: myFee } = await sb.from('membership_fees').select('paid').eq('period_id', fee.id).eq('member_id', me.id).maybeSingle();
-              unpaid = !!myFee && !myFee.paid;
-            }
-          }
-          if (unpaid) out.push({ key: 'fee-2', date: fee.second_deadline.slice(0, 10), kind: 'fee', title: 'Membership fee: final deadline', note: fee.semester_label, sort: `${fee.second_deadline.slice(0, 10)}T00:05` });
-        }
-      }
-      out.sort((a, b) => (a.date === b.date ? a.sort.localeCompare(b.sort) : a.date.localeCompare(b.date)));
-      setItems(out);
-      loadPlaces(events).catch(() => undefined);
+      const d = await fetchCalendarData(session?.user?.id ?? null, feeExempt);
+      cache = { key: `${session?.user?.id ?? ''}|${feeExempt}`, data: d };
+      apply(d);
+      loadPlaces(d.events).catch(() => undefined);
     } catch (e) { toast({ title: 'Failed to load calendar', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
   };
+
+  // A registration or cancellation made here is written into the kept copy
+  // too, so a return visit never flashes the state from before it.
+  useEffect(() => {
+    if (hydrated.current && cache && cache.key === `${session?.user?.id ?? ''}|${feeExempt}`) cache = { ...cache, data: { ...cache.data, registered, waiting } };
+  }, [registered, waiting, session, feeExempt]);
+
+  // SHOWN AT ONCE ON A RETURN VISIT. What this session last loaded is drawn
+  // straight away, and replaced by a fresh copy a moment later, so going
+  // back to the Calendar never waits on the network to show something.
+  useEffect(() => {
+    const key = `${session?.user?.id ?? ''}|${feeExempt}`;
+    if (cache && cache.key === key) { apply(cache.data); setLoading(false); loadPlaces(cache.data.events).catch(() => undefined); }
+    load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [session]);
+  }, [session]);
+
 
   // ── Derived ─────────────────────────────────────────────────────────
   const stateOf = (it: CalItem): RegState | undefined =>
@@ -194,7 +233,9 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     return m;
   }, [visible]);
 
-  const monthItems = useMemo(() => items.filter((it) => sameMonth(it.date, cursor)), [items, cursor]);
+  // The months on screen: one, or three from the cursor in the 3-month view.
+  const shownMonths = useMemo(() => (view === 'quarter' ? [cursor, addMonths(cursor, 1), addMonths(cursor, 2)] : [cursor]), [view, cursor]);
+  const monthItems = useMemo(() => items.filter((it) => shownMonths.some((m) => sameMonth(it.date, m))), [items, shownMonths]);
   const countIn = (c: Category) => monthItems.filter((it) => categoryOf(it) === c).length;
 
   const holidayByDate = useMemo(() => {
@@ -378,7 +419,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   };
 
   // ── Month view: the inside of a day ─────────────────────────────────
-  const renderDay = (d: string) => {
+  const renderDay = (d: string, dense = false) => {
     const list = byDate[d] || [];
     const { brk, hol } = dayNotes(d);
     if (!wide) {
@@ -391,7 +432,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         </span>
       );
     }
-    const max = hol || (brk && d === brk.start_date) ? 2 : 3;
+    const max = (hol || (brk && d === brk.start_date) ? 2 : 3) - (dense ? 1 : 0);
     const shown = list.slice(0, max);
     const more = list.length - shown.length;
     return (
@@ -521,10 +562,12 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
           onCursor={(d) => { setCursor(`${d.slice(0, 7)}-01`); setShowEarlier(false); }}
           views={[
             { value: 'month', label: 'Month', icon: <CalendarDays className="h-4 w-4" /> },
+            { value: 'quarter', label: '3 months', icon: <CalendarRange className="h-4 w-4" /> },
             { value: 'agenda', label: 'Agenda', icon: <List className="h-4 w-4" /> },
           ]}
           view={view}
           onView={setView}
+          title={view === 'quarter' ? quarterTitle(cursor) : undefined}
           extra={<HelpDot page="calendar" topic="colors" />}
         />
 
@@ -557,8 +600,34 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
           </span>
         </div>
 
-        {view === 'month' ? (
-          <div className="space-y-4">
+        {view === 'quarter' ? (
+          <div className="space-y-6" data-calendar-scope>
+            {shownMonths.map((m) => (
+              <div key={m}>
+                <h3 className="mb-2 font-serif text-xl text-accent">{monthTitle(m)}</h3>
+                <MonthGrid
+                  cursor={m}
+                  selected={selected}
+                  onSelect={setSelected}
+                  onCursor={(d) => setCursor(`${d.slice(0, 7)}-01`)}
+                  renderDay={(d) => renderDay(d, true)}
+                  dayClass={(d) => dayClass(d)}
+                  dayLabel={dayLabel}
+                  onDayDoubleClick={canEdit ? (d) => { if (!dayNotes(d).hol && !dayNotes(d).brk) addOn(d); } : undefined}
+                  compact={!wide}
+                  cellMinHeight="min-h-[88px]"
+                  hideOutside
+                />
+              </div>
+            ))}
+            {!wide && selected && (
+              <div className="border border-separator">
+                {renderDayList(selected)}
+              </div>
+            )}
+          </div>
+        ) : view === 'month' ? (
+          <div className="space-y-4" data-calendar-scope>
             <MonthGrid
               cursor={cursor}
               selected={selected}

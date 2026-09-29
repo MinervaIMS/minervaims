@@ -25,8 +25,10 @@ import {
 export type ViewOption<V extends string> = { value: V; label: string; icon?: ReactNode };
 
 /** Month title, arrows, Today, and the view switch. */
-export function CalendarToolbar<V extends string>({ cursor, onCursor, views, view, onView, extra }: {
+export function CalendarToolbar<V extends string>({ cursor, onCursor, views, view, onView, extra, title }: {
   cursor: string;
+  /** Instead of the month's name, for a view that shows more than one month. */
+  title?: string;
   onCursor: (ymd: string) => void;
   views?: ViewOption<V>[];
   view?: V;
@@ -54,7 +56,7 @@ export function CalendarToolbar<V extends string>({ cursor, onCursor, views, vie
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
-      <h2 className="font-serif text-2xl text-accent min-w-[10ch]" aria-live="polite">{monthTitle(cursor)}</h2>
+      <h2 className="font-serif text-2xl text-accent min-w-[10ch]" aria-live="polite">{title ?? monthTitle(cursor)}</h2>
       <div className="flex-1" />
       {extra}
       {views && view && onView && <ViewTabs views={views} value={view} onChange={onView} />}
@@ -119,7 +121,7 @@ export interface DayState { inMonth: boolean; isToday: boolean; isSelected: bool
  * handles the keyboard.
  */
 export function MonthGrid({
-  cursor, selected, onSelect, onCursor, renderDay, dayClass, dayLabel, onDayDoubleClick, compact = false, cellMinHeight = 'min-h-[118px]', onDayDrop,
+  cursor, selected, onSelect, onCursor, renderDay, dayClass, dayLabel, onDayDoubleClick, compact = false, cellMinHeight = 'min-h-[118px]', onDayDrop, hideOutside = false,
 }: {
   cursor: string;
   selected: string | null;
@@ -137,6 +139,8 @@ export function MonthGrid({
   cellMinHeight?: string;
   /** Something was dragged onto a day: the dragged item's id, and the day. */
   onDayDrop?: (ymd: string, id: string) => void;
+  /** Leave the days of the neighbouring months blank (several months shown together). */
+  hideOutside?: boolean;
 }) {
   const today = todayYmd();
   const [dropDay, setDropDay] = useState<string | null>(null);
@@ -151,7 +155,8 @@ export function MonthGrid({
     const want = pendingFocus.current;
     if (!want) return;
     pendingFocus.current = null;
-    wrapRef.current?.querySelector<HTMLButtonElement>(`[data-day="${want}"]`)?.focus();
+    const scope = wrapRef.current?.closest('[data-calendar-scope]') ?? wrapRef.current;
+    scope?.querySelector<HTMLButtonElement>(`[data-day="${want}"][data-inmonth="1"]`)?.focus();
   }, [cursor]);
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -173,8 +178,11 @@ export function MonthGrid({
     }
     e.preventDefault();
     onSelect(next);
-    const cell = wrapRef.current?.querySelector<HTMLButtonElement>(`[data-day="${next}"]`);
-    if (cell && sameMonth(next, cursor)) cell.focus();
+    // The day may be in this grid or, with several months shown, in a
+    // neighbouring one: focus it wherever it is drawn as its own month.
+    const scope = wrapRef.current?.closest('[data-calendar-scope]') ?? wrapRef.current;
+    const cell = scope?.querySelector<HTMLButtonElement>(`[data-day="${next}"][data-inmonth="1"]`);
+    if (cell) cell.focus();
     else { pendingFocus.current = next; onCursor(next); }
   };
 
@@ -193,6 +201,9 @@ export function MonthGrid({
           {week.map((ymd) => {
             const s: DayState = { inMonth: sameMonth(ymd, cursor), isToday: ymd === today, isSelected: ymd === selected, isPast: ymd < today };
             const extra = dayLabel?.(ymd);
+            if (hideOutside && !s.inMonth) {
+              return <div key={ymd} role="gridcell" aria-hidden className={`border-b border-r border-separator bg-muted/20 ${compact ? 'min-h-[52px]' : cellMinHeight}`} />;
+            }
             return (
               <div
                 key={ymd} role="gridcell" aria-selected={s.isSelected}
@@ -206,7 +217,7 @@ export function MonthGrid({
                 } ${s.isSelected ? 'outline outline-2 -outline-offset-2 outline-accent/70' : ''} ${dayClass?.(ymd, s) ?? ''} cursor-pointer`}
               >
                 <button
-                  data-ro type="button" data-day={ymd}
+                  data-ro type="button" data-day={ymd} data-inmonth={s.inMonth ? '1' : '0'}
                   tabIndex={ymd === focusDay ? 0 : -1}
                   onClick={(e) => { e.stopPropagation(); onSelect(ymd); }}
                   aria-label={`${longDay(ymd)}${s.isToday ? ', today' : ''}${extra ? `, ${extra}` : ''}`}
