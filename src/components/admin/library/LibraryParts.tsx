@@ -18,9 +18,9 @@ import {
   contentsLine, coverImage, filesOf, itemLook, shortDate,
   LIBRARY_SORTS, type ItemLook, type LibraryFilter, type LibrarySort,
 } from '@/lib/library-files';
-import { byLine, factsLine, lookStyle, sizeOrContents } from './library-look';
+import { backdropProps, byLine, factsLine, lookStyle, sizeOrContents } from './library-look';
 import { divisionLabels } from '@/lib/roles';
-import type { LibraryView } from './library-data';
+import { useImageBackdrop, type LibraryView } from './library-data';
 
 // ---------------------------------------------------------------------
 // Type tiles
@@ -50,17 +50,22 @@ export function ItemVisual({ item, thumbs, size }: { item: ResourceRow; thumbs: 
   const url = signed && signed !== broken ? signed : undefined;
   const { tile, Icon } = lookStyle(look.kind);
   const onError = () => setBroken(signed ?? null);
+  // A transparent picture (a logo, a mark) sits on a backdrop it can be
+  // seen on, and is shown whole rather than cropped.
+  const backdrop = useImageBackdrop(url, cover?.value);
+  const bg = backdropProps(backdrop);
+  const fit = backdrop ? 'object-contain p-[8%]' : size === 'sheet' ? 'object-contain' : 'object-cover';
   if (size === 'row') {
     return (
-      <span className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden border border-separator ${url ? 'bg-muted/30' : tile}`}>
-        {url ? <img src={url} alt="" loading="lazy" decoding="async" onError={onError} className="h-full w-full object-cover" /> : <Icon aria-hidden className="h-5 w-5" />}
+      <span className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden border border-separator ${url ? bg.className : tile}`} style={url ? bg.style : undefined}>
+        {url ? <img src={url} alt="" loading="lazy" decoding="async" onError={onError} className={`h-full w-full ${backdrop ? 'object-contain p-0.5' : 'object-cover'}`} /> : <Icon aria-hidden className="h-5 w-5" />}
       </span>
     );
   }
   return (
-    <div className={`relative flex w-full items-center justify-center overflow-hidden ${size === 'cover' ? 'aspect-[4/3]' : 'aspect-[16/9]'} ${url ? 'bg-muted/40' : tile}`}>
+    <div className={`relative flex w-full items-center justify-center overflow-hidden ${size === 'cover' ? 'aspect-[4/3]' : 'aspect-[16/9]'} ${url ? bg.className : tile}`} style={url ? bg.style : undefined}>
       {url ? (
-        <img src={url} alt="" loading="lazy" decoding="async" onError={onError} className={`h-full w-full ${size === 'cover' ? 'object-cover' : 'object-contain'}`} />
+        <img src={url} alt="" loading="lazy" decoding="async" onError={onError} className={`h-full w-full ${fit}`} />
       ) : (
         <div className="flex flex-col items-center gap-2">
           <Icon aria-hidden className={size === 'cover' ? 'h-9 w-9' : 'h-12 w-12'} />
@@ -68,6 +73,24 @@ export function ItemVisual({ item, thumbs, size }: { item: ResourceRow; thumbs: 
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * A small square picture on the backdrop it needs: the file rows of an
+ * item and the upload list. `id` keeps the sampled backdrop for the file
+ * across signed addresses.
+ */
+export function Thumb({ url, id, className = '', fallback }: { url: string | null | undefined; id: string; className?: string; fallback: ReactNode }) {
+  const [broken, setBroken] = useState(false);
+  const shown = url && !broken ? url : null;
+  const backdrop = useImageBackdrop(shown, id);
+  const bg = backdropProps(backdrop);
+  if (!shown) return <>{fallback}</>;
+  return (
+    <span className={`flex h-full w-full items-center justify-center ${bg.className} ${className}`} style={bg.style}>
+      <img src={shown} alt="" loading="lazy" decoding="async" onError={() => setBroken(true)} className={`h-full w-full ${backdrop ? 'object-contain p-1' : 'object-cover'}`} />
+    </span>
   );
 }
 

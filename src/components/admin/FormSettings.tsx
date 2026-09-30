@@ -71,6 +71,10 @@ export default function FormSettings() {
     } finally { setSavingQ(null); }
   };
 
+  // The page waits for its questions like every other page: the pulsing
+  // logo in the middle of the pane, rather than a small one in a column.
+  if (loading) return <WorkspaceLoader />;
+
   return (
     <div>
       <WorkspacePageHeader
@@ -98,7 +102,7 @@ export default function FormSettings() {
             </p>
           </div>
 
-          {loading ? <WorkspaceLoader inline className="py-10" /> : (
+          {(
             <div className="space-y-3">
               {CORE.map((d) => {
                 const editable = canEditQuestions && editableDivisions.includes(d);

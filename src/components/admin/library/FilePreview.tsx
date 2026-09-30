@@ -9,11 +9,13 @@
 // them without closing.
 // =====================================================================
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { fileKindOf } from '@/lib/library-files';
+import { useImageBackdrop } from './library-data';
+import { backdropProps } from './library-look';
 
 export interface PreviewState {
   /** Every file of the item, so Previous and Next can walk them. */
@@ -32,6 +34,11 @@ export function FilePreview({ state, onClose, onIndex, onDownload }: {
   const file = state ? state.files[state.index] : null;
   const count = state?.files.length ?? 0;
   const kind = file ? fileKindOf(file) : 'other';
+  // A picture's backdrop: chosen for it (dark behind a white logo), or
+  // set by hand to see it on light, on dark, or on the chequerboard.
+  const [bgChoice, setBgChoice] = useState<'auto' | 'light' | 'dark' | 'checker'>('auto');
+  const auto = useImageBackdrop(kind === 'image' ? state?.url : null, file?.value);
+  const bg = backdropProps(bgChoice === 'auto' ? auto : bgChoice);
 
   useEffect(() => {
     if (!state || count < 2) return;
@@ -56,7 +63,7 @@ export function FilePreview({ state, onClose, onIndex, onDownload }: {
           {!state?.url ? (
             <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" aria-label="Loading" /></div>
           ) : kind === 'image' ? (
-            <div className="flex h-full w-full items-center justify-center p-3">
+            <div className={`flex h-full w-full items-center justify-center p-3 ${bg.className}`} style={bg.style} data-backdrop={bgChoice === 'auto' ? auto ?? 'none' : bgChoice}>
               <img src={state.url} alt={file?.label ?? ''} className="max-h-full max-w-full object-contain" />
             </div>
           ) : kind === 'video' ? (
@@ -79,7 +86,17 @@ export function FilePreview({ state, onClose, onIndex, onDownload }: {
             </>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-2 font-body">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 font-body">
+          {kind === 'image' && state?.url && (
+            <div role="group" aria-label="Background" className="mr-auto inline-flex border border-separator">
+              {(['auto', 'light', 'dark', 'checker'] as const).map((b) => (
+                <button key={b} type="button" data-ro aria-pressed={bgChoice === b} onClick={() => setBgChoice(b)}
+                  className={`h-9 px-3 text-sm transition-colors ${bgChoice === b ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/5 hover:text-accent'}`}>
+                  {b === 'auto' ? 'Auto' : b === 'light' ? 'Light' : b === 'dark' ? 'Dark' : 'Transparent'}
+                </button>
+              ))}
+            </div>
+          )}
           <Button variant="outline" disabled={!state?.url} onClick={() => state?.url && window.open(state.url, '_blank', 'noopener')}>
             <ExternalLink className="h-4 w-4" />Open in a new tab
           </Button>

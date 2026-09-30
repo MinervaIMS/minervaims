@@ -215,10 +215,10 @@ export function normalizeRole(role: string): string {
 
 /** The effective level a set of stored roles has on a resource. */
 // Pages made of other subsections: the same table as COMBINED_RESOURCES in
-// src/lib/access/matrix.ts. Brand & Social opens at the highest level its
+// src/lib/access/matrix.ts. Social Template opens at the highest level its
 // three tabs give; each tab's own row still decides that tab.
 const COMBINED: Record<string, string[]> = {
-  'smm-social': ['smm-ig', 'smm-li', 'smm-brand'],
+  'smm-social': ['smm-ig', 'smm-li', 'smm-other'],
 };
 
 export function resolveLevel(roles: string[], resource: string): Level {

@@ -139,11 +139,11 @@ export const NAV: NavSection[] = [
     key: 'smm', slug: 'social-media', label: 'Social Media', Icon: ImageIcon,
     subItems: [
       { key: 'smm-editorial', slug: 'editorial-calendar', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
-      // Instagram, LinkedIn and the Design System are one page with three
+      // Instagram, LinkedIn and Other Resources are one page with three
       // tabs. Each tab keeps its own permission; see MERGED_SUBSECTIONS.
-      { key: 'smm-social', slug: 'brand-and-social', label: 'Brand & Social', allowed: (p) => p.can('smm-social') },
+      { key: 'smm-social', slug: 'social-template', label: 'Social Template', allowed: (p) => p.can('smm-social') },
       { key: 'smm-graphics', slug: 'graphics', label: 'MIMS Graphics', allowed: (p) => p.can('smm-graphics') },
-      { key: 'smm-other', slug: 'other-resources', label: 'Other Resources', allowed: (p) => p.can('smm-other') },
+      { key: 'smm-brand', slug: 'design-system', label: 'Design System', allowed: (p) => p.can('smm-brand') },
       { key: 'smm-ads', slug: 'ads-and-spending', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
     ],
   },
@@ -189,8 +189,8 @@ export const NAV: NavSection[] = [
 // =====================================================================
 // SUBSECTIONS THAT BECAME TABS.
 // ---------------------------------------------------------------------
-// Instagram, LinkedIn and Design System were three subsections of Social
-// Media; they are now the three tabs of Brand & Social. Their keys stay,
+// Instagram, LinkedIn and Other Resources were three subsections of Social
+// Media; they are now the three tabs of Social Template. Their keys stay,
 // because they are what the access matrix, the server, the search index
 // and the Role permissions table speak in, and their old addresses stay,
 // because they have been bookmarked and sent. Both lead to the new page
@@ -210,8 +210,19 @@ export interface MergedSubsection {
 export const MERGED_SUBSECTIONS: Record<string, MergedSubsection> = {
   'smm-ig': { key: 'smm-social', tab: 'instagram', sectionKey: 'smm', slug: 'instagram', label: 'Instagram' },
   'smm-li': { key: 'smm-social', tab: 'linkedin', sectionKey: 'smm', slug: 'linkedin', label: 'LinkedIn' },
-  'smm-brand': { key: 'smm-social', tab: 'design-system', sectionKey: 'smm', slug: 'design-system', label: 'Design System' },
+  'smm-other': { key: 'smm-social', tab: 'other-resources', sectionKey: 'smm', slug: 'other-resources', label: 'Other Resources' },
 };
+
+/**
+ * Addresses a page had before it was renamed: section key, old segment,
+ * new page key. Brand & Social (Instagram, LinkedIn and the Design System)
+ * became Social Template (Instagram, LinkedIn and Other Resources) with the
+ * Design System on its own; its address still opens Social Template, and
+ * the workspace sends `?tab=design-system` on to the Design System page.
+ */
+const RENAMED_PAGES: { sectionKey: string; slug: string; key: string }[] = [
+  { sectionKey: 'smm', slug: 'brand-and-social', key: 'smm-social' },
+];
 
 /** The tabs of a merged page, in order: `{ tab, resource }`. */
 export function tabsOf(pageKey: string): { tab: string; resource: string; label: string }[] {
@@ -420,6 +431,14 @@ export function resolveWorkspaceTarget(
     if (!subSlug) return { status: 'ok', sectionKey: section.key, subKey: section.subItems[0]?.key ?? null };
     const sub = section.subItems.find((si) => si.slug === subSlug);
     if (sub) return { status: 'ok', sectionKey: section.key, subKey: sub.key };
+    // A page's address from before it was renamed.
+    const renamed = RENAMED_PAGES.find((r) => r.sectionKey === section.key && r.slug === subSlug);
+    const renamedPage = renamed ? section.subItems.find((si) => si.key === renamed.key) : undefined;
+    if (renamedPage) return { status: 'ok', sectionKey: section.key, subKey: renamedPage.key };
+    if (renamed) {
+      const label = ALL_SECTIONS.find((s) => s.key === section.key)?.subItems.find((si) => si.key === renamed.key)?.label ?? subSlug;
+      return { status: 'forbidden', label: `${section.label} / ${label}` };
+    }
     // An old address of what is now a tab: open the page on that tab.
     const merged = Object.values(MERGED_SUBSECTIONS).find((m) => m.sectionKey === section.key && m.slug === subSlug);
     if (merged) {
@@ -436,6 +455,9 @@ export function resolveWorkspaceTarget(
   const full = ALL_SECTIONS.find((s) => s.slug === sectionSlug);
   if (!full) return { status: 'unknown' };
   if (!subSlug) return { status: 'forbidden', label: full.label };
+  const renamedHere = RENAMED_PAGES.find((r) => r.sectionKey === full.key && r.slug === subSlug);
+  const renamedLabel = renamedHere ? full.subItems.find((si) => si.key === renamedHere.key)?.label : undefined;
+  if (renamedLabel) return { status: 'forbidden', label: `${full.label} / ${renamedLabel}` };
   const mergedHere = Object.values(MERGED_SUBSECTIONS).find((m) => m.sectionKey === full.key && m.slug === subSlug);
   if (mergedHere) return { status: 'forbidden', label: `${full.label} / ${mergedHere.label}` };
   const known = full.subItems.find((si) => si.slug === subSlug);

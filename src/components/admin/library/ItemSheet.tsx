@@ -19,7 +19,7 @@ import { fileBadge, fileKindOf, filesOf, formatBytes, itemLook, shortDate, sourc
 import { previewLink } from '@/lib/link-label';
 import { divisionLabels } from '@/lib/roles';
 import { useMedia } from '@/components/admin/calendar/calendar-hooks';
-import { ItemVisual, TypeBadge } from './LibraryParts';
+import { ItemVisual, Thumb, TypeBadge } from './LibraryParts';
 import { lookStyle } from './library-look';
 import { CAPTION_LIMITS, textNoun, type LibraryFlavour } from './library-data';
 
@@ -107,8 +107,8 @@ export function ItemSheet({
                       return (
                         <li key={`${f.value}-${i}`} className="flex items-center gap-3 px-3 py-2.5">
                           <button type="button" data-ro onClick={() => handlers.onPreview(item, i)} aria-label={`Preview ${f.label || `file ${i + 1}`}`}
-                            className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden border border-separator text-[10px] font-semibold tracking-wide ${thumb ? 'bg-muted/30' : tile}`}>
-                            {thumb ? <img src={thumb} alt="" loading="lazy" className="h-full w-full object-cover" /> : fileBadge(f)}
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden border border-separator text-[10px] font-semibold tracking-wide ${thumb ? '' : tile}`}>
+                            <Thumb url={thumb} id={f.value} fallback={fileBadge(f)} />
                           </button>
                           <div className="min-w-0 flex-1">
                             <p className="break-words text-sm leading-snug text-foreground">{f.label || `File ${i + 1}`}</p>

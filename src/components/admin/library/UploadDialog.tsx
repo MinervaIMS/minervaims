@@ -30,6 +30,7 @@ import {
 } from '@/lib/library-files';
 import { divisionLabels, type OrgDivision } from '@/lib/roles';
 import { lookStyle } from './library-look';
+import { Thumb } from './LibraryParts';
 
 type Status = 'ready' | 'rejected' | 'uploading' | 'saving' | 'done' | 'failed';
 
@@ -253,8 +254,8 @@ export function UploadDialog({
                 const locked = running || e.status === 'done' || e.status === 'saving' || e.status === 'uploading';
                 return (
                   <li key={e.id} className="flex items-start gap-3 px-3 py-3" data-upload-row={e.status}>
-                    <span className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-separator text-[10px] font-semibold tracking-wide ${e.preview ? 'bg-muted/30' : tile}`}>
-                      {e.preview ? <img src={e.preview} alt="" className="h-full w-full object-cover" /> : fileBadge({ value: e.file.name })}
+                    <span className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-separator text-[10px] font-semibold tracking-wide ${e.preview ? '' : tile}`}>
+                      <Thumb url={e.preview} id={`${e.id}:${e.file.name}`} fallback={fileBadge({ value: e.file.name })} />
                     </span>
                     <div className="min-w-0 flex-1 space-y-1">
                       {!together && e.status !== 'rejected' ? (

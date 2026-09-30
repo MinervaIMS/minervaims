@@ -55,11 +55,11 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'people-invites', label: 'Invites' } ] },
   { section: 'Media & Communication', items: [
     { key: 'smm-editorial', label: 'Editorial calendar' },
-    // One page, Brand & Social, with a tab for each of these three; each
+    // One page, Social Template, with a tab for each of these three; each
     // tab keeps its own row because each keeps its own permission.
-    { key: 'smm-ig', label: 'Brand & Social: Instagram tab' }, { key: 'smm-li', label: 'Brand & Social: LinkedIn tab' },
-    { key: 'smm-brand', label: 'Brand & Social: Design System tab' },
-    { key: 'smm-graphics', label: 'MIMS Graphics' }, { key: 'smm-other', label: 'Other resources' },
+    { key: 'smm-ig', label: 'Social Template: Instagram tab' }, { key: 'smm-li', label: 'Social Template: LinkedIn tab' },
+    { key: 'smm-other', label: 'Social Template: Other Resources tab' },
+    { key: 'smm-graphics', label: 'MIMS Graphics' }, { key: 'smm-brand', label: 'Design System' },
     { key: 'smm-ads', label: 'Ads & spending' } ] },
   { section: 'Operations', items: [
     { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' },
