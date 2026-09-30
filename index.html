@@ -85,7 +85,18 @@
     <link rel="preload" as="image" href="/__l5e/assets-v1/1eaa5426-5147-4233-ae56-2cad28df4a47/logo-white-loader.webp" fetchpriority="high" media="(max-width: 767px)" />
     <link rel="preconnect" href="https://asjudzdgsccacpjbzsue.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://asjudzdgsccacpjbzsue.supabase.co" />
-    <link rel="preload" as="image" href="/src/assets/homepage-bg.webp" />
+    <!--
+      NO HOMEPAGE IMAGE IS PRELOADED ANY MORE.
+
+      There used to be `<link rel="preload" as="image"
+      href="/src/assets/homepage-bg.webp">` here. Nothing on the site used
+      that file: the homepage's photograph was a different asset, and the
+      hero is now drawn rather than downloaded (see HeroMarketBackground).
+      Because this document is the shell of EVERY route, the hint made every
+      first visit to any page, public or workspace, fetch 1.7 MB of image
+      at the very start of the load, competing with the scripts the page
+      actually needed, and then throw it away.
+    -->
     <!--
       THE ENTRY SCRIPT IS PRELOADED BY THE BUILD, NOT BY HAND.
 

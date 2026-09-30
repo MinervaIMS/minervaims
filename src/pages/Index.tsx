@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Seo } from '@/components/shared/Seo';
 import { Link } from "react-router-dom";
 import logoWhite from "@/assets/footer-logo.svg";
-import homepageBgAsset from "@/assets/mims-homepage.webp.asset.json";
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from "@/components/shared/ReportsSection";
 import AlumniTicker from "@/components/shared/AlumniTicker";
 import { TestimonialsSection } from "@/components/shared/TestimonialsSection";
@@ -14,7 +13,9 @@ import { useKeyFigures } from "@/hooks/useKeyFigures";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
-import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
+import { HeroMarketBackground } from "@/components/home/HeroMarketBackground";
+import { loadMarketScene } from "@/components/home/market-scene/load";
+import { loadFundSeries } from "@/components/home/market-scene/fund-series";
 import { supabase } from "@/integrations/supabase/client";
 import { ApplicationsOpenLabel } from "@/components/shared/ApplicationsOpenLabel";
 import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
@@ -66,19 +67,30 @@ const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolea
 };
 
 const Index = () => {
-  const homepageBg = homepageBgAsset.url;
   const { counts, isLoading: isKeyFiguresLoading } = useKeyFigures();
   const { settings: appSettings } = useApplicationSettings();
   const [carouselFiles, setCarouselFiles] = useState<ArchiveFile[]>([]);
   const [isCarouselLoading, setIsCarouselLoading] = useState(true);
-  // BOTH LAYERS OF THE HERO, NOT ONE OF THEM.
-  // The dark wash over the photograph is a second downloaded image (see
-  // lib/hero-overlay.ts), and it used to be absent from this list. So the
-  // photograph was fetched from mount while the overlay was not started
-  // until the hero rendered: the picture was GUARANTEED to be ready first,
-  // and the reader met the bright, unshaded image before the wash arrived.
-  // Preloading them together is what makes the hero one state instead of two.
-  const imagesLoaded = useImagePreload([homepageBg, HERO_OVERLAY_URL, logoWhite]);
+  // THE LOGO IS THE ONLY IMAGE THE HERO WAITS FOR NOW.
+  // It used to wait for the photograph (2.1 MB) and the purple wash laid
+  // over it as well, both of them before the loader could lift. The hero
+  // ground is now drawn rather than downloaded (see HeroMarketBackground),
+  // so neither is fetched on this page any more, and the only picture
+  // left on the critical path is the one the reader actually looks at.
+  const imagesLoaded = useImagePreload([logoWhite]);
+
+  // The moving scene's script is fetched NOW, alongside the page's data,
+  // so it is already here when the hero mounts; so are the funds' records
+  // its chart line is drawn from, which the performance chart further
+  // down reads anyway (the two requests are one: see fund-series.ts).
+  // Fetched, not waited for: nothing is drawn until the hero has painted,
+  // and the loader never waits on either.
+  useEffect(() => {
+    loadMarketScene().catch(() => {
+      // The CSS ground stands in; there is nothing to recover.
+    });
+    void loadFundSeries();
+  }, []);
 
 
   useEffect(() => {
@@ -130,13 +142,12 @@ const Index = () => {
 
       {/* Hero Section */}
       <section data-page-hero className="relative min-h-screen flex flex-col">
-        {/* THE DARK BLOCK, AND ONLY IT, CARRIES THE PHOTOGRAPH.
-            The image used to be `inset-0` on the whole hero, which includes
-            the white figures band beneath: `bg-center` therefore centred the
-            picture on a box whose bottom third is covered, so what a reader
-            actually saw was the top of the photograph and never its middle.
-            Bounding the image to the block it is seen in makes `bg-center`
-            mean what it says.
+        {/* THE DARK BLOCK, AND ONLY IT, CARRIES THE BACKGROUND.
+            It used to be `inset-0` on the whole hero, which includes the
+            white figures band beneath, so the part a reader saw was never
+            the middle of it. Bounding it to the block it is seen in keeps
+            the composition centred on the logo. It is the moving research
+            scene now, where it was a photograph: see HeroMarketBackground.
 
             It is also the element the navbar measures. `data-nav-flip`
             marks the end of the dark ground, so the header turns solid the
@@ -146,8 +157,7 @@ const Index = () => {
           data-nav-flip
           className="relative flex-1 flex items-center justify-center text-center px-6 pt-20 pb-20 md:pt-24 md:pb-24"
         >
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${homepageBg})` }} />
-          <div className="absolute inset-0 hero-overlay" />
+          <HeroMarketBackground />
           <div className="relative z-10">
             {/* THE PAGE HAS A HEADING NOW.
                 The homepage's title is a logotype, which is right for the
@@ -159,10 +169,14 @@ const Index = () => {
             <h1 className="sr-only">
               Minerva Investment Management Society, the Bocconi University student society for investment research and portfolio management
             </h1>
+            {/* `data-hero-keepout` marks what the moving background lays
+                itself out around: it measures these two and keeps its
+                legible pieces clear of them. */}
             <img
               src={logoWhite}
               alt="Minerva Investment Management Society"
               className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+              data-hero-keepout="logo"
               {...HIGH_FETCH_PRIORITY}
             />
             {/* `acceptingApplications`: the button disappears when the
@@ -173,6 +187,7 @@ const Index = () => {
               <Link
                 to="/join"
                 className="inline-block mt-16 px-14 py-5 bg-background text-foreground font-serif text-xl hover:opacity-90 transition-opacity"
+                data-hero-keepout="action"
               >
                 {/* Wording and weighting come from the shared label, which the
                     Recruiting preview renders too. See
