@@ -206,10 +206,10 @@ function buildSources(): Source[] {
     // the table with a category filter: a role with Instagram but not
     // LinkedIn must not have the LinkedIn query sent on its behalf.
     ...([
-      ['smm-ig', 'smm_instagram', 'Brand & Social, Instagram'],
-      ['smm-li', 'smm_linkedin', 'Brand & Social, LinkedIn'],
+      ['smm-ig', 'smm_instagram', 'Social Template, Instagram'],
+      ['smm-li', 'smm_linkedin', 'Social Template, LinkedIn'],
+      ['smm-other', 'smm_other', 'Social Template, Other Resources'],
       ['smm-graphics', 'smm_graphics', 'MIMS Graphics'],
-      ['smm-other', 'smm_other', 'Other resources'],
       ['reports-templates', 'reports_templates', 'Templates & repositories'],
       ['ops-external', 'external_relations', 'External relations'],
       ['ops-docs', 'operations_statuto', 'Statute & documents'],

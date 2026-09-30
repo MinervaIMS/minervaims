@@ -129,7 +129,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'How the media plan fits together',
     body: [
       'The editorial calendar is the plan: what is going out, when, where it goes and in what format, who is responsible, its status and whether it is paid. One item can go to several destinations at once, with its own format in each, because a single piece of work is a single record even when it is a reel on Instagram and a post on LinkedIn.',
-      'The libraries beside it hold the material. Brand & Social brings together the Instagram and LinkedIn libraries and the design system that says how the association presents itself, as three tabs of one page; MIMS Graphics and Other resources hold the rest. Every library works the same way: search, type filters, pictures shown as pictures, bulk upload and ZIP downloads.',
+      'The libraries beside it hold the material. Social Template brings together the Instagram, LinkedIn and Other Resources libraries as three tabs of one page; MIMS Graphics holds the Society\'s graphic assets; and the Design System says how the association presents itself. Every library works the same way: search, type filters, pictures shown as pictures, bulk upload and ZIP downloads.',
       'Advertising and spending is a register of paid promotion. Recording a spend there posts the cost to the Treasury automatically, once, on the date it was incurred, so the media budget and the association\'s accounts cannot drift apart. Editing the description of an existing spend never posts a second time.',
     ],
     requires: 'smm-editorial',
@@ -338,7 +338,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'smm-social',
     level: 'manage',
     steps: [
-      'Open the library the material belongs to: Social Media, Brand & Social (the Instagram or LinkedIn tab), MIMS Graphics or Other resources.',
+      'Open the library the material belongs to: Social Media, Social Template (the Instagram, LinkedIn or Other Resources tab), or MIMS Graphics.',
       'Drop the files anywhere on the page, or press Upload files and choose them: several at once is fine. Each is listed with a title read from its name; change any title that would not mean something to somebody else in six months.',
       'Press Upload. Each file shows its own progress and becomes its own item; one that fails keeps its place with the reason and Retry.',
       'For a caption, a link or a post that needs its text beside its pictures, use New item instead, or open an item and Edit it to add the caption.',
@@ -487,7 +487,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'smm-brand',
     level: 'view',
     steps: [
-      'Open Social Media, Brand & Social, and choose the Design System tab.',
+      'Open Social Media, Design System.',
       'Press Download the ZIP: the whole design system, with the guide, logos, templates and fonts. The link works for one minute and the download is recorded.',
       'To publish a new edition (Head of Media and Communication, President, Vice President), press Replace the package and choose the new ZIP, up to 50 MB.',
     ],
@@ -806,18 +806,25 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   },
   'smm-social': {
     detail: [
-      "Instagram, LinkedIn and the Design System, which used to be three separate pages, are the three tabs of this one. Each tab keeps its own access: you see the tabs your role may open, and what you may change is decided tab by tab. The tab is part of the address, and the old addresses of the three pages open the matching tab.",
-      "The Instagram and LinkedIn tabs are libraries of material ready to post: pictures, videos, captions and links. Captions can be copied in one press and show their length against the platform's limit (2,200 characters on Instagram, 3,000 on LinkedIn).",
-      "The Design System tab is the design system of the Society, as the package itself describes it: the guide inside the package, chapter by chapter, with the logos, the type scale, the colours and the shadows drawn live beside the text. Download the ZIP gives the whole package, which stays inside Minerva because it contains the Society's artwork and licensed fonts; every download is recorded. A new edition is published by uploading its ZIP, which replaces the previous one for everybody at once.",
+      "Instagram, LinkedIn and Other Resources, which used to be three separate pages, are the three tabs of this one. Each tab keeps its own access: you see the tabs your role may open, and what you may change is decided tab by tab. The tab is part of the address, and the old addresses of the three pages open the matching tab.",
+      "The Instagram and LinkedIn tabs are libraries of material ready to post: pictures, videos, captions and links. Captions can be copied in one press and show their length against the platform's limit (2,200 characters on Instagram, 3,000 on LinkedIn). Other Resources holds what the posts draw on: press material, photography, mentions.",
     ],
-    related: ['smm-editorial', 'smm-graphics', 'smm-other'],
+    related: ['smm-editorial', 'smm-graphics', 'smm-brand'],
+  },
+  'smm-brand': {
+    detail: [
+      "The design system of the Society, as the package itself describes it: the guide inside the package is shown here chapter by chapter, with the logos, the type scale, the colours and the shadows drawn live beside the text.",
+      "Download the ZIP gives the whole package: the guide, every logo, the tokens, the templates and the font files. It stays inside Minerva because it contains the Society's artwork and licensed fonts, and every download is recorded.",
+      "A new edition is published by uploading its ZIP, which replaces the previous one for everybody at once.",
+    ],
+    related: ['smm-graphics', 'smm-social', 'smm-editorial'],
   },
   'smm-graphics': {
     detail: [
       "The Society's graphic assets as a picture library: every image shows as itself, and every other file as a tile with its type written on it. Search, filter by type, preview full screen, and download one file or several at once as a ZIP.",
       "The Media team adds assets by dropping many files at once; each becomes its own item, titled from its name. Put the editable file next to the export whenever there is one.",
     ],
-    related: ['smm-social', 'smm-editorial'],
+    related: ['smm-social', 'smm-brand', 'smm-editorial'],
   },
   'reports-templates': {
     detail: [

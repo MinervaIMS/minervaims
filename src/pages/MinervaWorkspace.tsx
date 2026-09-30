@@ -77,7 +77,8 @@ const MembershipFee = lazy(() => import('@/components/admin/MembershipFee'));
 const Treasury = lazy(() => import('@/components/admin/Treasury'));
 const AutoEmails = lazy(() => import('@/components/admin/AutoEmails'));
 const EditorialCalendar = lazy(() => import('@/components/admin/EditorialCalendar'));
-const BrandSocial = lazy(() => import('@/components/admin/BrandSocial'));
+const SocialTemplate = lazy(() => import('@/components/admin/SocialTemplate'));
+const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
 const AdsRegister = lazy(() => import('@/components/admin/AdsRegister'));
 const AlumniManagement = lazy(() => import('@/components/admin/AlumniManagement'));
 const InvitesManagement = lazy(() => import('@/components/admin/InvitesManagement'));
@@ -152,9 +153,9 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
   'people-invites': () => import('@/components/admin/InvitesManagement'),
   'smm-editorial': () => import('@/components/admin/EditorialCalendar'),
-  'smm-social': () => import('@/components/admin/BrandSocial'),
+  'smm-social': () => import('@/components/admin/SocialTemplate'),
   'smm-graphics': () => import('@/components/admin/ResourceManager'),
-  'smm-other': () => import('@/components/admin/ResourceManager'),
+  'smm-brand': () => import('@/components/admin/BrandDesignSystem'),
   'smm-ads': () => import('@/components/admin/AdsRegister'),
   'ops-fee': () => import('@/components/admin/MembershipFee'),
   'ops-treasury': () => import('@/components/admin/Treasury'),
@@ -396,7 +397,7 @@ const MinervaWorkspace = () => {
   const activeSectionKey = resolution.status === 'ok' ? resolution.sectionKey : null;
   const activeSubKey = resolution.status === 'ok' ? resolution.subKey : null;
 
-  // A PAGE WITH TABS (Brand & Social) keeps its tab in the address,
+  // A PAGE WITH TABS (Social Template) keeps its tab in the address,
   // `?tab=instagram`, so a tab can be linked to and the back button
   // returns to it. The tab shown is the one asked for if this reader may
   // open it, otherwise the first one they may: never an empty tab.
@@ -451,10 +452,24 @@ const MinervaWorkspace = () => {
     }
     if (resolution.status === 'ok') {
       const canonical = workspacePath(resolution.sectionKey, resolution.subKey);
-      // An old address of what is now a tab keeps its tab on the way over.
-      if (canonical !== location.pathname) navigate(resolution.tab ? `${canonical}?tab=${resolution.tab}` : canonical, { replace: true });
+      // An old address of what is now a tab keeps its tab on the way over,
+      // and a renamed page with tabs keeps the one its address asked for.
+      if (canonical !== location.pathname) {
+        const query = resolution.tab ? `?tab=${resolution.tab}` : resolution.subKey && tabsOf(resolution.subKey).length ? location.search : '';
+        navigate(`${canonical}${query}`, { replace: true });
+      }
     }
-  }, [navReady, visibleNav.length, resolution, homePath, location.pathname, navigate]);
+  }, [navReady, visibleNav.length, resolution, homePath, location.pathname, location.search, navigate]);
+
+  // Brand & Social had a Design System tab; the Design System is its own
+  // page again, so a link to that tab opens the page.
+  useEffect(() => {
+    if (!navReady) return;
+    if (sectionSlug === 'social-media' && subSlug === 'brand-and-social'
+      && new URLSearchParams(location.search).get('tab') === 'design-system') {
+      navigate(workspacePath('smm', 'smm-brand'), { replace: true });
+    }
+  }, [navReady, sectionSlug, subSlug, location.search, navigate]);
 
   // ----------------------------------------------------------------------
   // Once the workspace is up AND HAS FINISHED ARRIVING, fetch the pages
@@ -1142,7 +1157,7 @@ const MinervaWorkspace = () => {
         return <AdsRegister />;
       case 'smm-social':
         return (
-          <BrandSocial
+          <SocialTemplate
             tabs={pageTabs}
             activeTab={activeTab?.tab ?? null}
             onTab={(tab) => navigate(`${location.pathname}?tab=${tab}`, { replace: true })}
@@ -1150,8 +1165,8 @@ const MinervaWorkspace = () => {
         );
       case 'smm-graphics':
         return <ResourceManager category="smm_graphics" title="MIMS Graphics" description="The association's graphic assets: logos, marks, templates and ready-to-use graphics. Pictures show as pictures; find one by name or type, preview it full screen and download it." divisions={['none']} canManage={access.canManage('smm-graphics')} flavour="graphics" />;
-      case 'smm-other':
-        return <ResourceManager category="smm_other" title="Other Resources" description="Other reusable communication material: press material, photography, mentions, anything without a library of its own." divisions={['none']} canManage={access.canManage('smm-other')} />;
+      case 'smm-brand':
+        return <BrandDesignSystem />;
       case 'ops-fee':
         return <MembershipFee />;
       case 'ops-treasury':

@@ -55,3 +55,20 @@ export function sizeOrContents(item: ResourceRow): string {
   if (files.length === 1 && item.sources.length === 1) return formatBytes(files[0].size) || itemLook(item).label;
   return contentsLine(item);
 }
+
+/**
+ * The classes and style that draw a backdrop behind a picture (see
+ * `useImageBackdrop`). The chequerboard is two middle greys, so a white
+ * mark and a black one both show on it.
+ */
+export function backdropProps(b: 'dark' | 'light' | 'checker' | null | undefined): { className: string; style?: { backgroundImage: string; backgroundSize: string } } {
+  if (b === 'dark') return { className: 'bg-neutral-800' };
+  if (b === 'light') return { className: 'bg-white' };
+  if (b === 'checker') {
+    return {
+      className: 'bg-neutral-300',
+      style: { backgroundImage: 'conic-gradient(#a3a3a3 25%, #d4d4d4 0 50%, #a3a3a3 0 75%, #d4d4d4 0)', backgroundSize: '16px 16px' },
+    };
+  }
+  return { className: 'bg-muted/40' };
+}

@@ -69,7 +69,7 @@ export function useLibraryItems(category: string, onError: (e: unknown) => void)
   return { items, setItems, loading, reload };
 }
 
-/** Warm a library before it is opened (the tabs of Brand & Social). */
+/** Warm a library before it is opened (the tabs of Social Template). */
 export function prefetchLibrary(category: string): Promise<void> {
   if (itemCache.has(category)) return Promise.resolve();
   return listResources(category)
@@ -159,17 +159,57 @@ export interface LibraryChoices {
 
 /**
  * The view, the sort, the type and the search a reader chose in each
- * library, kept for as long as the workspace stays open: opening an item,
- * another page or another tab and coming back finds the library exactly
- * as it was left. Held in memory, not in the browser's storage, so a new
- * visit starts from each library's own default.
+ * library. While the workspace is open all four are kept in memory, so
+ * opening an item, another page or another tab and coming back finds the
+ * library exactly as it was left.
+ *
+ * THE VIEW AND THE SORT ALSO OUTLIVE THE VISIT. They are how a person
+ * likes to see a library (graphics as a grid, templates as a list, newest
+ * first or A to Z), so they are kept in this browser under one key,
+ * `mims.library.views`, which the Cookie Policy lists. The type filter and
+ * the search are not: finding a library still filtered from last week,
+ * with half its items hidden, is a surprise nobody wants.
  */
 const choiceMemory = new Map<string, LibraryChoices>();
+export const LIBRARY_VIEWS_KEY = 'mims.library.views';
+const VIEWS: LibraryView[] = ['grid', 'list'];
+const SORTS: LibrarySort[] = ['newest', 'oldest', 'name', 'name-desc', 'type'];
+
+type Saved = Record<string, { view?: string; sort?: string }>;
+
+function readSaved(): Saved {
+  try {
+    const raw = window.localStorage.getItem(LIBRARY_VIEWS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Saved : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSaved(category: string, view: LibraryView, sort: LibrarySort) {
+  try {
+    const all = readSaved();
+    all[category] = { view, sort };
+    window.localStorage.setItem(LIBRARY_VIEWS_KEY, JSON.stringify(all));
+  } catch { /* storage unavailable: kept for this visit only */ }
+}
+
+function startingChoices(category: string, defaults: LibraryChoices): LibraryChoices {
+  const inMemory = choiceMemory.get(category);
+  if (inMemory) return inMemory;
+  const saved = readSaved()[category];
+  return {
+    ...defaults,
+    view: saved && VIEWS.includes(saved.view as LibraryView) ? saved.view as LibraryView : defaults.view,
+    sort: saved && SORTS.includes(saved.sort as LibrarySort) ? saved.sort as LibrarySort : defaults.sort,
+  };
+}
 
 export function useLibraryChoices(category: string, defaults: LibraryChoices) {
-  const [choices, setChoices] = useState<LibraryChoices>(() => choiceMemory.get(category) ?? defaults);
+  const [choices, setChoices] = useState<LibraryChoices>(() => startingChoices(category, defaults));
   useEffect(() => {
-    setChoices(choiceMemory.get(category) ?? defaults);
+    setChoices(startingChoices(category, defaults));
     // Only a change of library resets; `defaults` is a fresh object each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
@@ -177,6 +217,7 @@ export function useLibraryChoices(category: string, defaults: LibraryChoices) {
     setChoices((prev) => {
       const next = { ...prev, ...patch };
       choiceMemory.set(category, next);
+      if (patch.view !== undefined || patch.sort !== undefined) writeSaved(category, next.view, next.sort);
       return next;
     });
   }, [category]);
@@ -214,4 +255,81 @@ export function textNoun(flavour: LibraryFlavour): { one: string; many: string }
   return flavour === 'instagram' || flavour === 'linkedin'
     ? { one: 'Caption', many: 'Captions and texts' }
     : { one: 'Text', many: 'Texts' };
+}
+
+// ---------------------------------------------------------------------
+// A backdrop a transparent picture can be seen on
+// ---------------------------------------------------------------------
+
+/**
+ * What to put behind a picture.
+ *   null     it has no transparency (a photograph): nothing needed.
+ *   'dark'   transparent and light, like a white logo: a dark backdrop.
+ *   'light'  transparent and dark, like a navy logo: a white backdrop.
+ *   'checker' transparent in between, or the picture could not be read:
+ *            the grey chequerboard design tools use for transparency.
+ *
+ * A white logo on the library's pale grey was simply invisible. The
+ * picture is sampled once, at 32 by 32 pixels, and the answer is kept for
+ * the session, so each picture is looked at once however often it is
+ * drawn. Nothing about the file changes.
+ */
+export type Backdrop = 'dark' | 'light' | 'checker' | null;
+
+const OPAQUE_FORMAT = /\.(jpe?g|heic|heif|bmp)$/i;
+const backdropCache = new Map<string, Backdrop>();
+const backdropWaiting = new Map<string, Promise<Backdrop>>();
+
+function sampleBackdrop(url: string): Promise<Backdrop> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.decoding = 'async';
+    img.onload = () => {
+      try {
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) { resolve('checker'); return; }
+        ctx.drawImage(img, 0, 0, size, size);
+        const d = ctx.getImageData(0, 0, size, size).data;
+        let see = 0; let lum = 0; let inked = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const a = d[i + 3];
+          if (a < 250) see += 1;
+          if (a >= 64) { lum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255; inked += 1; }
+        }
+        if (see / (size * size) < 0.02) { resolve(null); return; }
+        const mean = inked ? lum / inked : 0.5;
+        resolve(mean > 0.7 ? 'dark' : mean < 0.35 ? 'light' : 'checker');
+      } catch {
+        resolve('checker'); // the picture would not let itself be read
+      }
+    };
+    img.onerror = () => resolve('checker');
+    img.src = url;
+  });
+}
+
+/** The backdrop for the picture at `url`, remembered under `key`. */
+export function useImageBackdrop(url: string | null | undefined, key?: string | null): Backdrop {
+  const id = key || url || '';
+  const [value, setValue] = useState<Backdrop>(() => (id ? backdropCache.get(id) ?? null : null));
+  useEffect(() => {
+    if (!url || !id) { setValue(null); return; }
+    // A JPEG cannot be transparent: nothing to sample, nothing to fetch twice.
+    if (OPAQUE_FORMAT.test(id.split('?')[0])) { setValue(null); return; }
+    if (backdropCache.has(id)) { setValue(backdropCache.get(id) ?? null); return; }
+    let live = true;
+    let waiting = backdropWaiting.get(id);
+    if (!waiting) {
+      waiting = sampleBackdrop(url).then((b) => { backdropCache.set(id, b); backdropWaiting.delete(id); return b; });
+      backdropWaiting.set(id, waiting);
+    }
+    waiting.then((b) => { if (live) setValue(b); });
+    return () => { live = false; };
+  }, [url, id]);
+  return value;
 }

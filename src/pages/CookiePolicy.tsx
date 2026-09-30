@@ -6,7 +6,8 @@ import { openCookieSettings } from '@/components/cookies';
 // Cookie Policy, aligned with the Garante's Guidelines on cookies of
 // 10 June 2021 and article 122 of the Italian Privacy Code. The list in
 // section 5 is every browser storage item the code sets (audited in
-// September 2026, step 73); update it whenever a new one is added.
+// September 2026, step 73; the library views added in step 84); update it
+// whenever a new one is added.
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -26,7 +27,7 @@ const CookiePolicy = () => (
     <LegalLayout
       title="Cookie Policy"
       description="How this website uses cookies and similar technologies, and how you control them."
-      lastUpdated="September 25th, 2026"
+      lastUpdated="September 29th, 2026"
       currentId="cookies"
       sections={sections}
     >
@@ -140,9 +141,11 @@ const CookiePolicy = () => (
           </li>
           <li>
             <strong>mims.zoom.workspace</strong>, <strong>mims.zoom.editorial</strong>,{' '}
-            <strong>minerva-dashboard-greeting:...</strong>, <strong>ws-contact-prompted</strong> and{' '}
-            <strong>mims:ws:nav-first-seen</strong> (local or session storage). Remember the view you chose for a
-            calendar, which greeting you last saw on the dashboard, and which one-time prompts you have already seen.
+            <strong>mims.library.views</strong>, <strong>minerva-dashboard-greeting:...</strong>,{' '}
+            <strong>ws-contact-prompted</strong> and <strong>mims:ws:nav-first-seen</strong> (local or session
+            storage). Remember the view you chose for a calendar, how you arrange each file library (grid or list,
+            and the order), which greeting you last saw on the dashboard, and which one-time prompts you have already
+            seen.
             Duration: until you clear your browser data, or the browser session.
           </li>
         </ul>

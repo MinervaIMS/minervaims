@@ -1,36 +1,31 @@
 // =====================================================================
-// BRAND & SOCIAL: Instagram, LinkedIn and the Design System, one page.
+// SOCIAL TEMPLATE: Instagram, LinkedIn and Other Resources, one page.
 // ---------------------------------------------------------------------
-// They were three subsections of Social Media, and the Media team used
-// them together: the design system says how a post should look, the
-// Instagram and LinkedIn libraries hold the posts. Three places for one
-// job meant three trips through the menu and three different-looking
-// pages. They are now the three tabs of one page.
+// The material the Media team posts from lives in three libraries that
+// are used together: the Instagram and LinkedIn posts with their
+// captions, and the other resources (press material, photography,
+// mentions) that feed both. They are the three tabs of one page. The
+// Design System, which says how everything should look rather than
+// holding what is posted, keeps a subsection of its own.
 //
 // EACH TAB KEEPS ITS OWN PERMISSION. The tabs a reader sees are the ones
 // the access matrix lets them open, and what they may change on each is
-// decided by that tab's own row (a Media Analyst manages Instagram and
-// LinkedIn and reads the Design System). The workspace applies the
-// read-only treatment to the open tab, not to the page.
+// decided by that tab's own row. The workspace applies the read-only
+// treatment to the open tab, not to the page.
 //
 // The tab is in the address (`?tab=linkedin`), so it can be linked to and
 // the back button returns to it; the old addresses of the three pages
 // open the matching tab.
 // =====================================================================
 
-import { lazy, Suspense, useEffect, useRef, type KeyboardEvent } from 'react';
-import { Instagram, Linkedin, Palette } from 'lucide-react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { FolderOpen, Instagram, Linkedin } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
-import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import ResourceManager from '@/components/admin/ResourceManager';
 import { useAccess } from '@/hooks/useAccess';
 import { prefetchLibrary, useCachedCount } from '@/components/admin/library/library-data';
 
-// The design system carries the whole README and its specimens; it is
-// fetched when its tab is first opened, not with the libraries.
-const BrandDesignSystem = lazy(() => import('@/components/admin/BrandDesignSystem'));
-
-const TAB_META: Record<string, { icon: typeof Instagram; category?: string; blurb: string }> = {
+const TAB_META: Record<string, { icon: typeof Instagram; category: string; blurb: string }> = {
   instagram: {
     icon: Instagram,
     category: 'smm_instagram',
@@ -41,19 +36,20 @@ const TAB_META: Record<string, { icon: typeof Instagram; category?: string; blur
     category: 'smm_linkedin',
     blurb: 'LinkedIn posts and carousels, with their texts ready to paste. LinkedIn reaches alumni, partners and recruiters: keep to the Society’s professional register.',
   },
-  'design-system': {
-    icon: Palette,
-    blurb: '',
+  'other-resources': {
+    icon: FolderOpen,
+    category: 'smm_other',
+    blurb: 'Everything else the posts draw on: press material, photography, mentions of the Society, anything without a library of its own.',
   },
 };
 
-function TabCount({ category }: { category?: string }) {
-  const n = useCachedCount(category ?? '');
-  if (!category || n === null) return null;
+function TabCount({ category }: { category: string }) {
+  const n = useCachedCount(category);
+  if (n === null) return null;
   return <span className="tabular-nums text-xs opacity-80">{n}</span>;
 }
 
-export default function BrandSocial({ tabs, activeTab, onTab }: {
+export default function SocialTemplate({ tabs, activeTab, onTab }: {
   /** The tabs this reader may open, in order. */
   tabs: { tab: string; resource: string; label: string }[];
   activeTab: string | null;
@@ -89,21 +85,21 @@ export default function BrandSocial({ tabs, activeTab, onTab }: {
   return (
     <div>
       <WorkspacePageHeader
-        title="Brand & Social"
-        description="Everything the Society publishes with, in one place: the Instagram and LinkedIn material ready to post, and the design system every post is built on."
+        title="Social Template"
+        description="The material the Society posts from, in one place: Instagram and LinkedIn posts with their captions, and the other resources they draw on."
       />
 
       {tabs.length > 1 && (
-        <div ref={listRef} role="tablist" aria-label="Brand & Social" onKeyDown={onKey}
+        <div ref={listRef} role="tablist" aria-label="Social Template" onKeyDown={onKey}
           className="-mx-1 mb-6 flex gap-1 overflow-x-auto border-b border-separator px-1">
           {tabs.map((t) => {
             const meta = TAB_META[t.tab];
-            const Icon = meta?.icon ?? Palette;
+            const Icon = meta?.icon ?? FolderOpen;
             const selected = t.tab === activeTab;
             return (
               <button
                 key={t.tab} type="button" role="tab" data-tab={t.tab} data-ro
-                id={`brand-tab-${t.tab}`} aria-controls={`brand-panel-${t.tab}`}
+                id={`social-tab-${t.tab}`} aria-controls={`social-panel-${t.tab}`}
                 aria-selected={selected} tabIndex={selected ? 0 : -1}
                 onClick={() => onTab(t.tab)}
                 className={`-mb-px inline-flex h-11 shrink-0 items-center gap-2 border-b-2 px-3 font-body sm:px-4 text-[15px] transition-colors ${
@@ -112,7 +108,7 @@ export default function BrandSocial({ tabs, activeTab, onTab }: {
               >
                 <Icon aria-hidden className="h-4 w-4" />
                 {t.label}
-                <TabCount category={meta?.category} />
+                {meta && <TabCount category={meta.category} />}
               </button>
             );
           })}
@@ -120,21 +116,17 @@ export default function BrandSocial({ tabs, activeTab, onTab }: {
       )}
 
       {current && (
-        <div role="tabpanel" id={`brand-panel-${current.tab}`} aria-labelledby={`brand-tab-${current.tab}`}>
-          {current.tab === 'design-system' ? (
-            <Suspense fallback={<WorkspaceLoader />}><BrandDesignSystem embedded /></Suspense>
-          ) : (
-            <ResourceManager
-              key={current.tab}
-              embedded
-              category={TAB_META[current.tab]?.category ?? ''}
-              title={current.label}
-              description={TAB_META[current.tab]?.blurb ?? ''}
-              divisions={['none']}
-              canManage={access.canManage(current.resource)}
-              flavour={current.tab === 'linkedin' ? 'linkedin' : 'instagram'}
-            />
-          )}
+        <div role="tabpanel" id={`social-panel-${current.tab}`} aria-labelledby={`social-tab-${current.tab}`}>
+          <ResourceManager
+            key={current.tab}
+            embedded
+            category={TAB_META[current.tab]?.category ?? ''}
+            title={current.label}
+            description={TAB_META[current.tab]?.blurb ?? ''}
+            divisions={['none']}
+            canManage={access.canManage(current.resource)}
+            flavour={current.tab === 'linkedin' ? 'linkedin' : current.tab === 'instagram' ? 'instagram' : 'general'}
+          />
         </div>
       )}
     </div>
