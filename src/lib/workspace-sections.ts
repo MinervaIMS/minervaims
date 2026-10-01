@@ -24,7 +24,7 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'my-role', label: 'My profile' }, { key: 'dashboard', label: 'Dashboard' },
     { key: 'welcome', label: 'How to use' }, { key: 'calendar', label: 'Calendar' } ] },
   { section: 'Career', items: [
-    { key: 'career-cv', label: 'CV template' }, { key: 'career-cl', label: 'Cover letter template' },
+    { key: 'career-smart', label: 'Smart Tracker' }, { key: 'career-cv', label: 'CV template' }, { key: 'career-cl', label: 'Cover letter template' },
     { key: 'career-linkedin', label: 'LinkedIn' }, { key: 'career-gpa', label: 'GPA converter' },
     { key: 'career-gmat', label: 'GMAT resources' }, { key: 'career-ib', label: 'IB questions' } ] },
   { section: 'Reports', items: [
@@ -55,14 +55,14 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'people-invites', label: 'Invites' } ] },
   { section: 'Media & Communication', items: [
     { key: 'smm-editorial', label: 'Editorial calendar' },
-    // One page, Social Template, with a tab for each of these three; each
+    // One page, Social Templates, with a tab for each of these three; each
     // tab keeps its own row because each keeps its own permission.
-    { key: 'smm-ig', label: 'Social Template: Instagram tab' }, { key: 'smm-li', label: 'Social Template: LinkedIn tab' },
-    { key: 'smm-other', label: 'Social Template: Other Resources tab' },
+    { key: 'smm-ig', label: 'Social Templates: Instagram tab' }, { key: 'smm-li', label: 'Social Templates: LinkedIn tab' },
+    { key: 'smm-other', label: 'Social Templates: Other Resources tab' },
     { key: 'smm-graphics', label: 'MIMS Graphics' }, { key: 'smm-brand', label: 'Design System' },
     { key: 'smm-ads', label: 'Ads & spending' } ] },
   { section: 'Operations', items: [
-    { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' },
+    { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' }, { key: 'ops-forms', label: 'Internal forms' },
     { key: 'ops-external', label: 'External relations' }, { key: 'ops-docs', label: 'Statute & documents' } ] },
   { section: 'Website', items: [
     { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },

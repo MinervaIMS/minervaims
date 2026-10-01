@@ -65,7 +65,7 @@ const BASE: Record<string, string> = {
   president: 'President', vice_president: 'Vice President', head_of_asset_management: 'Head of Asset Management',
   head_of_division: 'Head of Division', team_leader: 'Team Leader', senior_analyst: 'Senior Analyst',
   portfolio_manager: 'Portfolio Manager', analyst: 'Analyst', head_of_media: 'Head of Media & Communication',
-  media_analyst: 'Media & Communication Analyst', head_of_operations: 'Head of Operations', member: 'Member',
+  media_analyst: 'Media & Communication Analyst', operations_analyst: 'Operations Analyst', head_of_operations: 'Head of Operations', member: 'Member',
 };
 
 export function roleLabel(rawRole: string, rawDivision: string | null): string {

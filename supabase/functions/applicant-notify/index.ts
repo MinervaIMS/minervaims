@@ -36,7 +36,7 @@ const STATUS_URL = 'https://minervaims.org/workspace';
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'portfolio_manager', 'analyst', 'head_of_media', 'media_analyst',
-  'head_of_operations', 'advisor',
+  'operations_analyst', 'head_of_operations', 'advisor',
 ]);
 
 function json(body: unknown, status = 200) {

@@ -83,6 +83,7 @@ export const NAV: NavSection[] = [
     // My Profile because it is about the member, not about the association.
     key: 'career', slug: 'career', label: 'Career', Icon: Briefcase,
     subItems: [
+      { key: 'career-smart', slug: 'smart-tracker', label: 'Smart Tracker', allowed: (p) => p.can('career-smart') },
       { key: 'career-cv', slug: 'cv-template', label: 'CV Template', allowed: (p) => p.can('career-cv') },
       { key: 'career-cl', slug: 'cover-letter-template', label: 'Cover Letter Template', allowed: (p) => p.can('career-cl') },
       { key: 'career-linkedin', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('career-linkedin') },
@@ -141,7 +142,7 @@ export const NAV: NavSection[] = [
       { key: 'smm-editorial', slug: 'editorial-calendar', label: 'Editorial Calendar', allowed: (p) => p.can('smm-editorial') },
       // Instagram, LinkedIn and Other Resources are one page with three
       // tabs. Each tab keeps its own permission; see MERGED_SUBSECTIONS.
-      { key: 'smm-social', slug: 'social-template', label: 'Social Template', allowed: (p) => p.can('smm-social') },
+      { key: 'smm-social', slug: 'social-templates', label: 'Social Templates', allowed: (p) => p.can('smm-social') },
       { key: 'smm-graphics', slug: 'graphics', label: 'MIMS Graphics', allowed: (p) => p.can('smm-graphics') },
       { key: 'smm-brand', slug: 'design-system', label: 'Design System', allowed: (p) => p.can('smm-brand') },
       { key: 'smm-ads', slug: 'ads-and-spending', label: 'Ads & Spending', allowed: (p) => p.can('smm-ads') },
@@ -152,6 +153,7 @@ export const NAV: NavSection[] = [
     subItems: [
       { key: 'ops-fee', slug: 'membership-fees', label: 'Membership Fees', allowed: (p) => p.can('ops-fee') },
       { key: 'ops-treasury', slug: 'treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
+      { key: 'ops-forms', slug: 'internal-forms', label: 'Internal Forms', allowed: (p) => p.can('ops-forms') },
       { key: 'ops-external', slug: 'external-relations', label: 'External Relations', allowed: (p) => p.can('ops-external') },
       { key: 'ops-docs', slug: 'statute-and-documents', label: 'Statute & Documents', allowed: (p) => p.can('ops-docs') },
     ],
@@ -190,7 +192,7 @@ export const NAV: NavSection[] = [
 // SUBSECTIONS THAT BECAME TABS.
 // ---------------------------------------------------------------------
 // Instagram, LinkedIn and Other Resources were three subsections of Social
-// Media; they are now the three tabs of Social Template. Their keys stay,
+// Media; they are now the three tabs of Social Templates. Their keys stay,
 // because they are what the access matrix, the server, the search index
 // and the Role permissions table speak in, and their old addresses stay,
 // because they have been bookmarked and sent. Both lead to the new page
@@ -216,12 +218,14 @@ export const MERGED_SUBSECTIONS: Record<string, MergedSubsection> = {
 /**
  * Addresses a page had before it was renamed: section key, old segment,
  * new page key. Brand & Social (Instagram, LinkedIn and the Design System)
- * became Social Template (Instagram, LinkedIn and Other Resources) with the
- * Design System on its own; its address still opens Social Template, and
+ * became Social Templates (Instagram, LinkedIn and Other Resources) with the
+ * Design System on its own; its address still opens Social Templates, and
  * the workspace sends `?tab=design-system` on to the Design System page.
  */
 const RENAMED_PAGES: { sectionKey: string; slug: string; key: string }[] = [
   { sectionKey: 'smm', slug: 'brand-and-social', key: 'smm-social' },
+  // Step 84 called it Social Template, singular.
+  { sectionKey: 'smm', slug: 'social-template', key: 'smm-social' },
 ];
 
 /** The tabs of a merged page, in order: `{ tab, resource }`. */

@@ -43,7 +43,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="September 28th, 2026"
+      lastUpdated="October 1st, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -116,8 +116,10 @@ const PrivacyPolicy = () => (
             <strong>Members:</strong> identification and contact details, division and role, membership status and
             history, membership fee records, photograph where provided, LinkedIn profile, and the semester registers
             of members; the certificates of membership you choose to download (name, role, semester, issue date,
-            certificate number and, if it happens, the date and reason of a withdrawal); and your progress in the
-            Getting started checklist of the Workspace, which only you can see.
+            certificate number and, if it happens, the date and reason of a withdrawal); your progress in the
+            Getting started checklist of the Workspace, which only you can see; and the answers you give to the
+            Society's internal forms, with any files you attach, the time they were sent and, where a form collects a
+            payment, whether it has been received.
           </li>
           <li>
             <strong>Alumni:</strong> name and surname, graduation year, current employer, job area, city and LinkedIn
@@ -174,6 +176,12 @@ const PrivacyPolicy = () => (
             and safely, article 6(1)(f). <strong>Thank-you email to guests who attended:</strong> legitimate interest
             in thanking participants and keeping them informed about the association's activities, article 6(1)(f);
             it is sent once, and you can object at any time.
+          </li>
+          <li>
+            <strong>Internal forms</strong> (orders, sign-ups and expressions of interest the Society collects from
+            its members, with a receipt of your answers by email): performance of the association relationship at
+            your request, article 6(1)(b), and legitimate interest in organising the association's activities,
+            article 6(1)(f).
           </li>
           <li>
             <strong>Certificates of membership</strong> (issuing a certificate you request and confirming it to the
@@ -252,7 +260,7 @@ const PrivacyPolicy = () => (
         <p>
           Transactional emails (application confirmations, interview invitations, offer notifications, event
           registration confirmations with your check-in code and reminders to members, membership fee notices,
-          account emails) are sent because they are necessary for the process or the membership concerned and do not
+          receipts of your answers to an internal form, account emails) are sent because they are necessary for the process or the membership concerned and do not
           depend on the newsletter. The check-in code in these emails contains no personal data: it is a random
           number that only the association's staff can use, to mark you as present at the entrance.
         </p>
@@ -304,6 +312,14 @@ const PrivacyPolicy = () => (
           reaches only the people the member chooses to show the certificate to. The President and the Vice
           President can withdraw a certificate, for example one issued with a wrong role; a withdrawn certificate is
           then shown as no longer valid.
+        </p>
+        <p>
+          <strong>Internal forms.</strong> The Society sometimes asks its active members for something through a form
+          in the Workspace: an order, a sign-up, interest in a visit. Answering is your choice. Your answers, and any
+          files you attach, are stored in a private area and are read only by the people who run the form (the
+          President, the Vice President, the Head of Operations and the Operations Analyst), who may add a note for
+          their own use and record whether a payment has been received. You receive an email with a copy of what you
+          sent. Your answers are not shown to other members.
         </p>
       </LegalSectionBlock>
 
@@ -500,6 +516,10 @@ const PrivacyPolicy = () => (
             <strong>Certificates of membership:</strong> for as long as the member's Workspace account exists, so
             that a certificate can still be confirmed after the semester it refers to; deleted together with the
             account. The Getting started checklist is deleted together with the account.
+          </li>
+          <li>
+            <strong>Answers to internal forms:</strong> kept until the form is deleted by the people who run it,
+            together with the files attached to them; an individual answer can be deleted earlier, on request.
           </li>
           <li>
             <strong>Newsletter:</strong> until you unsubscribe or object, plus a permanent suppression record to honour

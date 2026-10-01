@@ -125,11 +125,22 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     requires: 'ops-treasury',
   },
   {
+    id: 'internal-forms',
+    title: 'How internal forms work',
+    body: [
+      'An internal form collects something from the Society\'s active members: an order, a sign-up, interest in a company visit. It is built in Operations, Internal Forms by the President, the Vice President, the Head of Operations or the Operations Analyst, from a blank page or from a starter, with any of twelve kinds of question, photos and documents included.',
+      'A form is a draft until it is opened, and only organisers can see a draft. Once open, every active member finds it under Forms for you on their Dashboard, and its link opens it after signing in. A deadline closes it by itself; the organisers can close and reopen it at any time. Candidates, pending accounts, alumni, advisors and members on temporary leave cannot answer.',
+      'Each member answers once and receives a receipt email with a copy of their answers. If the form allows it, they can change their answers while it is open. Where the form collects a payment, members see the amount and how to pay, and organisers tick each payment as it arrives; the Treasury is not changed by those ticks.',
+      'The answers are read in a summary that counts every choice and totals every number, or in a table with search, a payment filter and a choice of columns, and are exported as Excel or CSV with exactly the answers and columns chosen, the attached files alongside as a ZIP. Answers and files are kept until the form is deleted.',
+    ],
+    requires: 'ops-forms',
+  },
+  {
     id: 'media',
     title: 'How the media plan fits together',
     body: [
       'The editorial calendar is the plan: what is going out, when, where it goes and in what format, who is responsible, its status and whether it is paid. One item can go to several destinations at once, with its own format in each, because a single piece of work is a single record even when it is a reel on Instagram and a post on LinkedIn.',
-      'The libraries beside it hold the material. Social Template brings together the Instagram, LinkedIn and Other Resources libraries as three tabs of one page; MIMS Graphics holds the Society\'s graphic assets; and the Design System says how the association presents itself. Every library works the same way: search, type filters, pictures shown as pictures, bulk upload and ZIP downloads.',
+      'The libraries beside it hold the material. Social Templates brings together the Instagram, LinkedIn and Other Resources libraries as three tabs of one page; MIMS Graphics holds the Society\'s graphic assets; and the Design System says how the association presents itself. Every library works the same way: search, type filters, pictures shown as pictures, bulk upload and ZIP downloads.',
       'Advertising and spending is a register of paid promotion. Recording a spend there posts the cost to the Treasury automatically, once, on the date it was incurred, so the media budget and the association\'s accounts cannot drift apart. Editing the description of an existing spend never posts a second time.',
     ],
     requires: 'smm-editorial',
@@ -338,7 +349,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'smm-social',
     level: 'manage',
     steps: [
-      'Open the library the material belongs to: Social Media, Social Template (the Instagram, LinkedIn or Other Resources tab), or MIMS Graphics.',
+      'Open the library the material belongs to: Social Media, Social Templates (the Instagram, LinkedIn or Other Resources tab), or MIMS Graphics.',
       'Drop the files anywhere on the page, or press Upload files and choose them: several at once is fine. Each is listed with a title read from its name; change any title that would not mean something to somebody else in six months.',
       'Press Upload. Each file shows its own progress and becomes its own item; one that fails keeps its place with the reason and Retry.',
       'For a caption, a link or a post that needs its text beside its pictures, use New item instead, or open an item and Edit it to add the caption.',
@@ -470,6 +481,34 @@ export const COMMON_TASKS: ManualTask[] = [
     caution: 'Closing is final. It locks the collection, posts the total to the Treasury and freezes the semester\'s member register.',
   },
   {
+    id: 'run-form',
+    title: 'Run an internal form',
+    requires: 'ops-forms',
+    level: 'manage',
+    steps: [
+      'Open Operations, Internal Forms and press New form. Start from a blank form or from a starter such as a merchandise order.',
+      'In Questions, give the form its title and introduction and write the questions; the column on the right shows what members will see. Press Save.',
+      'In Settings, set the deadline, whether members can change their answers, the payment (amount and how to pay) and the message they read after sending.',
+      'Press Preview to see the form as a member, then Open the form. Copy link to share it; members also find it on their Dashboard.',
+      'In Answers, read the summary, tick payments in the table as they arrive, and press Export for exactly the answers and columns needed.',
+      'Close the form when it is done, and delete it once its purpose is over: its answers and files go with it.',
+    ],
+    caution: 'Opening a form puts it on every active member\'s Dashboard at once. Deleting a form deletes its answers for good, so export them first.',
+  },
+  {
+    id: 'answer-form',
+    title: 'Answer an internal form',
+    requires: 'dashboard',
+    level: 'view',
+    steps: [
+      'On the Dashboard, under Forms for you, press Answer beside the form. A link shared by the organisers opens the same page.',
+      'Answer the questions; those marked Required must be answered. Files upload as soon as they are chosen.',
+      'Press Send my answers. A receipt with a copy of your answers reaches your inbox.',
+      'To change your answers while the form is open, press View or change on the Dashboard, then Change my answers, if the form allows it.',
+    ],
+    caution: 'Internal forms are for active members: candidates, alumni, advisors and members on temporary leave do not receive them.',
+  },
+  {
     id: 'record-money',
     title: 'Record a movement in the Treasury',
     requires: 'ops-treasury',
@@ -572,8 +611,10 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
     'The Head of Media and Communication owns everything the association says publicly outside its research: the editorial calendar, the platform libraries, the brand and design system with its downloadable package, and the paid advertising register. External relations and the statute and documents are managed here too, because an announcement of a partnership cannot be drafted from a summary of it. The member register and the alumni directory are readable, so member and alumni features and event communications start from the real record.',
   media_analyst:
     'A Media Analyst produces the material: the Instagram, LinkedIn, graphics and other libraries are theirs to manage, and so is the editorial calendar, the plan they work to every week. The brand system and the advertising register are read rather than edited, because the identity and the budget belong to the Head. At events, a Media Analyst can take attendance and scan tickets at the door alongside Operations, and the member register and alumni directory are readable for features and communications.',
+  operations_analyst:
+    'An Operations Analyst runs the association\'s internal forms, from the hoodie order to the interest list for a company visit: building each form, setting its deadline, following the answers and the payments, and exporting what is needed. Beyond that, the access is the Media Analyst\'s: the Social Templates, graphics and editorial calendar, attendance and ticket scanning at events, and the member register and alumni directory, readable.',
   head_of_operations:
-    'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ. Invitations to advisors and alumni are sent by the President and the Vice President.',
+    'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the internal forms, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ. Invitations to advisors and alumni are sent by the President and the Vice President.',
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
@@ -608,6 +649,9 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Certificate number', definition: 'The number printed on a certificate of membership, such as MIMS-26F-7K3Q-9D2X: the Society, the semester (26F is Fall 2026) and eight random characters. It is what minervaims.org/verify checks.' },
   { term: 'Getting started', definition: 'The five-step checklist a member starting out sees on the Dashboard in the place of Research by division, until the steps are done or the card is hidden.' },
   { term: 'Thank-you to guests', definition: 'The email the President sends, the morning after an event, to the guests marked as attended who are not members.', requires: 'events-attendance' },
+  { term: 'Internal form', definition: 'A form for the Society\'s active members, built in Operations, Internal Forms: an order, a sign-up, interest in a visit. Open forms appear under Forms for you on the Dashboard.' },
+  { term: 'Starter', definition: 'A ready-made form to begin from in Internal Forms, such as a merchandise order with a payment; a draft to change freely.', requires: 'ops-forms' },
+  { term: 'Operations Analyst', definition: 'The member who assists the Head of Operations and runs the internal forms. Beyond the forms, the access is the Media Analyst\'s.' },
   { term: 'Activity log', definition: 'The record of every meaningful action with the role held at that moment. It exists for accountability across leadership teams.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
 ];
@@ -633,6 +677,11 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     question: 'I changed a role and the public website has not caught up.',
     answer: 'The role has changed; the public Team page has three conditions, not one. The person must be marked to show on the website, their membership status must be one that is published, and their role must be one the public page carries. All three are on their record in People, Members.',
     requires: 'people-members',
+  },
+  {
+    question: 'A member says they cannot see a form.',
+    answer: 'Three things decide it. The form must be open, not a draft, and its deadline must not have passed: the list in Internal Forms shows both. The member must be ACTIVE: candidates, pending accounts, alumni, advisors and members on temporary leave cannot answer. And they must be signed in with the account linked to their member record. If all three hold, the form is under Forms for you on their Dashboard and its link opens it.',
+    requires: 'ops-forms',
   },
   {
     question: 'I cannot change my own role.',
@@ -734,6 +783,16 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     ],
     related: ['ops-fee', 'smm-ads'],
   },
+  'ops-forms': {
+    detail: [
+      "Forms for the Society's active members, whatever needs collecting this time: merchandise orders, interest in a company visit, a sign-up with preferences. The list shows the open forms first, with their deadline, their answers and their payments, then the drafts, then the closed ones.",
+      "A form has three tabs, in the order the work is done. Questions holds the title, the introduction and the questions, with the member's view beside them. Settings holds the deadline, whether answers can be changed, the payment and the message members read after sending. Answers holds the summary, the table and the export.",
+      "Edits are kept on the page until Save, in a bar that stays in view. Opening, closing and reopening a form say what will happen to members before they happen. A form that already has answers can still be changed: what was answered stays as it was sent, and a removed question keeps its answers in the export.",
+      "Every answer can be opened in full beside the table, with its files, a Paid switch that records who ticked it and when, and a note for the team that the member never sees.",
+      "Answers and attached files are kept until the form is deleted, and only organisers can read them.",
+    ],
+    related: ['ops-fee', 'ops-treasury'],
+  },
   'ops-fee': {
     detail: [
       "The semester's membership fee collection: who owes it, who has paid, and the deadlines they were given.",
@@ -782,7 +841,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The public Team page is written from this register automatically. A person appears there only if three things are true at once: their profile is marked to show on the website, their membership status is one that is published, and their role is one the public page carries.",
       "Only the President and the association account can assign or change a role. Nobody can change their own, from any page.",
       "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
-      "The Head of Media and Communication and the Media Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
+      "The Head of Media and Communication, the Media Analyst and the Operations Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
       "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken. Association on Display days count as events.",
     ],
     related: ['settings-users', 'people-alumni', 'ops-fee'],
@@ -800,7 +859,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Who registered for each event and who actually came. Every registration carries an entry code, sent as a QR code in the confirmation email and again the day before; Scan tickets reads it with the camera of a phone or a laptop and ticks the person as present, with the time.",
       "Ticking by hand works exactly as before and can be mixed with scanning: somebody without their code is found in the list and ticked. Online events have no door, so they have no code and no scanner.",
       "Several phones can scan the same event together and share one live count. Without signal the scanner keeps working: tickets are saved on the phone with the time of the scan and sent as soon as the connection returns.",
-      "The Media Analyst can take attendance and scan alongside Operations. The list closes two weeks after the event; after that it is the record and can still be exported.",
+      "The Media Analyst and the Operations Analyst can take attendance and scan alongside Operations. The list closes two weeks after the event; after that it is the record and can still be exported.",
     ],
     related: ['events-forms', 'events-create', 'events-archive'],
   },
@@ -1007,7 +1066,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "A summary of the association's semester, identical for every member: research output, people, and fund performance, always against the semester before.",
       "Nothing here needs maintaining. Every figure is computed from the registers the workspace already holds.",
-      "A member starting out in an analyst, media analyst, senior analyst, team leader or portfolio manager role sees Getting started in the place of Research by division: five steps that tick themselves as they are done and can be ticked by hand. Once all are done, or the card is hidden, the chart returns.",
+      "A member starting out in an analyst, media analyst, operations analyst, senior analyst, team leader or portfolio manager role sees Getting started in the place of Research by division: five steps that tick themselves as they are done and can be ticked by hand. Once all are done, or the card is hidden, the chart returns.",
     ],
     related: ['reports-archive', 'people-members', 'reports-funds'],
   },

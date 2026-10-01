@@ -2,7 +2,7 @@
 // THE FILE LIBRARY.
 // ---------------------------------------------------------------------
 // One component draws every library in the workspace: the Instagram,
-// LinkedIn and Other Resources tabs of Social Template, MIMS Graphics,
+// LinkedIn and Other Resources tabs of Social Templates, MIMS Graphics,
 // Templates & repositories, External relations and Statute & documents.
 // They are one store (workspace_resources), one set of permissions and
 // now one way of working, so learning one teaches all of them.

@@ -55,7 +55,7 @@ interface UserRow {
 const ASSIGNABLE_ROLES: AppRole[] = [
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'advisor', 'member',
+  'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor', 'member',
 ];
 // A user with one of these (or no role row) is "pending" — not yet given real access.
 const PENDING_ROLES: AppRole[] = ['member', 'pending'];

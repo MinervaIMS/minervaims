@@ -45,13 +45,13 @@ const RedeemSchema = z.object({
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'advisor',
+  'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor',
 ]);
 
 const ROLE_RANK: Record<string, number> = {
   president: 1, vice_president: 2, head_of_asset_management: 3, head_of_division: 4,
   head_of_media: 5, head_of_operations: 6, portfolio_manager: 7, team_leader: 8,
-  senior_analyst: 9, analyst: 10, media_analyst: 11, advisor: 12,
+  senior_analyst: 9, analyst: 10, media_analyst: 11, operations_analyst: 11, advisor: 12,
   alumni: 90, member: 95, candidate: 98, pending: 99, admin: 99,
 };
 
