@@ -26,7 +26,7 @@ import { useCandidateDetail } from '@/components/admin/recruiting/useCandidateDe
 import { CandidateProfile, CandidateStage } from '@/components/admin/recruiting/CandidateProfile';
 import { currentSemester, semesterOf, semestersInData } from '@/lib/semester';
 
-const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst'];
+const JOIN_ROLES: AppRole[] = ['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst', 'operations_analyst'];
 
 // =====================================================================
 // THE DIVISION A CANDIDATE WAS SELECTED FOR - not the two they asked for.
@@ -68,12 +68,12 @@ const selectedDivision = (a: ApplicationRow): OrgDivision =>
 // then refused ("Choose one of the five research divisions") until the
 // role was changed by hand.
 //
-// The joint intake is where the split between its two divisions is made,
-// and the one role an offer can hand out there is Media & Communication
-// Analyst: by statute Operations is "an auxiliary division of one person"
-// (Art. 22), and appointing its Head is a leadership appointment made in
-// People > Members, never through an offer. So a joint-intake candidate
-// starts on that role. A role already saved on the offer still wins, but
+// The joint intake is where the split between its two divisions is made.
+// An offer there appoints a Media & Communication Analyst or, since step
+// 85, an Operations Analyst; appointing the Head of Operations remains a
+// leadership appointment made in People > Members, never through an
+// offer. A joint-intake candidate starts on Media & Communication Analyst,
+// and the dialog switches to Operations Analyst in one choice. A role already saved on the offer still wins, but
 // only when it fits the division saved with it: an offer saved as
 // "Analyst" in Media & Communication (the pair the server refuses) would
 // otherwise reopen as an Analyst in Equity Research, the first division
@@ -100,11 +100,12 @@ const RESEARCH: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', '
 function offerPairProblem(role: AppRole, division: OrgDivision | ''): string | null {
   if (!division) return 'Choose the division this role belongs to.';
   if (role === 'media_analyst') return division === 'media' ? null : 'Media & Communication Analysts always belong to Media & Communication.';
+  if (role === 'operations_analyst') return division === 'operations' ? null : 'Operations Analysts always belong to Operations.';
   if (role === 'portfolio_manager') return division === 'portfolio' ? null : 'Portfolio Manager always belongs to Portfolio Management.';
   if (role === 'team_leader' && division === 'portfolio') return "Portfolio Management's team leader is the Portfolio Manager role.";
   return RESEARCH.includes(division)
     ? null
-    : `${composeRoleLabel(role, null)} is a research role. For Media & Communication, choose "Media & Communication Analyst".`;
+    : `${composeRoleLabel(role, null)} is a research role. For the joint intake, choose "Media & Communication Analyst" or "Operations Analyst".`;
 }
 
 /** The Division column: where the offer places them, or the intake they are in. */

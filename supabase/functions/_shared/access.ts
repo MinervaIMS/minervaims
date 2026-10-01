@@ -97,7 +97,8 @@ export const MATRIX: Record<string, Grants> = {
     'ops-newsletter': 'view', 'ops-auto-emails': 'view',
     'settings-users': 'view', 'settings-roles': 'view', 'settings-mobile': 'view', 'settings-activity': 'view',
     'settings-certificates': 'manage',
-    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'ops-forms': 'manage',
   },
   head_of_asset_management: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
@@ -110,7 +111,7 @@ export const MATRIX: Record<string, Grants> = {
     'smm-other': 'view', 'smm-brand': 'view', 'smm-ads': 'view',
     'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view',
     'website-readings': 'manage',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   head_of_division: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
@@ -121,7 +122,7 @@ export const MATRIX: Record<string, Grants> = {
     'people-members': 'view', 'people-alumni': 'view',
     'ops-treasury': 'view', 'ops-external': 'view', 'ops-docs': 'view',
     'website-readings': 'manage',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   portfolio_manager: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
@@ -129,7 +130,7 @@ export const MATRIX: Record<string, Grants> = {
     'applications-screening': 'view', 'applications-interview-calendar': 'view', 'applications-joiners': 'view',
     'events-archive': 'view', 'events-on-display': 'view',
     'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'manage',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   team_leader: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
@@ -137,19 +138,19 @@ export const MATRIX: Record<string, Grants> = {
     'applications-screening': 'view', 'applications-interview-calendar': 'view', 'applications-joiners': 'view',
     'events-archive': 'view', 'events-on-display': 'view',
     'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'manage',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   senior_analyst: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
     'reports-archive': 'view', 'reports-templates': 'manage',
     'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'view',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   analyst: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
     'reports-archive': 'view', 'reports-templates': 'view',
     'events-on-display': 'view', 'people-members': 'view', 'people-alumni': 'view', 'website-readings': 'view',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   head_of_media: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
@@ -160,7 +161,7 @@ export const MATRIX: Record<string, Grants> = {
     'ops-external': 'manage', 'ops-docs': 'manage',
     'people-members': 'view',
     'people-alumni': 'view',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   media_analyst: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
@@ -170,7 +171,20 @@ export const MATRIX: Record<string, Grants> = {
     'events-attendance': 'manage',
     'people-members': 'view',
     'people-alumni': 'view',
-    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+  },
+  // Exactly the Media & Communication Analyst's access, plus the whole of
+  // Operations > Internal Forms, which the Operations Analyst runs.
+  operations_analyst: {
+    'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
+    'events-on-display': 'view',
+    'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage',
+    'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view',
+    'events-attendance': 'manage',
+    'people-members': 'view',
+    'people-alumni': 'view',
+    'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'ops-forms': 'manage',
   },
   head_of_operations: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage',
@@ -183,11 +197,12 @@ export const MATRIX: Record<string, Grants> = {
     'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage',
     'website-history': 'manage', 'website-faqs': 'manage',
     'ops-newsletter': 'view', 'ops-auto-emails': 'view',
-    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
+    'ops-forms': 'manage',
   },
   // Everything, read-only, minus Settings (see DENY). See the matrix for why.
   advisor: { '*': 'view', 'my-role': 'manage' },
-  alumni: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
+  alumni: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
   // member / pending / candidate deliberately have no general grants.
 };
 
@@ -195,7 +210,10 @@ export const MATRIX: Record<string, Grants> = {
 // ROLE that carries it: a president who is also listed as an advisor keeps
 // what the presidency gives.
 const DENY: Record<string, string[]> = {
-  advisor: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates'],
+  // Internal Forms holds members' answers, files and payments: it is run by
+  // the President, the Vice President and Operations, and an advisor's
+  // read-everything grant does not reach it.
+  advisor: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'ops-forms'],
 };
 
 // Legacy division-baked head roles, and the retired silent advisor.
@@ -215,7 +233,7 @@ export function normalizeRole(role: string): string {
 
 /** The effective level a set of stored roles has on a resource. */
 // Pages made of other subsections: the same table as COMBINED_RESOURCES in
-// src/lib/access/matrix.ts. Social Template opens at the highest level its
+// src/lib/access/matrix.ts. Social Templates opens at the highest level its
 // three tabs give; each tab's own row still decides that tab.
 const COMBINED: Record<string, string[]> = {
   'smm-social': ['smm-ig', 'smm-li', 'smm-other'],

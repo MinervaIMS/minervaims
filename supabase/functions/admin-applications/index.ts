@@ -115,7 +115,7 @@ const WITHDRAWN = 'withdrawn';
 const PUBLIC_ROLES = new Set([
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'advisor',
+  'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor',
 ]);
 
 // TWO KINDS OF NAME, and they are not interchangeable (see
@@ -128,10 +128,11 @@ const PLACEMENT_NAME = (division: string | null | undefined) => placementLabel(d
 const STATUS_URL = 'https://minervaims.org/workspace';
 // Roles a new joiner may be given. Hard whitelist: the offer flow can never
 // hand out leadership or admin access.
-const JOIN_ROLES = new Set(['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst']);
+const JOIN_ROLES = new Set(['analyst', 'senior_analyst', 'team_leader', 'portfolio_manager', 'media_analyst', 'operations_analyst']);
 function joinRoleDivisionError(role: string, division: string): string | null {
   if (!JOIN_ROLES.has(role)) return 'Invalid role for a new joiner.';
   if (role === 'media_analyst') return division === 'media' ? null : 'Media & Communication analysts always belong to the Media division.';
+  if (role === 'operations_analyst') return division === 'operations' ? null : 'Operations Analysts always belong to Operations.';
   if (role === 'portfolio_manager') return division === 'portfolio' ? null : 'Portfolio Manager always belongs to Portfolio Management.';
   const core = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
   if (role === 'team_leader' && division === 'portfolio') return "Portfolio Management's team leader is the Portfolio Manager role.";

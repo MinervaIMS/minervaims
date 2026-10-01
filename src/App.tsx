@@ -32,6 +32,7 @@ const Events = lazy(() => import("./pages/Events"));
 const Join = lazy(() => import("./pages/Join"));
 const Apply = lazy(() => import("./pages/Apply"));
 const EventRegister = lazy(() => import("./pages/EventRegister"));
+const InternalFormPage = lazy(() => import("./pages/InternalFormPage"));
 const EventCancel = lazy(() => import("./pages/EventCancel"));
 const Archive = lazy(() => import("./pages/Archive"));
 const Readings = lazy(() => import("./pages/Readings"));
@@ -151,6 +152,7 @@ const App = () => {
                 <Route path="/apply" element={<Suspense fallback={<PageLoader />}><Apply /></Suspense>} />
                 <Route path="/events/:id/register" element={<Suspense fallback={<PageLoader />}><EventRegister /></Suspense>} />
                 <Route path="/events/:id/cancel" element={<Suspense fallback={<PageLoader />}><EventCancel /></Suspense>} />
+                <Route path="/forms/:id" element={<Suspense fallback={<PageLoader />}><InternalFormPage /></Suspense>} />
                 <Route path="/archive" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="archive"><Archive /></PageVisibilityGate></Suspense>} />
                 <Route path="/readings" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="readings"><Readings /></PageVisibilityGate></Suspense>} />
                 <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />

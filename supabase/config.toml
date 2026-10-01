@@ -71,3 +71,5 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = true
   [functions.report-file]
     verify_jwt = false
+  [functions.internal-forms]
+    verify_jwt = false

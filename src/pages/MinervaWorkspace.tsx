@@ -75,6 +75,7 @@ const AssociationOnDisplay = lazy(() => import('@/components/admin/AssociationOn
 const WorkspaceCalendar = lazy(() => import('@/components/admin/WorkspaceCalendar'));
 const MembershipFee = lazy(() => import('@/components/admin/MembershipFee'));
 const Treasury = lazy(() => import('@/components/admin/Treasury'));
+const InternalForms = lazy(() => import('@/components/admin/forms/InternalForms'));
 const AutoEmails = lazy(() => import('@/components/admin/AutoEmails'));
 const EditorialCalendar = lazy(() => import('@/components/admin/EditorialCalendar'));
 const SocialTemplate = lazy(() => import('@/components/admin/SocialTemplate'));
@@ -159,6 +160,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'smm-ads': () => import('@/components/admin/AdsRegister'),
   'ops-fee': () => import('@/components/admin/MembershipFee'),
   'ops-treasury': () => import('@/components/admin/Treasury'),
+  'ops-forms': () => import('@/components/admin/forms/InternalForms'),
   'ops-external': () => import('@/components/admin/ResourceManager'),
   'ops-docs': () => import('@/components/admin/ResourceManager'),
   'ops-newsletter': () => import('@/components/admin/NewsletterManagement'),
@@ -177,6 +179,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'career-cl': () => import('@/components/admin/career/CareerTemplate'),
   'career-linkedin': () => import('@/components/admin/career/CareerLinkedIn'),
   'career-gpa': () => import('@/components/admin/career/GpaConverter'),
+  'career-smart': () => import('@/components/admin/career/CareerComingSoon'),
   'career-gmat': () => import('@/components/admin/career/CareerComingSoon'),
   'career-ib': () => import('@/components/admin/career/CareerComingSoon'),
 };
@@ -397,7 +400,7 @@ const MinervaWorkspace = () => {
   const activeSectionKey = resolution.status === 'ok' ? resolution.sectionKey : null;
   const activeSubKey = resolution.status === 'ok' ? resolution.subKey : null;
 
-  // A PAGE WITH TABS (Social Template) keeps its tab in the address,
+  // A PAGE WITH TABS (Social Templates) keeps its tab in the address,
   // `?tab=instagram`, so a tab can be linked to and the back button
   // returns to it. The tab shown is the one asked for if this reader may
   // open it, otherwise the first one they may: never an empty tab.
@@ -1171,6 +1174,8 @@ const MinervaWorkspace = () => {
         return <MembershipFee />;
       case 'ops-treasury':
         return <Treasury />;
+      case 'ops-forms':
+        return <InternalForms />;
       case 'ops-external':
         return <ResourceManager category="external_relations" title="External Relations" description="Every partner, sponsor and institution the Society deals with: their contacts, agreements, files and links, kept for the next board." divisions={['none']} canManage={access.canManage('ops-external')} flavour="contacts" />;
       case 'ops-auto-emails':
@@ -1193,6 +1198,8 @@ const MinervaWorkspace = () => {
         return <CareerLinkedIn />;
       case 'career-gpa':
         return <GpaConverter />;
+      case 'career-smart':
+        return <CareerComingSoon key="smart" which="smart" />;
       case 'career-gmat':
         return <CareerComingSoon key="gmat" which="gmat" />;
       case 'career-ib':

@@ -18,11 +18,14 @@ import { useOnboarding } from '@/components/admin/dashboard/useOnboarding';
 import { useAuth } from '@/contexts/AuthContext';
 import AlumniGrowthBlock from '@/components/admin/dashboard/AlumniGrowthBlock';
 import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
+import FormsForYouBlock from '@/components/admin/dashboard/FormsForYouBlock';
+import { useMyForms } from '@/components/admin/dashboard/useMyForms';
 
 // =====================================================================
 // Dashboard.
 // ---------------------------------------------------------------------
 //   greeting, centred
+//   forms for you (only while an internal form is open to the member)
 //   Reports | Readings | Members | Alumni Network
 //   research by division (40%)  |  current update (60%)
 //     (a new member sees "Getting started" in the research card's place
@@ -83,6 +86,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
   const data = useDashboardData();
   const { user } = useAuth();
   const onboarding = useOnboarding(user?.id ?? null);
+  const openForms = useMyForms(user?.id ?? null);
   const reduced = useReducedMotion();
   const visible = usePageVisible();
   // BOTH BREAKPOINTS ARE ANSWERED ON THE FIRST RENDER, never in an effect
@@ -195,13 +199,17 @@ export default function WorkspaceDashboard({ onNavigate }: {
   // =================================================================
   // The getting started checklist is part of that one load: whether it
   // replaces the research card is known before the page appears.
-  if (!data.greetingReady || !onboarding.settled) return <div className="h-full"><WorkspaceLoader /></div>;
+  if (!data.greetingReady || !onboarding.settled || !openForms.settled) return <div className="h-full"><WorkspaceLoader /></div>;
 
   return (
     <div className={`flex flex-col gap-3 font-body lg:h-full lg:min-h-0 pb-16 lg:pb-0${painted ? '' : ' dash-paused'}`}>
       <DashboardMotionStyles />
 
       <DashboardGreeting userId={data.userId} vars={data.greetingVars} />
+
+      {/* Open internal forms, while there are any: answering one is the
+          other thing on this page that asks the reader to act. */}
+      <FormsForYouBlock forms={openForms.forms} style={enter(0)} />
 
       {/* KPI row. Reports carries the filled treatment; the other three
           are light, so the row reads as one instrument panel with a

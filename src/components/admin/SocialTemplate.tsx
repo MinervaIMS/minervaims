@@ -85,12 +85,12 @@ export default function SocialTemplate({ tabs, activeTab, onTab }: {
   return (
     <div>
       <WorkspacePageHeader
-        title="Social Template"
+        title="Social Templates"
         description="The material the Society posts from, in one place: Instagram and LinkedIn posts with their captions, and the other resources they draw on."
       />
 
       {tabs.length > 1 && (
-        <div ref={listRef} role="tablist" aria-label="Social Template" onKeyDown={onKey}
+        <div ref={listRef} role="tablist" aria-label="Social Templates" onKeyDown={onKey}
           className="-mx-1 mb-6 flex gap-1 overflow-x-auto border-b border-separator px-1">
           {tabs.map((t) => {
             const meta = TAB_META[t.tab];

@@ -1,0 +1,36 @@
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { myForms, type MyFormSummary } from '@/lib/internal-forms-api';
+
+// The internal forms open to this member, for the Dashboard's "Forms for
+// you" strip (FormsForYouBlock.tsx). Part of the Dashboard's one load.
+
+/** How long the Dashboard waits for this before appearing without it. */
+const WAIT_MS = 1500;
+let cache: { userId: string; forms: MyFormSummary[] } | null = null;
+
+export function useMyForms(userId: string | null) {
+  const { session } = useAuth();
+  const cached = cache && cache.userId === userId ? cache.forms : null;
+  const [forms, setForms] = useState<MyFormSummary[]>(cached ?? []);
+  const [settled, setSettled] = useState<boolean>(!userId || !!cached);
+
+  useEffect(() => {
+    if (!userId) { setSettled(true); return; }
+    let active = true;
+    const timer = window.setTimeout(() => { if (active) setSettled(true); }, WAIT_MS);
+    myForms(session)
+      .then((list) => {
+        if (!active) return;
+        cache = { userId, forms: list };
+        setForms(list);
+      })
+      .catch((e) => { console.warn('Could not read the open forms', e); })
+      .finally(() => { if (active) { window.clearTimeout(timer); setSettled(true); } });
+    return () => { active = false; window.clearTimeout(timer); };
+    // The session object changes on every token refresh; the user does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  return { forms, settled };
+}

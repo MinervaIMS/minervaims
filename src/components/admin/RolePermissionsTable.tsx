@@ -14,7 +14,7 @@ const ROLES: { key: AppRole; label: string }[] = [
   { key: 'admin', label: 'Admin' }, { key: 'president', label: 'President' }, { key: 'vice_president', label: 'Vice President' },
   { key: 'head_of_asset_management', label: 'Head of Asset Management' }, { key: 'head_of_division', label: 'Head of Division' },
   { key: 'portfolio_manager', label: 'Portfolio Manager' }, { key: 'team_leader', label: 'Team Leader' }, { key: 'senior_analyst', label: 'Senior Analyst' },
-  { key: 'analyst', label: 'Analyst' }, { key: 'head_of_media', label: 'Head of Media & Communication' }, { key: 'media_analyst', label: 'Media & Comm. Analyst' },
+  { key: 'analyst', label: 'Analyst' }, { key: 'head_of_media', label: 'Head of Media & Communication' }, { key: 'media_analyst', label: 'Media & Comm. Analyst' }, { key: 'operations_analyst', label: 'Operations Analyst' },
   { key: 'head_of_operations', label: 'Head of Operations' }, { key: 'advisor', label: 'Advisor' },
   { key: 'alumni', label: 'Alumni' }, { key: 'member', label: 'Member' }, { key: 'candidate', label: 'Applicant' }, { key: 'pending', label: 'Pending' },
 ];

@@ -152,7 +152,7 @@ Deno.serve(audited('admin-users', async (req, audit) => {
     const ASSIGNABLE_ROLES = [
       'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
       'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-      'media_analyst', 'head_of_operations', 'advisor', 'member',
+      'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor', 'member',
       ...Object.keys(LEGACY_HEADS),
     ];
     // Roles outside the membership fee. Kept in step with
@@ -162,7 +162,7 @@ Deno.serve(audited('admin-users', async (req, audit) => {
     const PUBLIC_ROLES = new Set([
       'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
       'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
-      'media_analyst', 'head_of_operations',
+      'media_analyst', 'operations_analyst', 'head_of_operations',
     ]);
 
     if (action === 'set-role') {
@@ -203,7 +203,7 @@ Deno.serve(audited('admin-users', async (req, audit) => {
       // core-division roles must name one of the five research divisions.
       const CORE = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
       const FIXED: Record<string, string> = {
-        portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations',
+        portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations', operations_analyst: 'operations',
       };
       let div: string | null = null;
       if (FIXED[role]) {

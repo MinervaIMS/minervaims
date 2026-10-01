@@ -52,7 +52,7 @@ import {
 const ROLE_OPTIONS: AppRole[] = [
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'advisor', 'member',
+  'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor', 'member',
 ];
 
 const MEMBERSHIP_OPTIONS = ['active', 'on_exchange', 'one_semester_pause', 'expelled'] as const;

@@ -20,6 +20,7 @@ export type AppRole =
   | 'analyst'
   | 'head_of_media'
   | 'media_analyst'
+  | 'operations_analyst'
   | 'head_of_operations'
   | 'advisor'
   | 'silent_advisor'
@@ -100,6 +101,7 @@ const roleBaseLabels: Record<AppRole, string> = {
   analyst: 'Analyst',
   head_of_media: 'Head of Media & Communication',
   media_analyst: 'Media & Communication Analyst',
+  operations_analyst: 'Operations Analyst',
   head_of_operations: 'Head of Operations',
   advisor: 'Advisor',
   silent_advisor: 'Advisor',
@@ -154,6 +156,7 @@ const roleRank: Record<AppRole, number> = {
   senior_analyst: 9,
   analyst: 10,
   media_analyst: 11,
+  operations_analyst: 11,
   advisor: 12,
   silent_advisor: 12,
   alumni: 90,
@@ -191,6 +194,7 @@ export const FIXED_DIVISION_ROLES: Partial<Record<AppRole, OrgDivision>> = {
   head_of_media: 'media',
   media_analyst: 'media',
   head_of_operations: 'operations',
+  operations_analyst: 'operations',
 };
 
 /** Divisions a role may be paired with (empty = the role carries no division). */

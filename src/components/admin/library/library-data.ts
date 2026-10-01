@@ -69,7 +69,7 @@ export function useLibraryItems(category: string, onError: (e: unknown) => void)
   return { items, setItems, loading, reload };
 }
 
-/** Warm a library before it is opened (the tabs of Social Template). */
+/** Warm a library before it is opened (the tabs of Social Templates). */
 export function prefetchLibrary(category: string): Promise<void> {
   if (itemCache.has(category)) return Promise.resolve();
   return listResources(category)

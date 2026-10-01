@@ -1,14 +1,21 @@
 import { CareerPage } from '@/components/admin/career/CareerPage';
 
 // =====================================================================
-// Career > GMAT Resources and Career > IB Questions: announced, not yet
-// built. They are in the navigation now so members know they are coming
-// and when; the page says what they will hold and nothing more.
+// Career > Smart Tracker, GMAT Resources and IB Questions: announced, not
+// yet built. They are in the navigation now so members know they are
+// coming and when; the page says what they will hold and nothing more.
 // =====================================================================
 
-type Which = 'gmat' | 'ib';
+type Which = 'smart' | 'gmat' | 'ib';
 
-const COPY: Record<Which, { title: string; description: string; headline: string; body: string }> = {
+const COPY: Record<Which, { title: string; description: string; headline: string; body: string; when?: string }> = {
+  smart: {
+    title: 'Smart Tracker',
+    description: 'Learn from the recruiting processes other members have already been through.',
+    headline: 'Smart Tracker is on its way',
+    body: 'Members will be able to share, with their consent, tips and tricks from the recruiting processes they go through: online assessments, HireVue video interviews and interviews. Whoever applies next to the same firm will know what to expect.',
+    when: 'Available next semester, and by August 2027 at the latest.',
+  },
   gmat: {
     title: 'GMAT Resources',
     description: 'Prepare the GMAT with the material the association recommends, gathered in one place.',
@@ -34,7 +41,7 @@ export default function CareerComingSoon({ which }: { which: Which }) {
           </span>
           <p className="mt-4 font-serif text-2xl text-accent">{c.headline}</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{c.body}</p>
-          <p className="mt-5 text-sm font-medium text-foreground">Available by the end of the semester.</p>
+          <p className="mt-5 text-sm font-medium text-foreground">{c.when ?? 'Available by the end of the semester.'}</p>
         </div>
       </div>
     </CareerPage>

@@ -71,7 +71,7 @@ function deriveLegacy(sources: { kind: string; value: string }[]) {
 const MANAGE_ALL = ['admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_media', 'head_of_operations'];
 // Senior analysts manage their division's templates in the matrix and were
 // missing here, so every save of theirs was refused as out of scope.
-const SCOPED = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'media_analyst'];
+const SCOPED = ['head_of_division', 'portfolio_manager', 'team_leader', 'senior_analyst', 'analyst', 'media_analyst', 'operations_analyst'];
 
 // =====================================================================
 // WHICH LIBRARY IS WHICH SUBSECTION.
@@ -103,13 +103,13 @@ const ROLE_BASE: Record<string, string> = {
   president: 'President', vice_president: 'Vice President', head_of_asset_management: 'Head of Asset Management',
   head_of_media: 'Head of Media & Communication', head_of_operations: 'Head of Operations',
   portfolio_manager: 'Portfolio Manager', team_leader: 'Team Leader / Senior Analyst', analyst: 'Analyst',
-  media_analyst: 'Media & Communication Analyst', advisor: 'Advisor',
+  media_analyst: 'Media & Communication Analyst', operations_analyst: 'Operations Analyst', advisor: 'Advisor',
   member: 'Member', admin: 'Admin',
 };
 const ROLE_RANK: Record<string, number> = {
   president: 1, vice_president: 2, admin: 2, head_of_asset_management: 3, head_of_division: 4,
   head_of_media: 5, head_of_operations: 6, portfolio_manager: 7, team_leader: 8, analyst: 9,
-  media_analyst: 10, advisor: 11, member: 95,
+  media_analyst: 10, operations_analyst: 10, advisor: 11, member: 95,
 };
 function roleLabel(role: string, division: string | null): string {
   const div = division && division !== 'none' && division !== 'board' ? division : null;
@@ -168,7 +168,7 @@ Deno.serve(audited('admin-resources', async (req, audit) => {
     const isAdminEmail = user.email === 'as.minerva@unibocconi.it';
     const canAll = isAdminEmail || roles.some((r) => MANAGE_ALL.includes(r.role));
     const scopedDivisions = roles.filter((r) => SCOPED.includes(r.role))
-      .map((r) => r.division || (r.role === 'portfolio_manager' ? 'portfolio' : r.role === 'media_analyst' ? 'media' : null))
+      .map((r) => r.division || (r.role === 'portfolio_manager' ? 'portfolio' : r.role === 'media_analyst' ? 'media' : r.role === 'operations_analyst' ? 'operations' : null))
       .filter((d): d is string => !!d && d !== 'none' && d !== 'board');
     const isStaff = canAll || scopedDivisions.length > 0 || roles.some((r) => !['member', 'pending', 'candidate'].includes(r.role));
     if (!isStaff) return json({ error: 'Access denied' }, 403);

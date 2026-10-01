@@ -208,7 +208,7 @@ function idFrom(body: Record<string, unknown>): string | null {
 const RANK = [
   'admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations',
   'head_of_media', 'head_of_division', 'portfolio_manager', 'team_leader',
-  'senior_analyst', 'media_analyst', 'analyst', 'advisor', 'alumni', 'member',
+  'senior_analyst', 'media_analyst', 'operations_analyst', 'analyst', 'advisor', 'alumni', 'member',
 ];
 function seniorRole(roles: string[]): string {
   for (const r of RANK) if (roles.includes(r)) return r;

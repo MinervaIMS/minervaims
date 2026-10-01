@@ -15,7 +15,7 @@ import { ColumnFilter } from '@/components/admin/ColumnFilter';
 import { ClearFilters } from '@/components/shared/ClearFilters';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { divisionLabels } from '@/lib/roles';
-import { formatEventWhen, formatStamp, formatTime } from '@/lib/event-time';
+import { formatEventWhen, formatStamp, formatTime, nearestEvent } from '@/lib/event-time';
 import { requestCamera } from '@/lib/camera';
 import { flushQueue, queuedScans } from '@/lib/checkin-queue';
 import {
@@ -107,7 +107,10 @@ export default function EventAttendance() {
       try {
         const evs = await listEvents();
         setEvents(evs);
-        if (evs.length) setEventId(evs[0].id);
+        // Open on the event happening now or coming up soonest, not on the
+        // one furthest in the future (the list is newest first).
+        const nearest = nearestEvent(evs);
+        if (nearest) setEventId(nearest.id);
       } catch (e) { toast({ title: 'Failed to load events', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
       finally { setLoading(false); }
     })();

@@ -2794,6 +2794,7 @@ export type Database = {
         | "team_leader"
         | "analyst"
         | "media_analyst"
+        | "operations_analyst"
         | "advisor"
         | "silent_advisor"
         | "candidate"
@@ -2992,6 +2993,7 @@ export const Constants = {
         "team_leader",
         "analyst",
         "media_analyst",
+        "operations_analyst",
         "advisor",
         "silent_advisor",
         "candidate",

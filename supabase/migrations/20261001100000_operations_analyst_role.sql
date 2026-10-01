@@ -1,0 +1,11 @@
+-- =====================================================================
+-- THE OPERATIONS ANALYST (step 85).
+-- ---------------------------------------------------------------------
+-- A new role, placed in Operations, with exactly the access of a Media &
+-- Communication Analyst plus Operations > Internal Forms.
+--
+-- The value is added in a migration OF ITS OWN: Postgres refuses to use
+-- an enum value in the same transaction that added it, and the next
+-- migration (20261001100100) uses it in several functions.
+-- =====================================================================
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'operations_analyst';

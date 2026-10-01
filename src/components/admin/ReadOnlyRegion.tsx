@@ -165,7 +165,7 @@ const ROOTS = '[data-ws-pane], [role="dialog"], [role="alertdialog"]';
 // file, is drawn only for the President, the Vice President and the Head
 // of Operations, and the `career-files` function checks it again.
 // =====================================================================
-const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-gmat', 'career-ib']);
+const EXEMPT_RESOURCES = new Set(['dashboard', 'welcome', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-gmat', 'career-ib', 'career-smart']);
 
 function sweep() {
   document.querySelectorAll<HTMLElement>(ROOTS).forEach((root) => {

@@ -27,7 +27,7 @@ const DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant', 'media
 const ASSIGNABLE_ROLES = [
   'president', 'vice_president', 'head_of_asset_management', 'head_of_division',
   'team_leader', 'senior_analyst', 'portfolio_manager', 'analyst', 'head_of_media',
-  'media_analyst', 'head_of_operations', 'advisor', 'alumni', 'member',
+  'media_analyst', 'operations_analyst', 'head_of_operations', 'advisor', 'alumni', 'member',
 ] as const;
 
 // ── Role ⇄ division pairing rules (mirror of src/lib/roles.ts) ─────────
@@ -38,7 +38,7 @@ const CORE_DIVISIONS = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 // src/lib/membership-fee.ts and with admin-fees.
 const FEE_EXEMPT_ROLES = ['advisor', 'silent_advisor'];
 const FIXED_DIVISION: Record<string, string> = {
-  portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations',
+  portfolio_manager: 'portfolio', head_of_media: 'media', media_analyst: 'media', head_of_operations: 'operations', operations_analyst: 'operations',
 };
 function divisionOptionsFor(role: string): string[] {
   if (FIXED_DIVISION[role]) return [FIXED_DIVISION[role]];
@@ -125,7 +125,7 @@ const ROLE_RANK: Record<string, number> = {
   head_of_division: 4, head_of_equity: 4, head_of_investment: 4, head_of_macro: 4,
   head_of_portfolio: 4, head_of_quant: 4, head_of_media: 5, head_of_operations: 6,
   portfolio_manager: 7, team_leader: 8, senior_analyst: 9, analyst: 10,
-  media_analyst: 11, advisor: 12, silent_advisor: 12,
+  media_analyst: 11, operations_analyst: 11, advisor: 12, silent_advisor: 12,
   alumni: 90, member: 95, candidate: 98, pending: 99,
 };
 const rankOf = (role: string | null | undefined): number => ROLE_RANK[role ?? ''] ?? 99;

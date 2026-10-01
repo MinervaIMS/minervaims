@@ -167,3 +167,28 @@ export function formatStamp(iso: string | Date | null | undefined): string {
   const d = asDate(iso);
   return d ? `${formatDay(d, { weekday: false, month: 'short' })}, ${formatTime(d)}` : '';
 }
+
+/**
+ * The event a page about the day's events should open on: the one
+ * happening now or coming up soonest. An event counts as still to come
+ * until it ends (its end time, or three hours after its start when it has
+ * none, or the end of its day in Rome when it has no time at all). When
+ * every event is over, the most recent one. Null for an empty list.
+ */
+export function nearestEvent<T extends { id: string; date?: string | null; start_at?: string | null; end_at?: string | null }>(
+  events: T[],
+  now: Date = new Date(),
+): T | null {
+  if (!events.length) return null;
+  const today = romeYmd(now);
+  const nowMs = now.getTime();
+  const startOf = (e: T) => (e.start_at ? new Date(e.start_at).getTime() : e.date ? Date.parse(`${e.date}T00:00:00Z`) : 0);
+  const isOver = (e: T) => {
+    if (e.end_at) return new Date(e.end_at).getTime() <= nowMs;
+    if (e.start_at) return new Date(e.start_at).getTime() + 3 * 3600_000 <= nowMs;
+    return !!e.date && e.date < today;
+  };
+  const coming = events.filter((e) => !isOver(e)).sort((a, b) => startOf(a) - startOf(b));
+  if (coming.length) return coming[0];
+  return [...events].sort((a, b) => startOf(b) - startOf(a))[0];
+}

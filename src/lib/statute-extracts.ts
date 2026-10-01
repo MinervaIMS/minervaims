@@ -258,6 +258,20 @@ export const roleGuides: Partial<Record<AppRole, RoleGuide>> = {
     ],
     contact: 'Refer to the Head of Media & Communication.',
   },
+  operations_analyst: {
+    summary: 'An Operations Analyst supports the Head of Operations in the association’s administrative and logistical work. The statute describes Operations as the auxiliary function of the Head of Operations (Art. 22); the Operations Analyst assists that function and holds no office of the statute of their own.',
+    responsibilities: [
+      'Run the association’s internal forms: build them, collect the answers, follow up payments where a form asks for one, and export what is needed.',
+      'Support attendance at events, including scanning tickets at the door.',
+      'Support the communication material and the editorial calendar alongside the Media & Communication team.',
+    ],
+    reportsTo: 'The Head of Operations.',
+    rights: [
+      'Manage Operations > Internal Forms in full.',
+      'Request one semester of leave, discussed with the Head of Operations (Art. 9).',
+    ],
+    contact: 'Refer to the Head of Operations.',
+  },
   head_of_operations: {
     summary: 'The Head of Operations is the association’s administrative and logistical function. Operations is an auxiliary division of one person rather than a team (Art. 22).',
     responsibilities: [
