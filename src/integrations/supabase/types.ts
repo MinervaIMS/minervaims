@@ -1601,6 +1601,131 @@ export type Database = {
           },
         ]
       }
+      internal_form_responses: {
+        Row: {
+          answers: Json
+          edit_count: number
+          form_id: string
+          id: string
+          member_division: string | null
+          member_email: string | null
+          member_name: string | null
+          member_role: string | null
+          paid: boolean
+          paid_at: string | null
+          paid_by_name: string | null
+          staff_note: string | null
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          edit_count?: number
+          form_id: string
+          id?: string
+          member_division?: string | null
+          member_email?: string | null
+          member_name?: string | null
+          member_role?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          paid_by_name?: string | null
+          staff_note?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          edit_count?: number
+          form_id?: string
+          id?: string
+          member_division?: string | null
+          member_email?: string | null
+          member_name?: string | null
+          member_role?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          paid_by_name?: string | null
+          staff_note?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_form_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "internal_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_forms: {
+        Row: {
+          allow_edits: boolean
+          closed_at: string | null
+          closes_at: string | null
+          confirmation_message: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          description: string | null
+          fields: Json
+          id: string
+          payment_amount: number | null
+          payment_instructions: string | null
+          published_at: string | null
+          status: string
+          title: string
+          track_payments: boolean
+          updated_at: string
+          updated_by_name: string | null
+        }
+        Insert: {
+          allow_edits?: boolean
+          closed_at?: string | null
+          closes_at?: string | null
+          confirmation_message?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          payment_amount?: number | null
+          payment_instructions?: string | null
+          published_at?: string | null
+          status?: string
+          title: string
+          track_payments?: boolean
+          updated_at?: string
+          updated_by_name?: string | null
+        }
+        Update: {
+          allow_edits?: boolean
+          closed_at?: string | null
+          closes_at?: string | null
+          confirmation_message?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          payment_amount?: number | null
+          payment_instructions?: string | null
+          published_at?: string | null
+          status?: string
+          title?: string
+          track_payments?: boolean
+          updated_at?: string
+          updated_by_name?: string | null
+        }
+        Relationships: []
+      }
       interview_bookings: {
         Row: {
           application_id: string
@@ -2794,13 +2919,13 @@ export type Database = {
         | "team_leader"
         | "analyst"
         | "media_analyst"
-        | "operations_analyst"
         | "advisor"
         | "silent_advisor"
         | "candidate"
         | "alumni"
         | "pending"
         | "senior_analyst"
+        | "operations_analyst"
       org_division:
         | "equity"
         | "investment"
@@ -2993,13 +3118,13 @@ export const Constants = {
         "team_leader",
         "analyst",
         "media_analyst",
-        "operations_analyst",
         "advisor",
         "silent_advisor",
         "candidate",
         "alumni",
         "pending",
         "senior_analyst",
+        "operations_analyst",
       ],
       org_division: [
         "equity",
