@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, FormEvent } from "react";
+import { isOnlineEvent, publicPlace } from '@/lib/event-place';
 import { Seo } from '@/components/shared/Seo';
 import { eventListSchema } from '@/lib/seo/structured-data';
 import { Calendar, MapPin, X, ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -118,7 +119,7 @@ const Events = () => {
     return {
       title: next.title,
       date: next.start_at || next.date,
-      place: next.place,
+      place: publicPlace(next),
       description: next.description ?? null,
       photoUrl: next.poster_url ?? null,
       registrationUrl: `/events/${next.id}/register`,
@@ -207,9 +208,9 @@ const Events = () => {
       id: e.id,
       title: e.title,
       date: e.start_at || e.date,
-      place: e.place,
+      place: publicPlace(e),
       description: e.description,
-      online: /online/i.test(e.place || ''),
+      online: isOnlineEvent(e),
       posterUrl: e.poster_url,
       guests: e.guest,
     })),
@@ -564,7 +565,7 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
         </h3>
 
         <p className="font-body text-body text-foreground mb-2">
-          <span className="font-medium">Location:</span> {event.place}
+          <span className="font-medium">Location:</span> {publicPlace(event)}
         </p>
 
         {event.description && (
@@ -651,7 +652,7 @@ function PastEventRow({
           <span aria-hidden="true" className="text-separator">|</span>
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-            {event.place}
+            {publicPlace(event)}
           </span>
         </div>
 

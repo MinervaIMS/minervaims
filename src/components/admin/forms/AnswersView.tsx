@@ -35,7 +35,7 @@ import { isQuestion, type FileAnswer } from '@/lib/internal-forms-rules';
 import {
   deleteResponse, setResponseNote, setResponsePaid, signFormFiles, type FormResponse, type InternalForm,
 } from '@/lib/internal-forms-api';
-import { allColumns, responseHaystack, stamp, summarise, type Column } from './answers-model';
+import { allColumns, dueOf, responseHaystack, stamp, summarise, type Column } from './answers-model';
 import { FIELD_ICON, money } from './forms-model';
 import { ResponseSheet } from './ResponseSheet';
 import { ExportDialog } from './ExportDialog';
@@ -58,7 +58,8 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
   const [query, setQuery] = useState('');
   const [pay, setPay] = useState<PayFilter>('all');
   const [sort, setSort] = useState<Sort>('newest');
-  const [hidden, setHidden] = useState<Set<string>>(new Set(['email', 'role', 'updated', 'paid_at', 'note']));
+  // The per-colour and per-size counts of orders go to the export; the table starts with the order as one line.
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set(['email', 'role', 'updated', 'paid_at', 'note', ...allColumns(form, responses).filter((c) => c.breakdown).map((c) => c.key)]));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openId, setOpenId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
@@ -86,6 +87,11 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
   }, [responses, query, pay, sort, hay]);
 
   const paidCount = responses.filter((r) => r.paid).length;
+  // Money: each answer's own amount (what that member ordered), or the form's fixed amount.
+  const dues = responses.map((r) => ({ r, due: dueOf(form, r) }));
+  const hasDue = dues.some((d) => d.due !== null);
+  const collected = dues.filter((d) => d.r.paid).reduce((a, d) => a + (d.due ?? 0), 0);
+  const stillDue = dues.filter((d) => !d.r.paid).reduce((a, d) => a + (d.due ?? 0), 0);
   const last = responses.reduce<string | null>((m, r) => (!m || r.updated_at > m ? r.updated_at : m), null);
   const openResponse = responses.find((r) => r.id === openId) ?? null;
   const openIndex = openResponse ? shown.findIndex((r) => r.id === openResponse.id) : -1;
@@ -148,6 +154,7 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
     }
     const v = c.value(r);
     if (v === '' || v === null || v === undefined) return <span className="text-muted-foreground">-</span>;
+    if (c.key === 'amount' && typeof v === 'number') return <span className="tabular-nums">{money(v)}</span>;
     return <span className="line-clamp-2 whitespace-pre-wrap break-words">{String(v)}</span>;
   };
 
@@ -176,8 +183,8 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
             <div className="mt-2 h-1.5 bg-muted" aria-hidden><div className="h-full bg-accent" style={{ width: `${Math.round((paidCount / responses.length) * 100)}%` }} /></div>
           </div>
         )}
-        {form.track_payments && form.payment_amount != null && (
-          <div className="border border-separator p-3"><p className="text-xs uppercase tracking-wider text-muted-foreground">Collected</p><p className="mt-1 font-serif text-2xl text-accent tabular-nums">{money(paidCount * form.payment_amount)}</p><p className="text-xs text-muted-foreground">{money((responses.length - paidCount) * form.payment_amount)} still due</p></div>
+        {form.track_payments && hasDue && (
+          <div className="border border-separator p-3"><p className="text-xs uppercase tracking-wider text-muted-foreground">Collected</p><p className="mt-1 font-serif text-2xl text-accent tabular-nums">{money(collected)}</p><p className="text-xs text-muted-foreground">{money(stillDue)} still due</p></div>
         )}
         <div className="border border-separator p-3"><p className="text-xs uppercase tracking-wider text-muted-foreground">Latest</p><p className="mt-1 text-sm text-foreground">{stamp(last)}</p></div>
       </div>
@@ -205,6 +212,39 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
               <section key={f.id} className="border border-separator p-4">
                 <h3 className="flex items-start gap-2 text-[15px] font-medium text-foreground"><Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{f.label}</h3>
                 <p className="mb-3 mt-0.5 text-xs text-muted-foreground">{s.answered} of {responses.length} answered</p>
+                {s.kind === 'order' && (
+                  // The supplier's list: each choice by size, with the totals.
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-separator text-left text-xs text-muted-foreground">
+                          <th scope="col" className="py-1.5 pr-3 font-medium">Choice</th>
+                          {s.sizes.map((sz) => <th key={sz} scope="col" className="px-2 py-1.5 text-right font-medium">{sz}</th>)}
+                          <th scope="col" className="px-2 py-1.5 text-right font-medium">Total</th>
+                          {s.amount !== null && <th scope="col" className="py-1.5 pl-2 text-right font-medium">Amount</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {s.rows.map((row) => (
+                          <tr key={row.label} className="border-b border-separator/60">
+                            <th scope="row" className="py-1.5 pr-3 text-left font-normal text-foreground">{row.label}</th>
+                            {s.sizes.map((sz) => <td key={sz} className={`px-2 py-1.5 text-right tabular-nums ${row.bySize[sz] ? 'text-foreground' : 'text-muted-foreground'}`}>{row.bySize[sz] ?? 0}</td>)}
+                            <td className="px-2 py-1.5 text-right font-medium tabular-nums">{row.total}</td>
+                            {s.amount !== null && <td className="py-1.5 pl-2 text-right tabular-nums text-muted-foreground">{row.amount === null ? '-' : money(row.amount)}</td>}
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="text-foreground">
+                          <th scope="row" className="py-1.5 pr-3 text-left font-medium">All</th>
+                          {s.sizes.map((sz) => <td key={sz} className="px-2 py-1.5 text-right font-medium tabular-nums">{s.bySize[sz] ?? 0}</td>)}
+                          <td className="px-2 py-1.5 text-right font-serif text-lg tabular-nums text-accent">{s.items}</td>
+                          {s.amount !== null && <td className="py-1.5 pl-2 text-right font-medium tabular-nums">{money(s.amount)}</td>}
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
                 {s.kind === 'numbers' && (
                   <dl className="mb-3 grid grid-cols-4 gap-2 text-center">
                     {[['Total', s.total], ['Average', Math.round(s.mean * 100) / 100], ['Lowest', s.min], ['Highest', s.max]].map(([k, v]) => (

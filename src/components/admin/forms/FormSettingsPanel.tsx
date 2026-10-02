@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { romeWall, romeWallToIso, zoneOnDate } from '@/lib/event-time';
+import { hasPrices } from '@/lib/internal-forms-rules';
 import type { InternalForm } from '@/lib/internal-forms-api';
 import { deadlineRelative, deadlineText } from './forms-model';
 
@@ -75,12 +76,19 @@ export function FormSettingsPanel({ form, set, readOnly }: {
       <Block icon={CreditCard} title="Payment">
         <label className="flex items-start gap-2 text-sm">
           <Switch className="mt-0.5" checked={form.track_payments} disabled={readOnly} onCheckedChange={(v) => set({ track_payments: v })} />
-          <span>This form collects a payment<span className="block text-muted-foreground">Each answer gets a Paid box to tick when the money reaches the Society, with who ticked it and when. Members see the amount and how to pay.</span></span>
+          <span>This form collects a payment<span className="block text-muted-foreground">Each answer gets a Paid box to tick when the money reaches the Society, with who ticked it and when. Members see what they owe and how to pay.</span></span>
         </label>
+        {form.track_payments && (
+          <p className="text-sm text-muted-foreground">
+            {hasPrices(form.fields)
+              ? `Members pay for what they order: the prices are on the choices in Questions${form.payment_amount != null ? ', plus the fixed amount below' : ''}. Each member's total is worked out when they send, and kept with their answer.`
+              : 'Put a price on choices in Questions to charge for what each member orders, or set one fixed amount for every answer below.'}
+          </p>
+        )}
         {form.track_payments && (
           <div className="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
             <div className="space-y-1">
-              <Label htmlFor="pay-amount" className="text-xs">Amount per answer (EUR)</Label>
+              <Label htmlFor="pay-amount" className="text-xs">{hasPrices(form.fields) ? 'Fixed amount added (EUR)' : 'Amount per answer (EUR)'}</Label>
               <Input id="pay-amount" type="number" min={0} step="0.01" className="h-10" disabled={readOnly} value={form.payment_amount ?? ''}
                 onChange={(e) => set({ payment_amount: e.target.value === '' ? null : Number(e.target.value) })} placeholder="Optional" />
             </div>

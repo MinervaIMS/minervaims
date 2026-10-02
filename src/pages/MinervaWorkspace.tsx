@@ -891,7 +891,8 @@ const MinervaWorkspace = () => {
       setIsDialogOpen(false); resetForm(); fetchEvents();
     } catch (error) {
       console.error('Submit error:', error);
-      toast({ title: 'Error', description: 'Failed to save event', variant: 'destructive' });
+      // The server's own sentence when it has one (for example a missing meeting link).
+      toast({ title: 'Error', description: error instanceof Error && error.message ? error.message : 'Failed to save event', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -1262,8 +1263,8 @@ const MinervaWorkspace = () => {
                   <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Event title" required /></div>
                 <div className="space-y-2"><Label htmlFor="date" className="font-body">Date *</Label>
                   <Input id="date" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required /></div>
-                <div className="space-y-2"><Label htmlFor="place" className="font-body">Place *</Label>
-                  <Input id="place" value={formData.place} onChange={(e) => setFormData({ ...formData, place: e.target.value })} placeholder="Event location" required /></div>
+                <div className="space-y-2"><Label htmlFor="place" className="font-body">{editingEvent?.online ? 'Meeting link *' : 'Place *'}</Label>
+                  <Input id="place" value={formData.place} onChange={(e) => setFormData({ ...formData, place: e.target.value })} placeholder={editingEvent?.online ? 'https://...' : 'Event location'} required /></div>
                 <div className="space-y-2"><Label htmlFor="moderator" className="font-body">Moderator (optional)</Label>
                   <Input id="moderator" value={formData.moderator} onChange={(e) => setFormData({ ...formData, moderator: e.target.value })} placeholder="e.g., John Smith, CEO at Company" /></div>
                 <div className="space-y-2">

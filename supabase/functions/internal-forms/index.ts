@@ -5,7 +5,8 @@ import { readFileField, readTextField } from '../_shared/form-file.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { romeClock12 } from '../_shared/event-time.ts';
 import {
-  fileProblem, isQuestion, LIMITS, sanitizeFields, validateAnswers, type Answers, type FormField,
+  amountDue, fileProblem, formImagePaths, imageProblem, isQuestion, LIMITS, sanitizeFields, validateAnswers,
+  type Answers, type FormField,
 } from '../_shared/internal-forms.ts';
 import { answersBlock, confirmationBlock, editBlock, paymentBlock } from '../_shared/internal-form-email.ts';
 
@@ -27,6 +28,14 @@ import { answersBlock, confirmationBlock, editBlock, paymentBlock } from '../_sh
 // every rule below is enforced. Files live in the private bucket
 // `internal-forms`, under <form>/<member>/, and are opened through
 // links that work for an hour.
+//
+// PICTURES the organisers put in a form (the cover, picture blocks and a
+// picture per choice) live in the same bucket under <form>/_form/, are
+// shown through the same one-hour links, are copied with the form when
+// it is duplicated, and are deleted once no version of the form uses
+// them. ORDERS: what a member owes is worked out here from what they
+// ordered (the shared rules), and kept on their answer as `amount_due`,
+// so a later change of price never rewrites an order already placed.
 // =====================================================================
 
 const corsHeaders = {
@@ -46,7 +55,7 @@ const NOT_MEMBERS = ['candidate', 'pending', 'alumni', 'advisor', 'silent_adviso
 interface FormRow {
   id: string; title: string; description: string | null; fields: FormField[]; status: 'draft' | 'open' | 'closed';
   closes_at: string | null; allow_edits: boolean; track_payments: boolean; payment_amount: number | null;
-  payment_instructions: string | null; confirmation_message: string | null;
+  payment_instructions: string | null; confirmation_message: string | null; cover_path: string | null;
   created_by: string | null; created_by_name: string | null; updated_by_name: string | null;
   published_at: string | null; closed_at: string | null; created_at: string; updated_at: string;
 }
@@ -54,6 +63,7 @@ interface ResponseRow {
   id: string; form_id: string; user_id: string; member_name: string | null; member_email: string | null;
   member_role: string | null; member_division: string | null; answers: Answers; submitted_at: string;
   updated_at: string; edit_count: number; paid: boolean; paid_at: string | null; paid_by_name: string | null; staff_note: string | null;
+  amount_due: number | null;
 }
 
 const isUuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f-]{36}$/i.test(v);
@@ -78,6 +88,10 @@ function accepting(f: FormRow, now = Date.now()): boolean {
 /** What a member sees of the state of a form. */
 function memberState(f: FormRow): 'open' | 'closed' {
   return accepting(f) ? 'open' : 'closed';
+}
+/** The cover a form may use: a picture in the form's own folder, or none. */
+function coverOf(formId: string, v: unknown): string | null {
+  return typeof v === 'string' && v.startsWith(`${formId}/_form/`) && /^[A-Za-z0-9-]{1,64}\/_form\/[A-Za-z0-9._-]{1,200}$/.test(v) ? v : null;
 }
 /** Every stored file an answer set points to. */
 function filePaths(fields: FormField[], answers: Answers): string[] {
@@ -118,6 +132,15 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       const { data } = await supabase.from('internal_forms').select('*').eq('id', id).maybeSingle();
       return (data as FormRow | null) ?? null;
     };
+    /** One-hour links for stored pictures and files, by path. */
+    const signAll = async (paths: string[]): Promise<Record<string, string>> => {
+      const list = [...new Set(paths.filter(Boolean))].slice(0, 500);
+      if (!list.length) return {};
+      const { data } = await supabase.storage.from(BUCKET).createSignedUrls(list, 3600);
+      const out: Record<string, string> = {};
+      for (const s of data || []) if (s.path && s.signedUrl) out[s.path] = s.signedUrl;
+      return out;
+    };
 
     // ── File upload (members, multipart) ─────────────────────────────
     const contentType = req.headers.get('content-type') || '';
@@ -125,7 +148,31 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       const form = await req.formData();
       const formId = readTextField(form, 'form_id');
       const fieldId = readTextField(form, 'field_id');
-      audit.request('upload', { form_id: formId, field_id: fieldId });
+      const purpose = readTextField(form, 'purpose');
+      audit.request('upload', { form_id: formId, field_id: fieldId, purpose });
+
+      // A picture an organiser puts in the form: the cover, a picture
+      // block or a choice's picture.
+      if (purpose === 'form-image') {
+        if (!canManage) return json({ error: 'Only the organisers can add pictures to a form.' }, 403);
+        const f = await getForm(formId);
+        if (!f) return json({ error: 'This form no longer exists.' }, 404);
+        const file = readFileField(form, 'file');
+        if (!file) return json({ error: 'No file was received. Choose the picture again.' }, 400);
+        const problem = imageProblem(file.name, file.size);
+        if (problem) return json({ error: problem }, 400);
+        const path = `${f.id}/_form/${crypto.randomUUID()}-${safeName(file.name)}`;
+        const { error: upErr } = await supabase.storage.from(BUCKET)
+          .upload(path, await file.arrayBuffer(), { contentType: file.type || 'image/jpeg', upsert: false });
+        if (upErr) {
+          console.error('internal form picture upload failed', upErr);
+          return json({ error: 'The upload failed. Please try again.' }, 500);
+        }
+        audit.subject(f.title);
+        const urls = await signAll([path]);
+        return json({ file: { path, name: file.name.slice(-200), size: file.size, type: file.type || '' }, url: urls[path] ?? null });
+      }
+
       if (!isMember) return json({ error: 'Internal forms are for the Society\'s active members.' }, 403);
       const f = await getForm(formId);
       if (!f || f.status === 'draft') return json({ error: 'This form is not available.' }, 404);
@@ -161,7 +208,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
     if (action === 'my-forms') {
       if (!isMember) return json({ forms: [] });
       const { data, error } = await supabase.from('internal_forms')
-        .select('id, title, description, status, closes_at, allow_edits, track_payments, payment_amount')
+        .select('id, title, description, status, closes_at, allow_edits, track_payments, payment_amount, cover_path')
         .eq('status', 'open').order('closes_at', { ascending: true, nullsFirst: false });
       if (error) throw error;
       const open = ((data || []) as FormRow[]).filter((f) => accepting(f));
@@ -170,10 +217,13 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         ? (await supabase.from('internal_form_responses').select('form_id, submitted_at, updated_at, paid').eq('user_id', user.id).in('form_id', ids)).data || []
         : [];
       const byForm = new Map((mine as { form_id: string; submitted_at: string; updated_at: string; paid: boolean }[]).map((r) => [r.form_id, r]));
+      // The cover of each form still waiting for this member, for the Dashboard.
+      const covers = await signAll(open.filter((f) => !byForm.has(f.id) && f.cover_path).map((f) => f.cover_path as string));
       return json({
         forms: open.map((f) => ({
           id: f.id, title: f.title, description: f.description, closes_at: f.closes_at, allow_edits: f.allow_edits,
           track_payments: f.track_payments, payment_amount: f.payment_amount,
+          cover_url: f.cover_path ? covers[f.cover_path] ?? null : null,
           answered_at: byForm.get(f.id)?.updated_at ?? null, paid: byForm.get(f.id)?.paid ?? false,
         })),
       });
@@ -189,6 +239,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       }
       let response: ResponseRow | null = null;
       const files: Record<string, string> = {};
+      const images = await signAll(formImagePaths(f.fields || [], f.cover_path));
       if (isMember) {
         const { data } = await supabase.from('internal_form_responses').select('*').eq('form_id', f.id).eq('user_id', user.id).maybeSingle();
         response = (data as ResponseRow | null) ?? null;
@@ -203,11 +254,13 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
           id: f.id, title: f.title, description: f.description, fields: f.fields, closes_at: f.closes_at,
           allow_edits: f.allow_edits, track_payments: f.track_payments, payment_amount: f.payment_amount,
           payment_instructions: f.payment_instructions, confirmation_message: f.confirmation_message,
+          cover_path: f.cover_path ?? null,
           state: f.status === 'draft' ? 'draft' : memberState(f),
         },
         me: { name: displayName, email: me?.email || user.email, can_answer: isMember },
-        response: response ? { answers: response.answers, submitted_at: response.submitted_at, updated_at: response.updated_at, paid: response.paid } : null,
+        response: response ? { answers: response.answers, submitted_at: response.submitted_at, updated_at: response.updated_at, paid: response.paid, amount_due: response.amount_due ?? null } : null,
         files,
+        images,
       });
     }
 
@@ -226,6 +279,8 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       if (before && !f.allow_edits) return json({ error: 'You have already answered, and this form does not accept changes.' }, 409);
 
       const now = new Date().toISOString();
+      // What this member owes for what they ordered, fixed at this moment.
+      const due = amountDue(f.track_payments, f.payment_amount === null ? null : Number(f.payment_amount), f.fields || [], answers);
       const identity = {
         member_name: displayName.slice(0, 200),
         member_email: (me?.email || user.email || '').slice(0, 254),
@@ -235,7 +290,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       let saved: ResponseRow;
       if (before) {
         const { data, error } = await supabase.from('internal_form_responses')
-          .update({ ...identity, answers, updated_at: now, edit_count: (before.edit_count ?? 0) + 1 })
+          .update({ ...identity, answers, amount_due: due, updated_at: now, edit_count: (before.edit_count ?? 0) + 1 })
           .eq('id', before.id).select('*').single();
         if (error) throw error;
         saved = data as ResponseRow;
@@ -245,7 +300,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         if (gone.length) await supabase.storage.from(BUCKET).remove(gone);
       } else {
         const { data, error } = await supabase.from('internal_form_responses')
-          .insert({ form_id: f.id, user_id: user.id, ...identity, answers, submitted_at: now, updated_at: now })
+          .insert({ form_id: f.id, user_id: user.id, ...identity, answers, amount_due: due, submitted_at: now, updated_at: now })
           .select('*').single();
         if (error) throw error;
         saved = data as ResponseRow;
@@ -267,7 +322,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
               submitted_on: romeLong(now),
               form_url: `${SITE}/forms/${f.id}`,
               answers_block: answersBlock(f.fields || [], answers),
-              payment_block: f.track_payments ? paymentBlock(f.payment_amount, f.payment_instructions) : '',
+              payment_block: f.track_payments ? paymentBlock(due, f.payment_instructions) : '',
               edit_block: editBlock(f.allow_edits, f.closes_at ? romeLong(f.closes_at) : null),
               confirmation_block: confirmationBlock(f.confirmation_message),
             },
@@ -279,7 +334,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
           console.error('internal form receipt failed', e);
         }
       }
-      return json({ success: true, emailed, response: { answers: saved.answers, submitted_at: saved.submitted_at, updated_at: saved.updated_at, paid: saved.paid } });
+      return json({ success: true, emailed, response: { answers: saved.answers, submitted_at: saved.submitted_at, updated_at: saved.updated_at, paid: saved.paid, amount_due: saved.amount_due ?? null } });
     }
 
     // =================================================================
@@ -299,7 +354,11 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         if (r.paid) t.paid += 1;
         tally.set(r.form_id, t);
       }
-      return json({ forms: forms.map((f) => ({ ...f, responses: tally.get(f.id)?.responses ?? 0, paid_count: tally.get(f.id)?.paid ?? 0 })) });
+      const covers = await signAll(forms.map((f) => f.cover_path ?? '').filter(Boolean));
+      return json({ forms: forms.map((f) => ({
+        ...f, responses: tally.get(f.id)?.responses ?? 0, paid_count: tally.get(f.id)?.paid ?? 0,
+        cover_url: f.cover_path ? covers[f.cover_path] ?? null : null,
+      })) });
     }
 
     if (action === 'get') {
@@ -307,14 +366,16 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       if (!f) return json({ error: 'This form no longer exists.' }, 404);
       const { data, error } = await supabase.from('internal_form_responses').select('*').eq('form_id', f.id).order('submitted_at', { ascending: true });
       if (error) throw error;
-      return json({ form: f, responses: data || [] });
+      return json({ form: f, responses: data || [], images: await signAll(formImagePaths(f.fields || [], f.cover_path)) });
     }
 
     if (action === 'save') {
       const input = (body.form && typeof body.form === 'object' ? body.form : {}) as Record<string, unknown>;
       const title = text(input.title, LIMITS.title);
       if (!title) return json({ error: 'Give the form a title.' }, 400);
-      const { fields, error: fieldError } = sanitizeFields(input.fields);
+      // Pictures may only come from this form's own folder; a new form has none yet.
+      const ownId = isUuid(input.id) ? input.id : '';
+      const { fields, error: fieldError } = sanitizeFields(input.fields, ownId ? `${ownId}/_form/` : 'none/');
       if (fieldError) return json({ error: fieldError }, 400);
       let closesAt: string | null = null;
       if (input.closes_at) {
@@ -335,6 +396,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         payment_amount: input.track_payments === true && amount !== null ? Math.round(amount * 100) / 100 : null,
         payment_instructions: input.track_payments === true ? text(input.payment_instructions, 1000) : null,
         confirmation_message: text(input.confirmation_message, 1000),
+        cover_path: ownId ? coverOf(ownId, input.cover_path) : null,
         updated_by_name: displayName,
         updated_at: new Date().toISOString(),
       };
@@ -344,8 +406,12 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         if (existing.status === 'open' && !fields.some(isQuestion)) return json({ error: 'An open form needs at least one question.' }, 400);
         const { data, error } = await supabase.from('internal_forms').update(record).eq('id', existing.id).select('*').single();
         if (error) throw error;
+        // Pictures the form no longer shows are deleted.
+        const kept = new Set(formImagePaths(fields, record.cover_path));
+        const gone = formImagePaths(existing.fields || [], existing.cover_path).filter((p) => !kept.has(p));
+        if (gone.length) await supabase.storage.from(BUCKET).remove(gone);
         audit.subject(title);
-        return json({ form: data });
+        return json({ form: data, images: await signAll([...kept]) });
       }
       const { data, error } = await supabase.from('internal_forms')
         .insert({ ...record, status: 'draft', created_by: user.id, created_by_name: displayName })
@@ -382,20 +448,33 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       const f = await getForm(body.id);
       if (!f) return json({ error: 'This form no longer exists.' }, 404);
       const { data, error } = await supabase.from('internal_forms').insert({
-        title: `${f.title} (copy)`.slice(0, LIMITS.title), description: f.description, fields: f.fields,
+        title: `${f.title} (copy)`.slice(0, LIMITS.title), description: f.description, fields: [],
         closes_at: null, allow_edits: f.allow_edits, track_payments: f.track_payments, payment_amount: f.payment_amount,
         payment_instructions: f.payment_instructions, confirmation_message: f.confirmation_message,
         status: 'draft', created_by: user.id, created_by_name: displayName, updated_by_name: displayName,
       }).select('*').single();
       if (error) throw error;
+      // The copy gets its own copy of every picture, so deleting either
+      // form never takes the other's pictures with it.
+      const copy = data as FormRow;
+      const from = `${f.id}/_form/`; const to = `${copy.id}/_form/`;
+      for (const p of formImagePaths(f.fields || [], f.cover_path)) {
+        const { error: cpErr } = await supabase.storage.from(BUCKET).copy(p, to + p.slice(from.length));
+        if (cpErr) console.error('picture copy failed', p, cpErr);
+      }
+      const moved = JSON.parse(JSON.stringify(f.fields || []).split(from).join(to)) as FormField[];
+      const { data: done, error: upErr } = await supabase.from('internal_forms')
+        .update({ fields: moved, cover_path: f.cover_path ? to + f.cover_path.slice(from.length) : null })
+        .eq('id', copy.id).select('*').single();
+      if (upErr) throw upErr;
       audit.subject(f.title);
-      return json({ form: data });
+      return json({ form: done });
     }
 
     if (action === 'delete') {
       const f = await getForm(body.id);
       if (!f) return json({ success: true });
-      // Every file under the form's folder, member by member.
+      // Every file under the form's folder: each member's, and the form's own pictures (_form).
       const { data: folders } = await supabase.storage.from(BUCKET).list(f.id, { limit: 1000 });
       for (const folder of folders || []) {
         const { data: inside } = await supabase.storage.from(BUCKET).list(`${f.id}/${folder.name}`, { limit: 1000 });

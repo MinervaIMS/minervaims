@@ -8,7 +8,7 @@
 // The rows use the same type and spacing as the event emails' tables.
 // =====================================================================
 
-import { answerText, isQuestion, type Answers, type FormField } from './internal-forms.ts';
+import { answerText, isQuestion, visibleIds, type Answers, type FormField } from './internal-forms.ts';
 
 const FONT = "Calibri,'Segoe UI',Helvetica,Arial,sans-serif";
 
@@ -21,7 +21,10 @@ const para = (html: string) =>
 
 /** Every question and its answer, as the table the event emails use. */
 export function answersBlock(fields: FormField[], answers: Answers): string {
-  const rows = fields.filter(isQuestion).map((f, i) => {
+  // Only the questions this member was shown: a question their own answers
+  // hid (show-if) is not theirs to have skipped.
+  const shown = visibleIds(fields, answers);
+  const rows = fields.filter((f) => isQuestion(f) && shown.has(f.id)).map((f, i) => {
     const text = answerText(f, answers[f.id]);
     const value = text ? escapeHtml(text.length > 600 ? `${text.slice(0, 600)}...` : text).replace(/\n/g, '<br />') : '<span style="color:#737373;">No answer</span>';
     const border = i === 0 ? '' : 'border-top:1px solid #E0E0E0;';

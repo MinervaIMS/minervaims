@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { useMedia } from '@/components/admin/calendar/calendar-hooks';
 import { answerText, isQuestion, type AnswerValue, type FileAnswer } from '@/lib/internal-forms-rules';
 import type { FormResponse, InternalForm } from '@/lib/internal-forms-api';
-import { memberRoleLabel, stamp } from './answers-model';
+import { dueOf, memberRoleLabel, stamp } from './answers-model';
 import { money } from './forms-model';
 
 export function ResponseSheet({
@@ -67,7 +67,7 @@ export function ResponseSheet({
                 <section className={`border px-4 py-3 ${response.paid ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'}`}>
                   <label className="flex items-center justify-between gap-3">
                     <span>
-                      <span className="block text-[15px] font-medium text-foreground">{response.paid ? 'Paid' : 'Not paid yet'}{form.payment_amount != null ? ` · ${money(form.payment_amount)}` : ''}</span>
+                      <span className="block text-[15px] font-medium text-foreground">{response.paid ? 'Paid' : 'Not paid yet'}{dueOf(form, response) != null ? ` · ${money(dueOf(form, response))}` : ''}</span>
                       <span className="block text-xs text-muted-foreground">{response.paid ? `Recorded ${stamp(response.paid_at)}${response.paid_by_name ? ` by ${response.paid_by_name}` : ''}` : 'Tick when the payment reaches the Society.'}</span>
                     </span>
                     <span className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export function ResponseSheet({
               <section>
                 <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Answers</h3>
                 <dl className="divide-y divide-separator border-y-2 border-y-accent">
-                  {form.fields.filter(isQuestion).map((f) => {
+                  {form.fields.filter((f) => isQuestion(f) && (!f.showIf || response.answers?.[f.id] !== undefined)).map((f) => {
                     const v = response.answers?.[f.id] as AnswerValue | undefined;
                     return (
                       <div key={f.id} className="py-3">

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { isMeetingLink, meetingLinkProblem, meetingPlatform } from '@/lib/event-place';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,6 +60,9 @@ export default function EventCreate() {
   const submit = async () => {
     if (!form.title.trim() || !form.start_local) { toast({ title: 'Title and start time are required', variant: 'destructive' }); return; }
     if (!form.online && !form.place.trim()) { toast({ title: 'Add a location (or mark the event online)', variant: 'destructive' }); return; }
+    // An online event's link reaches registrants in their confirmation email, so it is required.
+    const linkProblem = form.online ? meetingLinkProblem(form.place) : null;
+    if (linkProblem) { toast({ title: 'Add the meeting link', description: linkProblem, variant: 'destructive' }); return; }
     if (divisionRequired && !form.division) { toast({ title: 'Choose the organising division', description: 'This event type requires a division.', variant: 'destructive' }); return; }
     if (examBreak) { toast({ title: 'Exam session break', description: `${examBreak.label}: the calendar does not accept events between ${examBreak.start_date} and ${examBreak.end_date}. Pick a date when the community can attend.`, variant: 'destructive' }); return; }
     const placesNumber = form.places.trim() ? Number(form.places) : null;
@@ -72,7 +76,7 @@ export default function EventCreate() {
     setSaving(true);
     try {
       await saveEvent(session, {
-        title: form.title, date: form.start_local.slice(0, 10), place: form.online ? (form.place || 'Online') : form.place,
+        title: form.title, date: form.start_local.slice(0, 10), place: form.place.trim(),
         moderator: form.moderator || null, guest: guests.filter((g) => g.trim()), description: form.description || null,
         poster_url: form.poster_url || null, event_type: form.event_type, division: form.division || null,
         start_at: startAt, end_at: endAt,
@@ -140,7 +144,18 @@ export default function EventCreate() {
           <Label htmlFor="online">Online event</Label>
           <Switch id="online" checked={form.online} onCheckedChange={(v) => setForm({ ...form, online: v })} />
         </div>
-        <div className="space-y-1"><Label>{form.online ? 'Meeting link / platform' : 'Location *'}</Label><Input value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} placeholder={form.online ? 'e.g. https://zoom.us/j/123456789' : 'e.g. Bocconi, Room AS01'} /></div>
+        <div className="space-y-1">
+          <Label>{form.online ? 'Meeting link *' : 'Location *'}</Label>
+          <Input value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} inputMode={form.online ? 'url' : undefined}
+            placeholder={form.online ? 'e.g. https://teams.microsoft.com/l/meetup-join/...' : 'e.g. Bocconi, Room AS01'} />
+          {form.online && (
+            <p className={`text-xs ${form.place.trim() && !isMeetingLink(form.place) ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {form.place.trim() && !isMeetingLink(form.place)
+                ? 'Paste the full link, starting with https://.'
+                : `Sent in a box of its own in every registration confirmation${meetingPlatform(form.place) ? ` (${meetingPlatform(form.place)})` : ''}. The public website shows only "Online".`}
+            </p>
+          )}
+        </div>
 
         <div className="space-y-1"><Label>Moderator (optional)</Label><Input value={form.moderator} onChange={(e) => setForm({ ...form, moderator: e.target.value })} placeholder="e.g. Jane Smith" /></div>
 

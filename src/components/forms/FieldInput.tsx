@@ -7,14 +7,23 @@
 // words as well as by an asterisk, a hint under the label, and an error
 // under the field that says how to fix it, marked by text and an icon as
 // well as by colour. Choices are big rows, easy to hit on a phone.
+//
+// PICTURES. A choice with a picture becomes a tile showing it; any
+// picture opens full size. ORDERS. When a question counts "how many of
+// each", picking a choice opens its counter right under it (one per size
+// when sizes are asked), with what that choice comes to when it has a
+// price. The counters are steppers with a typed number in the middle:
+// big enough for a thumb, exact for a keyboard.
 // =====================================================================
 
-import { useRef, useState, type DragEvent } from 'react';
-import { AlertCircle, FileText, Loader2, Paperclip, Upload, X } from 'lucide-react';
+import { useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { AlertCircle, FileText, Image as ImageIcon, Loader2, Maximize2, Minus, Paperclip, Plus, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
-  FILE_KINDS, LIMITS, fileProblem, type AnswerValue, type FileAnswer, type FormField,
+  FILE_KINDS, LIMITS, eur, fileProblem, isOrder, optionPrice,
+  type AnswerValue, type FileAnswer, type FormField, type OrderLine,
 } from '@/lib/internal-forms-rules';
 
 export interface UploadingFile { key: string; name: string; progress: number; error: string | null }
@@ -29,14 +38,46 @@ export interface FieldInputProps {
   onUpload?: (field: FormField, file: File, onProgress: (f: number) => void) => Promise<FileAnswer>;
   /** File questions: links to open files already attached. */
   fileUrls?: Record<string, string>;
+  /** Links to the form's pictures, by stored path. */
+  imageUrls?: Record<string, string>;
   /** Number shown before the question. */
   number?: number;
 }
 
 const formatSize = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
 
+/** A picture at full size, over the page. */
+export function ImageZoom({ url, alt, onClose }: { url: string | null; alt: string; onClose: () => void }) {
+  return (
+    <Dialog open={!!url} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="w-[min(96vw,64rem)] max-w-[min(96vw,64rem)] border-0 bg-background p-2 sm:p-3">
+        <DialogTitle className="sr-only">{alt}</DialogTitle>
+        {url && <img src={url} alt={alt} className="mx-auto max-h-[85vh] w-auto object-contain" />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** "-", a number to type, "+": a quantity. */
+function Stepper({ value, max, onChange, label, disabled }: { value: number; max: number; onChange: (n: number) => void; label: string; disabled?: boolean }) {
+  const set = (n: number) => onChange(Math.max(0, Math.min(max, Math.round(n) || 0)));
+  return (
+    <div className="inline-flex items-stretch border border-separator bg-background" role="group" aria-label={label}>
+      <button type="button" disabled={disabled || value <= 0} onClick={() => set(value - 1)} aria-label={`One fewer: ${label}`}
+        className="flex h-10 w-10 items-center justify-center text-accent hover:bg-accent/5 disabled:text-muted-foreground disabled:hover:bg-transparent"><Minus className="h-4 w-4" /></button>
+      <input
+        type="text" inputMode="numeric" value={String(value)} disabled={disabled} aria-label={label}
+        onChange={(e) => set(Number(e.target.value.replace(/\D/g, '')))} onFocus={(e) => e.target.select()}
+        className="h-10 w-11 border-x border-separator bg-background text-center font-body text-[15px] tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <button type="button" disabled={disabled || value >= max} onClick={() => set(value + 1)} aria-label={`One more: ${label}`}
+        className="flex h-10 w-10 items-center justify-center text-accent hover:bg-accent/5 disabled:text-muted-foreground disabled:hover:bg-transparent"><Plus className="h-4 w-4" /></button>
+    </div>
+  );
+}
+
 function Choice({ type, name, checked, onChange, disabled, children }: {
-  type: 'radio' | 'checkbox'; name: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; children: React.ReactNode;
+  type: 'radio' | 'checkbox'; name: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; children: ReactNode;
 }) {
   return (
     <label className={`flex min-h-[44px] cursor-pointer items-center gap-3 border px-3 py-2 font-body text-[15px] transition-colors ${
@@ -47,12 +88,12 @@ function Choice({ type, name, checked, onChange, disabled, children }: {
         onChange={(e) => onChange(e.target.checked)}
         className="h-4 w-4 shrink-0 accent-[hsl(var(--accent))]"
       />
-      <span className="min-w-0 break-words">{children}</span>
+      <span className="min-w-0 flex-1 break-words">{children}</span>
     </label>
   );
 }
 
-export function FieldInput({ field, value, onChange, error, disabled, onUpload, fileUrls = {}, number }: FieldInputProps) {
+export function FieldInput({ field, value, onChange, error, disabled, onUpload, fileUrls = {}, imageUrls = {}, number }: FieldInputProps) {
   const id = `q-${field.id}`;
   const helpId = field.help ? `${id}-help` : undefined;
   const errId = error ? `${id}-err` : undefined;
@@ -62,9 +103,40 @@ export function FieldInput({ field, value, onChange, error, disabled, onUpload, 
   const picker = useRef<HTMLInputElement>(null);
   const otherRef = useRef<HTMLInputElement>(null);
   const [otherActive, setOtherActive] = useState(false);
+  const [zoom, setZoom] = useState<{ url: string; alt: string } | null>(null);
+  // Orders: choices picked whose sizes are not counted yet.
+  const [opened, setOpened] = useState<string[]>([]);
   // The latest answer, for uploads that finish one after another.
   const latest = useRef(value);
   latest.current = value;
+  const zoomLayer = <ImageZoom url={zoom?.url ?? null} alt={zoom?.alt ?? ''} onClose={() => setZoom(null)} />;
+
+  // ── A picture ───────────────────────────────────────────────────
+  if (field.type === 'image') {
+    const url = field.image ? imageUrls[field.image] : undefined;
+    return (
+      <figure id={id} className="m-0">
+        {url ? (
+          <button type="button" data-ro onClick={() => setZoom({ url, alt: field.label || 'Picture' })}
+            className="group relative block w-full overflow-hidden border border-separator bg-muted/30" aria-label={`Open the picture${field.label ? `: ${field.label}` : ''} full size`}>
+            <img src={url} alt={field.label || 'Picture'} loading="lazy" className="mx-auto max-h-[30rem] w-auto object-contain" />
+            <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center bg-background/90 text-accent opacity-80 group-hover:opacity-100" aria-hidden><Maximize2 className="h-4 w-4" /></span>
+          </button>
+        ) : (
+          <div className="flex h-40 items-center justify-center border border-dashed border-separator bg-muted/30 font-body text-sm text-muted-foreground">
+            <ImageIcon aria-hidden className="mr-2 h-4 w-4" />{field.image ? 'Loading the picture' : 'No picture yet'}
+          </div>
+        )}
+        {(field.label || field.help) && (
+          <figcaption className="mt-2 font-body">
+            {field.label && <span className="block text-[15px] font-medium text-foreground">{field.label}</span>}
+            {field.help && <span className="mt-0.5 block whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">{field.help}</span>}
+          </figcaption>
+        )}
+        {zoomLayer}
+      </figure>
+    );
+  }
 
   if (field.type === 'section') {
     return (
@@ -90,6 +162,121 @@ export function FieldInput({ field, value, onChange, error, disabled, onUpload, 
   ) : null;
   const invalid = error ? 'border-destructive focus-visible:ring-destructive' : '';
 
+  const optImage = (o: string): string | undefined => {
+    const i = (field.options ?? []).indexOf(o);
+    const p = i >= 0 ? field.optionImages?.[i] : null;
+    return p ? imageUrls[p] : undefined;
+  };
+  const priceTag = (o: string) => {
+    const pr = optionPrice(field, o);
+    return pr === null ? null : <span className="shrink-0 tabular-nums text-muted-foreground">{eur(pr)}</span>;
+  };
+  // The picture of a choice: decorative inside its label (the text names
+  // the choice), with its "see full size" button kept OUTSIDE the label,
+  // so a tick box never has a button inside its name.
+  const thumb = (o: string, size: 'sm' | 'lg') => {
+    const url = optImage(o);
+    if (!url) return null;
+    return (
+      <span className={`block shrink-0 overflow-hidden border border-separator bg-muted/30 ${size === 'lg' ? 'aspect-square w-full' : 'h-16 w-16 sm:h-20 sm:w-20'}`}>
+        <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
+      </span>
+    );
+  };
+  const zoomButton = (o: string, className: string) => {
+    const url = optImage(o);
+    if (!url) return null;
+    return (
+      <button type="button" data-ro onClick={() => setZoom({ url, alt: o })} aria-label={`See ${o} full size`}
+        className={`flex h-8 w-8 items-center justify-center bg-background/90 text-accent hover:bg-background ${className}`}>
+        <Maximize2 className="h-3.5 w-3.5" />
+      </button>
+    );
+  };
+
+  // ── Orders: how many of each choice (and size) ─────────────────
+  if (isOrder(field)) {
+    const opts = field.options ?? [];
+    const sizes = field.sizes ?? [];
+    const max = field.maxQty ?? LIMITS.defaultQty;
+    const multi = field.type === 'multi_choice';
+    const lines: OrderLine[] = Array.isArray(value) ? (value as OrderLine[]) : [];
+    const qtyOf = (o: string, size?: string) => lines.filter((l) => l.option === o && (l.size ?? '') === (size ?? '')).reduce((a, l) => a + l.qty, 0);
+    const picked = (o: string) => opened.includes(o) || lines.some((l) => l.option === o && l.qty > 0);
+    const commit = (next: OrderLine[]) => onChange(next.length ? next : undefined);
+    const setQty = (o: string, size: string | undefined, qty: number) => {
+      const others = lines.filter((l) => !(l.option === o && (l.size ?? '') === (size ?? '')));
+      const keep = multi ? others : others.filter((l) => l.option === o);
+      commit(qty > 0 ? [...keep, { option: o, ...(size ? { size } : {}), qty }] : keep);
+    };
+    const pick = (o: string, on: boolean) => {
+      if (on) {
+        // A choice without sizes starts at one; with sizes, the member says which.
+        const rest = multi ? lines : [];
+        if (!multi) setOpened([o]); else setOpened((x) => [...new Set([...x, o])]);
+        if (!sizes.length) commit([...rest.filter((l) => l.option !== o), { option: o, qty: Math.max(1, qtyOf(o)) }]);
+        else if (!multi) commit([]);
+      } else {
+        setOpened((x) => x.filter((y) => y !== o));
+        commit(lines.filter((l) => l.option !== o));
+      }
+    };
+    return (
+      <fieldset id={id} aria-describedby={describedBy} aria-invalid={!!error || undefined}>
+        <legend className="mb-1">{label}</legend>
+        {help}
+        <p className="mt-1 font-body text-xs text-muted-foreground">
+          {multi ? 'Tick what you would like' : 'Choose one'}{sizes.length ? ', then how many of each size' : ', then how many'}. Up to {max} of each.
+        </p>
+        <div className="mt-2.5 grid gap-2">
+          {opts.map((o) => {
+            const on = picked(o);
+            const count = lines.filter((l) => l.option === o).reduce((a, l) => a + l.qty, 0);
+            const pr = optionPrice(field, o);
+            return (
+              <div key={o} className={`border transition-colors ${on ? 'border-accent bg-accent/[0.03]' : 'border-separator bg-background'}`}>
+                <div className="flex items-center gap-2 pr-2">
+                  <label className={`flex min-h-[44px] min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-2 font-body text-[15px] ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}>
+                    <input type={multi ? 'checkbox' : 'radio'} name={id} checked={on} disabled={disabled}
+                      onChange={(e) => pick(o, e.target.checked)} className="h-4 w-4 shrink-0 accent-[hsl(var(--accent))]" />
+                    {thumb(o, 'sm')}
+                    <span className="min-w-0 flex-1 break-words">{o}</span>
+                    {priceTag(o)}
+                  </label>
+                  {zoomButton(o, 'shrink-0 border border-separator')}
+                </div>
+                {on && (
+                  <div className="border-t border-separator px-3 pb-3 pt-2.5 font-body">
+                    {sizes.length ? (
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-2.5">
+                        {sizes.map((sz) => (
+                          <div key={sz} className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-foreground">{sz}</span>
+                            <Stepper value={qtyOf(o, sz)} max={max} disabled={disabled} label={`${o}, size ${sz}, how many`} onChange={(n) => setQty(o, sz, n)} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-foreground">How many</span>
+                        <Stepper value={qtyOf(o)} max={max} disabled={disabled} label={`${o}, how many`} onChange={(n) => setQty(o, undefined, n)} />
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+                      {count ? `${count} ${count === 1 ? 'item' : 'items'}${pr !== null ? `, ${eur(pr * count)}` : ''}` : sizes.length ? 'Choose how many of each size.' : 'Choose how many.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {errorLine}
+        {zoomLayer}
+      </fieldset>
+    );
+  }
+
   // ── Choices ─────────────────────────────────────────────────────
   if (field.type === 'single_choice' || field.type === 'multi_choice') {
     const opts = field.options ?? [];
@@ -111,9 +298,31 @@ export function FieldInput({ field, value, onChange, error, disabled, onUpload, 
       <fieldset id={id} aria-describedby={describedBy} aria-invalid={!!error || undefined}>
         <legend className="mb-1">{label}</legend>
         {help}
+        {opts.some((o) => optImage(o)) ? (
+          // Pictures: one tile per choice, the picture first.
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {opts.map((o, i) => (
+              <div key={o} className={`relative border p-2 font-body text-[15px] transition-colors ${list.includes(o) ? 'border-accent bg-accent/5' : 'border-separator bg-background hover:border-accent/60'} ${disabled ? 'opacity-70' : ''}`}>
+                {/* The picture is a second label for the same tick box: a tap on it picks the choice. */}
+                <label htmlFor={`${id}-opt-${i}`} className={disabled ? 'block cursor-not-allowed' : 'block cursor-pointer'}>
+                  {thumb(o, 'lg') ?? <span className="flex aspect-square w-full items-center justify-center bg-muted/40 text-muted-foreground"><ImageIcon aria-hidden className="h-5 w-5" /></span>}
+                </label>
+                {zoomButton(o, 'absolute right-3 top-3 border border-separator')}
+                <label htmlFor={`${id}-opt-${i}`} className={`mt-2 flex items-start gap-2 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input id={`${id}-opt-${i}`} type={multi ? 'checkbox' : 'radio'} name={id} checked={list.includes(o)} disabled={disabled}
+                    onChange={(e) => set(o, e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--accent))]" />
+                  <span className="min-w-0 flex-1 break-words">{o}</span>
+                </label>
+                {optionPrice(field, o) !== null && <span className="ml-6 block text-sm tabular-nums text-muted-foreground">{eur(optionPrice(field, o) as number)}</span>}
+              </div>
+            ))}
+          </div>
+        ) : null}
         <div className="mt-2.5 grid gap-2">
-          {opts.map((o) => (
-            <Choice key={o} type={multi ? 'checkbox' : 'radio'} name={id} checked={list.includes(o)} onChange={(on) => set(o, on)} disabled={disabled}>{o}</Choice>
+          {!opts.some((o) => optImage(o)) && opts.map((o) => (
+            <Choice key={o} type={multi ? 'checkbox' : 'radio'} name={id} checked={list.includes(o)} onChange={(on) => set(o, on)} disabled={disabled}>
+              <span className="flex items-center justify-between gap-3"><span>{o}</span>{priceTag(o)}</span>
+            </Choice>
           ))}
           {field.other && (
             <div className={`flex min-h-[44px] items-center gap-3 border px-3 py-1.5 ${otherText ? 'border-accent bg-accent/5' : 'border-separator'}`}>
@@ -133,6 +342,7 @@ export function FieldInput({ field, value, onChange, error, disabled, onUpload, 
           )}
         </div>
         {errorLine}
+        {zoomLayer}
       </fieldset>
     );
   }
@@ -281,7 +491,7 @@ export function FieldInput({ field, value, onChange, error, disabled, onUpload, 
           className={`mt-2 h-11 w-full border bg-background px-3 font-body text-[15px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${error ? 'border-destructive' : 'border-input'}`}
         >
           <option value="">Choose...</option>
-          {(field.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+          {(field.options ?? []).map((o) => <option key={o} value={o}>{optionPrice(field, o) !== null ? `${o} (${eur(optionPrice(field, o) as number)})` : o}</option>)}
         </select>
         {errorLine}
       </div>

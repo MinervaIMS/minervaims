@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { publicPlace } from '@/lib/event-place';
 import { Calendar, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DbEvent {
@@ -121,7 +122,7 @@ export function EventsListNew({ events }: EventsListNewProps) {
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 flex-shrink-0" />
               <span className="font-body text-sm tracking-wider uppercase">
-                {event.place}
+                {publicPlace(event)}
               </span>
             </div>
           </div>

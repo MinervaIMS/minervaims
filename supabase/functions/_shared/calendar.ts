@@ -198,6 +198,38 @@ function calendarRow(base: string): string {
     + '</p></td></tr>';
 }
 
+// ── Online events: the join box ─────────────────────────────────────
+// Mirrored EXACTLY by public.event_join_block in the database. An online
+// event keeps its meeting link in `place`; when that is a web address,
+// the confirmation carries it in a box nobody can miss: a heading, a
+// button named after the platform, and the address itself to copy.
+
+/** A meeting link as the emails accept it: http(s), no spaces, not too long. */
+export const MEETING_LINK_RE = /^https?:\/\/[^\s<>"']{3,2000}$/i;
+
+/** "Join on Microsoft Teams", "Join on Zoom", ... from the address. */
+export function joinLabel(url: string): string {
+  const u = url.toLowerCase();
+  if (u.includes('teams.microsoft.com') || u.includes('teams.live.com')) return 'Join on Microsoft Teams';
+  if (u.includes('zoom.us')) return 'Join on Zoom';
+  if (u.includes('meet.google.com')) return 'Join on Google Meet';
+  if (u.includes('webex.com')) return 'Join on Webex';
+  return 'Join the event';
+}
+
+export function emailJoinBlock(place: string | null | undefined): string {
+  const url = String(place ?? '').trim();
+  if (!MEETING_LINK_RE.test(url)) return '';
+  const href = url.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return '<tr><td class="mims-pad" style="padding:0 40px 26px;">'
+    + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:2px solid #1F0F4D;background:#F3F1F9;"><tr><td style="padding:20px 22px 22px;">'
+    + `<p style="margin:0 0 6px;${FONT}font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1F0F4D;">This event is online</p>`
+    + `<p style="margin:0 0 16px;font-family:'EB Garamond','Times New Roman',Georgia,serif;font-size:22px;line-height:1.3;color:#141414;">Join from this link at the start time</p>`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#1F0F4D" style="background:#1F0F4D;"><a href="${href}" style="display:inline-block;padding:15px 34px;${FONT}font-size:12px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:#FFFFFF;text-decoration:none;">${joinLabel(url)}</a></td></tr></table>`
+    + `<p style="margin:16px 0 0;${FONT}font-size:13px;line-height:1.6;color:#4D4D4D;">If the button does not open, copy this address into your browser:<br /><a href="${href}" style="color:#1F0F4D;text-decoration:underline;word-break:break-all;">${href}</a></p>`
+    + '</td></tr></table></td></tr>';
+}
+
 export function emailCancelBlock(eventId: string, token: string, kind: 'registration' | 'waitlist'): string {
   if (!/^([0-9a-f-]{36}|sample)$/.test(eventId) || !/^([a-f0-9]{32}|sample)$/.test(token)) return '';
   const url = `${SITE}/events/${eventId}/cancel?t=${token}`;
