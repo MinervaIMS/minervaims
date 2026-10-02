@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isOnlineEvent } from '@/lib/event-place';
 import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -160,7 +161,7 @@ export default function EventRegister() {
       </div>
       <div className="font-body text-sm text-muted-foreground space-y-2 mb-5 max-w-[470px] mx-auto">
         <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{when}</div>
-        {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{event.place}</div>}
+        {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{isOnlineEvent(event) ? 'Online: the link to join is in your confirmation email' : event.place}</div>}
         {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
         {left !== null && (
           <div className="flex items-start gap-2.5"><Ticket className="h-4 w-4 shrink-0 mt-0.5" />

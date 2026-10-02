@@ -21,9 +21,11 @@ const EventSchema = z.object({
       const date = new Date(val)
       return !isNaN(date.getTime()) && date.getFullYear() >= 2000 && date.getFullYear() <= 2100
     }, 'Invalid date'),
+  // Up to 2000 so an online event's meeting link fits (Teams links run
+  // long); a place in the world is still held to 200 below.
   place: z.string()
     .min(1, 'Place is required')
-    .max(200, 'Place too long')
+    .max(2000, 'Place too long')
     .trim(),
   moderator: z.string()
     .max(200, 'Moderator name too long')
@@ -63,6 +65,25 @@ const EventSchema = z.object({
   // The number of places; null for no limit (the default).
   capacity: z.number().int('Places must be a whole number').min(1, 'At least one place').max(10000, 'Too many places').nullable().optional()
 })
+
+// =====================================================================
+// AN ONLINE EVENT CARRIES ITS MEETING LINK.
+// ---------------------------------------------------------------------
+// It is kept in `place`, and the registration confirmation puts it in a
+// box nobody can miss (public.event_join_block). So an online event must
+// have a real web address there. Checked on create, and on update only
+// when the place or the online switch changes: an older online event
+// saved with "Online" keeps working for every other edit, such as the
+// archive's website switch.
+// =====================================================================
+const MEETING_LINK_RE = /^https?:\/\/[^\s<>"']{3,2000}$/i
+function placeProblem(online: boolean, place: string): string | null {
+  if (online && !MEETING_LINK_RE.test(place.trim())) {
+    return 'An online event needs its meeting link, starting with https:// (Teams, Zoom, Google Meet...). Registrants receive it in their confirmation email.'
+  }
+  if (!online && place.length > 200) return 'Place too long'
+  return null
+}
 
 // Internal meetings and online calls start off the public website; every
 // other type starts listed. Applies only when the caller does not say:
@@ -298,6 +319,13 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
 
         const validatedEvent = eventResult.data
+        const createPlace = placeProblem(validatedEvent.online ?? false, validatedEvent.place)
+        if (createPlace) {
+          return new Response(
+            JSON.stringify({ error: createPlace }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         // Alumni calls are created ONLY through Events > Alumni Calls, which
         // owns their planning workflow; this endpoint refuses to create one.
         if (validatedEvent.event_type === 'alumni_call') {
@@ -377,7 +405,18 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // on it like on any other event and nothing else can drift.
         // =================================================================
         const { data: linked } = await supabase
-          .from('events').select('id, aod_day_id').eq('id', validatedEvent.id).maybeSingle()
+          .from('events').select('id, aod_day_id, online, place').eq('id', validatedEvent.id).maybeSingle()
+        // The meeting link is asked for only when where the event happens changes.
+        const nowOnline = validatedEvent.online ?? false
+        if (!linked?.aod_day_id && (nowOnline !== (linked?.online ?? false) || validatedEvent.place !== (linked?.place ?? ''))) {
+          const updatePlace = placeProblem(nowOnline, validatedEvent.place)
+          if (updatePlace) {
+            return new Response(
+              JSON.stringify({ error: updatePlace }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        }
         if (linked?.aod_day_id) {
           const { data, error } = await supabase
             .from('events')

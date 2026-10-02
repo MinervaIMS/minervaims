@@ -7,17 +7,17 @@
 import * as React from 'npm:react@18.3.1'
 import { Body, Head, Html } from 'npm:@react-email/components@0.0.22'
 import { TRANSACTIONAL_TEMPLATES } from '../transactional-emails.ts'
-import { emailCalendarBlock, emailCancelBlock } from '../calendar.ts'
+import { emailCalendarBlock, emailCancelBlock, emailJoinBlock } from '../calendar.ts'
 import { PROFILE_MISSING_SAMPLE, PROFILE_PHOTO_HELP_SAMPLE } from '../profile-email-sample.ts'
 import { answersBlock, editBlock, paymentBlock } from '../internal-form-email.ts'
 
 // A sample internal form, so the receipt previews with real-looking answers.
 const FORM_SAMPLE_FIELDS = [
-  { id: 'size', type: 'single_choice' as const, label: 'Hoodie size', options: ['S', 'M', 'L'] },
-  { id: 'qty', type: 'number' as const, label: 'How many', integer: true },
-  { id: 'name', type: 'short_text' as const, label: 'Name to print on the sleeve' },
+  { id: 'order', type: 'multi_choice' as const, label: 'Which colours, and how many of each size?', options: ['Black', 'Grey'], optionPrices: [35, 35], quantities: true, sizes: ['S', 'M', 'L'], maxQty: 5 },
+  { id: 'sleeve', type: 'single_choice' as const, label: 'Add a name on the sleeve?', options: ['No', 'Yes'], optionPrices: [null, 5] },
+  { id: 'name', type: 'short_text' as const, label: 'Name to print on the sleeve', showIf: { field: 'sleeve', values: ['Yes'] } },
 ]
-const FORM_SAMPLE_ANSWERS = { size: 'M', qty: 2, name: 'J. Doe' }
+const FORM_SAMPLE_ANSWERS = { order: [{ option: 'Black', size: 'M', qty: 1 }, { option: 'Black', size: 'L', qty: 1 }, { option: 'Grey', size: 'S', qty: 1 }], sleeve: 'Yes', name: 'J. Doe' }
 
 // The project the preview links point at, as the emails' own links do.
 const PREVIEW_SUPABASE_URL = 'https://asjudzdgsccacpjbzsue.supabase.co'
@@ -72,6 +72,8 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   body_paragraph_3: 'Please refer to the Workspace for any operational details.',
   call_description: 'A structured conversation with alumni on career paths and technical preparation.',
   checkin_block: '',
+  // The confirmation as an online event receives it.
+  join_block: emailJoinBlock('https://teams.microsoft.com/l/meetup-join/sample'),
   calendar_block: emailCalendarBlock(PREVIEW_SUPABASE_URL, 'sample'),
   cancel_block: emailCancelBlock('sample', 'sample', 'registration'),
   waitlist_position: '3',
@@ -80,7 +82,7 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   member_name: 'Jane Doe',
   form_url: 'https://minervaims.org/forms/sample',
   answers_block: answersBlock(FORM_SAMPLE_FIELDS, FORM_SAMPLE_ANSWERS),
-  payment_block: paymentBlock(35, 'Bank transfer to the Society account, with your name in the description.'),
+  payment_block: paymentBlock(110, 'Bank transfer to the Society account, with your name in the description.'),
   edit_block: editBlock(true, 'Friday 10 October 2026, 11:59 pm CEST'),
   confirmation_block: '',
   missing_block: PROFILE_MISSING_SAMPLE,

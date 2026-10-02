@@ -23,8 +23,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, BarChart3, CopyPlus, Eye, FilePlus2, Link2, ListChecks, Loader2, Lock, MoreHorizontal, Plus,
-  RefreshCw, Search, Settings2, Trash2, Undo2, Unlock,
+  ArrowLeft, BarChart3, CopyPlus, Eye, FilePlus2, Image as ImageIcon, Link2, ListChecks, Loader2, Lock, MoreHorizontal, Plus,
+  RefreshCw, Search, Settings2, Trash2, Undo2, Unlock, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +47,7 @@ import { useToast } from '@/hooks/use-toast';
 import { friendlyError } from '@/lib/errors';
 import { isQuestion, LIMITS } from '@/lib/internal-forms-rules';
 import {
-  deleteForm, duplicateForm, getForm, listForms, saveForm, setFormStatus,
+  deleteForm, duplicateForm, getForm, listForms, saveForm, saveFormWithImages, setFormStatus, uploadFormImage,
   type FormResponse, type FormStatus, type InternalForm,
 } from '@/lib/internal-forms-api';
 import {
@@ -55,7 +55,7 @@ import {
   type EffectiveState, type Problem,
 } from './forms-model';
 import { stamp } from './answers-model';
-import { QuestionsEditor } from './QuestionsEditor';
+import { PictureButton, QuestionsEditor, type MediaContext } from './QuestionsEditor';
 import { FormSettingsPanel } from './FormSettingsPanel';
 import { AnswersView } from './AnswersView';
 
@@ -70,7 +70,7 @@ let listCache: InternalForm[] | null = null;
 const unsaved = new Map<string, { base: string; draft: InternalForm }>();
 
 /** The parts of a form the organiser edits, compared and saved. */
-const EDITABLE = ['title', 'description', 'fields', 'closes_at', 'allow_edits', 'track_payments', 'payment_amount', 'payment_instructions', 'confirmation_message'] as const;
+const EDITABLE = ['title', 'description', 'fields', 'closes_at', 'allow_edits', 'track_payments', 'payment_amount', 'payment_instructions', 'confirmation_message', 'cover_path'] as const;
 const editable = (f: InternalForm) => Object.fromEntries(EDITABLE.map((k) => [k, f[k]])) as Partial<InternalForm>;
 // Empty text, null and absent read the same, so typing and deleting a
 // word does not leave a form "changed".
@@ -286,6 +286,7 @@ function FormRow({ form: f, canEdit, busy, onOpen, onCopy, onDuplicate, onDelete
   ].filter(Boolean);
   return (
     <li className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center">
+      {f.cover_url && <img src={f.cover_url} alt="" className="hidden h-14 w-20 shrink-0 border border-separator object-cover sm:block" />}
       <button type="button" data-ro onClick={() => onOpen(n > 0 ? 'answers' : 'questions')} className="group min-w-0 flex-1 text-left font-body">
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-serif text-lg leading-snug text-accent group-hover:underline group-hover:underline-offset-2">{f.title}</span>
@@ -396,7 +397,15 @@ function FormEditor({ id, view, onView, onOpen }: {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [reveal, setReveal] = useState<{ id: string; at: number } | null>(null);
   const [ask, setAsk] = useState<null | 'open' | 'close' | 'leave' | 'delete' | 'draft'>(null);
+  // Links to the form's pictures, by stored path: from the server, and from each upload.
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const tabsRef = useRef<HTMLDivElement>(null);
+  const uploadImage = useCallback(async (file: File) => {
+    const { path, url } = await uploadFormImage(session, id, file);
+    if (url) setImageUrls((m) => ({ ...m, [path]: url }));
+    return path;
+  }, [session, id]);
+  const media: MediaContext = { imageUrls, uploadImage, payments: !!draft?.track_payments };
 
   const dirty = !!saved && !!draft && norm(saved) !== norm(draft);
 
@@ -408,6 +417,7 @@ function FormEditor({ id, view, onView, onOpen }: {
         const r = await getForm(session, id);
         if (cancelled) return;
         const f = tidy(r.form);
+        setImageUrls((m) => ({ ...m, ...(r.images ?? {}) }));
         setSaved(f);
         const kept = unsaved.get(id);
         if (kept && kept.base === f.updated_at && canEdit) { setDraft({ ...kept.draft, status: f.status }); setRestored(true); }
@@ -460,7 +470,9 @@ function FormEditor({ id, view, onView, onOpen }: {
     if (p) { showProblem(p); return null; }
     setSaving(true);
     try {
-      const f = tidy(await saveForm(session, { id: saved.id, ...editable(draft) }));
+      const res = await saveFormWithImages(session, { id: saved.id, ...editable(draft) });
+      const f = tidy(res.form);
+      if (res.images) setImageUrls((m) => ({ ...m, ...res.images }));
       setSaved(f);
       setDraft(f);
       latest.current = { saved: f, draft: f, dirty: false };
@@ -517,6 +529,7 @@ function FormEditor({ id, view, onView, onOpen }: {
     try {
       const r = await getForm(session, id);
       setResponses(r.responses);
+      setImageUrls((m) => ({ ...m, ...(r.images ?? {}) }));
       const f = tidy(r.form);
       if (!dirty) { setSaved(f); setDraft(f); }
     } catch (e) { toast({ title: 'Could not refresh the answers', description: friendlyError(e), variant: 'destructive' }); }
@@ -682,9 +695,31 @@ function FormEditor({ id, view, onView, onOpen }: {
         {view === 'questions' && (
           <QuestionsEditor
             fields={draft.fields} onChange={(fields) => set({ fields })} answerCount={responses.length} readOnly={readOnly} reveal={reveal}
-            title={draft.title} intro={draft.description}
+            title={draft.title} intro={draft.description} media={media} coverPath={draft.cover_path}
             header={(
               <section className="mb-4 border border-separator border-t-4 border-t-accent p-4 sm:p-5">
+                {/* The cover: at the top of the form, and on members' Dashboard while it waits for them. */}
+                <div className="mb-4">
+                  {draft.cover_path ? (
+                    <div className="relative overflow-hidden border border-separator bg-muted/30">
+                      {imageUrls[draft.cover_path]
+                        ? <img src={imageUrls[draft.cover_path]} alt="Cover" className="max-h-56 w-full object-cover" />
+                        : <div className="flex h-32 items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-accent" /></div>}
+                      {!readOnly && (
+                        <div className="absolute right-2 top-2 flex gap-1.5">
+                          <PictureButton media={media} onPicked={(path) => set({ cover_path: path })} label="Replace the cover picture"
+                            className="inline-flex h-9 items-center gap-1.5 bg-background/95 px-3 text-sm text-accent shadow-sm hover:bg-background"><ImageIcon className="h-4 w-4" />Replace</PictureButton>
+                          <Button type="button" variant="outline" size="sm" className="h-9 bg-background/95" onClick={() => set({ cover_path: null })}><X className="h-4 w-4" />Remove</Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : !readOnly && (
+                    <PictureButton media={media} onPicked={(path) => set({ cover_path: path })} label="Add a cover picture"
+                      className="flex w-full items-center justify-center gap-2 border border-dashed border-separator px-4 py-4 font-body text-sm text-accent hover:border-accent hover:bg-accent/5">
+                      <ImageIcon className="h-4 w-4" />Add a cover picture<span className="text-muted-foreground">: at the top of the form and on members' Dashboard</span>
+                    </PictureButton>
+                  )}
+                </div>
                 <div className="space-y-1">
                   <Label htmlFor="form-title" className="text-xs">Title</Label>
                   <Input id="form-title" value={draft.title} disabled={readOnly} maxLength={LIMITS.title} onChange={(e) => set({ title: e.target.value })}

@@ -18,18 +18,19 @@ import { useOnboarding } from '@/components/admin/dashboard/useOnboarding';
 import { useAuth } from '@/contexts/AuthContext';
 import AlumniGrowthBlock from '@/components/admin/dashboard/AlumniGrowthBlock';
 import ReportsMixBlock from '@/components/admin/dashboard/ReportsMixBlock';
-import FormsForYouBlock from '@/components/admin/dashboard/FormsForYouBlock';
+import FormsStackBlock from '@/components/admin/dashboard/FormsStackBlock';
 import { useMyForms } from '@/components/admin/dashboard/useMyForms';
 
 // =====================================================================
 // Dashboard.
 // ---------------------------------------------------------------------
 //   greeting, centred
-//   forms for you (only while an internal form is open to the member)
 //   Reports | Readings | Members | Alumni Network
 //   research by division (40%)  |  current update (60%)
-//     (a new member sees "Getting started" in the research card's place
-//      until the checklist is done or hidden)
+//     (an internal form waiting for the member's answer takes the
+//      research card's place first, as a stack when there are several;
+//      then a new member sees "Getting started" there until the
+//      checklist is done or hidden)
 //   fund performance (35%) | reports mix (25%) | alumni growth (40%)
 //
 // THE WHOLE PAGE IS ONE DESKTOP SCREEN. The root is a height-bounded
@@ -207,9 +208,6 @@ export default function WorkspaceDashboard({ onNavigate }: {
 
       <DashboardGreeting userId={data.userId} vars={data.greetingVars} />
 
-      {/* Open internal forms, while there are any: answering one is the
-          other thing on this page that asks the reader to act. */}
-      <FormsForYouBlock forms={openForms.forms} style={enter(0)} />
 
       {/* KPI row. Reports carries the filled treatment; the other three
           are light, so the row reads as one instrument panel with a
@@ -270,8 +268,12 @@ export default function WorkspaceDashboard({ onNavigate }: {
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-3 lg:min-h-[clamp(210px,25vh,300px)]">
           {/* The checklist needs more height than the chart on a phone,
               where the card is sized rather than shared. */}
-          <div className={`dash-enter order-2 lg:order-1 ${onboarding.show ? 'h-[300px]' : 'h-[264px]'} lg:h-auto min-h-0`} style={enter(4)}>
-            {onboarding.show ? (
+          <div className={`dash-enter order-2 lg:order-1 ${openForms.waiting.length || onboarding.show ? 'h-[300px]' : 'h-[264px]'} lg:h-auto min-h-0`} style={enter(4)}>
+            {/* A form waiting for an answer comes first: it has a deadline.
+                Answered or closed, the card goes back to what it was. */}
+            {openForms.waiting.length ? (
+              <FormsStackBlock forms={openForms.waiting} />
+            ) : onboarding.show ? (
               <OnboardingChecklistBlock
                 onboarding={onboarding}
                 onNavigate={onNavigate}

@@ -9,7 +9,7 @@
 // =====================================================================
 
 import {
-  answerText, isChoice, isQuestion, type AnswerValue, type FileAnswer, type FormField,
+  answerText, isChoice, isOrder, isQuestion, optionPrice, type AnswerValue, type FileAnswer, type FormField, type OrderLine,
 } from '@/lib/internal-forms-rules';
 import type { FormResponse, InternalForm } from '@/lib/internal-forms-api';
 import { formatDay, formatTime } from '@/lib/event-time';
@@ -31,7 +31,17 @@ export function memberRoleLabel(r: Pick<FormResponse, 'member_role' | 'member_di
 // Summaries
 // ---------------------------------------------------------------------
 
+/** What an answer owes: its own amount, or the form's fixed amount for answers sent before prices existed. */
+export function dueOf(form: Pick<InternalForm, 'track_payments' | 'payment_amount'>, r: Pick<FormResponse, 'amount_due'>): number | null {
+  if (!form.track_payments) return null;
+  if (r.amount_due !== null && r.amount_due !== undefined) return Number(r.amount_due);
+  return form.payment_amount === null || form.payment_amount === undefined ? null : Number(form.payment_amount);
+}
+
+export interface OrderRow { label: string; total: number; bySize: Record<string, number>; amount: number | null }
+
 export type Summary =
+  | { kind: 'order'; answered: number; sizes: string[]; rows: OrderRow[]; items: number; amount: number | null; bySize: Record<string, number> }
   | { kind: 'choices'; answered: number; rows: { label: string; count: number; other?: boolean }[] }
   | { kind: 'numbers'; answered: number; total: number; mean: number; min: number; max: number; rows: { label: string; count: number }[] }
   | { kind: 'texts'; answered: number; latest: { who: string; text: string }[] }
@@ -42,6 +52,29 @@ export function summarise(field: FormField, responses: FormResponse[]): Summary 
   const values = responses.map((r) => ({ r, v: r.answers?.[field.id] }))
     .filter((x) => x.v !== undefined && x.v !== null && x.v !== '' && !(Array.isArray(x.v) && x.v.length === 0));
   const answered = values.length;
+  // An order: how many of each choice, by size, and what it comes to. The
+  // supplier's list, without a spreadsheet.
+  if (isOrder(field)) {
+    const sizes = field.sizes ?? [];
+    const rows: OrderRow[] = (field.options ?? []).map((label) => ({ label, total: 0, bySize: {}, amount: optionPrice(field, label) === null ? null : 0 }));
+    const bySize: Record<string, number> = {};
+    for (const { v } of values) {
+      for (const l of (Array.isArray(v) ? v : []) as OrderLine[]) {
+        const row = rows.find((r) => r.label === l.option);
+        if (!row) continue;
+        row.total += l.qty;
+        if (l.size) { row.bySize[l.size] = (row.bySize[l.size] ?? 0) + l.qty; bySize[l.size] = (bySize[l.size] ?? 0) + l.qty; }
+        const pr = optionPrice(field, l.option);
+        if (pr !== null) row.amount = Math.round(((row.amount ?? 0) + pr * l.qty) * 100) / 100;
+      }
+    }
+    const priced = rows.some((r) => r.amount !== null);
+    return {
+      kind: 'order', answered, sizes, rows, bySize,
+      items: rows.reduce((a, r) => a + r.total, 0),
+      amount: priced ? Math.round(rows.reduce((a, r) => a + (r.amount ?? 0), 0) * 100) / 100 : null,
+    };
+  }
   if (isChoice(field.type)) {
     const counts = new Map<string, number>();
     for (const o of field.options ?? []) counts.set(o, 0);
@@ -97,6 +130,8 @@ export interface Column {
   value: (r: FormResponse) => Cell;
   /** Questions only. */
   field?: FormField;
+  /** One count of an order (a choice, or a choice in a size): exported, hidden in the table at first. */
+  breakdown?: boolean;
 }
 
 /**
@@ -123,6 +158,22 @@ export function allColumns(form: InternalForm, responses: FormResponse[]): Colum
         return answerText(f, v as AnswerValue);
       },
     });
+    // An order also gives one column per choice (and size): a number each,
+    // so the sheet adds up in Excel and goes straight to the supplier.
+    if (isOrder(f)) {
+      const count = (r: FormResponse, option: string, size?: string): Cell => {
+        const lines = (Array.isArray(r.answers?.[f.id]) ? r.answers[f.id] : []) as OrderLine[];
+        const n = lines.filter((l) => l.option === option && (size === undefined || l.size === size)).reduce((a, l) => a + l.qty, 0);
+        return n || '';
+      };
+      for (const o of f.options ?? []) {
+        if (f.sizes?.length) {
+          for (const sz of f.sizes) cols.push({ key: `qb:${f.id}:${o}:${sz}`, label: `${f.label}: ${o}, ${sz}`, group: 'questions', breakdown: true, value: (r) => count(r, o, sz) });
+        } else {
+          cols.push({ key: `qb:${f.id}:${o}`, label: `${f.label}: ${o}`, group: 'questions', breakdown: true, value: (r) => count(r, o) });
+        }
+      }
+    }
   }
   // Answers to questions that are no longer on the form.
   const orphans = new Set<string>();
@@ -140,6 +191,7 @@ export function allColumns(form: InternalForm, responses: FormResponse[]): Colum
     });
   }
   if (form.track_payments) {
+    cols.push({ key: 'amount', label: 'Amount due (EUR)', group: 'payment', value: (r) => dueOf(form, r) ?? '' });
     cols.push({ key: 'paid', label: 'Paid', group: 'payment', value: (r) => (r.paid ? 'Yes' : 'No') });
     cols.push({ key: 'paid_at', label: 'Payment recorded', group: 'payment', value: (r) => (r.paid ? `${stamp(r.paid_at)}${r.paid_by_name ? `, by ${r.paid_by_name}` : ''}` : '') });
   }

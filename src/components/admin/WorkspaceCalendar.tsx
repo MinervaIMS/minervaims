@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { isMeetingLink, meetingLinkProblem } from '@/lib/event-place';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -348,7 +349,13 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     const { event, title, date, time, endTime, place } = eventForm;
     if (!title.trim()) { toast({ title: 'A title is required', variant: 'destructive' }); return; }
     if (!date) { toast({ title: 'A date is required', variant: 'destructive' }); return; }
-    if (!place.trim()) { toast({ title: 'A place is required', variant: 'destructive' }); return; }
+    if (!place.trim()) { toast({ title: event.online ? 'The meeting link is required' : 'A place is required', variant: 'destructive' }); return; }
+    // An online event's link is checked when it is changed: an older event
+    // saved as "Online" can still have its time or title edited.
+    if (event.online && place.trim() !== (event.place ?? '').trim()) {
+      const problem = meetingLinkProblem(place);
+      if (problem) { toast({ title: 'Check the meeting link', description: problem, variant: 'destructive' }); return; }
+    }
     if (endTime && !time) { toast({ title: 'Give a start time before an end time', variant: 'destructive' }); return; }
     // A wall-clock time typed on Rome's clock becomes an instant here, once.
     const start_at = time ? romeWallToIso(date, time) : null;
@@ -717,8 +724,12 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                 </div>
               </div>
               <div className="space-y-1">
-                <Label>Place *</Label>
-                <Input value={eventForm.place} onChange={(e) => setEventForm({ ...eventForm, place: e.target.value })} placeholder="e.g. Room 3-E4-SR03, Via Roentgen 1" />
+                <Label>{eventForm.event.online ? 'Meeting link *' : 'Place *'}</Label>
+                <Input value={eventForm.place} onChange={(e) => setEventForm({ ...eventForm, place: e.target.value })}
+                  placeholder={eventForm.event.online ? 'e.g. https://teams.microsoft.com/l/meetup-join/...' : 'e.g. Room 3-E4-SR03, Via Roentgen 1'} />
+                {eventForm.event.online && !isMeetingLink(eventForm.place) && (
+                  <p className="text-xs text-destructive">Online event: paste the full meeting link (https://...). Registrants receive it in their confirmation email.</p>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 Times are Rome time ({zoneOnDate(eventForm.date || new Date().toISOString())}). Leave them empty for an all-day event. {EVENT_TYPE_LABELS[eventForm.event.event_type]}

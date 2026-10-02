@@ -10,7 +10,12 @@
 // answers. A closed form says when it closed and shows what they sent.
 //
 // Signed out: the page asks them to sign in. Sign-in lands on the
-// Dashboard, where the same form waits for them in "Forms for you".
+// Dashboard, where the same form waits for them on its own card.
+//
+// A cover picture, if the form has one, heads the card. Questions shown
+// only for some answers appear and disappear as the member answers, and
+// the numbering follows what is shown. Where the form has prices, the
+// total is kept up to date beside the Send button.
 // =====================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -20,10 +25,12 @@ import { useHideSiteFooter } from '@/components/layout/ChromeContext';
 import { EventCardShell } from '@/components/events/EventCardShell';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { FieldInput } from '@/components/forms/FieldInput';
+import { FieldInput, ImageZoom } from '@/components/forms/FieldInput';
 import {
-  answerText, isQuestion, validateAnswers, type AnswerValue, type Answers, type FormField,
+  amountDue, answerText, eur, hasPrices, isQuestion, validateAnswers, visibleIds,
+  type AnswerValue, type Answers, type FormField,
 } from '@/lib/internal-forms-rules';
+import { noteAnswered } from '@/components/admin/dashboard/useMyForms';
 import { fillGet, submitAnswers, uploadFormFile, type MemberForm } from '@/lib/internal-forms-api';
 import { deadlineRelative, deadlineText, money } from '@/components/admin/forms/forms-model';
 import { WORKSPACE_BASE } from '@/lib/workspace-base';
@@ -42,6 +49,7 @@ export default function InternalFormPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<null | { emailed: boolean; changed: boolean }>(null);
   const [editing, setEditing] = useState(false);
+  const [zoomCover, setZoomCover] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -59,7 +67,17 @@ export default function InternalFormPage() {
   useEffect(() => { if (session) load(); }, [session, load]);
 
   const form: MemberForm | null = data?.form ?? null;
-  const questions = useMemo(() => (form?.fields ?? []).filter(isQuestion), [form]);
+  // What is shown follows the member's own answers (show-if rules).
+  const shown = useMemo(() => visibleIds(form?.fields ?? [], answers), [form, answers]);
+  const questions = useMemo(() => (form?.fields ?? []).filter((f) => isQuestion(f) && shown.has(f.id)), [form, shown]);
+  const images = data?.images ?? {};
+  const priced = hasPrices(form?.fields ?? []);
+  // The running total: only what is shown counts.
+  const liveTotal = useMemo(() => {
+    if (!form) return null;
+    const visible = Object.fromEntries(Object.entries(answers).filter(([k]) => shown.has(k))) as Answers;
+    return amountDue(form.track_payments, form.payment_amount, form.fields, visible);
+  }, [form, answers, shown]);
   const answeredBefore = !!data?.response;
   const open = form?.state === 'open';
   const preview = form?.state === 'draft';
@@ -97,6 +115,7 @@ export default function InternalFormPage() {
       return;
     }
     const changed = answeredBefore;
+    noteAnswered(id);
     setData((d) => (d ? { ...d, response: res.response } : d));
     setAnswers(res.response.answers);
     setEditing(false);
@@ -136,6 +155,9 @@ export default function InternalFormPage() {
   }
 
   const deadline = form.closes_at ? deadlineText(form.closes_at) : null;
+  const coverUrl = form.cover_path ? images[form.cover_path] : undefined;
+  const sentShown = data.response ? visibleIds(form.fields, data.response.answers) : new Set<string>();
+  const owed = data.response ? (data.response.amount_due ?? amountDue(form.track_payments, form.payment_amount, form.fields, data.response.answers)) : null;
   let n = 0;
 
   return (
@@ -146,6 +168,12 @@ export default function InternalFormPage() {
             Preview. This form is a draft: members cannot see it yet, and sending is turned off.
           </p>
         )}
+        {coverUrl && (
+          <button type="button" onClick={() => setZoomCover(true)} className="mb-6 block w-full overflow-hidden border border-separator bg-muted/30" aria-label="Open the cover picture full size">
+            <img src={coverUrl} alt={form.title} className="max-h-80 w-full object-cover" />
+          </button>
+        )}
+        <ImageZoom url={zoomCover && coverUrl ? coverUrl : null} alt={form.title} onClose={() => setZoomCover(false)} />
         <div className="mb-6 text-center">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Internal form</div>
           <h1 className="font-serif text-2xl text-accent text-balance sm:text-3xl">{form.title}</h1>
@@ -160,7 +188,12 @@ export default function InternalFormPage() {
           {form.track_payments && (
             <div className="flex items-start gap-2.5">
               <CreditCard aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{form.payment_amount != null ? <>Payment due: <span className="text-foreground">{money(form.payment_amount)}</span>. </> : 'This form collects a payment. '}{form.payment_instructions}</span>
+              <span>
+                {priced
+                  ? <>You pay for what you order{form.payment_amount != null ? <>, plus <span className="text-foreground">{money(form.payment_amount)}</span></> : ''}: the total shows as you answer. </>
+                  : form.payment_amount != null ? <>Payment due: <span className="text-foreground">{money(form.payment_amount)}</span>. </> : 'This form collects a payment. '}
+                {form.payment_instructions}
+              </span>
             </div>
           )}
           <div className="flex items-start gap-2.5">
@@ -192,7 +225,7 @@ export default function InternalFormPage() {
               )}
             </div>
             <dl className="divide-y divide-separator border-y-2 border-y-accent">
-              {questions.map((f) => {
+              {form.fields.filter((f) => isQuestion(f) && sentShown.has(f.id)).map((f) => {
                 const v = data.response!.answers[f.id];
                 return (
                   <div key={f.id} className="grid gap-1 py-2.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4">
@@ -206,6 +239,12 @@ export default function InternalFormPage() {
                 );
               })}
             </dl>
+            {form.track_payments && owed != null && (
+              <p className="mt-3 flex items-center justify-between gap-3 border border-separator px-3 py-2 text-[15px]">
+                <span>Amount due</span>
+                <span className="font-medium tabular-nums">{eur(owed)}{data.response.paid ? <span className="ml-2 text-sm font-normal text-emerald-700">paid</span> : null}</span>
+              </p>
+            )}
             <p className="mt-3 text-sm text-muted-foreground">
               {!open ? 'This form is closed, so the answers can no longer be changed.'
                 : form.allow_edits ? `You can change them${deadline ? ` until ${deadline}` : ' while the form is open'}.`
@@ -239,7 +278,7 @@ export default function InternalFormPage() {
             )}
             {questions.some((f) => f.required) && <p className="mb-4 text-xs text-muted-foreground">Questions marked <span className="text-destructive">*</span> are required.</p>}
             <div className="space-y-7">
-              {form.fields.map((f: FormField) => (
+              {form.fields.filter((f) => shown.has(f.id)).map((f: FormField) => (
                 <FieldInput
                   key={f.id}
                   field={f}
@@ -249,10 +288,17 @@ export default function InternalFormPage() {
                   error={errors[f.id]}
                   disabled={sending || !canSend}
                   fileUrls={data.files}
+                  imageUrls={images}
                   onUpload={(field, file, onProgress) => uploadFormFile(session, form.id, field.id, file, onProgress)}
                 />
               ))}
             </div>
+            {form.track_payments && priced && liveTotal != null && (
+              <div className="mt-7 flex items-center justify-between gap-3 border-y-2 border-y-accent py-3" aria-live="polite">
+                <span className="text-[15px] font-medium">Your total</span>
+                <span className="font-serif text-2xl tabular-nums text-accent">{eur(liveTotal)}</span>
+              </div>
+            )}
             <div className="mt-8 flex flex-col gap-2 sm:flex-row">
               <Button type="submit" variant="solid" className="h-12 flex-1 text-[15px]" disabled={sending || !canSend}>
                 {sending ? <><Loader2 className="h-4 w-4 animate-spin" />Sending</> : answeredBefore ? 'Save my changes' : 'Send my answers'}

@@ -5,9 +5,9 @@
 // =====================================================================
 
 import {
-  AlignLeft, Calendar, CheckSquare, ChevronDownSquare, CircleDot, FileUp, Hash, Heading, Mail, Phone, SlidersHorizontal, Type, ShieldCheck,
+  AlignLeft, Calendar, CheckSquare, ChevronDownSquare, CircleDot, FileUp, Hash, Heading, Image as ImageIcon, Mail, Phone, SlidersHorizontal, Type, ShieldCheck,
 } from 'lucide-react';
-import { FIELD_TYPES, isChoice, isQuestion, sanitizeFields, type FieldType, type FormField } from '@/lib/internal-forms-rules';
+import { FIELD_TYPES, LIMITS, canDrive, isChoice, isQuestion, sanitizeFields, type FieldType, type FormField } from '@/lib/internal-forms-rules';
 import { formatDay, formatTime, romeYmd } from '@/lib/event-time';
 import type { InternalForm } from '@/lib/internal-forms-api';
 
@@ -25,6 +25,7 @@ export const FIELD_ICON: Record<FieldType, typeof Type> = {
   file: FileUp,
   consent: ShieldCheck,
   section: Heading,
+  image: ImageIcon,
 };
 
 export const fieldTypeLabel = (t: FieldType) => FIELD_TYPES.find((x) => x.type === t)?.label ?? t;
@@ -51,6 +52,7 @@ export function newField(type: FieldType): FormField {
     case 'consent':
       return { id, type, label: '', required: true };
     case 'section':
+    case 'image':
       return { id, type, label: '' };
     default:
       return { id, type, label: '', required: false };
@@ -59,7 +61,14 @@ export function newField(type: FieldType): FormField {
 
 /** A copy of a question, with its own id. */
 export function copyField(f: FormField): FormField {
-  return { ...f, id: newFieldId(), options: f.options ? [...f.options] : undefined, label: f.label ? `${f.label} (copy)` : '' };
+  return {
+    ...f, id: newFieldId(), label: f.label ? `${f.label} (copy)` : '',
+    options: f.options ? [...f.options] : undefined,
+    optionImages: f.optionImages ? [...f.optionImages] : undefined,
+    optionPrices: f.optionPrices ? [...f.optionPrices] : undefined,
+    sizes: f.sizes ? [...f.sizes] : undefined,
+    showIf: f.showIf ? { ...f.showIf, values: [...f.showIf.values] } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -85,20 +94,28 @@ export const STARTERS: Starter[] = [
   {
     key: 'merch',
     title: 'Merchandise order',
-    blurb: 'Hoodies, T-shirts, scarves: size, quantity, a name to print, and the payment.',
-    build: () => ({
-      title: 'Hoodie order',
-      description: 'Order your Minerva hoodie. Sizes run true to fit; the size guide is in the photo.',
-      track_payments: true,
-      payment_amount: 35,
-      payment_instructions: 'Bank transfer to the Society account, with your name and "Hoodie" in the description.',
-      fields: [
-        q('single_choice', 'Size', { required: true, options: ['XS', 'S', 'M', 'L', 'XL'] }),
-        q('number', 'How many', { required: true, integer: true, min: 1, max: 5, help: 'Each hoodie is paid for separately.' }),
-        q('short_text', 'Name to print on the sleeve', { help: 'Leave empty for no name.' }),
-        q('consent', 'I will pay for my order by the deadline', { required: true }),
-      ],
-    }),
+    blurb: 'Hoodies, T-shirts, scarves: colours with their pictures, how many of each size, a name to print, and the total to pay.',
+    build: () => {
+      const order = q('multi_choice', 'Which colours, and how many of each size?', {
+        required: true, options: ['Black', 'Grey', 'Navy'], optionPrices: [35, 35, 35],
+        quantities: true, sizes: ['XS', 'S', 'M', 'L', 'XL'], maxQty: 5,
+        help: 'Tick a colour, then choose how many of each size. Add a picture to each colour in its settings.',
+      });
+      const name = q('single_choice', 'Add a name on the sleeve?', { required: true, options: ['No', 'Yes'], optionPrices: [null, 5] });
+      return {
+        title: 'Hoodie order',
+        description: 'Order your Minerva hoodie. Sizes run true to fit.',
+        track_payments: true,
+        payment_amount: null,
+        payment_instructions: 'Bank transfer to the Society account, with your name and "Hoodie" in the description.',
+        fields: [
+          order,
+          name,
+          q('short_text', 'Name to print on the sleeve', { required: true, showIf: { field: name.id, values: ['Yes'] } }),
+          q('consent', 'I will pay for my order by the deadline', { required: true }),
+        ],
+      };
+    },
   },
   {
     key: 'visit',
@@ -193,15 +210,32 @@ export interface Problem {
  */
 export function firstProblem(form: Pick<InternalForm, 'title' | 'fields' | 'status' | 'track_payments' | 'payment_amount'>): Problem | null {
   if (!form.title.trim()) return { message: 'Give the form a title.', view: 'questions', fieldId: '__title' };
-  for (const f of form.fields) {
-    if (!f.label.trim()) {
+  for (const [i, f] of form.fields.entries()) {
+    if (f.type === 'image') {
+      if (!f.image) return { message: 'A picture block has no picture yet. Add one, or remove the block.', view: 'questions', fieldId: f.id };
+    } else if (!f.label.trim()) {
       return { message: f.type === 'section' ? 'A section has no heading yet.' : 'A question has no text yet.', view: 'questions', fieldId: f.id };
     }
     if (isChoice(f.type) && !(f.options ?? []).some((o) => o.trim())) {
       return { message: `"${f.label}" needs at least one choice.`, view: 'questions', fieldId: f.id };
     }
+    if (isChoice(f.type) && (f.optionPrices ?? []).some((p) => p !== null && p !== undefined && (!Number.isFinite(p) || p < 0 || p > LIMITS.price))) {
+      return { message: `"${f.label}": a price is not valid.`, view: 'questions', fieldId: f.id };
+    }
     if (f.type === 'number' && f.min != null && f.max != null && f.min > f.max) {
       return { message: `"${f.label}": the smallest number is larger than the largest.`, view: 'questions', fieldId: f.id };
+    }
+    if (f.showIf) {
+      // The rule must point at a choice question ABOVE this one, with answers it still has.
+      const at = form.fields.findIndex((x) => x.id === f.showIf!.field);
+      const src = at >= 0 && at < i ? form.fields[at] : null;
+      const allowed = src ? (src.type === 'consent' ? ['Yes'] : src.options ?? []) : [];
+      if (src && canDrive(src) && f.showIf.values.length === 0) {
+        return { message: `"${f.label || 'A picture'}" is shown only for some answers, but none is ticked yet. Tick at least one, or turn the rule off.`, view: 'questions', fieldId: f.id };
+      }
+      if (!src || !canDrive(src) || !f.showIf.values.some((v) => allowed.includes(v))) {
+        return { message: `"${f.label || 'A picture'}" is shown only for an answer that is no longer above it. Choose the rule again, or remove it.`, view: 'questions', fieldId: f.id };
+      }
     }
   }
   if (form.status === 'open' && !form.fields.some(isQuestion)) return { message: 'An open form needs at least one question.', view: 'questions' };
