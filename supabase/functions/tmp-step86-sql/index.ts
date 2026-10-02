@@ -1,5 +1,5 @@
 import postgres from "https://deno.land/x/postgresjs@v3.4.4/mod.js";
-const SQL = await Deno.readTextFile(new URL("./m.sql.ts.txt", import.meta.url));
+import SQL from "./m.ts";
 Deno.serve(async () => {
   const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { max: 1 });
   try {
