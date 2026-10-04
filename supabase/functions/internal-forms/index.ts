@@ -18,8 +18,8 @@ import { answersBlock, confirmationBlock, editBlock, paymentBlock } from '../_sh
 // President, the Head of Operations and the Operations Analyst) build
 // forms, open and close them, read the answers, tick payments and delete.
 //
-// MEMBERS (every active member of the Society: not applicants, alumni or
-// advisors) see the forms that are open, fill them in, attach files and
+// MEMBERS (every active member of the Society: not applicants or alumni) see
+// the forms that are open, fill them in, attach files and
 // change their answers until the deadline, if the form allows it. Every
 // submission sends the member a receipt by email.
 //
@@ -50,7 +50,7 @@ function json(body: unknown, status = 200) {
 const BUCKET = 'internal-forms';
 const RESOURCE = 'ops-forms';
 const SITE = 'https://minervaims.org';
-const NOT_MEMBERS = ['candidate', 'pending', 'alumni', 'advisor', 'silent_advisor'];
+const NOT_MEMBERS = ['candidate', 'pending', 'alumni'];
 
 interface FormRow {
   id: string; title: string; description: string | null; fields: FormField[]; status: 'draft' | 'open' | 'closed';
