@@ -50,7 +50,7 @@ function json(body: unknown, status = 200) {
 const BUCKET = 'internal-forms';
 const RESOURCE = 'ops-forms';
 const SITE = 'https://minervaims.org';
-const NOT_MEMBERS = ['candidate', 'pending', 'alumni', 'advisor', 'silent_advisor'];
+const NOT_MEMBERS = ['candidate', 'pending', 'alumni'];
 
 interface FormRow {
   id: string; title: string; description: string | null; fields: FormField[]; status: 'draft' | 'open' | 'closed';
