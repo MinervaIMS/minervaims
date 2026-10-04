@@ -18,8 +18,8 @@ import { answersBlock, confirmationBlock, editBlock, paymentBlock } from '../_sh
 // President, the Head of Operations and the Operations Analyst) build
 // forms, open and close them, read the answers, tick payments and delete.
 //
-// MEMBERS (every active member of the Society: not applicants, alumni or
-// advisors) see the forms that are open, fill them in, attach files and
+// MEMBERS (every active member of the Society: not applicants or alumni) see
+// the forms that are open, fill them in, attach files and
 // change their answers until the deadline, if the form allows it. Every
 // submission sends the member a receipt by email.
 //
