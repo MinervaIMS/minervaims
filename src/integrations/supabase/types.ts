@@ -1603,6 +1603,7 @@ export type Database = {
       }
       internal_form_responses: {
         Row: {
+          amount_due: number | null
           answers: Json
           edit_count: number
           form_id: string
@@ -1620,6 +1621,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount_due?: number | null
           answers?: Json
           edit_count?: number
           form_id: string
@@ -1637,6 +1639,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount_due?: number | null
           answers?: Json
           edit_count?: number
           form_id?: string
@@ -1669,6 +1672,7 @@ export type Database = {
           closed_at: string | null
           closes_at: string | null
           confirmation_message: string | null
+          cover_path: string | null
           created_at: string
           created_by: string | null
           created_by_name: string | null
@@ -1689,6 +1693,7 @@ export type Database = {
           closed_at?: string | null
           closes_at?: string | null
           confirmation_message?: string | null
+          cover_path?: string | null
           created_at?: string
           created_by?: string | null
           created_by_name?: string | null
@@ -1709,6 +1714,7 @@ export type Database = {
           closed_at?: string | null
           closes_at?: string | null
           confirmation_message?: string | null
+          cover_path?: string | null
           created_at?: string
           created_by?: string | null
           created_by_name?: string | null
@@ -2701,6 +2707,7 @@ export type Database = {
       }
       event_checkin_block: { Args: { p_token: string }; Returns: string }
       event_clock: { Args: { p_at: string; p_zone?: boolean }; Returns: string }
+      event_join_block: { Args: { p_place: string }; Returns: string }
       event_notice_enqueue: {
         Args: {
           p_cancel?: string
