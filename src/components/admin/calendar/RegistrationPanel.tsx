@@ -7,6 +7,7 @@ import { relativeDay, shortDay } from '@/lib/calendar-dates';
 import { EmptyState } from './CalendarKit';
 import { DateBlock, RegBadge, RegisterButton, RegistrationSteps } from './CalendarItems';
 import { eventDay, placesLine, type RegState } from './calendar-model';
+import { JoinMeetingLink } from '@/components/shared/JoinMeetingLink';
 
 // =====================================================================
 // REGISTER FOR EVENTS: the first thing on the Calendar.
@@ -24,7 +25,9 @@ export interface OpenEvent { event: EventRow; state: RegState; places: EventPlac
 
 const SHOWN = 3;
 
-export function RegistrationPanel({ open, mine, busyId, onRegister, onOpen }: {
+export function RegistrationPanel({ open, mine, busyId, onRegister, onOpen, joinLinks = {} }: {
+  /** Meeting links of the online events the reader holds a place at. */
+  joinLinks?: Record<string, string>;
   open: OpenEvent[];
   mine: OpenEvent[];
   busyId: string | null;
@@ -110,6 +113,7 @@ export function RegistrationPanel({ open, mine, busyId, onRegister, onOpen }: {
             <ul className="divide-y divide-separator border border-separator bg-background">
               {mine.map(({ event: e, state }) => {
                 const day = eventDay(e);
+                const join = state === 'registered' ? joinLinks[e.id] : undefined;
                 return (
                   <li key={e.id}>
                     <button data-ro type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-accent/[0.04]">
@@ -122,6 +126,7 @@ export function RegistrationPanel({ open, mine, busyId, onRegister, onOpen }: {
                         <span className="mt-1 block"><RegBadge state={state} compact /></span>
                       </span>
                     </button>
+                    {join && <div className="-mt-1 pb-2.5 pl-[5.5rem] pr-3"><JoinMeetingLink url={join} /></div>}
                   </li>
                 );
               })}

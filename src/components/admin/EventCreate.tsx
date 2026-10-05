@@ -152,7 +152,7 @@ export default function EventCreate() {
             <p className={`text-xs ${form.place.trim() && !isMeetingLink(form.place) ? 'text-destructive' : 'text-muted-foreground'}`}>
               {form.place.trim() && !isMeetingLink(form.place)
                 ? 'Paste the full link, starting with https://.'
-                : `Sent in a box of its own in every registration confirmation${meetingPlatform(form.place) ? ` (${meetingPlatform(form.place)})` : ''}. The public website shows only "Online".`}
+                : `Kept private${meetingPlatform(form.place) ? ` (${meetingPlatform(form.place)})` : ''}: only people registered get it, in their confirmation and in the day-before email, and on their Dashboard and My events. Everyone else sees "Online".`}
             </p>
           )}
         </div>

@@ -23,6 +23,12 @@ export function meetingPlatform(url: string | null | undefined): string | null {
   return null;
 }
 
+/** "Join on Microsoft Teams", or "Join the event" for a link it does not recognise. */
+export function joinLabel(url: string): string {
+  const p = meetingPlatform(url);
+  return p ? `Join on ${p}` : 'Join the event';
+}
+
 /** Whether an event takes place online, by its switch or by its place. */
 export const isOnlineEvent = (e: { online?: boolean | null; place?: string | null }): boolean =>
   !!e.online || isMeetingLink(e.place) || /^\s*online\s*$/i.test(String(e.place ?? ''));

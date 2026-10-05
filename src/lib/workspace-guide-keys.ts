@@ -29,7 +29,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds',
   'applications-website', 'applications-screening', 'applications-interview-calendar',
   'applications-joiners', 'applications-form',
-  'events-create', 'events-forms', 'events-attendance', 'events-archive',
+  'events-mine', 'events-create', 'events-forms', 'events-attendance', 'events-archive',
   'events-alumni-calls', 'events-on-display',
   'people-members', 'people-alumni', 'people-invites',
   'smm-editorial', 'smm-social', 'smm-graphics', 'smm-brand', 'smm-ads',

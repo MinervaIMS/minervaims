@@ -8,6 +8,7 @@ import type { OrgDivision } from '@/lib/roles';
 import { isFeeExempt } from '@/lib/membership-fee';
 import { semesterOrdinal, type GreetingVars } from './greetings';
 import { formatTimeRange } from '@/lib/event-time';
+import { myEventRegistrations, type MyRegistration } from '@/lib/events-api';
 
 // =====================================================================
 // useDashboardData — every figure on the Dashboard, from live data.
@@ -115,6 +116,10 @@ export interface LatestUpdate {
   eventId?: string | null;
   description?: string | null;
   registrationOpen?: boolean;
+  /** Whether the reader holds a place at this event, or waits for one. */
+  myStatus?: 'registered' | 'waitlisted' | null;
+  /** The meeting link: only for an online event the reader holds a place at. */
+  joinUrl?: string | null;
 }
 
 export interface DashboardData {
@@ -178,6 +183,18 @@ export function useDashboardData(): DashboardData {
   const feeExempt = isFeeExempt((roles || []).map((r) => r.role));
 
   const [loading, setLoading] = useState(true);
+  // What the reader is registered for, with the meeting links of the
+  // online events they hold a place at. Read apart from the rest: it is
+  // the reader's own, and the card is drawn without it if it is slow.
+  const [myRegs, setMyRegs] = useState<Map<string, MyRegistration>>(new Map());
+  useEffect(() => {
+    let live = true;
+    if (!user?.id) return;
+    myEventRegistrations()
+      .then((rows) => { if (live) setMyRegs(new Map(rows.map((r) => [r.event_id, r]))); })
+      .catch(() => { /* the card simply offers Register */ });
+    return () => { live = false; };
+  }, [user?.id]);
   const [reports, setReports] = useState<ReportRow[] | null>(null);
   const [snapshots, setSnapshots] = useState<{ label: string; sort: number; members: number; alumni: number }[] | null>(null);
   const [members, setMembers] = useState<number | null>(null);
@@ -479,6 +496,8 @@ export function useDashboardData(): DashboardData {
         // when it is already the detail line (an event with no place).
         description: event.place ? event.description : null,
         registrationOpen: !!event.registration_enabled,
+        myStatus: myRegs.get(event.id)?.status ?? null,
+        joinUrl: myRegs.get(event.id)?.join_url ?? null,
       };
     }
 
@@ -497,7 +516,7 @@ export function useDashboardData(): DashboardData {
       };
     }
     return null;
-  }, [fee, aod, events, reports, feeExempt]);
+  }, [fee, aod, events, reports, feeExempt, myRegs]);
 
   /**
    * The PDFs behind the report-cover columns. Six is the whole ask: each

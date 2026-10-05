@@ -6,7 +6,9 @@
 // because that is the question the organiser is really asking.
 // =====================================================================
 
-import { CalendarClock, CreditCard, MessageSquareText, PencilLine } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarClock, CreditCard, Loader2, MailCheck, MessageSquareText, PencilLine } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -25,11 +27,21 @@ function Block({ icon: Icon, title, children }: { icon: typeof CalendarClock; ti
   );
 }
 
-export function FormSettingsPanel({ form, set, readOnly }: {
+export function FormSettingsPanel({ form, set, readOnly, dirty = false, onTestReceipt }: {
   form: InternalForm;
   set: (patch: Partial<InternalForm>) => void;
   readOnly: boolean;
+  /** Unsaved changes: the test sends the form as last saved. */
+  dirty?: boolean;
+  /** Emails the organiser the receipt this form sends, with sample answers. */
+  onTestReceipt?: () => Promise<void>;
 }) {
+  const [testing, setTesting] = useState(false);
+  const test = async () => {
+    if (!onTestReceipt) return;
+    setTesting(true);
+    try { await onTestReceipt(); } finally { setTesting(false); }
+  };
   const wall = romeWall(form.closes_at);
   const setDeadline = (date: string, time: string) => {
     if (!date) { set({ closes_at: null }); return; }
@@ -110,6 +122,17 @@ export function FormSettingsPanel({ form, set, readOnly }: {
             placeholder="e.g. Thank you! Hoodies arrive in about three weeks; we will tell you when and where to collect yours." />
         </div>
         <p className="text-sm text-muted-foreground">Shown on the page once they have sent, and in the receipt email every member receives with a copy of their answers.</p>
+        {onTestReceipt && (
+          <div className="flex flex-col gap-2 border-t border-separator pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              See the receipt as a member gets it: it is sent to your own address, with sample answers.
+              {dirty ? ' It uses the form as last saved.' : ''}
+            </p>
+            <Button data-ro type="button" variant="outline" size="sm" className="shrink-0" onClick={test} disabled={testing}>
+              {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}Send me a test receipt
+            </Button>
+          </div>
+        )}
       </Block>
     </div>
   );

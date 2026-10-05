@@ -67,20 +67,26 @@ const EventSchema = z.object({
 })
 
 // =====================================================================
-// AN ONLINE EVENT CARRIES ITS MEETING LINK.
+// AN ONLINE EVENT CARRIES ITS MEETING LINK, AND KEEPS IT PRIVATE.
 // ---------------------------------------------------------------------
-// It is kept in `place`, and the registration confirmation puts it in a
-// box nobody can miss (public.event_join_block). So an online event must
-// have a real web address there. Checked on create, and on update only
-// when the place or the online switch changes: an older online event
-// saved with "Online" keeps working for every other edit, such as the
-// archive's website switch.
+// The organisers type the link where the place goes, as before. It is
+// saved in `event_join_links` (migration 20261005100000), which nobody
+// reads from the browser, and the event's own `place`, which the public
+// website reads, says "Online". The emails that confirm a place carry
+// the link, a registered member sees it on their Dashboard and in My
+// events, and the organisers get it back with `join-links` to edit it.
+//
+// A new online event must have a link. On update the link is asked for
+// only when where the event happens changes: an older online event saved
+// with "Online" and no link keeps working for every other edit, such as
+// the archive's website switch, and an edit that leaves the place as
+// "Online" keeps the link already saved.
 // =====================================================================
 const MEETING_LINK_RE = /^https?:\/\/[^\s<>"']{3,2000}$/i
+const ONLINE_WORD = /^\s*online\s*$/i
+const LINK_NEEDED = 'An online event needs its meeting link, starting with https:// (Teams, Zoom, Google Meet...). Registrants receive it in their confirmation email.'
 function placeProblem(online: boolean, place: string): string | null {
-  if (online && !MEETING_LINK_RE.test(place.trim())) {
-    return 'An online event needs its meeting link, starting with https:// (Teams, Zoom, Google Meet...). Registrants receive it in their confirmation email.'
-  }
+  if (online && !MEETING_LINK_RE.test(place.trim())) return LINK_NEEDED
   if (!online && place.length > 200) return 'Place too long'
   return null
 }
@@ -116,7 +122,7 @@ function extraEventCols(v: Record<string, unknown>) {
   }
 }
 
-const ActionSchema = z.enum(['create', 'update', 'delete'])
+const ActionSchema = z.enum(['create', 'update', 'delete', 'join-links'])
 
 const DeleteEventSchema = z.object({
   id: z.string().uuid('Invalid event ID')
@@ -293,7 +299,7 @@ Deno.serve(audited('admin-events', async (req, audit) => {
     const actionResult = ActionSchema.safeParse((body as { action?: string }).action)
     if (!actionResult.success) {
       return new Response(
-        JSON.stringify({ error: 'Invalid action. Must be create, update, or delete.' }),
+        JSON.stringify({ error: 'Invalid action. Must be create, update, delete or join-links.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -343,12 +349,14 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+        const createLink = (validatedEvent.online ?? false) ? validatedEvent.place.trim() : null
         const { data, error } = await supabase
           .from('events')
           .insert({
             title: validatedEvent.title,
             date: validatedEvent.date,
-            place: validatedEvent.place,
+            // The link is kept apart; the public place says "Online".
+            place: createLink ? 'Online' : validatedEvent.place,
             moderator: validatedEvent.moderator || null,
             guest: validatedEvent.guest || null,
             description: validatedEvent.description || null,
@@ -367,12 +375,27 @@ Deno.serve(audited('admin-events', async (req, audit) => {
           )
         }
 
+        if (createLink) {
+          const { error: linkError } = await supabase.from('event_join_links')
+            .upsert({ event_id: data.id, url: createLink, updated_at: new Date().toISOString() })
+          if (linkError) {
+            // An online event without its link would confirm places with
+            // no way in: it is not left half made.
+            console.error('Save meeting link error:', linkError)
+            await supabase.from('events').delete().eq('id', data.id)
+            return new Response(
+              JSON.stringify({ error: 'The meeting link could not be saved, so the event was not created. Please try again.' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        }
+
         // Log activity
         await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'event', data.id, validatedEvent.title);
 
         console.log('Event created:', data.id)
         return new Response(
-          JSON.stringify({ success: true, event: data }),
+          JSON.stringify({ success: true, event: { ...data, join_url: createLink } }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -406,15 +429,39 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // =================================================================
         const { data: linked } = await supabase
           .from('events').select('id, aod_day_id, online, place').eq('id', validatedEvent.id).maybeSingle()
-        // The meeting link is asked for only when where the event happens changes.
+        const { data: savedLink } = await supabase
+          .from('event_join_links').select('url').eq('event_id', validatedEvent.id).maybeSingle()
         const nowOnline = validatedEvent.online ?? false
-        if (!linked?.aod_day_id && (nowOnline !== (linked?.online ?? false) || validatedEvent.place !== (linked?.place ?? ''))) {
-          const updatePlace = placeProblem(nowOnline, validatedEvent.place)
-          if (updatePlace) {
-            return new Response(
-              JSON.stringify({ error: updatePlace }),
-              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
+        const wasOnline = linked?.online ?? false
+        const incoming = validatedEvent.place.trim()
+        // What the event's place and link become. `undefined` leaves the link as it is.
+        let storePlace = validatedEvent.place
+        let storeLink: string | null | undefined = undefined
+        if (!linked?.aod_day_id) {
+          if (nowOnline) {
+            if (MEETING_LINK_RE.test(incoming)) {
+              storeLink = incoming
+              storePlace = 'Online'
+            } else if (savedLink?.url && (ONLINE_WORD.test(incoming) || incoming === (linked?.place ?? '').trim())) {
+              storePlace = 'Online' // the link already saved stays
+            } else if (wasOnline && incoming === (linked?.place ?? '').trim()) {
+              // An older online event with no link, its place untouched.
+            } else {
+              return new Response(
+                JSON.stringify({ error: LINK_NEEDED }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+          } else {
+            const offline = placeProblem(false, validatedEvent.place)
+            if (offline) {
+              return new Response(
+                JSON.stringify({ error: offline }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+            // No longer online: its link goes.
+            if (savedLink) storeLink = null
           }
         }
         if (linked?.aod_day_id) {
@@ -437,12 +484,23 @@ Deno.serve(audited('admin-events', async (req, audit) => {
           )
         }
 
+        if (storeLink) {
+          const { error: linkError } = await supabase.from('event_join_links')
+            .upsert({ event_id: validatedEvent.id, url: storeLink, updated_at: new Date().toISOString() })
+          if (linkError) {
+            console.error('Save meeting link error:', linkError)
+            return new Response(
+              JSON.stringify({ error: 'The meeting link could not be saved. Nothing was changed; please try again.' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        }
         const { data, error } = await supabase
           .from('events')
           .update({
             title: validatedEvent.title,
             date: validatedEvent.date,
-            place: validatedEvent.place,
+            place: storePlace,
             moderator: validatedEvent.moderator || null,
             guest: validatedEvent.guest || null,
             description: validatedEvent.description || null,
@@ -461,12 +519,43 @@ Deno.serve(audited('admin-events', async (req, audit) => {
           )
         }
 
+        if (storeLink === null) await supabase.from('event_join_links').delete().eq('event_id', validatedEvent.id)
+
         // Log activity
         await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'event', data.id, validatedEvent.title);
 
         console.log('Event updated:', data.id)
+        const joinUrl = storeLink === null ? null : (storeLink ?? savedLink?.url ?? null)
         return new Response(
-          JSON.stringify({ success: true, event: data }),
+          JSON.stringify({ success: true, event: { ...data, join_url: joinUrl } }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // The meeting links, for the organisers' edit forms: every event's,
+      // or those of the events asked for.
+      case 'join-links': {
+        const ids = (body as { ids?: unknown }).ids
+        let q = supabase.from('event_join_links').select('event_id, url')
+        if (Array.isArray(ids)) {
+          const valid = ids.filter((x): x is string => typeof x === 'string' && /^[0-9a-f-]{36}$/i.test(x)).slice(0, 500)
+          if (!valid.length) {
+            return new Response(JSON.stringify({ links: {} }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+          q = q.in('event_id', valid)
+        }
+        const { data: rows, error } = await q
+        if (error) {
+          console.error('Read meeting links error:', error)
+          return new Response(
+            JSON.stringify({ error: 'Could not read the meeting links' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        const links: Record<string, string> = {}
+        for (const r of (rows || []) as { event_id: string; url: string }[]) links[r.event_id] = r.url
+        return new Response(
+          JSON.stringify({ links }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }

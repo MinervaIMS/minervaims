@@ -9,15 +9,24 @@ import { Body, Head, Html } from 'npm:@react-email/components@0.0.22'
 import { TRANSACTIONAL_TEMPLATES } from '../transactional-emails.ts'
 import { emailCalendarBlock, emailCancelBlock, emailJoinBlock } from '../calendar.ts'
 import { PROFILE_MISSING_SAMPLE, PROFILE_PHOTO_HELP_SAMPLE } from '../profile-email-sample.ts'
-import { answersBlock, editBlock, paymentBlock } from '../internal-form-email.ts'
+import { receiptVars } from '../internal-form-email.ts'
 
 // A sample internal form, so the receipt previews with real-looking answers.
 const FORM_SAMPLE_FIELDS = [
   { id: 'order', type: 'multi_choice' as const, label: 'Which colours, and how many of each size?', options: ['Black', 'Grey'], optionPrices: [35, 35], quantities: true, sizes: ['S', 'M', 'L'], maxQty: 5 },
   { id: 'sleeve', type: 'single_choice' as const, label: 'Add a name on the sleeve?', options: ['No', 'Yes'], optionPrices: [null, 5] },
   { id: 'name', type: 'short_text' as const, label: 'Name to print on the sleeve', showIf: { field: 'sleeve', values: ['Yes'] } },
+  { id: 'agree', type: 'consent' as const, label: 'I will pay for my order by the deadline' },
 ]
-const FORM_SAMPLE_ANSWERS = { order: [{ option: 'Black', size: 'M', qty: 1 }, { option: 'Black', size: 'L', qty: 1 }, { option: 'Grey', size: 'S', qty: 1 }], sleeve: 'Yes', name: 'J. Doe' }
+const FORM_SAMPLE_ANSWERS = { order: [{ option: 'Black', size: 'M', qty: 1 }, { option: 'Black', size: 'L', qty: 1 }, { option: 'Grey', size: 'S', qty: 1 }], sleeve: 'Yes', name: 'J. Doe', agree: true }
+const RECEIPT_SAMPLE = receiptVars({
+  formTitle: 'Hoodie order, Fall 2026', formUrl: 'https://minervaims.org/forms/sample',
+  fields: FORM_SAMPLE_FIELDS, answers: FORM_SAMPLE_ANSWERS, firstName: 'Jane', memberName: 'Jane Doe',
+  submittedOn: 'Thursday 1 October 2026, 6:42 pm CEST', trackPayments: true, fixedAmount: null, due: 110,
+  paymentInstructions: 'Bank transfer to the Society account, with your name and "Hoodie" in the description.',
+  allowEdits: true, deadlineText: 'Friday 10 October 2026, 11:59 pm CEST',
+  confirmationMessage: 'Thank you! Hoodies will be handed out at the general meeting in November.',
+})
 
 // The project the preview links point at, as the emails' own links do.
 const PREVIEW_SUPABASE_URL = 'https://asjudzdgsccacpjbzsue.supabase.co'
@@ -77,14 +86,17 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   calendar_block: emailCalendarBlock(PREVIEW_SUPABASE_URL, 'sample'),
   cancel_block: emailCancelBlock('sample', 'sample', 'registration'),
   waitlist_position: '3',
-  form_title: 'Hoodie order, Fall 2026',
-  submitted_on: 'Thursday 1 October 2026, 6:42 pm CEST',
-  member_name: 'Jane Doe',
-  form_url: 'https://minervaims.org/forms/sample',
-  answers_block: answersBlock(FORM_SAMPLE_FIELDS, FORM_SAMPLE_ANSWERS),
-  payment_block: paymentBlock(110, 'Bank transfer to the Society account, with your name in the description.'),
-  edit_block: editBlock(true, 'Friday 10 October 2026, 11:59 pm CEST'),
-  confirmation_block: '',
+  // The receipt of an internal form, as a member who ordered sees it.
+  form_title: RECEIPT_SAMPLE.form_title,
+  submitted_on: RECEIPT_SAMPLE.submitted_on,
+  member_name: RECEIPT_SAMPLE.member_name,
+  form_url: RECEIPT_SAMPLE.form_url,
+  summary_block: RECEIPT_SAMPLE.summary_block,
+  order_block: RECEIPT_SAMPLE.order_block,
+  answers_block: RECEIPT_SAMPLE.answers_block,
+  payment_block: RECEIPT_SAMPLE.payment_block,
+  edit_block: RECEIPT_SAMPLE.edit_block,
+  confirmation_block: RECEIPT_SAMPLE.confirmation_block,
   missing_block: PROFILE_MISSING_SAMPLE,
   photo_help_block: PROFILE_PHOTO_HELP_SAMPLE,
   register_url: 'https://minervaims.org/events',
