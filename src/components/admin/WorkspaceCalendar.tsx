@@ -19,7 +19,7 @@ import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { romeWall, romeWallToIso, zoneOnDate } from '@/lib/event-time';
 import {
-  listEvents, registerForEvent, myEventRegistrationIds, myEventWaitlistIds, cancelMyRegistration, saveEvent, eventPlaces,
+  listEvents, registerForEvent, fetchJoinLinks, myEventRegistrations, myEventRegistrationIds, myEventWaitlistIds, cancelMyRegistration, saveEvent, eventPlaces,
   EVENT_TYPE_LABELS, type EventRow, type EventPlaces,
 } from '@/lib/events-api';
 import {
@@ -158,6 +158,21 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<CalItem[]>([]);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
+  // The meeting links of the online events this reader holds a place at,
+  // asked again whenever their registrations change.
+  const [joinLinks, setJoinLinks] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    myEventRegistrations()
+      .then((rows) => {
+        if (!live) return;
+        const out: Record<string, string> = {};
+        for (const r of rows) if (r.join_url) out[r.event_id] = r.join_url;
+        setJoinLinks(out);
+      })
+      .catch(() => { if (live) setJoinLinks({}); });
+    return () => { live = false; };
+  }, [registered]);
   const [waiting, setWaiting] = useState<Set<string>>(new Set());
   const [places, setPlaces] = useState<Record<string, EventPlaces | null>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -342,6 +357,16 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
     const end = splitWhen(event.end_at, start.date);
     setDetail(null);
     setEventForm({ event, title: event.title ?? '', date: start.date, time: start.time, endTime: event.end_at ? end.time : '', place: event.place ?? '' });
+    // An online event's link is kept apart from its public place ("Online"):
+    // fetched for the organiser, it fills the field unless they have typed.
+    if (event.online) {
+      fetchJoinLinks(session, [event.id])
+        .then((links) => {
+          const link = links[event.id];
+          if (link) setEventForm((f) => (f && f.event.id === event.id && f.place === (event.place ?? '') ? { ...f, place: link } : f));
+        })
+        .catch(() => { /* the field keeps "Online", and saving keeps the link */ });
+    }
   };
 
   const saveEventEdits = async () => {
@@ -561,6 +586,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         busyId={busyId}
         onRegister={doRegister}
         onOpen={openEvent}
+        joinLinks={joinLinks}
       />
 
       <section aria-label="Calendar" className="space-y-3">
@@ -676,6 +702,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
         item={detail}
         state={detailState}
         places={detailEvent ? places[detailEvent.id] : null}
+        joinUrl={detailEvent ? joinLinks[detailEvent.id] ?? null : null}
         busy={!!detailEvent && busyId === detailEvent.id}
         cancelling={cancelling}
         onClose={() => setDetail(null)}

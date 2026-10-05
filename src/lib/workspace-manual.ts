@@ -99,6 +99,8 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     body: [
       'An event is created in Events, Create event, where its type, date, place and description are set, and where registration is turned on or off. A registration form can be attached from Events, Registration forms so that registrants are asked what the event actually needs to know.',
       'Registered members see the event on their Calendar with a confirmation mark. Attendance is taken afterwards in Events, Attendance, and the finished event moves into Events, Event archive, which offers only the event types it actually contains.',
+      'An online event\'s meeting link is private. It is typed where the place goes, but kept apart from the event: only the people holding a place receive it, in their confirmation email, again in the "See you tomorrow" email the day before, and as a Join button on their Dashboard, in My events and in the Calendar. Everybody else, in the workspace and on the public website, sees "Online", so the way in is to register.',
+      'Each member follows their own record in Events, My events: the events open for registration, registered for or cancelled in one click, and the semester\'s events held so far with attendance taken, each attended or missed, counted exactly as People, Members counts them.',
       'No event can be scheduled during an exam session break or on an Italian public holiday. Those dates are shaded on the Calendar and the restriction is enforced by the database, not only by the form, so it holds for every route into the calendar.',
     ],
     requires: 'events-archive',
@@ -329,6 +331,8 @@ export const COMMON_TASKS: ManualTask[] = [
       'Press Register beside the event. That is all: your details come from your account. Press the event\'s name first if you want to read the details.',
       'Your confirmation email arrives with your entry code (a QR code) and Add to calendar. The event moves to "Your upcoming events" and shows a green tick on the calendar.',
       'If the event is full the button reads Join the waiting list: you are registered and emailed at once if a place opens up.',
+      'For an online event, once you hold a place a Join button appears on the event, on your Dashboard and in Events, My events; the link is also in your confirmation email and in the day-before email. Nobody without a place sees it.',
+      'Events, My events offers the same Register and Can\'t make it buttons, beside your record of the semester\'s events.',
       'Can\'t make it? Open the event and press Cancel, so your place goes to somebody else. "How registration works" explains the four steps from the button to the door.',
       'For an Association on Display day, its panel opens the slot sign-up page instead. Registration closes 24 hours before the day.',
     ],
@@ -490,6 +494,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'Open Operations, Internal Forms and press New form. Start from a blank form or from a starter such as a merchandise order.',
       'In Questions, add a cover picture, give the form its title and introduction and write the questions; the column on the right shows what members will see. For an order, turn on Ask how many of each, list the sizes and add a picture and a price to each choice. Press Save.',
       'In Settings, set the deadline, whether members can change their answers, the payment (amount and how to pay) and the message they read after sending.',
+      'Still in Settings, Send me a test receipt emails you the receipt the form sends, with sample answers, so you can read it as a member will.',
       'Press Preview to see the form as a member, then Open the form. Copy link to share it; members also find it on their Dashboard.',
       'In Answers, read the summary, tick payments in the table as they arrive, and press Export for exactly the answers and columns needed.',
       'Close the form when it is done, and delete it once its purpose is over: its answers and files go with it.',
@@ -508,7 +513,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'Press Send my answers. A receipt with a copy of your answers reaches your inbox.',
       'To change your answers while the form is open, press Open the form in your receipt email, then Change my answers, if the form allows it.',
     ],
-    caution: 'Internal forms are for active members: candidates, alumni, advisors and members on temporary leave do not receive them.',
+    caution: 'Internal forms are for active members and advisors: candidates, alumni and members on temporary leave do not receive them.',
   },
   {
     id: 'record-money',
@@ -644,6 +649,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
   { term: 'Places', definition: 'The number of people an event can take, set in Events, Registration forms. Empty means no limit, which is the default.', requires: 'events-forms' },
+  { term: 'My events', definition: 'A member\'s own page in Events: the events open for registration, and the semester\'s events held so far, each attended or missed.', requires: 'events-mine' },
   { term: 'Waiting list', definition: 'The queue for an event whose places are taken. When a place frees up, the first person waiting is registered and emailed their ticket at once. Never once the event has started.', requires: 'events-attendance' },
   { term: 'Entry code', definition: 'The QR code in an event confirmation email and in the reminder the day before. It identifies one registration, carries no personal data, and is scanned at the door in Events, Attendance to tick the person as present.', requires: 'events-attendance' },
   { term: 'Rome time', definition: 'The clock every time in the workspace is written on, with its zone named: CET in winter, CEST in summer, as in 6:30 pm CEST. What you type is read on the same clock, wherever you are.' },
@@ -683,8 +689,18 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     requires: 'people-members',
   },
   {
+    question: 'A member cannot find the link to an online event.',
+    answer: 'The link is private: only somebody holding a place has it. If they are registered, it is in their confirmation email, in the "See you tomorrow" email the day before, and on the Join button of their Dashboard, of Events, My events and of the event in the Calendar. On the waiting list they do not have it yet; it arrives with the email that gives them a place. If nobody has it, the event was probably saved as "Online" without a link: open it in Calendar or Event archive and paste the link where the place goes.',
+    requires: 'events-create',
+  },
+  {
+    question: 'A member says their attendance is wrong.',
+    answer: 'They see their own record in Events, My events, and you see the same in People, Members by pressing their number in the Events column. If they were present but show as missed, tick them in Events, Attendance: the list can be corrected up to two weeks after the event, and the count follows at once.',
+    requires: 'events-attendance',
+  },
+  {
     question: 'A member says they cannot see a form.',
-    answer: 'Three things decide it. The form must be open, not a draft, and its deadline must not have passed: the list in Internal Forms shows both. The member must be ACTIVE: candidates, pending accounts, alumni, advisors and members on temporary leave cannot answer. And they must be signed in with the account linked to their member record. If all three hold, and they have not answered yet, the form is on their Dashboard in the place of Research by division, and its link opens it.',
+    answer: 'Three things decide it. The form must be open, not a draft, and its deadline must not have passed: the list in Internal Forms shows both. The member must be ACTIVE, or an advisor: candidates, pending accounts, alumni and members on temporary leave cannot answer. And they must be signed in with the account linked to their member record. If all three hold, and they have not answered yet, the form is on their Dashboard in the place of Research by division, and its link opens it.',
     requires: 'ops-forms',
   },
   {
@@ -847,7 +863,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Only the President and the association account can assign or change a role. Nobody can change their own, from any page.",
       "Advisors are appointed alumni. The switch in their profile decides whether they appear on the public website; it does not change what they can reach in the workspace.",
       "The Head of Media and Communication, the Media Analyst and the Operations Analyst read the whole register, without changing it, so member features and event communications start from the real record.",
-      "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken. Association on Display days count as events.",
+      "For the roles with full access, the Events column shows how many of this semester's events each member attended, out of those held so far with attendance taken. Association on Display days count as events. Press the number to see which events: each attended, registered but not present, or not registered.",
     ],
     related: ['settings-users', 'people-alumni', 'ops-fee'],
   },
@@ -920,6 +936,15 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The filter offers only the event types the archive actually contains, so every option leads somewhere.",
     ],
     related: ['events-create', 'events-attendance'],
+  },
+  'events-mine': {
+    detail: [
+      "Your own record of the semester's events. Coming up lists the events whose registration is open, from today on: Register signs you up with your account in one click, or puts you on the waiting list when the event is full, and the confirmation email follows at once. The events you hold a place at come first, with Can't make it to give the place back.",
+      "An online event you hold a place at shows a Join button: its link is private, and reaches only the people registered.",
+      "This semester lists the events held so far where attendance was taken, Association on Display days included, each Attended, Registered but not present, or Not registered, with the totals above. They are the same events, counted the same way, as the Events column of People, Members.",
+      "If you were at an event that shows as missed, tell the Head of Operations on WhatsApp or write to as.minerva@unibocconi.it with the event's name and date: attendance can be corrected up to two weeks after the event.",
+    ],
+    related: ['calendar', 'events-on-display'],
   },
   'events-on-display': {
     detail: [

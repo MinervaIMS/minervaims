@@ -9,6 +9,7 @@ import { tokenFromScan } from '../_shared/checkin.ts';
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
 // Actions: list · mark-attended · add-external · members · add-member · remove · checkin · door-status
+//          member-attendance (Members) · my-events (Events > My events)
 //
 // `checkin` is the door scanner: the QR code of a registration's ticket
 // (see _shared/checkin.ts) ticks that person as present. It needs full
@@ -86,6 +87,52 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     };
 
     // =====================================================================
+    // THE SEMESTER'S EVENTS THAT COUNT, shared by Members and My events.
+    //   * Counted: events from `from` up to today (Rome), Association on
+    //     Display days included, and only those where attendance was taken
+    //     (somebody ticked), so an event nobody recorded does not count
+    //     against anybody.
+    //   * Attended: ticked or scanned in, recognised by the account or by
+    //     the address on the member record. Registered: on the list.
+    // =====================================================================
+    const keysOf = (uid: string | null, email: string | null) =>
+      [uid ? `u:${uid}` : null, email ? `e:${email.trim().toLowerCase()}` : null].filter(Boolean) as string[];
+    type HeldEvent = { id: string; title: string; date: string; start_at: string | null; aod: boolean; online: boolean };
+    const heldEvents = async (from: string, to: string) => {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+      const until = to < today ? to : today;
+      const { data: evs, error: evErr } = await supabase.from('events')
+        .select('id, title, date, start_at, aod_day_id, online').gte('date', from).lte('date', until);
+      if (evErr) throw evErr;
+      const all = (evs || []) as { id: string; title: string | null; date: string; start_at: string | null; aod_day_id: string | null; online: boolean | null }[];
+      const ids = all.map((e) => e.id);
+      const attendedBy = new Map<string, Set<string>>(); // event id -> keys of attendees
+      const registeredBy = new Map<string, Set<string>>(); // event id -> keys of everybody on the list
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data: regs, error } = await supabase.from('event_registrations')
+          .select('event_id, user_id, email, attended').in('event_id', ids.slice(i, i + 200));
+        if (error) throw error;
+        for (const r of (regs || []) as { event_id: string; user_id: string | null; email: string | null; attended: boolean | null }[]) {
+          const keys = keysOf(r.user_id, r.email);
+          const reg = registeredBy.get(r.event_id) ?? new Set<string>();
+          keys.forEach((k) => reg.add(k));
+          registeredBy.set(r.event_id, reg);
+          if (r.attended) {
+            const set = attendedBy.get(r.event_id) ?? new Set<string>();
+            keys.forEach((k) => set.add(k));
+            attendedBy.set(r.event_id, set);
+          }
+        }
+      }
+      const events: HeldEvent[] = all
+        .filter((e) => attendedBy.has(e.id))
+        .map((e) => ({ id: e.id, title: e.title || (e.aod_day_id ? 'Association on Display' : 'Event'), date: e.date, start_at: e.start_at, aod: !!e.aod_day_id, online: !!e.online }))
+        .sort((a, b) => (a.start_at || a.date).localeCompare(b.start_at || b.date));
+      for (const ev of events) if (!registeredBy.has(ev.id)) registeredBy.set(ev.id, new Set());
+      return { events, attendedBy, registeredBy, until };
+    };
+
+    // =====================================================================
     // EVENTS ATTENDED, PER MEMBER, FOR PEOPLE, MEMBERS.
     // How many of the semester's events each member attended, out of those
     // held so far. For the roles with full access to Members only.
@@ -102,35 +149,104 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const from = typeof body.from === 'string' && DAY.test(body.from) ? body.from : null;
       const to = typeof body.to === 'string' && DAY.test(body.to) ? body.to : null;
       if (!from || !to || from > to) return json({ error: 'Choose a semester.' }, 400);
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
-      const until = to < today ? to : today;
-      const { data: evs, error: evErr } = await supabase.from('events')
-        .select('id, date').gte('date', from).lte('date', until);
-      if (evErr) throw evErr;
-      const ids = ((evs || []) as { id: string }[]).map((e) => e.id);
-      const attendedBy = new Map<string, Set<string>>(); // event id -> keys of attendees
-      if (ids.length) {
-        for (let i = 0; i < ids.length; i += 200) {
-          const { data: regs, error } = await supabase.from('event_registrations')
-            .select('event_id, user_id, email').in('event_id', ids.slice(i, i + 200)).eq('attended', true);
-          if (error) throw error;
-          for (const r of (regs || []) as { event_id: string; user_id: string | null; email: string | null }[]) {
-            const set = attendedBy.get(r.event_id) ?? new Set<string>();
-            if (r.user_id) set.add(`u:${r.user_id}`);
-            if (r.email) set.add(`e:${r.email.trim().toLowerCase()}`);
-            attendedBy.set(r.event_id, set);
-          }
-        }
-      }
-      const held = [...attendedBy.keys()];
+      const held = await heldEvents(from, to);
       const { data: members, error: mErr } = await supabase.from('members').select('id, user_id, email');
       if (mErr) throw mErr;
       const counts: Record<string, number> = {};
+      // WHICH events, as well as how many: the count in Members opens the
+      // list behind it. Per member, the events attended and the events they
+      // registered for, by id; `events` names them once.
+      const attended: Record<string, string[]> = {};
+      const registered: Record<string, string[]> = {};
       for (const m of (members || []) as { id: string; user_id: string | null; email: string | null }[]) {
-        const keys = [m.user_id ? `u:${m.user_id}` : null, m.email ? `e:${m.email.trim().toLowerCase()}` : null].filter(Boolean) as string[];
-        counts[m.id] = held.filter((ev) => keys.some((k) => attendedBy.get(ev)!.has(k))).length;
+        const keys = keysOf(m.user_id, m.email);
+        const went = held.events.filter((ev) => keys.some((k) => held.attendedBy.get(ev.id)!.has(k))).map((ev) => ev.id);
+        counts[m.id] = went.length;
+        if (went.length) attended[m.id] = went;
+        const signed = held.events.filter((ev) => keys.some((k) => held.registeredBy.get(ev.id)!.has(k))).map((ev) => ev.id);
+        if (signed.length) registered[m.id] = signed;
       }
-      return json({ total: held.length, from, to: until, counts });
+      return json({ total: held.events.length, from, to: held.until, counts, events: held.events, attended, registered });
+    }
+
+    // =====================================================================
+    // EVENTS > MY EVENTS: the signed-in member's own record.
+    //   * history: the semester's events held so far with attendance taken
+    //     (as counted in Members), each attended, or missed, and if missed
+    //     whether they were registered (the likely case for a correction:
+    //     present but not ticked);
+    //   * open: the events taking registrations from today, with their
+    //     place on the list (registered, waiting, or not yet), the places
+    //     left, and the meeting link of an online event they hold a place
+    //     at (it is private: see migration 20261005100000);
+    //   * the Head of Operations, by name, for the reminder to ask for a
+    //     correction.
+    // Registering and cancelling go through register-event, as everywhere.
+    // =====================================================================
+    if (action === 'my-events') {
+      if (!allows(roles, user.email, 'events-mine', 'view')) return json({ error: 'Access denied' }, 403);
+      const DAY = /^\d{4}-\d{2}-\d{2}$/;
+      const from = typeof body.from === 'string' && DAY.test(body.from) ? body.from : null;
+      const to = typeof body.to === 'string' && DAY.test(body.to) ? body.to : null;
+      if (!from || !to || from > to) return json({ error: 'Choose a semester.' }, 400);
+      const { data: meRow } = await supabase.from('members').select('email').eq('user_id', user.id).maybeSingle();
+      const myKeys = new Set([...keysOf(user.id, user.email ?? null), ...keysOf(null, (meRow as { email: string | null } | null)?.email ?? null)]);
+      const mineIn = (set: Set<string> | undefined) => !!set && [...myKeys].some((k) => set.has(k));
+
+      const held = await heldEvents(from, to);
+      const history = held.events.map((ev) => ({
+        ...ev,
+        status: mineIn(held.attendedBy.get(ev.id)) ? 'attended' : mineIn(held.registeredBy.get(ev.id)) ? 'registered_absent' : 'not_registered',
+      }));
+
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
+      const { data: openRows, error: openErr } = await supabase.from('events')
+        .select('id, title, date, start_at, end_at, place, online, event_type, description, poster_url, registration_audience, capacity')
+        .eq('registration_enabled', true).is('aod_day_id', null).gte('date', today)
+        .order('date', { ascending: true }).limit(60);
+      if (openErr) throw openErr;
+      const open = (openRows || []) as {
+        id: string; title: string; date: string; start_at: string | null; end_at: string | null; place: string | null; online: boolean | null;
+        event_type: string; description: string | null; poster_url: string | null; registration_audience: string; capacity: number | null;
+      }[];
+      const openIds = open.map((e) => e.id);
+      const regRows: { event_id: string; user_id: string | null; email: string | null }[] = [];
+      const waitRows: { event_id: string; user_id: string | null; email: string | null }[] = [];
+      if (openIds.length) {
+        const [{ data: r1, error: e1 }, { data: w1, error: e2 }] = await Promise.all([
+          supabase.from('event_registrations').select('event_id, user_id, email').in('event_id', openIds),
+          supabase.from('event_waitlist').select('event_id, user_id, email').in('event_id', openIds),
+        ]);
+        if (e1) throw e1;
+        if (e2) throw e2;
+        regRows.push(...((r1 || []) as typeof regRows));
+        waitRows.push(...((w1 || []) as typeof waitRows));
+      }
+      const isMine = (r: { user_id: string | null; email: string | null }) => keysOf(r.user_id, r.email).some((k) => myKeys.has(k));
+      const { data: links } = openIds.length
+        ? await supabase.from('event_join_links').select('event_id, url').in('event_id', openIds)
+        : { data: [] };
+      const linkOf = new Map(((links || []) as { event_id: string; url: string }[]).map((l) => [l.event_id, l.url]));
+      const upcoming = open.map((e) => {
+        const regs = regRows.filter((r) => r.event_id === e.id);
+        const waits = waitRows.filter((r) => r.event_id === e.id);
+        const status = regs.some(isMine) ? 'registered' : waits.some(isMine) ? 'waitlisted' : 'none';
+        return {
+          id: e.id, title: e.title, date: e.date, start_at: e.start_at, end_at: e.end_at,
+          place: e.online ? 'Online' : e.place, online: !!e.online, event_type: e.event_type,
+          description: e.description, poster_url: e.poster_url, audience: e.registration_audience,
+          capacity: e.capacity, taken: regs.length, waiting: waits.length, status,
+          join_url: status === 'registered' && e.online ? linkOf.get(e.id) ?? null : null,
+        };
+      });
+
+      const { data: hoo } = await supabase.from('members')
+        .select('first_name, surname').eq('role', 'head_of_operations').eq('membership_status', 'active')
+        .order('created_at', { ascending: false }).limit(1);
+      const h = ((hoo || [])[0] ?? null) as { first_name: string | null; surname: string | null } | null;
+      const headOfOperations = h ? [h.first_name, h.surname].filter(Boolean).join(' ') || null : null;
+
+      return json({ from, to: held.until, history, upcoming, head_of_operations: headOfOperations });
     }
 
     if (action === 'list') {

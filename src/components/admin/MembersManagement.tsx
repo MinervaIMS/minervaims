@@ -19,7 +19,8 @@ import {
 import { divisionHasTeams, teamsFor, teamFieldLabel } from '@/lib/division-teams';
 import { MEMBERS_DIVISION_VIEW_ROLES } from '@/lib/access/matrix';
 import { downloadCSV } from '@/lib/download-utils';
-import { memberEventAttendance } from '@/lib/events-api';
+import { memberEventAttendance, type HeldEvent } from '@/lib/events-api';
+import { MemberEventsDialog, type MemberEventsTarget } from '@/components/admin/events/MemberEventsDialog';
 import { currentSemester } from '@/lib/semester';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { HelpDot } from '@/components/admin/help/HelpSystem';
@@ -78,12 +79,20 @@ export default function MembersManagement() {
   // only. Of the semester's events held so far where attendance was taken
   // (Association on Display days included), how many each member attended.
   const seesAttendance = access.canManage('people-members');
-  const [attendance, setAttendance] = useState<{ total: number; counts: Record<string, number>; label: string } | null>(null);
+  const [attendance, setAttendance] = useState<{
+    total: number; counts: Record<string, number>; label: string;
+    events: HeldEvent[]; attended: Record<string, string[]>; registered: Record<string, string[]>;
+  } | null>(null);
+  // The events behind one member's number, when it is pressed.
+  const [eventsOf, setEventsOf] = useState<MemberEventsTarget | null>(null);
   useEffect(() => {
     if (!seesAttendance) return;
     const sem = currentSemester();
     memberEventAttendance(session, sem.start, sem.end)
-      .then((r) => setAttendance({ total: r.total, counts: r.counts, label: sem.label }))
+      .then((r) => setAttendance({
+        total: r.total, counts: r.counts, label: sem.label,
+        events: r.events ?? [], attended: r.attended ?? {}, registered: r.registered ?? {},
+      }))
       .catch(() => setAttendance(null));
   }, [seesAttendance, session]);
   const attendedOf = (id: string) => (attendance ? `${attendance.counts[id] ?? 0}/${attendance.total}` : '');
@@ -492,7 +501,23 @@ export default function MembersManagement() {
                   </td>
                   {seesAttendance && (
                     <td className="px-3 py-2 whitespace-nowrap tabular-nums text-muted-foreground" title={attendance ? `${attendance.counts[m.id] ?? 0} of ${attendance.total} events held so far in ${attendance.label}` : undefined}>
-                      {attendance ? <><span className="text-foreground">{attendance.counts[m.id] ?? 0}</span>/{attendance.total}</> : '-'}
+                      {attendance ? (
+                        // THE NUMBER OPENS THE LIST BEHIND IT: which events, attended or missed.
+                        <button
+                          type="button" data-ro
+                          onClick={() => setEventsOf({
+                            name: `${m.first_name} ${m.surname}`.trim(),
+                            semester: attendance.label,
+                            events: attendance.events,
+                            attended: new Set(attendance.attended[m.id] ?? []),
+                            registered: new Set(attendance.registered[m.id] ?? []),
+                          })}
+                          className="rounded-sm underline decoration-dotted underline-offset-4 hover:text-accent hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Events attended by ${m.first_name} ${m.surname}: ${attendance.counts[m.id] ?? 0} of ${attendance.total}. Show which.`}
+                        >
+                          <span className="text-foreground">{attendance.counts[m.id] ?? 0}</span>/{attendance.total}
+                        </button>
+                      ) : '-'}
                     </td>
                   )}
                   <td className="px-3 py-2">{MEMBERSHIP_STATUS_LABELS[m.membership_status] ?? m.membership_status}</td>
@@ -584,6 +609,8 @@ export default function MembersManagement() {
       )}
 
       {/* Create / edit dialog (create is for advisors only) */}
+      <MemberEventsDialog target={eventsOf} onClose={() => setEventsOf(null)} />
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-serif">{editingId ? 'Edit member' : 'Add advisor'}</DialogTitle></DialogHeader>

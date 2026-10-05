@@ -101,6 +101,9 @@ export const saveFormWithImages = (s: Session | null, form: Partial<InternalForm
 export const setFormStatus = (s: Session | null, id: string, status: FormStatus) => call<{ form: InternalForm }>(s, { action: 'set-status', id, status }).then((r) => r.form);
 export const duplicateForm = (s: Session | null, id: string) => call<{ form: InternalForm }>(s, { action: 'duplicate', id }).then((r) => r.form);
 export const deleteForm = (s: Session | null, id: string) => call(s, { action: 'delete', id });
+/** The receipt this form sends, with sample answers, to the organiser's own address. */
+export const sendTestReceipt = (s: Session | null, id: string) =>
+  call<{ success: boolean; to: string; status: string }>(s, { action: 'test-receipt', id });
 export const setResponsePaid = (s: Session | null, responseId: string, paid: boolean) =>
   call<{ response: Pick<FormResponse, 'id' | 'paid' | 'paid_at' | 'paid_by_name'> }>(s, { action: 'set-paid', response_id: responseId, paid }).then((r) => r.response);
 export const setResponseNote = (s: Session | null, responseId: string, note: string) =>

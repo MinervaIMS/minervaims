@@ -120,6 +120,7 @@ export const NAV: NavSection[] = [
   {
     key: 'events', slug: 'events', label: 'Events', Icon: Presentation,
     subItems: [
+      { key: 'events-mine', slug: 'my-events', label: 'My Events', allowed: (p) => p.can('events-mine') },
       { key: 'events-create', slug: 'create', label: 'Create Event', allowed: (p) => p.can('events-create') },
       { key: 'events-forms', slug: 'registration-forms', label: 'Registration Forms', allowed: (p) => p.can('events-forms') },
       { key: 'events-attendance', slug: 'attendance', label: 'Attendance', allowed: (p) => p.can('events-attendance') },

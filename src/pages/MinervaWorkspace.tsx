@@ -22,7 +22,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { EVENT_TYPE_LABELS, type EventType } from '@/lib/events-api';
+import { EVENT_TYPE_LABELS, fetchJoinLinks, type EventType } from '@/lib/events-api';
 import ContactPrompt from '@/components/admin/ContactPrompt';
 import { PageLoader } from '@/components/shared/PageLoader';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
@@ -72,6 +72,7 @@ const EventForms = lazy(() => import('@/components/admin/EventForms'));
 const EventAttendance = lazy(() => import('@/components/admin/EventAttendance'));
 const AlumniCalls = lazy(() => import('@/components/admin/AlumniCalls'));
 const AssociationOnDisplay = lazy(() => import('@/components/admin/AssociationOnDisplay'));
+const MyEvents = lazy(() => import('@/components/admin/events/MyEvents'));
 const WorkspaceCalendar = lazy(() => import('@/components/admin/WorkspaceCalendar'));
 const MembershipFee = lazy(() => import('@/components/admin/MembershipFee'));
 const Treasury = lazy(() => import('@/components/admin/Treasury'));
@@ -150,6 +151,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   // 'events-archive' is drawn inline by this file and has no chunk to warm.
   'events-alumni-calls': () => import('@/components/admin/AlumniCalls'),
   'events-on-display': () => import('@/components/admin/AssociationOnDisplay'),
+  'events-mine': () => import('@/components/admin/events/MyEvents'),
   'people-members': () => import('@/components/admin/MembersManagement'),
   'people-alumni': () => import('@/components/admin/AlumniManagement'),
   'people-invites': () => import('@/components/admin/InvitesManagement'),
@@ -781,6 +783,17 @@ const MinervaWorkspace = () => {
       show_on_website: event.show_on_website !== false,
     });
     setIsDialogOpen(true);
+    // The meeting link is kept apart from the public place: fetched for
+    // the organiser, it replaces "Online" in the field unless they have
+    // started typing.
+    if (event.online) {
+      fetchJoinLinks(session, [event.id])
+        .then((links) => {
+          const link = links[event.id];
+          if (link) setFormData((f) => (f.place === event.place ? { ...f, place: link } : f));
+        })
+        .catch(() => { /* the field keeps "Online", and saving keeps the link */ });
+    }
   };
 
   // Flip an event's website visibility straight from the archive list.
@@ -1126,6 +1139,8 @@ const MinervaWorkspace = () => {
         return <AlumniCalls />;
       case 'events-on-display':
         return <AssociationOnDisplay />;
+      case 'events-mine':
+        return <MyEvents onNavigate={(section, sub) => goTo(section, sub)} />;
       case 'events-archive':
         return renderEventsManagement();
       case 'applications-website':

@@ -8,7 +8,7 @@ import {
   amountDue, fileProblem, formImagePaths, imageProblem, isQuestion, LIMITS, sanitizeFields, validateAnswers,
   type Answers, type FormField,
 } from '../_shared/internal-forms.ts';
-import { answersBlock, confirmationBlock, editBlock, paymentBlock } from '../_shared/internal-form-email.ts';
+import { receiptVars, sampleAnswers } from '../_shared/internal-form-email.ts';
 
 // =====================================================================
 // internal-forms: Operations > Internal Forms, and the members who fill
@@ -315,17 +315,22 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
           const { error: mailError } = await supabase.rpc('enqueue_app_email', {
             p_key: 'internal_form_receipt',
             p_to: to,
-            p_vars: {
-              first_name: (me?.first_name || displayName.split(' ')[0] || 'Member'),
-              member_name: displayName,
-              form_title: f.title,
-              submitted_on: romeLong(now),
-              form_url: `${SITE}/forms/${f.id}`,
-              answers_block: answersBlock(f.fields || [], answers),
-              payment_block: f.track_payments ? paymentBlock(due, f.payment_instructions) : '',
-              edit_block: editBlock(f.allow_edits, f.closes_at ? romeLong(f.closes_at) : null),
-              confirmation_block: confirmationBlock(f.confirmation_message),
-            },
+            p_vars: receiptVars({
+              formTitle: f.title,
+              formUrl: `${SITE}/forms/${f.id}`,
+              fields: f.fields || [],
+              answers,
+              firstName: me?.first_name || displayName.split(' ')[0] || 'Member',
+              memberName: displayName,
+              submittedOn: romeLong(now),
+              trackPayments: f.track_payments,
+              fixedAmount: f.payment_amount === null ? null : Number(f.payment_amount),
+              due,
+              paymentInstructions: f.payment_instructions,
+              allowEdits: f.allow_edits,
+              deadlineText: f.closes_at ? romeLong(f.closes_at) : null,
+              confirmationMessage: f.confirmation_message,
+            }),
           });
           // rpc() reports a failure instead of throwing it.
           if (mailError) throw mailError;
@@ -367,6 +372,41 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       const { data, error } = await supabase.from('internal_form_responses').select('*').eq('form_id', f.id).order('submitted_at', { ascending: true });
       if (error) throw error;
       return json({ form: f, responses: data || [], images: await signAll(formImagePaths(f.fields || [], f.cover_path)) });
+    }
+
+    // A test receipt, to the organiser's own address: the receipt this
+    // form would send, with sample answers, so it can be read before the
+    // form opens. Nothing is stored.
+    if (action === 'test-receipt') {
+      const f = await getForm(body.id);
+      if (!f) return json({ error: 'This form no longer exists.' }, 404);
+      const to = (user.email || '').trim();
+      if (!to) return json({ error: 'Your account has no email address to send the test to.' }, 400);
+      const answers = sampleAnswers(f.fields || [], to);
+      const fixed = f.payment_amount === null ? null : Number(f.payment_amount);
+      const started = new Date(Date.now() - 1000).toISOString();
+      const now = started;
+      const { error: mailError } = await supabase.rpc('enqueue_app_email', {
+        p_key: 'internal_form_receipt',
+        p_to: to,
+        p_vars: receiptVars({
+          formTitle: f.title, formUrl: `${SITE}/forms/${f.id}`, fields: f.fields || [], answers,
+          firstName: me?.first_name || displayName.split(' ')[0] || 'Member', memberName: displayName,
+          submittedOn: romeLong(now), trackPayments: f.track_payments, fixedAmount: fixed,
+          due: amountDue(f.track_payments, fixed, f.fields || [], answers),
+          paymentInstructions: f.payment_instructions, allowEdits: f.allow_edits,
+          deadlineText: f.closes_at ? romeLong(f.closes_at) : null, confirmationMessage: f.confirmation_message,
+        }),
+      });
+      if (mailError) throw mailError;
+      // What happened to it, from the register of sent emails: the same
+      // test sent again within five minutes is held back as a duplicate,
+      // and nothing goes out while the template is switched off.
+      const { data: logged } = await supabase.from('email_send_log')
+        .select('status').eq('template_name', 'internal_form_receipt').ilike('recipient_email', to)
+        .gte('created_at', started).order('created_at', { ascending: false }).limit(1);
+      const status = (logged?.[0] as { status?: string } | undefined)?.status ?? 'not_sent';
+      return json({ success: true, to, status });
     }
 
     if (action === 'save') {

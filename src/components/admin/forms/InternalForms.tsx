@@ -49,6 +49,7 @@ import { isQuestion, LIMITS } from '@/lib/internal-forms-rules';
 import {
   deleteForm, duplicateForm, getForm, listForms, saveForm, saveFormWithImages, setFormStatus, uploadFormImage,
   type FormResponse, type FormStatus, type InternalForm,
+  sendTestReceipt,
 } from '@/lib/internal-forms-api';
 import {
   STARTERS, STATE_LABEL, deadlineRelative, deadlineText, effectiveState, firstProblem, formLink, money,
@@ -575,6 +576,15 @@ function FormEditor({ id, view, onView, onOpen }: {
     } catch (e) { toast({ title: 'Could not delete the form', description: friendlyError(e), variant: 'destructive' }); }
     finally { setStatusBusy(false); setAsk(null); }
   };
+  const testReceipt = async () => {
+    if (!saved) return;
+    try {
+      const r = await sendTestReceipt(session, saved.id);
+      if (r.status === 'duplicate') toast({ title: 'Test already sent', description: 'A test receipt went to you less than five minutes ago. Check your inbox, or try again in a few minutes.' });
+      else if (r.status === 'not_sent') toast({ title: 'Test not sent', description: 'The receipt email is switched off in Operations > Automatic Emails.', variant: 'destructive' });
+      else toast({ title: 'Test receipt sent', description: `It is on its way to ${r.to}.` });
+    } catch (e) { toast({ title: 'Could not send the test', description: friendlyError(e), variant: 'destructive' }); }
+  };
   const back = () => { if (dirty) setAsk('leave'); else onOpen(null); };
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -734,7 +744,7 @@ function FormEditor({ id, view, onView, onOpen }: {
             )}
           />
         )}
-        {view === 'settings' && <FormSettingsPanel form={draft} set={set} readOnly={readOnly} />}
+        {view === 'settings' && <FormSettingsPanel form={draft} set={set} readOnly={readOnly} dirty={dirty} onTestReceipt={canEdit ? testReceipt : undefined} />}
         {view === 'answers' && (
           <AnswersView form={saved} responses={responses} setResponses={(fn) => setResponses(fn)} session={session} readOnly={readOnly} />
         )}

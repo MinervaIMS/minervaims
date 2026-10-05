@@ -3,6 +3,7 @@ import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlaceholder';
 import AodPromoCard from './AodPromoCard';
 import type { LatestUpdate } from './useDashboardData';
+import { joinLabel } from '@/lib/event-place';
 
 // =====================================================================
 // The current update: the one thing on this page that asks for an action.
@@ -34,10 +35,12 @@ interface Props {
   ok: boolean;
   /** Opens a workspace subsection in place. */
   onNavigate?: (section: string, sub: string | null) => void;
+  /** The reader can open Events > My events. */
+  canOpenMyEvents?: boolean;
 }
 
 /** Where this update leads, and how that destination is reached. */
-function destination(update: LatestUpdate): { kind: 'workspace'; section: string; sub: string; label: string }
+function destination(update: LatestUpdate, canOpenMyEvents = false): { kind: 'workspace'; section: string; sub: string; label: string }
 | { kind: 'route'; to: string; label: string }
 | { kind: 'external'; href: string; label: string } {
   switch (update.kind) {
@@ -50,6 +53,13 @@ function destination(update: LatestUpdate): { kind: 'workspace'; section: string
     // without a form keeps leading where it always did.
     case 'event-public':
     case 'event-internal':
+      // A PLACE HELD AT AN ONLINE EVENT LEADS INTO THE MEETING. The link is
+      // private: it reaches only the people registered (my_event_
+      // registrations), so for everybody else the card still says Register.
+      if (update.joinUrl) return { kind: 'external', href: update.joinUrl, label: joinLabel(update.joinUrl) };
+      if (update.myStatus && canOpenMyEvents) {
+        return { kind: 'workspace', section: 'events', sub: 'events-mine', label: 'View in My events' };
+      }
       if (update.registrationOpen && update.eventId) {
         return { kind: 'route', to: `/events/${update.eventId}/register`, label: 'Register' };
       }
@@ -61,7 +71,7 @@ function destination(update: LatestUpdate): { kind: 'workspace'; section: string
   }
 }
 
-export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
+export function CurrentUpdateBlock({ update, ok, onNavigate, canOpenMyEvents = false }: Props) {
   const shell = 'h-full min-h-0 overflow-hidden rounded-xl border border-accent bg-accent text-accent-foreground';
 
   if (!ok) {
@@ -76,7 +86,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
     return <section className={`${shell} animate-pulse`} aria-hidden="true" />;
   }
 
-  const target = destination(update);
+  const target = destination(update, canOpenMyEvents);
   // AN EVENT WITHOUT A POSTER still has a cover: the full Minerva logo and
   // one line about events, as on the public Events page, and its
   // description is shown with the title so the card says what it is.
@@ -178,6 +188,14 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
   const when = (cls: string) => (update.date ? (
     <span className={`shrink-0 text-accent-foreground/70 ${cls}`}>{formatDate(update.date)}{update.time ? `, ${update.time}` : ''}</span>
   ) : null);
+  // Whether the reader already holds a place, so the card never asks
+  // somebody registered to register.
+  const mine = (cls: string) => (isEvent && update.myStatus ? (
+    <span className={`shrink-0 inline-flex items-center gap-1.5 text-accent-foreground ${cls}`}>
+      <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-accent-foreground" />
+      {update.myStatus === 'registered' ? 'You are registered' : 'You are on the waiting list'}
+    </span>
+  ) : null);
   // The site's button language: white fill and purple label, and on hover the
   // full inversion to the deep purple with a white border. No icon: the
   // site's buttons do not carry one.
@@ -212,6 +230,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
           <div className="min-w-0 flex-1">
             {title('text-[21px] line-clamp-3')}
             {when('mt-2 block text-[13px]')}
+            {mine('mt-1.5 text-[13px]')}
           </div>
         </div>
 
@@ -250,6 +269,7 @@ export function CurrentUpdateBlock({ update, ok, onNavigate }: Props) {
               at the foot rather than being cut through a line. */}
           {detail(posterless && update.description ? 'mt-3 text-sm line-clamp-1 shrink-0' : 'mt-3 text-sm line-clamp-2')}
           {when('mt-2.5 block text-[13px]')}
+          {mine('mt-2 text-[13px]')}
           {about('mt-3 text-sm flex-1 [mask-image:linear-gradient(to_bottom,black_65%,transparent)]')}
           <div className="mt-auto shrink-0 pt-5">{cta('w-fit')}</div>
         </div>

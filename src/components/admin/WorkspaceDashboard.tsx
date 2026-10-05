@@ -293,7 +293,7 @@ export default function WorkspaceDashboard({ onNavigate }: {
               stand in it without the photograph being reduced to a
               strip. */}
           <div className="dash-enter order-1 lg:order-2 h-[360px] lg:h-auto min-h-0" style={enter(5)}>
-            <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} />
+            <CurrentUpdateBlock update={data.latestUpdate} ok={data.latestUpdateOk} onNavigate={onNavigate} canOpenMyEvents={access.canView('events-mine')} />
           </div>
         </div>
         {/* Three cards across, 34 / 30 / 36 of the row once the two gaps

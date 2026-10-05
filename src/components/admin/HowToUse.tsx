@@ -35,6 +35,10 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Events, My events: your own record of the semester. Register for open events in one click (or cancel), see which events you attended and which you missed, and who to tell if your attendance was not recorded correctly.',
+  'The link to an online event is now private: only the people registered get it, in their confirmation, again in the "See you tomorrow" email the day before, and as a Join button on the Dashboard, in My events and in the Calendar. Everyone else sees "Online".',
+  'People, Members: press a member\'s number in the Events column to see which events they attended and which they missed.',
+  'The receipt of an internal form reads at a glance: whether it arrived and can still be changed, the order with its total, how to pay, then the answers. Organisers can send themselves a test receipt from Settings.',
   'Internal forms take orders properly: a cover picture, pictures between questions and a picture on each choice; "how many of each" for every colour picked, counted by size; prices per choice with the member\'s total shown as they answer and kept with their answer; and questions shown only for some answers, such as the name to print only if a name is wanted. The answers summary gives the supplier\'s table of each colour by size, and the export a column for each.',
   'A form waiting for your answer now takes the place of Research by division on the Dashboard, with its picture; several forms make a stack you swipe through, as on an iPhone. Once you answer, or the form closes, the card goes back to what it was.',
   'Online events: the meeting link is now required when an event is online, and every registration confirmation carries it in a box of its own, with a Join button and the address to copy. The public website shows only "Online".',

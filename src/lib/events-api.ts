@@ -205,6 +205,33 @@ export async function myEventWaitlistIds(userId?: string | null): Promise<Set<st
 export function saveEvent(session: Session | null, event: EventInput) {
   return invoke('admin-events', session, { action: event.id ? 'update' : 'create', event });
 }
+// =====================================================================
+// AN ONLINE EVENT'S MEETING LINK IS PRIVATE (migration 20261005100000).
+// The event's own `place` says "Online"; the link is kept apart and read
+// by two kinds of people only: the organisers, to edit it, and the
+// members holding a place, to join.
+// =====================================================================
+
+/** The meeting links of these events (or of all), for the organisers' edit forms. */
+export async function fetchJoinLinks(session: Session | null, ids?: string[]): Promise<Record<string, string>> {
+  const r = await invoke('admin-events', session, { action: 'join-links', ...(ids ? { ids } : {}) });
+  return ((r && typeof r === 'object' ? (r as { links?: Record<string, string> }).links : null) ?? {});
+}
+
+export interface MyRegistration {
+  event_id: string;
+  status: 'registered' | 'waitlisted';
+  /** The meeting link, for an online event the member holds a place at. */
+  join_url: string | null;
+}
+
+/** What the signed-in member is registered for, from yesterday on, with their links. */
+export async function myEventRegistrations(): Promise<MyRegistration[]> {
+  const { data, error } = await supabase.rpc('my_event_registrations');
+  if (error) throw error;
+  return ((data || []) as unknown as MyRegistration[]).filter((r) => r && typeof r.event_id === 'string');
+}
+
 export function deleteEvent(session: Session | null, id: string) {
   return invoke('admin-events', session, { action: 'delete', event: { id } });
 }
@@ -239,8 +266,44 @@ export async function listRegistrationsFull(session: Session | null, eventId: st
 }
 
 /** Events attended per member (by member id), out of those held so far in the range. Full access to Members only. */
-export function memberEventAttendance(session: Session | null, from: string, to: string): Promise<{ total: number; from: string; to: string; counts: Record<string, number> }> {
+/** An event of the semester that counts towards attendance: held, with attendance taken. */
+export interface HeldEvent { id: string; title: string; date: string; start_at: string | null; aod: boolean; online: boolean }
+
+export interface MemberAttendance {
+  total: number; from: string; to: string;
+  counts: Record<string, number>;
+  /** The events counted, in date order. */
+  events?: HeldEvent[];
+  /** Per member id: the counted events they attended, and those they were registered for. */
+  attended?: Record<string, string[]>;
+  registered?: Record<string, string[]>;
+}
+
+export function memberEventAttendance(session: Session | null, from: string, to: string): Promise<MemberAttendance> {
   return invoke('admin-event-reg', session, { action: 'member-attendance', from, to });
+}
+
+// ── Events > My events ────────────────────────────────────────────────
+export type MyHistoryStatus = 'attended' | 'registered_absent' | 'not_registered';
+export interface MyHistoryEvent extends HeldEvent { status: MyHistoryStatus }
+export interface MyOpenEvent {
+  id: string; title: string; date: string; start_at: string | null; end_at: string | null;
+  place: string | null; online: boolean; event_type: EventType; description: string | null; poster_url: string | null;
+  audience: RegistrationAudience; capacity: number | null; taken: number; waiting: number;
+  status: 'registered' | 'waitlisted' | 'none';
+  /** The meeting link, for an online event the member holds a place at. */
+  join_url: string | null;
+}
+export interface MyEventsData {
+  from: string; to: string;
+  history: MyHistoryEvent[];
+  upcoming: MyOpenEvent[];
+  /** The current Head of Operations, by name, for corrections. */
+  head_of_operations: string | null;
+}
+
+export function myEvents(session: Session | null, from: string, to: string): Promise<MyEventsData> {
+  return invoke('admin-event-reg', session, { action: 'my-events', from, to });
 }
 
 // ── Places, the waiting list and "Can't make it" ──────────────────────

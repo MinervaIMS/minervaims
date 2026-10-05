@@ -11,6 +11,7 @@ import { longDay, relativeDay } from '@/lib/calendar-dates';
 import { useMedia } from './calendar-hooks';
 import { RegisterButton, RegistrationSteps } from './CalendarItems';
 import { CATEGORY, categoryOf, isBoardOnly, type CalItem, type RegState } from './calendar-model';
+import { JoinMeetingLink } from '@/components/shared/JoinMeetingLink';
 
 // =====================================================================
 // Everything about one item, and what you can do with it.
@@ -37,9 +38,11 @@ function Row({ icon, label, children }: { icon: ReactNode; label: string; childr
 
 export function ItemDetailSheet({
   item, state, places, busy, cancelling, onClose, onRegister, onCancel,
-  canEditEvent, onEditEvent, canEditEntry, onEditEntry, canOpenForms, onOpenForms, onOpenAod,
+  canEditEvent, onEditEvent, canEditEntry, onEditEntry, canOpenForms, onOpenForms, onOpenAod, joinUrl,
 }: {
   item: CalItem | null;
+  /** The meeting link, only for an online event the reader holds a place at. */
+  joinUrl?: string | null;
   state?: RegState;
   places?: EventPlaces | null;
   busy: boolean;
@@ -85,7 +88,10 @@ export function ItemDetailSheet({
             <div className="space-y-6 px-6 py-5">
               <dl className="space-y-3">
                 <Row icon={<Clock className="h-4 w-4" />} label="When">{e ? formatEventWhen(e) : longDay(item.date)}</Row>
-                <Row icon={<MapPin className="h-4 w-4" />} label="Where">{e?.place || item.entry?.location || ''}</Row>
+                <Row icon={<MapPin className="h-4 w-4" />} label="Where">
+                  {e?.place || item.entry?.location || ''}
+                  {joinUrl && state === 'registered' && <span className="mt-1.5 block"><JoinMeetingLink url={joinUrl} /></span>}
+                </Row>
                 {e && e.registration_enabled && !e.aod_day_id && (
                   <Row icon={<Users className="h-4 w-4" />} label="Who can register">
                     {AUDIENCE_LABELS[e.registration_audience]}

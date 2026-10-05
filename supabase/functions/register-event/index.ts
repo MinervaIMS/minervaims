@@ -107,10 +107,23 @@ Deno.serve(async (req) => {
         const { data: r } = await supabase.from('event_registrations')
           .select('id, event_id, name, email, attended').eq('event_id', evId).eq('user_id', userId).maybeSingle();
         reg = r as Reg | null;
+        // A member who registered on the public form, without signing in, is
+        // found by the address of their account (Events > My events counts
+        // that place as theirs, so it must be theirs to cancel).
+        if (!reg && userEmail) {
+          const { data: byMail } = await supabase.from('event_registrations')
+            .select('id, event_id, name, email, attended').eq('event_id', evId).is('user_id', null).ilike('email', userEmail).limit(1);
+          reg = ((byMail || [])[0] as Reg | undefined) ?? null;
+        }
         if (!reg) {
           const { data: w } = await supabase.from('event_waitlist')
             .select('id, event_id, name, email, created_at').eq('event_id', evId).eq('user_id', userId).maybeSingle();
           wait = w;
+        }
+        if (!reg && !wait && userEmail) {
+          const { data: wMail } = await supabase.from('event_waitlist')
+            .select('id, event_id, name, email, created_at').eq('event_id', evId).is('user_id', null).ilike('email', userEmail).limit(1);
+          wait = (wMail || [])[0] ?? null;
         }
       } else {
         const { data: r } = await supabase.from('event_registrations')

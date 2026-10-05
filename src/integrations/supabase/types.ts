@@ -2814,6 +2814,14 @@ export type Database = {
         }
         Returns: number
       }
+      my_event_registrations: {
+        Args: never
+        Returns: {
+          event_id: string
+          join_url: string
+          status: string
+        }[]
+      }
       my_onboarding_context: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }

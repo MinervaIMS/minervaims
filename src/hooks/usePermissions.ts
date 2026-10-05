@@ -53,7 +53,8 @@ export const usePermissions = (): Permissions => {
       canAccessEvents:
         access.canView('events-archive') || access.canView('events-create') ||
         access.canView('events-forms') || access.canView('events-attendance') ||
-        access.canView('events-alumni-calls') || access.canView('events-on-display'),
+        access.canView('events-alumni-calls') || access.canView('events-on-display') ||
+        access.canView('events-mine'),
       canAccessFiles: access.canView('reports-archive') || access.canView('reports-upload'),
       canAccessTeam: access.canView('people-members'),
       canAccessReadings: access.canView('website-readings'),
