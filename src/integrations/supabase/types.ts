@@ -1096,6 +1096,32 @@ export type Database = {
         }
         Relationships: []
       }
+      event_join_links: {
+        Row: {
+          event_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          event_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          event_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_join_links_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           academic_year: string | null
@@ -2708,6 +2734,7 @@ export type Database = {
       event_checkin_block: { Args: { p_token: string }; Returns: string }
       event_clock: { Args: { p_at: string; p_zone?: boolean }; Returns: string }
       event_join_block: { Args: { p_place: string }; Returns: string }
+      event_join_url: { Args: { p_event_id: string }; Returns: string }
       event_notice_enqueue: {
         Args: {
           p_cancel?: string
