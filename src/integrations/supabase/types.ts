@@ -839,6 +839,92 @@ export type Database = {
         }
         Relationships: []
       }
+      brainteaser_progress: {
+        Row: {
+          flagged: boolean
+          note: string | null
+          problem_id: string
+          revealed_at: string | null
+          status: string | null
+          status_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          flagged?: boolean
+          note?: string | null
+          problem_id: string
+          revealed_at?: string | null
+          status?: string | null
+          status_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          flagged?: boolean
+          note?: string | null
+          problem_id?: string
+          revealed_at?: string | null
+          status?: string | null
+          status_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brainteaser_progress_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "brainteasers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brainteasers: {
+        Row: {
+          answer: string
+          created_at: string
+          created_by: string | null
+          field: string
+          firms: string[]
+          hidden: boolean
+          id: string
+          question: string
+          sort_order: number
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          created_by?: string | null
+          field: string
+          firms?: string[]
+          hidden?: boolean
+          id: string
+          question: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          created_by?: string | null
+          field?: string
+          firms?: string[]
+          hidden?: boolean
+          id?: string
+          question?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       calendar_entries: {
         Row: {
           author_name: string | null
@@ -1565,6 +1651,33 @@ export type Database = {
           total_weight?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      greenbook_downloads: {
+        Row: {
+          downloaded_at: string
+          email: string | null
+          file_id: string | null
+          id: string
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          downloaded_at?: string
+          email?: string | null
+          file_id?: string | null
+          id?: string
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          downloaded_at?: string
+          email?: string | null
+          file_id?: string | null
+          id?: string
+          name?: string
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -284,10 +284,10 @@ Deno.serve(audited('career-brainteasers', async (req, audit) => {
       const shown = /[A-Za-z]/.test(printed) ? printed : '';
       const issuedTo = shown ? `${shown}${email ? ` (${email})` : ''}` : (email || 'a member of the Society');
       const out = await watermarkPdf(original, {
-        footer: `Issued to ${issuedTo} on ${today} · Minerva IMS members only · Not for distribution`,
+        footer: `Issued to ${issuedTo} on ${today} · Personal copy · Not for distribution`,
         cover: [
           `This copy was issued to ${shown || email || 'a member of the Society'} on ${today} for personal study.`,
-          'Minerva Investment Management Society: for members only. Do not copy, share or distribute it.',
+          'Do not copy, share or distribute it.',
           'Every copy carries the name of the person it was issued to.',
         ],
       });
