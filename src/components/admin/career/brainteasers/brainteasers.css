@@ -1,0 +1,49 @@
+/* =====================================================================
+   Career > Brainteasers: questions and solutions as text, with maths.
+   The workspace's body type, a comfortable measure, and KaTeX at the
+   size of the text around it.
+   ===================================================================== */
+
+.bt-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+.bt-text p { margin: 0 0 0.85em; }
+.bt-text p:last-child { margin-bottom: 0; }
+.bt-text .bt-item { display: flex; gap: 0.6em; }
+.bt-text .bt-marker { flex-shrink: 0; min-width: 1.4em; color: hsl(var(--accent)); font-variant-numeric: tabular-nums; }
+.bt-text .bt-display {
+  margin: 0.4em 0 0.95em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.15em 0;
+}
+/* A formula still too wide at its smallest (MathText.tsx) scrolls
+   sideways; the fade at its edge says there is more, and goes once the
+   end is reached. */
+.bt-text .bt-display.bt-scroll {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+.bt-text .bt-display.bt-scroll.bt-scroll-end { -webkit-mask-image: none; mask-image: none; }
+.bt-text .bt-display:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.bt-text .katex { font-size: 1.06em; }
+.bt-text .katex-display { margin: 0; }
+.bt-text .bt-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: hsl(var(--muted));
+  padding: 0.05em 0.3em;
+}
+
+/* The solution is for reading here, not for lifting out. */
+.bt-protect { user-select: none; -webkit-user-select: none; }
+
+@media print {
+  .bt-print-hide { display: none !important; }
+}
+
+/* A short formula and the punctuation around it (render-math.ts). */
+.bt-text .bt-nw { white-space: nowrap; }

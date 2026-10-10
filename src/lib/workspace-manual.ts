@@ -189,7 +189,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'The workspace on a phone',
     body: [
       'On a phone the workspace becomes a compact shell: sections in a drawer, subsections as chips, and every page your role can open available to read.',
-      'Nothing is withheld on a phone that you can see on a computer, and nothing can be edited from one, with two exceptions done away from a desk: Events, Attendance, taken at the door, and Career, GPA converter, whose saved averages are your own. Everywhere else every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
+      'Nothing is withheld on a phone that you can see on a computer, and nothing can be edited from one, with three exceptions done away from a desk: Events, Attendance, taken at the door, and Career, GPA converter and Brainteasers, whose saved averages and training record are your own. Everywhere else every editing control is put beyond reach, for every role. Reading, searching, filtering, previewing a document and downloading keep working, and a ribbon at the top of each page says so. Pages built for a wide screen keep all their columns and are dragged sideways rather than trimmed.',
     ],
   },
 ];
@@ -259,6 +259,19 @@ export const COMMON_TASKS: ManualTask[] = [
       'Correct anything that is not true or does not sound like you, then paste it into About on LinkedIn.',
     ],
     caution: 'What you attach is sent to the AI service you use. Choose one you trust.',
+  },
+  {
+    id: 'career-brainteasers',
+    title: 'Train on brainteasers',
+    requires: 'career-brainteasers',
+    level: 'view',
+    steps: [
+      'Open Career, Brainteasers. Narrow the list by type, by firm and by where you stand, or search it.',
+      'Open a question and try it on paper first; then press Show the solution and compare.',
+      'Say how it went: Solved on my own, or Needed the solution. Flag it as hard to come back to it, and keep a note if it helps.',
+      'Press Random for a question from the list you have not done yet; check My progress to see which types and firms need work.',
+    ],
+    caution: 'Solutions open one at a time, up to 40 new ones an hour. The greenbook is the only download, and every copy carries your name.',
   },
   {
     id: 'career-average',
@@ -625,7 +638,7 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
-    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit and the GPA converter. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
+    'An alumnus keeps a profile, the Dashboard, the Calendar and the Career section: the CV and cover letter templates, the LinkedIn kit, the GPA converter and Brainteasers, with the greenbook. The alumni directory on the public site and the alumni calls are where the relationship with the association continues.',
 };
 
 // =====================================================================
@@ -645,6 +658,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Exam session break', definition: 'A protected date range during which no event, interview slot, Association on Display day, alumni call, meeting or social can be scheduled anywhere in the workspace. Deadlines and reminders remain possible.', requires: 'calendar' },
   { term: 'Association on Display', definition: 'The recurring day on which the association presents itself, with time slots members sign up for. Registration closes 24 hours before the day.', requires: 'events-on-display' },
   { term: 'Locked entry', definition: 'A Treasury entry written by the workspace itself, from a fee collection closing or an advertising spend being recorded. It is the record of something that happened elsewhere and cannot be altered here.', requires: 'ops-treasury' },
+  { term: 'Greenbook', definition: 'A Practical Guide to Quantitative Finance Interviews, the book offered in Career, Brainteasers. Each download is a copy with the reader\'s name, email and the date on every page, for their own study.', requires: 'career-brainteasers' },
+  { term: 'Needed the solution', definition: 'In Brainteasers, a question you could not solve without its solution: listed apart, so it can be tried again later.', requires: 'career-brainteasers' },
   { term: 'Equivalence bands', definition: 'The default method of the GPA converter: grades that mean the same thing (pass, good, very good, excellent, top) are matched between two systems, and a grade in between is read at the same position. Indicative, like every conversion.', requires: 'career-gpa' },
   { term: 'Degree mark base', definition: 'On the Bocconi /30 scale, the weighted average times 110 divided by 30: the starting point of the final degree mark, before the points the commission adds.', requires: 'career-gpa' },
   { term: 'Advisor', definition: 'An alumnus appointed to advise the association. Reads everything, changes nothing but their own profile, has no access to Settings, and is outside the membership fee entirely.' },
@@ -731,6 +746,21 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
     question: 'Copy prompt did nothing.',
     answer: 'Your browser refused access to the clipboard, and the page says so. Allow clipboard access for the workspace in the browser settings, or use another browser. The prompts are copied, not shown on the page.',
     requires: 'career-linkedin',
+  },
+  {
+    question: 'The page says I have opened too many solutions.',
+    answer: 'Brainteasers gives out up to 40 new solutions an hour and 150 a day, so the set is studied rather than copied out. Solutions you have already opened stay available, and the message says from when you can open new ones.',
+    requires: 'career-brainteasers',
+  },
+  {
+    question: 'A formula in a solution is cut off on my phone.',
+    answer: 'It is not cut off: a formula wider than the screen is first drawn smaller to fit, and the few still wider scroll sideways inside their own box, with a fade at the edge to show there is more. Swipe the formula itself sideways to read the rest; on a computer every formula fits.',
+    requires: 'career-brainteasers',
+  },
+  {
+    question: 'A member cannot download the greenbook.',
+    answer: 'Three things decide it. A greenbook must have been uploaded (the Greenbook view says so if not). The member must have Career, Brainteasers in their role: applicants and accounts without a role do not. And each person can download it up to three times in 24 hours; after that the message asks them to use the copy they already have.',
+    requires: 'career-brainteasers',
   },
   {
     question: 'My saved averages are missing on another device.',
@@ -1019,7 +1049,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'settings-mobile': {
     detail: [
       "What each part of the workspace offers on a phone.",
-      "There is one rule and this page states it: every page opens, within your role, and nothing can be edited, apart from the two pages ticked in the table, Attendance and the GPA converter. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
+      "There is one rule and this page states it: every page opens, within your role, and nothing can be edited, apart from the three pages ticked in the table, Attendance, the GPA converter and Brainteasers. The list of what it covers is generated from the live navigation, so it cannot fall behind the workspace it describes.",
     ],
     related: ['settings-roles'],
   },
@@ -1148,6 +1178,14 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The wallpapers are shown whole, at their own proportions, because LinkedIn crops them itself when they are uploaded.",
     ],
     related: ['career-cv', 'my-role'],
+  },
+  'career-brainteasers': {
+    detail: [
+      "Three views: Questions, My progress and Greenbook. Questions lists the set beside the question on screen; the filters (type, firm, where you stand, search) stay above the list, and only the list and the question scroll.",
+      "Each solution opens on request, up to 40 new ones an hour and 150 a day, and cannot be selected or printed from the page. What you mark, flag and note is yours alone.",
+      "The greenbook is the only download: a copy with your name, email and the date on every page, recorded, for your own study. The President and the admin account replace it; the President, the Vice President and the Head of Operations correct and add questions.",
+    ],
+    related: ['career-gpa', 'career-cv'],
   },
   'career-gpa': {
     detail: [

@@ -188,6 +188,36 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    key: 'career-brainteasers', section: 'Career', label: 'Brainteasers',
+    purpose: 'Train for the brainteaser and probability questions of trading and quant interviews: hundreds of questions asked by real firms, each with its type and the firms it is attributed to, and a worked solution. Your record of what you solved, what needed the solution and what you found hard is yours alone. The greenbook is the one file you can download, as your own watermarked copy.',
+    view: [
+      'Filter the questions by type (Probability, Reasoning, Math, Option Theory, Finance, Statistics, Behavioral), by firm and by where you stand, and search their text.',
+      'Read a question, try it, then open its solution.',
+      'Mark each question Solved on my own or Needed the solution, flag the hard ones and keep private notes.',
+      'See your progress overall, by type and by firm, and practise from there.',
+      'Download the greenbook, as a copy with your name on every page.',
+    ],
+    manage: [
+      'Correct a question, its type, its firms or its solution; add a question; hide one from members.',
+    ],
+    warnings: [
+      'Nothing here can be downloaded except the greenbook, and only as your own copy, with your name, email and the date on every page. Do not share it outside the Society.',
+      'Solutions open one at a time, up to 40 new ones an hour and 150 a day; one you have opened stays open.',
+    ],
+    topics: [
+      { id: 'how', title: 'How to train', body: 'Read the question and give it a real try first, on paper, before you open the solution: a solution read before trying teaches far less than one compared with your own attempt. Then say how it went. Solved on my own, or Needed the solution: be honest, because the second list is the one worth a second go. Flag a question as hard to come back to it, and write in My notes the trick or the formula you want to remember.' },
+      { id: 'filters', title: 'Finding questions', body: 'Type and Firm take several values at once: tick Probability and Reasoning, or Jane Street and SIG, and the list shows any of them. Firm not specified collects the questions with no firm attached. The status menu shows the questions not done yet, solved on your own, that needed the solution, flagged as hard, or with your notes. The search looks through titles and questions. Clear all puts everything back. Your filters and the question on screen are remembered in this browser.' },
+      { id: 'random', title: 'Random and moving through', body: 'Random opens a question from the current list that you have not done yet, so a session can be "Probability at Jane Street, at random". Previous and Next move through the list, and on a computer so do the left and right arrow keys.' },
+      { id: 'solutions', title: 'Why solutions open one at a time', body: 'The set is for training, not for copying out: each solution is sent when you ask for it, up to 40 new ones an hour and 150 a day, and cannot be selected or printed from the page. A solution you have opened stays open whenever you come back to it, and counts only once.' },
+      { id: 'progress', title: 'My progress', body: 'Done counts the questions you marked Solved on my own or Needed the solution. By type and By firm show the same for each, solved in green and needed in amber; press a row to practise the questions of that type or firm you have not done yet. Start over clears your marks, flags and notes; it cannot be undone.' },
+      { id: 'privacy', title: 'Who can see your record', body: 'Only you. Your marks, flags and notes are kept in your account and are not shown to the Board or anybody else.' },
+      { id: 'greenbook', title: 'The greenbook', body: 'The greenbook (A Practical Guide to Quantitative Finance Interviews) is the one file here that can be downloaded, by every role that has the page. Download my copy makes your own copy at that moment: your name, your email and the date are printed at the foot of every page, with a notice on the cover, and the download is recorded. It is for your own study; do not share it, upload it or send it outside the Society, since every copy says whose it was. Up to three downloads a day.' },
+      { id: 'greenbook-manage', title: 'Replacing the greenbook', requires: 'manage', body: 'Only the President and the admin account replace or remove the greenbook, from the Greenbook view: choose a PDF of up to 60 MB that is not password-protected. It is checked by watermarking it once, the way every download will be, and then replaces the current one. Who has a copy lists every download with the name it carries.' },
+      { id: 'editing', title: 'Editing the questions', requires: 'manage', body: 'The President, the Vice President, the Head of Operations and the admin account can correct a question (the pencil beside it) or add one (Add, above the list). Maths goes between $ signs, a formula on its own line between $$ lines, and a blank line starts a new paragraph; the preview shows it exactly as members will see it. Hidden from members keeps a question without listing it.' },
+      { id: 'on-phone', title: 'On a phone', body: 'Brainteasers works in full on a phone: the list is the page, and a question opens over it. A long formula is drawn smaller to fit the screen; the few still wider fade at the edge, and you swipe them sideways to read the rest. What you record is your own, not the association\'s.' },
+    ],
+  },
+  {
     key: 'career-smart', section: 'Career', label: 'Smart Tracker',
     purpose: 'Coming next semester, and by August 2027 at the latest: members will be able to share, with their consent, tips and tricks from the recruiting processes they go through (online assessments, HireVue video interviews and interviews), so whoever applies next to the same firm knows what to expect.',
     view: ['See what the page will hold and when it opens.'],
@@ -380,7 +410,7 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'Who registered and who actually attended each event; scan tickets at the door, search and filter the door list, and add walk-ins.',
     view: ['Consult registration and attendance numbers.', 'Search the people registered by name, email or programme, and filter by attendance, by type and by how each person was recognised.'],
     manage: ['Scan the entry codes people bring on their phone, with the camera of a phone or a laptop, and they are ticked as present.', 'Mark attendance by hand, add members who turned up from the register, and add external guests, from a computer or from a phone.', 'The Media Analyst and the Operations Analyst have full access here too, to help Operations at the door.'],
-    warnings: ['Guests ticked as attended who are not members receive a thank-you from the President the next morning at 9:00 am, so attendance is best taken on the day. See Registration forms, The thank-you to guests.', 'This page can be edited from a phone, because attendance is taken at a door. Apart from the GPA converter, whose saved averages are the member\'s own, everywhere else the workspace is read-only on mobile.', 'Attendance closes two weeks after the event: after that the list can be read and exported, but no longer changed.'],
+    warnings: ['Guests ticked as attended who are not members receive a thank-you from the President the next morning at 9:00 am, so attendance is best taken on the day. See Registration forms, The thank-you to guests.', 'This page can be edited from a phone, because attendance is taken at a door. Apart from the GPA converter and Brainteasers, whose saved averages and training record are the member\'s own, everywhere else the workspace is read-only on mobile.', 'Attendance closes two weeks after the event: after that the list can be read and exported, but no longer changed.'],
     topics: [
       { id: 'which-event', title: 'Which event opens first', body: 'The page opens on the nearest event that is not over yet: the one happening now, or else the next one to come. When every event is over it opens on the most recent. Choose any other event from the list at the top.' },
       { id: 'recognising-members', title: 'How the list knows who is a member', body: 'The public event form asks for a name and an address and does not require signing in, which is the point of a public event. A member who registers that way is stored with no account attached, and used to be listed as an external guest. Every registration is now checked against the register of members, and the list says HOW it knows, because the three answers are not equally certain. "Signed in" means they used their own account: not a guess at all. "Matched by email" means the address they gave is a member\u2019s address, and an address identifies one person. "Matched by name" means the name matches exactly one member and nothing else confirms it: a good guess, shown in amber so you can tell. '
@@ -691,7 +721,7 @@ export const GUIDE: GuideEntry[] = [
     view: ['Consult the table.'],
     manage: [],
     topics: [
-      { id: 'levels', title: 'The rule', body: 'Every subsection opens on a phone and, with two exceptions, every one of them is read only: the controls that change something are withheld, for everybody, including the President. The exceptions are the pages done away from a desk: Events, Attendance, taken at the door of an event, and Career, GPA converter, whose saved averages are the member\'s own. They are ticked in the table. Which pages you see is still decided by your role, exactly as it is on a computer, because the mobile rule is a cap and never a grant. An applicant is a separate case: their own pages, where they book an interview and answer an offer, are still opened on a computer.' },
+      { id: 'levels', title: 'The rule', body: 'Every subsection opens on a phone and, with three exceptions, every one of them is read only: the controls that change something are withheld, for everybody, including the President. The exceptions are the pages done away from a desk: Events, Attendance, taken at the door of an event, and Career, GPA converter and Brainteasers, whose saved averages and training record are the member\'s own. They are ticked in the table. Which pages you see is still decided by your role, exactly as it is on a computer, because the mobile rule is a cap and never a grant. An applicant is a separate case: their own pages, where they book an interview and answer an offer, are still opened on a computer.' },
       { id: 'cap', title: 'A cap, never a grant', body: 'The mobile rule can only take away what a role already has. It cannot open a page a role cannot open, and it applies to everyone including the President. It engages below 1024 pixels wide, which is the same threshold that switches the workspace to its mobile shell.' },
     ],
   },
