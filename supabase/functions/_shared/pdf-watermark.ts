@@ -47,7 +47,7 @@ export interface WatermarkResult {
   pages: number;
 }
 
-const FONT_KEY = 'MinervaWM';
+const FONT_KEY = 'WMFont';
 const enc = new TextEncoder();
 const latin1 = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
 
