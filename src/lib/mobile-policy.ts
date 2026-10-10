@@ -50,6 +50,11 @@
 // done on the way out of one, and a phone that could compute an average
 // but not keep it would be the rule getting in the way of nothing.
 //
+// BRAINTEASERS IS THE THIRD, for the same reason as the GPA Converter:
+// marking a question solved, flagging it or writing a note changes only
+// the member's own training record, and a brainteaser is exactly the kind
+// of thing done on a phone between lectures.
+//
 // THE ROLE STILL DECIDES. This is still a cap and still never a grant:
 // 'full' means the mobile cap does not lower the level, not that anybody
 // gets one. A reader with 'view' on Attendance still only reads it, on a
@@ -71,7 +76,7 @@ export const MOBILE_POLICY: MobilePolicy = 'view';
  * The subsections that are done away from a desk, and so keep their
  * writes on a phone. See the exception above before adding to it.
  */
-export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance', 'career-gpa']);
+export const MOBILE_FULL_SUBSECTIONS = new Set<string>(['events-attendance', 'career-gpa', 'career-brainteasers']);
 
 /** What the given subsection offers on a phone. */
 export function mobilePolicyFor(key?: string | null): MobilePolicy {

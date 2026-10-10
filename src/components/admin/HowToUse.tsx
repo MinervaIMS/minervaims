@@ -35,6 +35,7 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Career, Brainteasers: hundreds of interview questions from trading firms, with worked solutions. Filter by type and by firm, try each one before opening its solution, mark what you solved and what needed help, flag the hard ones, keep notes and follow your progress by type and firm. The greenbook is downloadable as your own copy, with your name on every page.',
   'Events, My events: your own record of the semester. Register for open events in one click (or cancel), see which events you attended and which you missed, and who to tell if your attendance was not recorded correctly.',
   'The link to an online event is now private: only the people registered get it, in their confirmation, again in the "See you tomorrow" email the day before, and as a Join button on the Dashboard, in My events and in the Calendar. Everyone else sees "Online".',
   'People, Members: press a member\'s number in the Events column to see which events they attended and which they missed.',

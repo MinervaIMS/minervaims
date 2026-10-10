@@ -100,6 +100,7 @@ const HistoryManagement = lazy(() => import('@/components/admin/HistoryManagemen
 const CareerTemplate = lazy(() => import('@/components/admin/career/CareerTemplate'));
 const CareerLinkedIn = lazy(() => import('@/components/admin/career/CareerLinkedIn'));
 const GpaConverter = lazy(() => import('@/components/admin/career/GpaConverter'));
+const Brainteasers = lazy(() => import('@/components/admin/career/brainteasers/Brainteasers'));
 const CareerComingSoon = lazy(() => import('@/components/admin/career/CareerComingSoon'));
 
 // =====================================================================
@@ -181,6 +182,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'career-cl': () => import('@/components/admin/career/CareerTemplate'),
   'career-linkedin': () => import('@/components/admin/career/CareerLinkedIn'),
   'career-gpa': () => import('@/components/admin/career/GpaConverter'),
+  'career-brainteasers': () => import('@/components/admin/career/brainteasers/Brainteasers'),
   'career-smart': () => import('@/components/admin/career/CareerComingSoon'),
   'career-gmat': () => import('@/components/admin/career/CareerComingSoon'),
   'career-ib': () => import('@/components/admin/career/CareerComingSoon'),
@@ -1214,6 +1216,8 @@ const MinervaWorkspace = () => {
         return <CareerLinkedIn />;
       case 'career-gpa':
         return <GpaConverter />;
+      case 'career-brainteasers':
+        return <Brainteasers />;
       case 'career-smart':
         return <CareerComingSoon key="smart" which="smart" />;
       case 'career-gmat':

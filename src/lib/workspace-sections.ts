@@ -26,6 +26,7 @@ export const SECTIONS: WorkspaceSectionMap[] = [
   { section: 'Career', items: [
     { key: 'career-smart', label: 'Smart Tracker' }, { key: 'career-cv', label: 'CV template' }, { key: 'career-cl', label: 'Cover letter template' },
     { key: 'career-linkedin', label: 'LinkedIn' }, { key: 'career-gpa', label: 'GPA converter' },
+    { key: 'career-brainteasers', label: 'Brainteasers' },
     { key: 'career-gmat', label: 'GMAT resources' }, { key: 'career-ib', label: 'IB questions' } ] },
   { section: 'Reports', items: [
     { key: 'reports-upload', label: 'Upload report' }, { key: 'reports-archive', label: 'Report archive' },

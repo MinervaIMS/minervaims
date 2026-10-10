@@ -85,6 +85,7 @@ const PLACE: Record<string, { section: string; subsection: string }> = {
   'admin-alumni-calls': { section: 'Events', subsection: 'Alumni calls' },
   'admin-aod': { section: 'Events', subsection: 'Association on Display' },
   'career-files': { section: 'Career', subsection: 'Templates and LinkedIn files' },
+  'career-brainteasers': { section: 'Career', subsection: 'Brainteasers' },
   'membership-certificate': { section: 'General', subsection: 'My profile' },
   'brand-kit': { section: 'Media & Communication', subsection: 'Brand & design' },
   'admin-applications': { section: 'Recruiting', subsection: 'Candidates screening' },
@@ -158,6 +159,11 @@ const MUTATES: Record<string, string> = {
   // The design system package: who took it, and who replaced it.
   'brand-kit:download': 'download',
   'brand-kit:upload-url': 'upload',
+  // Career > Brainteasers: who took the greenbook (each copy carries their
+  // name), and who replaced or removed it. Questions edited are 'save'.
+  'career-brainteasers:greenbook-download': 'download',
+  'career-brainteasers:greenbook-commit': 'upload',
+  'career-brainteasers:greenbook-remove': 'delete',
 };
 
 /** What a write is called in the log, or null when it is a read. */

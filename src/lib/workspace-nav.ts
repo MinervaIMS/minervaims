@@ -88,6 +88,7 @@ export const NAV: NavSection[] = [
       { key: 'career-cl', slug: 'cover-letter-template', label: 'Cover Letter Template', allowed: (p) => p.can('career-cl') },
       { key: 'career-linkedin', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('career-linkedin') },
       { key: 'career-gpa', slug: 'gpa-converter', label: 'GPA Converter', allowed: (p) => p.can('career-gpa') },
+      { key: 'career-brainteasers', slug: 'brainteasers', label: 'Brainteasers', allowed: (p) => p.can('career-brainteasers') },
       { key: 'career-gmat', slug: 'gmat-resources', label: 'GMAT Resources', allowed: (p) => p.can('career-gmat') },
       { key: 'career-ib', slug: 'ib-questions', label: 'IB Questions', allowed: (p) => p.can('career-ib') },
     ],

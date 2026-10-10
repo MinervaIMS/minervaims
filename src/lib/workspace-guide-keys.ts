@@ -35,7 +35,7 @@ export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'smm-editorial', 'smm-social', 'smm-graphics', 'smm-brand', 'smm-ads',
   'ops-fee', 'ops-treasury', 'ops-forms', 'ops-external', 'ops-docs', 'ops-auto-emails', 'ops-newsletter',
   'website-pages', 'website-history', 'website-faqs', 'website-readings', 'website-testimonials',
-  'career-smart', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-gmat', 'career-ib',
+  'career-smart', 'career-cv', 'career-cl', 'career-linkedin', 'career-gpa', 'career-brainteasers', 'career-gmat', 'career-ib',
   'settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates',
   // The applicant's four pages.
   'candidate-my-role', 'applications-status', 'applications-interview',
