@@ -1742,8 +1742,10 @@ export type Database = {
       }
       internal_form_responses: {
         Row: {
+          access_hash: string | null
           amount_due: number | null
           answers: Json
+          client_hash: string | null
           edit_count: number
           form_id: string
           id: string
@@ -1754,14 +1756,17 @@ export type Database = {
           paid: boolean
           paid_at: string | null
           paid_by_name: string | null
+          respondent: string
           staff_note: string | null
           submitted_at: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          access_hash?: string | null
           amount_due?: number | null
           answers?: Json
+          client_hash?: string | null
           edit_count?: number
           form_id: string
           id?: string
@@ -1772,14 +1777,17 @@ export type Database = {
           paid?: boolean
           paid_at?: string | null
           paid_by_name?: string | null
+          respondent?: string
           staff_note?: string | null
           submitted_at?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          access_hash?: string | null
           amount_due?: number | null
           answers?: Json
+          client_hash?: string | null
           edit_count?: number
           form_id?: string
           id?: string
@@ -1790,6 +1798,7 @@ export type Database = {
           paid?: boolean
           paid_at?: string | null
           paid_by_name?: string | null
+          respondent?: string
           staff_note?: string | null
           submitted_at?: string
           updated_at?: string
@@ -1808,6 +1817,7 @@ export type Database = {
       internal_forms: {
         Row: {
           allow_edits: boolean
+          audience: string
           closed_at: string | null
           closes_at: string | null
           confirmation_message: string | null
@@ -1818,6 +1828,8 @@ export type Database = {
           description: string | null
           fields: Json
           id: string
+          item_label: string | null
+          items_max: number
           payment_amount: number | null
           payment_instructions: string | null
           published_at: string | null
@@ -1829,6 +1841,7 @@ export type Database = {
         }
         Insert: {
           allow_edits?: boolean
+          audience?: string
           closed_at?: string | null
           closes_at?: string | null
           confirmation_message?: string | null
@@ -1839,6 +1852,8 @@ export type Database = {
           description?: string | null
           fields?: Json
           id?: string
+          item_label?: string | null
+          items_max?: number
           payment_amount?: number | null
           payment_instructions?: string | null
           published_at?: string | null
@@ -1850,6 +1865,7 @@ export type Database = {
         }
         Update: {
           allow_edits?: boolean
+          audience?: string
           closed_at?: string | null
           closes_at?: string | null
           confirmation_message?: string | null
@@ -1860,6 +1876,8 @@ export type Database = {
           description?: string | null
           fields?: Json
           id?: string
+          item_label?: string | null
+          items_max?: number
           payment_amount?: number | null
           payment_instructions?: string | null
           published_at?: string | null
