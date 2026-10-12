@@ -22,6 +22,12 @@ import { CareerCard } from '../CareerCard';
 // and the date on every page (see _shared/pdf-watermark.ts). Every
 // download is recorded. The President and the admin account replace or
 // remove it and can see who has taken a copy.
+//
+// What the greenbook is, who it is for and why it matters: for a member,
+// at the head of the right-hand card, above where the book meets the
+// types of question; for the President and the admin account, whose
+// right-hand card is the register of downloads, under the download. The
+// download itself stays in view either way.
 // =====================================================================
 
 const MAX_MB = 60;
@@ -36,6 +42,27 @@ const CHAPTERS: { ch: string; title: string; types: string }[] = [
   { ch: '5', title: 'Stochastic Process and Stochastic Calculus', types: 'Probability' },
   { ch: '6', title: 'Finance', types: 'Option Theory, Finance' },
 ];
+
+// What the greenbook is, who it is for, and why it matters.
+const ABOUT: { label: string; text: string }[] = [
+  { label: 'What it is', text: '"A Practical Guide to Quantitative Finance Interviews" by Xinfeng Zhou, known as the greenbook for its cover: interview problems in brain teasers, probability, calculus and linear algebra, stochastic processes and finance, each with a worked solution.' },
+  { label: 'Who it is for', text: 'Anyone preparing for quantitative trading, quantitative research, sales and trading or market making interviews, and anyone whose interviews include brain teasers, probability or option questions.' },
+  { label: 'Why it matters', text: 'It is the standard preparation for these interviews: many questions asked in first rounds are variations of its problems. Working through it teaches the methods, so you can solve a question you have never seen, quickly and out loud.' },
+];
+
+/** What it is, who it is for, why it matters. */
+function About() {
+  return (
+    <dl className="space-y-2.5">
+      {ABOUT.map((a) => (
+        <div key={a.label} className="grid gap-0.5 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-3">
+          <dt className="text-xs font-semibold uppercase tracking-wider text-accent sm:pt-0.5">{a.label}</dt>
+          <dd className="text-sm leading-relaxed text-foreground">{a.text}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export function GreenbookView({ greenbook, canReplace, perDay, onChange }: {
   greenbook: Greenbook | null;
@@ -153,6 +180,8 @@ export function GreenbookView({ greenbook, canReplace, perDay, onChange }: {
           </div>
         )}
 
+        {canReplace && <div className="mt-6 border-t border-separator pt-5"><About /></div>}
+
         {canReplace && (
           <div className="mt-6 border-t border-separator pt-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-accent">Only the President and the admin account</p>
@@ -204,7 +233,9 @@ export function GreenbookView({ greenbook, canReplace, perDay, onChange }: {
           )}
         </CareerCard>
       ) : (
-        <CareerCard title="Read it with the questions" subtitle="Where the book meets the types" scroll className="lg:h-full">
+        <CareerCard title="What the greenbook is" subtitle="Who it is for, and why it matters" scroll className="lg:h-full">
+          <About />
+          <h3 className="mb-1 mt-6 border-b border-separator pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent">Read it with the questions</h3>
           {isTheBook ? (
             <ul className="divide-y divide-separator">
               {CHAPTERS.map((c) => (

@@ -10,13 +10,24 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { CareerCard, Step } from '@/components/admin/career/CareerCard';
 import { CareerPage } from '@/components/admin/career/CareerPage';
 import { DocxPreview } from '@/components/admin/career/DocxPreview';
+import { prefetchDocx } from '@/components/admin/career/docx-cache';
+import { Segmented } from '@/components/admin/career/gpa/shared';
 import { CV_DISCLAIMER, CL_DISCLAIMER } from '@/lib/career/disclaimers';
 import { listCareerFiles, uploadCareerFile, downloadCareerFile, type CareerFile, type CareerFileKind } from '@/lib/career-api';
 
 // =====================================================================
-// Career > CV Template and Career > Cover Letter Template.
+// Career > CV & Cover Letter: the CV template and the cover letter
+// template, one page with a tab each.
 // ---------------------------------------------------------------------
-// One page, two documents. On a computer it fits the screen: on the left
+// They used to be two pages; they are written together, so they are now
+// two tabs (Step 89), each keeping its own permission (`career-cv`,
+// `career-cl`) as Social Templates does. The tab is in the address
+// (`?tab=cv`, `?tab=cover-letter`) and the old addresses open the right
+// tab. Both files are read once, when the page opens, and the other
+// tab's document is fetched quietly in the background, so switching tab
+// shows it at once instead of loading again.
+//
+// Each tab is laid out the same way. On a computer it fits the screen: on the left
 // the file and its download, with the members-only rule, then how to use
 // it and the disclaimer in full, in a card that scrolls on its own; on
 // the right, taking most of the width, the document itself, page by
@@ -30,6 +41,9 @@ import { listCareerFiles, uploadCareerFile, downloadCareerFile, type CareerFile,
 // =====================================================================
 
 type Which = 'cv' | 'cl';
+/** The tab in the address, and the template behind it. */
+const TAB_WHICH: Record<string, Which> = { cv: 'cv', 'cover-letter': 'cl' };
+const KINDS: CareerFileKind[] = ['cv_template', 'cl_template'];
 
 const COPY: Record<Which, {
   resource: string; kind: CareerFileKind; title: string; description: string; noun: string; steps: string[];
@@ -63,36 +77,81 @@ function sizeLabel(bytes: number | null): string {
   return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-export default function CareerTemplate({ which }: { which: Which }) {
+export default function CareerTemplate({ tabs, activeTab, onTab }: {
+  /** The tabs this reader may open, in order. */
+  tabs: { tab: string; resource: string; label: string }[];
+  activeTab: string | null;
+  onTab: (tab: string) => void;
+}) {
+  const { session } = useAuth();
+  const { toast } = useToast();
+  const [files, setFiles] = useState<Partial<Record<CareerFileKind, CareerFile>>>({});
+  const [canManage, setCanManage] = useState<Partial<Record<CareerFileKind, boolean>>>({});
+  const [loading, setLoading] = useState(true);
+  const which: Which = TAB_WHICH[activeTab ?? ''] ?? TAB_WHICH[tabs[0]?.tab ?? ''] ?? 'cv';
+  const c = COPY[which];
+
+  // Both templates at once: the first load shows the page loader; a
+  // refresh after an upload keeps the page on screen and only swaps the file.
+  const load = async (first = false) => {
+    if (first) setLoading(true);
+    try {
+      const res = await listCareerFiles(session, KINDS);
+      setFiles(Object.fromEntries(res.files.filter((f) => KINDS.includes(f.kind)).map((f) => [f.kind, f])));
+      setCanManage(res.can_manage);
+    } catch (e) {
+      toast({ title: 'Could not load the templates', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+    } finally { if (first) setLoading(false); }
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(true); }, []);
+
+  // The other tab's document, fetched quietly so it shows at once.
+  useEffect(() => {
+    if (loading) return;
+    const other = files[which === 'cv' ? 'cl_template' : 'cv_template'];
+    if (!other?.view_url) return;
+    const t = window.setTimeout(() => prefetchDocx(other.view_url!), 800);
+    return () => window.clearTimeout(t);
+  }, [loading, files, which]);
+
+  return (
+    <CareerPage
+      title="CV & Cover Letter"
+      description="A one-page CV recruiters read at a glance, and a cover letter that makes a specific case to one firm: two templates, each with the guide written into it."
+      toolbar={tabs.length > 1 ? (
+        <Segmented<string>
+          value={activeTab ?? tabs[0].tab} onChange={onTab} label="Template" nowrap className="w-full sm:w-auto sm:inline-flex"
+          options={tabs.map((t) => ({ value: t.tab, label: t.label === 'CV' ? 'CV template' : 'Cover letter template' }))}
+        />
+      ) : undefined}
+    >
+      {loading ? <WorkspaceLoader /> : (
+        <TemplateTab key={which} which={which} file={files[c.kind] ?? null} serverCanManage={!!canManage[c.kind]} onReplaced={() => load()} />
+      )}
+    </CareerPage>
+  );
+}
+
+/** One template: the file, how to use it, the disclaimer, and the document itself. */
+function TemplateTab({ which, file, serverCanManage, onReplaced }: {
+  which: Which;
+  file: CareerFile | null;
+  serverCanManage: boolean;
+  onReplaced: () => Promise<void>;
+}) {
   const c = COPY[which];
   const disclaimer = which === 'cv' ? CV_DISCLAIMER : CL_DISCLAIMER;
   const { session } = useAuth();
   const { toast } = useToast();
   const access = useAccess();
-  const [file, setFile] = useState<CareerFile | null>(null);
-  const [canManage, setCanManage] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [zoom, setZoom] = useState<'fit' | 'actual'>('fit');
   const [fitScale, setFitScale] = useState<number | null>(null);
   const [fullView, setFullView] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // The first load shows the page loader; a refresh after an upload keeps
-  // the page on screen and only swaps the file.
-  const load = async (first = false) => {
-    if (first) setLoading(true);
-    try {
-      const res = await listCareerFiles(session, [c.kind]);
-      setFile(res.files.find((f) => f.kind === c.kind) ?? null);
-      setCanManage(!!res.can_manage[c.kind]);
-    } catch (e) {
-      toast({ title: 'Could not load the template', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
-    } finally { if (first) setLoading(false); }
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(true); }, [which]);
+  const canManage = serverCanManage;
 
   // The server decides; the page also respects the phone's read-only cap.
   const mayReplace = canManage && access.canManage(c.resource);
@@ -107,7 +166,7 @@ export default function CareerTemplate({ which }: { which: Which }) {
     try {
       await uploadCareerFile(session, c.kind, f);
       toast({ title: 'Template replaced', description: `Members now download ${f.name}.` });
-      await load();
+      await onReplaced();
     } catch (e) {
       toast({ title: 'Could not replace the template', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
     } finally {
@@ -129,17 +188,16 @@ export default function CareerTemplate({ which }: { which: Which }) {
   const updated = file ? new Date(file.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
   return (
-    <CareerPage title={c.title} description={c.description}>
-      {loading ? <WorkspaceLoader /> : (
-        // The left column has a fixed width on a computer, so every pixel
-        // the window gains goes to the document.
+    <>
+        {/* The left column has a fixed width on a computer, so every pixel
+            the window gains goes to the document. */}
         <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch">
           {/* ---- Left: the file, the rule, how to use it, the disclaimer ---- */}
           <div className="min-w-0 flex flex-col gap-4 lg:w-[18rem] lg:shrink-0 2xl:w-[21rem] lg:min-h-0">
             <CareerCard
               title={file ? file.file_name : `The ${c.noun}`}
               subtitle={file ? [sizeLabel(file.size_bytes), `Updated ${updated}`].filter(Boolean).join(' · ') : 'Not uploaded yet'}
-              action={<HelpDot page={c.resource} topic="use" />}
+              action={<HelpDot page="career-templates" topic={which === 'cv' ? 'use' : 'use-cl'} />}
               className="shrink-0"
             >
               {file ? (
@@ -232,7 +290,6 @@ export default function CareerTemplate({ which }: { which: Which }) {
             </div>
           </section>
         </div>
-      )}
 
       {/* The document large: nearly the whole window, the page at least at
           its real width wherever the screen allows. */}
@@ -249,6 +306,6 @@ export default function CareerTemplate({ which }: { which: Which }) {
           </DialogContent>
         </Dialog>
       )}
-    </CareerPage>
+    </>
   );
 }

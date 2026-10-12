@@ -174,7 +174,7 @@ export const MATRIX: Record<string, Grants> = {
     'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view',
   },
   // Exactly the Media & Communication Analyst's access, plus the whole of
-  // Operations > Internal Forms, which the Operations Analyst runs.
+  // Operations > Forms, which the Operations Analyst runs.
   operations_analyst: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
     'events-on-display': 'view', 'events-mine': 'view',
@@ -210,7 +210,7 @@ export const MATRIX: Record<string, Grants> = {
 // ROLE that carries it: a president who is also listed as an advisor keeps
 // what the presidency gives.
 const DENY: Record<string, string[]> = {
-  // Internal Forms holds members' answers, files and payments: it is run by
+  // Forms holds members' and guests' answers, files and payments: it is run by
   // the President, the Vice President and Operations, and an advisor's
   // read-everything grant does not reach it.
   advisor: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'ops-forms'],
@@ -234,9 +234,11 @@ export function normalizeRole(role: string): string {
 /** The effective level a set of stored roles has on a resource. */
 // Pages made of other subsections: the same table as COMBINED_RESOURCES in
 // src/lib/access/matrix.ts. Social Templates opens at the highest level its
-// three tabs give; each tab's own row still decides that tab.
+// three tabs give, and CV & Cover Letter at the higher of its two; each
+// tab's own row still decides that tab.
 const COMBINED: Record<string, string[]> = {
   'smm-social': ['smm-ig', 'smm-li', 'smm-other'],
+  'career-templates': ['career-cv', 'career-cl'],
 };
 
 export function resolveLevel(roles: string[], resource: string): Level {

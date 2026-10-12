@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
-import { buildMemberIndex, matchRegistration, type MemberLike } from '../_shared/member-match.ts';
+import { buildMemberIndex, matchRegistration, normaliseEmail, normaliseName, type MemberLike } from '../_shared/member-match.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { attendanceOpen, attendanceClosesOn } from '../_shared/attendance-window.ts';
 import { allows } from '../_shared/access.ts';
@@ -10,6 +10,7 @@ import { tokenFromScan } from '../_shared/checkin.ts';
 // admin-event-reg — staff management of event registrations & attendance.
 // Actions: list · mark-attended · add-external · members · add-member · remove · checkin · door-status
 //          member-attendance (Members) · my-events (Events > My events)
+//          import-preview · import-attendance (an online event's meeting report)
 //
 // `checkin` is the door scanner: the QR code of a registration's ticket
 // (see _shared/checkin.ts) ticks that person as present. It needs full
@@ -460,6 +461,210 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       });
       if (error) throw error;
       return json({ success: true, already_listed: false, name: fullName });
+    }
+    // =====================================================================
+    // AN ONLINE EVENT'S ATTENDANCE, FROM THE MEETING'S REPORT.
+    // ---------------------------------------------------------------------
+    // The page reads the attendance report Teams gives the organiser (see
+    // src/lib/attendance-report.ts) and sends the people in it, name and
+    // email. Nothing it says about who they are is trusted: each person is
+    // recognised HERE, against the register of members, the way the door
+    // list does it (email first, then a name that matches exactly one
+    // member; two members with the same name is no match).
+    //
+    //   import-preview     who each person is and whether they are on the
+    //                      list already. Changes nothing.
+    //   import-attendance  the people the organiser kept ticked, marked as
+    //                      present: a row already on the list is ticked; a
+    //                      member who is not is added as a member (with
+    //                      their account and address), anybody else as a
+    //                      guest. Guests are NOT added to the newsletter,
+    //                      unlike a walk-in typed at the door: they never
+    //                      asked to be. Running it twice changes nothing
+    //                      the second time.
+    //
+    // Online events only, full access to Attendance only, and inside the
+    // two weeks the list stays open, as every other change to it.
+    // =====================================================================
+    if (action === 'import-preview' || action === 'import-attendance') {
+      if (!allows(roles, user.email, 'events-attendance', 'manage')) {
+        return json({ error: 'Only people with full access to Attendance can record attendance from a report.' }, 403);
+      }
+      const eventId = optionalTextOf(body, 'event_id');
+      if (!eventId) return json({ error: 'Choose the event first.' }, 400);
+      const { data: ev } = await supabase.from('events').select('id, title, date, online').eq('id', eventId).maybeSingle();
+      if (!ev) return json({ error: 'This event no longer exists. Reload the page.' }, 404);
+      if (!ev.online) return json({ error: 'A meeting report records attendance for online events. For an event in person, scan the tickets or tick the list.' }, 400);
+      const closed = await closedError(eventId);
+      if (closed) return json({ error: closed }, 403);
+
+      // The people sent, cleaned and counted once each.
+      const EMAIL = /^[^\s@,;<>()"]+@[^\s@,;<>()"]+\.[a-z]{2,}$/i;
+      const raw = Array.isArray(body.people) ? body.people : [];
+      if (raw.length === 0) return json({ error: 'The report has nobody in it.' }, 400);
+      if (raw.length > 1000) return json({ error: 'A report can hold at most 1,000 people.' }, 400);
+      // `i`: the person's place in what was sent, so the page can put each
+      // answer against the right line of its file.
+      type Person = { name: string; email: string | null; i: number };
+      const people: Person[] = [];
+      const seen = new Set<string>();
+      for (const [i, p] of (raw as unknown[]).entries()) {
+        if (!p || typeof p !== 'object') continue;
+        const o = p as Record<string, unknown>;
+        const name = typeof o.name === 'string' ? o.name.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+        const e = normaliseEmail(typeof o.email === 'string' ? o.email : '');
+        const email = e && e.length <= 254 && EMAIL.test(e) ? e : null;
+        if (!name && !email) continue;
+        const key = email ? `e:${email}` : `n:${normaliseName(name)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        people.push({ name: name || email!, email, i });
+      }
+      if (people.length === 0) return json({ error: 'The report has nobody in it.' }, 400);
+
+      // The register, with the address of each member's account as well as
+      // the one on their record, since either may be the one Teams shows.
+      const { data: memberRows, error: mErr } = await supabase.from('members')
+        .select('id, user_id, first_name, surname, email, division, membership_status');
+      if (mErr) throw mErr;
+      const members = ((memberRows || []) as MemberLike[]).filter((m) => m.membership_status !== 'expelled');
+      const index = buildMemberIndex(members);
+      const accountEmail = new Map<string, string>(); // member id -> account address
+      const userIds = members.map((m) => m.user_id).filter(Boolean) as string[];
+      for (let i = 0; i < userIds.length; i += 200) {
+        const { data: profs } = await supabase.from('profiles').select('id, email').in('id', userIds.slice(i, i + 200));
+        for (const pr of (profs || []) as { id: string; email: string | null }[]) {
+          const e = normaliseEmail(pr.email);
+          const m = index.byUserId.get(pr.id);
+          if (!e || !m) continue;
+          accountEmail.set(m.id, e);
+          if (!index.byEmail.has(e)) index.byEmail.set(e, m);
+        }
+      }
+
+      const { data: regRows, error: rErr } = await supabase.from('event_registrations')
+        .select('id, user_id, name, email, attended').eq('event_id', eventId);
+      if (rErr) throw rErr;
+      type Reg = { id: string; user_id: string | null; name: string | null; email: string | null; attended: boolean | null };
+      const regs = (regRows || []) as Reg[];
+      const regByEmail = new Map<string, Reg>();
+      const regsByName = new Map<string, Reg[]>();
+      for (const r of regs) {
+        const e = normaliseEmail(r.email);
+        if (e && !regByEmail.has(e)) regByEmail.set(e, r);
+        const n = normaliseName(r.name);
+        if (n) regsByName.set(n, [...(regsByName.get(n) || []), r]);
+      }
+      /** The one row a name points at, if exactly one does. */
+      const oneByName = (n: string, emailOk: (r: Reg) => boolean) => {
+        const hits = (regsByName.get(n) || []).filter(emailOk);
+        return hits.length === 1 ? hits[0] : null;
+      };
+
+      type Seen = {
+        i: number; name: string; email: string | null; kind: 'member' | 'guest'; how: 'email' | 'name' | null;
+        member: MemberLike | null; ambiguous: boolean; reg: Reg | null;
+      };
+      const recognise = (p: Person): Seen => {
+        let member: MemberLike | null = null;
+        let how: Seen['how'] = null;
+        let ambiguous = false;
+        if (p.email) { member = index.byEmail.get(p.email) ?? null; if (member) how = 'email'; }
+        if (!member) {
+          const hits = index.byName.get(normaliseName(p.name)) || [];
+          if (hits.length === 1) { member = hits[0]; how = 'name'; }
+          else if (hits.length > 1) ambiguous = true;
+        }
+        let reg: Reg | null = null;
+        if (member) {
+          const addresses = [normaliseEmail(member.email), accountEmail.get(member.id) ?? '', p.email ?? ''].filter(Boolean);
+          reg = regs.find((r) => (member!.user_id && r.user_id === member!.user_id)) ?? null;
+          for (const a of addresses) if (!reg) reg = regByEmail.get(a) ?? null;
+          if (!reg) reg = oneByName(normaliseName(`${member.first_name} ${member.surname}`), (r) => !r.email || addresses.includes(normaliseEmail(r.email)));
+          if (!reg) reg = oneByName(normaliseName(p.name), (r) => !r.email || addresses.includes(normaliseEmail(r.email)));
+        } else {
+          if (p.email) reg = regByEmail.get(p.email) ?? null;
+          // By name only where the addresses cannot disagree.
+          if (!reg) reg = oneByName(normaliseName(p.name), (r) => !r.email || !p.email || normaliseEmail(r.email) === p.email);
+        }
+        return { i: p.i, name: p.name, email: p.email, kind: member ? 'member' : 'guest', how, member, ambiguous, reg };
+      };
+      const found = people.map(recognise);
+
+      if (action === 'import-preview') {
+        return json({
+          event: { id: ev.id, title: ev.title, date: ev.date },
+          people: found.map((f) => ({
+            i: f.i, name: f.name, email: f.email, kind: f.kind, how: f.how, ambiguous: f.ambiguous,
+            member_name: f.member ? `${f.member.first_name} ${f.member.surname}`.trim() : null,
+            member_division: f.member?.division ?? null,
+            on_list: !!f.reg, already_present: !!f.reg?.attended,
+          })),
+        });
+      }
+
+      // Record them. Rows on the list are ticked together; the others are
+      // added together; a clash on an address (somebody registered while
+      // this ran) is settled row by row, by ticking the row that is there.
+      const tick = new Set<string>();
+      let already = 0;
+      const inserts: Record<string, unknown>[] = [];
+      for (const f of found) {
+        if (f.reg) {
+          if (f.reg.attended) already++; else tick.add(f.reg.id);
+          continue;
+        }
+        if (f.member) {
+          const email = normaliseEmail(f.member.email) || accountEmail.get(f.member.id) || f.email;
+          inserts.push({
+            event_id: eventId, user_id: f.member.user_id || null, name: `${f.member.first_name || ''} ${f.member.surname || ''}`.trim() || f.name,
+            email: email || null, is_member: true, is_external: false, attended: true, added_by: user.id,
+          });
+        } else {
+          inserts.push({
+            event_id: eventId, user_id: null, name: f.name, email: f.email,
+            is_member: false, is_external: true, attended: true, added_by: user.id,
+          });
+        }
+      }
+      // Two report rows can lead to the same new row (a member found by
+      // name and by address): one insert each address.
+      const byAddress = new Map<string, Record<string, unknown>>();
+      const unique: Record<string, unknown>[] = [];
+      for (const row of inserts) {
+        const e = normaliseEmail(row.email as string | null);
+        if (e) { if (byAddress.has(e)) continue; byAddress.set(e, row); }
+        unique.push(row);
+      }
+      if (tick.size) {
+        const ids = [...tick];
+        for (let i = 0; i < ids.length; i += 200) {
+          const { error } = await supabase.from('event_registrations').update({ attended: true }).in('id', ids.slice(i, i + 200));
+          if (error) throw error;
+        }
+      }
+      let addedMembers = 0;
+      let addedGuests = 0;
+      const count = (row: Record<string, unknown>) => { if (row.is_member) addedMembers++; else addedGuests++; };
+      if (unique.length) {
+        const { error } = await supabase.from('event_registrations').insert(unique);
+        if (!error) unique.forEach(count);
+        else if ((error as { code?: string }).code === '23505') {
+          for (const row of unique) {
+            const { error: one } = await supabase.from('event_registrations').insert(row);
+            if (!one) { count(row); continue; }
+            if ((one as { code?: string }).code !== '23505' || !row.email) throw one;
+            const { data: there } = await supabase.from('event_registrations').select('id, attended')
+              .eq('event_id', eventId).ilike('email', String(row.email).replace(/[\\%_]/g, (c) => `\\${c}`)).maybeSingle();
+            if (there && !there.attended) {
+              await supabase.from('event_registrations').update({ attended: true }).eq('id', there.id);
+              tick.add(there.id);
+            } else already++;
+          }
+        } else throw error;
+      }
+      audit.subject(`${ev.title || 'Online event'}: ${found.length} from the meeting report`, ev.id);
+      return json({ success: true, ticked: tick.size, added_members: addedMembers, added_guests: addedGuests, already, total: found.length });
     }
     if (action === 'remove') {
       const closed = await closedError(await eventOfRegistration(body.id));

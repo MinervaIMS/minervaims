@@ -27,7 +27,7 @@ import { useMyForms } from '@/components/admin/dashboard/useMyForms';
 //   greeting, centred
 //   Reports | Readings | Members | Alumni Network
 //   research by division (40%)  |  current update (60%)
-//     (an internal form waiting for the member's answer takes the
+//     (a form waiting for the member's answer takes the
 //      research card's place first, as a stack when there are several;
 //      then a new member sees "Getting started" there until the
 //      checklist is done or hidden)

@@ -1,7 +1,11 @@
 // =====================================================================
-// Internal forms: the calls to the `internal-forms` edge function.
+// Forms: the calls to the `internal-forms` edge function.
 // Every read and write goes through it; the tables are closed to the
 // browser. See supabase/functions/internal-forms/index.ts.
+//
+// A form is answered by members from their account, by guests from its
+// link (name and email, no account), or by both (`audience`). A guest's
+// answer is reopened only with the private token in their receipt.
 // =====================================================================
 
 import type { Session } from '@supabase/supabase-js';
@@ -9,6 +13,8 @@ import { invokeFunction, callFunction } from '@/lib/errors';
 import type { Answers, FileAnswer, FormField } from '@/lib/internal-forms-rules';
 
 export type FormStatus = 'draft' | 'open' | 'closed';
+/** Who answers: members (signed in), guests (by link) or both. */
+export type FormAudience = 'internal' | 'external' | 'both';
 
 export interface InternalForm {
   id: string;
@@ -24,6 +30,11 @@ export interface InternalForm {
   confirmation_message: string | null;
   /** The cover picture, a stored path. */
   cover_path: string | null;
+  audience: FormAudience;
+  /** How many items one answer can hold ("Want another one?"): 1 to 5. */
+  items_max: number;
+  /** What one item is called, e.g. "Hoodie". */
+  item_label: string | null;
   created_by_name: string | null;
   updated_by_name: string | null;
   published_at: string | null;
@@ -42,7 +53,10 @@ export type ImageUrls = Record<string, string>;
 export interface FormResponse {
   id: string;
   form_id: string;
-  user_id: string;
+  /** Empty for a guest. */
+  user_id: string | null;
+  /** 'guest' for someone outside the Society who answered from the link. */
+  respondent?: 'member' | 'guest';
   member_name: string | null;
   member_email: string | null;
   member_role: string | null;
@@ -73,6 +87,9 @@ export interface MemberForm {
   confirmation_message: string | null;
   cover_path: string | null;
   state: 'draft' | 'open' | 'closed';
+  audience?: FormAudience;
+  items_max?: number;
+  item_label?: string | null;
 }
 
 export interface MyFormSummary {
@@ -115,8 +132,33 @@ export const signFormFiles = (s: Session | null, paths: string[]) =>
 // ── Members ─────────────────────────────────────────────────────────
 export const myForms = (s: Session | null) => call<{ forms: MyFormSummary[] }>(s, { action: 'my-forms' }).then((r) => r.forms);
 export interface MyResponse { answers: Answers; submitted_at: string; updated_at: string; paid: boolean; amount_due?: number | null }
+export type FillGet = { form: MemberForm; me: { name: string; email: string; can_answer: boolean }; response: MyResponse | null; files: Record<string, string>; images?: ImageUrls };
+/** The form for a signed-in member, or `{ guest: true }` when it is answered from its link. */
 export const fillGet = (s: Session | null, id: string) =>
-  call<{ form: MemberForm; me: { name: string; email: string; can_answer: boolean }; response: MyResponse | null; files: Record<string, string>; images?: ImageUrls }>(s, { action: 'fill-get', id });
+  call<FillGet | { guest: true }>(s, { action: 'fill-get', id });
+
+// ── Guests ──────────────────────────────────────────────────────────
+export interface GuestResponse extends MyResponse { name: string | null; email: string | null }
+export type GuestGet =
+  | { form: MemberForm; response: GuestResponse | null; images?: ImageUrls }
+  | { members_only: true; title: string };
+/** A form open to guests, and the guest's own answer when the private token is given. No account needed. */
+export const guestGet = (id: string, token?: string | null) =>
+  call<GuestGet>(null, { action: 'guest-get', id, ...(token ? { token } : {}) });
+/** Send or change a guest's answer. A first answer returns the private token its receipt also carries. */
+export async function guestSubmit(id: string, input: { name: string; email: string; answers: Answers; website?: string; token?: string | null }): Promise<
+  { ok: true; emailed: boolean; token: string | null; response: GuestResponse } | { ok: false; error: string; errors?: Record<string, string> }
+> {
+  try {
+    const data = await call<{ success?: boolean; emailed?: boolean; token?: string | null; invalid?: boolean; message?: string; errors?: Record<string, string>; response?: GuestResponse | null }>(
+      null, { action: 'guest-submit', id, name: input.name, email: input.email, answers: input.answers, website: input.website ?? '', ...(input.token ? { token: input.token } : {}) });
+    if (data.invalid) return { ok: false, error: data.message || 'Some answers need attention.', errors: data.errors };
+    if (data.success && data.response) return { ok: true, emailed: !!data.emailed, token: data.token ?? null, response: data.response };
+    return { ok: false, error: 'Your answers could not be sent. Please try again.' };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Your answers could not be sent. Please try again.' };
+  }
+}
 
 /** Send answers. Field errors come back as `errors`, keyed by question. */
 export async function submitAnswers(s: Session | null, id: string, answers: Answers): Promise<

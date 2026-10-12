@@ -128,13 +128,15 @@ export const HOW_IT_WORKS: ManualConcept[] = [
   },
   {
     id: 'internal-forms',
-    title: 'How internal forms work',
+    title: 'How forms work',
     body: [
-      'An internal form collects something from the Society\'s active members: an order, a sign-up, interest in a company visit. It is built in Operations, Internal Forms by the President, the Vice President, the Head of Operations or the Operations Analyst, from a blank page or from a starter, with any of twelve kinds of question, photos and documents included. A cover picture, pictures between questions and a picture on each choice show members what they are ordering.',
+      'A form collects something from the Society\'s active members, from guests outside the Society, or from both: an order, a sign-up, interest in a company visit. It is built in Operations, Forms by the President, the Vice President, the Head of Operations or the Operations Analyst, from a blank page or from a starter, with any of twelve kinds of question, photos and documents included. A cover picture, pictures between questions and a picture on each choice show people what they are ordering.',
+      'Who can answer is set on each form. Members only: active members answer from their account. Guests only: anyone with the link answers with their full name and email, no account needed; the form is not listed anywhere on the site. Members and guests: both. A guest answers once per email address and receives a receipt with a private link, the only way back to their answer; guests never see questions that ask for a file, and a hidden check with a limit per connection keeps automated spam out. Guests\' details are used only for the form and its receipt.',
+      'A form can let one answer hold more than one item, up to five: under the questions, "Want another one?" asks the questions again for a second hoodie, a third, each with its own answers. The organisers choose which questions are asked again for each item (all but agreements, to start with). A fixed amount counts for each item, and priced choices for each item that picks them.',
       'A choice question can ask how many of each, by size if sizes are listed, and each choice can carry a price: the member sees the total as they answer, and their answer keeps what it came to. Any question can be shown only for some answers to a question above it; while hidden it is never required.',
-      'A form is a draft until it is opened, and only organisers can see a draft. Once open, every active member who has not answered finds it on their Dashboard, in the place of Research by division (several forms make a stack to swipe through), and its link opens it after signing in. A deadline closes it by itself; the organisers can close and reopen it at any time. Candidates, pending accounts, alumni, advisors and members on temporary leave cannot answer.',
-      'Each member answers once and receives a receipt email with a copy of their answers. If the form allows it, they can change their answers while it is open. Where the form collects a payment, members see the amount and how to pay, and organisers tick each payment as it arrives; the Treasury is not changed by those ticks.',
-      'The answers are read in a summary that counts every choice and totals every number, or in a table with search, a payment filter and a choice of columns, and are exported as Excel or CSV with exactly the answers and columns chosen, the attached files alongside as a ZIP. Answers and files are kept until the form is deleted.',
+      'A form is a draft until it is opened, and only organisers can see a draft. Once open, every active member who has not answered a form for members finds it on their Dashboard, in the place of Research by division (several forms make a stack to swipe through), and its link opens it after signing in; a form for guests opens from its link straight away. A deadline closes it by itself; the organisers can close and reopen it at any time. Of the Society\'s accounts, active members and advisors can answer a form for members; candidates, pending accounts, alumni and members on temporary leave cannot.',
+      'Each person answers once and receives a receipt email with a copy of their answers. If the form allows it, they can change their answers while it is open. Where the form collects a payment, people see the amount and how to pay, and organisers tick each payment as it arrives; the Treasury is not changed by those ticks.',
+      'The answers are read in a summary that counts every choice (every item of every answer) and totals every number, or in a table with search, a payment filter and a choice of columns, where an answer with several items lists each one on its own numbered line. They are exported as Excel or CSV with exactly the answers and columns chosen, one row per answer or one row per item, the attached files alongside as a ZIP. Answers and files are kept until the form is deleted.',
     ],
     requires: 'ops-forms',
   },
@@ -242,11 +244,25 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'career-cv',
     level: 'view',
     steps: [
-      'Open Career, CV Template and read the template in the preview on the right.',
+      'Open Career, CV & Cover Letter, on the CV tab, and read the template in the preview on the right.',
       'Press Download the CV template and open the .docx in Word, Pages or Google Docs.',
       'Follow the guidance in the document, remove every bracket, keep the GDPR line in the footer, and export a one-page PDF named Name_Surname_CV.pdf.',
+      'For the cover letter, switch to the Cover letter tab on the same page and do the same with its template.',
     ],
-    caution: 'The template is for Minerva members only: do not forward it or publish it.',
+    caution: 'The templates are for Minerva members only: do not forward them or publish them.',
+  },
+  {
+    id: 'teams-attendance',
+    title: 'Record an online event\'s attendance from Teams',
+    requires: 'events-attendance',
+    level: 'manage',
+    steps: [
+      'After the call, the organiser of the Teams meeting opens it in the Teams Calendar (or its chat), goes to Attendance and presses Download: a .csv file is saved.',
+      'In Events, Attendance, choose the online event and press Attendance from Teams. Choose the file, or drop it on the box.',
+      'Check the list: members recognised by email are certain, by name in amber are worth a glance; guests are everyone else. Untick anybody who should not count, or choose a shortest stay in Count.',
+      'Press Record. Members on the list are ticked, the others added; guests are added without being put on the newsletter.',
+    ],
+    caution: 'Only for online events, and only while the list is open (two weeks after the event). If the page says the report is for another day, check you chose the right event.',
   },
   {
     id: 'career-about',
@@ -291,7 +307,7 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'career-linkedin',
     level: 'manage',
     steps: [
-      'From a computer, open the Career page concerned: CV Template, Cover Letter Template or LinkedIn.',
+      'From a computer, open the Career page concerned: CV & Cover Letter (on the tab of the template to change) or LinkedIn.',
       'For a template, use the Replace panel at the foot of the left column. For the portrait background or the wallpapers, press Manage on the card: upload a new background, or add, rename and remove wallpapers.',
       'The change reaches every member at once. Check the preview afterwards.',
     ],
@@ -500,33 +516,33 @@ export const COMMON_TASKS: ManualTask[] = [
   },
   {
     id: 'run-form',
-    title: 'Run an internal form',
+    title: 'Run a form',
     requires: 'ops-forms',
     level: 'manage',
     steps: [
-      'Open Operations, Internal Forms and press New form. Start from a blank form or from a starter such as a merchandise order.',
-      'In Questions, add a cover picture, give the form its title and introduction and write the questions; the column on the right shows what members will see. For an order, turn on Ask how many of each, list the sizes and add a picture and a price to each choice. Press Save.',
-      'In Settings, set the deadline, whether members can change their answers, the payment (amount and how to pay) and the message they read after sending.',
-      'Still in Settings, Send me a test receipt emails you the receipt the form sends, with sample answers, so you can read it as a member will.',
-      'Press Preview to see the form as a member, then Open the form. Copy link to share it; members also find it on their Dashboard.',
-      'In Answers, read the summary, tick payments in the table as they arrive, and press Export for exactly the answers and columns needed.',
+      'Open Operations, Forms and press New form. Start from a blank form or from a starter such as a merchandise order.',
+      'In Questions, add a cover picture, give the form its title and introduction and write the questions; the column on the right shows what people will see. For an order, turn on Ask how many of each, list the sizes and add a picture and a price to each choice. Press Save.',
+      'In Settings, choose who can answer (members, guests from the link, or both), the deadline, whether people can change their answers, whether one answer can hold more than one item (and what one is called), the payment (amount and how to pay) and the message they read after sending. With more than one item, go back to Questions and check Ask again for each extra item on each card.',
+      'Still in Settings, Send me a test receipt emails you the receipt the form sends, with sample answers, so you can read it as people will.',
+      'Press Preview to see the form as people will, then Open the form. Copy link to share it; members also find a form for members on their Dashboard, and guests answer from the link.',
+      'In Answers, read the summary, tick payments in the table as they arrive, and press Export for exactly the answers and columns needed (with several items per answer, One row per item gives the supplier\'s list).',
       'Close the form when it is done, and delete it once its purpose is over: its answers and files go with it.',
     ],
-    caution: 'Opening a form puts it on every active member\'s Dashboard at once. Deleting a form deletes its answers for good, so export them first.',
+    caution: 'Opening a form for members puts it on every active member\'s Dashboard at once; a form for guests can be answered by anyone with the link. Deleting a form deletes its answers for good, so export them first.',
   },
   {
     id: 'answer-form',
-    title: 'Answer an internal form',
+    title: 'Answer a form',
     requires: 'dashboard',
     level: 'view',
     steps: [
       'On the Dashboard, the card in the place of Research by division, beside the latest update, shows the form waiting for you: press Answer. With several forms, swipe or scroll the card, or press its dots, to see the others. A link shared by the organisers opens the same page.',
       'For an order, tick each item you want, then set how many of each size; the total updates as you go.',
-      'Answer the questions; those marked Required must be answered. Files upload as soon as they are chosen.',
+      'Answer the questions; those marked Required must be answered. Files upload as soon as they are chosen. If the form offers Want another one?, press it to add a second item (a second hoodie) with its own answers; Remove takes it out again.',
       'Press Send my answers. A receipt with a copy of your answers reaches your inbox.',
       'To change your answers while the form is open, press Open the form in your receipt email, then Change my answers, if the form allows it.',
     ],
-    caution: 'Internal forms are for active members and advisors: candidates, alumni and members on temporary leave do not receive them.',
+    caution: 'Forms for members are for active members and advisors: candidates, alumni and members on temporary leave do not receive them. A form for guests is answered from its link, with a name and an email.',
   },
   {
     id: 'record-money',
@@ -632,9 +648,9 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
   media_analyst:
     'A Media Analyst produces the material: the Instagram, LinkedIn, graphics and other libraries are theirs to manage, and so is the editorial calendar, the plan they work to every week. The brand system and the advertising register are read rather than edited, because the identity and the budget belong to the Head. At events, a Media Analyst can take attendance and scan tickets at the door alongside Operations, and the member register and alumni directory are readable for features and communications.',
   operations_analyst:
-    'An Operations Analyst runs the association\'s internal forms, from the hoodie order to the interest list for a company visit: building each form, setting its deadline, following the answers and the payments, and exporting what is needed. Beyond that, the access is the Media Analyst\'s: the Social Templates, graphics and editorial calendar, attendance and ticket scanning at events, and the member register and alumni directory, readable.',
+    'An Operations Analyst runs the association\'s forms, from the hoodie order to the interest list for a company visit: building each form, setting its deadline, following the answers and the payments, and exporting what is needed. Beyond that, the access is the Media Analyst\'s: the Social Templates, graphics and editorial calendar, attendance and ticket scanning at events, and the member register and alumni directory, readable.',
   head_of_operations:
-    'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the internal forms, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ. Invitations to advisors and alumni are sent by the President and the Vice President.',
+    'The Head of Operations runs the association\'s machinery: the calendar, the events, the member register, the fee collection, the Treasury, the forms, the external relationships and the documents. Several parts of the public website are managed here as well, including the testimonials, the Society timeline and the admissions FAQ. Invitations to advisors and alumni are sent by the President and the Vice President.',
   advisor:
     'An Advisor is an alumnus appointed to advise the association. Every section and every subsection is open, read-only, because advice given without sight of the work is not worth much. Two things are deliberately different: Settings is closed entirely, since an outside adviser has no business in the association\'s access control or its audit trail, and the advisor\'s own profile is theirs to edit. Advisors are outside the membership fee in every respect.',
   alumni:
@@ -671,12 +687,15 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Withdrawn certificate', definition: 'A certificate of membership the President or the Vice President has withdrawn, with a reason, in Settings, Certificates. Its number reads as no longer valid at minervaims.org/verify until it is restored.', requires: 'settings-certificates' },
   { term: 'Certificate number', definition: 'The number printed on a certificate of membership, such as MIMS-26F-7K3Q-9D2X: the Society, the semester (26F is Fall 2026) and eight random characters. It is what minervaims.org/verify checks.' },
   { term: 'Getting started', definition: 'The five-step checklist a member starting out sees on the Dashboard in the place of Research by division, until the steps are done or the card is hidden.' },
+  { term: 'Attendance report', definition: 'The .csv file Microsoft Teams gives the organiser of a meeting, listing who joined and for how long. In Events, Attendance it records who attended an online event.', requires: 'events-attendance' },
   { term: 'Thank-you to guests', definition: 'The email the President sends, the morning after an event, to the guests marked as attended who are not members.', requires: 'events-attendance' },
-  { term: 'Internal form', definition: 'A form for the Society\'s active members, built in Operations, Internal Forms: an order, a sign-up, interest in a visit. Open forms waiting for a member\'s answer appear on their Dashboard.' },
+  { term: 'Form', definition: 'A form for the Society\'s active members, for guests or for both, built in Operations, Forms: an order, a sign-up, interest in a visit. Open forms for members waiting for a member\'s answer appear on their Dashboard.' },
+  { term: 'Guest (forms)', definition: 'Someone outside the Society who answers a form from its link with their name and email. Their receipt carries a private link back to their answer.', requires: 'ops-forms' },
+  { term: 'Want another one?', definition: 'The button under a form\'s questions that adds a second item to the same answer (a second hoodie), with the questions asked again, up to the form\'s limit of at most five.' },
   { term: 'Order question', definition: 'A choice question that asks how many of each choice, by size when sizes are listed, with a price per choice if the form collects a payment.', requires: 'ops-forms' },
-  { term: 'Show-if rule', definition: 'A question, heading or picture of an internal form shown only when a question above it has one of the chosen answers.', requires: 'ops-forms' },
-  { term: 'Starter', definition: 'A ready-made form to begin from in Internal Forms, such as a merchandise order with a payment; a draft to change freely.', requires: 'ops-forms' },
-  { term: 'Operations Analyst', definition: 'The member who assists the Head of Operations and runs the internal forms. Beyond the forms, the access is the Media Analyst\'s.' },
+  { term: 'Show-if rule', definition: 'A question, heading or picture of a form shown only when a question above it has one of the chosen answers.', requires: 'ops-forms' },
+  { term: 'Starter', definition: 'A ready-made form to begin from in Forms, such as a merchandise order with a payment; a draft to change freely.', requires: 'ops-forms' },
+  { term: 'Operations Analyst', definition: 'The member who assists the Head of Operations and runs the forms. Beyond the forms, the access is the Media Analyst\'s.' },
   { term: 'Activity log', definition: 'The record of every meaningful action with the role held at that moment. It exists for accountability across leadership teams.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
 ];
@@ -715,7 +734,7 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
   },
   {
     question: 'A member says they cannot see a form.',
-    answer: 'Three things decide it. The form must be open, not a draft, and its deadline must not have passed: the list in Internal Forms shows both. The member must be ACTIVE, or an advisor: candidates, pending accounts, alumni and members on temporary leave cannot answer. And they must be signed in with the account linked to their member record. If all three hold, and they have not answered yet, the form is on their Dashboard in the place of Research by division, and its link opens it.',
+    answer: 'Three things decide it. The form must be open, not a draft, and its deadline must not have passed: the list in Forms shows both. It must be a form for members (or for members and guests): a form for guests only never appears on the Dashboard. The member must be ACTIVE, or an advisor: candidates, pending accounts, alumni and members on temporary leave cannot answer. And they must be signed in with the account linked to their member record. If all three hold, and they have not answered yet, the form is on their Dashboard in the place of Research by division, and its link opens it.',
     requires: 'ops-forms',
   },
   {
@@ -1155,21 +1174,14 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     ],
     related: ['applications-status'],
   },
-  'career-cv': {
+  'career-templates': {
     detail: [
-      "The association's one-page CV template, with the guide to filling it in.",
-      "The left half says what the template is, that it stays inside Minerva, and the disclaimer in full, with the download. The right half is the document itself, page by page, scrolling on its own; on a phone the two stack, download first.",
-      "The preview is drawn in the workspace from the same file you download, so nothing is sent to an outside viewer. The downloaded file is always the reference.",
+      "The association's one-page CV template and its cover letter template, one page with a tab each: CV and Cover letter. The tab is in the address, and the old addresses of the two pages open the right tab.",
+      "On each tab, the left half says what the template is, that it stays inside Minerva, and the disclaimer in full, with the download. The right half is the document itself, page by page, scrolling on its own; on a phone the two stack, download first.",
+      "The preview is drawn in the workspace from the same file you download, so nothing is sent to an outside viewer. The downloaded file is always the reference. Both files are read when the page opens, so switching tab is immediate.",
       "The page fits the screen: the left column and the preview scroll on their own. Downloads are recorded in the activity log, which is why the page says they are tracked.",
     ],
-    related: ['career-cl', 'career-linkedin', 'career-gpa'],
-  },
-  'career-cl': {
-    detail: [
-      "The association's cover letter template, with the guide to writing each paragraph.",
-      "Laid out exactly like the CV template: the rule, the disclaimer and the download on the left, the document on the right.",
-    ],
-    related: ['career-cv', 'career-linkedin'],
+    related: ['career-linkedin', 'career-gpa'],
   },
   'career-linkedin': {
     detail: [
@@ -1177,7 +1189,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Each card has the same four rows at the same heights: what goes in and what comes out, one line on what it needs, the steps, and the buttons that do the association's half of the work: a prompt to copy, a background to download, a wallpaper to choose.",
       "The wallpapers are shown whole, at their own proportions, because LinkedIn crops them itself when they are uploaded.",
     ],
-    related: ['career-cv', 'my-role'],
+    related: ['career-templates', 'my-role'],
   },
   'career-brainteasers': {
     detail: [
@@ -1185,7 +1197,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Each solution opens on request, up to 40 new ones an hour and 150 a day, and cannot be selected or printed from the page. What you mark, flag and note is yours alone.",
       "The greenbook is the only download: a copy with your name, email and the date on every page, recorded, for your own study. The President and the admin account replace it; the President, the Vice President and the Head of Operations correct and add questions.",
     ],
-    related: ['career-gpa', 'career-cv'],
+    related: ['career-gpa', 'career-templates'],
   },
   'career-gpa': {
     detail: [
@@ -1193,7 +1205,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Conversions use equivalence bands by default, or the German linear formula on request, across twenty-two grading systems in Italy, the UK and Ireland, North America and the rest of Europe.",
       "Saved averages belong to you alone: they are stored in your account, readable by nobody else, and work from a phone as well as a computer.",
     ],
-    related: ['career-cv', 'career-cl'],
+    related: ['career-templates'],
   },
 };
 

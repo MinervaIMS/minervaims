@@ -1,5 +1,5 @@
 // =====================================================================
-// Internal forms: the parts with no React in them. What a new question
+// Forms: the parts with no React in them. What a new question
 // looks like, the forms a new one can start from, how a deadline reads,
 // what state a form is really in, and the icon of each question type.
 // =====================================================================
@@ -7,9 +7,9 @@
 import {
   AlignLeft, Calendar, CheckSquare, ChevronDownSquare, CircleDot, FileUp, Hash, Heading, Image as ImageIcon, Mail, Phone, SlidersHorizontal, Type, ShieldCheck,
 } from 'lucide-react';
-import { FIELD_TYPES, LIMITS, canDrive, isChoice, isQuestion, sanitizeFields, type FieldType, type FormField } from '@/lib/internal-forms-rules';
+import { FIELD_TYPES, LIMITS, canDrive, isChoice, isQuestion, itemsMaxOf, repeats, sanitizeFields, type FieldType, type FormField } from '@/lib/internal-forms-rules';
 import { formatDay, formatTime, romeYmd } from '@/lib/event-time';
-import type { InternalForm } from '@/lib/internal-forms-api';
+import type { FormAudience, InternalForm } from '@/lib/internal-forms-api';
 
 export const FIELD_ICON: Record<FieldType, typeof Type> = {
   short_text: Type,
@@ -186,8 +186,42 @@ export function deadlineRelative(iso: string | null, now = Date.now()): string {
   return `Closes in ${days} days`;
 }
 
-/** The link members open. */
+/** The link people open. */
 export const formLink = (id: string) => `${typeof window !== 'undefined' ? window.location.origin : 'https://minervaims.org'}/forms/${id}`;
+
+// ---------------------------------------------------------------------
+// Who answers, and how many items one answer holds
+// ---------------------------------------------------------------------
+
+export const AUDIENCES: { value: FormAudience; label: string; short: string; hint: string }[] = [
+  { value: 'internal', label: 'Members only', short: 'Members', hint: 'Active members, signed in. They find it on their Dashboard and answer from their account.' },
+  { value: 'external', label: 'Guests only', short: 'Guests', hint: 'People outside the Society, from the link. They give their name and email; no account needed.' },
+  { value: 'both', label: 'Members and guests', short: 'Members and guests', hint: 'Members answer from their account and see it on their Dashboard; anyone else answers from the link with their name and email.' },
+];
+export const audienceOf = (f: Pick<InternalForm, 'audience'>): FormAudience => (f.audience === 'external' || f.audience === 'both' ? f.audience : 'internal');
+export const forGuests = (f: Pick<InternalForm, 'audience'>) => audienceOf(f) !== 'internal';
+export const forMembers = (f: Pick<InternalForm, 'audience'>) => audienceOf(f) !== 'external';
+
+/** What the copied link does, said in the toast. */
+export function linkNote(f: Pick<InternalForm, 'audience'>): string {
+  const a = audienceOf(f);
+  if (a === 'external') return 'Anyone with it can answer, with their name and email. It is not listed anywhere on the site.';
+  if (a === 'both') return 'Members open it from their account; anyone else answers with their name and email.';
+  return 'It opens the form for any active member, after they sign in.';
+}
+
+/** What one item is called: "Hoodie", or "Item" when the organiser left it empty. */
+export const itemWord = (f: Pick<InternalForm, 'item_label'>) => (f.item_label ?? '').trim() || 'Item';
+
+/** An English plural, good for the names of things people order: "Hoodies", "Boxes", "Hobbies". */
+export function plural(word: string): string {
+  if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}${/Y$/.test(word) ? 'IES' : 'ies'}`;
+  if (/(s|x|z|ch|sh)$/i.test(word)) return `${word}${/[A-Z]$/.test(word) ? 'ES' : 'es'}`;
+  return `${word}${/[A-Z]{2}$/.test(word) ? 'S' : 's'}`;
+}
+
+/** "1 hoodie", "3 hoodies". */
+export const countOf = (n: number, word: string) => `${n} ${n === 1 ? word : plural(word)}`;
 
 /** "EUR 35.00". */
 export const money = (n: number | null | undefined) => (n == null ? '' : `EUR ${Number(n).toFixed(2)}`);
@@ -208,7 +242,7 @@ export interface Problem {
  * The server checks the same rules (the rules file is shared); this only
  * lets the page point at the question instead of reporting a refusal.
  */
-export function firstProblem(form: Pick<InternalForm, 'title' | 'fields' | 'status' | 'track_payments' | 'payment_amount'>): Problem | null {
+export function firstProblem(form: Pick<InternalForm, 'title' | 'fields' | 'status' | 'track_payments' | 'payment_amount'> & Partial<Pick<InternalForm, 'items_max'>>): Problem | null {
   if (!form.title.trim()) return { message: 'Give the form a title.', view: 'questions', fieldId: '__title' };
   for (const [i, f] of form.fields.entries()) {
     if (f.type === 'image') {
@@ -241,6 +275,9 @@ export function firstProblem(form: Pick<InternalForm, 'title' | 'fields' | 'stat
   if (form.status === 'open' && !form.fields.some(isQuestion)) return { message: 'An open form needs at least one question.', view: 'questions' };
   if (form.track_payments && form.payment_amount != null && (!Number.isFinite(form.payment_amount) || form.payment_amount < 0 || form.payment_amount > 100000)) {
     return { message: 'The amount to pay is not valid.', view: 'settings' };
+  }
+  if (itemsMaxOf(form.items_max) > 1 && form.fields.some(isQuestion) && !form.fields.some(repeats)) {
+    return { message: 'More than one is on, but no question is asked again for the extra ones. Turn on "Ask again" on at least one question, or turn More than one off.', view: 'settings' };
   }
   const { error } = sanitizeFields(form.fields);
   if (error) return { message: error, view: 'questions' };

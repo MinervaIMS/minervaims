@@ -1,5 +1,5 @@
 // =====================================================================
-// One question of an internal form, as a member answers it.
+// One question of a form, as a member or a guest answers it.
 // ---------------------------------------------------------------------
 // Used by the member's form page and by the organisers' live preview, so
 // what is built is exactly what is seen. The rules the research is clear

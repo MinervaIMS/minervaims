@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff } from 'lucide-react';
+import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff, Video } from 'lucide-react';
 import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
+import { TeamsImportDialog } from '@/components/admin/attendance/TeamsImportDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { downloadCSV } from '@/lib/download-utils';
@@ -46,6 +47,11 @@ import {
 // and says how it knows - see _shared/member-match.ts - and this page
 // draws the difference, because an address identifies one person and a
 // name is a good guess.
+//
+// AN ONLINE EVENT HAS NO DOOR, so its list is taken from the meeting:
+// "Attendance from Teams" reads the attendance report Teams gives the
+// organiser and records who joined, after the list has been checked
+// (see attendance/TeamsImportDialog.tsx).
 // =====================================================================
 
 /** The three questions a door list is filtered by. */
@@ -88,6 +94,7 @@ export default function EventAttendance() {
   const [busy, setBusy] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   // An event with a limit of places: the limit and who is waiting, in order.
   const [capacity, setCapacity] = useState<number | null>(null);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
@@ -519,6 +526,11 @@ export default function EventAttendance() {
           // registrant's email; the tick boxes below and the walk-in form
           // stay exactly as they were. An online event has no door.
           <div className="flex flex-col sm:flex-row gap-2">
+            {currentEvent?.online && (
+              <Button variant="solid" className="w-full sm:w-auto" disabled={!eventId} onClick={() => setImportOpen(true)}>
+                <Video className="h-4 w-4 mr-2" />Attendance from Teams
+              </Button>
+            )}
             {!currentEvent?.online && (
               <Button
                 variant="solid" className="w-full sm:w-auto" disabled={!eventId}
@@ -537,6 +549,7 @@ export default function EventAttendance() {
               <Plus className="h-4 w-4 mr-2" />Add someone who turned up
             </Button>
             {!currentEvent?.online && <HelpDot page="events-attendance" topic="scan" />}
+            {currentEvent?.online && <HelpDot page="events-attendance" topic="teams-report" />}
           </div>
         )}
       </div>
@@ -675,6 +688,10 @@ export default function EventAttendance() {
             ))}
           </ol>
         </div>
+      )}
+
+      {currentEvent?.online && (
+        <TeamsImportDialog key={currentEvent.id} open={importOpen} onOpenChange={setImportOpen} event={currentEvent} onDone={() => loadRegs(currentEvent.id)} />
       )}
 
       {eventId && (

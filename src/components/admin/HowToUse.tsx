@@ -35,6 +35,11 @@ const AT_A_GLANCE = [
 // Newest first. Kept to what a person would actually notice: a change
 // nobody can see from a page does not belong in a manual about pages.
 const RECENT_IMPROVEMENTS = [
+  'Operations, Internal Forms is now Forms, and a form can be for members, for guests outside the Society, or for both. Guests answer from the link with their name and email, no account needed, and receive a receipt with a private link back to their answer. The old address still works.',
+  'Forms can take more than one item in an answer: under the questions, "Want another one?" asks them again for a second hoodie, a third, up to five, each with its own size and colour. The total counts every item, the answers table lists each item on its own numbered line, and the export can give one row per item.',
+  'Events, Attendance: for an online event, upload the attendance report from Microsoft Teams and the people who joined are matched to members (by email, then by name) and to guests. Check the list, untick anyone, and record them in one go.',
+  'Career, CV & Cover Letter: the CV and the cover letter templates are now one page with a tab each, both loaded at once so switching is immediate. The old addresses open the right tab.',
+  'Career, Brainteasers: the greenbook tab says what the greenbook is, who it is for and why it matters before you download it.',
   'Career, Brainteasers: hundreds of interview questions from trading firms, with worked solutions. Filter by type and by firm, try each one before opening its solution, mark what you solved and what needed help, flag the hard ones, keep notes and follow your progress by type and firm. The greenbook is downloadable as your own copy, with your name on every page.',
   'Events, My events: your own record of the semester. Register for open events in one click (or cancel), see which events you attended and which you missed, and who to tell if your attendance was not recorded correctly.',
   'The link to an online event is now private: only the people registered get it, in their confirmation, again in the "See you tomorrow" email the day before, and as a Join button on the Dashboard, in My events and in the Calendar. Everyone else sees "Online".',

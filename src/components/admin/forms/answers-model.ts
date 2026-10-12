@@ -6,10 +6,16 @@
 // supplier. So every choice question is counted, every number question
 // is totalled, and the export is built from exactly the columns and the
 // rows that were chosen, in the order the form asks its questions.
+//
+// MORE THAN ONE. An answer can hold several items (three hoodies). A
+// question asked again for each item has one value per item: the table
+// lists them numbered in one cell, the summaries count every item (the
+// supplier needs every hoodie), and the export can give one row per item.
 // =====================================================================
 
 import {
-  answerText, isChoice, isOrder, isQuestion, optionPrice, type AnswerValue, type FileAnswer, type FormField, type OrderLine,
+  MORE_KEY, answerText, firstItem, isChoice, isOrder, isQuestion, itemCount, moreItems, optionPrice, repeats,
+  type AnswerValue, type FileAnswer, type FormField, type OrderLine,
 } from '@/lib/internal-forms-rules';
 import type { FormResponse, InternalForm } from '@/lib/internal-forms-api';
 import { formatDay, formatTime } from '@/lib/event-time';
@@ -22,10 +28,23 @@ export function stamp(iso: string | null | undefined): string {
   return `${formatDay(iso, { weekday: false, month: 'short' })}, ${formatTime(iso)}`;
 }
 
-export function memberRoleLabel(r: Pick<FormResponse, 'member_role' | 'member_division'>): string {
+export function memberRoleLabel(r: Pick<FormResponse, 'member_role' | 'member_division'> & { respondent?: FormResponse['respondent'] }): string {
+  if (r.respondent === 'guest') return 'Guest';
   if (!r.member_role) return '';
   return roleLabel(r.member_role as AppRole, (r.member_division as OrgDivision | null) ?? null);
 }
+
+/**
+ * What one question holds in an answer: a value for each item when the
+ * question is asked again for each, otherwise the one value.
+ */
+export function valuesOf(f: FormField, answers: unknown): (AnswerValue | undefined)[] {
+  const first = firstItem(answers);
+  if (!repeats(f)) return [first[f.id]];
+  return [first[f.id], ...moreItems(answers).map((m) => m[f.id])];
+}
+
+const blank = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 
 // ---------------------------------------------------------------------
 // Summaries
@@ -40,18 +59,27 @@ export function dueOf(form: Pick<InternalForm, 'track_payments' | 'payment_amoun
 
 export interface OrderRow { label: string; total: number; bySize: Record<string, number>; amount: number | null }
 
-export type Summary =
-  | { kind: 'order'; answered: number; sizes: string[]; rows: OrderRow[]; items: number; amount: number | null; bySize: Record<string, number> }
-  | { kind: 'choices'; answered: number; rows: { label: string; count: number; other?: boolean }[] }
-  | { kind: 'numbers'; answered: number; total: number; mean: number; min: number; max: number; rows: { label: string; count: number }[] }
-  | { kind: 'texts'; answered: number; latest: { who: string; text: string }[] }
-  | { kind: 'files'; answered: number; files: number }
-  | { kind: 'consent'; answered: number };
+/**
+ * `answered` counts the answers (people) with a value; `n` counts the
+ * values themselves, one per item, which is what percentages are of.
+ */
+export type Summary = { answered: number; n: number } & (
+  | { kind: 'order'; sizes: string[]; rows: OrderRow[]; items: number; amount: number | null; bySize: Record<string, number> }
+  | { kind: 'choices'; rows: { label: string; count: number; other?: boolean }[] }
+  | { kind: 'numbers'; total: number; mean: number; min: number; max: number; rows: { label: string; count: number }[] }
+  | { kind: 'texts'; latest: { who: string; text: string }[] }
+  | { kind: 'files'; files: number }
+  | { kind: 'consent' }
+);
 
-export function summarise(field: FormField, responses: FormResponse[]): Summary {
-  const values = responses.map((r) => ({ r, v: r.answers?.[field.id] }))
-    .filter((x) => x.v !== undefined && x.v !== null && x.v !== '' && !(Array.isArray(x.v) && x.v.length === 0));
-  const answered = values.length;
+export function summarise(field: FormField, responses: FormResponse[], itemLabel = 'Item'): Summary {
+  // Every value, one per item: the second hoodie's size counts as much as the first's.
+  const values = responses.flatMap((r) => {
+    const several = itemCount(r.answers) > 1 && repeats(field);
+    return valuesOf(field, r.answers).map((v, i) => ({ r, v, item: several ? i + 1 : 0 }));
+  }).filter((x) => !blank(x.v));
+  const answered = new Set(values.map((x) => x.r.id)).size;
+  const n = values.length;
   // An order: how many of each choice, by size, and what it comes to. The
   // supplier's list, without a spreadsheet.
   if (isOrder(field)) {
@@ -70,7 +98,7 @@ export function summarise(field: FormField, responses: FormResponse[]): Summary 
     }
     const priced = rows.some((r) => r.amount !== null);
     return {
-      kind: 'order', answered, sizes, rows, bySize,
+      kind: 'order', answered, n, sizes, rows, bySize,
       items: rows.reduce((a, r) => a + r.total, 0),
       amount: priced ? Math.round(rows.reduce((a, r) => a + (r.amount ?? 0), 0) * 100) / 100 : null,
     };
@@ -88,7 +116,7 @@ export function summarise(field: FormField, responses: FormResponse[]): Summary 
     }
     const rows: { label: string; count: number; other?: boolean }[] = [...counts.entries()].map(([label, count]) => ({ label, count }));
     if (field.other || other) rows.push({ label: 'Other', count: other, other: true });
-    return { kind: 'choices', answered, rows };
+    return { kind: 'choices', answered, n, rows };
   }
   if (field.type === 'number' || field.type === 'scale') {
     const nums = values.map(({ v }) => Number(v)).filter((x) => Number.isFinite(x));
@@ -101,7 +129,7 @@ export function summarise(field: FormField, responses: FormResponse[]): Summary 
       ? Array.from({ length: (field.scaleMax ?? 5) - (field.scaleMin ?? 1) + 1 }, (_, i) => (field.scaleMin ?? 1) + i).map((k) => ({ label: String(k), count: counts.get(k) ?? 0 }))
       : distinct.length <= 12 ? distinct.map((k) => ({ label: String(k), count: counts.get(k) ?? 0 })) : [];
     return {
-      kind: 'numbers', answered, total,
+      kind: 'numbers', answered, n, total,
       mean: nums.length ? total / nums.length : 0,
       min: nums.length ? Math.min(...nums) : 0,
       max: nums.length ? Math.max(...nums) : 0,
@@ -109,14 +137,14 @@ export function summarise(field: FormField, responses: FormResponse[]): Summary 
     };
   }
   if (field.type === 'file') {
-    return { kind: 'files', answered, files: values.reduce((a, { v }) => a + (Array.isArray(v) ? v.length : 0), 0) };
+    return { kind: 'files', answered, n, files: values.reduce((a, { v }) => a + (Array.isArray(v) ? v.length : 0), 0) };
   }
-  if (field.type === 'consent') return { kind: 'consent', answered };
+  if (field.type === 'consent') return { kind: 'consent', answered, n };
   const latest = [...values]
     .sort((a, b) => b.r.updated_at.localeCompare(a.r.updated_at))
     .slice(0, 5)
-    .map(({ r, v }) => ({ who: r.member_name ?? '', text: answerText(field, v as AnswerValue) }));
-  return { kind: 'texts', answered, latest };
+    .map(({ r, v, item }) => ({ who: `${r.member_name ?? ''}${item ? `, ${itemLabel.toLowerCase()} ${item}` : ''}`, text: answerText(field, v as AnswerValue) }));
+  return { kind: 'texts', answered, n, latest };
 }
 
 // ---------------------------------------------------------------------
@@ -128,6 +156,10 @@ export interface Column {
   label: string;
   group: 'member' | 'timing' | 'questions' | 'payment' | 'notes';
   value: (r: FormResponse) => Cell;
+  /** A question asked again for each item: its value for item i (0 for the first). */
+  itemValue?: (r: FormResponse, i: number) => Cell;
+  /** Said once per answer: in an export with a row per item, only on the answer's first row, so the column adds up. */
+  perAnswer?: boolean;
   /** Questions only. */
   field?: FormField;
   /** One count of an order (a choice, or a choice in a size): exported, hidden in the table at first. */
@@ -139,7 +171,8 @@ export interface Column {
  * from the form after people answered them keep their answers: they are
  * offered at the end, marked as removed, so nothing collected is lost.
  */
-export function allColumns(form: InternalForm, responses: FormResponse[]): Column[] {
+export function allColumns(form: InternalForm, responses: FormResponse[], itemLabel = 'Item'): Column[] {
+  const several = (form.items_max ?? 1) > 1 || responses.some((r) => itemCount(r.answers) > 1);
   const cols: Column[] = [
     { key: 'name', label: 'Name', group: 'member', value: (r) => r.member_name ?? '' },
     { key: 'email', label: 'Email', group: 'member', value: (r) => r.member_email ?? '' },
@@ -147,30 +180,40 @@ export function allColumns(form: InternalForm, responses: FormResponse[]): Colum
     { key: 'submitted', label: 'First sent', group: 'timing', value: (r) => stamp(r.submitted_at) },
     { key: 'updated', label: 'Last changed', group: 'timing', value: (r) => (r.edit_count > 0 ? stamp(r.updated_at) : '') },
   ];
-  const known = new Set<string>();
+  // How many items each answer holds.
+  if (several) cols.push({ key: 'items', label: `How many (${itemLabel.toLowerCase()})`, group: 'questions', value: (r) => itemCount(r.answers), perAnswer: true });
+  const known = new Set<string>([MORE_KEY]);
   for (const f of form.fields.filter(isQuestion)) {
     known.add(f.id);
+    const one = (v: AnswerValue | undefined): Cell => {
+      if (f.type === 'number' || f.type === 'scale') return typeof v === 'number' ? v : '';
+      return answerText(f, v as AnswerValue);
+    };
     cols.push({
       key: `q:${f.id}`, label: f.label, group: 'questions', field: f,
       value: (r) => {
-        const v = r.answers?.[f.id];
-        if (f.type === 'number' || f.type === 'scale') return typeof v === 'number' ? v : '';
-        return answerText(f, v as AnswerValue);
+        const vs = valuesOf(f, r.answers);
+        if (vs.length === 1) return one(vs[0]);
+        // Several items: one numbered line each, "1. M", "2. S".
+        return vs.map((v, i) => `${i + 1}. ${blank(v) ? '-' : String(one(v))}`).join('\n');
       },
+      itemValue: repeats(f) ? (r, i) => one(valuesOf(f, r.answers)[i]) : undefined,
     });
     // An order also gives one column per choice (and size): a number each,
     // so the sheet adds up in Excel and goes straight to the supplier.
     if (isOrder(f)) {
-      const count = (r: FormResponse, option: string, size?: string): Cell => {
-        const lines = (Array.isArray(r.answers?.[f.id]) ? r.answers[f.id] : []) as OrderLine[];
-        const n = lines.filter((l) => l.option === option && (size === undefined || l.size === size)).reduce((a, l) => a + l.qty, 0);
-        return n || '';
-      };
+      const linesOf = (v: AnswerValue | undefined) => (Array.isArray(v) ? v : []) as OrderLine[];
+      const sum = (lines: OrderLine[], option: string, size?: string) => lines.filter((l) => l.option === option && (size === undefined || l.size === size)).reduce((a, l) => a + l.qty, 0);
+      // Every item's order counts.
+      const count = (r: FormResponse, option: string, size?: string): Cell => valuesOf(f, r.answers).reduce<number>((a, v) => a + sum(linesOf(v), option, size), 0) || '';
+      const countItem = (r: FormResponse, i: number, option: string, size?: string): Cell => sum(linesOf(valuesOf(f, r.answers)[i]), option, size) || '';
       for (const o of f.options ?? []) {
         if (f.sizes?.length) {
-          for (const sz of f.sizes) cols.push({ key: `qb:${f.id}:${o}:${sz}`, label: `${f.label}: ${o}, ${sz}`, group: 'questions', breakdown: true, value: (r) => count(r, o, sz) });
+          for (const sz of f.sizes) {
+            cols.push({ key: `qb:${f.id}:${o}:${sz}`, label: `${f.label}: ${o}, ${sz}`, group: 'questions', breakdown: true, value: (r) => count(r, o, sz), itemValue: repeats(f) ? (r, i) => countItem(r, i, o, sz) : undefined });
+          }
         } else {
-          cols.push({ key: `qb:${f.id}:${o}`, label: `${f.label}: ${o}`, group: 'questions', breakdown: true, value: (r) => count(r, o) });
+          cols.push({ key: `qb:${f.id}:${o}`, label: `${f.label}: ${o}`, group: 'questions', breakdown: true, value: (r) => count(r, o), itemValue: repeats(f) ? (r, i) => countItem(r, i, o) : undefined });
         }
       }
     }
@@ -191,7 +234,7 @@ export function allColumns(form: InternalForm, responses: FormResponse[]): Colum
     });
   }
   if (form.track_payments) {
-    cols.push({ key: 'amount', label: 'Amount due (EUR)', group: 'payment', value: (r) => dueOf(form, r) ?? '' });
+    cols.push({ key: 'amount', label: 'Amount due (EUR)', group: 'payment', value: (r) => dueOf(form, r) ?? '', perAnswer: true });
     cols.push({ key: 'paid', label: 'Paid', group: 'payment', value: (r) => (r.paid ? 'Yes' : 'No') });
     cols.push({ key: 'paid_at', label: 'Payment recorded', group: 'payment', value: (r) => (r.paid ? `${stamp(r.paid_at)}${r.paid_by_name ? `, by ${r.paid_by_name}` : ''}` : '') });
   }
@@ -203,9 +246,18 @@ export const GROUP_LABEL: Record<Column['group'], string> = {
   member: 'Who answered', timing: 'When', questions: 'Questions', payment: 'Payment', notes: 'Notes',
 };
 
-/** Rows of cells for the chosen columns. */
-export function exportRows(cols: Column[], responses: FormResponse[]): Cell[][] {
-  return responses.map((r) => cols.map((c) => c.value(r)));
+/**
+ * Rows of cells for the chosen columns: one per answer or, with
+ * `perItem`, one per item, led by the item's number. In a row per item a
+ * question asked again gives that item's value, one asked once repeats on
+ * each row, and the amount is on the answer's first row only.
+ */
+export function exportRows(cols: Column[], responses: FormResponse[], perItem = false): Cell[][] {
+  if (!perItem) return responses.map((r) => cols.map((c) => c.value(r)));
+  return responses.flatMap((r) => Array.from({ length: itemCount(r.answers) }, (_, i) => [
+    i + 1,
+    ...cols.map((c) => (c.itemValue ? c.itemValue(r, i) : c.perAnswer && i > 0 ? '' : c.value(r))),
+  ]));
 }
 
 /** Every file attached to these answers, named for a ZIP: "Surname Name/file.pdf". */
@@ -213,11 +265,12 @@ export function filesForZip(form: InternalForm, responses: FormResponse[]): { na
   const out: { name: string; path: string }[] = [];
   const fileFields = form.fields.filter((f) => f.type === 'file');
   for (const r of responses) {
-    const folder = (r.member_name || r.member_email || r.user_id).replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Member';
+    const folder = (r.member_name || r.member_email || r.user_id || '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Member';
     for (const f of fileFields) {
-      const v = r.answers?.[f.id];
-      if (!Array.isArray(v)) continue;
-      for (const x of v as FileAnswer[]) out.push({ name: `${folder}/${x.name}`, path: x.path });
+      for (const v of valuesOf(f, r.answers)) {
+        if (!Array.isArray(v)) continue;
+        for (const x of v as FileAnswer[]) out.push({ name: `${folder}/${x.name}`, path: x.path });
+      }
     }
   }
   return out;
@@ -226,6 +279,6 @@ export function filesForZip(form: InternalForm, responses: FormResponse[]): { na
 /** Search across who answered and what they answered. */
 export function responseHaystack(form: InternalForm, r: FormResponse): string {
   const parts = [r.member_name ?? '', r.member_email ?? '', r.staff_note ?? ''];
-  for (const f of form.fields) if (isQuestion(f)) parts.push(answerText(f, r.answers?.[f.id] as AnswerValue));
+  for (const f of form.fields) if (isQuestion(f)) for (const v of valuesOf(f, r.answers)) parts.push(answerText(f, v as AnswerValue));
   return parts.join(' ').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }

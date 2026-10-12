@@ -387,6 +387,32 @@ export async function listAttendanceMembers(session: Session | null): Promise<At
 export async function addMemberAttendee(session: Session | null, eventId: string, memberId: string): Promise<{ already_listed: boolean; name: string }> {
   return invoke('admin-event-reg', session, { action: 'add-member', event_id: eventId, member_id: memberId });
 }
+// An online event's attendance from the meeting's report (see
+// src/lib/attendance-report.ts and admin-event-reg, `import-preview` and
+// `import-attendance`). The server recognises each person itself.
+export interface ImportPerson { name: string; email: string | null }
+export interface ImportPreviewRow {
+  /** The person's place in the list sent. */
+  i: number;
+  name: string;
+  email: string | null;
+  kind: 'member' | 'guest';
+  /** How a member was recognised: by address (certain) or by name (probable). */
+  how: 'email' | 'name' | null;
+  /** The name matches more than one member, so nobody is claimed. */
+  ambiguous: boolean;
+  member_name: string | null;
+  member_division: OrgDivision | null;
+  on_list: boolean;
+  already_present: boolean;
+}
+export function previewAttendanceImport(session: Session | null, eventId: string, people: ImportPerson[]): Promise<{ people: ImportPreviewRow[] }> {
+  return invoke('admin-event-reg', session, { action: 'import-preview', event_id: eventId, people });
+}
+export interface ImportResult { ticked: number; added_members: number; added_guests: number; already: number; total: number }
+export function importAttendance(session: Session | null, eventId: string, people: ImportPerson[]): Promise<ImportResult> {
+  return invoke('admin-event-reg', session, { action: 'import-attendance', event_id: eventId, people });
+}
 export function removeRegistration(session: Session | null, id: string) {
   return invoke('admin-event-reg', session, { action: 'remove', id });
 }

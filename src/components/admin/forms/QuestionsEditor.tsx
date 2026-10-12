@@ -1,7 +1,7 @@
 // =====================================================================
 // Building the questions of a form.
 // ---------------------------------------------------------------------
-// One card per question, in the order members will see them. A card
+// One card per question, in the order people will see them. A card
 // closed shows what the question is at a glance (its number, its type,
 // its text, whether it is required); opened, it shows everything that
 // can be set for that type and nothing else. One card is open at a time,
@@ -10,8 +10,8 @@
 // Ordering is done with Move up and Move down, which work with a mouse,
 // a finger and a keyboard alike. New questions go straight after the one
 // being edited, which is where people expect them, and open ready to be
-// typed into. The live preview beside the list is the member's view,
-// drawn by the same component the member's page uses.
+// typed into. The live preview beside the list is the view of the
+// person answering, drawn by the same component the form page uses.
 //
 // ORDERS AND PICTURES. A choice can carry a picture and, when the form
 // collects a payment, a price. "Ask how many of each" turns a choice
@@ -20,6 +20,12 @@
 // anywhere in the form. SHOW-IF: any card can be shown only for some
 // answers to a choice question above it; the card says so in its
 // summary, and a rule that no longer points above is flagged on the card.
+//
+// MORE THAN ONE. When the form lets people ask for more than one item
+// (Settings), each question card has "Ask again for each extra item":
+// on, the question is repeated for the second item, the third and so
+// on; off, it is answered once. Agreements start off, everything else
+// on. A question answered once says so on its card.
 // =====================================================================
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -33,7 +39,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  FIELD_TYPES, FILE_KINDS, IMAGE_EXT, LIMITS, canDrive, imageProblem, isChoice, isOrder, isQuestion,
+  FIELD_TYPES, FILE_KINDS, IMAGE_EXT, LIMITS, canDrive, imageProblem, isChoice, isOrder, isQuestion, repeats,
   type FieldType, type FileKinds, type FormField,
 } from '@/lib/internal-forms-rules';
 import { FieldInput } from '@/components/forms/FieldInput';
@@ -239,7 +245,7 @@ function TypeSettings({ field, set, readOnly, media }: { field: FormField; set: 
             <label className="flex items-start gap-2 font-body text-sm">
               <Switch className="mt-0.5" checked={!!field.quantities} disabled={readOnly}
                 onCheckedChange={(v) => set(v ? { quantities: true, other: undefined, maxQty: field.maxQty ?? LIMITS.defaultQty } : { quantities: undefined, sizes: undefined, maxQty: undefined })} />
-              <span>Ask how many of each<span className="block text-xs text-muted-foreground">Each choice a member picks gets its own quantity, for example two black hoodies and one grey.</span></span>
+              <span>Ask how many of each<span className="block text-xs text-muted-foreground">Each choice a person picks gets its own quantity, for example two black hoodies and one grey.</span></span>
             </label>
             {field.quantities && (
               <div className="grid gap-3 pl-11 sm:grid-cols-[minmax(0,1fr)_10rem]">
@@ -252,7 +258,7 @@ function TypeSettings({ field, set, readOnly, media }: { field: FormField; set: 
                       set({ sizes: list.length ? list : undefined });
                       setSizesText(list.join(', '));
                     }} />
-                  <p className="font-body text-xs text-muted-foreground">Separated by commas. With sizes, a member says how many of each size of each choice.</p>
+                  <p className="font-body text-xs text-muted-foreground">Separated by commas. With sizes, people say how many of each size of each choice.</p>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor={`max-${field.id}`} className="text-xs">Most of one item</Label>
@@ -268,7 +274,7 @@ function TypeSettings({ field, set, readOnly, media }: { field: FormField; set: 
         {field.type !== 'dropdown' && !field.quantities && (
           <label className="flex items-center gap-2 pl-7 font-body text-sm">
             <Switch checked={!!field.other} disabled={readOnly} onCheckedChange={(v) => set({ other: v })} />
-            Let members write their own answer under "Other"
+            Let people write their own answer under "Other"
           </label>
         )}
       </div>
@@ -325,7 +331,7 @@ function TypeSettings({ field, set, readOnly, media }: { field: FormField; set: 
     );
   }
   if (field.type === 'consent') {
-    return <p className="font-body text-xs text-muted-foreground">The text above is what the member agrees to by ticking the box, for example "I will pay for my order by the deadline".</p>;
+    return <p className="font-body text-xs text-muted-foreground">The text above is what the person agrees to by ticking the box, for example "I will pay for my order by the deadline".</p>;
   }
   return null;
 }
@@ -392,7 +398,7 @@ function ruleText(f: FormField, all: FormField[]): string | null {
   return `Only if "${src.label || 'a question'}": ${vals.join(', ') || 'no answer ticked yet'}`;
 }
 
-export function QuestionsEditor({ fields, onChange, answerCount, readOnly, reveal, header, title, intro, media, coverPath }: {
+export function QuestionsEditor({ fields, onChange, answerCount, readOnly, reveal, header, title, intro, media, coverPath, itemsMax = 1, itemLabel = 'Item', guestsOnly = false }: {
   fields: FormField[];
   onChange: (fields: FormField[]) => void;
   answerCount: number;
@@ -405,9 +411,15 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
   reveal?: { id: string; at: number } | null;
   /** Above the questions, in the same column: the title and introduction. */
   header?: React.ReactNode;
-  /** Shown at the head of the member's view. */
+  /** Shown at the head of the preview. */
   title?: string;
   intro?: string | null;
+  /** More than one item per answer (Settings): questions can be asked again for each. */
+  itemsMax?: number;
+  /** What one item is called, e.g. "Hoodie". */
+  itemLabel?: string;
+  /** Only guests answer: the preview says so, and file questions are flagged. */
+  guestsOnly?: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(fields[0]?.id ?? null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
@@ -461,10 +473,16 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
       sizes: counted && f.quantities ? f.sizes : undefined,
       maxQty: counted && f.quantities ? f.maxQty : undefined,
       image: type === 'image' ? f.image : undefined,
+      // Asked again for each extra item: kept only where it differs from the new type's default.
+      repeat: isQuestion({ type }) && f.repeat !== undefined && f.repeat !== (type !== 'consent') ? f.repeat : undefined,
     });
   };
 
   let number = 0;
+  const several = itemsMax > 1;
+  const word = itemLabel.toLowerCase();
+  /** On or off for "Ask again for each extra item", stored only where it differs from the default. */
+  const setRepeat = (f: FormField, on: boolean) => update(f.id, { repeat: on === (f.type !== 'consent') ? undefined : on });
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
@@ -498,6 +516,8 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
                       {f.showIf && <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground"><Eye aria-hidden className="h-3 w-3 shrink-0" />{ruleText(f, fields)}</span>}
                     </span>
                     <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{fieldTypeLabel(f.type)}{summaryOf(f) ? ` · ${summaryOf(f)}` : ''}</span>
+                    {several && isQuestion(f) && !repeats(f) && <span className="hidden shrink-0 border border-separator px-1.5 text-[11px] text-muted-foreground sm:inline" title={`Answered once, not again for each extra ${word}`}>Asked once</span>}
+                    {guestsOnly && f.type === 'file' && <span className="hidden shrink-0 border border-amber-300 px-1.5 text-[11px] text-amber-900 dark:border-amber-800 dark:text-amber-300 sm:inline" title="Guests never see questions that ask for a file">Not for guests</span>}
                     {f.required && <span className="shrink-0 border border-destructive/40 px-1.5 text-[11px] text-destructive">Required</span>}
                   </button>
                   {!readOnly && (
@@ -511,7 +531,7 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
                   <div className="space-y-4 border-t border-separator px-4 pb-4 pt-3 font-body">
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
                       <div className="space-y-1">
-                        <Label htmlFor={`edit-${f.id}`} className="text-xs">{f.type === 'section' ? 'Heading' : f.type === 'consent' ? 'What the member agrees to' : f.type === 'image' ? 'Caption (optional)' : 'Question'}</Label>
+                        <Label htmlFor={`edit-${f.id}`} className="text-xs">{f.type === 'section' ? 'Heading' : f.type === 'consent' ? 'What the person agrees to' : f.type === 'image' ? 'Caption (optional)' : 'Question'}</Label>
                         <Input id={`edit-${f.id}`} value={f.label} disabled={readOnly} maxLength={LIMITS.label} onChange={(e) => update(f.id, { label: e.target.value })}
                           placeholder={f.type === 'section' ? 'e.g. Delivery' : f.type === 'image' ? 'e.g. The three colours' : 'e.g. What size do you take?'} className="h-10 text-[15px]" />
                       </div>
@@ -533,9 +553,16 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
                     {!readOnly && (
                       <div className="flex flex-wrap items-center gap-2 border-t border-separator pt-3">
                         {isQuestion(f) && (
-                          <label className="mr-auto flex items-center gap-2 text-sm">
-                            <Switch checked={!!f.required} onCheckedChange={(v) => update(f.id, { required: v })} />Required
-                          </label>
+                          <div className="mr-auto flex flex-wrap items-center gap-x-5 gap-y-2">
+                            <label className="flex items-center gap-2 text-sm">
+                              <Switch checked={!!f.required} onCheckedChange={(v) => update(f.id, { required: v })} />Required
+                            </label>
+                            {several && (
+                              <label className="flex items-center gap-2 text-sm">
+                                <Switch checked={repeats(f)} onCheckedChange={(v) => setRepeat(f, v)} />Ask again for each extra {word}
+                              </label>
+                            )}
+                          </div>
                         )}
                         {!isQuestion(f) && <span className="mr-auto" />}
                         <Button type="button" variant="ghost" size="sm" onClick={() => insertAfter(f.id, copyField(f))}><Copy className="h-4 w-4" />Duplicate</Button>
@@ -564,10 +591,10 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
         {fields.length >= LIMITS.fields && <p className="mt-2 font-body text-xs text-muted-foreground">A form holds at most {LIMITS.fields} questions and sections.</p>}
       </div>
 
-      {/* The member's view, as they will see it. */}
+      {/* The view of the person answering, as they will see it. */}
       <aside className="hidden xl:block" aria-label="Preview">
         <div className="sticky top-0 max-h-[calc(100vh-14rem)] overflow-y-auto border border-separator bg-muted/20 p-5">
-          <p className="mb-4 font-body text-xs uppercase tracking-wider text-muted-foreground">What members see</p>
+          <p className="mb-4 font-body text-xs uppercase tracking-wider text-muted-foreground">{guestsOnly ? 'What guests see' : 'What people see'}</p>
           <div className="space-y-6 bg-background p-5">
             {coverPath && media.imageUrls[coverPath] && (
               <img src={media.imageUrls[coverPath]} alt="" className="max-h-48 w-full border border-separator object-cover" />
@@ -585,6 +612,12 @@ export function QuestionsEditor({ fields, onChange, answerCount, readOnly, revea
                 <FieldInput field={f} number={isQuestion(f) ? ++k : undefined} value={undefined} onChange={() => undefined} disabled imageUrls={media.imageUrls} />
               </div>
             )); })()}
+            {several && fields.some(repeats) && (
+              <div className="flex flex-col items-center gap-1 border-2 border-dashed border-accent/40 px-4 py-4 text-center font-body">
+                <span className="flex items-center gap-2 font-serif text-lg text-accent"><Plus aria-hidden className="h-4 w-4" />Want another one?</span>
+                <span className="text-xs text-muted-foreground">Adds {word} 2, up to {itemsMax}: the {fields.filter(repeats).length === fields.filter(isQuestion).length ? 'same questions' : `${fields.filter(repeats).length} questions marked to ask again`}.</span>
+              </div>
+            )}
           </div>
         </div>
       </aside>
