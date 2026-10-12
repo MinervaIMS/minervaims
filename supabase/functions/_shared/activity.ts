@@ -108,6 +108,7 @@ const PLACE: Record<string, { section: string; subsection: string }> = {
   'admin-treasury': { section: 'Operations', subsection: 'Treasury' },
   'admin-users': { section: 'Settings', subsection: 'Users' },
   'admin-event-reg': { section: 'Events', subsection: 'Registration forms' },
+  'internal-forms': { section: 'Operations', subsection: 'Forms' },
 };
 
 /**
@@ -156,6 +157,8 @@ const MUTATES: Record<string, string> = {
   'membership-certificate:restore': 'update',
   // The door scanner ticks somebody as present.
   'admin-event-reg:checkin': 'update',
+  // An online event's attendance, recorded from the meeting's report.
+  'admin-event-reg:import-attendance': 'update',
   // The design system package: who took it, and who replaced it.
   'brand-kit:download': 'download',
   'brand-kit:upload-url': 'upload',

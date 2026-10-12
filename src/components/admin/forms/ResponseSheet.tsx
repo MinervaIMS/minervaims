@@ -1,10 +1,12 @@
 // =====================================================================
-// One member's answers, in full, beside the table.
+// One person's answers, in full, beside the table.
 // ---------------------------------------------------------------------
 // Who answered and when, the payment (ticked here, with who ticked it
 // and when), a note for the team, and every answer at its full length,
-// files included. Previous and Next, or the arrow keys, walk the answers
-// in the order the table shows them.
+// files included. An answer with several items (three hoodies) shows
+// each item under its own heading, then the questions asked once.
+// Previous and Next, or the arrow keys, walk the answers in the order
+// the table shows them.
 // =====================================================================
 
 import { useEffect, useState } from 'react';
@@ -14,10 +16,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useMedia } from '@/components/admin/calendar/calendar-hooks';
-import { answerText, isQuestion, type AnswerValue, type FileAnswer } from '@/lib/internal-forms-rules';
+import { answerText, firstItem, isQuestion, itemCount, moreItems, repeats, type AnswerValue, type FileAnswer, type FormField } from '@/lib/internal-forms-rules';
 import type { FormResponse, InternalForm } from '@/lib/internal-forms-api';
 import { dueOf, memberRoleLabel, stamp } from './answers-model';
-import { money } from './forms-model';
+import { countOf, itemWord, money } from './forms-model';
 
 export function ResponseSheet({
   form, response, position, onStep, onClose, onPaid, onNote, onDelete, onOpenFile, readOnly, busy,
@@ -35,6 +37,28 @@ export function ResponseSheet({
   busy: string | null;
 }) {
   const wide = useMedia('(min-width: 640px)');
+  const item = itemWord(form);
+  const row = (f: FormField, v: AnswerValue | undefined, key: string) => (
+    <div key={key} className="py-3">
+      <dt className="text-xs uppercase tracking-wider text-muted-foreground">{f.label}</dt>
+      <dd className="mt-1 whitespace-pre-wrap break-words text-[15px] text-foreground">
+        {f.type === 'file' && Array.isArray(v) && v.length ? (
+          <ul className="space-y-1.5">
+            {(v as FileAnswer[]).map((x) => (
+              <li key={x.path} className="flex items-center gap-2">
+                <FileText aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 break-words">{x.name}</span>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onOpenFile(x, false)} aria-label={`Open ${x.name}`} title="Open"><ExternalLink className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onOpenFile(x, true)} aria-label={`Download ${x.name}`} title="Download"><Download className="h-4 w-4" /></Button>
+              </li>
+            ))}
+          </ul>
+        ) : answerText(f, v) || <span className="text-muted-foreground">No answer</span>}
+      </dd>
+    </div>
+  );
+  // A question shown only for some answers appears where it was answered.
+  const asked = (f: FormField, a: Record<string, unknown>) => isQuestion(f) && (!f.showIf || a[f.id] !== undefined);
   const [note, setNote] = useState('');
   useEffect(() => { setNote(response?.staff_note ?? ''); }, [response?.id, response?.staff_note]);
 
@@ -78,33 +102,31 @@ export function ResponseSheet({
                 </section>
               )}
 
-              <section>
-                <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Answers</h3>
-                <dl className="divide-y divide-separator border-y-2 border-y-accent">
-                  {form.fields.filter((f) => isQuestion(f) && (!f.showIf || response.answers?.[f.id] !== undefined)).map((f) => {
-                    const v = response.answers?.[f.id] as AnswerValue | undefined;
-                    return (
-                      <div key={f.id} className="py-3">
-                        <dt className="text-xs uppercase tracking-wider text-muted-foreground">{f.label}</dt>
-                        <dd className="mt-1 whitespace-pre-wrap break-words text-[15px] text-foreground">
-                          {f.type === 'file' && Array.isArray(v) && v.length ? (
-                            <ul className="space-y-1.5">
-                              {(v as FileAnswer[]).map((x) => (
-                                <li key={x.path} className="flex items-center gap-2">
-                                  <FileText aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                  <span className="min-w-0 flex-1 break-words">{x.name}</span>
-                                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onOpenFile(x, false)} aria-label={`Open ${x.name}`} title="Open"><ExternalLink className="h-4 w-4" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onOpenFile(x, true)} aria-label={`Download ${x.name}`} title="Download"><Download className="h-4 w-4" /></Button>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : answerText(f, v) || <span className="text-muted-foreground">No answer</span>}
-                        </dd>
-                      </div>
-                    );
-                  })}
-                </dl>
-              </section>
+              {itemCount(response.answers) <= 1 ? (
+                <section>
+                  <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Answers</h3>
+                  <dl className="divide-y divide-separator border-y-2 border-y-accent">
+                    {form.fields.filter((f) => asked(f, response.answers ?? {})).map((f) => row(f, response.answers?.[f.id] as AnswerValue | undefined, f.id))}
+                  </dl>
+                </section>
+              ) : (
+                <section className="space-y-4">
+                  <h3 className="text-xs uppercase tracking-wider text-muted-foreground">Answers · {countOf(itemCount(response.answers), item.toLowerCase())}</h3>
+                  {[firstItem(response.answers), ...moreItems(response.answers)].map((it, i) => (
+                    <div key={i}>
+                      <h4 className="mb-1 font-serif text-lg text-accent">{item} {i + 1}</h4>
+                      <dl className="divide-y divide-separator border-y border-y-accent/60">
+                        {form.fields.filter((f) => repeats(f) && asked(f, it)).map((f) => row(f, it[f.id], `${i}-${f.id}`))}
+                      </dl>
+                    </div>
+                  ))}
+                  {form.fields.some((f) => !repeats(f) && asked(f, firstItem(response.answers))) && (
+                    <dl className="divide-y divide-separator border-y-2 border-y-accent">
+                      {form.fields.filter((f) => !repeats(f) && asked(f, firstItem(response.answers))).map((f) => row(f, firstItem(response.answers)[f.id], f.id))}
+                    </dl>
+                  )}
+                </section>
+              )}
 
               <section>
                 <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Note for the team</h3>

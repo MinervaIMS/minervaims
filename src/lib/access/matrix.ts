@@ -101,7 +101,7 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   head_of_media: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'calendar': 'view', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'view', 'events-on-display': 'view', 'events-mine': 'view', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'manage', 'smm-ads': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'people-members': 'view', 'people-alumni': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
   media_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-on-display': 'view', 'events-mine': 'view', 'events-attendance': 'manage', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view', 'people-members': 'view', 'people-alumni': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view' },
   // Exactly the Media & Communication Analyst's access, plus the whole of
-  // Operations > Internal Forms, which the Operations Analyst runs.
+  // Operations > Forms, which the Operations Analyst runs.
   operations_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-on-display': 'view', 'events-mine': 'view', 'events-attendance': 'manage', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view', 'people-members': 'view', 'people-alumni': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
   head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-on-display': 'manage', 'events-mine': 'view', 'people-members': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view', 'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
   // =================================================================
@@ -235,7 +235,7 @@ export const MEMBERS_DIVISION_VIEW_ROLES: AppRole[] = [
 // access from a president who is also listed as one.
 // =====================================================================
 const ROLE_DENY: Partial<Record<AppRole, ResourceKey[]>> = {
-  // Internal Forms holds members' answers, files and payments: it is run by
+  // Forms holds members' and guests' answers, files and payments: it is run by
   // the President, the Vice President and Operations, and an advisor's
   // read-everything grant does not reach it.
   advisor: ['settings-users', 'settings-roles', 'settings-mobile', 'settings-activity', 'settings-certificates', 'ops-forms'],
@@ -254,10 +254,12 @@ export function isDeniedForRole(role: AppRole, resource: ResourceKey): boolean {
 // are what the Role permissions table shows and what the server enforces.
 // The page itself opens for anybody who may open at least one of them, at
 // the highest level they hold on any, and each tab then applies its own.
-// It grants nothing a role did not already have.
+// It grants nothing a role did not already have. CV & Cover Letter, in
+// Career, is built the same way from its two tabs.
 // =====================================================================
 export const COMBINED_RESOURCES: Record<ResourceKey, ResourceKey[]> = {
   'smm-social': ['smm-ig', 'smm-li', 'smm-other'],
+  'career-templates': ['career-cv', 'career-cl'],
 };
 
 export function resolveLevel(roles: AppRole[], resource: ResourceKey): AccessLevel {

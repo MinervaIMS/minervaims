@@ -2825,7 +2825,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
   },
   {
     key: "internal_form_receipt",
-    name: "Internal form: answers received",
+    name: "Form: answers received",
     subject: "Answers received: {{form_title}} | Minerva IMS",
     body: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -2846,7 +2846,7 @@ export const TRANSACTIONAL_TEMPLATES: TransactionalTemplate[] = [
     <tr>
       <td align="center" style="padding:32px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#FFFFFF;border:1px solid #E0E0E0;">
-          <tr><td style="background:#141414;padding:9px 40px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;line-height:1;color:#FFFFFF;mso-line-height-rule:exactly;">Operations · Internal forms</td></tr>
+          <tr><td style="background:#141414;padding:9px 40px;font-family:Calibri,'Segoe UI',Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;line-height:1;color:#FFFFFF;mso-line-height-rule:exactly;">Operations · Forms</td></tr>
           <tr>
             <td style="padding:30px 40px 22px;border-bottom:1px solid #E0E0E0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">

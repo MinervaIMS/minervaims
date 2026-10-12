@@ -22,9 +22,12 @@
 // =====================================================================
 
 import {
-  answerText, eur, hasPrices, isChoice, isOrder, isQuestion, optionPrice, pickedOptions, visibleIds,
+  allItems, answerText, eur, hasPrices, isChoice, isOrder, isQuestion, itemsTotal, MORE_KEY, optionPrice, pickedOptions, repeats, visibleIds,
   type Answers, type FormField, type OrderLine,
 } from './internal-forms.ts';
+
+/** "Hoodie", or "Item" when the organisers named nothing. */
+export const itemName = (label: string | null | undefined) => (label && label.trim() ? label.trim() : 'Item');
 
 const FONT = "Calibri,'Segoe UI',Helvetica,Arial,sans-serif";
 const SERIF = "'EB Garamond','Times New Roman',Georgia,serif";
@@ -125,14 +128,56 @@ function orderRows(fields: FormField[], answers: Answers, shown: Set<string>, pr
 
 /** The questions the order table shows, so the answers do not repeat them. */
 export function orderedIds(fields: FormField[], answers: Answers, due: number | null): string[] {
+  // Several items: the order table lists every item with its own answers.
+  if (allItems(fields, answers).length > 1) return fields.filter(repeats).map((f) => f.id);
   return orderRows(fields, answers, visibleIds(fields, answers), due !== null && hasPrices(fields)).listed;
+}
+
+/**
+ * Several items ("Want another one?"): one line per item, its own answers
+ * underneath, and what it costs (the fixed amount, if any, plus its own
+ * priced choices); anything priced that is asked once is an extra.
+ */
+function itemsOrderBlock(fields: FormField[], answers: Answers, due: number | null, fixed: number | null, label: string): string {
+  const items = allItems(fields, answers);
+  const rep = fields.filter(repeats);
+  const once = fields.filter((f) => isQuestion(f) && !repeats(f));
+  const money = due !== null;
+  const cell = `font-family:${FONT};font-size:15px;line-height:1.45;color:${INK};vertical-align:top;`;
+  const head = (h: string, align: string, width: string) =>
+    `<td style="padding:0 0 8px;font-family:${FONT};font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:${GREY};text-align:${align};${width}">${h}</td>`;
+  const rows: string[] = [`<tr>${head(label, 'left', '')}${money ? head('Amount', 'right', 'width:110px;') : ''}</tr>`];
+  items.forEach((it, i) => {
+    const shown = visibleIds(fields, it);
+    const detail = rep.filter((f) => shown.has(f.id))
+      .map((f) => {
+        const v = f.type === 'consent' ? (it[f.id] === true ? 'Agreed' : '') : answerText(f, it[f.id]);
+        return v ? `${f.label}: ${v.length > 160 ? `${v.slice(0, 160)}...` : v}` : '';
+      })
+      .filter(Boolean).join(' · ');
+    const amount = (Number(fixed) || 0) + itemsTotal(rep, it);
+    rows.push('<tr>'
+      + `<td style="padding:10px 0;border-top:1px solid ${LINE};${cell}"><strong>${escapeHtml(`${label} ${i + 1}`)}</strong>${detail ? `<br /><span style="color:${GREY};font-size:13px;">${text(detail)}</span>` : ''}</td>`
+      + (money ? `<td style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(amount)}</td>` : '')
+      + '</tr>');
+  });
+  const extras = money ? itemsTotal(once, items[0]) : 0;
+  if (extras) {
+    rows.push(`<tr><td style="padding:10px 0;border-top:1px solid ${LINE};${cell}">Extras<br /><span style="color:${GREY};font-size:13px;">Chosen once for the whole order</span></td><td style="padding:10px 0;border-top:1px solid ${LINE};${cell}text-align:right;white-space:nowrap;">${eur(extras)}</td></tr>`);
+  }
+  if (money) {
+    rows.push(`<tr><td style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:15px;font-weight:700;color:${INK};">Total to pay${fixed ? `<br /><span style="font-weight:400;color:${GREY};font-size:13px;">${escapeHtml(`${eur(Number(fixed))} for each of ${items.length}`)}${hasPrices(fields) ? ', plus what each one adds' : ''}</span>` : ''}</td><td style="padding:12px 0 2px;border-top:2px solid ${PURPLE};font-family:${FONT};font-size:17px;font-weight:700;color:${PURPLE};text-align:right;white-space:nowrap;vertical-align:top;">${eur(due!)}</td></tr>`);
+  }
+  return heading(`Your order (${items.length})`)
+    + `<tr><td style="padding:4px 40px 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>`;
 }
 
 /**
  * What the member ordered, as a table with the total underneath. Empty
  * when the form has no order question and no priced choice.
  */
-export function orderBlock(fields: FormField[], answers: Answers, due: number | null, fixed: number | null): string {
+export function orderBlock(fields: FormField[], answers: Answers, due: number | null, fixed: number | null, itemLabel?: string | null): string {
+  if (allItems(fields, answers).length > 1) return itemsOrderBlock(fields, answers, due, fixed, itemName(itemLabel));
   const shown = visibleIds(fields, answers);
   const priced = due !== null && hasPrices(fields);
   const { groups, count } = orderRows(fields, answers, shown, priced);
@@ -255,12 +300,15 @@ export interface ReceiptInput {
   allowEdits: boolean;
   deadlineText: string | null;
   confirmationMessage: string | null;
+  /** How many items the form allows, and what one is called ("Hoodie"). */
+  itemsMax?: number;
+  itemLabel?: string | null;
 }
 
 /** Every variable of `internal_form_receipt`, escaped and ready. */
 export function receiptVars(r: ReceiptInput): Record<string, string> {
   const due = r.trackPayments ? r.due : null;
-  const order = orderBlock(r.fields, r.answers, due, r.fixedAmount);
+  const order = orderBlock(r.fields, r.answers, due, r.fixedAmount, r.itemLabel);
   // What the order table shows is not listed twice.
   const skip = new Set(order ? orderedIds(r.fields, r.answers, due) : []);
   return {
@@ -293,7 +341,7 @@ export function receiptVars(r: ReceiptInput): Record<string, string> {
  * themselves: the first choice of each question, one of the first option
  * in the first size, and a short sample for the rest.
  */
-export function sampleAnswers(fields: FormField[], email: string): Answers {
+export function sampleAnswers(fields: FormField[], email: string, itemsMax = 1): Answers {
   const out: Answers = {};
   const today = new Date().toISOString().slice(0, 10);
   for (const f of fields) {
@@ -317,6 +365,16 @@ export function sampleAnswers(fields: FormField[], email: string): Answers {
       case 'long_text': out[f.id] = 'A sample answer, written for this test.\nIt can run over several lines.'; break;
       default: out[f.id] = 'Sample answer';
     }
+  }
+  // A second item, so the test shows how several read: the repeated
+  // questions again, with the second choice where there is one.
+  if (itemsMax > 1) {
+    const second: Answers = {};
+    for (const f of fields.filter(repeats)) {
+      const pick = (f.options ?? []).filter((o) => o.trim())[1];
+      second[f.id] = pick && (f.type === 'single_choice' || f.type === 'dropdown') && !isOrder(f) ? pick : out[f.id];
+    }
+    (out as Record<string, unknown>)[MORE_KEY] = [second];
   }
   return out;
 }

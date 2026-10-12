@@ -11,7 +11,9 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // to the newsletter and on what basis, the public alumni directory and
 // the fields it shows, the notice for alumni data taken from LinkedIn,
 // and the retention periods. If the system changes, change this text in
-// the same release.
+// the same release. Step 89 (October 2026) added the forms answered by
+// guests outside the Society (section 4, 5, 9 and 15) and the recording of
+// online attendance from the meeting's attendance report (section 4).
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -43,7 +45,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="October 1st, 2026"
+      lastUpdated="October 11th, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -110,7 +112,9 @@ const PrivacyPolicy = () => (
             are a Bocconi student and your programme, affiliation, whether you attended, and a record of the
             registration reminders sent for the event; a personal check-in code, shown as a QR code in your
             registration emails, and the time it was scanned at the entrance; and, for guests who attended and are not
-            members, a record of the thank-you email sent the day after the event.
+            members, a record of the thank-you email sent the day after the event. For an online event, attendance
+            can be recorded from the attendance report of the video-call service used for the meeting (such as
+            Microsoft Teams): the name and email address shown in the call, and the fact that you joined.
           </li>
           <li>
             <strong>Members:</strong> identification and contact details, division and role, membership status and
@@ -118,8 +122,15 @@ const PrivacyPolicy = () => (
             of members; the certificates of membership you choose to download (name, role, semester, issue date,
             certificate number and, if it happens, the date and reason of a withdrawal); your progress in the
             Getting started checklist of the Workspace, which only you can see; and the answers you give to the
-            Society's internal forms, with any files you attach, the time they were sent and, where a form collects a
+            Society's forms, with any files you attach, the time they were sent and, where a form collects a
             payment, whether it has been received.
+          </li>
+          <li>
+            <strong>Guests who answer a form:</strong> where a form is open to people outside the Society, the name
+            and email address you give, your answers, the time they were sent and, where the form collects a payment,
+            whether it has been received; a code derived from the private link in your receipt, so that only that
+            link opens your answer; and, for a short time, a one-way code derived from your connection (not your IP
+            address itself), used only to limit how many answers one connection can send.
           </li>
           <li>
             <strong>Alumni:</strong> name and surname, graduation year, current employer, job area, city and LinkedIn
@@ -178,10 +189,12 @@ const PrivacyPolicy = () => (
             it is sent once, and you can object at any time.
           </li>
           <li>
-            <strong>Internal forms</strong> (orders, sign-ups and expressions of interest the Society collects from
-            its members, with a receipt of your answers by email): performance of the association relationship at
-            your request, article 6(1)(b), and legitimate interest in organising the association's activities,
-            article 6(1)(f).
+            <strong>Forms</strong> (orders, sign-ups and expressions of interest the Society collects from its
+            members and, where a form is open to them, from guests, with a receipt of your answers by email):
+            performance of the association relationship, or of the request you make by answering, at your request,
+            article 6(1)(b), and legitimate interest in organising the association's activities, article 6(1)(f); the
+            connection code that limits automated answers rests on our legitimate interest in keeping forms free of
+            abuse, article 6(1)(f).
           </li>
           <li>
             <strong>Certificates of membership</strong> (issuing a certificate you request and confirming it to the
@@ -260,7 +273,7 @@ const PrivacyPolicy = () => (
         <p>
           Transactional emails (application confirmations, interview invitations, offer notifications, event
           registration confirmations with your check-in code and reminders to members, membership fee notices,
-          receipts of your answers to an internal form, account emails) are sent because they are necessary for the process or the membership concerned and do not
+          receipts of your answers to a form, account emails) are sent because they are necessary for the process or the membership concerned and do not
           depend on the newsletter. The check-in code in these emails contains no personal data: it is a random
           number that only the association's staff can use, to mark you as present at the entrance.
         </p>
@@ -314,12 +327,22 @@ const PrivacyPolicy = () => (
           then shown as no longer valid.
         </p>
         <p>
-          <strong>Internal forms.</strong> The Society sometimes asks its active members for something through a form
+          <strong>Forms.</strong> The Society sometimes asks its active members for something through a form
           in the Workspace: an order, a sign-up, interest in a visit. Answering is your choice. Your answers, and any
           files you attach, are stored in a private area and are read only by the people who run the form (the
           President, the Vice President, the Head of Operations and the Operations Analyst), who may add a note for
           their own use and record whether a payment has been received. You receive an email with a copy of what you
           sent. Your answers are not shown to other members.
+        </p>
+        <p>
+          Some forms are open to people outside the Society, from a link the Society shares; they are not listed on
+          the website. If you answer one as a guest, you give your name and email address, and your answers are
+          handled exactly as members' answers above. Your receipt carries a private link, the only way back to your
+          answer; we keep only a one-way code derived from it, never the link itself. Guests cannot attach files.
+          Your name and email are used for that form and its receipt only: you are not added to the newsletter or
+          to any other list. To keep forms free of automated spam, a one-way code derived from your connection is
+          kept with your answer only as long as needed to limit how many answers one connection can send in an
+          hour, then erased.
         </p>
       </LegalSectionBlock>
 
@@ -518,8 +541,10 @@ const PrivacyPolicy = () => (
             account. The Getting started checklist is deleted together with the account.
           </li>
           <li>
-            <strong>Answers to internal forms:</strong> kept until the form is deleted by the people who run it,
-            together with the files attached to them; an individual answer can be deleted earlier, on request.
+            <strong>Answers to forms</strong> (members' and guests'): kept until the form is deleted by the people
+            who run it, together with the files attached to them; an individual answer can be deleted earlier, on
+            request. The connection code of a guest's answer is erased once it is no longer needed for the hourly
+            limit, and at the latest with the answer.
           </li>
           <li>
             <strong>Newsletter:</strong> until you unsubscribe or object, plus a permanent suppression record to honour

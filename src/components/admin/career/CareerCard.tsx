@@ -26,7 +26,7 @@ export function CareerCard({
     <section className={`w-full min-w-0 rounded-xl border border-separator bg-background p-5 flex flex-col ${scroll ? 'lg:min-h-0' : ''} ${className}`}>
       <div className="mb-4 pb-3 border-b border-separator shrink-0">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-serif text-xl text-accent leading-tight min-w-0">{title}</h2>
+          <h2 className="font-serif text-xl text-accent leading-tight min-w-0 break-words">{title}</h2>
           {action && <div className="shrink-0 flex items-center gap-2">{action}</div>}
         </div>
         {subtitle && <div className="mt-1.5 text-xs uppercase tracking-wider text-muted-foreground">{subtitle}</div>}

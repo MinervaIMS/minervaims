@@ -8,7 +8,7 @@ import { deadlineRelative } from '@/components/admin/forms/forms-model';
 // =====================================================================
 // Forms waiting for this member, in the place of Research by division.
 // ---------------------------------------------------------------------
-// While an internal form is open and the member has not answered it, it
+// While a form for members is open and the member has not answered it, it
 // takes the card on the left of the event registration; once they answer
 // or it closes, Research by division (or Getting started) comes back.
 //

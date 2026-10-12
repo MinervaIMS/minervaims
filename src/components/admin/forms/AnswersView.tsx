@@ -6,8 +6,9 @@
 // in total, what people wrote most recently. Every choice is counted
 // with a bar; every number is totalled and averaged.
 //
-// TABLE is one row per member and one column per question, with the
-// name always visible on the left. Search reads names, emails and every
+// TABLE is one row per answer and one column per question, with the
+// name always visible on the left. An answer holding several items
+// (three hoodies) lists each item's value, numbered, in the same cell. Search reads names, emails and every
 // answer; the payment filter shows who still has to pay; Columns hides
 // what is not needed today. The Paid box is ticked right in the row. A
 // row opens the member's full answer beside the table.
@@ -31,12 +32,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { friendlyError } from '@/lib/errors';
 import { downloadAs } from '@/lib/file-download';
-import { isQuestion, type FileAnswer } from '@/lib/internal-forms-rules';
+import { isQuestion, itemCount, type FileAnswer } from '@/lib/internal-forms-rules';
 import {
   deleteResponse, setResponseNote, setResponsePaid, signFormFiles, type FormResponse, type InternalForm,
 } from '@/lib/internal-forms-api';
-import { allColumns, dueOf, responseHaystack, stamp, summarise, type Column } from './answers-model';
-import { FIELD_ICON, money } from './forms-model';
+import { allColumns, dueOf, responseHaystack, stamp, summarise, valuesOf, type Column } from './answers-model';
+import { FIELD_ICON, countOf, itemWord, money, plural } from './forms-model';
 import { ResponseSheet } from './ResponseSheet';
 import { ExportDialog } from './ExportDialog';
 
@@ -59,14 +60,15 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
   const [pay, setPay] = useState<PayFilter>('all');
   const [sort, setSort] = useState<Sort>('newest');
   // The per-colour and per-size counts of orders go to the export; the table starts with the order as one line.
-  const [hidden, setHidden] = useState<Set<string>>(() => new Set(['email', 'role', 'updated', 'paid_at', 'note', ...allColumns(form, responses).filter((c) => c.breakdown).map((c) => c.key)]));
+  const item = itemWord(form);
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set(['email', 'role', 'updated', 'paid_at', 'note', ...allColumns(form, responses, item).filter((c) => c.breakdown).map((c) => c.key)]));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openId, setOpenId] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<FormResponse | null>(null);
 
-  const columns = useMemo(() => allColumns(form, responses), [form, responses]);
+  const columns = useMemo(() => allColumns(form, responses, item), [form, responses, item]);
   const hay = useMemo(() => new Map(responses.map((r) => [r.id, responseHaystack(form, r)])), [form, responses]);
 
   const shown = useMemo(() => {
@@ -87,6 +89,8 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
   }, [responses, query, pay, sort, hay]);
 
   const paidCount = responses.filter((r) => r.paid).length;
+  const totalItems = responses.reduce((a, r) => a + itemCount(r.answers), 0);
+  const several = (form.items_max ?? 1) > 1 || totalItems > responses.length;
   // Money: each answer's own amount (what that member ordered), or the form's fixed amount.
   const dues = responses.map((r) => ({ r, due: dueOf(form, r) }));
   const hasDue = dues.some((d) => d.due !== null);
@@ -149,8 +153,25 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
       );
     }
     if (c.field?.type === 'file') {
-      const files = (r.answers?.[c.field.id] as FileAnswer[] | undefined) ?? [];
+      const files = valuesOf(c.field, r.answers).flatMap((v) => (Array.isArray(v) ? (v as FileAnswer[]) : []));
       return files.length ? <span className="inline-flex items-center gap-1 text-accent"><FileText className="h-3.5 w-3.5" />{files.length === 1 ? files[0].name : `${files.length} files`}</span> : <span className="text-muted-foreground">-</span>;
+    }
+    // Several items: each one's value on its own numbered line.
+    const many = c.itemValue ? itemCount(r.answers) : 1;
+    if (c.itemValue && many > 1) {
+      return (
+        <ol className="space-y-0.5" aria-label={`${c.label}, by ${item.toLowerCase()}`}>
+          {Array.from({ length: many }, (_, i) => {
+            const v = c.itemValue!(r, i);
+            return (
+              <li key={i} className="flex gap-1.5">
+                <span className="shrink-0 tabular-nums text-xs leading-5 text-muted-foreground">{i + 1}.</span>
+                <span className="line-clamp-2 min-w-0 whitespace-pre-wrap break-words">{v === '' || v === null || v === undefined ? <span className="text-muted-foreground">-</span> : String(v)}</span>
+              </li>
+            );
+          })}
+        </ol>
+      );
     }
     const v = c.value(r);
     if (v === '' || v === null || v === undefined) return <span className="text-muted-foreground">-</span>;
@@ -165,7 +186,7 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
         <BarChart3 className="mx-auto mb-3 h-8 w-8 text-accent" aria-hidden />
         <p className="font-serif text-xl text-foreground">No answers yet</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          {form.status === 'draft' ? 'Open the form, then share its link: answers appear here as soon as members send them.' : 'Answers appear here as soon as members send them. Members also find open forms on their Dashboard.'}
+          {form.status === 'draft' ? 'Open the form, then share its link: answers appear here as soon as people send them.' : `Answers appear here as soon as people send them.${(form.audience ?? 'internal') !== 'external' ? ' Members also find open forms on their Dashboard.' : ''}`}
         </p>
       </div>
     );
@@ -175,7 +196,11 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
     <div className="font-body">
       {/* Key figures */}
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="border border-separator p-3"><p className="text-xs uppercase tracking-wider text-muted-foreground">Answers</p><p className="mt-1 font-serif text-3xl text-accent tabular-nums">{responses.length}</p></div>
+        <div className="border border-separator p-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Answers</p>
+          <p className="mt-1 font-serif text-3xl text-accent tabular-nums">{responses.length}</p>
+          {several && <p className="text-xs text-muted-foreground">{countOf(totalItems, item.toLowerCase())} in all</p>}
+        </div>
         {form.track_payments && (
           <div className="border border-separator p-3">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Paid</p>
@@ -205,13 +230,13 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
       {view === 'summary' ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {form.fields.filter(isQuestion).map((f) => {
-            const s = summarise(f, responses);
+            const s = summarise(f, responses, item);
             const Icon = FIELD_ICON[f.type];
             const max = s.kind === 'choices' || s.kind === 'numbers' ? Math.max(1, ...s.rows.map((x) => x.count)) : 1;
             return (
               <section key={f.id} className="border border-separator p-4">
                 <h3 className="flex items-start gap-2 text-[15px] font-medium text-foreground"><Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{f.label}</h3>
-                <p className="mb-3 mt-0.5 text-xs text-muted-foreground">{s.answered} of {responses.length} answered</p>
+                <p className="mb-3 mt-0.5 text-xs text-muted-foreground">{s.answered} of {responses.length} answered{s.n > s.answered ? `, ${s.n} ${plural(item).toLowerCase()} in all` : ''}</p>
                 {s.kind === 'order' && (
                   // The supplier's list: each choice by size, with the totals.
                   <div className="overflow-x-auto">
@@ -258,7 +283,7 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
                       <li key={row.label} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_3.5rem] items-center gap-2 text-sm">
                         <span className="truncate" title={row.label}>{row.label}</span>
                         <span className="h-2.5 bg-muted" aria-hidden><span className="block h-full bg-accent" style={{ width: `${(row.count / max) * 100}%` }} /></span>
-                        <span className="text-right tabular-nums text-muted-foreground">{row.count}{s.answered ? <span className="text-xs"> ({Math.round((row.count / s.answered) * 100)}%)</span> : null}</span>
+                        <span className="text-right tabular-nums text-muted-foreground">{row.count}{s.n ? <span className="text-xs"> ({Math.round((row.count / s.n) * 100)}%)</span> : null}</span>
                       </li>
                     ))}
                   </ul>
@@ -266,11 +291,11 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
                 {s.kind === 'texts' && (
                   <ul className="space-y-2">
                     {s.latest.map((x, i) => <li key={i} className="border-l-2 border-separator pl-3 text-sm"><span className="line-clamp-3 whitespace-pre-wrap">{x.text}</span><span className="text-xs text-muted-foreground">{x.who}</span></li>)}
-                    {s.answered > s.latest.length && <li><button type="button" data-ro className="text-sm text-accent underline underline-offset-2" onClick={() => setView('table')}>See all {s.answered} in the table</button></li>}
+                    {s.n > s.latest.length && <li><button type="button" data-ro className="text-sm text-accent underline underline-offset-2" onClick={() => setView('table')}>See all {s.n} in the table</button></li>}
                   </ul>
                 )}
                 {s.kind === 'files' && <p className="text-sm">{s.files} {s.files === 1 ? 'file' : 'files'} attached. Download them all from Export.</p>}
-                {s.kind === 'consent' && <p className="text-sm">{s.answered} ticked the box.</p>}
+                {s.kind === 'consent' && <p className="text-sm">{s.n} ticked the box.</p>}
               </section>
             );
           })}
@@ -335,7 +360,7 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
                       checked={shown.length > 0 && shown.every((r) => selected.has(r.id))}
                       onChange={(e) => setSelected(e.target.checked ? new Set(shown.map((r) => r.id)) : new Set())} />
                   </th>
-                  <th scope="col" className="sticky left-0 z-10 min-w-[12rem] bg-muted px-3 py-2.5 text-[13px] font-medium text-muted-foreground">Member</th>
+                  <th scope="col" className="sticky left-0 z-10 min-w-[12rem] bg-muted px-3 py-2.5 text-[13px] font-medium text-muted-foreground">Name</th>
                   <th scope="col" className="min-w-[11.5rem] px-3 py-2.5 text-[13px] font-medium text-muted-foreground">Sent</th>
                   {visibleCols.filter((c) => c.key !== 'submitted').map((c) => (
                     <th key={c.key} scope="col" title={c.label} className={`px-3 py-2.5 text-[13px] font-medium text-muted-foreground ${c.key === 'paid' ? 'w-16 text-center' : 'min-w-[9rem] max-w-[18rem]'}`}>
@@ -353,8 +378,9 @@ export function AnswersView({ form, responses, setResponses, session, readOnly }
                     </td>
                     <td className="sticky left-0 bg-background px-3 py-2.5 align-top">
                       <button type="button" data-ro onClick={() => setOpenId(r.id)} className="text-left">
-                        <span className="block font-medium text-accent underline-offset-2 hover:underline">{r.member_name || 'Member'}</span>
+                        <span className="block font-medium text-accent underline-offset-2 hover:underline">{r.member_name || (r.respondent === 'guest' ? 'Guest' : 'Member')}</span>
                         <span className="block text-xs text-muted-foreground">{r.member_email}</span>
+                        {r.respondent === 'guest' && <span className="mt-1 inline-block border border-separator px-1.5 text-[11px] text-muted-foreground">Guest</span>}
                       </button>
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 align-top text-muted-foreground">{stamp(r.submitted_at)}{r.edit_count > 0 && <span className="block text-xs">changed {r.edit_count}x</span>}</td>

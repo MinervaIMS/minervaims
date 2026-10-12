@@ -178,8 +178,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'settings-mobile': () => import('@/components/admin/MobileViewTable'),
   'settings-activity': () => import('@/components/admin/ActivityManagement'),
   'settings-certificates': () => import('@/components/admin/CertificateRegister'),
-  'career-cv': () => import('@/components/admin/career/CareerTemplate'),
-  'career-cl': () => import('@/components/admin/career/CareerTemplate'),
+  'career-templates': () => import('@/components/admin/career/CareerTemplate'),
   'career-linkedin': () => import('@/components/admin/career/CareerLinkedIn'),
   'career-gpa': () => import('@/components/admin/career/GpaConverter'),
   'career-brainteasers': () => import('@/components/admin/career/brainteasers/Brainteasers'),
@@ -461,8 +460,17 @@ const MinervaWorkspace = () => {
       const canonical = workspacePath(resolution.sectionKey, resolution.subKey);
       // An old address of what is now a tab keeps its tab on the way over,
       // and a renamed page with tabs keeps the one its address asked for.
+      // A renamed page without tabs keeps the rest of its address (Internal
+      // Forms, now Forms: `?form=...&view=answers` still opens that form).
       if (canonical !== location.pathname) {
-        const query = resolution.tab ? `?tab=${resolution.tab}` : resolution.subKey && tabsOf(resolution.subKey).length ? location.search : '';
+        let query = '';
+        if (resolution.tab) query = `?tab=${resolution.tab}`;
+        else if (resolution.subKey && tabsOf(resolution.subKey).length) query = location.search;
+        else {
+          const rest = new URLSearchParams(location.search);
+          rest.delete('tab');
+          query = rest.toString() ? `?${rest.toString()}` : '';
+        }
         navigate(`${canonical}${query}`, { replace: true });
       }
     }
@@ -1208,10 +1216,14 @@ const MinervaWorkspace = () => {
         return <JoinFaqsManagement />;
       case 'settings-mobile':
         return <MobileViewTable />;
-      case 'career-cv':
-        return <CareerTemplate key="cv" which="cv" />;
-      case 'career-cl':
-        return <CareerTemplate key="cl" which="cl" />;
+      case 'career-templates':
+        return (
+          <CareerTemplate
+            tabs={pageTabs}
+            activeTab={activeTab?.tab ?? null}
+            onTab={(tab) => navigate(`${location.pathname}?tab=${tab}`, { replace: true })}
+          />
+        );
       case 'career-linkedin':
         return <CareerLinkedIn />;
       case 'career-gpa':

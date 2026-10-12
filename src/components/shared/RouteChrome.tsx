@@ -77,8 +77,8 @@ function chromeFor(path: string): Chrome {
   if (AUTH_LIKE.some((p) => path === p || path.startsWith(p + '/'))) {
     return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
   }
-  // Event registration shares the auth backdrop.
-  if (/^\/events\/[^/]+\/register/.test(path)) return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
+  // Event registration and a form share the auth backdrop.
+  if (/^\/events\/[^/]+\/register/.test(path) || /^\/forms\/[^/]+$/.test(path)) return { theme: AUTH_DARK, base: AUTH_DARK, bottom: AUTH_DARK };
   // Public site. Two bands, decided separately.
   //
   // The bottom band is painted WHITE. Leaving it transparent has now been

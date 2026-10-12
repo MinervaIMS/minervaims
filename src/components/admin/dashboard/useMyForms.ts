@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { myForms, type MyFormSummary } from '@/lib/internal-forms-api';
 
-// The internal forms open to this member, for the Dashboard's form card
+// The forms for members open to this member, for the Dashboard's form card
 // (FormsStackBlock.tsx). Part of the Dashboard's one load.
 
 /** How long the Dashboard waits for this before appearing without it. */

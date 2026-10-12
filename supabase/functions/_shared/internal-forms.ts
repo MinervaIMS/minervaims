@@ -21,6 +21,15 @@
 // SHOW-IF. Any question, heading or picture can be shown only when an
 // earlier choice question (or agreement) has one of the chosen answers.
 // A hidden question is never required and its answer is never kept.
+//
+// MORE THAN ONE ("Want another one?"). A form can let people order up to
+// ITEMS_MAX of what it describes: a second hoodie, a third. The questions
+// that make up one item (by default every question except agreements)
+// are asked again for each extra item. The first item's answers are kept
+// where they always were, so every answer sent before this existed reads
+// as before; the extra items are kept as a list under MORE_KEY. A fixed
+// amount counts once per item, and priced choices are added up across
+// every item.
 // =====================================================================
 
 export type FieldType =
@@ -71,6 +80,12 @@ export interface FormField {
   maxQty?: number;
   /** Shown only when an earlier answer matches. */
   showIf?: ShowIf;
+  /**
+   * When the form allows more than one item: is this question asked again
+   * for each extra item? Unset means the default, which is yes for every
+   * question except an agreement (see `repeats`).
+   */
+  repeat?: boolean;
 }
 
 export interface FileAnswer { path: string; name: string; size: number; type: string }
@@ -78,6 +93,14 @@ export interface FileAnswer { path: string; name: string; size: number; type: st
 export interface OrderLine { option: string; size?: string; qty: number }
 export type AnswerValue = string | number | boolean | string[] | FileAnswer[] | OrderLine[];
 export type Answers = Record<string, AnswerValue>;
+
+/** The most items one answer can hold, the first included. */
+export const ITEMS_MAX = 5;
+/**
+ * Where the second and later items are kept inside an answer. A field id
+ * is letters, digits, "_" and "-" only, so this can never be one.
+ */
+export const MORE_KEY = '+items';
 
 export const LIMITS = {
   fields: 60,
@@ -131,6 +154,48 @@ export const isQuestion = (f: Pick<FormField, 'type'>) => f.type !== 'section' &
 export const isOrder = (f: Pick<FormField, 'type' | 'quantities'>) => !!f.quantities && (f.type === 'single_choice' || f.type === 'multi_choice');
 /** The kinds of question a show-if rule can depend on. */
 export const canDrive = (f: Pick<FormField, 'type'>) => isChoice(f.type) || f.type === 'consent';
+/** Is this question asked again for each extra item? Agreements are not, unless the organiser says so. */
+export const repeats = (f: Pick<FormField, 'type' | 'repeat'>) => isQuestion(f) && (f.repeat ?? f.type !== 'consent');
+/** How many items a form allows: 1 (no "Want another one?") to ITEMS_MAX. */
+export const itemsMaxOf = (v: unknown) => {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isInteger(n) ? Math.min(ITEMS_MAX, Math.max(1, n)) : 1;
+};
+
+/** The second and later items of an answer: each one the answers to the repeated questions. */
+export function moreItems(answers: unknown): Answers[] {
+  const a = answers && typeof answers === 'object' ? (answers as Record<string, unknown>)[MORE_KEY] : undefined;
+  if (!Array.isArray(a)) return [];
+  return a.filter((x): x is Answers => !!x && typeof x === 'object' && !Array.isArray(x)).slice(0, ITEMS_MAX - 1);
+}
+/** How many items an answer holds: 1, plus the extra ones. */
+export const itemCount = (answers: unknown) => 1 + moreItems(answers).length;
+/** The first item's answers alone: an answer without its extra items. */
+export function firstItem(answers: unknown): Answers {
+  const out: Answers = {};
+  if (!answers || typeof answers !== 'object') return out;
+  for (const [k, v] of Object.entries(answers as Record<string, unknown>)) if (k !== MORE_KEY) out[k] = v as AnswerValue;
+  return out;
+}
+/** An answer with these extra items (none: the key is left out). */
+export function withItems(first: Answers, more: Answers[]): Answers {
+  const out: Answers = { ...firstItem(first) };
+  if (more.length) (out as Record<string, unknown>)[MORE_KEY] = more;
+  return out;
+}
+/**
+ * Every item of an answer as a full set of answers: the first as sent,
+ * and each extra one made of its repeated questions over the first's
+ * other answers (so a show-if rule that depends on an agreement still
+ * reads the same).
+ */
+export function allItems(fields: FormField[], answers: unknown): Answers[] {
+  const first = firstItem(answers);
+  const repeated = new Set(fields.filter(repeats).map((f) => f.id));
+  const base: Answers = {};
+  for (const [k, v] of Object.entries(first)) if (!repeated.has(k)) base[k] = v;
+  return [first, ...moreItems(answers).map((m) => ({ ...base, ...m }))];
+}
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -207,6 +272,8 @@ export function sanitizeFields(raw: unknown, imagePrefix?: string): { fields: Fo
       f.image = img;
     }
     if (isQuestion({ type })) f.required = r.required === true;
+    // Only a choice that differs from the default is kept.
+    if (isQuestion({ type }) && typeof r.repeat === 'boolean' && r.repeat !== (type !== 'consent')) f.repeat = r.repeat;
     if (isChoice(type)) {
       // Choices travel with their picture and price, so dropping an empty
       // or repeated choice never shifts another choice's picture or price.
@@ -352,7 +419,13 @@ export function amountDue(trackPayments: boolean, fixed: number | null | undefin
   if (!trackPayments) return null;
   const priced = hasPrices(fields);
   if (!priced && (fixed === null || fixed === undefined)) return null;
-  return Math.round(((Number(fixed) || 0) + (priced ? itemsTotal(fields, answers) : 0)) * 100) / 100;
+  // Each item pays the fixed amount once; an extra item adds only what its
+  // own repeated questions cost (the rest was counted with the first).
+  const items = allItems(fields, answers);
+  const rep = fields.filter(repeats);
+  let total = (Number(fixed) || 0) * items.length;
+  if (priced) items.forEach((it, i) => { total += itemsTotal(i === 0 ? fields : rep, it); });
+  return Math.round(total * 100) / 100;
 }
 
 // ---------------------------------------------------------------------
@@ -362,6 +435,123 @@ export function amountDue(trackPayments: boolean, fixed: number | null | undefin
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** One question's answer checked: the value to keep, or the sentence to show under it. */
+function checkOne(f: FormField, v: unknown, filePrefix?: string): { value?: AnswerValue; error?: string } {
+  const fail = (error: string) => ({ error });
+  const keep = (value: AnswerValue) => ({ value });
+  const none = () => ({});
+  const empty = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0) || (f.type === 'consent' && v !== true);
+  if (empty) {
+    if (!f.required) return none();
+    return fail(f.type === 'consent' ? 'Tick the box to continue.' : f.type === 'file' ? 'Attach a file.' : isOrder(f) ? 'Choose at least one, and how many.' : 'This question needs an answer.');
+  }
+  if (isOrder(f)) {
+    const opts = f.options ?? [];
+    const sizes = f.sizes ?? [];
+    const max = f.maxQty ?? LIMITS.defaultQty;
+    const merged = new Map<string, OrderLine>();
+    for (const x of Array.isArray(v) ? v : []) {
+      const o = x && typeof x === 'object' ? (x as Record<string, unknown>) : {};
+      const option = typeof o.option === 'string' ? o.option : '';
+      const size = typeof o.size === 'string' ? o.size : '';
+      const qty = typeof o.qty === 'number' ? o.qty : Number(o.qty);
+      if (!opts.includes(option)) return fail('Choose from the options.');
+      if (sizes.length ? !sizes.includes(size) : size) return fail(sizes.length ? 'Choose a size for each item.' : 'Choose from the options.');
+      if (!Number.isInteger(qty) || qty < 0) return fail('Enter how many as a whole number.');
+      if (qty === 0) continue;
+      const key = `${option}\u0000${size}`;
+      const line = merged.get(key) ?? { option, ...(sizes.length ? { size } : {}), qty: 0 };
+      line.qty += qty;
+      if (line.qty > max) return fail(`At most ${max} of each.`);
+      merged.set(key, line);
+    }
+    const lines = [...merged.values()].sort((a, b) => opts.indexOf(a.option) - opts.indexOf(b.option) || sizes.indexOf(a.size ?? '') - sizes.indexOf(b.size ?? ''));
+    if (!lines.length) return f.required ? fail('Choose at least one, and how many.') : none();
+    if (f.type === 'single_choice' && new Set(lines.map((l) => l.option)).size > 1) return fail('Choose one of the options.');
+    return keep(lines);
+  }
+  switch (f.type) {
+    case 'short_text':
+    case 'long_text': {
+      if (typeof v !== 'string') return fail('Write your answer as text.');
+      const max = f.type === 'short_text' ? LIMITS.shortText : LIMITS.longText;
+      const t = v.trim();
+      if (!t) return f.required ? fail('This question needs an answer.') : none();
+      if (t.length > max) return fail(`Keep it under ${max.toLocaleString('en-GB')} characters.`);
+      return keep(t);
+    }
+    case 'email': {
+      const t = typeof v === 'string' ? v.trim() : '';
+      if (!EMAIL_RE.test(t) || t.length > 254) return fail('Enter an email address, like name@studbocconi.it.');
+      return keep(t);
+    }
+    case 'phone': {
+      const t = typeof v === 'string' ? v.trim() : '';
+      if (!/^[+()\d\s.-]{5,40}$/.test(t) || (t.match(/\d/g) || []).length < 5) return fail('Enter a phone number, with the country code if it is not Italian.');
+      return keep(t);
+    }
+    case 'date': {
+      const t = typeof v === 'string' ? v.trim() : '';
+      if (!DATE_RE.test(t) || Number.isNaN(Date.parse(`${t}T12:00:00Z`))) return fail('Choose a date.');
+      return keep(t);
+    }
+    case 'number': {
+      const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v.replace(',', '.')) : NaN;
+      if (!Number.isFinite(n)) return fail('Enter a number.');
+      if (f.integer && !Number.isInteger(n)) return fail('Enter a whole number.');
+      if (f.min != null && n < f.min) return fail(`The smallest accepted is ${f.min}.`);
+      if (f.max != null && n > f.max) return fail(`The largest accepted is ${f.max}.`);
+      return keep(n);
+    }
+    case 'scale': {
+      const n = typeof v === 'number' ? v : Number(v);
+      const lo = f.scaleMin ?? 1; const hi = f.scaleMax ?? 5;
+      if (!Number.isInteger(n) || n < lo || n > hi) return fail(`Choose a value from ${lo} to ${hi}.`);
+      return keep(n);
+    }
+    case 'single_choice':
+    case 'dropdown': {
+      const t = typeof v === 'string' ? v.trim() : '';
+      const opts = f.options ?? [];
+      if (!opts.includes(t) && !(f.other && t && t.length <= LIMITS.option)) return fail('Choose one of the options.');
+      return keep(t);
+    }
+    case 'multi_choice': {
+      const list = Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x.trim() : '')).filter(Boolean) : [];
+      const opts = f.options ?? [];
+      const extra = list.filter((x) => !opts.includes(x));
+      if (extra.length > (f.other ? 1 : 0) || extra.some((x) => x.length > LIMITS.option)) return fail('Choose from the options.');
+      if (list.length === 0) return f.required ? fail('Choose at least one.') : none();
+      // Kept in the order the form lists them, "Other" last.
+      return keep([...opts.filter((o) => list.includes(o)), ...extra]);
+    }
+    case 'consent':
+      return keep(true);
+    case 'file': {
+      const files: FileAnswer[] = [];
+      for (const x of Array.isArray(v) ? v : []) {
+        const o = x && typeof x === 'object' ? (x as Record<string, unknown>) : {};
+        const path = typeof o.path === 'string' ? o.path : '';
+        const name = typeof o.name === 'string' ? o.name.slice(0, 200) : '';
+        const size = typeof o.size === 'number' ? o.size : 0;
+        const type = typeof o.type === 'string' ? o.type.slice(0, 120) : '';
+        if (!path || !name || path.includes('..') || (filePrefix && !path.startsWith(filePrefix))) return fail('One of the files could not be read. Attach it again.');
+        const p = fileProblem(f, name, size);
+        if (p) return fail(p);
+        files.push({ path, name, size, type });
+      }
+      if (files.length > (f.maxFiles ?? 1)) return fail(`Attach at most ${f.maxFiles ?? 1} ${(f.maxFiles ?? 1) === 1 ? 'file' : 'files'}.`);
+      if (files.length === 0) return f.required ? fail('Attach a file.') : none();
+      return keep(files);
+    }
+    default:
+      return none();
+  }
+}
+
+/** Is there nothing in this answer at all? */
+const isBlank = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0) || v === false;
+
 /**
  * Check a member's answers against the form, question by question.
  *
@@ -369,146 +559,50 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * for every question that is not right, the sentence to show under it.
  * `filePrefix`, on the server, is the only folder a file answer may point
  * into: the form's folder for this member.
+ *
+ * `itemsMax` is how many items the form allows. Above 1, the extra items
+ * under MORE_KEY are checked too, each against the repeated questions;
+ * their errors are keyed "+items.<n>.<question>", n being the item's place
+ * among the extra items as sent (0 for the second item), so an error
+ * lands under the item the person sees. An extra item left completely
+ * empty is dropped.
  */
 export function validateAnswers(
   fields: FormField[],
   raw: unknown,
   filePrefix?: string,
+  itemsMax = 1,
 ): { answers: Answers; errors: Record<string, string> } {
   const input = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  const answers: Answers = {};
+  const first: Answers = {};
   const errors: Record<string, string> = {};
   // A question the member's own answers hide is neither required nor kept.
-  const shown = visibleIds(fields, input);
+  const shown = visibleIds(fields, firstItem(input));
   for (const f of fields) {
     if (!isQuestion(f) || !shown.has(f.id)) continue;
-    const v = input[f.id];
-    const empty = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0) || (f.type === 'consent' && v !== true);
-    if (empty) {
-      if (f.required) errors[f.id] = f.type === 'consent' ? 'Tick the box to continue.' : f.type === 'file' ? 'Attach a file.' : isOrder(f) ? 'Choose at least one, and how many.' : 'This question needs an answer.';
-      continue;
-    }
-    if (isOrder(f)) {
-      const opts = f.options ?? [];
-      const sizes = f.sizes ?? [];
-      const max = f.maxQty ?? LIMITS.defaultQty;
-      const merged = new Map<string, OrderLine>();
-      let bad = '';
-      for (const x of Array.isArray(v) ? v : []) {
-        const o = x && typeof x === 'object' ? (x as Record<string, unknown>) : {};
-        const option = typeof o.option === 'string' ? o.option : '';
-        const size = typeof o.size === 'string' ? o.size : '';
-        const qty = typeof o.qty === 'number' ? o.qty : Number(o.qty);
-        if (!opts.includes(option)) { bad = 'Choose from the options.'; break; }
-        if (sizes.length ? !sizes.includes(size) : size) { bad = sizes.length ? 'Choose a size for each item.' : 'Choose from the options.'; break; }
-        if (!Number.isInteger(qty) || qty < 0) { bad = 'Enter how many as a whole number.'; break; }
-        if (qty === 0) continue;
-        const key = `${option}\u0000${size}`;
-        const line = merged.get(key) ?? { option, ...(sizes.length ? { size } : {}), qty: 0 };
-        line.qty += qty;
-        if (line.qty > max) { bad = `At most ${max} of each.`; break; }
-        merged.set(key, line);
-      }
-      if (bad) { errors[f.id] = bad; continue; }
-      const lines = [...merged.values()].sort((a, b) => opts.indexOf(a.option) - opts.indexOf(b.option) || sizes.indexOf(a.size ?? '') - sizes.indexOf(b.size ?? ''));
-      if (!lines.length) { if (f.required) errors[f.id] = 'Choose at least one, and how many.'; continue; }
-      if (f.type === 'single_choice' && new Set(lines.map((l) => l.option)).size > 1) { errors[f.id] = 'Choose one of the options.'; continue; }
-      answers[f.id] = lines;
-      continue;
-    }
-    switch (f.type) {
-      case 'short_text':
-      case 'long_text': {
-        if (typeof v !== 'string') { errors[f.id] = 'Write your answer as text.'; break; }
-        const max = f.type === 'short_text' ? LIMITS.shortText : LIMITS.longText;
-        const t = v.trim();
-        if (!t) { if (f.required) errors[f.id] = 'This question needs an answer.'; break; }
-        if (t.length > max) { errors[f.id] = `Keep it under ${max.toLocaleString('en-GB')} characters.`; break; }
-        answers[f.id] = t;
-        break;
-      }
-      case 'email': {
-        const t = typeof v === 'string' ? v.trim() : '';
-        if (!EMAIL_RE.test(t) || t.length > 254) { errors[f.id] = 'Enter an email address, like name@studbocconi.it.'; break; }
-        answers[f.id] = t;
-        break;
-      }
-      case 'phone': {
-        const t = typeof v === 'string' ? v.trim() : '';
-        if (!/^[+()\d\s.-]{5,40}$/.test(t) || (t.match(/\d/g) || []).length < 5) { errors[f.id] = 'Enter a phone number, with the country code if it is not Italian.'; break; }
-        answers[f.id] = t;
-        break;
-      }
-      case 'date': {
-        const t = typeof v === 'string' ? v.trim() : '';
-        if (!DATE_RE.test(t) || Number.isNaN(Date.parse(`${t}T12:00:00Z`))) { errors[f.id] = 'Choose a date.'; break; }
-        answers[f.id] = t;
-        break;
-      }
-      case 'number': {
-        const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v.replace(',', '.')) : NaN;
-        if (!Number.isFinite(n)) { errors[f.id] = 'Enter a number.'; break; }
-        if (f.integer && !Number.isInteger(n)) { errors[f.id] = 'Enter a whole number.'; break; }
-        if (f.min != null && n < f.min) { errors[f.id] = `The smallest accepted is ${f.min}.`; break; }
-        if (f.max != null && n > f.max) { errors[f.id] = `The largest accepted is ${f.max}.`; break; }
-        answers[f.id] = n;
-        break;
-      }
-      case 'scale': {
-        const n = typeof v === 'number' ? v : Number(v);
-        const lo = f.scaleMin ?? 1; const hi = f.scaleMax ?? 5;
-        if (!Number.isInteger(n) || n < lo || n > hi) { errors[f.id] = `Choose a value from ${lo} to ${hi}.`; break; }
-        answers[f.id] = n;
-        break;
-      }
-      case 'single_choice':
-      case 'dropdown': {
-        const t = typeof v === 'string' ? v.trim() : '';
-        const opts = f.options ?? [];
-        if (!opts.includes(t) && !(f.other && t && t.length <= LIMITS.option)) { errors[f.id] = 'Choose one of the options.'; break; }
-        answers[f.id] = t;
-        break;
-      }
-      case 'multi_choice': {
-        const list = Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x.trim() : '')).filter(Boolean) : [];
-        const opts = f.options ?? [];
-        const extra = list.filter((x) => !opts.includes(x));
-        if (extra.length > (f.other ? 1 : 0) || extra.some((x) => x.length > LIMITS.option)) { errors[f.id] = 'Choose from the options.'; break; }
-        if (list.length === 0) { if (f.required) errors[f.id] = 'Choose at least one.'; break; }
-        // Kept in the order the form lists them, "Other" last.
-        answers[f.id] = [...opts.filter((o) => list.includes(o)), ...extra];
-        break;
-      }
-      case 'consent': {
-        answers[f.id] = true;
-        break;
-      }
-      case 'file': {
-        const list = Array.isArray(v) ? v : [];
-        const files: FileAnswer[] = [];
-        let bad = '';
-        for (const x of list) {
-          const o = x && typeof x === 'object' ? (x as Record<string, unknown>) : {};
-          const path = typeof o.path === 'string' ? o.path : '';
-          const name = typeof o.name === 'string' ? o.name.slice(0, 200) : '';
-          const size = typeof o.size === 'number' ? o.size : 0;
-          const type = typeof o.type === 'string' ? o.type.slice(0, 120) : '';
-          if (!path || !name || path.includes('..') || (filePrefix && !path.startsWith(filePrefix))) { bad = 'One of the files could not be read. Attach it again.'; break; }
-          const p = fileProblem(f, name, size);
-          if (p) { bad = p; break; }
-          files.push({ path, name, size, type });
-        }
-        if (bad) { errors[f.id] = bad; break; }
-        if (files.length > (f.maxFiles ?? 1)) { errors[f.id] = `Attach at most ${f.maxFiles ?? 1} ${(f.maxFiles ?? 1) === 1 ? 'file' : 'files'}.`; break; }
-        if (files.length === 0) { if (f.required) errors[f.id] = 'Attach a file.'; break; }
-        answers[f.id] = files;
-        break;
-      }
-      default:
-        break;
-    }
+    const r = checkOne(f, input[f.id], filePrefix);
+    if (r.error) errors[f.id] = r.error;
+    else if (r.value !== undefined) first[f.id] = r.value;
   }
-  return { answers, errors };
+  const max = itemsMaxOf(itemsMax);
+  if (max <= 1) return { answers: first, errors };
+  const rep = fields.filter(repeats);
+  const base: Answers = {};
+  for (const [k, v] of Object.entries(first)) if (!rep.some((f) => f.id === k)) base[k] = v;
+  const more: Answers[] = [];
+  moreItems(input).slice(0, max - 1).forEach((m, n) => {
+    if (rep.every((f) => isBlank(m[f.id]))) return;
+    const seen = visibleIds(fields, { ...base, ...m });
+    const item: Answers = {};
+    for (const f of rep) {
+      if (!seen.has(f.id)) continue;
+      const r = checkOne(f, m[f.id], filePrefix);
+      if (r.error) errors[`${MORE_KEY}.${n}.${f.id}`] = r.error;
+      else if (r.value !== undefined) item[f.id] = r.value;
+    }
+    more.push(item);
+  });
+  return { answers: withItems(first, more), errors };
 }
 
 /** "EUR 35.00". */

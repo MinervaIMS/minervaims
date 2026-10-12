@@ -84,8 +84,9 @@ export const NAV: NavSection[] = [
     key: 'career', slug: 'career', label: 'Career', Icon: Briefcase,
     subItems: [
       { key: 'career-smart', slug: 'smart-tracker', label: 'Smart Tracker', allowed: (p) => p.can('career-smart') },
-      { key: 'career-cv', slug: 'cv-template', label: 'CV Template', allowed: (p) => p.can('career-cv') },
-      { key: 'career-cl', slug: 'cover-letter-template', label: 'Cover Letter Template', allowed: (p) => p.can('career-cl') },
+      // The CV and the cover letter templates are one page with two tabs,
+      // each keeping its own permission; see MERGED_SUBSECTIONS.
+      { key: 'career-templates', slug: 'cv-and-cover-letter', label: 'CV & Cover Letter', allowed: (p) => p.can('career-templates') },
       { key: 'career-linkedin', slug: 'linkedin', label: 'LinkedIn', allowed: (p) => p.can('career-linkedin') },
       { key: 'career-gpa', slug: 'gpa-converter', label: 'GPA Converter', allowed: (p) => p.can('career-gpa') },
       { key: 'career-brainteasers', slug: 'brainteasers', label: 'Brainteasers', allowed: (p) => p.can('career-brainteasers') },
@@ -155,7 +156,7 @@ export const NAV: NavSection[] = [
     subItems: [
       { key: 'ops-fee', slug: 'membership-fees', label: 'Membership Fees', allowed: (p) => p.can('ops-fee') },
       { key: 'ops-treasury', slug: 'treasury', label: 'Treasury', allowed: (p) => p.can('ops-treasury') },
-      { key: 'ops-forms', slug: 'internal-forms', label: 'Internal Forms', allowed: (p) => p.can('ops-forms') },
+      { key: 'ops-forms', slug: 'forms', label: 'Forms', allowed: (p) => p.can('ops-forms') },
       { key: 'ops-external', slug: 'external-relations', label: 'External Relations', allowed: (p) => p.can('ops-external') },
       { key: 'ops-docs', slug: 'statute-and-documents', label: 'Statute & Documents', allowed: (p) => p.can('ops-docs') },
     ],
@@ -194,7 +195,9 @@ export const NAV: NavSection[] = [
 // SUBSECTIONS THAT BECAME TABS.
 // ---------------------------------------------------------------------
 // Instagram, LinkedIn and Other Resources were three subsections of Social
-// Media; they are now the three tabs of Social Templates. Their keys stay,
+// Media; they are now the three tabs of Social Templates. In Career, the
+// CV Template and the Cover Letter Template are the two tabs of CV & Cover
+// Letter (Step 89). Their keys stay,
 // because they are what the access matrix, the server, the search index
 // and the Role permissions table speak in, and their old addresses stay,
 // because they have been bookmarked and sent. Both lead to the new page
@@ -215,6 +218,8 @@ export const MERGED_SUBSECTIONS: Record<string, MergedSubsection> = {
   'smm-ig': { key: 'smm-social', tab: 'instagram', sectionKey: 'smm', slug: 'instagram', label: 'Instagram' },
   'smm-li': { key: 'smm-social', tab: 'linkedin', sectionKey: 'smm', slug: 'linkedin', label: 'LinkedIn' },
   'smm-other': { key: 'smm-social', tab: 'other-resources', sectionKey: 'smm', slug: 'other-resources', label: 'Other Resources' },
+  'career-cv': { key: 'career-templates', tab: 'cv', sectionKey: 'career', slug: 'cv-template', label: 'CV' },
+  'career-cl': { key: 'career-templates', tab: 'cover-letter', sectionKey: 'career', slug: 'cover-letter-template', label: 'Cover letter' },
 };
 
 /**
@@ -228,6 +233,8 @@ const RENAMED_PAGES: { sectionKey: string; slug: string; key: string }[] = [
   { sectionKey: 'smm', slug: 'brand-and-social', key: 'smm-social' },
   // Step 84 called it Social Template, singular.
   { sectionKey: 'smm', slug: 'social-template', key: 'smm-social' },
+  // Internal Forms became Forms when forms opened to guests (Step 89).
+  { sectionKey: 'operations', slug: 'internal-forms', key: 'ops-forms' },
 ];
 
 /** The tabs of a merged page, in order: `{ tab, resource }`. */

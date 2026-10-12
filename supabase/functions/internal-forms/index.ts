@@ -5,14 +5,14 @@ import { readFileField, readTextField } from '../_shared/form-file.ts';
 import { readJsonObject, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
 import { romeClock12 } from '../_shared/event-time.ts';
 import {
-  amountDue, fileProblem, formImagePaths, imageProblem, isQuestion, LIMITS, sanitizeFields, validateAnswers,
+  allItems, amountDue, fileProblem, formImagePaths, imageProblem, isQuestion, itemsMaxOf, LIMITS, sanitizeFields, validateAnswers,
   type Answers, type FormField,
 } from '../_shared/internal-forms.ts';
 import { receiptVars, sampleAnswers } from '../_shared/internal-form-email.ts';
 
 // =====================================================================
-// internal-forms: Operations > Internal Forms, and the members who fill
-// them in.
+// internal-forms: Operations > Forms, and the members and guests who
+// fill them in.
 // ---------------------------------------------------------------------
 // ORGANISERS (the matrix's 'ops-forms' at manage: the President, the Vice
 // President, the Head of Operations and the Operations Analyst) build
@@ -22,6 +22,15 @@ import { receiptVars, sampleAnswers } from '../_shared/internal-form-email.ts';
 // the forms that are open, fill them in, attach files and
 // change their answers until the deadline, if the form allows it. Every
 // submission sends the member a receipt by email.
+//
+// GUESTS (people outside the Society) answer a form that is open to them
+// (audience 'external' or 'both') from its link, signed in or not: they
+// give their name and email, and the receipt sent there carries a private
+// link, the only way to see or change that answer later. Guests never
+// upload files (a file question is left out for them), each connection
+// can send a limited number of answers an hour, and a hidden field turns
+// away the simplest robots. Only the two guest actions run without a
+// signed-in user; everything else is as it was.
 //
 // The tables have row-level security on and no policy at all: nobody
 // reads or writes them except through this function, which is where
@@ -58,9 +67,11 @@ interface FormRow {
   payment_instructions: string | null; confirmation_message: string | null; cover_path: string | null;
   created_by: string | null; created_by_name: string | null; updated_by_name: string | null;
   published_at: string | null; closed_at: string | null; created_at: string; updated_at: string;
+  audience: 'internal' | 'external' | 'both'; items_max: number; item_label: string | null;
 }
 interface ResponseRow {
-  id: string; form_id: string; user_id: string; member_name: string | null; member_email: string | null;
+  id: string; form_id: string; user_id: string | null; member_name: string | null; member_email: string | null;
+  respondent: 'member' | 'guest'; access_hash?: string | null; client_hash?: string | null;
   member_role: string | null; member_division: string | null; answers: Answers; submitted_at: string;
   updated_at: string; edit_count: number; paid: boolean; paid_at: string | null; paid_by_name: string | null; staff_note: string | null;
   amount_due: number | null;
@@ -96,18 +107,187 @@ function coverOf(formId: string, v: unknown): string | null {
 /** Every stored file an answer set points to. */
 function filePaths(fields: FormField[], answers: Answers): string[] {
   const out: string[] = [];
-  for (const f of fields) {
-    if (f.type !== 'file') continue;
-    const v = answers?.[f.id];
-    if (Array.isArray(v)) for (const x of v as { path?: string }[]) if (x && typeof x.path === 'string') out.push(x.path);
+  for (const item of allItems(fields, answers)) {
+    for (const f of fields) {
+      if (f.type !== 'file') continue;
+      const v = item?.[f.id];
+      if (Array.isArray(v)) for (const x of v as { path?: string }[]) if (x && typeof x.path === 'string' && !out.includes(x.path)) out.push(x.path);
+    }
   }
   return out;
 }
+/** Is the form open to guests? */
+const forGuests = (f: Pick<FormRow, 'audience'>) => f.audience === 'external' || f.audience === 'both';
+/** Is the form answered by members from their account? */
+const forMembers = (f: Pick<FormRow, 'audience'>) => (f.audience ?? 'internal') !== 'external';
+/** The questions a guest answers: every one but file uploads. */
+const guestFields = (fields: FormField[]) => (fields || []).filter((f) => f.type !== 'file');
+/** An answer as organisers read it: never the hashes. */
+function forOrganisers(r: ResponseRow): Omit<ResponseRow, 'access_hash' | 'client_hash'> {
+  const { access_hash: _a, client_hash: _c, ...rest } = r;
+  return rest;
+}
+async function sha256(textIn: string): Promise<string> {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(textIn));
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+/** A private link's token: 32 random bytes, URL-safe. */
+function newToken(): string {
+  const b = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+const TOKEN_RE = /^[A-Za-z0-9_-]{30,64}$/;
+const GUEST_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+/** New guest answers one connection may send in an hour. */
+const GUEST_PER_HOUR = 10;
 
 Deno.serve(audited('internal-forms', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const getForm = async (id: unknown): Promise<FormRow | null> => {
+      if (!isUuid(id)) return null;
+      const { data } = await supabase.from('internal_forms').select('*').eq('id', id).maybeSingle();
+      return (data as FormRow | null) ?? null;
+    };
+    /** One-hour links for stored pictures and files, by path. */
+    const signAll = async (paths: string[]): Promise<Record<string, string>> => {
+      const list = [...new Set(paths.filter(Boolean))].slice(0, 500);
+      if (!list.length) return {};
+      const { data } = await supabase.storage.from(BUCKET).createSignedUrls(list, 3600);
+      const out: Record<string, string> = {};
+      for (const s of data || []) if (s.path && s.signedUrl) out[s.path] = s.signedUrl;
+      return out;
+    };
+
+    // The body is read first: the guest actions are answered before any
+    // sign-in is asked for. A file upload is a multipart body, read below.
+    const contentType = req.headers.get('content-type') || '';
+    let body: LooseBody = {};
+    if (!contentType.includes('multipart/form-data')) {
+      const parsed = await readJsonObject(req);
+      if (!parsed) return json({ error: UNREADABLE_BODY }, 400);
+      body = parsed as LooseBody;
+    }
+    const action = typeof body.action === 'string' ? body.action : '';
+
+    // =================================================================
+    // GUESTS
+    // =================================================================
+    if (action === 'guest-get' || action === 'guest-submit') {
+      // Nothing a guest typed goes into the activity trail.
+      audit.request(action, {});
+      const f = await getForm(body.id);
+      if (!f || f.status === 'draft') return json({ error: 'This form does not exist or has been removed.' }, 404);
+      if (!forGuests(f)) return json({ members_only: true, title: f.title });
+      const token = typeof body.token === 'string' && TOKEN_RE.test(body.token) ? body.token : null;
+      const mine = async (): Promise<ResponseRow | null> => {
+        if (!token) return null;
+        const { data } = await supabase.from('internal_form_responses').select('*')
+          .eq('form_id', f.id).eq('respondent', 'guest').eq('access_hash', await sha256(token)).maybeSingle();
+        return (data as ResponseRow | null) ?? null;
+      };
+      const formOut = () => ({
+        id: f.id, title: f.title, description: f.description, fields: guestFields(f.fields), closes_at: f.closes_at,
+        allow_edits: f.allow_edits, track_payments: f.track_payments, payment_amount: f.payment_amount,
+        payment_instructions: f.payment_instructions, confirmation_message: f.confirmation_message,
+        cover_path: f.cover_path ?? null, state: memberState(f), audience: f.audience,
+        items_max: itemsMaxOf(f.items_max), item_label: f.item_label ?? null,
+      });
+      const responseOut = (r: ResponseRow) => ({
+        answers: r.answers, submitted_at: r.submitted_at, updated_at: r.updated_at, paid: r.paid,
+        amount_due: r.amount_due ?? null, name: r.member_name, email: r.member_email,
+      });
+
+      if (action === 'guest-get') {
+        const r = await mine();
+        if (token && !r) return json({ error: 'This private link does not match an answer to this form. Use the link in your most recent receipt.' }, 404);
+        return json({ form: formOut(), response: r ? responseOut(r) : null, images: await signAll(formImagePaths(f.fields || [], f.cover_path)) });
+      }
+
+      // guest-submit
+      // A hidden field people never see: a robot fills it in.
+      if (typeof body.website === 'string' && body.website.trim()) return json({ success: true, emailed: false, response: null });
+      if (!accepting(f)) return json({ error: f.closes_at && new Date(f.closes_at).getTime() <= Date.now() ? `The deadline has passed: this form closed on ${romeLong(f.closes_at)}.` : 'This form is closed and no longer takes answers.' }, 400);
+      const name = text(body.name, 120);
+      const email = (text(body.email, 254) ?? '').toLowerCase();
+      const who: Record<string, string> = {};
+      if (!name || name.length < 2) who['guest:name'] = 'Write your full name.';
+      if (!GUEST_EMAIL_RE.test(email)) who['guest:email'] = 'Enter your email address, like name@example.com.';
+      const fields = guestFields(f.fields);
+      const items = itemsMaxOf(f.items_max);
+      const { answers, errors } = validateAnswers(fields, body.answers, 'guest-has-no-files/', items);
+      Object.assign(errors, who);
+      if (Object.keys(errors).length) return json({ invalid: true, message: 'Some answers need attention.', errors });
+
+      const before = await mine();
+      if (token && !before) return json({ error: 'This private link does not match an answer to this form. Use the link in your most recent receipt.' }, 404);
+      if (before && !f.allow_edits) return json({ error: 'You have already answered, and this form does not accept changes.' }, 409);
+      const now = new Date().toISOString();
+      const due = amountDue(f.track_payments, f.payment_amount === null ? null : Number(f.payment_amount), fields, answers);
+      const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || 'unknown';
+      const clientHash = await sha256(`${ip}|internal-forms|${(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '').slice(-24)}`);
+      let saved: ResponseRow;
+      let sendToken = token;
+      if (before) {
+        const { data, error } = await supabase.from('internal_form_responses')
+          .update({ member_name: name, answers, amount_due: due, updated_at: now, edit_count: (before.edit_count ?? 0) + 1 })
+          .eq('id', before.id).select('*').single();
+        if (error) throw error;
+        saved = data as ResponseRow;
+      } else {
+        // One answer per email: a second one needs the private link of the first.
+        // Guests' emails are stored in lower case, so an exact match is the same address.
+        const { data: taken } = await supabase.from('internal_form_responses').select('id')
+          .eq('form_id', f.id).eq('respondent', 'guest').eq('member_email', email).maybeSingle();
+        if (taken) return json({ error: `An answer from ${email} is already in. To see or change it, use the private link in the receipt we emailed to that address.`, already: true }, 409);
+        const hourAgo = new Date(Date.now() - 3600000).toISOString();
+        // The connection code is needed only for the hourly limit: older ones are erased.
+        try {
+          await supabase.from('internal_form_responses').update({ client_hash: null })
+            .not('client_hash', 'is', null).lt('submitted_at', hourAgo);
+        } catch (e) { console.error('client code clean-up failed', e); }
+        const { count } = await supabase.from('internal_form_responses').select('id', { count: 'exact', head: true })
+          .eq('client_hash', clientHash).gte('submitted_at', hourAgo);
+        if ((count ?? 0) >= GUEST_PER_HOUR) return json({ error: 'Too many answers have been sent from this connection in the last hour. Please try again later.' }, 429);
+        sendToken = newToken();
+        const { data, error } = await supabase.from('internal_form_responses').insert({
+          form_id: f.id, user_id: null, respondent: 'guest', member_name: name, member_email: email,
+          member_role: null, member_division: null, answers, amount_due: due, submitted_at: now, updated_at: now,
+          access_hash: await sha256(sendToken), client_hash: clientHash,
+        }).select('*').single();
+        if (error) {
+          // Two sends at once from the same address: the unique index answers.
+          if ((error as { code?: string }).code === '23505') return json({ error: `An answer from ${email} is already in. To see or change it, use the private link in the receipt we emailed to that address.`, already: true }, 409);
+          throw error;
+        }
+        saved = data as ResponseRow;
+      }
+
+      let emailed = false;
+      try {
+        const { error: mailError } = await supabase.rpc('enqueue_app_email', {
+          p_key: 'internal_form_receipt',
+          p_to: email,
+          p_vars: receiptVars({
+            formTitle: f.title,
+            formUrl: `${SITE}/forms/${f.id}?r=${encodeURIComponent(sendToken!)}`,
+            fields, answers,
+            firstName: name.split(/\s+/)[0] || 'there', memberName: name, submittedOn: romeLong(now),
+            trackPayments: f.track_payments, fixedAmount: f.payment_amount === null ? null : Number(f.payment_amount), due,
+            paymentInstructions: f.payment_instructions, allowEdits: f.allow_edits,
+            deadlineText: f.closes_at ? romeLong(f.closes_at) : null, confirmationMessage: f.confirmation_message,
+            itemsMax: items, itemLabel: f.item_label,
+          }),
+        });
+        if (mailError) throw mailError;
+        emailed = true;
+      } catch (e) {
+        console.error('guest form receipt failed', e);
+      }
+      return json({ success: true, emailed, token: before ? null : sendToken, response: responseOut(saved) });
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Sign in to continue.' }, 401);
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.split(' ')[1]);
@@ -127,23 +307,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
     const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
     const displayName = myName || profile?.full_name || user.email || 'Member';
 
-    const getForm = async (id: unknown): Promise<FormRow | null> => {
-      if (!isUuid(id)) return null;
-      const { data } = await supabase.from('internal_forms').select('*').eq('id', id).maybeSingle();
-      return (data as FormRow | null) ?? null;
-    };
-    /** One-hour links for stored pictures and files, by path. */
-    const signAll = async (paths: string[]): Promise<Record<string, string>> => {
-      const list = [...new Set(paths.filter(Boolean))].slice(0, 500);
-      if (!list.length) return {};
-      const { data } = await supabase.storage.from(BUCKET).createSignedUrls(list, 3600);
-      const out: Record<string, string> = {};
-      for (const s of data || []) if (s.path && s.signedUrl) out[s.path] = s.signedUrl;
-      return out;
-    };
-
     // ── File upload (members, multipart) ─────────────────────────────
-    const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
       const formId = readTextField(form, 'form_id');
@@ -173,7 +337,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         return json({ file: { path, name: file.name.slice(-200), size: file.size, type: file.type || '' }, url: urls[path] ?? null });
       }
 
-      if (!isMember) return json({ error: 'Internal forms are for the Society\'s active members.' }, 403);
+      if (!isMember) return json({ error: 'This form is for the Society\'s active members.' }, 403);
       const f = await getForm(formId);
       if (!f || f.status === 'draft') return json({ error: 'This form is not available.' }, 404);
       if (!accepting(f)) return json({ error: 'This form is closed and no longer takes answers.' }, 400);
@@ -194,10 +358,6 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       return json({ file: { path, name: file.name.slice(-200), size: file.size, type: file.type || '' } });
     }
 
-    const parsed = await readJsonObject(req);
-    if (!parsed) return json({ error: UNREADABLE_BODY }, 400);
-    const body = parsed as LooseBody;
-    const action = typeof body.action === 'string' ? body.action : '';
     audit.request(action, body);
 
     // =================================================================
@@ -208,10 +368,11 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
     if (action === 'my-forms') {
       if (!isMember) return json({ forms: [] });
       const { data, error } = await supabase.from('internal_forms')
-        .select('id, title, description, status, closes_at, allow_edits, track_payments, payment_amount, cover_path')
+        .select('id, title, description, status, closes_at, allow_edits, track_payments, payment_amount, cover_path, audience')
         .eq('status', 'open').order('closes_at', { ascending: true, nullsFirst: false });
       if (error) throw error;
-      const open = ((data || []) as FormRow[]).filter((f) => accepting(f));
+      // A form for guests only is not on members' Dashboards.
+      const open = ((data || []) as FormRow[]).filter((f) => accepting(f) && forMembers(f));
       const ids = open.map((f) => f.id);
       const mine = ids.length
         ? (await supabase.from('internal_form_responses').select('form_id, submitted_at, updated_at, paid').eq('user_id', user.id).in('form_id', ids)).data || []
@@ -234,8 +395,10 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       const f = await getForm(body.id);
       // A draft exists only for its organisers, who can preview it.
       if (!f || (f.status === 'draft' && !canManage)) return json({ error: 'This form does not exist or has been removed.' }, 404);
+      // Answered from its link as a guest, signed in or not (an organiser previewing a draft excepted).
+      if (f.status !== 'draft' && (!forMembers(f) || (!isMember && forGuests(f)))) return json({ guest: true });
       if (!isMember && !canManage) {
-        return json({ error: 'Internal forms are for the Society\'s active members.', reason: 'not_member' }, 403);
+        return json({ error: 'This form is for the Society\'s active members.', reason: 'not_member' }, 403);
       }
       let response: ResponseRow | null = null;
       const files: Record<string, string> = {};
@@ -256,6 +419,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
           payment_instructions: f.payment_instructions, confirmation_message: f.confirmation_message,
           cover_path: f.cover_path ?? null,
           state: f.status === 'draft' ? 'draft' : memberState(f),
+          audience: f.audience ?? 'internal', items_max: itemsMaxOf(f.items_max), item_label: f.item_label ?? null,
         },
         me: { name: displayName, email: me?.email || user.email, can_answer: isMember },
         response: response ? { answers: response.answers, submitted_at: response.submitted_at, updated_at: response.updated_at, paid: response.paid, amount_due: response.amount_due ?? null } : null,
@@ -266,11 +430,12 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
 
     // Send or change my answers.
     if (action === 'submit') {
-      if (!isMember) return json({ error: 'Internal forms are for the Society\'s active members.' }, 403);
+      if (!isMember) return json({ error: 'This form is for the Society\'s active members.' }, 403);
       const f = await getForm(body.id);
       if (!f || f.status === 'draft') return json({ error: 'This form does not exist or has been removed.' }, 404);
+      if (!forMembers(f)) return json({ error: 'This form is answered from its link, with your name and email.' }, 400);
       if (!accepting(f)) return json({ error: f.closes_at && new Date(f.closes_at).getTime() <= Date.now() ? `The deadline has passed: this form closed on ${romeLong(f.closes_at)}.` : 'This form is closed and no longer takes answers.' }, 400);
-      const { answers, errors } = validateAnswers(f.fields || [], body.answers, `${f.id}/${user.id}/`);
+      const { answers, errors } = validateAnswers(f.fields || [], body.answers, `${f.id}/${user.id}/`, itemsMaxOf(f.items_max));
       // Field by field, so the page can say what is wrong under each question.
       if (Object.keys(errors).length) return json({ invalid: true, message: 'Some answers need attention.', errors });
 
@@ -330,6 +495,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
               allowEdits: f.allow_edits,
               deadlineText: f.closes_at ? romeLong(f.closes_at) : null,
               confirmationMessage: f.confirmation_message,
+              itemsMax: itemsMaxOf(f.items_max), itemLabel: f.item_label,
             }),
           });
           // rpc() reports a failure instead of throwing it.
@@ -345,7 +511,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
     // =================================================================
     // ORGANISERS
     // =================================================================
-    if (!canManage) return json({ error: 'Internal Forms are run by the President, the Vice President and Operations.' }, 403);
+    if (!canManage) return json({ error: 'Forms are run by the President, the Vice President and Operations.' }, 403);
 
     if (action === 'list') {
       const { data, error } = await supabase.from('internal_forms').select('*').order('created_at', { ascending: false });
@@ -371,7 +537,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       if (!f) return json({ error: 'This form no longer exists.' }, 404);
       const { data, error } = await supabase.from('internal_form_responses').select('*').eq('form_id', f.id).order('submitted_at', { ascending: true });
       if (error) throw error;
-      return json({ form: f, responses: data || [], images: await signAll(formImagePaths(f.fields || [], f.cover_path)) });
+      return json({ form: f, responses: ((data || []) as ResponseRow[]).map(forOrganisers), images: await signAll(formImagePaths(f.fields || [], f.cover_path)) });
     }
 
     // A test receipt, to the organiser's own address: the receipt this
@@ -382,7 +548,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
       if (!f) return json({ error: 'This form no longer exists.' }, 404);
       const to = (user.email || '').trim();
       if (!to) return json({ error: 'Your account has no email address to send the test to.' }, 400);
-      const answers = sampleAnswers(f.fields || [], to);
+      const answers = sampleAnswers(f.fields || [], to, itemsMaxOf(f.items_max));
       const fixed = f.payment_amount === null ? null : Number(f.payment_amount);
       const started = new Date(Date.now() - 1000).toISOString();
       const now = started;
@@ -396,6 +562,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
           due: amountDue(f.track_payments, fixed, f.fields || [], answers),
           paymentInstructions: f.payment_instructions, allowEdits: f.allow_edits,
           deadlineText: f.closes_at ? romeLong(f.closes_at) : null, confirmationMessage: f.confirmation_message,
+          itemsMax: itemsMaxOf(f.items_max), itemLabel: f.item_label,
         }),
       });
       if (mailError) throw mailError;
@@ -437,6 +604,10 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         payment_instructions: input.track_payments === true ? text(input.payment_instructions, 1000) : null,
         confirmation_message: text(input.confirmation_message, 1000),
         cover_path: ownId ? coverOf(ownId, input.cover_path) : null,
+        // Who answers and how many items: a page from before these settings
+        // existed sends neither, and then the form keeps what it has.
+        ...('audience' in input ? { audience: input.audience === 'external' || input.audience === 'both' ? input.audience : 'internal' } : {}),
+        ...('items_max' in input ? { items_max: itemsMaxOf(input.items_max), item_label: itemsMaxOf(input.items_max) > 1 ? text(input.item_label, 40) : null } : {}),
         updated_by_name: displayName,
         updated_at: new Date().toISOString(),
       };
@@ -491,6 +662,7 @@ Deno.serve(audited('internal-forms', async (req, audit) => {
         title: `${f.title} (copy)`.slice(0, LIMITS.title), description: f.description, fields: [],
         closes_at: null, allow_edits: f.allow_edits, track_payments: f.track_payments, payment_amount: f.payment_amount,
         payment_instructions: f.payment_instructions, confirmation_message: f.confirmation_message,
+        audience: f.audience ?? 'internal', items_max: itemsMaxOf(f.items_max), item_label: f.item_label ?? null,
         status: 'draft', created_by: user.id, created_by_name: displayName, updated_by_name: displayName,
       }).select('*').single();
       if (error) throw error;

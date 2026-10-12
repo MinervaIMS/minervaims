@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { HElement } from 'docx-preview';
+import { fetchDocx } from './docx-cache';
 
 // =====================================================================
 // A Word document (.docx), shown as pages in the browser.
@@ -46,6 +47,11 @@ import type { HElement } from 'docx-preview';
 //
 // The library is loaded only when a preview is opened, so the rest of
 // the workspace does not carry it.
+//
+// A FILE IS FETCHED ONCE. The downloaded document is kept by its address
+// for as long as the page is open (a few, the latest kept), so a page
+// with two documents (CV & Cover Letter) can fetch the second while the
+// first is read, and show it at once when its tab is chosen.
 // =====================================================================
 
 interface TabStop { position?: string; style?: string; leader?: string }
@@ -218,9 +224,7 @@ export function DocxPreview({ url, title, zoom = 'fit', onFitScale }: {
     setNatural(null);
     (async () => {
       try {
-        const [{ renderAsync }, response] = await Promise.all([import('docx-preview'), fetch(url)]);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const blob = await response.blob();
+        const [{ renderAsync }, blob] = await Promise.all([import('docx-preview'), fetchDocx(url)]);
         if (cancelled) return;
         const found: { renderer: Renderer | null } = { renderer: null };
         await renderAsync(blob, pages, undefined, {

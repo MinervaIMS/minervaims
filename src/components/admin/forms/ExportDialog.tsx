@@ -5,8 +5,10 @@
 // ones the filters show, or the ones ticked), which columns (grouped as
 // who answered, when, the questions, the payment and the notes, with
 // every question named), and which format (Excel or CSV). The attached
-// files can come along as a ZIP with a folder per member. A line at the
-// bottom says what will be downloaded before it is.
+// files can come along as a ZIP with a folder per person. When answers
+// hold several items (three hoodies), the sheet can have one row per
+// item instead of one per answer: the list a supplier works from. A line
+// at the bottom says what will be downloaded before it is.
 // =====================================================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -20,8 +22,10 @@ import { useToast } from '@/hooks/use-toast';
 import { buildCsv, buildXlsx } from '@/lib/xlsx-lite';
 import { downloadBlob, safeFileName } from '@/lib/file-download';
 import { zipFromUrls } from '@/lib/zip';
+import { itemCount } from '@/lib/internal-forms-rules';
 import type { FormResponse, InternalForm } from '@/lib/internal-forms-api';
 import { GROUP_LABEL, exportRows, filesForZip, type Column } from './answers-model';
+import { countOf, itemWord } from './forms-model';
 
 type Rows = 'all' | 'filtered' | 'selected';
 
@@ -42,6 +46,7 @@ export function ExportDialog({
   const [rows, setRows] = useState<Rows>('all');
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [withFiles, setWithFiles] = useState(false);
+  const [perItem, setPerItem] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const hasFiles = form.fields.some((f) => f.type === 'file');
@@ -53,6 +58,7 @@ export function ExportDialog({
     setChosen(new Set(columns.filter((c) => c.group !== 'notes' && c.key !== 'updated').map((c) => c.key)));
     setName(`${form.title} answers ${new Date().toISOString().slice(0, 10)}`);
     setWithFiles(false);
+    setPerItem(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -63,6 +69,10 @@ export function ExportDialog({
   }, [columns]);
 
   const list = rows === 'selected' ? selected : rows === 'filtered' ? filtered : all;
+  const item = itemWord(form);
+  const several = (form.items_max ?? 1) > 1 || all.some((r) => itemCount(r.answers) > 1);
+  const items = list.reduce((a, r) => a + itemCount(r.answers), 0);
+  const byItem = several && perItem;
   const cols = columns.filter((c) => chosen.has(c.key));
   const fileCount = hasFiles && withFiles ? filesForZip(form, list).length : 0;
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -72,8 +82,8 @@ export function ExportDialog({
     const base = safeFileName(name || form.title);
     setBusy('sheet');
     try {
-      const header = cols.map((c) => c.label);
-      const data = exportRows(cols, list);
+      const header = [...(byItem ? [`${item} number`] : []), ...cols.map((c) => c.label)];
+      const data = exportRows(cols, list, byItem);
       const blob = format === 'xlsx' ? buildXlsx(form.title, header, data) : buildCsv(header, data);
       downloadBlob(blob, `${base}.${format}`);
       if (withFiles && fileCount) {
@@ -89,7 +99,7 @@ export function ExportDialog({
         downloadBlob(zip, `${base} files.zip`);
         if (failed.length) toast({ title: `${failed.length} file${failed.length === 1 ? '' : 's'} could not be added`, description: failed.slice(0, 3).join(', '), variant: 'destructive' });
       }
-      toast({ title: 'Export ready', description: `${plural(list.length, 'answer', 'answers')}, ${plural(cols.length, 'column', 'columns')}${withFiles && fileCount ? `, ${plural(fileCount, 'file', 'files')}` : ''}.` });
+      toast({ title: 'Export ready', description: `${plural(list.length, 'answer', 'answers')}${byItem ? ` (${countOf(items, item.toLowerCase())}, one row each)` : ''}, ${plural(cols.length, 'column', 'columns')}${withFiles && fileCount ? `, ${plural(fileCount, 'file', 'files')}` : ''}.` });
       onOpenChange(false);
     } catch (e) {
       toast({ title: 'The export did not complete', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -159,17 +169,23 @@ export function ExportDialog({
               <Label htmlFor="export-name" className="text-xs">File name</Label>
               <Input id="export-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
+            {several && (
+              <label className="mt-3 flex items-start gap-2 text-sm">
+                <Switch data-ro className="mt-0.5" checked={perItem} onCheckedChange={setPerItem} />
+                <span>One row per {item.toLowerCase()}<span className="block text-muted-foreground">An answer with three gets three rows, numbered, each with that {item.toLowerCase()}'s own answers: the list to send a supplier. The amount due stays on each answer's first row, so the column still adds up.</span></span>
+              </label>
+            )}
             {hasFiles && (
               <label className="mt-3 flex items-start gap-2 text-sm">
                 <Switch data-ro className="mt-0.5" checked={withFiles} onCheckedChange={setWithFiles} />
-                <span>Also download the attached files<span className="block text-muted-foreground">A second ZIP file, with a folder for each member.</span></span>
+                <span>Also download the attached files<span className="block text-muted-foreground">A second ZIP file, with a folder for each person.</span></span>
               </label>
             )}
           </section>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-separator bg-background px-6 py-4">
           <p className="mr-auto text-sm text-muted-foreground" aria-live="polite">
-            {plural(list.length, 'answer', 'answers')} · {plural(cols.length, 'column', 'columns')} · {format === 'xlsx' ? 'Excel' : 'CSV'}{withFiles && hasFiles ? ` · ${plural(fileCount, 'file', 'files')}` : ''}
+            {plural(list.length, 'answer', 'answers')}{byItem ? ` (${plural(items, 'row', 'rows')})` : ''} · {plural(cols.length, 'column', 'columns')} · {format === 'xlsx' ? 'Excel' : 'CSV'}{withFiles && hasFiles ? ` · ${plural(fileCount, 'file', 'files')}` : ''}
           </p>
           <Button data-ro variant="outline" onClick={() => onOpenChange(false)} disabled={!!busy}>Cancel</Button>
           <Button data-ro variant="solid" onClick={run} disabled={!!busy || cols.length === 0 || list.length === 0}>

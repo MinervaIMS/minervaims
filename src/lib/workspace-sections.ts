@@ -24,7 +24,7 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'my-role', label: 'My profile' }, { key: 'dashboard', label: 'Dashboard' },
     { key: 'welcome', label: 'How to use' }, { key: 'calendar', label: 'Calendar' } ] },
   { section: 'Career', items: [
-    { key: 'career-smart', label: 'Smart Tracker' }, { key: 'career-cv', label: 'CV template' }, { key: 'career-cl', label: 'Cover letter template' },
+    { key: 'career-smart', label: 'Smart Tracker' }, { key: 'career-cv', label: 'CV & Cover Letter: CV tab' }, { key: 'career-cl', label: 'CV & Cover Letter: Cover letter tab' },
     { key: 'career-linkedin', label: 'LinkedIn' }, { key: 'career-gpa', label: 'GPA converter' },
     { key: 'career-brainteasers', label: 'Brainteasers' },
     { key: 'career-gmat', label: 'GMAT resources' }, { key: 'career-ib', label: 'IB questions' } ] },
@@ -63,7 +63,7 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'smm-graphics', label: 'MIMS Graphics' }, { key: 'smm-brand', label: 'Design System' },
     { key: 'smm-ads', label: 'Ads & spending' } ] },
   { section: 'Operations', items: [
-    { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' }, { key: 'ops-forms', label: 'Internal forms' },
+    { key: 'ops-fee', label: 'Membership fees' }, { key: 'ops-treasury', label: 'Treasury' }, { key: 'ops-forms', label: 'Forms' },
     { key: 'ops-external', label: 'External relations' }, { key: 'ops-docs', label: 'Statute & documents' } ] },
   { section: 'Website', items: [
     { key: 'website-pages', label: 'Pages' }, { key: 'website-readings', label: 'Readings' }, { key: 'website-testimonials', label: 'Testimonials' }, { key: 'website-history', label: 'History' }, { key: 'website-faqs', label: 'FAQs' },

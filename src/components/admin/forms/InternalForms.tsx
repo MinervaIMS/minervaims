@@ -1,5 +1,5 @@
 // =====================================================================
-// Operations > Internal Forms: the organisers' page.
+// Operations > Forms: the organisers' page.
 // ---------------------------------------------------------------------
 // TWO PLACES, ONE ADDRESS EACH. The list of forms is the page itself;
 // a form opens in place, at `?form=<id>&view=questions|settings|answers`,
@@ -12,12 +12,17 @@
 // the forms the Society runs most often.
 //
 // A FORM has three tabs, in the order work is done: Questions (the title,
-// the introduction and the questions, with the member's view beside
-// them), Settings (deadline, changes, payment, the message after
-// sending) and Answers. Edits are held on the page until Save, in a bar
-// that stays in view while anything is unsaved; leaving the page keeps
-// them for when the form is opened again. Opening, closing and reopening
-// say what will happen to members before they happen.
+// the introduction and the questions, with the view of the person
+// answering beside them), Settings (who answers, deadline, changes, more
+// than one item, payment, the message after sending) and Answers. Edits
+// are held on the page until Save, in a bar that stays in view while
+// anything is unsaved; leaving the page keeps them for when the form is
+// opened again. Opening, closing and reopening say what will happen
+// before they happen.
+//
+// WHO ANSWERS. A form is for members (signed in, on their Dashboard),
+// for guests (from its link, with a name and an email) or for both; the
+// list says which, and Copy link says what the link does.
 // =====================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -45,14 +50,14 @@ import { useAccess } from '@/hooks/useAccess';
 import { useIsDesktop } from '@/hooks/use-desktop';
 import { useToast } from '@/hooks/use-toast';
 import { friendlyError } from '@/lib/errors';
-import { isQuestion, LIMITS } from '@/lib/internal-forms-rules';
+import { isQuestion, itemsMaxOf, LIMITS } from '@/lib/internal-forms-rules';
 import {
   deleteForm, duplicateForm, getForm, listForms, saveForm, saveFormWithImages, setFormStatus, uploadFormImage,
   type FormResponse, type FormStatus, type InternalForm,
   sendTestReceipt,
 } from '@/lib/internal-forms-api';
 import {
-  STARTERS, STATE_LABEL, deadlineRelative, deadlineText, effectiveState, firstProblem, formLink, money,
+  AUDIENCES, STARTERS, STATE_LABEL, audienceOf, deadlineRelative, deadlineText, effectiveState, firstProblem, formLink, forMembers, itemWord, linkNote, money,
   type EffectiveState, type Problem,
 } from './forms-model';
 import { stamp } from './answers-model';
@@ -71,12 +76,25 @@ let listCache: InternalForm[] | null = null;
 const unsaved = new Map<string, { base: string; draft: InternalForm }>();
 
 /** The parts of a form the organiser edits, compared and saved. */
-const EDITABLE = ['title', 'description', 'fields', 'closes_at', 'allow_edits', 'track_payments', 'payment_amount', 'payment_instructions', 'confirmation_message', 'cover_path'] as const;
+const EDITABLE = [
+  'title', 'description', 'fields', 'closes_at', 'allow_edits', 'track_payments', 'payment_amount', 'payment_instructions', 'confirmation_message', 'cover_path',
+  'audience', 'items_max', 'item_label',
+] as const;
 const editable = (f: InternalForm) => Object.fromEntries(EDITABLE.map((k) => [k, f[k]])) as Partial<InternalForm>;
 // Empty text, null and absent read the same, so typing and deleting a
 // word does not leave a form "changed".
 const norm = (f: InternalForm) => JSON.stringify(editable(f), (_k, v) => (v === '' || v === null || v === undefined ? undefined : v));
-const tidy = (f: InternalForm): InternalForm => ({ ...f, payment_amount: f.payment_amount == null ? null : Number(f.payment_amount), fields: Array.isArray(f.fields) ? f.fields : [] });
+const tidy = (f: InternalForm): InternalForm => ({
+  ...f, payment_amount: f.payment_amount == null ? null : Number(f.payment_amount), fields: Array.isArray(f.fields) ? f.fields : [],
+  audience: audienceOf(f), items_max: itemsMaxOf(f.items_max), item_label: f.item_label ?? null,
+});
+
+/** Who answers, on the list and the form's header, for forms not only for members. */
+function AudienceBadge({ form }: { form: Pick<InternalForm, 'audience'> }) {
+  const a = audienceOf(form);
+  if (a === 'internal') return null;
+  return <span className="inline-flex shrink-0 items-center border border-accent/40 bg-accent/5 px-2 py-0.5 font-body text-xs text-accent">{AUDIENCES.find((x) => x.value === a)?.short}</span>;
+}
 
 const BADGE: Record<EffectiveState, string> = {
   open: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
@@ -146,7 +164,7 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
     const closed = list.filter((f) => ['closed', 'expired'].includes(effectiveState(f)))
       .sort((a, b) => (b.closed_at ?? b.closes_at ?? b.updated_at).localeCompare(a.closed_at ?? a.closes_at ?? a.updated_at));
     return [
-      { key: 'open', title: 'Open', hint: 'Members see these on their Dashboard and can answer now.', items: openForms },
+      { key: 'open', title: 'Open', hint: 'Taking answers now: members find theirs on the Dashboard, guests answer from the link.', items: openForms },
       { key: 'draft', title: 'Drafts', hint: 'Only organisers can see these.', items: drafts },
       { key: 'closed', title: 'Closed', hint: 'No new answers; every answer is kept.', items: closed },
     ].filter((g) => g.items.length);
@@ -155,7 +173,7 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
   const copyLink = async (f: InternalForm) => {
     try {
       await navigator.clipboard.writeText(formLink(f.id));
-      toast({ title: 'Link copied', description: 'It opens the form for any active member, after they sign in.' });
+      toast({ title: 'Link copied', description: linkNote(f) });
     } catch { toast({ title: 'Copy this link', description: formLink(f.id) }); }
   };
   const duplicate = async (f: InternalForm) => {
@@ -184,14 +202,14 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
   return (
     <div>
       <WorkspacePageHeader
-        title="Internal Forms"
-        description="Forms for active members, from hoodie orders to company visits, with every answer, payment and export in one place."
+        title="Forms"
+        description="Forms for members, guests or both, from hoodie orders to company visits, with every answer, payment and export in one place."
         actions={canEdit ? <Button variant="solid" onClick={() => setNewOpen(true)}><Plus className="h-4 w-4" />New form</Button> : undefined}
       />
       {!canEdit && (
         <p className="mb-4 flex items-center gap-2 border border-separator bg-muted/30 px-3 py-2 font-body text-sm text-muted-foreground">
           <Lock aria-hidden className="h-4 w-4 shrink-0" />
-          {isDesktop ? 'Your role can read these forms but not change them.' : 'Read-only on a phone: open Internal Forms on a computer to create forms or tick payments.'}
+          {isDesktop ? 'Your role can read these forms but not change them.' : 'Read-only on a phone: open Forms on a computer to create forms or tick payments.'}
         </p>
       )}
 
@@ -208,7 +226,7 @@ function FormList({ onOpen }: { onOpen: (id: string, v?: View) => void }) {
           <ListChecks aria-hidden className="mx-auto mb-3 h-8 w-8 text-accent" />
           <p className="font-serif text-xl text-foreground">No forms yet</p>
           <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">
-            A form collects something from members: an order, a sign-up, interest in a visit. It starts as a draft only organisers see; once opened, every active member finds it on their Dashboard and receives a receipt of their answers by email.
+            A form collects something from members, from guests outside the Society, or from both: an order, a sign-up, interest in a visit. It starts as a draft only organisers see; once opened, members find it on their Dashboard, guests answer from its link, and everyone receives a receipt of their answers by email.
           </p>
           {canEdit && <Button variant="solid" className="mt-4" onClick={() => setNewOpen(true)}><Plus className="h-4 w-4" />Create the first form</Button>}
         </div>
@@ -284,6 +302,7 @@ function FormRow({ form: f, canEdit, busy, onOpen, onCopy, onDuplicate, onDelete
     state === 'open' ? deadlineRelative(f.closes_at) : state === 'expired' && f.closes_at ? `Deadline passed ${stamp(f.closes_at)}` : '',
     state === 'closed' && f.closed_at ? `Closed ${stamp(f.closed_at)}` : '',
     state === 'draft' ? `${questions} ${questions === 1 ? 'question' : 'questions'}` : '',
+    itemsMaxOf(f.items_max) > 1 ? `Up to ${itemsMaxOf(f.items_max)} per answer` : '',
   ].filter(Boolean);
   return (
     <li className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center">
@@ -292,7 +311,8 @@ function FormRow({ form: f, canEdit, busy, onOpen, onCopy, onDuplicate, onDelete
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-serif text-lg leading-snug text-accent group-hover:underline group-hover:underline-offset-2">{f.title}</span>
           <StateBadge state={state} />
-          {f.track_payments && f.payment_amount != null && <span className="text-xs text-muted-foreground">{money(f.payment_amount)}</span>}
+          <AudienceBadge form={f} />
+          {f.track_payments && f.payment_amount != null && <span className="text-xs text-muted-foreground">{money(f.payment_amount)}{itemsMaxOf(f.items_max) > 1 ? ` per ${itemWord(f).toLowerCase()}` : ''}</span>}
         </span>
         {f.description && <span className="mt-0.5 block truncate text-sm text-muted-foreground">{f.description}</span>}
         <span className="mt-1 block text-[13px] text-muted-foreground">{meta.join(' · ')}</span>
@@ -310,7 +330,7 @@ function FormRow({ form: f, canEdit, busy, onOpen, onCopy, onDuplicate, onDelete
             <DropdownMenuContent align="end" className="font-body">
               <DropdownMenuItem onSelect={() => onOpen('questions')}><ListChecks className="h-4 w-4" />Edit the questions</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => onOpen('settings')}><Settings2 className="h-4 w-4" />Settings and deadline</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => window.open(`/forms/${f.id}`, '_blank', 'noopener')}><Eye className="h-4 w-4" />Preview as a member</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => window.open(`/forms/${f.id}`, '_blank', 'noopener')}><Eye className="h-4 w-4" />Preview</DropdownMenuItem>
               <DropdownMenuItem onSelect={onDuplicate}><CopyPlus className="h-4 w-4" />Make a copy</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" />Delete</DropdownMenuItem>
@@ -481,7 +501,7 @@ function FormEditor({ id, view, onView, onOpen }: {
       setRestored(false);
       unsaved.delete(id);
       keepInList(f);
-      toast({ title: 'Saved', description: f.status === 'open' ? 'Members see the changes from now on.' : undefined });
+      toast({ title: 'Saved', description: f.status === 'open' ? 'People see the changes from now on.' : undefined });
       return f;
     } catch (e) {
       toast({ title: 'Could not save', description: friendlyError(e), variant: 'destructive' });
@@ -518,7 +538,9 @@ function FormEditor({ id, view, onView, onOpen }: {
       keepInList(f);
       toast({
         title: status === 'open' ? 'The form is open' : status === 'closed' ? 'The form is closed' : 'Back to draft',
-        description: status === 'open' ? 'Active members find it on their Dashboard. Copy the link to share it too.' : status === 'closed' ? 'Members can no longer answer. Every answer is kept.' : 'Only organisers can see it now.',
+        description: status === 'open'
+          ? (forMembers(f) ? `Active members find it on their Dashboard. Copy the link to share it${audienceOf(f) === 'both' ? ' with guests' : ' too'}.` : 'Copy the link and share it: guests answer from it.')
+          : status === 'closed' ? 'Nobody can answer any more. Every answer is kept.' : 'Only organisers can see it now.',
       });
     } catch (e) {
       toast({ title: 'Could not change the form', description: friendlyError(e), variant: 'destructive' });
@@ -540,7 +562,7 @@ function FormEditor({ id, view, onView, onOpen }: {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(formLink(id));
-      toast({ title: 'Link copied', description: 'It opens the form for any active member, after they sign in.' });
+      toast({ title: 'Link copied', description: saved ? linkNote(saved) : undefined });
     } catch { toast({ title: 'Copy this link', description: formLink(id) }); }
   };
   const preview = async () => {
@@ -606,9 +628,9 @@ function FormEditor({ id, view, onView, onOpen }: {
   const paid = responses.filter((r) => r.paid).length;
   const stateLine = (() => {
     if (state === 'draft') return 'A draft: only organisers can open it. Open it when the questions are ready.';
-    if (state === 'open') return `Open to every active member. ${saved.closes_at ? `${deadlineRelative(saved.closes_at)} (${deadlineText(saved.closes_at)}).` : 'No deadline: it stays open until you close it.'}`;
-    if (state === 'expired') return `The deadline passed ${stamp(saved.closes_at)}, so members can no longer answer. Move the deadline in Settings to take more answers.`;
-    return `Closed${saved.closed_at ? ` ${stamp(saved.closed_at)}` : ''}. Members can no longer answer; every answer is kept.`;
+    if (state === 'open') return `Open to ${({ internal: 'every active member', external: 'guests, from its link', both: 'every active member, and to guests from its link' } as const)[audienceOf(saved)]}. ${saved.closes_at ? `${deadlineRelative(saved.closes_at)} (${deadlineText(saved.closes_at)}).` : 'No deadline: it stays open until you close it.'}`;
+    if (state === 'expired') return `The deadline passed ${stamp(saved.closes_at)}, so nobody can answer any more. Move the deadline in Settings to take more answers.`;
+    return `Closed${saved.closed_at ? ` ${stamp(saved.closed_at)}` : ''}. Nobody can answer any more; every answer is kept.`;
   })();
 
   const tabs: { v: View; label: string; icon: typeof ListChecks; count?: number }[] = [
@@ -645,6 +667,7 @@ function FormEditor({ id, view, onView, onOpen }: {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h1 className="min-w-0 break-words font-serif text-heading text-accent">{draft.title || 'Untitled form'}</h1>
               <StateBadge state={state} />
+              <AudienceBadge form={saved} />
             </div>
             <p className="mt-1.5 max-w-2xl text-body text-muted-foreground">{stateLine}</p>
           </div>
@@ -706,6 +729,7 @@ function FormEditor({ id, view, onView, onOpen }: {
           <QuestionsEditor
             fields={draft.fields} onChange={(fields) => set({ fields })} answerCount={responses.length} readOnly={readOnly} reveal={reveal}
             title={draft.title} intro={draft.description} media={media} coverPath={draft.cover_path}
+            itemsMax={itemsMaxOf(draft.items_max)} itemLabel={itemWord(draft)} guestsOnly={audienceOf(draft) === 'external'}
             header={(
               <section className="mb-4 border border-separator border-t-4 border-t-accent p-4 sm:p-5">
                 {/* The cover: at the top of the form, and on members' Dashboard while it waits for them. */}
@@ -726,7 +750,7 @@ function FormEditor({ id, view, onView, onOpen }: {
                   ) : !readOnly && (
                     <PictureButton media={media} onPicked={(path) => set({ cover_path: path })} label="Add a cover picture"
                       className="flex w-full items-center justify-center gap-2 border border-dashed border-separator px-4 py-4 font-body text-sm text-accent hover:border-accent hover:bg-accent/5">
-                      <ImageIcon className="h-4 w-4" />Add a cover picture<span className="text-muted-foreground">: at the top of the form and on members' Dashboard</span>
+                      <ImageIcon className="h-4 w-4" />Add a cover picture<span className="text-muted-foreground">: at the top of the form{forMembers(draft) ? " and on members' Dashboard" : ''}</span>
                     </PictureButton>
                   )}
                 </div>
@@ -738,7 +762,7 @@ function FormEditor({ id, view, onView, onOpen }: {
                 <div className="mt-3 space-y-1">
                   <Label htmlFor="form-intro" className="text-xs">Introduction (optional)</Label>
                   <Textarea id="form-intro" rows={3} maxLength={4000} disabled={readOnly} value={draft.description ?? ''} onChange={(e) => set({ description: e.target.value })}
-                    placeholder="What the form is for, and anything members should know before answering." />
+                    placeholder="What the form is for, and anything people should know before answering." />
                 </div>
               </section>
             )}
@@ -758,7 +782,7 @@ function FormEditor({ id, view, onView, onOpen }: {
             <p className="mr-auto min-w-0 text-sm" aria-live="polite">
               {problem
                 ? <span className="text-destructive">{problem.message}</span>
-                : <><span className="font-medium text-foreground">Unsaved changes.</span> <span className="text-muted-foreground">{saved.status === 'open' ? 'Members see them once you save.' : 'Save before you leave.'}</span></>}
+                : <><span className="font-medium text-foreground">Unsaved changes.</span> <span className="text-muted-foreground">{saved.status === 'open' ? 'People see them once you save.' : 'Save before you leave.'}</span></>}
             </p>
             {dirty && <Button variant="ghost" onClick={discard} disabled={saving}>Discard</Button>}
             {dirty && <Button variant="solid" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}Save</Button>}
@@ -775,7 +799,10 @@ function FormEditor({ id, view, onView, onOpen }: {
                 <AlertDialogTitle>{state === 'draft' ? 'Open' : 'Reopen'} "{draft.title}"?</AlertDialogTitle>
                 <AlertDialogDescription asChild>
                   <div className="space-y-2">
-                    <p>Every active member will find it on their Dashboard and can answer {draft.closes_at ? `until ${deadlineText(draft.closes_at)}` : 'until you close it'}. Each member answers once{draft.allow_edits ? ' and can change their answers while it is open' : ''}, and receives a copy of their answers by email.</p>
+                    <p>
+                      {({ internal: 'Every active member will find it on their Dashboard and', external: 'Anyone with its link', both: 'Every active member will find it on their Dashboard, and anyone else can open it from its link. They all' } as const)[audienceOf(draft)]}
+                      {' '}can answer {draft.closes_at ? `until ${deadlineText(draft.closes_at)}` : 'until you close it'}. Each person answers once{draft.allow_edits ? ' and can change their answers while it is open' : ''}, and receives a copy of their answers by email.
+                    </p>
                     <p>{questions} {questions === 1 ? 'question' : 'questions'}{draft.track_payments ? `, with a payment${draft.payment_amount != null ? ` of ${money(draft.payment_amount)}` : ''}` : ''}.{dirty ? ' Your unsaved changes are saved first.' : ''}</p>
                   </div>
                 </AlertDialogDescription>
@@ -792,7 +819,7 @@ function FormEditor({ id, view, onView, onOpen }: {
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>Close "{draft.title}"?</AlertDialogTitle>
-                <AlertDialogDescription>Members can no longer answer or change their answers, and the form leaves their Dashboard. The {responses.length} {responses.length === 1 ? 'answer' : 'answers'} received are kept, and you can reopen the form at any time.</AlertDialogDescription>
+                <AlertDialogDescription>Nobody can answer or change their answers any more{forMembers(draft) ? ", and the form leaves members' Dashboard" : ''}. The {responses.length} {responses.length === 1 ? 'answer' : 'answers'} received are kept, and you can reopen the form at any time.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={statusBusy}>Keep it open</AlertDialogCancel>
@@ -806,7 +833,7 @@ function FormEditor({ id, view, onView, onOpen }: {
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>Back to draft?</AlertDialogTitle>
-                <AlertDialogDescription>The form leaves members' Dashboards and its link opens for organisers only. It has no answers yet, so nothing is lost.</AlertDialogDescription>
+                <AlertDialogDescription>Its link opens for organisers only{forMembers(draft) ? ", and it leaves members' Dashboards" : ''}. It has no answers yet, so nothing is lost.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={statusBusy}>Cancel</AlertDialogCancel>
