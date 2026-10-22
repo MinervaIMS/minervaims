@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { readFileField } from '../_shared/form-file.ts';
 import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
@@ -69,7 +70,7 @@ function splitName(full: string | null | undefined, fallbackEmail: string): { fi
   return { first: parts[0], surname: parts.slice(1).join(' ') };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('member-profile', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
@@ -89,6 +90,7 @@ Deno.serve(async (req) => {
       .from('user_roles').select('role, division').eq('user_id', user.id);
     const roleList = (roleRows || []) as Array<{ role: string; division: string | null }>;
     const roles: string[] = roleList.map((r) => r.role);
+    audit.actor(user, roles);
     const isCandidate = roles.includes('candidate') && !roles.some((r) => r !== 'candidate' && r !== 'pending');
     // The admin role is a user, not a member.
     const isAdminRole = roles.includes('admin') && !roles.some((r) => PUBLIC_ROLES.has(r));
@@ -97,6 +99,8 @@ Deno.serve(async (req) => {
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       if (isCandidate || isAdminRole) return json({ error: 'Not available' }, 403);
+      audit.request('upload', {});
+      audit.subject('Profile photo', null);
       const formData = await req.formData();
       // `readFileField` instead of a cast: a field that is not actually a file
       // now reads as no file at all, which is the refusal below rather than a
@@ -124,6 +128,10 @@ Deno.serve(async (req) => {
     const body = ((await readJsonObject(req)) ?? {}) as LooseBody;
     const action: 'get' | 'update' | 'redeem' =
       body.action === 'update' ? 'update' : body.action === 'redeem' ? 'redeem' : 'get';
+    // Only the fields' names are kept with the entry, never their values.
+    audit.request(action, {});
+    audit.subject('Own profile', null);
+    if (action === 'update') audit.note({ fields: Object.keys(body).filter((k) => k !== 'action') });
 
     if (isCandidate || isAdminRole) return json({ member: null, isCandidate, isAdmin: isAdminRole });
 
@@ -255,4 +263,4 @@ Deno.serve(async (req) => {
     console.error('member-profile error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

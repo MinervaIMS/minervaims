@@ -40,34 +40,6 @@ const DeleteAlumniSchema = z.object({
 
 const ActionSchema = z.enum(['create', 'update', 'delete']);
 
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    });
-  } catch (err) {
-    console.error('Failed to log activity:', err);
-  }
-}
-
 Deno.serve(audited('admin-alumni', async (req, audit) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -180,7 +152,7 @@ Deno.serve(audited('admin-alumni', async (req, audit) => {
           .single();
         
         if (!result.error) {
-          await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'alumnus', result.data.id, `${alumni.name} ${alumni.surname}`);
+          audit.subject(`${alumni.name} ${alumni.surname}`, result.data.id);
         }
         break;
 
@@ -207,7 +179,7 @@ Deno.serve(audited('admin-alumni', async (req, audit) => {
           .single();
         
         if (!result.error) {
-          await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'alumnus', alumni.id, `${alumni.name} ${alumni.surname}`);
+          audit.subject(`${alumni.name} ${alumni.surname}`, alumni.id);
         }
         break;
 
@@ -233,7 +205,7 @@ Deno.serve(audited('admin-alumni', async (req, audit) => {
         
         if (!result.error) {
           const alumniName = existingAlumni ? `${existingAlumni.name} ${existingAlumni.surname}` : null;
-          await logActivity(supabase, user.id, user.email!, primaryRole, 'delete', 'alumnus', alumni.id, alumniName);
+          audit.subject(alumniName, alumni.id);
         }
         break;
 

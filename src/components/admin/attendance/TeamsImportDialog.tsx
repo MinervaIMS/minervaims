@@ -269,7 +269,7 @@ export function TeamsImportDialog({ open, onOpenChange, event, onDone }: {
                   result.already ? `${result.already} already present` : '',
                 ].filter(Boolean).join(' · ') || 'Nothing to change: everyone was already recorded.'}
               </p>
-              <p className="text-xs text-muted-foreground">Anybody can still be unticked or removed on the list, until it closes two weeks after the event.</p>
+              <p className="text-xs text-muted-foreground">Anybody can still be unticked or removed on the list, until it closes at the end of the semester.</p>
             </div>
           )}
         </div>

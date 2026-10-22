@@ -159,34 +159,6 @@ async function purgeReport(supabase: any, id: string, fileUrl: string | null) {
   await supabase.from('archive_files').delete().eq('id', id)
 }
 
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    });
-  } catch (err) {
-    console.error('Failed to log activity:', err);
-  }
-}
-
 Deno.serve(audited('admin-files', async (req, audit) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -468,17 +440,8 @@ Deno.serve(audited('admin-files', async (req, audit) => {
 
         // Log activity
         const primaryRole = userRoleNames[0] || 'member';
-        await logActivity(
-          supabase,
-          user.id,
-          user.email || 'unknown',
-          primaryRole,
-          'create',
-          'file',
-          data.id,
-          validatedFile.title,
-          { division: validatedFile.division, fund: validatedFile.fund }
-        );
+        audit.subject(validatedFile.title, data.id);
+        audit.note({ division: validatedFile.division, fund: validatedFile.fund });
 
         console.log('File created:', data.id)
         return new Response(
@@ -549,17 +512,8 @@ Deno.serve(audited('admin-files', async (req, audit) => {
 
         // Log activity
         const primaryRole = userRoleNames[0] || 'member';
-        await logActivity(
-          supabase,
-          user.id,
-          user.email || 'unknown',
-          primaryRole,
-          'update',
-          'file',
-          data.id,
-          validatedFile.title,
-          { division: validatedFile.division, fund: validatedFile.fund }
-        );
+        audit.subject(validatedFile.title, data.id);
+        audit.note({ division: validatedFile.division, fund: validatedFile.fund });
 
         console.log('File updated:', data.id)
         return new Response(
@@ -693,17 +647,8 @@ Deno.serve(audited('admin-files', async (req, audit) => {
 
         // Log activity
         const primaryRole = userRoleNames[0] || 'member';
-        await logActivity(
-          supabase,
-          user.id,
-          user.email || 'unknown',
-          primaryRole,
-          'delete',
-          'file',
-          deleteResult.data.id,
-          fileData?.title || 'Unknown file',
-          { division: fileData?.division, recoverable_until: new Date(Date.now() + RECOVERY_MS).toISOString() }
-        );
+        audit.subject(fileData?.title || 'Unknown file', deleteResult.data.id);
+        audit.note({ division: fileData?.division, recoverable_until: new Date(Date.now() + RECOVERY_MS).toISOString() });
 
         console.log('File moved to the recovery window:', deleteResult.data.id)
         return new Response(
@@ -751,8 +696,8 @@ Deno.serve(audited('admin-files', async (req, audit) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
-        await logActivity(supabase, user.id, user.email || 'unknown', userRoleNames[0] || 'member',
-          'update', 'file', parsed.data.id, existing.title || 'Unknown file', { division: existing.division, operation: 'restore' })
+        audit.subject(existing.title || 'Unknown file', parsed.data.id);
+        audit.note({ division: existing.division, operation: 'restore' });
 
         return new Response(JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -794,8 +739,8 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         }
 
         await purgeReport(supabase, parsed.data.id, existing.file_url)
-        await logActivity(supabase, user.id, user.email || 'unknown', userRoleNames[0] || 'member',
-          'delete', 'file', parsed.data.id, existing.title || 'Unknown file', { division: existing.division, operation: 'permanent' })
+        audit.subject(existing.title || 'Unknown file', parsed.data.id);
+        audit.note({ division: existing.division, operation: 'permanent' });
 
         return new Response(JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

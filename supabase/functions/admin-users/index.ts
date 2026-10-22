@@ -360,16 +360,12 @@ Deno.serve(audited('admin-users', async (req, audit) => {
         }
       }
 
-      // Audit trail.
+      // One entry, written by the audit wrapper: whose role, and to what.
       try {
-        const { data: target } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
-        await supabaseAdmin.from('activity_logs').insert({
-          user_id: requestingUser.id, user_email: requestingUser.email, user_role: 'admin',
-          action: 'update', entity_type: 'user_role', entity_id: userId, entity_name: target?.email || userId,
-          section: 'Settings', subsection: 'Users',
-          details: { role, division: div },
-        });
-      } catch (logErr) { console.error('Failed to log role change:', logErr); }
+        const { data: target } = await supabaseAdmin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+        audit.subject(target?.full_name || 'User account', userId);
+      } catch { audit.subject('User account', userId); }
+      audit.note({ role, division: div });
 
       return new Response(JSON.stringify({ success: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

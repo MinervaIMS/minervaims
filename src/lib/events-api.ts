@@ -113,6 +113,12 @@ export interface EventRegistration {
   member_name?: string | null;
   member_division?: OrgDivision | null;
   member_ambiguous?: boolean;
+  /** The member the row belongs to, the one the events-attended count uses. */
+  member_id?: string | null;
+  /** A person said this registration is NOT a member (a guest sharing a name). */
+  member_declined?: boolean;
+  /** For a name two members share: who it could be, for "Link to member". */
+  member_candidates?: { id: string; name: string; division: OrgDivision | null }[];
 }
 
 // =====================================================================
@@ -132,13 +138,16 @@ export interface EventRegistration {
 // =====================================================================
 
 /** How a registration was recognised. Mirrors `MemberMatch` on the server. */
-export type MemberMatch = 'account' | 'email' | 'name' | 'none';
+export type MemberMatch = 'account' | 'email' | 'name' | 'manual' | 'none';
 
 /** Is this registration a member of the association, however we know? */
 export function isRecognisedMember(r: Pick<EventRegistration, 'member_match' | 'is_member'>): boolean {
-  // `is_member` still counts: it is the answer for anybody who WAS signed
-  // in, and it remains true of rows written before any of this existed.
-  return (!!r.member_match && r.member_match !== 'none') || !!r.is_member;
+  // The endpoint's answer is the one the events-attended count uses, so the
+  // door list says exactly what the count will count. `is_member` (was an
+  // account attached when registering) is only the fallback for a row that
+  // did not come through the endpoint.
+  if (r.member_match) return r.member_match !== 'none';
+  return !!r.is_member;
 }
 
 /** What to call the evidence, in the reader's words. */
@@ -146,6 +155,7 @@ export const MEMBER_MATCH_LABELS: Record<MemberMatch, string> = {
   account: 'Signed in',
   email: 'Matched by email',
   name: 'Matched by name',
+  manual: 'Linked by hand',
   none: 'Not a member',
 };
 
@@ -154,6 +164,7 @@ export const MEMBER_MATCH_NOTE: Record<MemberMatch, string> = {
   account: 'They were signed in when they registered, so this is their own account.',
   email: 'The address they gave is a member\u2019s address, which identifies one person.',
   name: 'The name matches one member exactly. Nothing else confirms it, so check if it matters.',
+  manual: 'Somebody linked this registration to the member by hand.',
   none: 'Nothing on this registration matches the register of members.',
 };
 
@@ -260,9 +271,21 @@ export interface WaitlistEntry {
 }
 
 /** The door list, the number of places and who is waiting, in order. */
-export async function listRegistrationsFull(session: Session | null, eventId: string): Promise<{ registrations: EventRegistration[]; capacity: number | null; waitlist: WaitlistEntry[] }> {
+export async function listRegistrationsFull(session: Session | null, eventId: string): Promise<{ registrations: EventRegistration[]; capacity: number | null; waitlist: WaitlistEntry[]; override: boolean }> {
   const res = await invoke('admin-event-reg', session, { action: 'list', event_id: eventId });
-  return { registrations: res.registrations ?? [], capacity: res.capacity ?? null, waitlist: res.waitlist ?? [] };
+  return {
+    registrations: res.registrations ?? [], capacity: res.capacity ?? null, waitlist: res.waitlist ?? [],
+    // Closed for everybody else, but this reader (President, Vice President) can still correct it.
+    override: !!res.attendance_override,
+  };
+}
+
+/**
+ * Settle who a registration is: link it to a member, or (memberId null) say
+ * it is not a member. Never relinked automatically afterwards.
+ */
+export function linkRegistrationMember(session: Session | null, registrationId: string, memberId: string | null) {
+  return invoke('admin-event-reg', session, { action: 'link-member', id: registrationId, member_id: memberId });
 }
 
 /** Events attended per member (by member id), out of those held so far in the range. Full access to Members only. */
@@ -471,14 +494,17 @@ async function invoke(fn: string, session: Session | null, body: Record<string, 
 
 
 // =====================================================================
-// THE ATTENDANCE WINDOW: two weeks after the event, the list is the record.
+// THE ATTENDANCE WINDOW: open until the end of the event's semester.
 // ---------------------------------------------------------------------
 // The mirror of supabase/functions/_shared/attendance-window.ts, which is
-// what actually refuses a change. Counted on Rome's calendar; the whole
-// fourteenth day is included, so an event on the 1st can be edited until
-// the end of the 15th.
+// what actually refuses a change. Fall closes on 31 January, Spring on 31
+// August (src/lib/semester.ts), and never less than fourteen days after
+// the event, so one late in a semester still has two weeks. Counted on
+// Rome's calendar, the last day included. After that, the President and
+// the Vice President can still correct the list (the endpoint says so in
+// `attendance_override`).
 // =====================================================================
-export const ATTENDANCE_OPEN_DAYS = 14;
+export const ATTENDANCE_MIN_OPEN_DAYS = 14;
 
 function romeToday(at: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -488,11 +514,21 @@ function romeToday(at: Date = new Date()): string {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
+/** The last day of the semester a date (YYYY-MM-DD) belongs to. */
+function semesterEndOf(day: string): string {
+  const [y, m] = day.slice(0, 10).split('-').map(Number);
+  if (m >= 9) return `${y + 1}-01-31`;
+  if (m === 1) return `${y}-01-31`;
+  return `${y}-08-31`;
+}
+
 /** Whether this event's attendance can still be changed, and until when. */
 export function attendanceWindow(eventDate: string | null | undefined, at: Date = new Date()): { open: boolean; closesOn: string | null } {
   if (!eventDate) return { open: true, closesOn: null };
   const [y, m, d] = eventDate.slice(0, 10).split('-').map(Number);
-  const closesOn = new Date(Date.UTC(y, m - 1, d + ATTENDANCE_OPEN_DAYS)).toISOString().slice(0, 10);
+  const floor = new Date(Date.UTC(y, m - 1, d + ATTENDANCE_MIN_OPEN_DAYS)).toISOString().slice(0, 10);
+  const end = semesterEndOf(eventDate);
+  const closesOn = end > floor ? end : floor;
   return { open: romeToday(at) <= closesOn, closesOn };
 }
 

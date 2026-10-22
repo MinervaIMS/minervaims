@@ -1,5 +1,7 @@
 // Utility functions for downloading data as CSV or files
 
+import { logExport } from '@/lib/export-log';
+
 /**
  * Convert an array of objects to CSV string
  */
@@ -52,6 +54,9 @@ export function downloadCSV<T extends object>(
 ) {
   const csv = objectsToCSV(data, columns);
   downloadFile(csv, filename);
+  // Every CSV export from the workspace is recorded in Activity tracking
+  // (the file's name and how many rows; never its content).
+  logExport(filename, { rows: data.length, columns: columns.length });
 }
 
 /**

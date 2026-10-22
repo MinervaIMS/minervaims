@@ -17,16 +17,17 @@
 // the function behind each of them now records the same event itself,
 // and keeping both would have written every action to the log twice.
 //
-// WHAT IS LEFT HERE IS WHAT THE SERVER CANNOT SEE:
+// WHAT IS LEFT HERE IS WHAT THE SERVER CANNOT SEE: a download that
+// happens entirely in the browser and reaches no function at all (the
+// manual in How To Use). CSV and spreadsheet exports are recorded by
+// src/lib/export-log.ts, and since Step 90 the writes the workspace makes
+// straight to a table are recorded by the database itself (the audit
+// trigger of migration 20261022100200), so they need nothing here.
 //
-//   * a download, which happens entirely in the browser and reaches no
-//     function at all;
-//   * the two writes the workspace still makes straight to a table
-//     rather than through a function.
-//
-// Add a call here only for something in one of those two categories. If
-// the action goes through an edge function, it is already logged, and a
-// second entry makes the trail harder to read rather than fuller.
+// Add a call here only for something in that category. If the action
+// goes through an edge function or a table with the trigger, it is
+// already logged, and a second entry makes the trail harder to read
+// rather than fuller. scripts/check-activity-coverage.mjs checks it.
 //
 // ---------------------------------------------------------------------
 // IT NEVER DELAYS ANYTHING AND IT NEVER THROWS.

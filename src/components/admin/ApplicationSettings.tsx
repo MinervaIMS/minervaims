@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { callFunction, friendlyError } from '@/lib/errors';
 import { useAuth } from '@/contexts/AuthContext';
-import { logActivity } from '@/lib/activity-log';
 import { Save, Loader2, Lock, Unlock } from 'lucide-react';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { WorkspaceLoader } from '@/components/admin/WorkspaceLoader';
@@ -42,8 +41,7 @@ function windowState(startLocal: string, endLocal: string): { label: string; ton
 }
 
 const ApplicationSettings = () => {
-  const { session, roles } = useAuth();
-  const primaryRole = roles?.[0]?.role ?? null;
+  const { session } = useAuth();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -121,13 +119,6 @@ const ApplicationSettings = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      logActivity(session, primaryRole, {
-        action: nowClosed ? 'close' : 'open',
-        section: 'Recruiting', subsection: 'Application page',
-        entityType: 'division_applications',
-        entityName: applyDivisionLabel(division),
-        details: { closed_divisions: next },
-      });
       toast({
         title: nowClosed
           ? `${applyDivisionLabel(division)} is no longer taking applications`

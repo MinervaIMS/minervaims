@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -1223,6 +1223,10 @@ export type Database = {
           is_bocconi: boolean | null
           is_external: boolean
           is_member: boolean
+          member_id: string | null
+          member_link: string | null
+          member_linked_at: string | null
+          member_linked_by: string | null
           name: string
           programme: string | null
           registered_at: string
@@ -1242,6 +1246,10 @@ export type Database = {
           is_bocconi?: boolean | null
           is_external?: boolean
           is_member?: boolean
+          member_id?: string | null
+          member_link?: string | null
+          member_linked_at?: string | null
+          member_linked_by?: string | null
           name: string
           programme?: string | null
           registered_at?: string
@@ -1261,6 +1269,10 @@ export type Database = {
           is_bocconi?: boolean | null
           is_external?: boolean
           is_member?: boolean
+          member_id?: string | null
+          member_link?: string | null
+          member_linked_at?: string | null
+          member_linked_by?: string | null
           name?: string
           programme?: string | null
           registered_at?: string
@@ -1272,6 +1284,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
@@ -1760,7 +1779,7 @@ export type Database = {
           staff_note: string | null
           submitted_at: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           access_hash?: string | null
@@ -1781,7 +1800,7 @@ export type Database = {
           staff_note?: string | null
           submitted_at?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           access_hash?: string | null
@@ -1802,7 +1821,7 @@ export type Database = {
           staff_note?: string | null
           submitted_at?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2140,6 +2159,7 @@ export type Database = {
           board: Json
           code: string
           holder_name: string
+          holder_status: string
           id: string
           issued_at: string
           member_id: string | null
@@ -2155,6 +2175,7 @@ export type Database = {
           board?: Json
           code: string
           holder_name: string
+          holder_status?: string
           id?: string
           issued_at?: string
           member_id?: string | null
@@ -2170,6 +2191,7 @@ export type Database = {
           board?: Json
           code?: string
           holder_name?: string
+          holder_status?: string
           id?: string
           issued_at?: string
           member_id?: string | null
@@ -2809,7 +2831,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      event_registration_members: {
+        Row: {
+          ambiguous: boolean | null
+          attended: boolean | null
+          event_id: string | null
+          how: string | null
+          member_id: string | null
+          registration_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       build_member_email: {
@@ -2948,6 +2988,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      match_member: {
+        Args: { p_email: string; p_name: string; p_user_id: string }
+        Returns: {
+          ambiguous: boolean
+          how: string
+          member_id: string
+        }[]
+      }
       member_division_read: {
         Args: {
           _division: Database["public"]["Enums"]["org_division"]
@@ -2983,6 +3031,7 @@ export type Database = {
       my_onboarding_context: { Args: never; Returns: Json }
       normalise_city: { Args: { value: string }; Returns: string }
       normalize_email_part: { Args: { _s: string }; Returns: string }
+      person_name_key: { Args: { p_name: string }; Returns: string }
       pricing_rate_check: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: boolean

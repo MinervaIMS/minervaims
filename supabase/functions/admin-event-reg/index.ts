@@ -1,16 +1,25 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { audited } from '../_shared/activity.ts';
-import { buildMemberIndex, matchRegistration, normaliseEmail, normaliseName, type MemberLike } from '../_shared/member-match.ts';
+import { buildMemberIndex, normaliseEmail, normaliseName, type MemberLike } from '../_shared/member-match.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY, type LooseBody } from '../_shared/request-body.ts';
-import { attendanceOpen, attendanceClosesOn } from '../_shared/attendance-window.ts';
+import { attendanceOpen, attendanceClosesOn, canOverrideClosedAttendance } from '../_shared/attendance-window.ts';
 import { allows } from '../_shared/access.ts';
 import { tokenFromScan } from '../_shared/checkin.ts';
 
 // =====================================================================
 // admin-event-reg — staff management of event registrations & attendance.
 // Actions: list · mark-attended · add-external · members · add-member · remove · checkin · door-status
+//          link-member (settle who a registration is)
 //          member-attendance (Members) · my-events (Events > My events)
 //          import-preview · import-attendance (an online event's meeting report)
+//
+// WHO A REGISTRATION IS comes from ONE place, the database view
+// public.event_registration_members (migration 20261022100000): a link
+// stored on the row, else the account, else the address (record or
+// account), else a name carried by exactly one member. The door list, the
+// count in People > Members and Events > My events all read it, so a
+// person recognised on the list is counted, and a name shared by two
+// members is counted for nobody until somebody links it ("Needs linking").
 //
 // `checkin` is the door scanner: the QR code of a registration's ticket
 // (see _shared/checkin.ts) ticks that person as present. It needs full
@@ -67,20 +76,31 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     audit.request(action, body);
 
     // =====================================================================
-    // THE LIST CLOSES TWO WEEKS AFTER THE EVENT. See _shared/attendance-window.ts.
-    // Every change to it - ticking, adding a walk-in, removing a row - asks
-    // this first, by the event's own date.
+    // THE LIST STAYS OPEN UNTIL THE END OF THE EVENT'S SEMESTER (never less
+    // than two weeks after it). See _shared/attendance-window.ts. Every
+    // change to it - ticking, adding a walk-in, removing a row, linking a
+    // member, a scan, a Teams report - asks this first, by the event's own
+    // date. After it closes, the President and the Vice President can still
+    // correct it, and their change is marked as such in Activity tracking.
     // =====================================================================
     const WEEK_DAY = (iso: string) => {
       const [y, m, d] = iso.split('-').map(Number);
       return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
     };
+    const overrides = canOverrideClosedAttendance(roles, user.email);
     const closedError = async (eventId: unknown): Promise<string | null> => {
       if (typeof eventId !== 'string' || !eventId) return null;
       const { data: ev } = await supabase.from('events').select('date').eq('id', eventId).maybeSingle();
       if (!ev?.date || attendanceOpen(ev.date)) return null;
-      return `Attendance for this event closed on ${WEEK_DAY(attendanceClosesOn(ev.date))}, two weeks after it took place. The list is now the record of who attended.`;
+      if (overrides) {
+        audit.note({ after_close: true, closed_on: attendanceClosesOn(ev.date) });
+        return null;
+      }
+      return `Attendance for this event closed on ${WEEK_DAY(attendanceClosesOn(ev.date))}, at the end of its semester. The list is now the record of who attended; the President or the Vice President can still correct it.`;
     };
+    // Changing the list is for full access to Attendance, as the page shows it.
+    const ATTENDANCE_EDIT_DENIED = 'Only people with full access to Attendance can change the list.';
+    const canEditAttendance = allows(roles, user.email, 'events-attendance', 'manage');
     const eventOfRegistration = async (id: unknown): Promise<string | null> => {
       if (typeof id !== 'string' || !id) return null;
       const { data } = await supabase.from('event_registrations').select('event_id').eq('id', id).maybeSingle();
@@ -93,8 +113,13 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
     //     Display days included, and only those where attendance was taken
     //     (somebody ticked), so an event nobody recorded does not count
     //     against anybody.
-    //   * Attended: ticked or scanned in, recognised by the account or by
-    //     the address on the member record. Registered: on the list.
+    //   * Attended / registered, PER MEMBER: who each row is comes from the
+    //     view public.event_registration_members, the one definition (see
+    //     the header). A row that matches two members by name belongs to
+    //     nobody until somebody links it.
+    //   * `keysBy` also keeps each row's account and address, for the one
+    //     reader who may not be on the register at all (the association's
+    //     own account opening My events).
     // =====================================================================
     const keysOf = (uid: string | null, email: string | null) =>
       [uid ? `u:${uid}` : null, email ? `e:${email.trim().toLowerCase()}` : null].filter(Boolean) as string[];
@@ -107,30 +132,44 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       if (evErr) throw evErr;
       const all = (evs || []) as { id: string; title: string | null; date: string; start_at: string | null; aod_day_id: string | null; online: boolean | null }[];
       const ids = all.map((e) => e.id);
-      const attendedBy = new Map<string, Set<string>>(); // event id -> keys of attendees
-      const registeredBy = new Map<string, Set<string>>(); // event id -> keys of everybody on the list
+      const attendedBy = new Map<string, Set<string>>(); // event id -> member ids present
+      const registeredBy = new Map<string, Set<string>>(); // event id -> member ids on the list
+      const keysAttended = new Map<string, Set<string>>(); // event id -> account/address keys present
+      const keysRegistered = new Map<string, Set<string>>(); // event id -> account/address keys on the list
+      const taken = new Set<string>(); // events where somebody was ticked
+      const add = (map: Map<string, Set<string>>, ev: string, values: string[]) => {
+        const set = map.get(ev) ?? new Set<string>();
+        values.forEach((v) => set.add(v));
+        map.set(ev, set);
+      };
       for (let i = 0; i < ids.length; i += 200) {
-        const { data: regs, error } = await supabase.from('event_registrations')
-          .select('event_id, user_id, email, attended').in('event_id', ids.slice(i, i + 200));
-        if (error) throw error;
+        const slice = ids.slice(i, i + 200);
+        const [{ data: who, error: wErr }, { data: regs, error: rErr }] = await Promise.all([
+          supabase.from('event_registration_members').select('registration_id, event_id, member_id, attended').in('event_id', slice),
+          supabase.from('event_registrations').select('id, event_id, user_id, email, attended').in('event_id', slice),
+        ]);
+        if (wErr) throw wErr;
+        if (rErr) throw rErr;
+        for (const r of (who || []) as { event_id: string; member_id: string | null; attended: boolean | null }[]) {
+          if (r.attended) taken.add(r.event_id);
+          if (!r.member_id) continue;
+          add(registeredBy, r.event_id, [r.member_id]);
+          if (r.attended) add(attendedBy, r.event_id, [r.member_id]);
+        }
         for (const r of (regs || []) as { event_id: string; user_id: string | null; email: string | null; attended: boolean | null }[]) {
           const keys = keysOf(r.user_id, r.email);
-          const reg = registeredBy.get(r.event_id) ?? new Set<string>();
-          keys.forEach((k) => reg.add(k));
-          registeredBy.set(r.event_id, reg);
-          if (r.attended) {
-            const set = attendedBy.get(r.event_id) ?? new Set<string>();
-            keys.forEach((k) => set.add(k));
-            attendedBy.set(r.event_id, set);
-          }
+          add(keysRegistered, r.event_id, keys);
+          if (r.attended) { taken.add(r.event_id); add(keysAttended, r.event_id, keys); }
         }
       }
       const events: HeldEvent[] = all
-        .filter((e) => attendedBy.has(e.id))
+        .filter((e) => taken.has(e.id))
         .map((e) => ({ id: e.id, title: e.title || (e.aod_day_id ? 'Association on Display' : 'Event'), date: e.date, start_at: e.start_at, aod: !!e.aod_day_id, online: !!e.online }))
         .sort((a, b) => (a.start_at || a.date).localeCompare(b.start_at || b.date));
-      for (const ev of events) if (!registeredBy.has(ev.id)) registeredBy.set(ev.id, new Set());
-      return { events, attendedBy, registeredBy, until };
+      for (const ev of events) {
+        for (const map of [attendedBy, registeredBy, keysAttended, keysRegistered]) if (!map.has(ev.id)) map.set(ev.id, new Set());
+      }
+      return { events, attendedBy, registeredBy, keysAttended, keysRegistered, until };
     };
 
     // =====================================================================
@@ -151,7 +190,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const to = typeof body.to === 'string' && DAY.test(body.to) ? body.to : null;
       if (!from || !to || from > to) return json({ error: 'Choose a semester.' }, 400);
       const held = await heldEvents(from, to);
-      const { data: members, error: mErr } = await supabase.from('members').select('id, user_id, email');
+      const { data: members, error: mErr } = await supabase.from('members').select('id');
       if (mErr) throw mErr;
       const counts: Record<string, number> = {};
       // WHICH events, as well as how many: the count in Members opens the
@@ -159,12 +198,11 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       // registered for, by id; `events` names them once.
       const attended: Record<string, string[]> = {};
       const registered: Record<string, string[]> = {};
-      for (const m of (members || []) as { id: string; user_id: string | null; email: string | null }[]) {
-        const keys = keysOf(m.user_id, m.email);
-        const went = held.events.filter((ev) => keys.some((k) => held.attendedBy.get(ev.id)!.has(k))).map((ev) => ev.id);
+      for (const m of (members || []) as { id: string }[]) {
+        const went = held.events.filter((ev) => held.attendedBy.get(ev.id)!.has(m.id)).map((ev) => ev.id);
         counts[m.id] = went.length;
         if (went.length) attended[m.id] = went;
-        const signed = held.events.filter((ev) => keys.some((k) => held.registeredBy.get(ev.id)!.has(k))).map((ev) => ev.id);
+        const signed = held.events.filter((ev) => held.registeredBy.get(ev.id)!.has(m.id)).map((ev) => ev.id);
         if (signed.length) registered[m.id] = signed;
       }
       return json({ total: held.events.length, from, to: held.until, counts, events: held.events, attended, registered });
@@ -190,14 +228,20 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const from = typeof body.from === 'string' && DAY.test(body.from) ? body.from : null;
       const to = typeof body.to === 'string' && DAY.test(body.to) ? body.to : null;
       if (!from || !to || from > to) return json({ error: 'Choose a semester.' }, 400);
-      const { data: meRow } = await supabase.from('members').select('email').eq('user_id', user.id).maybeSingle();
-      const myKeys = new Set([...keysOf(user.id, user.email ?? null), ...keysOf(null, (meRow as { email: string | null } | null)?.email ?? null)]);
+      const { data: meRow } = await supabase.from('members').select('id, email').eq('user_id', user.id).maybeSingle();
+      const me = meRow as { id: string; email: string | null } | null;
+      const myKeys = new Set([...keysOf(user.id, user.email ?? null), ...keysOf(null, me?.email ?? null)]);
       const mineIn = (set: Set<string> | undefined) => !!set && [...myKeys].some((k) => set.has(k));
 
+      // The same answer as People > Members: by the member the rows belong
+      // to. Somebody with no member record (the association's own account)
+      // is recognised by their account and address, as before.
       const held = await heldEvents(from, to);
+      const wentTo = (ev: string) => (me ? held.attendedBy.get(ev)!.has(me.id) : mineIn(held.keysAttended.get(ev)));
+      const listedFor = (ev: string) => (me ? held.registeredBy.get(ev)!.has(me.id) : mineIn(held.keysRegistered.get(ev)));
       const history = held.events.map((ev) => ({
         ...ev,
-        status: mineIn(held.attendedBy.get(ev.id)) ? 'attended' : mineIn(held.registeredBy.get(ev.id)) ? 'registered_absent' : 'not_registered',
+        status: wentTo(ev.id) ? 'attended' : listedFor(ev.id) ? 'registered_absent' : 'not_registered',
       }));
 
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' });
@@ -257,21 +301,47 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const registrations = data || [];
 
       // ── who among them is a member ──────────────────────────────────────
-      // Read once for the whole list and indexed, so a room of two hundred
-      // costs one query rather than two hundred. A failure here must not
-      // fail the door list: the names still matter more than the labels,
-      // so the rows go out unrecognised rather than not at all.
+      // From the one definition (public.event_registration_members), read
+      // once for the whole list, so a room of two hundred costs one query.
+      // A failure here must not fail the door list: the names still matter
+      // more than the labels, so the rows go out unrecognised rather than
+      // not at all.
+      type Who = { member_id: string | null; how: string; ambiguous: boolean };
+      const whoOf = new Map<string, Who>();
+      const memberById = new Map<string, MemberLike>();
       let index = buildMemberIndex([]);
       try {
-        const { data: members } = await supabase.from('members')
-          .select('id, user_id, first_name, surname, email, division, membership_status');
-        // Expelled accounts are not members and must not be counted as
-        // such on a door list; everybody else on the register is.
-        index = buildMemberIndex(((members || []) as MemberLike[])
-          .filter((m) => m.membership_status !== 'expelled'));
+        const [{ data: who }, { data: members }] = await Promise.all([
+          supabase.from('event_registration_members').select('registration_id, member_id, how, ambiguous').eq('event_id', body.event_id),
+          supabase.from('members').select('id, user_id, first_name, surname, email, division, membership_status'),
+        ]);
+        for (const w of (who || []) as ({ registration_id: string } & Who)[]) whoOf.set(w.registration_id, w);
+        const usable = ((members || []) as MemberLike[]).filter((m) => m.membership_status !== 'expelled');
+        usable.forEach((m) => memberById.set(m.id, m));
+        index = buildMemberIndex(usable);
       } catch (e) {
-        console.error('member index failed; registrations go out unrecognised', e);
+        console.error('member recognition failed; registrations go out unrecognised', e);
       }
+      const fullName = (m: MemberLike) => `${m.first_name} ${m.surname}`.trim();
+      const recognition = (r: Record<string, unknown>) => {
+        const w = whoOf.get(r.id as string);
+        const m = w?.member_id ? memberById.get(w.member_id) : undefined;
+        const how = (w?.how ?? 'none') as 'account' | 'email' | 'name' | 'manual' | 'none';
+        const ambiguous = !!w?.ambiguous;
+        return {
+          member_match: m ? how : 'none',
+          member_id: m ? m.id : null,
+          member_name: m ? fullName(m) : null,
+          member_division: m ? m.division ?? null : null,
+          member_ambiguous: ambiguous,
+          // "Not a member", said by a person: shown so it can be undone.
+          member_declined: (r.member_link as string | null) === 'none',
+          // For a name two members share: who it could be, for "Link to member".
+          member_candidates: ambiguous
+            ? (index.byName.get(normaliseName(r.name as string | null)) || []).map((c) => ({ id: c.id, name: fullName(c), division: c.division ?? null }))
+            : [],
+        };
+      };
 
       // Whether the list can still be changed, so the page can say so
       // before anybody tries rather than after.
@@ -285,9 +355,12 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           .eq('event_id', body.event_id).order('created_at', { ascending: true });
         waitlist = (w || []) as Record<string, unknown>[];
       } catch (e) { console.error('waiting list unavailable', e); }
+      const listOpen = ev?.date ? attendanceOpen(ev.date) : true;
       return json({
-        attendance_open: ev?.date ? attendanceOpen(ev.date) : true,
+        attendance_open: listOpen,
         attendance_closes_on: ev?.date ? attendanceClosesOn(ev.date) : null,
+        // Closed for everybody else, but this reader can still correct it.
+        attendance_override: !listOpen && overrides,
         // The ticket's token stays on the server: the list never needs it,
         // and a page showing it would make every ticket copyable.
         capacity: (ev as { capacity?: number | null } | null)?.capacity ?? null,
@@ -295,14 +368,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         // The cancel link's token stays on the server for the same reason.
         registrations: registrations.map(({ checkin_token: _ticket, cancel_token: _cancel, ...r }: Record<string, unknown>) => ({
           ...r,
-          ...matchRegistration(
-            {
-              user_id: (r.user_id as string | null) ?? null,
-              name: (r.name as string | null) ?? null,
-              email: (r.email as string | null) ?? null,
-            },
-            index,
-          ),
+          ...recognition(r),
         })),
       });
     }
@@ -328,10 +394,9 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       // Member or guest, the same way the door list decides it.
       let member = false;
       try {
-        const { data: members } = await supabase.from('members')
-          .select('id, user_id, first_name, surname, email, division, membership_status');
-        const index = buildMemberIndex(((members || []) as MemberLike[]).filter((m) => m.membership_status !== 'expelled'));
-        member = matchRegistration({ user_id: reg.user_id ?? null, name: reg.name ?? null, email: reg.email ?? null }, index).member_match !== 'none';
+        const { data: who } = await supabase.from('event_registration_members')
+          .select('member_id').eq('registration_id', reg.id).maybeSingle();
+        member = !!(who as { member_id: string | null } | null)?.member_id;
       } catch { /* recognised as a guest */ }
 
       audit.subject(reg.name, reg.id);
@@ -376,14 +441,17 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       });
     }
     if (action === 'mark-attended') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const closed = await closedError(await eventOfRegistration(body.id));
       if (closed) return json({ error: closed }, 403);
-      const { error } = await supabase.from('event_registrations')
-        .update({ attended: !!body.attended }).eq('id', body.id);
+      const { data: row, error } = await supabase.from('event_registrations')
+        .update({ attended: !!body.attended }).eq('id', body.id).select('id, name').maybeSingle();
       if (error) throw error;
+      if (row) audit.subject(`${(row as { name: string }).name}: ${body.attended ? 'present' : 'not present'}`, (row as { id: string }).id);
       return json({ success: true });
     }
     if (action === 'add-external') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const closed = await closedError(body.event_id);
       if (closed) return json({ error: closed }, 403);
       const first = textOf(body, 'name');
@@ -396,6 +464,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         is_member: false, is_external: true, attended: !!body.attended, added_by: user.id,
       });
       if (error) throw error;
+      audit.subject(fullName, typeof body.event_id === 'string' ? body.event_id : null);
       // External attendees are added to the newsletter (name, surname, email).
       if (email) {
         try { await supabase.from('newsletter_subscribers').insert({ email, consent: true, source: 'event' }); }
@@ -428,6 +497,7 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       });
     }
     if (action === 'add-member') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const closed = await closedError(body.event_id);
       if (closed) return json({ error: closed }, 403);
       const eventId = optionalTextOf(body, 'event_id');
@@ -449,15 +519,18 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
         .select('id, user_id, email').eq('event_id', eventId);
       const mine = (existing || []).find((r: { user_id: string | null; email: string | null }) =>
         (m.user_id && r.user_id === m.user_id) || (email && (r.email || '').trim().toLowerCase() === email.toLowerCase()));
+      audit.subject(fullName, eventId);
       if (mine) {
         const { error } = await supabase.from('event_registrations')
           .update({ attended: true }).eq('id', mine.id);
         if (error) throw error;
         return json({ success: true, already_listed: true, name: fullName });
       }
+      // Picked from the register by a person: that is the link.
       const { error } = await supabase.from('event_registrations').insert({
         event_id: eventId, user_id: m.user_id || null, name: fullName, email,
         is_member: true, is_external: false, attended: true, added_by: user.id,
+        member_id: m.id, member_link: 'manual', member_linked_by: user.id, member_linked_at: new Date().toISOString(),
       });
       if (error) throw error;
       return json({ success: true, already_listed: false, name: fullName });
@@ -543,9 +616,9 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       }
 
       const { data: regRows, error: rErr } = await supabase.from('event_registrations')
-        .select('id, user_id, name, email, attended').eq('event_id', eventId);
+        .select('id, user_id, name, email, attended, member_id, member_link').eq('event_id', eventId);
       if (rErr) throw rErr;
-      type Reg = { id: string; user_id: string | null; name: string | null; email: string | null; attended: boolean | null };
+      type Reg = { id: string; user_id: string | null; name: string | null; email: string | null; attended: boolean | null; member_id?: string | null; member_link?: string | null };
       const regs = (regRows || []) as Reg[];
       const regByEmail = new Map<string, Reg>();
       const regsByName = new Map<string, Reg[]>();
@@ -609,9 +682,16 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       const tick = new Set<string>();
       let already = 0;
       const inserts: Record<string, unknown>[] = [];
+      // A row already on the list that the report recognised as a member,
+      // and that nobody has linked yet: the link is stored now, so the
+      // count keeps it whatever is later edited on the row.
+      const links: { id: string; member_id: string; member_link: string }[] = [];
       for (const f of found) {
         if (f.reg) {
           if (f.reg.attended) already++; else tick.add(f.reg.id);
+          if (f.member && !f.reg.member_id && !f.reg.member_link) {
+            links.push({ id: f.reg.id, member_id: f.member.id, member_link: f.how === 'name' ? 'name' : 'email' });
+          }
           continue;
         }
         if (f.member) {
@@ -619,6 +699,8 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           inserts.push({
             event_id: eventId, user_id: f.member.user_id || null, name: `${f.member.first_name || ''} ${f.member.surname || ''}`.trim() || f.name,
             email: email || null, is_member: true, is_external: false, attended: true, added_by: user.id,
+            // Recognised here, and confirmed by the organiser in the preview.
+            member_id: f.member.id, member_link: f.how === 'name' ? 'name' : 'email',
           });
         } else {
           inserts.push({
@@ -642,6 +724,11 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
           const { error } = await supabase.from('event_registrations').update({ attended: true }).in('id', ids.slice(i, i + 200));
           if (error) throw error;
         }
+      }
+      for (const l of links) {
+        const { error } = await supabase.from('event_registrations')
+          .update({ member_id: l.member_id, member_link: l.member_link }).eq('id', l.id).is('member_id', null);
+        if (error) throw error;
       }
       let addedMembers = 0;
       let addedGuests = 0;
@@ -667,11 +754,47 @@ Deno.serve(audited('admin-event-reg', async (req, audit) => {
       return json({ success: true, ticked: tick.size, added_members: addedMembers, added_guests: addedGuests, already, total: found.length });
     }
     if (action === 'remove') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
       const closed = await closedError(await eventOfRegistration(body.id));
       if (closed) return json({ error: closed }, 403);
-      const { error } = await supabase.from('event_registrations').delete().eq('id', body.id);
+      const { data: gone, error } = await supabase.from('event_registrations').delete().eq('id', body.id).select('id, name').maybeSingle();
       if (error) throw error;
+      if (gone) audit.subject((gone as { name: string }).name, (gone as { id: string }).id);
       return json({ success: true });
+    }
+    // =====================================================================
+    // WHO A REGISTRATION IS, SETTLED BY A PERSON.
+    // ---------------------------------------------------------------------
+    // "Link to member" on a row that matches two members by name ("Needs
+    // linking"), or a correction on any row: `member_id` links it to that
+    // member; `member_id: null` says it is NOT a member (a guest who shares
+    // a member's name). Either way it is never relinked automatically, and
+    // the count in People > Members follows at once. Inside the same
+    // window as every other change to the list.
+    // =====================================================================
+    if (action === 'link-member') {
+      if (!canEditAttendance) return json({ error: ATTENDANCE_EDIT_DENIED }, 403);
+      const regId = optionalTextOf(body, 'id');
+      if (!regId) return json({ error: 'Choose the registration first.' }, 400);
+      const { data: reg } = await supabase.from('event_registrations').select('id, event_id, name').eq('id', regId).maybeSingle();
+      if (!reg) return json({ error: 'This registration no longer exists. Reload the page.' }, 404);
+      const closed = await closedError(reg.event_id);
+      if (closed) return json({ error: closed }, 403);
+      const memberId = body.member_id === null ? null : optionalTextOf(body, 'member_id');
+      if (body.member_id !== null && !memberId) return json({ error: 'Choose the member.' }, 400);
+      let memberName = 'not a member';
+      if (memberId) {
+        const { data: m } = await supabase.from('members').select('id, first_name, surname, membership_status').eq('id', memberId).maybeSingle();
+        if (!m || m.membership_status === 'expelled') return json({ error: 'This person is not on the register of members.' }, 404);
+        memberName = `${m.first_name || ''} ${m.surname || ''}`.trim();
+      }
+      const { error } = await supabase.from('event_registrations').update({
+        member_id: memberId, member_link: memberId ? 'manual' : 'none',
+        member_linked_by: user.id, member_linked_at: new Date().toISOString(),
+      }).eq('id', regId);
+      if (error) throw error;
+      audit.subject(`${reg.name}: linked to ${memberName}`, regId);
+      return json({ success: true, member_id: memberId, member_name: memberId ? memberName : null });
     }
     return json({ error: 'Invalid action' }, 400);
   } catch (error) {

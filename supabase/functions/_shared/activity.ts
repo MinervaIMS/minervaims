@@ -49,12 +49,16 @@
 // failure is swallowed rather than surfaced, because a broken audit
 // trail must never break the thing being audited.
 //
-// READS ARE NOT LOGGED. Recording every list call would bury the writes
-// under thousands of rows of noise within a week and would make the log
-// unusable for the one thing it exists for. `MUTATES` below decides.
+// READS ARE NOT LOGGED, EXCEPT THE SENSITIVE ONES. Recording every list
+// call would bury the writes under thousands of rows of noise within a
+// week and would make the log unusable for the one thing it exists for.
+// What is recorded, and what is not, is ONE list: activity-registry.ts,
+// which the coverage test (scripts/check-activity-coverage.mjs) checks
+// against every function's source.
 // =====================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { placeFor, verbFor as registryVerb } from './activity-registry.ts';
 
 /** What the wrapper collects while the handler runs. */
 interface AuditState {
@@ -65,113 +69,31 @@ interface AuditState {
   entityName?: string | null;
   entityId?: string | null;
   details?: Record<string, unknown>;
+  /** A verb that says more than the action's usual one, for this request. */
+  verb?: string;
+  /** Roles were not given: look them up when the entry is written. */
+  lookupRole?: boolean;
 }
 
 export interface AuditHandle {
-  /** Called once the caller has been identified. */
-  actor(user: { id: string; email?: string | null }, roles: string[]): void;
+  /**
+   * Called once the caller has been identified. Without `roles`, the role
+   * is looked up when the entry is written (after the response).
+   */
+  actor(user: { id: string; email?: string | null }, roles?: string[]): void;
   /** Called once the request body has been read. */
   request(action: string, body: Record<string, unknown>): void;
   /** Optional: name the affected record more precisely than the body does. */
   subject(name?: string | null, id?: string | null): void;
+  /** Optional: facts worth keeping with the entry (never personal data). */
+  note(details: Record<string, unknown>): void;
+  /** Optional: a more precise verb for this request (e.g. 'status_change'). */
+  verb(verb: string): void;
 }
-
-// ---------------------------------------------------------------------
-// WHERE EACH FUNCTION'S WRITES BELONG, in the workspace's own words.
-// The log is read by people who know the navigation, not the codebase.
-// ---------------------------------------------------------------------
-const PLACE: Record<string, { section: string; subsection: string }> = {
-  'admin-alumni': { section: 'People', subsection: 'Alumni' },
-  'admin-alumni-calls': { section: 'Events', subsection: 'Alumni calls' },
-  'admin-aod': { section: 'Events', subsection: 'Association on Display' },
-  'career-files': { section: 'Career', subsection: 'Templates and LinkedIn files' },
-  'career-brainteasers': { section: 'Career', subsection: 'Brainteasers' },
-  'membership-certificate': { section: 'General', subsection: 'My profile' },
-  'brand-kit': { section: 'Media & Communication', subsection: 'Brand & design' },
-  'admin-applications': { section: 'Recruiting', subsection: 'Candidates screening' },
-  'admin-auto-emails': { section: 'Operations', subsection: 'Automatic emails' },
-  'admin-calendar': { section: 'General', subsection: 'Calendar' },
-  'admin-events': { section: 'Events', subsection: 'Event archive' },
-  'admin-fees': { section: 'Operations', subsection: 'Membership fees' },
-  'admin-files': { section: 'Reports', subsection: 'Report archive' },
-  'admin-funds': { section: 'Reports', subsection: 'Fund performances' },
-  'admin-history': { section: 'Website', subsection: 'History' },
-  'admin-interviews': { section: 'Recruiting', subsection: 'Interview calendar' },
-  'admin-join-faqs': { section: 'Website', subsection: 'FAQs' },
-  'admin-members': { section: 'People', subsection: 'Members' },
-  'admin-readings': { section: 'Website', subsection: 'Readings' },
-  'admin-resources': { section: 'Workspace', subsection: 'Resources' },
-  'admin-settings': { section: 'Recruiting', subsection: 'Applications on website' },
-  'admin-smm': { section: 'Media & Communication', subsection: 'Editorial calendar' },
-  'admin-team': { section: 'People', subsection: 'Members' },
-  'admin-testimonials': { section: 'Website', subsection: 'Testimonials' },
-  'admin-treasury': { section: 'Operations', subsection: 'Treasury' },
-  'admin-users': { section: 'Settings', subsection: 'Users' },
-  'admin-event-reg': { section: 'Events', subsection: 'Registration forms' },
-  'internal-forms': { section: 'Operations', subsection: 'Forms' },
-};
-
-/**
- * Actions that CHANGE something, and the verb the log prints for them.
- *
- * The key is either `fn:action` for the cases that need to be specific,
- * or a bare `action` shared by every function that uses that name. An
- * action absent from both is treated as a read and is not recorded.
- */
-const MUTATES: Record<string, string> = {
-  // Shared verbs, used the same way by many functions.
-  save: 'update', create: 'create', add: 'create', insert: 'create',
-  update: 'update', edit: 'update', upsert: 'update', reorder: 'update',
-  delete: 'delete', remove: 'delete',
-  publish: 'update', unpublish: 'update', 'set-published': 'update',
-  'set-open': 'update', 'set-visible': 'update', 'set-role': 'update',
-  open: 'open', close: 'close',
-  upload: 'upload', signup: 'registration', register: 'registration',
-  'remove-signup': 'delete',
-  approve: 'approval', reject: 'rejection',
-  // The specific ones, where the shared verb would say too little.
-  'admin-applications:set-status': 'status_change',
-  'admin-applications:set-evaluation-division': 'status_change',
-  'admin-applications:send-offer': 'approval',
-  'admin-applications:resend-offer': 'approval',
-  'admin-fees:set-paid': 'update',
-  'admin-smm:editorial-save': 'update',
-  'admin-smm:editorial-delete': 'delete',
-  'admin-smm:ads-save': 'update',
-  'admin-smm:ads-delete': 'delete',
-  'admin-aod:create-day': 'create',
-  'admin-aod:delete-day': 'delete',
-  'admin-interviews:save-slots': 'update',
-  'admin-interviews:book': 'registration',
-  'admin-interviews:cancel': 'delete',
-  'admin-auto-emails:save-template': 'update',
-  'admin-auto-emails:create-template': 'create',
-  'career-files:rename': 'update',
-  // A read, recorded on purpose: the Career templates tell members that
-  // downloads are tracked.
-  'career-files:download': 'download',
-  // Also a read recorded on purpose: who took a certificate, and when.
-  'membership-certificate:issue': 'download',
-  // Settings, Certificates: the register of certificates.
-  'membership-certificate:withdraw': 'update',
-  'membership-certificate:restore': 'update',
-  // The door scanner ticks somebody as present.
-  'admin-event-reg:checkin': 'update',
-  // An online event's attendance, recorded from the meeting's report.
-  'admin-event-reg:import-attendance': 'update',
-  // The design system package: who took it, and who replaced it.
-  'brand-kit:download': 'download',
-  'brand-kit:upload-url': 'upload',
-  // Career > Brainteasers: who took the greenbook (each copy carries their
-  // name), and who replaced or removed it. Questions edited are 'save'.
-  'career-brainteasers:greenbook-download': 'download',
-  'career-brainteasers:greenbook-commit': 'upload',
-  'career-brainteasers:greenbook-remove': 'delete',
-};
 
 /** What a write is called in the log, or null when it is a read. */
 function verbFor(fn: string, action: string): string | null {
-  return MUTATES[`${fn}:${action}`] ?? MUTATES[action] ?? null;
+  return registryVerb(fn, action);
 }
 
 /**
@@ -216,8 +138,10 @@ function idFrom(body: Record<string, unknown>): string | null {
  */
 const RANK = [
   'admin', 'president', 'vice_president', 'head_of_asset_management', 'head_of_operations',
-  'head_of_media', 'head_of_division', 'portfolio_manager', 'team_leader',
-  'senior_analyst', 'media_analyst', 'operations_analyst', 'analyst', 'advisor', 'alumni', 'member',
+  'head_of_media', 'head_of_division', 'head_of_equity', 'head_of_investment', 'head_of_macro',
+  'head_of_portfolio', 'head_of_quant', 'portfolio_manager', 'team_leader',
+  'senior_analyst', 'media_analyst', 'operations_analyst', 'analyst', 'advisor', 'silent_advisor',
+  'alumni', 'member', 'candidate', 'pending',
 ];
 function seniorRole(roles: string[]): string {
   for (const r of RANK) if (roles.includes(r)) return r;
@@ -234,15 +158,20 @@ function afterResponse(p: Promise<unknown>) {
 
 async function write(fn: string, s: AuditState, status: number) {
   if (!s.userId || !s.action) return;
-  const verb = verbFor(fn, s.action);
-  if (!verb) return;                                   // a read: not recorded
-  const place = PLACE[fn] ?? { section: 'Workspace', subsection: fn };
+  const usual = verbFor(fn, s.action);
+  if (!usual) return;                                  // a read: not recorded
+  const verb = s.verb ?? usual;
+  const place = placeFor(fn, s.action);
   const ok = status >= 200 && status < 300;
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+    if (s.lookupRole) {
+      const { data } = await supabase.from('user_roles').select('role').eq('user_id', s.userId);
+      s.role = seniorRole(((data || []) as { role: string }[]).map((r) => r.role));
+    }
     await supabase.from('activity_logs').insert({
       user_id: s.userId,
       user_email: s.email ?? '',
@@ -284,7 +213,8 @@ export function audited(
       actor(user, roles) {
         state.userId = user.id;
         state.email = user.email ?? '';
-        state.role = seniorRole(roles);
+        if (roles) state.role = seniorRole(roles);
+        else state.lookupRole = true;
       },
       request(action, body) {
         state.action = action;
@@ -294,6 +224,12 @@ export function audited(
       subject(name, id) {
         if (name !== undefined) state.entityName = name;
         if (id !== undefined) state.entityId = id;
+      },
+      note(details) {
+        state.details = { ...(state.details ?? {}), ...details };
+      },
+      verb(verb) {
+        state.verb = verb;
       },
     };
     let response: Response;

@@ -74,34 +74,6 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
   }
 }
 
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    });
-  } catch (err) {
-    console.error('Failed to log activity:', err);
-  }
-}
-
 // Roles that can access readings management
 const readingsAccessRoles = [
   'admin', 'president', 'vice_president', 'head_of_asset_management',
@@ -276,7 +248,7 @@ Deno.serve(audited('admin-readings', async (req, audit) => {
         }
 
         // Log activity
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'reading', data.id, validatedReading.title);
+        audit.subject(validatedReading.title, data.id);
 
         console.log('Reading created:', data.id)
         return new Response(
@@ -328,7 +300,7 @@ Deno.serve(audited('admin-readings', async (req, audit) => {
         }
 
         // Log activity
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'reading', data.id, validatedReading.title);
+        audit.subject(validatedReading.title, data.id);
 
         console.log('Reading updated:', data.id)
         return new Response(
@@ -371,7 +343,7 @@ Deno.serve(audited('admin-readings', async (req, audit) => {
         }
 
         // Log activity
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'delete', 'reading', deleteResult.data.id, existingReading?.title || null);
+        audit.subject(existingReading?.title || null, deleteResult.data.id);
 
         console.log('Reading deleted:', deleteResult.data.id)
         return new Response(
@@ -408,7 +380,8 @@ Deno.serve(audited('admin-readings', async (req, audit) => {
 
         // Log activity
         const typeLabel = readingType ? readingTypeLabels[readingType] || readingType : 'readings';
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'reorder', 'reading', null, null, { 
+        audit.subject(null, null);
+        audit.note({ 
           type: typeLabel, 
           count: reorderResult.data.length 
         });

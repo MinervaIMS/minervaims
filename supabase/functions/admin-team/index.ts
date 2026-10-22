@@ -99,34 +99,6 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    });
-  } catch (err) {
-    console.error('Failed to log activity:', err);
-  }
-}
-
 Deno.serve(audited('admin-team', async (req, audit) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -213,6 +185,8 @@ Deno.serve(audited('admin-team', async (req, audit) => {
     
     // Handle multipart form data (photo uploads)
     if (contentType.includes('multipart/form-data')) {
+      audit.request('upload-photo', {});
+      audit.subject('Team member photo', null);
       try {
         const formData = await req.formData();
         // `readFileField` instead of a cast: a field that is not actually a file
@@ -372,17 +346,8 @@ Deno.serve(audited('admin-team', async (req, audit) => {
 
       // Log activity
       const primaryRole = userRoleNames[0] || 'member';
-      await logActivity(
-        supabase,
-        user.id,
-        user.email || 'unknown',
-        primaryRole,
-        'delete',
-        'team_member',
-        deleteResult.data.id,
-        memberToLog ? `${memberToLog.name} ${memberToLog.surname}` : 'Unknown member',
-        { division: memberToLog?.division, position: memberToLog?.position }
-      );
+      audit.subject(memberToLog ? `${memberToLog.name} ${memberToLog.surname}` : 'Unknown member', deleteResult.data.id);
+      audit.note({ division: memberToLog?.division, position: memberToLog?.position });
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -415,17 +380,8 @@ Deno.serve(audited('admin-team', async (req, audit) => {
 
       // Log activity
       const primaryRole = userRoleNames[0] || 'member';
-      await logActivity(
-        supabase,
-        user.id,
-        user.email || 'unknown',
-        primaryRole,
-        'reorder',
-        'team_member',
-        null,
-        null,
-        { count: reorderResult.data.length }
-      );
+      audit.subject(null, null);
+      audit.note({ count: reorderResult.data.length });
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -502,17 +458,8 @@ Deno.serve(audited('admin-team', async (req, audit) => {
 
       // Log activity
       const primaryRole = userRoleNames[0] || 'member';
-      await logActivity(
-        supabase,
-        user.id,
-        user.email || 'unknown',
-        primaryRole,
-        'create',
-        'team_member',
-        data.id,
-        `${member.name} ${member.surname}`,
-        { division: member.division, position: member.position }
-      );
+      audit.subject(`${member.name} ${member.surname}`, data.id);
+      audit.note({ division: member.division, position: member.position });
 
       return new Response(
         JSON.stringify({ success: true, member: data }),
@@ -549,17 +496,8 @@ Deno.serve(audited('admin-team', async (req, audit) => {
 
       // Log activity
       const primaryRole = userRoleNames[0] || 'member';
-      await logActivity(
-        supabase,
-        user.id,
-        user.email || 'unknown',
-        primaryRole,
-        'update',
-        'team_member',
-        data.id,
-        `${member.name} ${member.surname}`,
-        { division: member.division, position: member.position }
-      );
+      audit.subject(`${member.name} ${member.surname}`, data.id);
+      audit.note({ division: member.division, position: member.position });
 
       return new Response(
         JSON.stringify({ success: true, member: data }),

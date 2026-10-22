@@ -182,7 +182,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     id: 'accountability',
     title: 'What is recorded',
     body: [
-      'Every meaningful action is written to the activity log with the role you held at that moment. That includes role changes, publishing, deletions, fee and treasury entries, candidate status changes and manual downloads.',
+      'Every change made in the workspace, by anybody, is written to the activity log with the role you held at that moment: creating, editing and deleting anything, ticking attendance, saving your own GPA comparisons or calendar entries, an applicant\'s application and offer answer. So are the downloads that matter: CSV and spreadsheet exports, candidates\' CVs and written answers, files attached to Forms answers, certificates and the greenbook. Each is recorded once, by the server where it happens. Entries are kept for ninety days.',
       'The log exists for accountability across leadership teams, not for supervision of individuals. It is visible only to the roles that can open Settings, Activity log, and advisors are deliberately excluded from it.',
     ],
   },
@@ -262,7 +262,7 @@ export const COMMON_TASKS: ManualTask[] = [
       'Check the list: members recognised by email are certain, by name in amber are worth a glance; guests are everyone else. Untick anybody who should not count, or choose a shortest stay in Count.',
       'Press Record. Members on the list are ticked, the others added; guests are added without being put on the newsletter.',
     ],
-    caution: 'Only for online events, and only while the list is open (two weeks after the event). If the page says the report is for another day, check you chose the right event.',
+    caution: 'Only for online events, and only while the list is open (until the end of the semester). If the page says the report is for another day, check you chose the right event.',
   },
   {
     id: 'career-about',
@@ -331,11 +331,11 @@ export const COMMON_TASKS: ManualTask[] = [
     requires: 'my-role',
     level: 'view',
     steps: [
-      'Open General, My Profile. Active members see the Membership Certificate card.',
-      'Press Download PDF. The certificate states your name, your current role and the semester, and is signed by the President and the Vice President on behalf of the Board of Directors.',
+      'Open General, My Profile. Active members see the Membership Certificate card, and so do former members listed among the alumni.',
+      'Press Download PDF. The certificate states your name, your current role and the semester, and is signed by the President and the Vice President on behalf of the Board of Directors. For an alumnus, it states the role held in the last semester served, and that you were a member.',
       'Share the PDF. Whoever receives it can check its number or scan its QR code at minervaims.org/verify, without an account.',
     ],
-    caution: 'It certifies the role you hold now, for this semester. After a change of role, download it again.',
+    caution: 'A member\'s certificate is for the role held now, this semester: after a change of role, download it again. A certificate stays valid while its holder is a member or an alumnus.',
   },
   {
     id: 'withdraw-certificate',
@@ -696,7 +696,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Show-if rule', definition: 'A question, heading or picture of a form shown only when a question above it has one of the chosen answers.', requires: 'ops-forms' },
   { term: 'Starter', definition: 'A ready-made form to begin from in Forms, such as a merchandise order with a payment; a draft to change freely.', requires: 'ops-forms' },
   { term: 'Operations Analyst', definition: 'The member who assists the Head of Operations and runs the forms. Beyond the forms, the access is the Media Analyst\'s.' },
-  { term: 'Activity log', definition: 'The record of every meaningful action with the role held at that moment. It exists for accountability across leadership teams.' },
+  { term: 'Activity log', definition: 'The record of every change made in the workspace, and of every sensitive download, with the role held at that moment. Kept for ninety days. It exists for accountability across leadership teams.' },
+  { term: 'Needs linking', definition: 'An attendance row whose name matches more than one member. It counts for nobody until somebody presses it in Events, Attendance and chooses the member.' },
   { term: 'Deep link', definition: 'A link that opens the workspace on a specific subsection, provided your role can see it.' },
 ];
 
@@ -729,7 +730,7 @@ export const TROUBLESHOOTING: ManualAnswer[] = [
   },
   {
     question: 'A member says their attendance is wrong.',
-    answer: 'They see their own record in Events, My events, and you see the same in People, Members by pressing their number in the Events column. If they were present but show as missed, tick them in Events, Attendance: the list can be corrected up to two weeks after the event, and the count follows at once.',
+    answer: 'They see their own record in Events, My events, and you see the same in People, Members by pressing their number in the Events column. If they were present but show as missed, tick them in Events, Attendance, or link their row if it reads Needs linking: the list can be corrected until the end of the semester, and the count follows at once.',
     requires: 'events-attendance',
   },
   {
@@ -929,7 +930,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Who registered for each event and who actually came. Every registration carries an entry code, sent as a QR code in the confirmation email and again the day before; Scan tickets reads it with the camera of a phone or a laptop and ticks the person as present, with the time.",
       "Ticking by hand works exactly as before and can be mixed with scanning: somebody without their code is found in the list and ticked. Online events have no door, so they have no code and no scanner.",
       "Several phones can scan the same event together and share one live count. Without signal the scanner keeps working: tickets are saved on the phone with the time of the scan and sent as soon as the connection returns.",
-      "The Media Analyst and the Operations Analyst can take attendance and scan alongside Operations. The list closes two weeks after the event; after that it is the record and can still be exported.",
+      "The Media Analyst and the Operations Analyst can take attendance and scan alongside Operations. The list stays open until the end of the event's semester (never less than two weeks); after that it is the record, can still be exported, and only the President and the Vice President can correct it.",
+      "A name two members share reads Needs linking and counts for nobody until somebody presses it and chooses the member, or marks it as not a member. The choice is kept on the row, and the events-attended count in People, Members follows it.",
     ],
     related: ['events-forms', 'events-create', 'events-archive'],
   },
@@ -991,7 +993,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Your own record of the semester's events. Coming up lists the events whose registration is open, from today on: Register signs you up with your account in one click, or puts you on the waiting list when the event is full, and the confirmation email follows at once. The events you hold a place at come first, with Can't make it to give the place back.",
       "An online event you hold a place at shows a Join button: its link is private, and reaches only the people registered.",
       "This semester lists the events held so far where attendance was taken, Association on Display days included, each Attended, Registered but not present, or Not registered, with the totals above. They are the same events, counted the same way, as the Events column of People, Members.",
-      "If you were at an event that shows as missed, tell the Head of Operations on WhatsApp or write to as.minerva@unibocconi.it with the event's name and date: attendance can be corrected up to two weeks after the event.",
+      "If you were at an event that shows as missed, tell the Head of Operations on WhatsApp or write to as.minerva@unibocconi.it with the event's name and date: attendance can be corrected until the end of the semester.",
     ],
     related: ['calendar', 'events-on-display'],
   },
@@ -1046,7 +1048,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Preview on each row shows the certificate exactly as its holder downloads it, with a Download PDF button.",
       "Every certificate of membership the Society has issued, with its number, the holder, the role and semester it certifies, the day it was issued and whether it is still valid.",
-      "The President and the Vice President can withdraw a certificate, with a reason, and restore it. A withdrawn certificate reads as no longer valid to anybody who checks the number, at once; a certificate whose holder has been expelled reads the same way on its own.",
+      "The President and the Vice President can withdraw a certificate, with a reason, and restore it. A withdrawn certificate reads as no longer valid to anybody who checks the number, at once; a certificate whose holder has been expelled, or who is neither among the members nor among the alumni any more, reads the same way on its own.",
     ],
     related: ['my-role', 'people-members', 'settings-activity'],
   },
@@ -1135,7 +1137,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'my-role': {
     detail: [
       "Your own record: your card, the brief describing what your role covers, and the link to the association statute.",
-      "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify.",
+      "Active members also find their certificate of membership here: a PDF of the current role and semester, signed by the President and the Vice President on behalf of the Board, with a number anybody can check at minervaims.org/verify. Former members listed among the alumni find one for the last semester they served.",
       "Your role and division are assigned by the President or the association account. You cannot change your own role from any page, and the server enforces that as well as the interface.",
       "A profile without a photo or a phone number receives a reminder on a Monday at 9:00 am that lists what is missing and explains how to make a professional photo with Career, LinkedIn. At most twice a semester, two weeks apart; never to the roles Member and Advisor.",
     ],

@@ -122,6 +122,12 @@ Deno.serve(audited('admin-settings', async (req, audit) => {
     if (!parsedBody) return new Response(JSON.stringify({ error: UNREADABLE_BODY }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     const { action, settings } = parsedBody as LooseBody;
     audit.request(action, settings ?? {});
+    // Opening or closing one division's applications is the change people
+    // look for in the log: say so, rather than "updated a setting".
+    if (settings && typeof settings === 'object' && 'closed_divisions' in (settings as Record<string, unknown>)) {
+      audit.subject('Divisions taking applications', null);
+      audit.note({ closed_divisions: (settings as Record<string, unknown>).closed_divisions });
+    }
     console.log('Action:', action, 'Settings:', settings);
 
     // `get` is the read. Anything that writes the window needs 'manage'.

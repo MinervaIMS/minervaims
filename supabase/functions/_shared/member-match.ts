@@ -72,9 +72,23 @@ export interface MatchResult {
  * "Mario Rossi": under-matching leaves a member listed as external, which
  * somebody notices and can fix in one press, while over-matching quietly
  * credits attendance to the wrong person.
+ *
+ * Up to three trailing tags such as "(Unverified)", "(External)" or
+ * "(Guest)", which Teams and other tools add after a name, are dropped
+ * first, unless the tag is the whole name.
+ *
+ * THE DATABASE COMPUTES THE SAME KEY: public.person_name_key (migration
+ * 20261022100000_attendance_member_link.sql), which is what the
+ * events-attended count uses. The two must stay identical.
  */
 export function normaliseName(raw: string | null | undefined): string {
-  return (raw || '')
+  let s = (raw || '').replace(/\s+/g, ' ').trim();
+  for (let i = 0; i < 3; i++) {
+    const m = s.match(/\s*\([^()]{1,40}\)\s*$/);
+    if (!m || m[0].length >= s.length) break;
+    s = s.slice(0, s.length - m[0].length).trim();
+  }
+  return s
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()

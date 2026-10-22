@@ -276,14 +276,9 @@ Deno.serve(audited('admin-fees', async (req, audit) => {
         console.error('Semester snapshot failed (collection still closed):', snapErr);
       }
 
-      // Audit trail — records the closer's role AT THIS MOMENT.
-      try {
-        await supabase.from('activity_logs').insert({
-          user_id: user.id, user_email: user.email ?? '', user_role: roles[0] ?? 'admin',
-          action: 'close', entity_type: 'fee_period', entity_id: period.id, entity_name: period.semester_label,
-          section: 'Operations', subsection: 'Membership fees', details: { total, members_registered: undefined },
-        });
-      } catch (logErr) { console.error('Failed to log fee close:', logErr); }
+      // One entry, written by the audit wrapper: what was closed, and the total.
+      audit.subject(period.semester_label, period.id);
+      audit.note({ total });
 
       return json({ success: true, total });
     }

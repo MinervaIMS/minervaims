@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { isAllowedBocconiEmail, DOMAIN_REJECTED_MESSAGE } from '../_shared/bocconi-email.ts';
 import { readFileField, readTextField } from '../_shared/form-file.ts';
 
@@ -68,7 +69,7 @@ async function uploadPdf(supabase: any, userId: string, kind: string, file: File
   return path;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('submit-application', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
@@ -127,6 +128,11 @@ Deno.serve(async (req) => {
     const { data: got, error: userErr } = await supabase.auth.admin.getUserById(userId);
     const account = got?.user;
     if (userErr || !account) return json({ error: 'We could not find your account. Please retry.' }, 400);
+    // The application, recorded against the candidate's account (their name
+    // only; nothing else they wrote goes into the log).
+    audit.actor({ id: account.id, email: account.email ?? fields.email });
+    audit.request('submit', {});
+    audit.subject(`${fields.first_name ?? ''} ${fields.surname ?? ''}`.trim() || 'Application', null);
 
     // ── Eligibility ──
     // The application is only open to the university's own addresses. This
@@ -286,4 +292,4 @@ Deno.serve(async (req) => {
     console.error('submit-application error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

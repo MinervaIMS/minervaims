@@ -8,6 +8,27 @@
       "when": 1791786838733,
       "tag": "0000_forms_audience_items",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792679966580,
+      "tag": "0001_attendance_member_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792679980273,
+      "tag": "0002_certificates_alumni",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792680009345,
+      "tag": "0003_activity_everyone",
+      "breakpoints": true
     }
   ]
 }

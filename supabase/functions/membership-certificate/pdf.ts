@@ -35,6 +35,14 @@ export interface CertificateData {
   issuedAt: Date;
   board: CertificateSignatory[];
   verifyUrl: string;
+  /**
+   * 'alumni': a former member's certificate of the last semester they
+   * served, issued later. It reads "was a member", and the Board line names
+   * the Board of the semester it was ISSUED in, which is who signs it.
+   */
+  holderStatus?: 'member' | 'alumni';
+  /** The semester the certificate was issued in (alumni certificates). */
+  issuedSemesterLabel?: string;
 }
 
 const PURPLE = rgb(0x1f / 255, 0x0f / 255, 0x4d / 255);
@@ -174,7 +182,8 @@ export async function renderCertificate(data: CertificateData): Promise<Uint8Arr
   page.drawLine({ start: { x: cx - ruleHalf, y }, end: { x: cx + ruleHalf, y }, thickness: 0.5, color: HAIR });
 
   y -= 28;
-  centred(page, 'is a member of Minerva Investment Management Society', y, { font: garamond, size: 13.5, color: INK });
+  const verb = data.holderStatus === 'alumni' ? 'was a member' : 'is a member';
+  centred(page, `${verb} of Minerva Investment Management Society`, y, { font: garamond, size: 13.5, color: INK });
   y -= 20;
   centred(page, `in the ${drawable(garamond, data.semesterLabel)} semester, in the role of`, y, { font: garamond, size: 13.5, color: INK });
   y -= 30;
@@ -211,7 +220,8 @@ export async function renderCertificate(data: CertificateData): Promise<Uint8Arr
     centred(page, drawable(carlito, p.title.toUpperCase()), y - 18, titleInk, mid);
   });
   y -= 44;
-  centred(page, `On behalf of the Board of Directors of ${drawable(garamondItalic, data.semesterLabel)}`, y, { font: garamondItalic, size: 11.5, color: MUTED });
+  const boardOf = data.holderStatus === 'alumni' && data.issuedSemesterLabel ? data.issuedSemesterLabel : data.semesterLabel;
+  centred(page, `On behalf of the Board of Directors of ${drawable(garamondItalic, boardOf)}`, y, { font: garamondItalic, size: 11.5, color: MUTED });
 
   // ── Verification ─────────────────────────────────────────────────────
   const qr = QRCode.create(data.verifyUrl, { errorCorrectionLevel: 'M' });

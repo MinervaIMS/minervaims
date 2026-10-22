@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { buildCsv, buildXlsx } from '@/lib/xlsx-lite';
 import { downloadBlob, safeFileName } from '@/lib/file-download';
+import { logExport } from '@/lib/export-log';
 import { zipFromUrls } from '@/lib/zip';
 import { itemCount } from '@/lib/internal-forms-rules';
 import type { FormResponse, InternalForm } from '@/lib/internal-forms-api';
@@ -86,6 +87,9 @@ export function ExportDialog({
       const data = exportRows(cols, list, byItem);
       const blob = format === 'xlsx' ? buildXlsx(form.title, header, data) : buildCsv(header, data);
       downloadBlob(blob, `${base}.${format}`);
+      // The answers leave the workspace: recorded in Activity tracking (the
+      // files zip below is recorded by the function that opens the files).
+      logExport(`${base}.${format}`, { rows: data.length, form: form.title });
       if (withFiles && fileCount) {
         setBusy('files');
         const files = filesForZip(form, list);

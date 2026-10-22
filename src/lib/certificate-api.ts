@@ -26,10 +26,12 @@ export interface CertificateStatus {
   certificate: CertificateSummary | null;
   /** The Board withdrew this role and semester's certificate. */
   withdrawn?: boolean;
+  /** 'alumni': a former member's certificate of the last semester they served. */
+  holder_status?: 'member' | 'alumni';
 }
 
 // ── The register (Settings, Certificates) ───────────────────────────────
-export type RegisterStatus = 'valid' | 'withdrawn' | 'expelled';
+export type RegisterStatus = 'valid' | 'withdrawn' | 'expelled' | 'left';
 
 export interface RegisterEntry {
   id: string;
@@ -43,6 +45,10 @@ export interface RegisterEntry {
   withdrawn_at: string | null;
   withdrawn_reason: string | null;
   withdrawn_by: string | null;
+  /** 'alumni' for a former member's certificate. */
+  holder_status?: 'member' | 'alumni';
+  /** Why a certificate whose holder left the register is no longer valid. */
+  left_reason?: string | null;
 }
 
 export async function certificateRegister(session: Session | null): Promise<{ certificates: RegisterEntry[]; can_manage: boolean }> {

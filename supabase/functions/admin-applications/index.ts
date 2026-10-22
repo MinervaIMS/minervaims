@@ -673,15 +673,8 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
             .delete().eq('application_id', app.id);
       if (error) throw error;
 
-      try {
-        await supabase.from('activity_logs').insert({
-          user_id: user.id, user_email: user.email || 'unknown', user_role: primaryRole,
-          action: 'update', entity_type: 'application', entity_id: app.id,
-          entity_name: `${app.first_name} ${app.surname}`,
-          section: 'Recruiting', subsection: 'Candidates screening',
-          details: { event: 'priority_change', priority: next },
-        });
-      } catch (e) { console.error('priority log failed', e); }
+      audit.subject(`${app.first_name} ${app.surname}`, app.id);
+      audit.note({ event: 'priority_change', priority: next });
 
       return json({ success: true, priority: next });
     }
@@ -766,15 +759,8 @@ Deno.serve(audited('admin-applications', async (req, audit) => {
         await supabase.from('interview_bookings').delete().eq('application_id', app.id);
       } catch (e) { console.error('releasing the old interview booking failed', e); }
 
-      try {
-        await supabase.from('activity_logs').insert({
-          user_id: user.id, user_email: user.email || 'unknown', user_role: primaryRole,
-          action: 'status_change', entity_type: 'application', entity_id: app.id,
-          entity_name: `${app.first_name} ${app.surname}`,
-          section: 'Recruiting', subsection: 'Candidates screening',
-          details: { event: 'evaluation_division_change', from: current, to: target, previous_status: app.status },
-        });
-      } catch (e) { console.error('evaluation division log failed', e); }
+      audit.subject(`${app.first_name} ${app.surname}`, app.id);
+      audit.note({ event: 'evaluation_division_change', from: current, to: target, previous_status: app.status });
 
       // Notify the candidate only after the evaluation move has succeeded.
       try {

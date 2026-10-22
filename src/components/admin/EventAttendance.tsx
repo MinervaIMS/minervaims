@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Download, Search, UserCheck, AlertTriangle, Loader2, ScanLine, CloudOff, Video } from 'lucide-react';
 import CheckinScanner from '@/components/admin/attendance/CheckinScanner';
 import { TeamsImportDialog } from '@/components/admin/attendance/TeamsImportDialog';
+import { LinkMemberDialog, type LinkResult } from '@/components/admin/attendance/LinkMemberDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { downloadCSV } from '@/lib/download-utils';
@@ -67,7 +68,8 @@ const MATCH_OPTIONS: { value: MemberMatch | 'ambiguous'; label: string }[] = [
   { value: 'account', label: MEMBER_MATCH_LABELS.account },
   { value: 'email', label: MEMBER_MATCH_LABELS.email },
   { value: 'name', label: MEMBER_MATCH_LABELS.name },
-  { value: 'ambiguous', label: 'Name is ambiguous' },
+  { value: 'manual', label: MEMBER_MATCH_LABELS.manual },
+  { value: 'ambiguous', label: 'Needs linking' },
   { value: 'none', label: MEMBER_MATCH_LABELS.none },
 ];
 
@@ -98,6 +100,11 @@ export default function EventAttendance() {
   // An event with a limit of places: the limit and who is waiting, in order.
   const [capacity, setCapacity] = useState<number | null>(null);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  // Closed for everybody else, but this reader can still correct it
+  // (President, Vice President): the endpoint says so.
+  const [override, setOverride] = useState(false);
+  // The registration being linked to a member ("Needs linking").
+  const [linking, setLinking] = useState<EventRegistration | null>(null);
   const [cameraRequest, setCameraRequest] = useState<Promise<MediaStream> | null>(null);
   // The register of members, read once when the walk-in box is first opened.
   const [roster, setRoster] = useState<AttendanceMember[] | null>(null);
@@ -131,6 +138,7 @@ export default function EventAttendance() {
       setRegs(res.registrations);
       setCapacity(res.capacity);
       setWaitlist(res.waitlist);
+      setOverride(res.override);
     }
     catch (e) { toast({ title: 'Failed to load attendees', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoadingRegs(false); }
@@ -158,6 +166,7 @@ export default function EventAttendance() {
       setRegs(res.registrations);
       setCapacity(res.capacity);
       setWaitlist(res.waitlist);
+      setOverride(res.override);
     } catch { /* the next report tries again */ }
     finally { reloadingRef.current = false; }
   }, [session]);
@@ -258,14 +267,18 @@ export default function EventAttendance() {
   }), [regs]);
 
   // =================================================================
-  // A WEEK AFTER THE EVENT THE LIST IS THE RECORD. Ticking, adding a
-  // walk-in and removing somebody all stop, here and on the server
-  // (which is what actually refuses them). The list stays readable,
-  // searchable and exportable.
+  // AT THE END OF THE EVENT'S SEMESTER THE LIST IS THE RECORD (never
+  // sooner than two weeks after it). Ticking, adding a walk-in, removing
+  // somebody and linking a member all stop, here and on the server (which
+  // is what actually refuses them). The list stays readable, searchable
+  // and exportable. The President and the Vice President can still
+  // correct it (`override`), and every change they make is recorded in
+  // Activity tracking.
   // =================================================================
   const currentEvent = events.find((e) => e.id === eventId) ?? null;
   const window_ = attendanceWindow(currentEvent?.date);
-  const listClosed = !!currentEvent && !window_.open;
+  const closedForAll = !!currentEvent && !window_.open;
+  const listClosed = closedForAll && !override;
   const closesLabel = window_.closesOn
     ? new Date(`${window_.closesOn}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
@@ -365,7 +378,7 @@ export default function EventAttendance() {
         name: r.name,
         email: r.email ?? '',
         type: isRecognisedMember(r) ? 'Member' : 'Guest',
-        recognised: MEMBER_MATCH_LABELS[matchOf(r)],
+        recognised: r.member_ambiguous ? 'Needs linking' : MEMBER_MATCH_LABELS[matchOf(r)],
         member: r.member_name ?? '',
         division: r.member_division ? divisionLabels[r.member_division] : '',
         attended: r.attended ? 'Yes' : 'No',
@@ -436,8 +449,10 @@ export default function EventAttendance() {
           <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
           <span>
             {counts.ambiguous === 1 ? 'One registration matches' : `${counts.ambiguous} registrations match`} more than one
-            member by name, so nobody is claimed for {counts.ambiguous === 1 ? 'it' : 'them'}. Filter by
-            <strong> Name is ambiguous</strong> to settle {counts.ambiguous === 1 ? 'it' : 'them'} by hand.
+            member by name, so {counts.ambiguous === 1 ? 'it is' : 'they are'} counted for nobody.
+            {listClosed
+              ? <> The list is closed: the President or the Vice President can still choose the member.</>
+              : <> Press <strong>Needs linking</strong> on {counts.ambiguous === 1 ? 'it' : 'each'} to choose the member.</>}
           </span>
         </p>
       )}
@@ -452,12 +467,19 @@ export default function EventAttendance() {
           press is a big one. */}
       {listClosed ? (
         <div className="mb-5 border border-separator bg-muted/40 px-3 py-2.5 font-body text-sm text-muted-foreground" role="status">
-          Attendance for this event closed on <span className="text-foreground">{closesLabel}</span>, two weeks after it took
-          place. The list below is the record of who attended; it can still be searched and exported.
+          Attendance for this event closed on <span className="text-foreground">{closesLabel}</span>, at the end of its
+          semester. The list below is the record of who attended; it can still be searched and exported. The President or
+          the Vice President can still correct it.
+        </div>
+      ) : closedForAll ? (
+        <div className="mb-5 border border-amber-600/40 bg-amber-50 px-3 py-2.5 font-body text-sm text-amber-900" role="status">
+          Attendance for this event closed on <span className="font-medium">{closesLabel}</span> for everybody else. As
+          President or Vice President you can still correct it; every change is recorded in Activity tracking.
         </div>
       ) : currentEvent && window_.closesOn ? (
-        <p className="mb-2 font-body text-xs text-muted-foreground">
-          Attendance can be recorded until {closesLabel}, two weeks after the event.
+        <p className="mb-2 font-body text-xs text-muted-foreground flex items-center gap-1.5">
+          Editable until {closesLabel}.
+          <HelpDot page="events-attendance" topic="week" />
         </p>
       ) : null}
       {!listClosed && (
@@ -601,7 +623,7 @@ export default function EventAttendance() {
                     {r.attended && r.checked_in_at && <span className="ml-1.5 text-xs text-muted-foreground">scanned {scannedAt(r.checked_in_at)}</span>}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <MemberTag reg={r} />
+                    <MemberTag reg={r} onLink={listClosed ? undefined : () => setLinking(r)} />
                     {r.email && <span className="text-xs text-muted-foreground break-all">{r.email}</span>}
                   </div>
                 </div>
@@ -652,7 +674,7 @@ export default function EventAttendance() {
                       )}
                     </td>
                     <td className="px-3 py-2 break-all">{r.email || '-'}</td>
-                    <td className="px-3 py-2"><MemberTag reg={r} /></td>
+                    <td className="px-3 py-2"><MemberTag reg={r} onLink={listClosed ? undefined : () => setLinking(r)} /></td>
                     <td className="px-3 py-2 text-right">
                       {!listClosed && (
                       <Button variant="destructive" size="icon" onClick={() => remove(r.id)} aria-label={`Remove ${r.name}`}>
@@ -694,6 +716,21 @@ export default function EventAttendance() {
         <TeamsImportDialog key={currentEvent.id} open={importOpen} onOpenChange={setImportOpen} event={currentEvent} onDone={() => loadRegs(currentEvent.id)} />
       )}
 
+      <LinkMemberDialog
+        reg={linking}
+        onOpenChange={(o) => { if (!o) setLinking(null); }}
+        onLinked={(reg, res: LinkResult) => setRegs((p) => p.map((x) => (x.id === reg.id ? {
+          ...x,
+          member_id: res.member_id,
+          member_name: res.member_name,
+          member_division: res.member_division,
+          member_match: res.member_id ? 'manual' : 'none',
+          member_ambiguous: false,
+          member_declined: !res.member_id,
+          member_candidates: [],
+        } : x)))}
+      />
+
       {eventId && (
         <CheckinScanner
           open={scanOpen}
@@ -714,46 +751,65 @@ export default function EventAttendance() {
  * What is known about this person, in one mark.
  *
  * The evidence is carried into the label rather than flattened to
- * "Member", because the three answers are not equally certain and a
- * reader deciding whether to let somebody in should be able to tell a
- * fact from a good guess. The tooltip says which.
+ * "Member", because the answers are not equally certain and a reader
+ * deciding whether to let somebody in should be able to tell a fact from
+ * a good guess. The tooltip says which.
+ *
+ * WHO A ROW IS CAN BE SETTLED HERE. A name two members share reads "Needs
+ * linking" and is counted for nobody until somebody presses it and says
+ * which member it is. Any other mark can be pressed too, to correct it,
+ * while the list is open (`onLink`).
  */
-function MemberTag({ reg }: { reg: EventRegistration }) {
+function MemberTag({ reg, onLink }: { reg: EventRegistration; onLink?: () => void }) {
   const match = matchOf(reg);
   const isMember = isRecognisedMember(reg);
 
-  if (!isMember) {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-        title={reg.member_ambiguous
-          ? 'The name matches more than one member, so nobody is claimed for it.'
-          : MEMBER_MATCH_NOTE.none}
-      >
-        {reg.member_ambiguous && <AlertTriangle className="h-3 w-3 text-amber-600" aria-hidden />}
-        {reg.member_ambiguous ? 'Ambiguous name' : 'Guest'}
+  let mark: JSX.Element;
+  if (reg.member_ambiguous) {
+    mark = (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-amber-700">
+        <AlertTriangle className="h-3 w-3" aria-hidden />Needs linking
       </span>
     );
-  }
-
-  // A name match is the one worth flagging as probable rather than certain.
-  const probable = match === 'name';
-  return (
+  } else if (!isMember) {
+    mark = (
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        {reg.member_declined ? 'Guest · not a member' : 'Guest'}
+      </span>
+    );
+  } else {
+    // A name match is the one worth flagging as probable rather than certain.
+    const probable = match === 'name';
     /* EACH PART WRAPS AS A UNIT. On a phone the tag broke inside its own
        phrases - "matched by / email", "Macro / Research" - which reads as
        two half-facts. The line may wrap between the parts; none of them
        may wrap inside itself. */
-    <span
-      className={`inline-flex flex-wrap items-center gap-x-1 text-xs ${probable ? 'text-amber-700' : 'text-emerald-700'}`}
-      title={MEMBER_MATCH_NOTE[match]}
-    >
-      <span className="inline-flex items-center gap-1 whitespace-nowrap">
-        <UserCheck className="h-3 w-3 shrink-0" aria-hidden />Member
+    mark = (
+      <span className={`inline-flex flex-wrap items-center gap-x-1 text-xs ${probable ? 'text-amber-700' : 'text-emerald-700'}`}>
+        <span className="inline-flex items-center gap-1 whitespace-nowrap">
+          <UserCheck className="h-3 w-3 shrink-0" aria-hidden />{reg.member_name && match === 'manual' ? reg.member_name : 'Member'}
+        </span>
+        <span className="text-muted-foreground whitespace-nowrap">· {MEMBER_MATCH_LABELS[match].toLowerCase()}</span>
+        {reg.member_division && (
+          <span className="text-muted-foreground whitespace-nowrap">· {divisionLabels[reg.member_division]}</span>
+        )}
       </span>
-      <span className="text-muted-foreground whitespace-nowrap">· {MEMBER_MATCH_LABELS[match].toLowerCase()}</span>
-      {reg.member_division && (
-        <span className="text-muted-foreground whitespace-nowrap">· {divisionLabels[reg.member_division]}</span>
-      )}
-    </span>
+    );
+  }
+
+  const note = reg.member_ambiguous
+    ? 'The name matches more than one member, so it is counted for nobody. Press to choose the member.'
+    : reg.member_declined ? 'Somebody marked this registration as not a member.' : MEMBER_MATCH_NOTE[isMember ? match : 'none'];
+  if (!onLink) return <span title={note}>{mark}</span>;
+  return (
+    <button
+      type="button"
+      onClick={onLink}
+      title={reg.member_ambiguous ? note : `${note} Press to change who this is.`}
+      aria-label={reg.member_ambiguous ? `Needs linking: choose which member ${reg.name} is` : `Change who ${reg.name} is`}
+      className={`text-left underline-offset-2 hover:underline ${reg.member_ambiguous ? 'border border-amber-600/50 bg-amber-50 px-1.5 py-0.5' : ''}`}
+    >
+      {mark}
+    </button>
   );
 }
