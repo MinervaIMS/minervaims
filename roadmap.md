@@ -4,6 +4,9 @@
 - [x] Synchronize stored templates, deploy affected functions, and verify three test emails.
 - [x] Add a 24-hour attendance reminder to registered event guests (template, job stage, Forms page, test email).
 - [x] Rename the attendance email to “See you tomorrow” and send a fresh test.
-- [ ] Apply Step 90 migrations in order and report database notices.
-- [ ] Copy Step 90 files unchanged and deploy the 34 listed functions.
-- [ ] Run coverage and rule checks, verify signed-in flows, and publish Step 90.
+- [x] Apply Step 90 migrations in order and verify database results (notices not exposed by the migration tool).
+- [x] Copy Step 90 files unchanged and deploy the 34 listed functions.
+- [x] Run coverage and ten rule checks; verify name-based count, CSV, attendance closing date, certificates, and export activity.
+- [x] Repair the pre-existing activity category restriction without changing supplied files.
+- [ ] Publish Step 90: blocked by declined publication.
+- [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.

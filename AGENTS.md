@@ -3,3 +3,4 @@ Use the booking row as the once-only marker for time-based interview reminders; 
 Use the service-role attendance resolution view for member attendance counts so all readers share stable identity matching.
 Keep workspace audit actions in the shared activity registry and audit direct client writes through database triggers to avoid missing or duplicate entries.
 Keep pure operations-rule regression tests separate from supplied package files so archive replacements stay byte-exact.
+Allow bounded nonempty activity entity categories rather than a fixed legacy set because the shared registry adds categories for new workspace actions.
