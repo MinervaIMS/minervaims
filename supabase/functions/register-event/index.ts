@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_shared/request-body.ts';
 
 // =====================================================================
@@ -58,7 +59,7 @@ function hasStarted(ev: { start_at: string | null; date: string | null }): boole
   return false;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('register-event', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -74,6 +75,10 @@ Deno.serve(async (req) => {
         userId = user.id; userEmail = user.email ?? null;
         const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
         isMember = (roles || []).some((r: { role: string }) => !['candidate', 'pending'].includes(r.role));
+        // Somebody signed in (Events > My events, the Dashboard): recorded.
+        // A visitor registering from the public page has no account, and
+        // nothing is recorded for them.
+        audit.actor(user, ((roles || []) as { role: string }[]).map((r) => r.role));
       }
     }
 
@@ -87,6 +92,7 @@ Deno.serve(async (req) => {
     const body = await readJsonObject(req);
     if (!body) return json({ error: UNREADABLE_BODY }, 400);
     const action = optionalTextOf(body, 'action') || 'register';
+    audit.request(action, {});
 
     // ── The cancel link: what it is, and cancelling ────────────────────
     if (action === 'lookup' || action === 'cancel') {
@@ -140,6 +146,7 @@ Deno.serve(async (req) => {
       const { data: ev } = await supabase.from('events')
         .select('id, title, date, start_at, end_at, place, online, aod_day_id').eq('id', evId).maybeSingle();
       if (!ev) return json({ kind: 'gone' });
+      audit.subject(ev.title, ev.id);
       const event = { id: ev.id, title: ev.title, date: ev.date, start_at: ev.start_at, end_at: ev.end_at, place: ev.place, online: ev.online };
       let position: number | null = null;
       if (wait) {
@@ -183,6 +190,7 @@ Deno.serve(async (req) => {
       .select('registration_enabled, registration_audience, title, date, start_at, end_at, place, online, description')
       .eq('id', eventId).maybeSingle();
     if (!ev || !ev.registration_enabled) return json({ error: 'Registration is not open for this event.' }, 403);
+    audit.subject(ev.title, eventId);
 
 
     const audience = ev.registration_audience as string;
@@ -273,4 +281,4 @@ Deno.serve(async (req) => {
     console.error('register-event error:', error);
     return json({ error: 'An unexpected error occurred. Please try again.' }, 500);
   }
-});
+}));

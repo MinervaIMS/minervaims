@@ -45,7 +45,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="October 11th, 2026"
+      lastUpdated="October 22nd, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -312,19 +312,20 @@ const PrivacyPolicy = () => (
           <a href="/terms-of-use">Terms of Use</a>.
         </p>
         <p>
-          Actions performed inside the Workspace are recorded in an activity log (author, role held at the time,
-          action, affected item, timestamp) used for accountability and security. Users are informed of this inside
+          Actions performed inside the Workspace, including downloads and exports, are recorded in an activity log
+          (author, role held at the time, action, affected item, timestamp) used for accountability and security. Users are informed of this inside
           the Workspace; the log is visible only to roles with the corresponding permission.
         </p>
         <p>
           <strong>Certificates of membership.</strong> An active member can download from the Workspace a
-          certificate of the role they hold in the current semester. Each certificate carries a number and a QR code.
-          Anyone who has the number can confirm the certificate at <a href="/verify">minervaims.org/verify</a>, which
-          shows only the holder's name, the role, the semester, the issue date and whether the certificate is still
-          valid: nothing else about the member is disclosed, and the page is not indexed by search engines. The number
-          reaches only the people the member chooses to show the certificate to. The President and the Vice
-          President can withdraw a certificate, for example one issued with a wrong role; a withdrawn certificate is
-          then shown as no longer valid.
+          certificate of the role they hold in the current semester, and a former member listed among the alumni can
+          download one for the last semester they served. Each certificate carries a number and a QR code. Anyone who
+          has the number can confirm the certificate at <a href="/verify">minervaims.org/verify</a>, which shows only
+          the holder's name, the role, the semester, the issue date and whether the certificate is still valid:
+          nothing else about the holder is disclosed, and the page is not indexed by search engines. The number
+          reaches only the people the holder chooses to show the certificate to. The President and the Vice
+          President can withdraw a certificate, for example one issued with a wrong role. A certificate is also shown
+          as no longer valid once its holder is neither among the members nor among the alumni of the Society.
         </p>
         <p>
           <strong>Forms.</strong> The Society sometimes asks its active members for something through a form
@@ -554,8 +555,7 @@ const PrivacyPolicy = () => (
             <strong>Records of automatic emails sent:</strong> twelve months.
           </li>
           <li>
-            <strong>Workspace activity log:</strong> twelve months at most; the log also deletes its oldest entries
-            automatically once it exceeds five thousand entries.
+            <strong>Workspace activity log:</strong> ninety days at most; older entries are deleted automatically.
           </li>
           <li>
             <strong>Payoff Lab abuse-prevention record</strong> (IP address): a few minutes.

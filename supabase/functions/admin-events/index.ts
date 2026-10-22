@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
@@ -159,34 +158,6 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
     allowed: true, 
     remaining: maxRequests - record.count, 
     resetAt: record.resetAt 
-  }
-}
-
-// Activity logging helper
-async function logActivity(
-  supabase: any,
-  userId: string,
-  userEmail: string,
-  userRole: string,
-  action: string,
-  entityType: string,
-  entityId: string | null,
-  entityName: string | null,
-  details?: Record<string, unknown>
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_email: userEmail,
-      user_role: userRole,
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-      entity_name: entityName,
-      details: details || null,
-    });
-  } catch (err) {
-    console.error('Failed to log activity:', err);
   }
 }
 
@@ -391,7 +362,7 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
 
         // Log activity
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'create', 'event', data.id, validatedEvent.title);
+        audit.subject(validatedEvent.title, data.id);
 
         console.log('Event created:', data.id)
         return new Response(
@@ -522,7 +493,7 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         if (storeLink === null) await supabase.from('event_join_links').delete().eq('event_id', validatedEvent.id)
 
         // Log activity
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'update', 'event', data.id, validatedEvent.title);
+        audit.subject(validatedEvent.title, data.id);
 
         console.log('Event updated:', data.id)
         const joinUrl = storeLink === null ? null : (storeLink ?? savedLink?.url ?? null)
@@ -604,7 +575,7 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
 
         // Log activity
-        await logActivity(supabase, user.id, user.email!, primaryRole, 'delete', 'event', deleteResult.data.id, existingEvent?.title || null);
+        audit.subject(existingEvent?.title || null, deleteResult.data.id);
 
         console.log('Event deleted:', deleteResult.data.id)
         return new Response(

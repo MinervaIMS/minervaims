@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { audited } from '../_shared/activity.ts';
 import { divisionHeadsAndPresident, notifyStaff } from '../_shared/staff-notify.ts';
 import { intakeLabel, placementLabel } from '../_shared/recruiting.ts';
 import { readJsonObject } from '../_shared/request-body.ts';
@@ -43,7 +44,7 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(audited('applicant-notify', async (req, audit) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -57,6 +58,10 @@ Deno.serve(async (req) => {
     // always has; a body of `null` or a list no longer crashes on the read.
     const body = (await readJsonObject(req)) ?? {};
     const action = typeof body.action === 'string' && body.action ? body.action : 'notify-received';
+    // The candidate's own decisions on their application are recorded in
+    // Activity tracking (their role is looked up there).
+    audit.actor(user);
+    audit.request(action, {});
 
     const { data: app } = await supabase.from('applications')
       .select('*')
@@ -64,6 +69,7 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (app) audit.subject(`${(app as any).first_name ?? ''} ${(app as any).surname ?? ''}`.trim() || 'Application', (app as any).id);
 
     // ── accept-offer ─────────────────────────────────────────────────────────
     if (action === 'accept-offer') {
@@ -244,4 +250,4 @@ Deno.serve(async (req) => {
     console.error('applicant-notify error:', error);
     return json({ error: 'An unexpected error occurred.' }, 500);
   }
-});
+}));

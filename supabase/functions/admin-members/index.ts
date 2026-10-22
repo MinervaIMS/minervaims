@@ -145,22 +145,6 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-async function logActivity(
-  supabase: any, userId: string, userEmail: string, userRole: string,
-  action: string, entityId: string | null, entityName: string | null,
-  details?: Record<string, unknown>,
-) {
-  try {
-    await supabase.from('activity_logs').insert({
-      user_id: userId, user_email: userEmail, user_role: userRole,
-      action, entity_type: 'member', entity_id: entityId, entity_name: entityName,
-      section: 'People', subsection: 'Members',
-      details: details || null,
-    });
-  } catch (err) {
-    console.error('Failed to log activity:', err);
-  }
-}
 
 
 function json(body: unknown, status = 200) {
@@ -251,6 +235,8 @@ Deno.serve(audited('admin-members', async (req, audit) => {
     // ── Photo upload (multipart) — reuses the existing team-photos bucket ──
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
+      audit.request('upload-photo', {});
+      audit.subject('Member photo', null);
       const formData = await req.formData();
       // `readFileField` instead of a cast: a field that is not actually a file
       // now reads as no file at all, which is the refusal below rather than a
@@ -299,8 +285,7 @@ Deno.serve(audited('admin-members', async (req, audit) => {
 
       const { error } = await supabase.from('members').delete().eq('id', parsed.data.id);
       if (error) throw error;
-      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'delete',
-        parsed.data.id, existing ? `${existing.first_name} ${existing.surname}` : null);
+      audit.subject(existing ? `${existing.first_name} ${existing.surname}` : null, parsed.data.id);
       return json({ success: true });
     }
 
@@ -399,9 +384,8 @@ Deno.serve(audited('admin-members', async (req, audit) => {
         if (error) throw error;
       }
 
-      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'move-to-alumni',
-        parsed.data.id, `${member.first_name} ${member.surname}`,
-        { kept_as: keepRole ?? 'removed_from_roster', company: company ?? undefined });
+      audit.subject(`${member.first_name} ${member.surname}`, parsed.data.id);
+      audit.note({ kept_as: keepRole ?? 'removed_from_roster', company: company ?? undefined });
       return json({ success: true, alumni_id: alum.id });
     }
 
@@ -453,8 +437,8 @@ Deno.serve(audited('admin-members', async (req, audit) => {
       }
       const { data, error } = await supabase.from('members').insert(payload).select().single();
       if (error) throw error;
-      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, 'create',
-        data.id, `${m.first_name} ${m.surname}`, { division, role: m.role });
+      audit.subject(`${m.first_name} ${m.surname}`, data.id);
+      audit.note({ division, role: m.role });
       return json({ success: true, member: data });
     }
 
@@ -484,8 +468,9 @@ Deno.serve(audited('admin-members', async (req, audit) => {
       // onto user_roles for linked accounts, and expulsion removes access
       // immediately (the account itself is deleted after one month by the
       // cleanup_expelled_members() cron).
-      await logActivity(supabase, user.id, user.email || 'unknown', primaryRole, isExpelled ? 'expel' : 'update',
-        data.id, `${m.first_name} ${m.surname}`, { division, role: m.role });
+      audit.subject(`${m.first_name} ${m.surname}`, data.id);
+      audit.note({ division, role: m.role });
+      if (isExpelled) audit.verb('status_change');
       return json({ success: true, member: data });
     }
 

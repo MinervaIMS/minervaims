@@ -715,8 +715,9 @@ export default function MyProfile() {
     </ProfileCard>
   );
 
-  // THE CERTIFICATE. Only for a member who can have one: nobody else sees
-  // the card, so the page is unchanged for applicants, advisors and alumni.
+  // THE CERTIFICATE. For a member who can have one, and since Step 90 for a
+  // former member among the alumni (the last semester they served). Nobody
+  // else sees the card, so the page is unchanged for applicants and advisors.
   // The download is a read, so it works on a phone as well (`data-ro`).
   const certificateCard = certificate?.withdrawn ? (
     <ProfileCard title="Membership Certificate" className="lg:shrink-0">
@@ -740,8 +741,9 @@ export default function MyProfile() {
       }
     >
       <p className="text-sm text-foreground/85 leading-relaxed">
-        Your role as {certificate.role_label} in {certificate.semester_label}, certified in a PDF signed by the
-        President and the Vice President. Anyone can confirm it at minervaims.org/verify.
+        {certificate.holder_status === 'alumni'
+          ? <>Your role as {certificate.role_label} in {certificate.semester_label}, the last semester you served, certified in a PDF signed by the President and the Vice President. Anyone can confirm it at minervaims.org/verify.</>
+          : <>Your role as {certificate.role_label} in {certificate.semester_label}, certified in a PDF signed by the President and the Vice President. Anyone can confirm it at minervaims.org/verify.</>}
       </p>
       {certificate.certificate && (
         <p className="mt-2 text-xs text-muted-foreground">

@@ -35,7 +35,7 @@ import { AttendanceStatus } from './attendance-status';
 //      attendance was taken, each attended or missed, counted as People >
 //      Members counts them, so the two never disagree.
 //   3. Is something wrong?             Who to tell, and how, while the
-//      list can still be corrected (two weeks after the event).
+//      list can still be corrected (until the end of the semester).
 //
 // Every action here is the member's own, so it stays live where the page
 // is read-only (data-ro), as signing up for Association on Display does.
@@ -276,7 +276,7 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                 : ''}
               If you were at an event that shows as missed, tell the Head of Operations{data.head_of_operations ? `, ${data.head_of_operations},` : ''} on
               WhatsApp, or write to <a data-ro href={`mailto:${OPS_EMAIL}?subject=${encodeURIComponent('Attendance correction')}`} className="text-accent underline underline-offset-4">{OPS_EMAIL}</a>,
-              with the event's name and date. The list can be corrected up to two weeks after the event.
+              with the event's name and date. The list can be corrected until the end of the semester.
             </p>
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><MessageCircle aria-hidden className="h-4 w-4" />WhatsApp: the Head of Operations</span>

@@ -30,15 +30,18 @@ import {
 //
 // A withdrawn certificate reads "No longer valid" on minervaims.org/verify
 // at once, and its holder cannot download a replacement for the same role
-// and semester. A certificate whose holder has been expelled reads the
-// same way without anybody withdrawing it; the register says which is
-// which. Every withdrawal and restoration is in the activity log.
+// and semester. A certificate whose holder has been expelled, or is in
+// neither Members nor Alumni any more, reads the same way without anybody
+// withdrawing it; the register says which is which. Every withdrawal and
+// restoration is in the activity log.
 // =====================================================================
 
 const STATUS_LABEL: Record<RegisterStatus, string> = {
   valid: 'Valid',
   withdrawn: 'Withdrawn',
   expelled: 'Holder expelled',
+  // Neither in Members nor in Alumni any more: no longer valid (Step 90).
+  left: 'Holder not on the register',
 };
 
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -114,6 +117,8 @@ export default function CertificateRegister() {
   const counts = useMemo(() => ({
     valid: filtered.filter((r) => r.status === 'valid').length,
     withdrawn: filtered.filter((r) => r.status === 'withdrawn').length,
+    // No longer valid because of where the holder stands, not by a withdrawal.
+    holder: filtered.filter((r) => r.status === 'expelled' || r.status === 'left').length,
   }), [filtered]);
 
   const activeFilters = (search.trim() ? 1 : 0) + (semesters.length ? 1 : 0) + (statuses.length ? 1 : 0);
@@ -149,7 +154,7 @@ export default function CertificateRegister() {
   const header = (
     <WorkspacePageHeader
       title="Certificates"
-      description="Every certificate of membership issued, as it was issued. A withdrawn certificate reads No longer valid on the public verification page."
+      description="Every certificate of membership issued, as it was issued. A withdrawn certificate, or one whose holder is no longer a member or an alumnus, reads No longer valid on the public verification page."
     />
   );
 
@@ -170,6 +175,7 @@ export default function CertificateRegister() {
 
       <p className="text-small text-muted-foreground mb-4">
         {filtered.length} {filtered.length === 1 ? 'certificate' : 'certificates'}: {counts.valid} valid, {counts.withdrawn} withdrawn
+        {counts.holder > 0 && <>, {counts.holder} no longer valid because of where the holder stands</>}
       </p>
 
       {error && <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
@@ -216,6 +222,12 @@ export default function CertificateRegister() {
                       <p className="mt-1 max-w-xs text-xs text-muted-foreground">
                         {r.withdrawn_at ? day(r.withdrawn_at) : ''}{r.withdrawn_by ? `, by ${r.withdrawn_by}` : ''}{r.withdrawn_reason ? `: ${r.withdrawn_reason}` : ''}
                       </p>
+                    )}
+                    {r.status === 'left' && r.left_reason && (
+                      <p className="mt-1 max-w-xs text-xs text-muted-foreground">{r.left_reason}</p>
+                    )}
+                    {r.holder_status === 'alumni' && (
+                      <p className="mt-1 text-xs text-muted-foreground">Alumni certificate</p>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">

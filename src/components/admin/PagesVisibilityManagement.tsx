@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { logActivity } from '@/lib/activity-log';
 import { Loader2, Search } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -33,7 +32,7 @@ const formatDate = (iso: string | null | undefined) => {
 // filters inside the header row, bordered flat table.
 const PagesVisibilityManagement = () => {
   const { canView, canManage } = useAccess();
-  const { user, roles, session } = useAuth();
+  const { user } = useAuth();
   const { getRow, isHidden, setHidden, loading } = usePageVisibility();
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
@@ -87,19 +86,8 @@ const PagesVisibilityManagement = () => {
     try {
       await setHidden(pageKey, next);
 
-      // Page visibility is one of the two writes that never goes through
-      // an edge function, so it is one of the two the server-side audit
-      // cannot see and this still has to record. It no longer blocks the
-      // toggle: `logActivity` returns immediately and the entry lands on
-      // its own.
-      logActivity(session, roles[0]?.role ?? null, {
-        action: 'update',
-        section: 'Website',
-        subsection: 'Pages',
-        entityType: 'page_visibility',
-        entityName: label,
-        details: { is_hidden: next, page_key: pageKey },
-      });
+      // Recorded in Activity tracking by the database itself (the audit
+      // trigger on page_visibility, migration 20261022100200), once.
 
       toast.success(next ? 'Page hidden' : 'Page visible', {
         description: `${label} is now ${next ? 'hidden from the public' : 'visible to the public'}.`,

@@ -91,6 +91,7 @@ const actionLabels: Record<string, string> = {
   download: 'Downloaded',
   open: 'Opened',
   close: 'Closed',
+  send: 'Sent',
 };
 
 // =====================================================================
@@ -139,6 +140,23 @@ const entityLabels: Record<string, string> = {
   testimonials: 'testimonial',
   treasury: 'treasury entry',
   users: 'user account',
+  // Since Step 90: the remaining functions, and the writes the workspace
+  // makes straight to a table (recorded by the database's audit trigger).
+  'event-reminders': 'registration reminder',
+  invites: 'invitation',
+  'applicant-notify': 'application',
+  'submit-application': 'application',
+  'member-profile': 'profile',
+  'register-event': 'event registration',
+  'internal-forms': 'form',
+  'career-brainteasers': 'brainteaser',
+  export: 'export',
+  calendar_entries: 'calendar entry',
+  exam_sessions: 'exam session',
+  gpa_calculations: 'GPA comparison',
+  newsletter_subscribers: 'newsletter subscriber',
+  onboarding_progress: 'onboarding checklist',
+  report_deadlines: 'report deadline',
 };
 
 /** True when the server recorded the request as refused rather than done. */
@@ -182,13 +200,24 @@ export default function ActivityManagement() {
 
   const fetchActivities = async () => {
     try {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setActivities(data || []);
+      // EVERY ENTRY, NOT THE FIRST THOUSAND. A read returns at most a
+      // thousand rows at a time, and since Step 90 ninety days of the log
+      // can be several thousand: read it page by page, newest first, until
+      // it runs out (bounded, so a runaway table cannot hang the page).
+      const PAGE = 1000;
+      const MAX = 60000;
+      const all: ActivityLog[] = [];
+      for (let from = 0; from < MAX; from += PAGE) {
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all.push(...((data || []) as ActivityLog[]));
+        if (!data || data.length < PAGE) break;
+      }
+      setActivities(all);
     } catch (error) {
       console.error('Error fetching activities:', error);
       toast({

@@ -149,7 +149,14 @@ export type SpecialRule =
   // Treasury: the register is READABLE in full, but no entry can be added.
   // The two research Heads consult the association's position; recording a
   // movement belongs to the Board and to Operations.
-  | 'treasury_readonly';
+  | 'treasury_readonly'
+  // Attendance: the list can be changed until the end of the event's
+  // semester; after that only the President and the Vice President can
+  // correct it (supabase/functions/_shared/attendance-window.ts).
+  | 'attendance_semester_close'
+  // My Profile: a former member among the alumni can download a certificate
+  // of the last semester they served (membership-certificate).
+  | 'alumni_certificate';
 
 export interface SpecialEntry {
   rule: SpecialRule;
@@ -183,6 +190,18 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     resource: 'ops-treasury',
     roles: ['head_of_asset_management', 'head_of_division'],
     label: 'Reads the whole cash-flow register, including the balance and every semester, but cannot record an entry or export the register. Membership Fees is a separate subsection and is not open to these roles.',
+  },
+  {
+    rule: 'attendance_semester_close',
+    resource: 'events-attendance',
+    roles: ['head_of_operations', 'operations_analyst', 'head_of_media', 'media_analyst'],
+    label: "Can change an event's list until the end of its semester, and never less than two weeks after the event. After that the list is read-only; only the President and the Vice President can still correct it, and each correction is recorded in Activity tracking.",
+  },
+  {
+    rule: 'alumni_certificate',
+    resource: 'my-role',
+    roles: ['alumni'],
+    label: 'Can download a certificate of membership for the last semester they served as a member. It reads "was a member" and stays valid while they are listed among the alumni.',
   },
 ];
 

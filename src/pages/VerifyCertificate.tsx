@@ -108,7 +108,7 @@ export default function VerifyCertificate() {
           <p className="font-body mt-3" style={{ fontSize: '12.5px', color: MUTED, lineHeight: 1.55 }}>
             {result.valid
               ? 'This certificate was issued by Minerva Investment Management Society and attests membership in the role and semester shown. The Society operates independently of Bocconi University.'
-              : 'This certificate was issued by Minerva Investment Management Society but has since been withdrawn. For any question, write to as.minerva@unibocconi.it.'}
+              : 'This certificate was issued by Minerva Investment Management Society but is no longer valid. For any question, write to as.minerva@unibocconi.it.'}
           </p>
         </div>
       )}

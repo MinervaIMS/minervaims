@@ -33,7 +33,7 @@ export function ineligibility(m: MemberRow | null): string | null {
   if (!m) return 'Certificates are for members of the Society, and your account is not on the register of members.';
   if ((m.email || '').trim().toLowerCase() === SOCIETY_ACCOUNT) return 'The Society’s own account is not a member.';
   const role = normaliseRole(m.role || '');
-  if (NOT_MEMBERSHIP.has(role)) return 'Certificates are issued to the Society’s current members; advisors and alumni are not covered.';
+  if (NOT_MEMBERSHIP.has(role)) return 'Certificates are issued to the Society’s current members, and to its alumni for the last semester they served; advisors are not covered.';
   if ((m.membership_status || '') !== 'active') {
     const word = STATUS_WORDS[m.membership_status || ''] || 'not active';
     return `Certificates are issued to active members, and your membership is recorded as ${word}. The Head of Operations can help if this is wrong.`;
@@ -131,6 +131,34 @@ export function semesterOf(at: Date = new Date()): Semester {
   if (m >= 9) return build(y, true);
   if (m === 1) return build(y - 1, true);
   return build(y, false);
+}
+
+/** A semester from its key ('2026-spring'), as semesterOf builds it. */
+export function semesterFromKey(key: string): Semester | null {
+  const m = /^(\d{4})-(fall|spring)$/.exec(key || '');
+  if (!m) return null;
+  const year = Number(m[1]);
+  const fall = m[2] === 'fall';
+  return { key, label: `${fall ? 'Fall' : 'Spring'} ${year}`, short: `${String(year).slice(-2)}${fall ? 'F' : 'S'}` };
+}
+
+/** Semesters in order: Spring 2026 before Fall 2026 before Spring 2027. */
+export function semesterOrder(key: string): number {
+  const m = /^(\d{4})-(fall|spring)$/.exec(key || '');
+  return m ? Number(m[1]) * 2 + (m[2] === 'fall' ? 1 : 0) : -1;
+}
+
+/** A role held in a semester snapshot that was a membership (not advisor, alumni...). */
+export function servedAsMember(role: string | null | undefined): boolean {
+  return !!role && !NOT_MEMBERSHIP.has(normaliseRole(role));
+}
+
+/**
+ * Somebody who is neither on the register of members nor among the alumni
+ * cannot have a certificate. Said with their name, as the register says it.
+ */
+export function notOnRegister(name: string): string {
+  return `${name.trim() || 'This person'} is not in Members or Alumni, so a certificate cannot be issued. Add them first.`;
 }
 
 // ── The number. Crockford's alphabet: no I, L, O or U to misread. ────────
