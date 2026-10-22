@@ -8,6 +8,13 @@
       "when": 1791786838733,
       "tag": "0000_forms_audience_items",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792679966580,
+      "tag": "0001_attendance_member_link",
+      "breakpoints": true
     }
   ]
 }
