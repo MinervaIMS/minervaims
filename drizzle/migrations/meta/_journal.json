@@ -15,6 +15,13 @@
       "when": 1792679966580,
       "tag": "0001_attendance_member_link",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792679980273,
+      "tag": "0002_certificates_alumni",
+      "breakpoints": true
     }
   ]
 }

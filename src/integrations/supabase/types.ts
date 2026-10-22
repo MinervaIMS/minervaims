@@ -2159,6 +2159,7 @@ export type Database = {
           board: Json
           code: string
           holder_name: string
+          holder_status: string
           id: string
           issued_at: string
           member_id: string | null
@@ -2174,6 +2175,7 @@ export type Database = {
           board?: Json
           code: string
           holder_name: string
+          holder_status?: string
           id?: string
           issued_at?: string
           member_id?: string | null
@@ -2189,6 +2191,7 @@ export type Database = {
           board?: Json
           code?: string
           holder_name?: string
+          holder_status?: string
           id?: string
           issued_at?: string
           member_id?: string | null
