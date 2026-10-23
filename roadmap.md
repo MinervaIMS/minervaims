@@ -12,7 +12,11 @@
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
 
 - [x] Apply Step 93B supplied source files byte-exact and remove fund-series.ts.
-- [ ] Deploy macro-monitor with enforced service-role authentication.
-- [ ] Apply official fund line migration and load twelve official market figures.
-- [ ] Verify backgrounds, number parity, tests and activity coverage.
-- [ ] Publish Step 93B after the official figures are available.
+- [x] Deploy supplied macro-monitor with verify_jwt=true configuration.
+- [x] Apply official monthly fund line and verify both final ITDs through the public endpoint.
+- [x] Add twelve market figure definitions and homepage ordering without replacing existing data.
+- [ ] Apply macro_monitor_tick and monthly schedule, then fill twelve market figures: migration refused protected-secret access; do not bypass this restriction.
+- [x] Verify all ten public backgrounds render, phone composition and reduced motion; no browser errors.
+- [x] Run all tests: 31 pass, 7 static/build-dependent checks skipped; coverage reports no unrecorded write paths.
+- [ ] Verify market ticker parity and published static pages: blocked by missing official market values and publication.
+- [ ] Publish Step 93B after the official figures are available: blocked by protected-secret scheduling restriction.
