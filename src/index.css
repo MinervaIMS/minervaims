@@ -1697,3 +1697,25 @@ input[type='search']::-webkit-search-cancel-button {
 @media (prefers-reduced-motion: reduce) {
   .mims-scanline { animation: none; top: 50%; }
 }
+
+/* =====================================================================
+   The market ticker at the foot of the homepage hero (Step 93B). Two
+   copies of the same list travel left by half their combined width, so
+   the loop has no seam; the second copy is aria-hidden. The text is the
+   figures' final text from the first frame: only the strip moves, by
+   transform. Paused when off screen (MarketTicker sets data-paused) and
+   standing still, scrollable by hand, for a reader who asked for reduced
+   motion.
+   ===================================================================== */
+@keyframes mims-ticker {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.mims-ticker-track { animation: mims-ticker var(--ticker-duration, 110s) linear infinite; }
+.mims-ticker[data-paused="true"] .mims-ticker-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .mims-ticker { overflow-x: auto; scrollbar-width: none; }
+  .mims-ticker::-webkit-scrollbar { display: none; }
+  .mims-ticker-track { animation: none; }
+  .mims-ticker-copy { display: none; }
+}
