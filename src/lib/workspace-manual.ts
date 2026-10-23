@@ -155,7 +155,7 @@ export const HOW_IT_WORKS: ManualConcept[] = [
     title: 'What the workspace publishes to the public site',
     body: [
       'Several parts of the workspace write directly to minervaims.org, and it is worth knowing which, because the change is immediate and public.',
-      'Publishing a report puts it in the public archive. A member\'s profile drives their card on the Team page. Testimonials, the Society timeline, the admissions FAQ and the readings all render straight onto the site. The application window decides what /join says about applying, including the dates it announces.',
+      'Publishing a report puts it in the public archive and gives it its own permanent page; the fund returns typed in Fund performances drive the fund pages and /track-record. A member\'s profile drives their card on the Team page. Testimonials, the Society timeline, the admissions FAQ and the readings all render straight onto the site. The application window decides what /join says about applying, including the dates it announces.',
       'Page visibility controls which public pages exist at all. Turning a page off removes it from the site and from the navigation that points at it.',
     ],
     requires: 'website-pages',
@@ -433,6 +433,60 @@ export const COMMON_TASKS: ManualTask[] = [
       'For a fund report, update Reports, Fund performances so the public fund table matches the report.',
     ],
     caution: 'Publishing makes the report visible on the public website immediately.',
+  },
+  {
+    id: 'report-details',
+    title: 'Give a report its authors, tags and type',
+    requires: 'reports-archive',
+    level: 'manage',
+    steps: [
+      'Open Reports, Report archive. To find reports that need it, choose No authors, No summary or No type under Missing details.',
+      'Press the pencil on a report.',
+      'Choose the type, or leave it to follow the division. Add tags, pressing Enter after each.',
+      'Add the authors in the order of the cover: type part of a name and pick the person from Members or Alumni to link them, or add the name as typed. Write each role, for example Lead Analyst.',
+      'Update the file. The details are written into the PDF and show at once on the report page reached from the archive; the copy that opens from a link or a search result, which search engines and AI tools read, follows at the next Publish of the website.',
+      'To give several reports the same type or tags, tick them, press Edit selected, and apply.',
+    ],
+    caution: 'Names and roles only: never copy an email address or a phone number from a cover.',
+  },
+  {
+    id: 'pdf-details',
+    title: 'Bring the PDFs\' own details up to date',
+    requires: 'reports-archive',
+    level: 'manage',
+    steps: [
+      'Open Reports, Report archive, and press Check the PDFs under PDF details.',
+      'Read the result: how many PDFs are up to date, how many differ from their report page, and any stored elsewhere that cannot be changed.',
+      'Press Update, read what will happen, and confirm. The PDFs are updated a few at a time, with a progress bar.',
+      'Any PDF that could not be updated is listed with the reason; the rest carry their page\'s title, authors, summary and tags.',
+    ],
+    caution: 'The pages of each PDF are not changed, and the file exactly as it was uploaded is kept in a private copy.',
+  },
+  {
+    id: 'fund-month',
+    title: 'Add a month of fund returns',
+    requires: 'reports-funds',
+    level: 'manage',
+    steps: [
+      'Open Reports, Fund performances, on Monthly returns.',
+      'Press the pencil on the current year of the fund (or Add year in January).',
+      'Type the month\'s return, net, in %, and save.',
+      'Check the shaded columns: the year to date, the inception to date, the volatility and, for a full year, the Sharpe ratio are recomputed from the months.',
+      'Once a month, in References, press Fill the €STR from the ECB so the Sharpe ratio has its risk-free rate for every month.',
+    ],
+    caution: 'Inside the site the fund pages and /track-record show the new figures at once; the copy that opens from a link or a search result, which search engines and AI tools read, follows at the next Publish of the website.',
+  },
+  {
+    id: 'division-page',
+    title: 'Write your division\'s page',
+    requires: 'reports-divisions',
+    level: 'manage',
+    steps: [
+      'Open Reports, Division pages, and choose the division if you can edit more than one.',
+      'Write Standards, Review and Tools and data in plain sentences. Leave a part empty to hide it.',
+      'Tick up to three published reports for Flagship work, in the order they should appear.',
+      'Save. Inside the site the division page shows the blocks at once; the copy that opens from a link or a search result follows at the next Publish of the website.',
+    ],
   },
   {
     id: 'run-intake',
@@ -1030,24 +1084,34 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Where a report is published. Attach the PDF, fill in the title, the date and the division, and either publish it or save it as a draft.",
       "The page count is read from the file itself, so there is nothing to type. Publishing sends the report to the archive and to the public website at once.",
-      "Division-scoped roles upload for their own division only. A Portfolio Management report can be attached to a fund; remember to update Fund performances so the public fund table matches it.",
+      "Division-scoped roles upload for their own division only. A Portfolio Management report can be attached to a fund; remember to type the new monthly returns in Fund performances so the public fund table matches it.",
+      "The type (from the division unless you choose another), the tags and the authors appear on the report's own page and are written into the PDF's own details. Authors picked from Members or Alumni link to their entry; names and roles only.",
     ],
     related: ['reports-archive', 'reports-funds', 'reports-templates'],
   },
   'reports-archive': {
     detail: [
-      "Every published report, searchable by title and filterable by division, year and fund.",
+      "Every published report, searchable by title, summary, tag and author, and filterable by division, year, fund and status.",
       "Opening and downloading a report is available to every role that can see this page, because reading the research is what the archive is for. Downloads follow the filters that are active.",
+      "Each report has a permanent page at minervaims.org/archive/ followed by words from its title and its year: made automatically, fixed for ever once the report is published. The page carries its summary, authors, tags, PDF, a ready-made citation and related reports, and old links that pointed at a report in the archive now open its page.",
+      "Editing a report sets its type, tags and authors as well as its title, date and summary, and writes those details into the PDF. Missing details lists the reports without authors, a summary or a type; Edit selected changes the type or the tags of several reports at once; PDF details checks and updates what the PDFs say about themselves, keeping every original in a private copy.",
     ],
     related: ['reports-upload', 'reports-templates'],
   },
   'reports-funds': {
     detail: [
-      "The monthly figures for the association's simulated funds, in the same tables the public fund pages show. Any change here appears there immediately.",
-      "Enter each value exactly as it should read on the site, for example +1.2% or -0.4%.",
-      "Only the last fifteen calendar months are editable, and once every month of a year is locked the whole year freezes, aggregates included. That is what protects a published track record.",
+      "The monthly returns of the four virtual funds, typed here. Everything else the website shows about the funds (year to date, inception to date, volatility, Sharpe ratio on the €STR, maximum drawdown, best and worst month, beta and correlation to market indices) is computed from them by one function, so the fund pages, /track-record, the data files and the Dashboard always agree.",
+      "Type each month as a percentage, for example +1.2 or -0.4. An active fund's months older than fifteen months are frozen; a closed fund's history can be typed in full, and its page shows the table once its start and end dates are set in Profiles.",
+      "References holds the market indices (net total return, EUR) and the €STR, typed month by month with their source. Fill the €STR from the ECB fills the months without a value and never replaces one typed here.",
     ],
     related: ['reports-upload', 'reports-archive'],
+  },
+  'reports-divisions': {
+    detail: [
+      "What each division's public page says under How we work (the standards its reports meet, how they are reviewed, the tools and data they draw on) and the three reports it shows as Flagship work.",
+      "A Head edits their own division's page; the President, the Vice President and the Head of Asset Management can edit any. A part left empty is hidden on the website, and Flagship work stays hidden until a report is chosen.",
+    ],
+    related: ['reports-archive', 'reports-upload'],
   },
   'settings-users': {
     detail: [

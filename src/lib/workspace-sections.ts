@@ -30,7 +30,8 @@ export const SECTIONS: WorkspaceSectionMap[] = [
     { key: 'career-gmat', label: 'GMAT resources' }, { key: 'career-ib', label: 'IB questions' } ] },
   { section: 'Reports', items: [
     { key: 'reports-upload', label: 'Upload report' }, { key: 'reports-archive', label: 'Report archive' },
-    { key: 'reports-templates', label: 'Templates & repositories' }, { key: 'reports-funds', label: 'Fund performances' } ] },
+    { key: 'reports-templates', label: 'Templates & repositories' }, { key: 'reports-funds', label: 'Fund performances' },
+    { key: 'reports-divisions', label: 'Division pages' } ] },
   { section: 'Recruiting', items: [
     { key: 'applications-website', label: 'Application page' }, { key: 'applications-screening', label: 'Candidates screening' },
     { key: 'applications-interview-calendar', label: 'Interview calendar' }, { key: 'applications-joiners', label: 'Offers' },

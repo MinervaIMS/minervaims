@@ -122,6 +122,24 @@ const About = () => {
       {/* SECTION 1b - Our History */}
       <HistoryTimeline />
 
+      {/* SECTION 1c - The track record (Step 93): the history above, as
+          counts by year, on its own page. */}
+      <section className="bg-background pt-10 md:pt-16">
+        <div className="container">
+          <h2 className="font-serif text-heading mb-6 pb-3 border-b border-separator text-accent">
+            Our Track Record
+          </h2>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <p className="font-body text-body-lg text-muted-foreground max-w-3xl">
+              The reports published by each division every year, the funds&apos; returns and risk, the events and speakers, and the members and alumni of each semester, counted from the association&apos;s own records, with their definitions.
+            </p>
+            <Link to="/track-record" className="cta-link whitespace-nowrap shrink-0">
+              See The Track Record
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* SECTION 2 - Readings Curated By Our Members
           Half rhythm on top for the same reason as above. */}
       <section className="bg-background pt-10 md:pt-16 pb-section-sm md:pb-section">

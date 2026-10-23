@@ -3,6 +3,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 import { readFileField } from '../_shared/form-file.ts';
+import {
+  REPORT_TYPES, AUTHORS_MAX, AUTHOR_NAME_MAX, AUTHOR_ROLE_MAX, TAGS_MAX, TAG_LENGTH_MAX,
+  normaliseAuthors, normaliseTags, reportPdfMetadata, sameMetadata, type ReportAuthor,
+} from '../_shared/report-meta.ts';
+import { stampPdfMetadata } from '../_shared/pdf-metadata.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +36,16 @@ const corsHeaders = {
 // src/lib/archive-limits.ts with it.
 // =====================================================================
 const REPORT_DESCRIPTION_MAX = 8000
+
+// One author: a name and a role as printed on the cover, and, when picked
+// from the list, the Members or Alumni entry the report page links to.
+// Never an email or a phone number: nothing else is stored.
+const AuthorSchema = z.object({
+  name: z.string().trim().min(1).max(AUTHOR_NAME_MAX),
+  role: z.string().trim().max(AUTHOR_ROLE_MAX).nullable().optional(),
+  member_id: z.string().uuid().nullable().optional(),
+  alumni_id: z.string().uuid().nullable().optional(),
+})
 
 // Input validation schemas
 const FileMetadataSchema = z.object({
@@ -71,13 +86,22 @@ const FileMetadataSchema = z.object({
     .optional(),
   status: z.enum(['draft', 'published', 'blocked']).optional(),
   page_count: z.number().int().positive().max(5000).nullable().optional(),
-  project: z.string().max(200).nullable().optional()
+  project: z.string().max(200).nullable().optional(),
+  // Step 93. Left out of a request, each keeps its stored value; the
+  // address (`slug`) is never accepted from a client at all (the database
+  // makes it, see archive_files_address_guard).
+  report_type: z.enum(REPORT_TYPES as [string, ...string[]]).nullable().optional(),
+  tags: z.array(z.string().max(TAG_LENGTH_MAX * 2)).max(TAGS_MAX * 2).optional(),
+  authors: z.array(AuthorSchema).max(AUTHORS_MAX).optional(),
 })
 
 const ActionSchema = z.enum([
   'create', 'update', 'delete', 'upload', 'set-status', 'favourite',
   // Deleting a report is reversible for a month. See RECOVERY_DAYS below.
   'restore', 'purge', 'purge-expired',
+  // Step 93: several reports at once; the PDFs' own metadata; the
+  // division pages' "How we work" and "Flagship work".
+  'bulk-update', 'pdf-metadata-check', 'pdf-metadata-apply', 'division-page-save',
 ])
 
 const DeleteFileSchema = z.object({
@@ -147,7 +171,7 @@ function checkRateLimit(identifier: string, maxRequests: number, windowMs: numbe
  * still taken, because a report nobody can reach is the outcome asked for.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function purgeReport(supabase: any, id: string, fileUrl: string | null) {
+async function purgeReport(supabase: any, id: string, fileUrl: string | null, originalPath: string | null = null) {
   if (fileUrl && fileUrl.includes('archive-files')) {
     try {
       const parts = fileUrl.split('/archive-files/')
@@ -156,7 +180,103 @@ async function purgeReport(supabase: any, id: string, fileUrl: string | null) {
       console.warn('Could not delete file from storage:', storageError)
     }
   }
+  // The untouched original kept when the PDF's metadata was written goes
+  // with it: a purged report leaves nothing behind.
+  if (originalPath) {
+    try {
+      await supabase.storage.from(ORIGINALS_BUCKET).remove([originalPath])
+    } catch (storageError) {
+      console.warn('Could not delete the kept original:', storageError)
+    }
+  }
   await supabase.from('archive_files').delete().eq('id', id)
+}
+
+// =====================================================================
+// THE PDF SAYS WHAT THE PAGE SAYS (Step 93).
+// ---------------------------------------------------------------------
+// Every report's PDF carries the report page's title, authors, summary
+// and tags as its own Title, Author, Subject and Keywords, with the
+// Society as Creator (report-meta.ts builds them, pdf-metadata.ts writes
+// them as an incremental update: the original bytes are kept as they are
+// and the details are appended after them).
+//
+// NOTHING IS OVERWRITTEN WITHOUT A COPY. Before a stored PDF is replaced
+// by its stamped version for the first time, the file exactly as it was
+// uploaded is copied to the private bucket `archive-originals`, under the
+// same path, and the row records it (`pdf_original_path`). Every later
+// stamp starts again from that copy, so a file never carries more than
+// one update, and the original can always be put back.
+//
+// The stored file keeps its path, so every link to it, shared or
+// printed, keeps working and now opens the file with its details.
+// =====================================================================
+const ORIGINALS_BUCKET = 'archive-originals'
+// How many PDFs one `pdf-metadata-apply` call writes. Each is read,
+// copied and written once; four keeps a call well inside the function's
+// time and memory even with the archive's largest files (about 10 MB).
+const STAMP_BATCH = 4
+
+const REPORT_FIELDS = 'id, title, date, division, fund, status, description, report_type, tags, authors, file_url, slug, pdf_metadata, pdf_metadata_at, pdf_original_path, deleted_at'
+
+/** The object path inside `archive-files`, or null for a file stored anywhere else. */
+function storagePath(fileUrl: string | null | undefined): string | null {
+  const parts = String(fileUrl || '').split('/archive-files/')
+  if (parts.length < 2 || !parts[1]) return null
+  try {
+    return decodeURIComponent(parts[1].split('?')[0])
+  } catch {
+    return null
+  }
+}
+
+async function download(supabase: any, bucket: string, path: string): Promise<Uint8Array> {
+  const { data, error } = await supabase.storage.from(bucket).download(path)
+  if (error || !data) throw new Error(`The file could not be read from ${bucket} (${error?.message || 'missing'}).`)
+  return new Uint8Array(await data.arrayBuffer())
+}
+
+type StampOutcome = { ok: true; changed: boolean } | { ok: false; reason: string }
+
+/** Whether a report's PDF already says what its page says, and if not whether it can. */
+function stampNeed(row: any): { needed: boolean; reason?: string } {
+  if (sameMetadata(row.pdf_metadata, reportPdfMetadata(row))) return { needed: false }
+  if (!storagePath(row.file_url)) return { needed: false, reason: 'The PDF is not stored in the archive, so its details cannot be written.' }
+  return { needed: true }
+}
+
+/** Write the report page's details into the report's PDF (see above). Never throws. */
+async function stampReport(supabase: any, row: any): Promise<StampOutcome> {
+  try {
+    const meta = reportPdfMetadata(row)
+    if (sameMetadata(row.pdf_metadata, meta)) return { ok: true, changed: false }
+    const path = storagePath(row.file_url)
+    if (!path) return { ok: false, reason: 'The PDF is not stored in the archive, so its details cannot be written.' }
+
+    let original: Uint8Array
+    if (row.pdf_original_path === path) {
+      original = await download(supabase, ORIGINALS_BUCKET, path)
+    } else {
+      // First time for this file: keep the original before anything else.
+      original = await download(supabase, 'archive-files', path)
+      const { error: copyError } = await supabase.storage.from(ORIGINALS_BUCKET)
+        .upload(path, original, { contentType: 'application/pdf', upsert: true })
+      if (copyError) return { ok: false, reason: `The original could not be kept (${copyError.message}), so the PDF was left as it is.` }
+      const { error: markError } = await supabase.from('archive_files').update({ pdf_original_path: path }).eq('id', row.id)
+      if (markError) return { ok: false, reason: 'The copy of the original could not be recorded, so the PDF was left as it is.' }
+    }
+
+    const stamped = await stampPdfMetadata(original, meta)
+    const { error: writeError } = await supabase.storage.from('archive-files')
+      .upload(path, stamped, { contentType: 'application/pdf', cacheControl: '3600', upsert: true })
+    if (writeError) return { ok: false, reason: `The PDF could not be written (${writeError.message}).` }
+    await supabase.from('archive_files')
+      .update({ pdf_metadata: meta, pdf_metadata_at: new Date().toISOString() })
+      .eq('id', row.id)
+    return { ok: true, changed: true }
+  } catch (e) {
+    return { ok: false, reason: String((e as Error)?.message || e).slice(0, 300) }
+  }
 }
 
 Deno.serve(audited('admin-files', async (req, audit) => {
@@ -425,6 +545,10 @@ Deno.serve(audited('admin-files', async (req, audit) => {
             status: validatedFile.status || (isHead || hasFullAccess ? 'published' : 'draft'),
             project: validatedFile.project || null,
             page_count: validatedFile.page_count ?? null,
+            // The database fills the type from the division when none is given.
+            report_type: validatedFile.report_type ?? null,
+            tags: normaliseTags(validatedFile.tags),
+            authors: normaliseAuthors(validatedFile.authors as ReportAuthor[] | undefined),
             created_by: user.id,
           })
           .select()
@@ -441,11 +565,12 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         // Log activity
         const primaryRole = userRoleNames[0] || 'member';
         audit.subject(validatedFile.title, data.id);
-        audit.note({ division: validatedFile.division, fund: validatedFile.fund });
+        const pdfMetadata = await stampReport(supabase, data)
+        audit.note({ division: validatedFile.division, fund: validatedFile.fund, pdf_metadata: pdfMetadata.ok ? 'written' : 'not written' });
 
         console.log('File created:', data.id)
         return new Response(
-          JSON.stringify({ success: true, file: data }),
+          JSON.stringify({ success: true, file: data, pdf_metadata: pdfMetadata }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -497,6 +622,10 @@ Deno.serve(audited('admin-files', async (req, audit) => {
             fund: validatedFile.fund || null,
             ...(validatedFile.status ? { status: validatedFile.status } : {}),
             project: validatedFile.project ?? null,
+            ...(validatedFile.report_type !== undefined ? { report_type: validatedFile.report_type } : {}),
+            ...(validatedFile.tags !== undefined ? { tags: normaliseTags(validatedFile.tags) } : {}),
+            ...(validatedFile.authors !== undefined
+              ? { authors: normaliseAuthors(validatedFile.authors as ReportAuthor[]) } : {}),
           })
           .eq('id', validatedFile.id)
           .select()
@@ -513,11 +642,12 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         // Log activity
         const primaryRole = userRoleNames[0] || 'member';
         audit.subject(validatedFile.title, data.id);
-        audit.note({ division: validatedFile.division, fund: validatedFile.fund });
+        const pdfMetadata = await stampReport(supabase, data)
+        audit.note({ division: validatedFile.division, fund: validatedFile.fund, pdf_metadata: pdfMetadata.ok ? (pdfMetadata.changed ? 'written' : 'unchanged') : 'not written' });
 
         console.log('File updated:', data.id)
         return new Response(
-          JSON.stringify({ success: true, file: data }),
+          JSON.stringify({ success: true, file: data, pdf_metadata: pdfMetadata }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -719,7 +849,7 @@ Deno.serve(audited('admin-files', async (req, audit) => {
 
         const { data: existing } = await supabase
           .from('archive_files')
-          .select('file_url, division, title, deleted_at')
+          .select('file_url, division, title, deleted_at, pdf_original_path')
           .eq('id', parsed.data.id)
           .maybeSingle()
 
@@ -738,7 +868,7 @@ Deno.serve(audited('admin-files', async (req, audit) => {
             { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
-        await purgeReport(supabase, parsed.data.id, existing.file_url)
+        await purgeReport(supabase, parsed.data.id, existing.file_url, existing.pdf_original_path)
         audit.subject(existing.title || 'Unknown file', parsed.data.id);
         audit.note({ division: existing.division, operation: 'permanent' });
 
@@ -758,17 +888,187 @@ Deno.serve(audited('admin-files', async (req, audit) => {
         const cutoff = new Date(Date.now() - RECOVERY_MS).toISOString()
         const { data: expired } = await supabase
           .from('archive_files')
-          .select('id, file_url')
+          .select('id, file_url, pdf_original_path')
           .not('deleted_at', 'is', null)
           .lt('deleted_at', cutoff)
           .limit(50)
 
         let purged = 0
         for (const row of expired || []) {
-          await purgeReport(supabase, row.id, row.file_url)
+          await purgeReport(supabase, row.id, row.file_url, row.pdf_original_path)
           purged += 1
         }
         return new Response(JSON.stringify({ success: true, purged, recovery_days: RECOVERY_DAYS }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'bulk-update': {
+        // The same change to several reports: a type, tags added or taken
+        // away, a project. Every report must be one this person may edit;
+        // otherwise nothing is changed. Their PDFs' details follow with
+        // `pdf-metadata-apply`, which the archive offers right after.
+        const bulkSchema = z.object({
+          ids: z.array(z.string().uuid()).min(1).max(200),
+          report_type: z.enum(REPORT_TYPES as [string, ...string[]]).optional(),
+          add_tags: z.array(z.string().max(TAG_LENGTH_MAX * 2)).max(TAGS_MAX).optional(),
+          remove_tags: z.array(z.string().max(TAG_LENGTH_MAX * 2)).max(TAGS_MAX * 4).optional(),
+          project: z.string().trim().max(200).nullable().optional(),
+        })
+        const parsed = bulkSchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(JSON.stringify({ error: 'Invalid bulk change', details: parsed.error.errors.map(e => `${e.path.join('.')}: ${e.message}`) }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const change = parsed.data
+        const ids = [...new Set(change.ids)]
+        const addTags = normaliseTags(change.add_tags)
+        const removeKeys = new Set(normaliseTags(change.remove_tags).map((t) => t.toLowerCase()))
+        if (change.report_type === undefined && !addTags.length && !removeKeys.size && change.project === undefined) {
+          return new Response(JSON.stringify({ error: 'Choose at least one change to make.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const { data: rows, error: readError } = await supabase
+          .from('archive_files').select('id, division, tags, deleted_at').in('id', ids)
+        if (readError) throw readError
+        const found = (rows || []) as { id: string; division: string; tags: string[] | null; deleted_at: string | null }[]
+        if (found.length !== ids.length || found.some((r) => r.deleted_at)) {
+          return new Response(JSON.stringify({ error: 'Some of these reports no longer exist or are deleted. Reload the archive and try again.' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const outside = allowedDivisions ? found.filter((r) => !allowedDivisions.includes(r.division)).length : 0
+        if (outside) {
+          return new Response(JSON.stringify({ error: `${outside} of these reports belong to another division, which you cannot edit. Nothing was changed.` }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        // Tags beyond the limit are refused, not silently dropped.
+        const nextTags = new Map<string, string[]>()
+        for (const r of found) {
+          const kept = (r.tags || []).filter((t) => !removeKeys.has(t.toLowerCase()))
+          const merged = [...kept, ...addTags.filter((t) => !kept.some((k) => k.toLowerCase() === t.toLowerCase()))]
+          if (merged.length > TAGS_MAX) {
+            return new Response(JSON.stringify({ error: `A report can have at most ${TAGS_MAX} tags, and some of these would have more. Nothing was changed.` }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+          nextTags.set(r.id, normaliseTags(merged))
+        }
+        let updated = 0
+        for (let i = 0; i < found.length; i += 20) {
+          const results = await Promise.all(found.slice(i, i + 20).map((r) => supabase.from('archive_files').update({
+            ...(change.report_type !== undefined ? { report_type: change.report_type } : {}),
+            ...(addTags.length || removeKeys.size ? { tags: nextTags.get(r.id) } : {}),
+            ...(change.project !== undefined ? { project: change.project || null } : {}),
+          }).eq('id', r.id)))
+          for (const res of results) {
+            if (res.error) throw res.error
+            updated += 1
+          }
+        }
+        audit.subject(`${updated} reports`, null)
+        audit.note({ ids, report_type: change.report_type, add_tags: addTags, remove_tags: [...removeKeys], project: change.project })
+        return new Response(JSON.stringify({ success: true, updated }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'pdf-metadata-check': {
+        // Read only: which reports' PDFs do not yet say what their page
+        // says, and which cannot be written (a file stored elsewhere).
+        let query = supabase.from('archive_files').select(REPORT_FIELDS).is('deleted_at', null).order('date', { ascending: false })
+        if (allowedDivisions) query = query.in('division', allowedDivisions)
+        const { data: rows, error } = await query
+        if (error) throw error
+        const toUpdate: { id: string; title: string; status: string; first_time: boolean }[] = []
+        const cannot: { id: string; title: string; reason: string }[] = []
+        let upToDate = 0
+        for (const r of (rows || []) as any[]) {
+          const need = stampNeed(r)
+          if (need.needed) toUpdate.push({ id: r.id, title: r.title, status: r.status, first_time: !r.pdf_metadata_at })
+          else if (need.reason) cannot.push({ id: r.id, title: r.title, reason: need.reason })
+          else upToDate += 1
+        }
+        return new Response(JSON.stringify({ total: (rows || []).length, up_to_date: upToDate, to_update: toUpdate, cannot, batch: STAMP_BATCH }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'pdf-metadata-apply': {
+        // Write the details into the next few PDFs that need them. The
+        // archive asks first, showing how many files will be updated and
+        // that each original is kept, and sends `confirm: true` only then;
+        // it calls again until `remaining` is 0.
+        const applySchema = z.object({
+          confirm: z.literal(true),
+          ids: z.array(z.string().uuid()).max(200).optional(),
+          // Files that already failed in this run, so the next call moves on.
+          skip_ids: z.array(z.string().uuid()).max(500).optional(),
+        })
+        const parsed = applySchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(JSON.stringify({ error: 'Confirm the update of the PDFs first.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        let query = supabase.from('archive_files').select(REPORT_FIELDS).is('deleted_at', null).order('date', { ascending: false })
+        if (allowedDivisions) query = query.in('division', allowedDivisions)
+        if (parsed.data.ids?.length) query = query.in('id', parsed.data.ids)
+        const { data: rows, error } = await query
+        if (error) throw error
+        const skip = new Set(parsed.data.skip_ids || [])
+        const pending = ((rows || []) as any[]).filter((r) => !skip.has(r.id) && stampNeed(r).needed)
+        const done: string[] = []
+        const failed: { id: string; title: string; reason: string }[] = []
+        for (const r of pending.slice(0, STAMP_BATCH)) {
+          const outcome = await stampReport(supabase, r)
+          if (outcome.ok) done.push(r.id)
+          else failed.push({ id: r.id, title: r.title, reason: outcome.reason })
+        }
+        // A file that failed is sent back as `skip_ids` by the archive, so
+        // the run moves on and ends with the failures listed.
+        const remaining = Math.max(0, pending.length - done.length - failed.length)
+        audit.subject(`${done.length} report PDFs`, null)
+        audit.note({ written: done, failed: failed.map((f) => f.id), remaining })
+        return new Response(JSON.stringify({ success: true, done: done.length, failed, remaining }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'division-page-save': {
+        // A division page's "How we work" (standards, review, tools) and
+        // "Flagship work" (up to three of its published reports). Written
+        // by the division's own Head, or by the Board.
+        const pageSchema = z.object({
+          division: z.enum(['equity', 'investment', 'macro', 'portfolio', 'quant']),
+          standards: z.string().trim().max(1500),
+          review: z.string().trim().max(1500),
+          tools: z.string().trim().max(1500),
+          flagship_ids: z.array(z.string().uuid()).max(3),
+        })
+        const parsed = pageSchema.safeParse(file)
+        if (!parsed.success) {
+          return new Response(JSON.stringify({ error: 'Invalid division page', details: parsed.error.errors.map(e => `${e.path.join('.')}: ${e.message}`) }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const page = parsed.data
+        const isBoard = isAdminEmail || userRoleNames.some((r) => ['admin', 'president', 'vice_president', 'head_of_asset_management'].includes(r))
+        const isOwnHead = roleRows.some((r) => r.role === 'head_of_division' && r.division === page.division)
+        if (!isBoard && !isOwnHead) {
+          return new Response(JSON.stringify({ error: "Only the division's Head, the President, the Vice President or the Head of Asset Management can edit this page." }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const flagship = [...new Set(page.flagship_ids)]
+        if (flagship.length) {
+          const { data: picked, error: pickError } = await supabase.from('archive_files')
+            .select('id').in('id', flagship).eq('division', page.division).eq('status', 'published').is('deleted_at', null)
+          if (pickError) throw pickError
+          if ((picked || []).length !== flagship.length) {
+            return new Response(JSON.stringify({ error: "Flagship work must be published reports of this division." }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+        }
+        const { data, error } = await supabase.from('division_pages').upsert({
+          division: page.division, standards: page.standards, review: page.review, tools: page.tools,
+          flagship_ids: flagship, updated_by: user.id, updated_at: new Date().toISOString(),
+        }, { onConflict: 'division' }).select().single()
+        if (error) throw error
+        audit.subject(`Division page: ${page.division}`, null)
+        audit.note({ division: page.division, flagship_ids: flagship })
+        return new Response(JSON.stringify({ success: true, page: data }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 

@@ -17,51 +17,23 @@ import macroBgAsset from '@/assets/MIMS_Macro_Research.webp.asset.json';
 import portfolioBgAsset from '@/assets/MIMS_Portfolio_Management.webp.asset.json';
 import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
 import { NumbersSection } from '@/components/numbers/NumbersSection';
+import { DIVISION_CONTENT, FUND_DESCRIPTIONS } from '@/lib/public-content';
+import { DivisionWork, type DivisionPageRow } from '@/components/divisions/DivisionWork';
+import { pageDataKey, readPageData } from '@/lib/page-data';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
 }
 
-// Division content configuration
-interface DivisionContent {
-  title: string;
-  subtitle: string;
-  description: string;
-  sectionTitle: string;
+/** What the static copy of a division page embeds for the app (lib/page-data.ts). */
+export interface DivisionPageData {
+  reports: ArchiveFile[];
+  page: DivisionPageRow | null;
+  flagship: ArchiveFile[];
 }
 
-const divisionContent: Record<Division, DivisionContent> = {
-  equity: {
-    title: 'Equity Research',
-    subtitle: 'Company analysis with valuation models and investment theses',
-    description: 'Equity Research produces single-name coverage reports across sectors, translating business fundamentals into actionable, risk-aware views. Each report combines industry and competitive analysis, full financial statement modelling, and a dual valuation framework (discounted cash flow and relative multiples) to derive a target price and recommendation. Work is organised in small coverage teams led by a Lead Analyst, under the oversight of the Division\'s Co-Heads, with standardised sections on thesis, catalysts, and key risks.',
-    sectionTitle: 'Latest Reports',
-  },
-  investment: {
-    title: 'Investment Research',
-    subtitle: 'Cross-asset views, scenarios, and actionable market positioning',
-    description: 'Investment Research delivers cross-asset strategy for MIMS\' virtual portfolios, translating macro conditions into actionable positioning. The team publishes periodic Global Outlooks and Trade Ideas covering growth, inflation and policy scenarios, tactical asset-allocation views, and focused recommendations across equities, rates/credit, FX and commodities. Structured under a Head/Co-Head, research is organised into specialist desks: Equities Strategy, Fixed Income, and FX & Commodities, each led by senior strategists and supported by analysts.',
-    sectionTitle: 'Latest Outlooks',
-  },
-  macro: {
-    title: 'Macro Research',
-    subtitle: 'Global policy analysis with clear market transmission channels',
-    description: 'Macro Research produces thematic reports on global policy regimes and structural shifts in the international economy, linking macro narratives to market channels. Recent work spans monetary-policy scenarios across major economies, Europe\'s growth divergences and fiscal sustainability, China\'s rebalancing/deflation risks, and the move from dollarisation toward a more multipolar monetary system, including payments infrastructure. The division is led by a Head and Co-Head, supported by group leaders and analysts who build data-backed frameworks, scenarios and cross-asset implications.',
-    sectionTitle: 'Latest Reports',
-  },
-  portfolio: {
-    title: 'Portfolio Management',
-    subtitle: 'Converts research into disciplined portfolios and rebalancing',
-    description: 'The Portfolio Management Division designs, runs and reports on MIMS\'s proprietary student-managed portfolios, translating research into implementable allocations across equities, rates and commodities. The team sets strategic views, builds diversified portfolios, sizes positions via risk contribution and liquidity, and rebalances semi-annually with interim adjustments around market dislocations. Analysts conduct security and trade due diligence, monitor performance and exposures, and maintain transparent holdings disclosure. Derivatives are used only to hedge currency and tail risks, not to add net leverage.',
-    sectionTitle: 'Latest Funds Updates',
-  },
-  quant: {
-    title: 'Quantitative Research',
-    subtitle: 'Models and tools for risk, forecasting, derivatives and much more',
-    description: 'Quantitative Research applies advanced mathematical and statistical methods to open problems at the frontier of financial markets. The division develops models for risk measurement, forecasting and derivatives pricing, drawing on probability theory, statistical inference, optimisation and machine learning. Since the most interesting problems sit at the intersection of disciplines, the team deliberately brings together students from different quantitative backgrounds. Mathematics, economics, finance, AI and computer science all have a seat at the table: each member brings their own expertise and way of framing problems, and builds new ones by working alongside people who were trained entirely differently, replicating the collaborative structure of a real quantitative research team.',
-    sectionTitle: 'Latest Research Publications',
-  },
-};
+
+const divisionContent = DIVISION_CONTENT;
 
 // Background images mapping
 const divisionBackgrounds: Record<Division, string> = {
@@ -72,17 +44,14 @@ const divisionBackgrounds: Record<Division, string> = {
   quant: quantBgAsset.url,
 };
 
-// Fund descriptions for the Portfolio Management page
-const fundDescriptions: Record<Fund, string> = {
-  'multi-asset': 'Global diversified portfolio across equities, bonds, commodities.',
-  'long-short': 'Market-neutral equity strategy driven by multi-factor signals.',
-  'dps': 'ETF-based allocation delivering diversified, low-idiosyncratic exposure.',
-  'pir': 'Italian equity portfolio aligned with PIR investment rules.',
-};
+const fundDescriptions = FUND_DESCRIPTIONS;
 
 const DivisionDetail = () => {
   const { division } = useParams<{ division: string }>();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
+  // "How we work" and "Flagship work" (Step 93), written by the Head.
+  const [work, setWork] = useState<DivisionPageRow | null>(null);
+  const [flagship, setFlagship] = useState<ArchiveFile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   
   // Get the background image for the current division
@@ -98,6 +67,14 @@ const DivisionDetail = () => {
 
   useEffect(() => {
     if (division && divisionLabels[division as Division]) {
+      const embedded = readPageData<DivisionPageData>(pageDataKey.division(division));
+      if (embedded) {
+        setFiles(embedded.reports);
+        setWork(embedded.page);
+        setFlagship(embedded.flagship);
+        setIsDataLoading(false);
+        return;
+      }
       fetchFiles();
     } else {
       setIsDataLoading(false);
@@ -107,18 +84,35 @@ const DivisionDetail = () => {
   const fetchFiles = async () => {
     setIsDataLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('archive_files')
-        .select('id, title, description, file_url, date, division, fund')
-        .eq('division', division)
-        // Public surface: published reports only, and never a deleted one.
-        .eq('status', 'published')
-        .is('deleted_at', null)
-        .order('date', { ascending: false })
-        .limit(9);
+      const [filesRes, pageRes] = await Promise.all([
+        supabase
+          .from('archive_files')
+          .select('*')
+          .eq('division', division)
+          // Public surface: published reports only, and never a deleted one.
+          .eq('status', 'published')
+          .is('deleted_at', null)
+          .order('date', { ascending: false })
+          .limit(9),
+        // Before the Step 93 migration the table does not exist: the
+        // read fails quietly and the two blocks simply stay hidden.
+        supabase.from('division_pages').select('*').eq('division', division).maybeSingle(),
+      ]);
 
-      if (error) throw error;
-      setFiles(data || []);
+      if (filesRes.error) throw filesRes.error;
+      setFiles(filesRes.data || []);
+      const page = pageRes.error ? null : (pageRes.data as DivisionPageRow | null);
+      setWork(page);
+      const ids = page?.flagship_ids ?? [];
+      if (ids.length) {
+        const { data: picked } = await supabase
+          .from('archive_files').select('*').in('id', ids)
+          .eq('status', 'published').is('deleted_at', null);
+        // In the order the Head chose them.
+        setFlagship(ids.map((id) => (picked || []).find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f));
+      } else {
+        setFlagship([]);
+      }
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
@@ -232,6 +226,10 @@ const DivisionDetail = () => {
           </div>
         </section>
       )}
+
+      {/* How we work, and the three reports the Head chose (Step 93). Each
+          block stays hidden while it is empty. */}
+      <DivisionWork page={work} flagship={flagship} />
 
       {/* Third Section: Latest Reports/Publications */}
       <ReportsSection

@@ -82,6 +82,7 @@ export const PLACE_BY_ACTION: Record<string, Place> = {
   'internal-forms:upload': { section: 'Operations', subsection: 'Forms (answering)' },
   'career-files:upload': { section: 'Career', subsection: 'CV & Cover Letter' },
   'admin-members:upload-photo': { section: 'People', subsection: 'Members' },
+  'admin-files:division-page-save': { section: 'Reports', subsection: 'Division Pages' },
 };
 
 /**
@@ -170,6 +171,14 @@ export const MUTATES: Record<string, string> = {
   'admin-files:restore': 'update',
   'admin-files:purge': 'delete',
   'admin-files:purge-expired': 'delete',
+  'admin-files:bulk-update': 'update',
+  // Writing the report page's details into the stored PDFs (Step 93).
+  'admin-files:pdf-metadata-apply': 'update',
+  'admin-files:division-page-save': 'update',
+  'admin-funds:profile-upsert': 'update',
+  'admin-funds:reference-upsert': 'update',
+  'admin-funds:reference-delete': 'delete',
+  'admin-funds:import-estr': 'update',
   'admin-resources:favourite': 'update',
   // General.
   'member-profile:update': 'update',
@@ -205,8 +214,8 @@ export const READS: Record<string, string[]> = {
   'admin-event-reminders': ['status'],
   'admin-events': ['join-links'],
   'admin-fees': ['current', 'history'],
-  'admin-files': [],
-  'admin-funds': ['list'],
+  'admin-files': ['pdf-metadata-check'],
+  'admin-funds': ['list', 'reference-list'],
   'admin-history': ['list'],
   'admin-interviews': ['list', 'list-available', 'my-context'],
   'admin-invites': ['list'],

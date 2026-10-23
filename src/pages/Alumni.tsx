@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Seo } from '@/components/shared/Seo';
 import { PageIntroduction, PageLoader } from '@/components/shared';
 import alumniBgAsset from '@/assets/MIMS_Alumni_Background-v2.webp.asset.json';
@@ -60,6 +61,10 @@ const Alumni = () => {
   // Matches over the ENTIRE alumni base for the active filters (null while loading).
   const [totalMatches, setTotalMatches] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  // A report's author links here with ?person=<id> (Step 93).
+  const [searchParams] = useSearchParams();
+  const personParam = searchParams.get('person');
+  const personFocused = useRef(false);
     // The dark wash over the hero is a SECOND downloaded image, not a gradient
   // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
   // the page opening on the bright, unshaded picture and darkening a moment
@@ -155,6 +160,24 @@ const Alumni = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [companyFilter, cityFilter, jobAreaFilter]);
+
+  // Open on the page of the alumnus a link points at, bring the entry into
+  // view and outline it for a moment. Once, and only for the unfiltered list.
+  useEffect(() => {
+    if (!personParam || personFocused.current || isDataLoading || !imagesLoaded) return;
+    const index = filteredAlumni.findIndex((a) => a.id === personParam);
+    if (index < 0) return;
+    personFocused.current = true;
+    setCurrentPage(Math.floor(index / ALUMNI_PER_PAGE) + 1);
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`person-${personParam}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-primary', 'bg-muted');
+      window.setTimeout(() => el.classList.remove('ring-2', 'ring-primary', 'bg-muted'), 3000);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [personParam, filteredAlumni, isDataLoading, imagesLoaded]);
 
   // Group paginated alumni by graduation year
   const groupedAlumni = useMemo(() => {
@@ -391,6 +414,7 @@ const Alumni = () => {
                     .map((alumnus) => (
                       <div
                         key={alumnus.id}
+                        id={`person-${alumnus.id}`}
                         className="px-4 py-3 hover:bg-muted/50 transition-colors"
                       >
                         {/* Mobile layout - stacked */}

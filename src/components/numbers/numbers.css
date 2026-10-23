@@ -18,6 +18,26 @@
 @media (prefers-reduced-motion: reduce) {
   [data-kn-reveal="go"] .kn-ch { animation: none; }
 }
+/* The hero figures' count-up (HeroFigure). The text of the figure is its
+   final value throughout; while counting it is transparent and the moving
+   digits are drawn over it from the face's data-count attribute, which is
+   generated content, not text. */
+.kn-count { position: relative; display: inline-block; }
+.kn-count-face { display: none; }
+.kn-count[data-counting] > .kn-count-text { opacity: 0; }
+.kn-count[data-counting] > .kn-count-face {
+  display: block;
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+.kn-count[data-counting] > .kn-count-face::after { content: attr(data-count); }
+@media (prefers-reduced-motion: reduce) {
+  .kn-count[data-counting] > .kn-count-text { opacity: 1; }
+  .kn-count[data-counting] > .kn-count-face { display: none; }
+}
+
 /* The definitions disclosure: the marker is the underlined word. */
 .kn-defs > summary { list-style: none; cursor: pointer; }
 .kn-defs > summary::-webkit-details-marker { display: none; }

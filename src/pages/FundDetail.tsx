@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Seo } from '@/components/shared/Seo';
 import { FUND_META } from '@/lib/seo/routes';
-import { fundSchema } from '@/lib/seo/structured-data';
+import { fundDatasetSchema, fundSchema } from '@/lib/seo/structured-data';
 import { FundPerformanceChart } from '@/components/shared/FundPerformanceChart';
 import { useParams, Navigate } from 'react-router-dom';
 import { PageIntroduction, PageLoader } from '@/components/shared';
@@ -18,9 +18,20 @@ import multiAssetBgAsset from '@/assets/MIMS_Multi_Asset_Fund.webp.asset.json';
 import pirBgAsset from '@/assets/mims-pir-fund.webp.asset.json';
 import dpsBgAsset from '@/assets/MIMS_Diversified_Passive_Fund.webp.asset.json';
 import { NumbersSection } from '@/components/numbers/NumbersSection';
+import { FUND_CONTENT } from '@/lib/public-content';
+import { FundTrackRecord } from '@/components/funds/FundTrackRecord';
+import { fetchFundRecords } from '@/lib/fund-record-api';
+import { fundRecordShown, type FundEntry, type RecordFund } from '@/lib/fund-record';
+import { pageDataKey, readPageData } from '@/lib/page-data';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
+}
+
+/** What the static copy of a fund page embeds for the app (lib/page-data.ts). */
+export interface FundPageData {
+  entry: FundEntry | null;
+  reports: ArchiveFile[];
 }
 interface FundYearRow {
   year: number;
@@ -30,39 +41,8 @@ interface FundYearRow {
   vol: string;
   sharpe: string;
 }
-interface FundContent {
-  title: string;
-  subtitle: string;
-  description: string;
-  sectionTitle: string;
-}
 
-const fundContent: Record<Fund, FundContent> = {
-  'multi-asset': {
-    title: 'Multi Asset Global Opportunities Fund',
-    subtitle: 'Global diversified portfolio across equities, bonds, commodities',
-    description: 'The Multi Asset Global Opportunities Fund is MIMS\' actively managed, disclosed portfolio investing in listed equities, sovereign and credit instruments, and commodities. The mandate targets long-term capital growth with controlled volatility through diversified, opportunity-driven allocation across geographies, currencies and sectors. Position sizing is guided by marginal risk contribution, correlations and liquidity, typically across ~30 holdings. The team publishes semi-annual rebalancing reports and interim adjustments around market dislocations. Derivatives are used only for currency and tail-risk hedging, never for net leverage.',
-    sectionTitle: 'Latest Fund Updates',
-  },
-  'long-short': {
-    title: 'Long Short Equity Fund',
-    subtitle: 'Market-neutral equity strategy driven by multi-factor signals',
-    description: 'MIMS\' Long Short Equity Fund is a semi-automated, actively managed, zero-net-investment portfolio designed to deliver positive absolute returns across market regimes. The team builds a market-neutral book across US and European equities by ranking stocks through a proprietary multi-factor model (value, momentum, quality, low volatility, yield and illiquidity) and taking offsetting long and short positions. Signals are standardised and winsorised, with sector and geographic balance checks. Allocations are reviewed at each rebalancing and documented in periodic reports.',
-    sectionTitle: 'Latest Fund Updates',
-  },
-  'dps': {
-    title: 'Diversified Passive Selection Fund',
-    subtitle: 'ETF-based allocation delivering diversified, low-idiosyncratic exposure.',
-    description: 'ETF-only portfolio selecting UCITS instruments to express sector and macro themes while minimising idiosyncratic risk. The team sets strategic weights across equities, fixed income and commodities, diversified by region, sector and duration, and implements currency hedging where appropriate. Allocation is reviewed through semi-annual reports and interim adjustment notes when regimes shift (e.g., tariffs, fiscal shocks, rate repricing). Risk is monitored via VaR/Expected Shortfall and stress-aware duration management.',
-    sectionTitle: 'Latest Fund Updates',
-  },
-  'pir': {
-    title: 'Italian Equity PIR Fund',
-    subtitle: 'Italian equity portfolio aligned with PIR investment rules.',
-    description: 'The Italian Equity PIR Fund is MIMS\' actively managed, long-only portfolio investing exclusively in Italian equities within the PIR (Piano Individuale di Risparmio) framework. Portfolio construction combines a top-down view on the Italian macro backdrop with bottom-up single-name selection, while respecting PIR constraints on domestic issuers and minimum exposure to non-FTSE MIB constituents. Performance is assessed versus a blended FTSE MIB / FTSE Italia Mid-Small PIR benchmark, supported by VaR/Expected Shortfall risk monitoring.',
-    sectionTitle: 'Latest Fund Updates',
-  },
-};
+const fundContent = FUND_CONTENT;
 
 // Background images mapping
 const fundBackgrounds: Record<Fund, string> = {
@@ -75,6 +55,10 @@ const fundBackgrounds: Record<Fund, string> = {
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
+  // The track record, computed by the database (Step 93). `null` until it
+  // arrives, or when it cannot be read: then the typed table below is
+  // shown instead, exactly as before.
+  const [entry, setEntry] = useState<FundEntry | null>(null);
   const [perfRows, setPerfRows] = useState<FundYearRow[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -91,6 +75,16 @@ const FundDetail = () => {
 
   useEffect(() => {
     if (fund && fundLabels[fund as Fund]) {
+      // A direct visit carries the build's copy of the figures: the page
+      // shows exactly those, and reads nothing again (the number rule).
+      const embedded = readPageData<FundPageData>(pageDataKey.fund(fund));
+      if (embedded) {
+        setFiles(embedded.reports);
+        setEntry(embedded.entry);
+        setPerfRows([]);
+        setIsDataLoading(false);
+        return;
+      }
       fetchFiles();
     } else {
       setIsDataLoading(false);
@@ -100,42 +94,40 @@ const FundDetail = () => {
   const fetchFiles = async () => {
     setIsDataLoading(true);
     try {
-      const [filesRes, perfRows] = await Promise.all([
+      const [filesRes, record] = await Promise.all([
         supabase
           .from('archive_files')
-          .select('id, title, description, file_url, date, division, fund')
+          .select('*')
           .eq('fund', fund)
           // Public surface: published reports only, and never a deleted one.
           .eq('status', 'published')
           .is('deleted_at', null)
           .order('date', { ascending: false })
           .limit(9),
-        // THE SAME READ THE CHART MAKES, so the page performs it once.
-        //
-        // This used to be its own query against `fund_performance_years`,
-        // running beside the one `FundPerformanceChart` issues from the very
-        // same page: two requests, for the same rows, a few milliseconds
-        // apart. `listFundYears` coalesces concurrent callers, so both now
-        // wait on one round trip, and the ordering, the filtering and the
-        // twelve-month normalisation are done in one place instead of two.
-        //
-        // Performance matrix is only shown for the two active funds.
-        (fund === 'long-short' || fund === 'multi-asset')
-          ? listFundYears().then((rows) => rows.filter((r) => r.fund === fund)).catch(() => [])
-          : Promise.resolve([]),
+        fetchFundRecords().then((snap) => snap.funds[fund as RecordFund] ?? null).catch(() => null),
       ]);
 
       if (filesRes.error) throw filesRes.error;
       setFiles(filesRes.data || []);
+      setEntry(record);
 
-      setPerfRows(perfRows.map((r) => ({
-        year: r.year,
-        itd: r.itd ?? '',
-        months: Array.from({ length: 12 }, (_, i) => (Array.isArray(r.months) ? (r.months[i] ?? '') : '')),
-        ytd: r.ytd ?? '',
-        vol: r.vol ?? '',
-        sharpe: r.sharpe ?? '',
-      })));
+      // THE TYPED TABLE, ONLY AS A FALLBACK. Before the track-record
+      // function exists (or if it cannot be read) the page shows the cells
+      // as the PM team typed them, as it always did. `listFundYears` is the
+      // read the chart makes, so it costs no extra request.
+      if (!record && (fund === 'long-short' || fund === 'multi-asset')) {
+        const rows = await listFundYears().then((all) => all.filter((r) => r.fund === fund)).catch(() => []);
+        setPerfRows(rows.map((r) => ({
+          year: r.year,
+          itd: r.itd ?? '',
+          months: Array.from({ length: 12 }, (_, i) => (Array.isArray(r.months) ? (r.months[i] ?? '') : '')),
+          ytd: r.ytd ?? '',
+          vol: r.vol ?? '',
+          sharpe: r.sharpe ?? '',
+        })));
+      } else {
+        setPerfRows([]);
+      }
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
@@ -154,6 +146,8 @@ const FundDetail = () => {
   const fundKey = fund as Fund;
   const content = fundContent[fundKey];
   const isClosed = closedFunds.includes(fundKey);
+  const recordShown = fundRecordShown(entry);
+  const legacyTable = !entry && perfRows.length > 0;
 
   return (
     <>
@@ -170,7 +164,7 @@ const FundDetail = () => {
           { name: 'About', path: '/about' },
           { name: content.title, path: `/funds/${fundKey}` },
         ]}
-        structuredData={[fundSchema(fundKey)]}
+        structuredData={[fundSchema(fundKey), recordShown && entry ? fundDatasetSchema(fundKey, entry, content.title) : null]}
       />
       {/* First Section: Title and Subtitle with Background */}
       <div data-page-hero className="relative">
@@ -207,10 +201,18 @@ const FundDetail = () => {
       </section>
 
       {/* The track record as a curve, above the numbers it is drawn from. */}
-      {fundKey === 'long-short' && <FundPerformanceChart funds={['long-short']} />}
+      {(fundKey === 'long-short' || fundKey === 'multi-asset') && <FundPerformanceChart funds={[fundKey]} />}
+
+      {/* THE TRACK RECORD (Step 93): the table, the statistics, the market
+          references and the method, every figure computed from the monthly
+          returns. A closed fund shows it once the PM team has typed its
+          returns and its dates. */}
+      {recordShown && entry && (
+        <FundTrackRecord fund={fundKey as RecordFund} entry={entry} benchmarkNote={content.benchmarkNote} />
+      )}
 
       {/* Performance Summary - long-short only */}
-      {fundKey === 'long-short' && (
+      {legacyTable && fundKey === 'long-short' && (
         <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
           <div className="container">
           <div className="overflow-x-auto">
@@ -256,10 +258,8 @@ const FundDetail = () => {
         </section>
       )}
 
-      {fundKey === 'multi-asset' && <FundPerformanceChart funds={['multi-asset']} />}
-
       {/* Performance Summary - multi-asset */}
-      {fundKey === 'multi-asset' && (
+      {legacyTable && fundKey === 'multi-asset' && (
         <section className="pt-0 pb-section-sm md:pt-0 md:pb-section bg-background">
           <div className="container">
             <div className="overflow-x-auto">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import logoMark from '@/assets/logo-color.svg';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import { openReportInTab } from '@/lib/open-report';
@@ -17,6 +18,8 @@ export interface ReportItem {
   chart?: ReportChart;
   /** Optional 2-letter abbreviation; auto-derived from `div` if absent. */
   abbr?: string;
+  /** The report's own page, "/archive/<address>" (Step 93). */
+  href?: string;
 }
 
 export interface ReportsSectionProps {
@@ -300,6 +303,11 @@ function FeaturedInfo({
         >
           Open Report
         </button>
+        {report.href && (
+          <Link to={report.href} className="rbtn rbtn--onnavy-ghost">
+            Report Page
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -616,6 +624,8 @@ export function ReportsSection(props: ReportsSectionProps) {
 
 // ---------- Helper: adapt archive_files row -> ReportItem ----------
 export interface ArchiveFileRow {
+  /** The report's permanent address, when the row carries it (Step 93). */
+  slug?: string | null;
   title: string;
   description?: string | null;
   date: string; // ISO date
@@ -665,6 +675,7 @@ export function archiveFilesToReports(
       date: formatMonthYear(r.date),
       pdf: r.file_url,
       chart: pickChart(r.title),
+      ...(r.slug ? { href: `/archive/${r.slug}` } : {}),
     };
   });
 }

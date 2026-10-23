@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { releaseStaticPage } from '@/lib/page-data';
 import { WORKSPACE_BASE, LEGACY_WORKSPACE_BASE } from '@/lib/workspace-base';
 
 // =====================================================================
@@ -98,6 +99,14 @@ function chromeFor(path: string): Chrome {
 
 export function RouteChrome() {
   const { pathname } = useLocation();
+  const entryPath = useRef(pathname);
+
+  // A static copy written by the build belongs to the address it was
+  // loaded at: leaving that address inside the app always shows the app,
+  // even on a page that never says it is ready (see lib/page-data.ts).
+  useEffect(() => {
+    if (pathname !== entryPath.current) releaseStaticPage();
+  }, [pathname]);
 
   useEffect(() => {
     const c = chromeFor(pathname);

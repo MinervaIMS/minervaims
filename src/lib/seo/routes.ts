@@ -127,6 +127,13 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     priority: 0.8,
     changefreq: 'weekly',
   },
+  '/track-record': {
+    title: 'Track Record',
+    description:
+      'Minerva IMS year by year: reports published by division, the funds\' returns and risk, events and speakers, members and alumni per semester, with definitions and dates.',
+    priority: 0.8,
+    changefreq: 'weekly',
+  },
   '/contacts': {
     title: 'Contacts',
     description:

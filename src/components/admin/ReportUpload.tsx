@@ -18,6 +18,9 @@ import { activeFunds, fundLabels, type Fund } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { logActivity } from '@/lib/activity-log';
 import { PdfThumbnail, countPdfPages } from '@/components/shared/PdfThumbnail';
+import { DEFAULT_REPORT_TYPE, REPORT_TYPES, REPORT_TYPE_LABELS, type ReportAuthor, type ReportDivision, type ReportType } from '@/lib/report-meta';
+import { AuthorsEditor } from '@/components/admin/archive/AuthorsEditor';
+import { TagsInput } from '@/components/admin/archive/TagsInput';
 
 const CORE: OrgDivision[] = ['equity', 'investment', 'macro', 'portfolio', 'quant'];
 
@@ -40,6 +43,10 @@ export default function ReportUpload() {
     date: new Date().toISOString().slice(0, 10),
     division: (allowedDivisions[0] ?? '') as OrgDivision | '',
     fund: '' as Fund | '',
+    // Step 93: what the report page and the PDF's own details say.
+    report_type: '' as ReportType | '',
+    tags: [] as string[],
+    authors: [] as ReportAuthor[],
   });
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
@@ -95,6 +102,9 @@ export default function ReportUpload() {
             date: form.date, division: form.division, fund: form.division === 'portfolio' ? (form.fund || null) : null,
             status: publishNow ? 'published' : 'draft',
             page_count: pageCount && Number(pageCount) > 0 ? Number(pageCount) : null,
+            report_type: form.report_type || null,
+            tags: form.tags,
+            authors: form.authors,
           },
         }, session });
       if (error) throw error;
@@ -105,7 +115,10 @@ export default function ReportUpload() {
           ? 'Reminder: add the updated performance data in Funds\' Performances so it appears on the public fund table.'
           : 'You can find it in Reports > Archive.',
       });
-      setForm((f) => ({ ...f, title: '', description: '', fund: '' }));
+      if (data?.pdf_metadata && data.pdf_metadata.ok === false) {
+        toast({ title: 'The PDF\'s own details were not written', description: data.pdf_metadata.reason, variant: 'destructive' });
+      }
+      setForm((f) => ({ ...f, title: '', description: '', fund: '', report_type: '', tags: [], authors: [] }));
       setFileUrl(''); setFileName(''); setPageCount('');
     } catch (e) {
       toast({ title: 'Could not save report', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
@@ -161,6 +174,34 @@ export default function ReportUpload() {
                 </Select>
               </div>
             )}
+          </div>
+
+          {/* Step 93: the type (from the division unless changed), tags
+              and authors, shown on the report's page and written into the
+              PDF's own details. */}
+          <div className="space-y-1">
+            <Label htmlFor="upload-type">Type</Label>
+            <select
+              id="upload-type"
+              value={form.report_type}
+              onChange={(e) => setForm({ ...form, report_type: e.target.value as ReportType | '' })}
+              className="font-body bg-background border border-separator px-3 h-10 w-full"
+            >
+              <option value="">
+                {form.division && form.division in DEFAULT_REPORT_TYPE
+                  ? `From the division (${REPORT_TYPE_LABELS[DEFAULT_REPORT_TYPE[form.division as ReportDivision]]})`
+                  : 'From the division'}
+              </option>
+              {REPORT_TYPES.map((t) => <option key={t} value={t}>{REPORT_TYPE_LABELS[t]}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="upload-tags">Tags</Label>
+            <TagsInput id="upload-tags" value={form.tags} onChange={(tags) => setForm({ ...form, tags })} />
+          </div>
+          <div className="space-y-1">
+            <Label>Authors</Label>
+            <AuthorsEditor value={form.authors} onChange={(authors) => setForm({ ...form, authors })} />
           </div>
 
           {isFundReport && (

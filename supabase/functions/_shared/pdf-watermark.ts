@@ -52,7 +52,7 @@ const enc = new TextEncoder();
 const latin1 = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
 
 /** The offset of the last cross-reference section, from the file's tail. */
-function lastStartXref(bytes: Uint8Array): number {
+export function lastStartXref(bytes: Uint8Array): number {
   const tail = new TextDecoder('latin1').decode(bytes.subarray(Math.max(0, bytes.length - 4096)));
   const at = tail.lastIndexOf('startxref');
   if (at < 0) throw new Error('This PDF has no cross-reference section.');
@@ -62,7 +62,7 @@ function lastStartXref(bytes: Uint8Array): number {
 }
 
 /** Whether the section at `offset` is a classic "xref" table (else a stream), and its /Size. */
-function sectionAt(bytes: Uint8Array, offset: number): { classic: boolean; size: number } {
+export function sectionAt(bytes: Uint8Array, offset: number): { classic: boolean; size: number } {
   const head = new TextDecoder('latin1').decode(bytes.subarray(offset, Math.min(bytes.length, offset + 65536)));
   const classic = /^\s*xref/.test(head);
   // /Size sits in the trailer after the table, or in the stream's own dict.
@@ -75,7 +75,7 @@ function sectionAt(bytes: Uint8Array, offset: number): { classic: boolean; size:
   return { classic, size };
 }
 
-function serialize(obj: PDFObject): Uint8Array {
+export function serialize(obj: PDFObject): Uint8Array {
   const buf = new Uint8Array(obj.sizeInBytes());
   obj.copyBytesInto(buf, 0);
   return buf;

@@ -33,6 +33,8 @@ const Team = () => {
   const teamBg = teamBgAsset.url;
   const [searchParams] = useSearchParams();
   const divisionParam = searchParams.get('division') as Division | null;
+  // A report's author links here with ?person=<id> (Step 93).
+  const personParam = searchParams.get('person');
   const [members, setMembers] = useState<DbTeamMember[]>([]);
   // Which team the directory is showing, so the chart below opens on it.
   const [activeTab, setActiveTab] = useState<string>(divisionParam ?? 'executive');
@@ -127,6 +129,7 @@ const Team = () => {
             members={transformedMembers}
             initialDivisionFilter={divisionParam || undefined}
             onActiveTabChange={setActiveTab}
+            focusId={personParam}
           />
         </div>
       </section>

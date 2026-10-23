@@ -9,10 +9,12 @@ import type { Session } from '@supabase/supabase-js';
 
 import { invokeFunction } from '@/lib/errors';
 export type ActiveFund = 'long-short' | 'multi-asset';
+/** Every fund that can hold monthly returns: the closed ones too, since Step 93. */
+export type RecordedFund = ActiveFund | 'dps' | 'pir';
 
 export interface FundYear {
   id: string;
-  fund: ActiveFund;
+  fund: RecordedFund;
   year: number;
   itd: string;
   months: string[]; // 12 entries, Jan..Dec
@@ -21,14 +23,19 @@ export interface FundYear {
   sharpe: string;
 }
 
+/**
+ * A year as the editor saves it. Since Step 93 only the months are typed:
+ * the summary cells are computed (public.fund_track_record), and a row that
+ * still holds typed ones keeps them untouched when they are not sent.
+ */
 export interface FundYearInput {
-  fund: ActiveFund;
+  fund: RecordedFund;
   year: number;
-  itd: string;
   months: string[];
-  ytd: string;
-  vol: string;
-  sharpe: string;
+  itd?: string;
+  ytd?: string;
+  vol?: string;
+  sharpe?: string;
 }
 
 export const ACTIVE_FUND_LABELS: Record<ActiveFund, string> = {
@@ -171,4 +178,66 @@ export async function deleteFundYear(session: Session | null, id: string) {
   const res = await invoke(session, { action: 'delete', id });
   refreshFundYears();
   return res;
+}
+
+// ── Step 93: profiles, market references and the €STR ──────────────────
+
+export interface FundProfileInput {
+  fund: RecordedFund;
+  inception_date?: string | null;
+  end_date?: string | null;
+  closing_reason?: string;
+  rebalancing_policy?: string;
+  methodology?: string;
+  positions_count?: number | null;
+  positions_as_of?: string | null;
+}
+
+export async function upsertFundProfile(session: Session | null, profile: FundProfileInput) {
+  return invoke(session, { action: 'profile-upsert', profile });
+}
+
+export type ReferenceSeries = 'euro_stoxx_50' | 'sp_500' | 'msci_china' | 'estr';
+
+export interface ReferenceMeta { series: ReferenceSeries; label: string; variant: string; currency: string; kind: 'index' | 'risk_free'; position: number }
+export interface ReferenceRow { series: ReferenceSeries; month: string; value: number; source: string; as_of: string | null; updated_at: string }
+
+export async function listReferences(session: Session | null): Promise<{ meta: ReferenceMeta[]; rows: ReferenceRow[] }> {
+  return invoke(session, { action: 'reference-list' });
+}
+
+export async function upsertReference(
+  session: Session | null,
+  reference: { series: ReferenceSeries; source: string; as_of?: string | null; rows: { month: string; value: number }[] },
+) {
+  return invoke(session, { action: 'reference-upsert', reference });
+}
+
+export async function deleteReferenceMonths(session: Session | null, series: ReferenceSeries, months: string[]) {
+  return invoke(session, { action: 'reference-delete', reference: { series, months } });
+}
+
+/** Fill the €STR months that have no value from the ECB (never replaces a typed one). */
+export async function importEstr(session: Session | null): Promise<{ filled: number; kept: number; from: string; to: string }> {
+  return invoke(session, { action: 'import-estr' });
+}
+
+/**
+ * Lines of "YYYY-MM value" (a tab, a comma, a semicolon or spaces between,
+ * a % sign allowed, a comma or a dot as the decimal point) as months and
+ * values. Lines that cannot be read are returned so the editor can say which.
+ */
+export function parseReferenceLines(text: string): { rows: { month: string; value: number }[]; bad: string[] } {
+  const rows: { month: string; value: number }[] = [];
+  const bad: string[] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = /^(\d{4})[-/.](\d{1,2})(?:[-/.]\d{1,2})?[\s,;\t]+(.+)$/.exec(line);
+    const value = m ? parseFundNumber(m[3]) : null;
+    const month = m ? Number(m[2]) : 0;
+    if (!m || value === null || month < 1 || month > 12) { bad.push(line); continue; }
+    rows.push({ month: `${m[1]}-${String(month).padStart(2, '0')}`, value });
+  }
+  return { rows, bad };
 }

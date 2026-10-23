@@ -7,10 +7,15 @@
 > It is commonly abbreviated MIMS, and also referred to as Minerva IMS.
 
 This file exists so that assistants and answer engines can describe the
-association accurately. The website is a single-page application, so a
-crawler that does not execute JavaScript sees very little of it; what
-follows is the same information the pages carry, in plain text, with links
-to the pages themselves.
+association accurately. The website is a single-page application; the
+pages most worth citing (every report, the archive, the funds, the
+divisions and the track record) are also published as static HTML with
+the same content, so a crawler that does not execute JavaScript can read
+them. What follows is the same information the pages carry, in plain text,
+with links to the pages themselves.
+
+- [llms-full.txt](https://minervaims.org/llms-full.txt): every published report, with its date, division, authors, summary and permanent address.
+- [Track record](https://minervaims.org/track-record): reports by year and division, the funds' returns and risk, events and speakers, members and alumni per semester, with definitions.
 
 Website: https://minervaims.org
 Contact: as.minerva@unibocconi.it
@@ -50,12 +55,17 @@ leaders. Every division publishes to the same public archive.
 ## The student-managed funds
 
 Two funds are active and two are closed. Holdings are disclosed and
-performance is reported publicly.
+performance is reported publicly. They are virtual (paper) portfolios
+managed by students for educational purposes: no real capital is invested,
+and returns are simulated, net and in EUR. Every figure on a fund page
+(cumulative and annualised return, volatility, Sharpe ratio on the euro
+short-term rate, maximum drawdown) is computed from the monthly returns.
 
 - [Multi Asset Global Opportunities Fund](https://minervaims.org/funds/multi-asset) (active): actively managed across listed equities, sovereign and credit instruments and commodities, targeting long-term capital growth with controlled volatility, typically across around thirty holdings.
 - [Long Short Equity Fund](https://minervaims.org/funds/long-short) (active): market-neutral, zero-net-investment book across US and European equities, ranked by a proprietary multi-factor model covering value, momentum, quality, low volatility, yield and illiquidity.
 - [Diversified Passive Selection Fund](https://minervaims.org/funds/dps) (closed): ETF-only portfolio of UCITS instruments expressing sector and macro themes while minimising idiosyncratic risk.
 - [Italian Equity PIR Fund](https://minervaims.org/funds/pir) (closed): long-only Italian equities within the PIR (Piano Individuale di Risparmio) framework.
+- [funds.json](https://minervaims.org/data/funds.json): every fund's monthly returns and derived figures, with definitions; one CSV per fund at /data/funds-<fund>.csv.
 
 ## How to join
 
@@ -78,7 +88,7 @@ membership passively.
 
 ## Research and publications
 
-- [Research archive](https://minervaims.org/archive): every report the association has published, searchable by division, fund and year. Equity research, investment outlooks, macro analysis, fund updates and quantitative papers.
+- [Research archive](https://minervaims.org/archive): every report the association has published, searchable by division, fund and year. Equity research, investment outlooks, macro analysis, fund updates and quantitative papers. Each report has its own permanent page at https://minervaims.org/archive/<address>, with its authors, summary, PDF and a citation in the form "Minerva Investment Management Society (year). Title. Division. URL".
 - [Recommended readings](https://minervaims.org/readings): books, papers and resources the divisions recommend to students.
 
 Research is produced by students for educational purposes. It is not

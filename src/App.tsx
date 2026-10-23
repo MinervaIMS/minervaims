@@ -36,6 +36,8 @@ const EventRegister = lazy(() => import("./pages/EventRegister"));
 const InternalFormPage = lazy(() => import("./pages/InternalFormPage"));
 const EventCancel = lazy(() => import("./pages/EventCancel"));
 const Archive = lazy(() => import("./pages/Archive"));
+const ReportPage = lazy(() => import("./pages/ReportPage"));
+const TrackRecord = lazy(() => import("./pages/TrackRecord"));
 const Readings = lazy(() => import("./pages/Readings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
@@ -156,6 +158,9 @@ const App = () => {
                 <Route path="/events/:id/cancel" element={<Suspense fallback={<PageLoader />}><EventCancel /></Suspense>} />
                 <Route path="/forms/:id" element={<Suspense fallback={<PageLoader />}><InternalFormPage /></Suspense>} />
                 <Route path="/archive" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="archive"><Archive /></PageVisibilityGate></Suspense>} />
+                {/* Every report's permanent address (Step 93). */}
+                <Route path="/archive/:slug" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="archive"><ReportPage /></PageVisibilityGate></Suspense>} />
+                <Route path="/track-record" element={<Suspense fallback={<PageLoader />}><TrackRecord /></Suspense>} />
                 <Route path="/readings" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="readings"><Readings /></PageVisibilityGate></Suspense>} />
                 <Route path="/privacy-policy" element={<Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
                 <Route path="/cookie-policy" element={<Suspense fallback={<PageLoader />}><CookiePolicy /></Suspense>} />

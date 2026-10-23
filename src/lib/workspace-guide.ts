@@ -227,7 +227,8 @@ export const GUIDE: GuideEntry[] = [
     warnings: ['Publishing makes the report publicly visible on the website.', 'The number of pages is detected automatically from the PDF. No manual input is needed.'],
     topics: [
       { id: 'draft', title: 'Draft or publish', body: 'Publishing sends the report straight to the archive and the public website. Saving as a draft keeps it internal until a Head approves it from the Report archive.' },
-      { id: 'fund-reports', title: 'Fund reports', body: 'For Portfolio Management reports you can attach the report to a fund. Remember to update the corresponding figures in Fund performances so the public fund table stays current.' },
+      { id: 'fund-reports', title: 'Fund reports', body: 'For Portfolio Management reports you can attach the report to a fund. Remember to type the new monthly returns in Fund performances so the public fund table stays current.' },
+      { id: 'page-details', title: 'Type, tags and authors', body: 'The type comes from the division unless you choose another. Tags (up to twelve) and the authors, in the order of the cover, appear on the report\'s own page and are written into the PDF\'s own details when it is saved. Pick an author from Members or Alumni to link them to their entry on the website, or type a name to add it without a link. Names and roles only: never an email or a phone number.' },
     ],
   },
   {
@@ -235,10 +236,15 @@ export const GUIDE: GuideEntry[] = [
     purpose: 'Every report the association has produced, filterable by division, fund, year and status.',
     view: ['Search, preview and download reports of your division. Heads can switch to other divisions.'],
     manage: ['Approve drafts, edit metadata, block or delete reports.'],
-    warnings: ['Deleting a report removes it from the public website too.'],
+    warnings: ['Deleting a report removes it from the public website too.', 'A report blocked or deleted leaves its page at once; publish the website afterwards so that search engines and AI tools stop finding it as well.'],
     topics: [
       { id: 'statuses', title: 'Report statuses', body: 'Published reports are live on the website. Drafts are internal and waiting for review. Blocked reports are withdrawn from the website but kept in the archive.' },
-      { id: 'filters', title: 'Filters', body: 'Combine the division, fund, year and search filters to narrow the list. Filters only change what you see; they never change the data.' },
+      { id: 'filters', title: 'Filters', body: 'Combine the division, fund, year and search filters to narrow the list. The search also finds tags and authors. Filters only change what you see; they never change the data.' },
+      { id: 'address', title: 'Each report\'s own page', body: 'Every report has a permanent address, minervaims.org/archive/ followed by words from its title and its year. It is made automatically, follows the title while the report is a draft, and never changes once the report has been published, even if the title does, so links in CVs and citations keep working. The page shows the summary, the authors, the tags, the PDF and a ready-made citation.' },
+      { id: 'type-tags-authors', title: 'Type, tags and authors', requires: 'manage', body: 'Edit a report to set its type, its tags and its authors. Pick an author from Members or Alumni to link them to their entry, or type the name. Saving also writes the details into the PDF.' },
+      { id: 'missing', title: 'Missing details', requires: 'manage', body: 'Above the list, Missing details counts the reports with no authors, no summary or no type. Choose a count to list those reports and complete them.' },
+      { id: 'bulk', title: 'Editing several reports', requires: 'manage', body: 'Tick reports (or Select all for the current filters) and press Edit selected to give them a type, add tags or take tags away in one go. Nothing else changes, and nothing changes at all if one of them belongs to a division you cannot edit.' },
+      { id: 'pdf-details', title: 'PDF details', requires: 'manage', body: 'Check the PDFs compares what each PDF says about itself (title, authors, summary, tags) with its report page. Update writes the page\'s details into the PDFs that differ, after asking. The pages of the PDF are not touched, the file as it was uploaded is kept in a private copy, and links to the PDF stay the same.' },
     ],
   },
   {
@@ -257,13 +263,27 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'reports-funds', section: 'Reports', label: 'Fund performances',
-    purpose: 'The Multi Asset Fund and Long Short Fund track record: monthly returns and yearly statistics. This data feeds the public website and the Dashboard.',
-    view: ['Consult the full performance history.'],
-    manage: ['Insert and correct monthly performance rows and yearly statistics, within the editing window.'],
-    warnings: ['These numbers appear on the public website. Double-check before saving.', 'Only the last 15 calendar months are editable. Anything earlier is frozen history and cannot be changed by anyone.'],
+    purpose: 'The track record of the four virtual funds: the monthly returns, typed here, and every figure computed from them for the fund pages, /track-record, the data files and the Dashboard.',
+    view: ['Consult the monthly returns, the computed figures, the profiles and the references.'],
+    manage: ['Type and correct monthly returns, within the editing window.', 'Keep each fund\'s profile and the market references up to date, and fill the €STR from the ECB.'],
+    warnings: ['These numbers appear on the public website. Double-check before saving.', 'An active fund\'s months older than 15 months are frozen history and cannot be changed by anyone.', 'A fund page opened from a link or a search result shows the figures of the last Publish of the website until the next one.'],
     topics: [
-      { id: 'yearly', title: 'Yearly statistics', body: 'The yearly figures (ITD, YTD, volatility, Sharpe) are what the public fund table and the Dashboard display. Keep them aligned with the monthly data.' },
-      { id: 'editing-window', title: 'The 15-month editing window', body: 'Recent months can be corrected; months older than 15 months are locked, so the published track record cannot be rewritten. Once every month of a year is locked, the whole year freezes, aggregates included, and its row no longer offers the edit or delete actions: it simply reads as frozen history.' },
+      { id: 'computed', title: 'Only the months are typed', body: 'YTD, ITD, volatility and the Sharpe ratio (shaded) are computed from the monthly returns by one function, the same one the website uses: compounded returns, volatility annualised from the year\'s months, and the Sharpe ratio on the €STR for full calendar years. Saving a month updates them all.' },
+      { id: 'editing-window', title: 'The 15-month editing window', body: 'Recent months of an active fund can be corrected; months older than 15 months are locked, so the published track record cannot be rewritten. Once every month of a year is locked, the year reads as frozen history. A closed fund\'s history can be typed in full.' },
+      { id: 'closed', title: 'Closed funds', body: 'The Diversified Passive Selection and Italian Equity PIR funds show their table on their pages once their monthly returns are typed here and their start and end dates are set in Profiles. The reason the fund closed is optional.' },
+      { id: 'profiles', title: 'Profiles', body: 'Each fund\'s inception, rebalancing, method and number of positions (with the date they are counted at), shown on its page.' },
+      { id: 'references', title: 'References and the €STR', body: 'Market indices (EURO STOXX 50, S&P 500, MSCI China; net total return in EUR) are typed month by month with their source; only the beta and correlation computed from them are published. Fill the €STR from the ECB fills every month without a value from the ECB\'s own series and never replaces a value typed here; before October 2019 it uses the EONIA less 8.5 basis points, as the ECB converts it.' },
+    ],
+  },
+  {
+    key: 'reports-divisions', section: 'Reports', label: 'Division pages',
+    purpose: 'What each division page says under How we work (standards, review, tools and data) and which three reports it shows as Flagship work.',
+    view: ['Read what each division page says.'],
+    manage: ['A Head edits their own division\'s page; the President, the Vice President and the Head of Asset Management can edit any.'],
+    warnings: ['The text appears on the public division page. A part left empty is hidden there.', 'A division page opened from a link or a search result shows the text of the last Publish of the website until the next one.'],
+    topics: [
+      { id: 'how-we-work', title: 'How we work', body: 'Three short parts: the standards a report meets, how it is reviewed before publication, and the tools and data it draws on. Plain statements, no superlatives and no output per semester. A part left empty does not appear on the website.' },
+      { id: 'flagship', title: 'Flagship work', body: 'Up to three published reports of the division, in the order chosen, each linking to its own page. The block stays hidden until at least one is chosen.' },
     ],
   },
   {

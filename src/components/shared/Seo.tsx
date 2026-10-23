@@ -1,9 +1,12 @@
+import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import {
-  SITE_NAME, SITE_SHORT_NAME, SITE_LOCALE, TWITTER_HANDLE,
+  SITE_NAME, SITE_LOCALE, TWITTER_HANDLE,
   DEFAULT_OG_IMAGE, absoluteUrl, canonicalPath,
 } from '@/lib/seo/site';
+import { fullTitle } from '@/lib/seo/head';
+import { releaseStaticPage } from '@/lib/page-data';
 import { ROUTE_META, type RouteMeta } from '@/lib/seo/routes';
 import { breadcrumbSchema, graph, type JsonLd } from '@/lib/seo/structured-data';
 
@@ -63,39 +66,17 @@ export interface SeoProps {
   structuredData?: (JsonLd | null | undefined)[];
 }
 
-/**
- * Roughly where a search result stops showing a title. Not a hard limit:
- * Google measures pixels, not characters, and truncates around here.
- */
-const TITLE_BUDGET = 60;
-
-/**
- * The title as it appears in a tab and in a search result.
- *
- * THE SUFFIX ADAPTS TO THE ROOM LEFT. The association's full name is
- * worth carrying, because it is what somebody searching for it by name
- * types; but "Quantitative Research Division | Minerva Investment
- * Management Society" is seventy characters, and a search result that
- * truncates loses the name it was carrying it for. So the full name is
- * used where it fits and the short form where it does not, which keeps
- * every title inside the budget without ever dropping the identity
- * altogether.
- *
- * The suffix is added here rather than in the registry so that the
- * homepage, whose title already names the association in full, does not
- * end up saying it twice.
- */
-function fullTitle(title: string): string {
-  const trimmed = title.trim();
-  if (trimmed.toLowerCase().includes('minerva')) return `${trimmed} | ${SITE_SHORT_NAME}`;
-  const long = `${trimmed} | ${SITE_NAME}`;
-  return long.length <= TITLE_BUDGET ? long : `${trimmed} | Minerva IMS`;
-}
+// The title's suffix rule lives in lib/seo/head.ts, shared with the
+// static pages the build writes.
 
 export function Seo({
   page, title, description, socialTitle, image, noindex, breadcrumbs, structuredData,
 }: SeoProps) {
   const location = useLocation();
+  // A page renders its Seo once its content is on screen: that is the
+  // moment the static copy the build wrote for crawlers (if this load
+  // came with one) gives way to the app. See lib/page-data.ts.
+  useEffect(() => { releaseStaticPage(); }, []);
   const path = canonicalPath(page ?? location.pathname);
   const meta: RouteMeta | undefined = ROUTE_META[path] ?? ROUTE_META[page ?? ''];
 
