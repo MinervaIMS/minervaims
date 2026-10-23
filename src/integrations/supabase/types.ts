@@ -2260,6 +2260,148 @@ export type Database = {
         }
         Relationships: []
       }
+      key_number_history: {
+        Row: {
+          as_of: string | null
+          id: number
+          recorded_at: string
+          slug: string
+          value: number | null
+        }
+        Insert: {
+          as_of?: string | null
+          id?: number
+          recorded_at?: string
+          slug: string
+          value?: number | null
+        }
+        Update: {
+          as_of?: string | null
+          id?: number
+          recorded_at?: string
+          slug?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_number_history_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "key_numbers"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      key_number_page_scan: {
+        Row: {
+          error: string | null
+          file_id: string
+          ok: boolean
+          pages: number | null
+          tried_at: string
+        }
+        Insert: {
+          error?: string | null
+          file_id: string
+          ok: boolean
+          pages?: number | null
+          tried_at?: string
+        }
+        Update: {
+          error?: string | null
+          file_id?: string
+          ok?: boolean
+          pages?: number | null
+          tried_at?: string
+        }
+        Relationships: []
+      }
+      key_number_pages: {
+        Row: {
+          page_key: string
+          position: number
+          slug: string
+        }
+        Insert: {
+          page_key: string
+          position: number
+          slug: string
+        }
+        Update: {
+          page_key?: string
+          position?: number
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_number_pages_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "key_numbers"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      key_numbers: {
+        Row: {
+          as_of: string | null
+          decimals: number
+          definition: string | null
+          definition_template: string
+          format: string
+          kind: string
+          label: string
+          period: string | null
+          prefix: string
+          slug: string
+          source: string
+          status: string
+          suffix: string
+          updated_at: string
+          updated_by: string
+          value: number | null
+          virtual_portfolio: boolean
+        }
+        Insert: {
+          as_of?: string | null
+          decimals?: number
+          definition?: string | null
+          definition_template: string
+          format: string
+          kind: string
+          label: string
+          period?: string | null
+          prefix?: string
+          slug: string
+          source: string
+          status?: string
+          suffix?: string
+          updated_at?: string
+          updated_by?: string
+          value?: number | null
+          virtual_portfolio?: boolean
+        }
+        Update: {
+          as_of?: string | null
+          decimals?: number
+          definition?: string | null
+          definition_template?: string
+          format?: string
+          kind?: string
+          label?: string
+          period?: string | null
+          prefix?: string
+          slug?: string
+          source?: string
+          status?: string
+          suffix?: string
+          updated_at?: string
+          updated_by?: string
+          value?: number | null
+          virtual_portfolio?: boolean
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           account_status: string
@@ -3197,6 +3339,19 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       italian_easter: { Args: { y: number }; Returns: string }
       italian_holiday_on: { Args: { d: string }; Returns: string }
+      kn_page_count_tick: { Args: never; Returns: undefined }
+      kn_points: { Args: { v: string }; Returns: number }
+      kn_put: {
+        Args: {
+          p_as_of: string
+          p_ok: boolean
+          p_period: string
+          p_slug: string
+          p_value: number
+          p_vars: Json
+        }
+        Returns: undefined
+      }
       link_member_account: { Args: { p_user_id: string }; Returns: Json }
       log_activity: {
         Args: {
@@ -3281,6 +3436,7 @@ export type Database = {
         Args: { p_city?: string; p_company?: string; p_job_area?: string }
         Returns: number
       }
+      public_key_numbers: { Args: never; Returns: Json }
       public_testimonial_companies: {
         Args: never
         Returns: {
@@ -3296,6 +3452,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refresh_key_numbers: { Args: never; Returns: number }
       role_to_team_position: {
         Args: {
           _division: Database["public"]["Enums"]["org_division"]
