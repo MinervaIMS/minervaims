@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useKeyFigures } from '@/hooks/useKeyFigures';
+import { useKeyNumbers } from '@/hooks/useKeyNumbers';
+import { formatKeyNumber, type KeyNumbersSnapshot } from '@/lib/key-numbers';
 import { PdfThumbnail } from '@/components/shared/PdfThumbnail';
 import {
-  HISTORY_ALUMNI_FALLBACK,
   HISTORY_EVENTS,
   HistoryEvent,
   HistoryMedia,
@@ -184,59 +184,45 @@ function useArchiveCovers(events: HistoryEvent[]) {
 }
 
 // --- Counter -----------------------------------------------------------
+// THE NUMBER RULE (Step 92). The counter used to climb from 0 when its card
+// came into view, so a reader that never scrolled there recorded 0. It now
+// shows its final value from the first frame. A counter whose label names
+// one of the key numbers (alumni, reports, members, events) shows THAT
+// figure, exactly, so the About page and the homepage can never disagree;
+// any other counter shows the number set for it in Website > History.
 
-function CountUp({ target, run }: { target: number; run: boolean }) {
-  const [value, setValue] = useState(0);
-  const started = useRef(false);
-  const hostRef = useRef<HTMLSpanElement>(null);
-  // The figure must not start climbing before the section is actually on
-  // screen, so the card's own reveal is paired with a visibility check.
-  const [onScreen, setOnScreen] = useState(false);
+const COUNTER_FIGURES: [RegExp, string][] = [
+  [/alumni/i, 'alumni'],
+  [/report/i, 'reports_published'],
+  [/member/i, 'active_members'],
+  [/event/i, 'events_held'],
+];
 
-  useEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') { setOnScreen(true); return; }
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) { setOnScreen(true); io.disconnect(); }
-    }, { threshold: 0.2 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!run || !onScreen || started.current || target <= 0) return;
-    started.current = true;
-    if (reducedMotion()) { setValue(target); return; }
-    const t0 = performance.now();
-    const duration = 1600;
-    let frame = 0;
-    const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / duration);
-      setValue(Math.round(target * (1 - Math.pow(1 - k, 3))));
-      if (k < 1) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [run, onScreen, target]);
-
-  return <span ref={hostRef}>{value}</span>;
+/** The registry text for a counter's label, or null when it names no key number. */
+function counterFigure(label: string, snap: KeyNumbersSnapshot | null): string | null | undefined {
+  const hit = COUNTER_FIGURES.find(([re]) => re.test(label));
+  if (!hit) return undefined;
+  const figure = snap?.numbers[hit[1]];
+  return figure ? formatKeyNumber(figure) : null;
 }
 
 // --- Media -------------------------------------------------------------
 
-function Media({ media, coverUrl, revealed, alumniTotal }: {
+function Media({ media, coverUrl, snap }: {
   media: HistoryMedia;
   coverUrl?: string;
-  revealed: boolean;
-  alumniTotal: number;
+  snap: KeyNumbersSnapshot | null;
 }) {
   if (media.kind === 'counter') {
+    const registry = counterFigure(media.label, snap);
     return (
       <div className="tl-media tl-media--counter">
         <span className="tl-count">
-          <CountUp target={media.value} run={revealed} />
-          <span>+</span>
+          {registry === undefined
+            ? <>{media.value}<span>+</span></>
+            : registry !== null
+              ? <span data-kn="">{registry}</span>
+              : <span data-kn="pending" aria-hidden="true" className="inline-block" style={{ width: '2.2em', height: '1em' }} />}
         </span>
         <span className="tl-count-label">{media.label}</span>
       </div>
@@ -294,20 +280,26 @@ interface CardProps {
   vertical: boolean;
   revealed: boolean;
   coverUrl?: string;
-  alumniTotal: number;
+  snap: KeyNumbersSnapshot | null;
   titleMinHeight: number | null;
   registerTitle: (index: number, el: HTMLHeadingElement | null) => void;
 }
 
 function MilestoneCard({
-  event, index, vertical, revealed, coverUrl, alumniTotal, titleMinHeight, registerTitle,
+  event, index, vertical, revealed, coverUrl, snap, titleMinHeight, registerTitle,
 }: CardProps) {
   const [open, setOpen] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
   const copyRef = useRef<HTMLParagraphElement>(null);
   const descId = `tl-desc-${vertical ? 'v' : 'h'}-${event.year}`;
 
-  const text = event.description.split('[n]').join(String(alumniTotal));
+  // "[n]" is the alumni figure of the key numbers. Without it yet, the
+  // sentence that carries it is left out rather than shown with a stand-in
+  // number that would then change (the number rule).
+  const alumniFigure = snap?.numbers.alumni;
+  const text = alumniFigure
+    ? event.description.split('[n]').join(formatKeyNumber(alumniFigure))
+    : event.description.replace(/[^.]*\[n\][^.]*\.?\s*/g, '').trim();
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -345,7 +337,7 @@ function MilestoneCard({
           {open ? 'Read less' : 'Read more'}
         </button>
       )}
-      <Media media={event.media} coverUrl={coverUrl} revealed={revealed} alumniTotal={alumniTotal} />
+      <Media media={event.media} coverUrl={coverUrl} snap={snap} />
     </div>
   );
 }
@@ -355,8 +347,8 @@ function MilestoneCard({
 export function HistoryTimeline() {
   const events = useTimelineEvents();
   const covers = useArchiveCovers(events);
-  const { counts } = useKeyFigures();
-  const alumniTotal = counts.alumni > 0 ? counts.alumni : HISTORY_ALUMNI_FALLBACK;
+  const snap = useKeyNumbers();
+  const alumniTotal = snap?.numbers.alumni ? formatKeyNumber(snap.numbers.alumni) : null;
 
   const [mode, setMode] = useState<Mode>(() => {
     if (typeof window === 'undefined') return 'rail';
@@ -790,7 +782,7 @@ export function HistoryTimeline() {
                     vertical
                     revealed={revealed.has(i)}
                     coverUrl={covers[event.year]}
-                    alumniTotal={alumniTotal}
+                    snap={snap}
                     titleMinHeight={null}
                     registerTitle={registerTitle}
                   />
@@ -857,7 +849,7 @@ export function HistoryTimeline() {
                         vertical={false}
                         revealed={revealed.has(i)}
                         coverUrl={covers[event.year]}
-                        alumniTotal={alumniTotal}
+                        snap={snap}
                         titleMinHeight={titleMinHeight}
                         registerTitle={registerTitle}
                       />

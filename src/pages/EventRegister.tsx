@@ -213,7 +213,7 @@ export default function EventRegister() {
           )}
         </div>
       ) : (
-        <form onSubmit={submit} className="space-y-4 font-body">
+        <form data-clarity-mask="True" onSubmit={submit} className="space-y-4 font-body">
           {memberRegistering ? (
             <p className="text-sm text-muted-foreground text-center">Registering as <span className="text-foreground">{user.email}</span>. Your details are filled in automatically.</p>
           ) : (

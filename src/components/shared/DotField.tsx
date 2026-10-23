@@ -42,6 +42,12 @@ export interface DotFieldProps {
    * stand-in stays exactly where it is.
    */
   onReady?: () => void;
+  /**
+   * Stops the drawing loop while true, keeping the last frame on screen.
+   * A band further down a page passes it while it is off screen or the
+   * tab is hidden, so an unseen canvas costs nothing (Step 92).
+   */
+  paused?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -63,6 +69,7 @@ const DotField = memo(function DotField({
   gradientTo = '#B0A2DA',
   glowColor = '#2A1A5C',
   onReady,
+  paused = false,
   className,
   style,
 }: DotFieldProps) {
@@ -85,6 +92,8 @@ const DotField = memo(function DotField({
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
   const announcedRef = useRef(false);
+  const pausedRef = useRef(paused);
+  const resumeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -134,10 +143,14 @@ const DotField = memo(function DotField({
       dotsRef.current = dots;
     }
 
+    // Measured against the canvas where it is NOW, not where it was at the
+    // last resize: a field lower down a page moves whenever anything above
+    // it changes height, and a stored offset would put the bulge in the
+    // wrong place.
     function onMouseMove(e: MouseEvent) {
-      const s = sizeRef.current;
-      mouseRef.current.x = e.pageX - s.offsetX;
-      mouseRef.current.y = e.pageY - s.offsetY;
+      const rect = canvas!.getBoundingClientRect();
+      mouseRef.current.x = e.clientX - rect.left;
+      mouseRef.current.y = e.clientY - rect.top;
     }
 
     function updateMouseSpeed() {
@@ -252,8 +265,10 @@ const DotField = memo(function DotField({
         onReadyRef.current?.();
       }
 
+      if (pausedRef.current) { rafRef.current = 0; return; }
       rafRef.current = requestAnimationFrame(tick);
     }
+    resumeRef.current = () => { if (!rafRef.current) rafRef.current = requestAnimationFrame(tick); };
 
     doResize();
 
@@ -317,6 +332,11 @@ const DotField = memo(function DotField({
   useEffect(() => {
     rebuildRef.current?.();
   }, [dotRadius, dotSpacing]);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (!paused) resumeRef.current?.();
+  }, [paused]);
 
   return (
     <div className={`dot-field-container ${className ?? ''}`} style={style}>

@@ -20,6 +20,7 @@ import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import eventsBgAsset from "@/assets/MIMS_Events.webp.asset.json";
 import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlaceholder';
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 interface DbEvent {
   id: string;
@@ -367,7 +368,7 @@ const Events = () => {
               {/* Same identity as the footer newsletter form, adapted to the
                   light background: plain input joined to a serif Sign Up
                   button with the soft purple hover. */}
-              <form onSubmit={handleEventEmailSubmit} className="max-w-xl mx-auto text-left">
+              <form data-clarity-mask="True" onSubmit={handleEventEmailSubmit} className="max-w-xl mx-auto text-left">
                 <div className="flex w-full">
                   <input
                     type="email"
@@ -525,6 +526,9 @@ const Events = () => {
           )}
         </div>
       </section>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="events" />
 
       {lightboxIndex !== null && posterEvents.length > 0 && (
         <PosterLightbox

@@ -1,0 +1,2 @@
+# Step 92 hosting probe: does the host honour a _redirects file (a real 301)?
+/__probe/redirect-test /__probe/form-a.html 301

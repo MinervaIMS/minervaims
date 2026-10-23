@@ -59,5 +59,6 @@ Disallow: /session-expired
 Disallow: /access-denied
 Disallow: /pending-approval
 Disallow: /unsubscribe
+Disallow: /__probe/
 
 Sitemap: https://minervaims.org/sitemap.xml

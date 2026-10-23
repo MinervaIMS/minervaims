@@ -120,6 +120,13 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     priority: 0.6,
     changefreq: 'monthly',
   },
+  '/numbers': {
+    title: 'Minerva in Numbers',
+    description:
+      'Minerva IMS in figures: members, alumni, events and research reports of the Bocconi investment society founded in 2017, each with its definition and date.',
+    priority: 0.8,
+    changefreq: 'weekly',
+  },
   '/contacts': {
     title: 'Contacts',
     description:

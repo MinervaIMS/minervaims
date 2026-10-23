@@ -57,7 +57,7 @@ const EventSchema = z.object({
   // 'association_on_display' events are created and kept in step by the
   // database, one per Association on Display day; they are listed here so
   // the archive can still switch their website visibility.
-  event_type: z.enum(['meeting','assembly','aperitivo','division_event','online_call','guest','alumni_call','association_wide','association_on_display','other']).optional(),
+  event_type: z.enum(['meeting','assembly','aperitivo','division_event','online_call','guest','alumni_call','company_visit','association_wide','association_on_display','other']).optional(),
   division: z.enum(['equity','investment','macro','portfolio','quant','media','operations','board','none']).nullable().optional(),
   start_at: z.string().nullable().optional(),
   end_at: z.string().nullable().optional(),

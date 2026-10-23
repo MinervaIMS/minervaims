@@ -56,7 +56,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             LAYER moved above the card rather than the card below the
             navigation: every Radix portal is now z-[70]. The whole scale is
             written down once, at the top of index.css. */}
-        <div className="relative z-[55] w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
+        <div data-clarity-mask="True" className="relative z-[55] w-full max-w-2xl bg-white border border-[#D9D9D9] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.55)] px-6 sm:px-10 py-10">
           <div className="flex justify-center mb-6">
             <img
               src={fullLogo}

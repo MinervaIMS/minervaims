@@ -16,6 +16,7 @@ import investmentBgAsset from '@/assets/mims-investment-research.webp.asset.json
 import macroBgAsset from '@/assets/MIMS_Macro_Research.webp.asset.json';
 import portfolioBgAsset from '@/assets/MIMS_Portfolio_Management.webp.asset.json';
 import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -241,6 +242,9 @@ const DivisionDetail = () => {
         reports={archiveFilesToReports(files)}
         useRealCover
       />
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey={`division-${divisionKey}`} />
     </div>
   );
 };

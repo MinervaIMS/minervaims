@@ -440,10 +440,11 @@ const PrivacyPolicy = () => (
 
       <LegalSectionBlock id="cookies" number="12" title="Cookies and Similar Technologies">
         <p>
-          The website uses only strictly necessary technical storage items, set by the website itself, which do not
-          require consent. It sets no analytics, advertising or profiling cookies and loads no third-party tracking
-          services. The consent banner reserves further categories (preferences, analytics, external media) that are
-          not in use today and would load only with your prior consent, in line with the Garante's Guidelines on
+          Without your consent, the website uses only strictly necessary technical storage items, set by the website
+          itself, which do not require consent. With your consent only, the public pages use Microsoft Clarity for usage statistics,
+          heatmaps and masked recordings of visits; without your consent it is not loaded. The consent banner
+          reserves further categories (preferences, external media) that are not in use today and would load only
+          with your prior consent, in line with the Garante's Guidelines on
           cookies of 10 June 2021 and article 122 of the Italian Privacy Code. The full list of items, and how to
           change your choices at any time, is in the <a href="/cookie-policy">Cookie Policy</a>.
         </p>
@@ -462,6 +463,10 @@ const PrivacyPolicy = () => (
           <li>
             <strong>Video-call providers</strong> (Microsoft Teams or Zoom), only for the interviews you book, under
             their own terms.
+          </li>
+          <li>
+            <strong>Microsoft (Microsoft Clarity),</strong> for website analytics, only with your consent; data may be
+            transferred to the United States under the EU-US Data Privacy Framework.
           </li>
           <li>
             <strong>Association members with a need to know,</strong> under role-based access controls (for example,

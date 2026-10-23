@@ -20,6 +20,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 interface ArchiveFile {
   id: string;
@@ -418,6 +419,9 @@ const Archive = () => {
           )}
         </div>
       </div>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="archive" />
     </>
   );
 };

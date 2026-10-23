@@ -421,7 +421,7 @@ export default function InternalFormPage() {
         )}
 
         {showForm && (
-          <form noValidate onSubmit={(e) => { e.preventDefault(); if (canSend) send(); }}>
+          <form data-clarity-mask="True" noValidate onSubmit={(e) => { e.preventDefault(); if (canSend) send(); }}>
             {summary && (
               <div ref={summaryRef} tabIndex={-1} className="mb-5 border-2 border-destructive px-4 py-3 focus:outline-none" role="alert">
                 <p className="flex items-center gap-2 font-medium text-destructive"><AlertCircle className="h-4 w-4" aria-hidden />{summary}</p>

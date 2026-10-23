@@ -6,7 +6,7 @@
 // intakes (status, dates, semester label, division questions, FAQ
 // entries, key figures) is read from Supabase at runtime and is never
 // hardcoded: see useApplicationSettings, useDivisionQuestions,
-// useJoinFaqs and useKeyFigures.
+// useJoinFaqs and useKeyNumbers.
 // =====================================================================
 
 export const JOIN_HERO = {

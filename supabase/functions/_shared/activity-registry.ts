@@ -243,6 +243,7 @@ export const NOT_WORKSPACE: Record<string, string> = {
   'auth-link-status': 'Reports whether a sign-in link was already used; reads only.',
   'checkin-qr': 'Draws the QR code of a ticket; reads only.',
   'event-ics': 'The public "Add to calendar" file; reads only.',
+  'key-numbers': 'The scheduled page counter and recomputation of the key numbers (Step 92); called by the database, no person involved.',
   'handle-email-suppression': 'Called by the email provider for bounces and complaints, not by a person in the workspace.',
   'handle-email-unsubscribe': 'The public unsubscribe link in emails; no workspace account involved.',
   'preview-transactional-email': 'Renders an email preview; reads only.',
@@ -284,7 +285,7 @@ export const CLIENT_WRITE_RPCS: Record<string, string> = {
 /** Database functions the workspace calls directly that only READ. */
 export const CLIENT_READ_RPCS: string[] = [
   'event_places', 'my_event_registrations', 'my_onboarding_context', 'public_alumni_classes',
-  'public_alumni_directory', 'public_alumni_filter_count', 'public_testimonial_companies', 'workspace_member_count',
+  'public_alumni_directory', 'public_alumni_filter_count', 'public_key_numbers', 'public_testimonial_companies', 'workspace_member_count',
 ];
 
 /** Files the workspace uploads straight to storage, and what records them. */

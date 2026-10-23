@@ -27,7 +27,7 @@ const CookiePolicy = () => (
     <LegalLayout
       title="Cookie Policy"
       description="How this website uses cookies and similar technologies, and how you control them."
-      lastUpdated="September 29th, 2026"
+      lastUpdated="October 22nd, 2026"
       currentId="cookies"
       sections={sections}
     >
@@ -51,10 +51,14 @@ const CookiePolicy = () => (
             calendar). They are set by the website itself, are never read by third parties, and are always active.
           </li>
           <li>
-            <strong>Preferences, analytics and external media</strong> categories exist in the consent banner but
-            are not in use: the website sets no analytics, advertising or profiling cookies and loads no third-party
-            tracking services. If such a tool is ever adopted, it will run only under the corresponding consent
-            category and this policy will be updated first.
+            <strong>Analytics</strong>: only with your consent, the public pages use Microsoft Clarity, a service of
+            Microsoft, to see how visitors use the website: usage statistics, heatmaps and recordings of visits in
+            which what you type is masked. Clarity is never loaded in the Workspace or on the sign-in pages; on the
+            application, event registration and form pages, what you type is masked and never recorded. If you do not
+            accept the Analytics category, it is not loaded at all.
+          </li>
+          <li>
+            <strong>Preferences and external media</strong> categories exist in the banner but are not in use.
           </li>
         </ul>
         <p>
@@ -62,7 +66,12 @@ const CookiePolicy = () => (
           in the banner: no cookie was set, nothing was written to the browser's storage, and the only service
           contacted other than the website itself was the association's own backend, which serves the page content.
         </p>
-        <p>We do not use cookies for advertising, cross-site tracking or profiling.</p>
+        <p>
+          The association does not use cookies for advertising, cross-site tracking or profiling. If you accept the
+          Analytics category, Microsoft may also use the data Clarity collects for its own purposes, including
+          advertising, as set out in the{' '}
+          <a href="https://www.microsoft.com/privacy/privacystatement" target="_blank" rel="noopener noreferrer">Microsoft Privacy Statement</a>.
+        </p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="legal-basis" number="03" title="Legal Basis and Consent">
@@ -153,9 +162,22 @@ const CookiePolicy = () => (
           <strong>Hosting security cookies</strong> may be set transiently by our hosting infrastructure to protect
           the website (for example against abusive traffic). Category: strictly necessary. Duration: short-lived.
         </p>
+        <p><strong>Only if you accept the Analytics category</strong></p>
+        <ul>
+          <li>
+            <strong>_clck</strong> and <strong>_clsk</strong> (cookies set by Microsoft Clarity on this website).
+            Recognise a returning browser and group page views into a visit. Category: analytics. Duration: one year
+            and one day.
+          </li>
+          <li>
+            <strong>CLID</strong>, <strong>MUID</strong>, <strong>ANONCHK</strong>, <strong>MR</strong> and{' '}
+            <strong>SM</strong> (cookies set by Microsoft on its own domains). Recognise the browser across websites
+            that use Clarity. Category: analytics. Duration: up to one year.
+          </li>
+        </ul>
         <p>
-          No preferences, analytics or external media items are set today; the corresponding categories in the banner
-          are reserved for future features and third-party embeds, which will be documented here before use.
+          No preferences or external media items are set today; analytics items are set only after you accept the
+          Analytics category.
         </p>
       </LegalSectionBlock>
 
