@@ -90,7 +90,7 @@ export function keyNumbersPlugin(env: { url: string; anonKey: string; root: stri
       const machine = {
         name: 'Minerva Investment Management Society: key numbers',
         url: 'https://minervaims.org/numbers',
-        description: 'Every figure the website shows about Minerva, computed automatically from the association\'s own records. Fund figures come from virtual (paper) portfolios managed by students for education.',
+        description: 'Every figure the website shows about Minerva, computed automatically from the association\'s own records. Fund figures come from virtual (paper) portfolios managed by students for education. The market figures of the homepage monitor (the slugs that begin "mkt_") are official series read each month from the ECB Data Portal, Eurostat and the BIS, each with its source in its definition.',
         built_at: builtAt,
         computed_at: snap?.computed_at ?? null,
         numbers: Object.fromEntries(Object.entries(numbers).map(([slug, n]) => [slug, {

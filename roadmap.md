@@ -10,3 +10,9 @@
 - [x] Repair the pre-existing activity category restriction without changing supplied files.
 - [ ] Publish Step 90: blocked by declined publication.
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
+
+- [x] Apply Step 93B supplied source files byte-exact and remove fund-series.ts.
+- [ ] Deploy macro-monitor with enforced service-role authentication.
+- [ ] Apply official fund line migration and load twelve official market figures.
+- [ ] Verify backgrounds, number parity, tests and activity coverage.
+- [ ] Publish Step 93B after the official figures are available.

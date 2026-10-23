@@ -1,288 +1,247 @@
 // =====================================================================
-// What the homepage scene shows, kept apart from how it is drawn.
+// What each scene shows (Step 93B).
 // ---------------------------------------------------------------------
-// THE FUND LINE IS REAL: see fund-series.ts, which reads the funds'
-// published monthly returns. EVERYTHING ELSE HERE IS ILLUSTRATIVE. No
-// other figure is market data, and nothing in this file is fetched: the
-// scene must never wait on the network, and a background quoting live
-// numbers would be a claim the page has to keep true.
+// EVERY FORMULA HERE IS ONE A REPORT USES. Each page's scene is built
+// from that page's latest seven reports, read in full: a division's from
+// its own, a fund's from the fund's, the homepage's from the latest of
+// every division. The notes behind them (report, page, equation) were
+// kept with the step; where a report printed an equation in a garbled or
+// non-standard form, the standard form of the same model is set here.
 //
-// It is illustrative in the way a textbook example is, though, not in the
-// way filler text is. The DCF below is COMPUTED from its assumptions, so
-// its free cash flows, discount factors, terminal value and implied price
-// all tie out; somebody from Equity Research pausing on it will find a
-// model, not a picture of one. The formulas are the real ones, typeset
-// properly.
+// EVERY EXHIBIT IS A SHAPE A REPORT DRAWS: a local volatility surface, a
+// merit-order supply curve, a key-rate ladder, a dendrogram. They are
+// drawn as shapes only (see exhibits.ts): no figures, no names, no
+// labels, because a number in a background would be a number nobody can
+// check, and the number rule allows only official figures.
 //
-// The spread follows the divisions: derivatives pricing and portfolio
-// maths for Investment Research and Portfolio Management, statistics and
-// machine learning for Quantitative Research, the macro monitor and
-// policy rules for Macro Research, and the DCF for Equity Research.
+// The only figures any scene draws are the official ones the page text
+// also carries: the funds' cumulative returns and the market monitor,
+// both from the key numbers registry (see MarketScene and
+// lib/market-monitor.ts), and the funds' official lines.
+//
+// The typesetter (typeset.ts) knows a small subset of TeX: \frac, \sqrt,
+// scripts, \hat, \bar, \tilde, \op{}, \left, \right, \, and Unicode for the rest
+// (∑, ∫, ∏, ⊗, ⊤). A literal brace is written \{ or \}.
 // =====================================================================
 
-/**
- * `1,345.4`: one decimal and a thousands comma, as the tables print.
- *
- * By hand rather than with `toLocaleString`, which builds a formatter on
- * every call and initialises the locale data on the first: tens of
- * milliseconds on a slow phone, for a table of sixty numbers.
- */
-export function oneDecimal(v: number) {
-  const [whole, frac] = Math.abs(v).toFixed(1).split('.');
-  return `${v < 0 ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${frac}`;
+/** The desks the homepage's focus visits, in the order it visits them. */
+export const PM = 0;
+export const ER = 1;
+export const MR = 2;
+export const QR = 3;
+export const IR = 4;
+export const DESKS = 5;
+export type Desk = 0 | 1 | 2 | 3 | 4;
+
+export interface SceneFormula {
+  tex: string;
+  desk: Desk;
 }
 
-/** Small, fast, seedable PRNG (mulberry32), so every cycle is reproducible. */
-export function rng(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+/** The exhibits exhibits.ts can draw, each a shape from a report. */
+export type ExhibitId =
+  // Quantitative Research
+  | 'localVolSurface' | 'pdvSurface' | 'charSpiral' | 'barrierPaths' | 'arFan' | 'vrpSpline' | 'levyArea' | 'priceYield'
+  // Macro Research
+  | 'meritOrder' | 'reserveShares' | 'tariffHistory' | 'policyLadder' | 'ledgerBlocks' | 'creditNetwork'
+  // Equity Research
+  | 'sensitivityGrid' | 'footballField' | 'rebasedPair' | 'compsGrid' | 'riFade' | 'cet1Bars' | 'roeCapital' | 'roicWacc'
+  // Investment Research
+  | 'preferenceBoard' | 'curvePair' | 'bundStep' | 'spreadLevels' | 'cointegrated' | 'garchClusters' | 'transitsCollapse' | 'goldRealYield'
+  // Portfolio Management and the funds
+  | 'factorBars' | 'bookSilhouette' | 'correlationGrid' | 'nsBetas' | 'studentT' | 'hrpTree' | 'garchRolling' | 'momentumCrash'
+  | 'scoreLadder' | 'keyRateLadder' | 'curveShifts' | 'cashflowComb' | 'sleeveBalance' | 'bootstrap' | 'fxForward' | 'addsRemovals'
+  | 'supplyGap' | 'valuationStack' | 'covarianceGrid' | 'allocationBlocks' | 'tracking' | 'maturitySlide' | 'hedgePair'
+  | 'factorTilt' | 'termStructure' | 'strips' | 'pirNest' | 'sizeTiers' | 'weightRule' | 'benchmarkBlend' | 'cashCycle'
+  | 'capitalBar' | 'debtDynamics';
+
+export interface SceneExhibit {
+  id: ExhibitId;
+  desk: Desk;
 }
 
-/** Standard normal draw (Box-Muller) from a uniform source. */
-export function gauss(r: () => number) {
-  const u = Math.max(r(), 1e-9);
-  const v = r();
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+export interface SceneContent {
+  formulas: SceneFormula[];
+  exhibits: SceneExhibit[];
 }
 
-// ---------------------------------------------------------------------
-// Formulas, in a small subset of TeX (see typeset.ts).
-// ---------------------------------------------------------------------
+export type DivisionScene = 'division:equity' | 'division:investment' | 'division:macro' | 'division:portfolio' | 'division:quant';
+export type FundScene = 'fund:long-short' | 'fund:multi-asset' | 'fund:dps' | 'fund:pir';
+export type SceneKey = 'home' | DivisionScene | FundScene;
 
-export type FormulaTopic = 'derivatives' | 'statistics' | 'ml' | 'portfolio' | 'valuation' | 'macro';
+const f = (desk: Desk, ...tex: string[]): SceneFormula[] => tex.map((t) => ({ tex: t, desk }));
+const x = (desk: Desk, ...ids: ExhibitId[]): SceneExhibit[] => ids.map((id) => ({ id, desk }));
 
-export const FORMULAS: Record<FormulaTopic, string[]> = {
-  derivatives: [
-    'C = S_0 N(d_1) - K e^{-rT} N(d_2)',
-    'd_1 = \\frac{\\op{ln}(S_0/K) + (r + σ^2/2)T}{σ\\sqrt{T}}',
-    'dS_t = μ S_t\\,dt + σ S_t\\,dW_t',
-    '\\frac{∂V}{∂t} + \\frac{1}{2}σ^2 S^2 \\frac{∂^2V}{∂S^2} + rS\\frac{∂V}{∂S} - rV = 0',
-    'C - P = S_0 - K e^{-rT}',
-    'Γ = \\frac{N′(d_1)}{S_0 σ\\sqrt{T}}',
-    'F_0 = S_0\\,e^{(r - q)T}',
-  ],
-  statistics: [
-    '\\hat{β} = (X^{\\op{T}}X)^{-1} X^{\\op{T}} y',
-    'P(A | B) = \\frac{P(B | A)\\,P(A)}{P(B)}',
-    'f(x) = \\frac{1}{σ\\sqrt{2π}}\\,e^{-(x - μ)^2/2σ^2}',
-    'R^2 = 1 - \\frac{SS_{\\op{res}}}{SS_{\\op{tot}}}',
-    's^2 = \\frac{1}{n - 1} ∑_{i=1}^{n} (x_i - \\bar{x})^2',
-  ],
-  ml: [
-    'θ_{t+1} = θ_t - η ∇_θ L(θ_t)',
-    'L = -∑_i y_i\\,\\op{log}\\,\\hat{y}_i',
-    'σ(z)_i = \\frac{e^{z_i}}{∑_j e^{z_j}}',
-    'h_t = \\op{tanh}(W_h h_{t-1} + W_x x_t + b)',
-    '\\op{Attention}(Q, K, V) = \\op{softmax}\\left(\\frac{QK^{\\op{T}}}{\\sqrt{d_k}}\\right)V',
-  ],
-  portfolio: [
-    'E[R_i] = R_f + β_i (E[R_m] - R_f)',
-    '\\op{SR} = \\frac{E[R_p - R_f]}{σ_p}',
-    'σ_p^2 = w^{\\op{T}} Σ w',
-    'α = R_p - [R_f + β(R_m - R_f)]',
-  ],
-  valuation: [
-    '\\op{WACC} = \\frac{E}{V} r_E + \\frac{D}{V} r_D (1 - t)',
-    '\\op{TV} = \\frac{\\op{FCF}_{n+1}}{\\op{WACC} - g}',
-    '\\op{EV} = ∑_{t=1}^{n} \\frac{\\op{FCF}_t}{(1 + \\op{WACC})^t} + \\frac{\\op{TV}}{(1 + \\op{WACC})^n}',
-    '\\op{FCF} = \\op{EBIT}(1 - t) + \\op{D&A} - \\op{Capex} - Δ\\op{NWC}',
-  ],
-  macro: [
-    'i_t = r^{\u2217} + π_t + 0.5(π_t - π^{\u2217}) + 0.5(y_t - \\bar{y}_t)',
-    '(1 + i) = (1 + r)(1 + π^e)',
-    'Y = C + I + G + (X - M)',
-    'MV = PY',
-  ],
+// ---- the formulas, by the reports they come from -------------------
+
+const QUANT = {
+  dupire: 'σ_{\\op{loc}}^2(K, T) = \\frac{∂_T C(K, T)}{\\frac{1}{2}K^2\\,∂_{KK} C(K, T)}',
+  dupireFx: 'σ_{\\op{loc}}^2(K, T) = \\frac{∂_T C + (r_d - r_f)K\\,∂_K C + r_f C}{\\frac{1}{2}K^2\\,∂_{KK} C}',
+  breeden: '∂_{KK} C(K, T) = P(0, T)\\,p(K, T)',
+  heston: 'dv_t = κ(θ - v_t)\\,dt + ξ\\sqrt{v_t}\\,dW_t^v',
+  lsv: 'σ_{\\op{LV}}^2(K, T) = L^2(K, T)\\,\\op{E}\\left[v_T | S_T = K\\right]',
+  gilPelaez: 'F_X(x) = \\frac{1}{2} - \\frac{1}{π}∫_0^{∞} \\op{Im}\\left(\\frac{e^{-iux}\\,φ_X(u)}{u}\\right)du',
+  cos: 'f_{X_T}(x) ≈ ∑_{k=0}^{N-1} A_k\\,\\op{cos}\\left(kπ\\frac{x - a}{b - a}\\right)',
+  pdv: '\\op{Vol}_t = β_0 + β_1R_{1,t} + β_2Σ_t',
+  pdvKernel: 'R_{1,t} = ∑_{k≥1} w_k^{(1)}\\,r_{t-k}',
+  garch11: 'σ_t^2 = α_0 + α_1x_{t-1}^2 + β_1σ_{t-1}^2',
+  ar1: 'g_t = μ + φ(g_{t-1} - μ) + σε_t',
+  vrp: 'R_{t+1} = α + ∑_{j=1}^{J} β_j B_j(\\op{VRP}_t) + ε_{t+1}',
+  chen: 'S(X ∗ Y) = S(X) ⊗ S(Y)',
+  levy: 'A_{[0,T]}(X) = \\frac{1}{2}\\left(S(X)^{1,2} - S(X)^{2,1}\\right)',
+  lash: '\\op{LASH}_{i,t} ≈ Λ_i\\,\\frac{∂\\op{NPV}_{i,t}}{∂R_t}',
 };
 
-/** Large single symbols for the out-of-focus foreground. */
-export const GLYPHS = ['∂', 'σ', 'Σ', 'β', '∇', 'μ', 'Δ', 'π'];
+const MACRO = {
+  meritOrder: 'p(b) = \\op{max}_{i:\\,q_i > 0}\\,b_i',
+  uniform: 'π_i^u(θ, b) = \\left(p(b) - c_i\\right)q_i(θ, b)',
+  payAsBid: 'π_i^d(θ, b) = (b_i - c_i)\\,q_i(θ, b)',
+  clearing: '∑_{i∈I} q_i(θ, b) = θ',
+  critical: '\\tilde{θ} = \\frac{P}{P - c_j}\\,k_j',
+  revenue: 'R^d < R^u',
+  hedge: 'h^* = \\frac{\\op{Cov}(ΔP_a,\\,ΔP_h)}{\\op{Var}(ΔP_h)}',
+  dollarisation: 'σ_π > σ_{\\op{RER}}',
+};
 
-// ---------------------------------------------------------------------
-// The DCF: assumptions in, a model out.
-// ---------------------------------------------------------------------
+const EQUITY = {
+  wacc: '\\op{WACC} = \\frac{E}{D + E}K_e + \\frac{D}{D + E}K_d(1 - t)',
+  capm: 'K_e = R_f + β(R_m - R_f)',
+  blume: 'β_{\\op{adj}} = \\frac{2}{3}β_{\\op{raw}} + \\frac{1}{3}',
+  hamada: 'β_L = β_U\\left[1 + (1 - t)\\frac{D}{E}\\right]',
+  fcff: '\\op{FCFF} = \\op{EBIT}(1 - t) + \\op{D&A} - \\op{CAPEX} - Δ\\op{NWC}',
+  gordon: '\\op{TV} = \\frac{\\op{FCFF}_{T+1}}{\\op{WACC} - g}',
+  ddm: 'P_0 = ∑_{t=1}^{T}\\frac{\\op{DPS}_t}{(1 + k_e)^t} + \\frac{\\op{TV}_T}{(1 + k_e)^T}',
+  residual: '\\op{RI}_t = \\op{NI}_t - k_e\\,\\op{TBV}_{t-1}',
+  ptbv: '\\frac{P}{\\op{TBV}} = \\frac{\\op{RoTE} - g}{\\op{CoE} - g}',
+  growth: 'g = \\op{RoTE} × b',
+  harmonic: '\\bar{x}_H = \\frac{n}{∑_i 1/x_i}',
+};
 
-const DCF_YEARS = ['2025A', '2026E', '2027E', '2028E', '2029E', '2030E'];
-const REVENUE_2025 = 1240;
-const GROWTH = [0, 0.085, 0.078, 0.07, 0.062, 0.055];
-const MARGIN = [0.214, 0.22, 0.226, 0.231, 0.235, 0.238];
-const DA_PCT = 0.042;
-const CAPEX_PCT = [0.052, 0.05, 0.049, 0.048, 0.047, 0.046];
-const NWC_PCT = 0.12;
-const TAX = 0.24;
-export const DCF_WACC = 0.084;
-export const DCF_G = 0.02;
-const NET_DEBT = 420;
-const SHARES = 58.5;
-const PRICE = 43.4;
+const INVESTMENT = {
+  dv01: 'N_{\\op{BTP}}\\,\\op{DV01}_{\\op{BTP}} = N_{\\op{Bund}}\\,\\op{DV01}_{\\op{Bund}}',
+  spread: 's = y_{\\op{BTP}} - y_{\\op{Bund}}',
+  carry: 'r^{\\op{carry}} ≈ (i^* - i) - \\frac{ΔS}{S}',
+  vecm: 'Δy_t = αβ′y_{t-1} + ∑_i Γ_iΔy_{t-i} + ε_t',
+  garch: 'σ_t^2 = ω + α\\,ε_{t-1}^2 + β\\,σ_{t-1}^2',
+  debt: 'Δd_t ≈ (r - g)\\,d_{t-1} - \\op{pb}_t',
+};
 
-export interface DcfRow {
-  label: string;
-  values: (number | null)[];
-  kind: 'money' | 'pct' | 'factor';
-  /** Printed stronger: a subtotal the eye should land on. */
-  strong?: boolean;
-  /** Printed quieter: a ratio beneath the line it qualifies. */
-  quiet?: boolean;
-}
+const RISK = {
+  var: '\\op{VaR}_α = μ + σ\\,t_ν^{-1}(α)',
+  esIntegral: '\\op{ES}_α = -\\frac{1}{α}∫_0^α \\op{VaR}_γ\\,dγ',
+  esT: '\\op{ES}_α = σ\\,\\frac{ν + (T_ν^{-1}(α))^2}{ν - 1}\\,\\frac{τ_ν(T_ν^{-1}(α))}{α} + μ',
+  garchPQ: 'σ_{t+1|t}^2 = ω + ∑_{i=1}^{p}α_iε_{t-i}^2 + ∑_{j=1}^{q}β_jσ_{t-j+1|t-j}^2',
+  portfolioVar: '\\op{VaR}_{α,p} ≈ \\sqrt{\\op{VaR}_α\\,ρ\\,\\op{VaR}_α′}',
+  ks: 'D_n = \\op{sup}_x |F_n(x) - F(x)|',
+  covariance: 'Σ = DρD,\\ σ_p^2 = w^⊤Σw',
+  portfolioReturn: 'r_t^p = ∑_i w_i\\,r_{t,i}',
+};
 
-export interface DcfModel {
-  years: string[];
-  rows: DcfRow[];
-  summary: { label: string; value: string; strong?: boolean }[];
-  sensitivity: { waccs: number[]; gs: number[]; grid: number[][] };
-}
+const LONG_SHORT = {
+  tsfm: 'w_{i,j,t+1} = f_{i,j,t+1}\\left(\\frac{1}{N}\\right)(-1)^{1_s}',
+  tsfmScale: 's_{i,j,t} = \\op{min}\\left(\\op{max}\\left(\\frac{1}{σ_{i,j,t}}∑_{τ=1}^{j}f_{i,t-τ+1},\\,-2\\right),\\,2\\right)',
+  nelsonSiegel: 'y(τ) = β_0 + β_1\\frac{1 - e^{-λτ}}{λτ} + β_2\\left(\\frac{1 - e^{-λτ}}{λτ} - e^{-λτ}\\right)',
+  rateShock: 'r_{i,t}^e = d_i + γ_i^{(k)}Δβ_{k,t} + ε_{i,t}',
+  tailBeta: 'r_{i,t+1} = α_i + β_iλ_t^z + ε_{i,t+1}',
+  amihud: '\\op{ILLIQ}_i = \\frac{1}{D}∑_{d=1}^{D}\\frac{|R_{i,d}|}{\\op{VOL}_{i,d}}',
+  hrp: 'd_{ij} = \\sqrt{\\frac{1}{2}(1 - ρ_{ij})}',
+  sharpe: 'S_p = \\frac{\\op{E}(R_p - R_f)}{σ_p}',
+  vif: '\\op{VIF}_k = \\frac{1}{1 - R_k^2}',
+  betaHedge: 'N_f = \\frac{β\\,V_p}{F × m}',
+};
 
-function dcfValue(ufcf: number[], wacc: number, g: number) {
-  let pv = 0;
-  for (let i = 1; i < ufcf.length; i += 1) pv += ufcf[i] / (1 + wacc) ** i;
-  const n = ufcf.length - 1;
-  const tv = (ufcf[n] * (1 + g)) / (wacc - g);
-  const pvTv = tv / (1 + wacc) ** n;
-  const ev = pv + pvTv;
-  return { pv, tv, pvTv, ev, perShare: (ev - NET_DEBT) / SHARES };
-}
+const MULTI_ASSET = {
+  bondPrice: 'P = ∑_j \\frac{CF_j}{(1 + y/m)^{m t_j}}',
+  keyRate: '\\frac{ΔPV}{PV_0} ≈ -∑_k D_kΔr_k + \\frac{1}{2}∑_k \\op{Conv}_kΔr_k^2',
+  modified: 'D_{\\op{mod}} = \\frac{D_{\\op{Mac}}}{1 + y/m}',
+  duration: '\\frac{ΔP}{P} ≈ -D_{\\op{mod}}\\,Δy',
+  discount: 'DF(t) = e^{-r(t)\\,t}',
+  cip: 'F = X\\,e^{(r - r_f)(T - t)}',
+  basis: 'F^{\\op{mkt}} = X\\,e^{(r - r_f + b)(T - t)}',
+  swapSpread: 'a_{FX} ≈ (r - r_f)\\,T',
+  decomposition: 'P = \\op{BV} + \\left(\\frac{E}{k} - \\op{BV}\\right) + \\op{PVGO}',
+  impliedGrowth: 'P = \\frac{E(1 + g)}{k - g}',
+};
 
-export function buildDcf(): DcfModel {
-  const revenue: number[] = [];
-  for (let i = 0; i < DCF_YEARS.length; i += 1) {
-    revenue.push(i === 0 ? REVENUE_2025 : revenue[i - 1] * (1 + GROWTH[i]));
-  }
-  const ebitda = revenue.map((r, i) => r * MARGIN[i]);
-  const da = revenue.map((r) => r * DA_PCT);
-  const ebit = ebitda.map((e, i) => e - da[i]);
-  const taxes = ebit.map((e) => e * TAX);
-  const capex = revenue.map((r, i) => r * CAPEX_PCT[i]);
-  const dNwc = revenue.map((r, i) => (i === 0 ? 0 : (r - revenue[i - 1]) * NWC_PCT));
-  const ufcf = ebit.map((e, i) => e - taxes[i] + da[i] - capex[i] - dNwc[i]);
-  const df = revenue.map((_, i) => (i === 0 ? null : 1 / (1 + DCF_WACC) ** i));
-  const pvFcf = ufcf.map((f, i) => (i === 0 ? null : f * (df[i] as number)));
+const PASSIVE = {
+  tracking: '\\op{TE} = \\sqrt{\\op{Var}(r_p - r_b)}',
+  strips: 'P = \\frac{F}{(1 + y)^T}',
+};
 
-  const base = dcfValue(ufcf, DCF_WACC, DCF_G);
-  const equity = base.ev - NET_DEBT;
-  const upside = base.perShare / PRICE - 1;
+const PIR = {
+  benchmark: 'r_b = w_1\\,r_{\\op{MIB}} + w_2\\,r_{\\op{MS}}',
+  active: 'α_t = r_{p,t} - r_{b,t}',
+  weight: 'w_i = w_0 + b · 1_{\\op{OW}}',
+  debt: 'Δd = (r - g)\\,d - \\op{pb}',
+  ccc: '\\op{CCC} = \\op{DIO} + \\op{DSO} - \\op{DPO}',
+  cet1: '\\op{CET1 ratio} = \\frac{\\op{CET1}}{\\op{RWA}}',
+};
 
-  const waccs = [-0.01, -0.005, 0, 0.005, 0.01].map((d) => DCF_WACC + d);
-  const gs = [0.01, 0.015, 0.02, 0.025, 0.03];
-  const grid = waccs.map((w) => gs.map((g) => dcfValue(ufcf, w, g).perShare));
+// ---- the scenes ----------------------------------------------------
 
-  const eur = oneDecimal;
-
-  return {
-    years: DCF_YEARS,
-    rows: [
-      { label: 'Revenue', values: revenue, kind: 'money', strong: true },
-      { label: 'growth', values: GROWTH.map((g, i) => (i === 0 ? null : g)), kind: 'pct', quiet: true },
-      { label: 'EBITDA', values: ebitda, kind: 'money' },
-      { label: 'margin', values: MARGIN, kind: 'pct', quiet: true },
-      { label: 'D&A', values: da.map((v) => -v), kind: 'money' },
-      { label: 'EBIT', values: ebit, kind: 'money' },
-      { label: 'Taxes on EBIT', values: taxes.map((v) => -v), kind: 'money' },
-      { label: 'Plus D&A', values: da, kind: 'money' },
-      { label: 'Capex', values: capex.map((v) => -v), kind: 'money' },
-      { label: 'Change in NWC', values: dNwc.map((v, i) => (i === 0 ? null : -v)), kind: 'money' },
-      { label: 'Unlevered FCF', values: ufcf, kind: 'money', strong: true },
-      { label: 'Discount factor', values: df, kind: 'factor', quiet: true },
-      { label: 'PV of FCF', values: pvFcf, kind: 'money' },
+export const SCENES: Record<SceneKey, SceneContent> = {
+  // The latest of every division, each formula with its desk, so the
+  // focus can visit one desk at a time.
+  home: {
+    formulas: [
+      ...f(QR, QUANT.dupireFx, QUANT.breeden, QUANT.heston, QUANT.pdv, QUANT.gilPelaez),
+      ...f(ER, EQUITY.wacc, EQUITY.ptbv, EQUITY.residual, EQUITY.gordon),
+      ...f(MR, MACRO.meritOrder, MACRO.uniform, MACRO.critical, MACRO.hedge),
+      ...f(IR, INVESTMENT.dv01, INVESTMENT.carry, INVESTMENT.vecm),
+      ...f(PM, LONG_SHORT.tsfm, LONG_SHORT.hrp, MULTI_ASSET.keyRate, MULTI_ASSET.cip, RISK.var),
     ],
-    summary: [
-      { label: 'WACC', value: `${(DCF_WACC * 100).toFixed(1)}%` },
-      { label: 'Terminal growth', value: `${(DCF_G * 100).toFixed(1)}%` },
-      { label: 'Sum of PV of FCF', value: eur(base.pv) },
-      { label: 'PV of terminal value', value: eur(base.pvTv) },
-      { label: 'Enterprise value', value: eur(base.ev), strong: true },
-      { label: 'Net debt', value: `(${eur(NET_DEBT)})` },
-      { label: 'Equity value', value: eur(equity), strong: true },
-      { label: 'Implied value per share', value: `€${base.perShare.toFixed(2)}`, strong: true },
-      { label: 'Upside to €43.40', value: `${(upside * 100).toFixed(1)}%` },
+    exhibits: [
+      ...x(QR, 'localVolSurface'),
+      ...x(MR, 'meritOrder'),
+      ...x(ER, 'sensitivityGrid', 'footballField'),
+      ...x(IR, 'preferenceBoard', 'curvePair'),
+      ...x(PM, 'factorBars', 'keyRateLadder', 'hrpTree', 'studentT'),
     ],
-    sensitivity: { waccs, gs, grid },
-  };
-}
+  },
 
-// ---------------------------------------------------------------------
-// The macro monitor.
-// ---------------------------------------------------------------------
+  'division:quant': {
+    formulas: f(QR, QUANT.dupire, QUANT.dupireFx, QUANT.breeden, QUANT.heston, QUANT.lsv, QUANT.gilPelaez, QUANT.cos,
+      QUANT.pdv, QUANT.pdvKernel, QUANT.garch11, QUANT.ar1, QUANT.vrp, QUANT.chen, QUANT.levy, QUANT.lash),
+    exhibits: x(QR, 'localVolSurface', 'pdvSurface', 'charSpiral', 'barrierPaths', 'arFan', 'vrpSpline', 'levyArea', 'priceYield'),
+  },
+  'division:macro': {
+    formulas: f(MR, MACRO.meritOrder, MACRO.uniform, MACRO.payAsBid, MACRO.clearing, MACRO.critical, MACRO.revenue, MACRO.hedge, MACRO.dollarisation),
+    exhibits: x(MR, 'meritOrder', 'reserveShares', 'tariffHistory', 'policyLadder', 'ledgerBlocks', 'creditNetwork'),
+  },
+  'division:equity': {
+    formulas: f(ER, EQUITY.wacc, EQUITY.capm, EQUITY.blume, EQUITY.hamada, EQUITY.fcff, EQUITY.gordon, EQUITY.ddm,
+      EQUITY.residual, EQUITY.ptbv, EQUITY.growth, EQUITY.harmonic),
+    exhibits: x(ER, 'sensitivityGrid', 'footballField', 'rebasedPair', 'compsGrid', 'riFade', 'cet1Bars', 'roeCapital', 'roicWacc'),
+  },
+  'division:investment': {
+    formulas: f(IR, INVESTMENT.dv01, INVESTMENT.spread, INVESTMENT.carry, INVESTMENT.vecm, INVESTMENT.garch, INVESTMENT.debt),
+    exhibits: x(IR, 'preferenceBoard', 'curvePair', 'bundStep', 'spreadLevels', 'cointegrated', 'garchClusters', 'transitsCollapse', 'goldRealYield'),
+  },
+  'division:portfolio': {
+    formulas: f(PM, LONG_SHORT.tsfm, LONG_SHORT.hrp, LONG_SHORT.amihud, MULTI_ASSET.cip, MULTI_ASSET.decomposition,
+      MULTI_ASSET.keyRate, RISK.portfolioReturn, RISK.covariance, RISK.var, RISK.garchPQ, RISK.ks),
+    exhibits: x(PM, 'factorBars', 'hrpTree', 'keyRateLadder', 'fxForward', 'allocationBlocks', 'maturitySlide', 'covarianceGrid', 'garchRolling', 'addsRemovals'),
+  },
 
-export interface MacroRow {
-  label: string;
-  value: number;
-  decimals: number;
-  unit: string;
-  /** A short history for the sparkline, oldest first, ending at `value`. */
-  history: number[];
-  /** Market prices move; data releases do not. Only these ever tick. */
-  tick?: number;
-}
-
-function history(r: () => number, end: number, start: number, noise: number, n = 18) {
-  const out: number[] = [];
-  for (let i = 0; i < n; i += 1) {
-    const k = i / (n - 1);
-    out.push(start + (end - start) * k + (i === n - 1 ? 0 : gauss(r) * noise));
-  }
-  out[n - 1] = end;
-  return out;
-}
-
-export function buildMacro(): MacroRow[] {
-  const r = rng(7);
-  return [
-    { label: 'Euro area HICP, y/y', value: 2.1, decimals: 1, unit: '%', history: history(r, 2.1, 2.9, 0.08) },
-    { label: 'Core HICP, y/y', value: 2.3, decimals: 1, unit: '%', history: history(r, 2.3, 2.8, 0.05) },
-    { label: 'Euro area GDP, q/q', value: 0.2, decimals: 1, unit: '%', history: history(r, 0.2, 0.1, 0.12) },
-    { label: 'Unemployment', value: 6.3, decimals: 1, unit: '%', history: history(r, 6.3, 6.6, 0.04) },
-    { label: 'ECB deposit rate', value: 2.0, decimals: 2, unit: '%', history: [4, 4, 4, 4, 3.75, 3.75, 3.5, 3.25, 3.25, 3, 2.75, 2.5, 2.25, 2, 2, 2, 2, 2] },
-    { label: 'Bund 10Y', value: 2.68, decimals: 2, unit: '%', history: history(r, 2.68, 2.35, 0.05), tick: 0.01 },
-    { label: 'BTP-Bund spread', value: 86, decimals: 0, unit: ' bp', history: history(r, 86, 131, 4), tick: 1 },
-    { label: 'EUR/USD', value: 1.169, decimals: 4, unit: '', history: history(r, 1.169, 1.085, 0.008), tick: 0.0004 },
-  ];
-}
-
-/** Background candles: a walk used only as a blurred silhouette; `seed` varies the strip. */
-export function candleSeries(n: number, seed = 0) {
-  const r = rng(314 + seed * 101);
-  let p = 100;
-  const out: { o: number; h: number; l: number; c: number }[] = [];
-  for (let i = 0; i < n; i += 1) {
-    const o = p;
-    const c = o * Math.exp(0.004 + 0.022 * gauss(r));
-    const h = Math.max(o, c) * (1 + Math.abs(gauss(r)) * 0.009);
-    const l = Math.min(o, c) * (1 - Math.abs(gauss(r)) * 0.009);
-    out.push({ o, h, l, c });
-    p = c;
-  }
-  return out;
-}
-
-/** A correlation matrix with a believable block structure, for the heatmap. */
-export function correlationMatrix(n: number) {
-  const r = rng(21);
-  const m: number[][] = [];
-  for (let i = 0; i < n; i += 1) {
-    m.push([]);
-    for (let j = 0; j < n; j += 1) {
-      if (i === j) m[i].push(1);
-      else if (j < i) m[i].push(m[j][i]);
-      else {
-        const sameBlock = Math.floor(i / 3) === Math.floor(j / 3);
-        m[i].push(Math.max(-0.4, Math.min(0.95, (sameBlock ? 0.62 : 0.18) + gauss(r) * 0.14)));
-      }
-    }
-  }
-  return m;
-}
-
-/** Zero-coupon curve points: maturities in years and yields in percent. */
-export const YIELD_CURVE = {
-  tenors: [0.25, 0.5, 1, 2, 3, 5, 7, 10, 20, 30],
-  labels: ['3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'],
-  a: [1.96, 1.94, 1.91, 1.95, 2.03, 2.24, 2.42, 2.68, 3.05, 3.12],
-  b: [3.72, 3.65, 3.41, 3.02, 2.84, 2.71, 2.72, 2.78, 2.96, 2.94],
+  'fund:long-short': {
+    formulas: f(PM, LONG_SHORT.tsfm, LONG_SHORT.tsfmScale, LONG_SHORT.nelsonSiegel, LONG_SHORT.rateShock, LONG_SHORT.tailBeta,
+      LONG_SHORT.amihud, LONG_SHORT.hrp, LONG_SHORT.sharpe, RISK.var, RISK.esT, RISK.portfolioVar, RISK.garchPQ,
+      LONG_SHORT.vif, LONG_SHORT.betaHedge),
+    exhibits: x(PM, 'factorBars', 'bookSilhouette', 'correlationGrid', 'nsBetas', 'studentT', 'hrpTree', 'garchRolling', 'momentumCrash', 'scoreLadder'),
+  },
+  'fund:multi-asset': {
+    formulas: f(PM, MULTI_ASSET.bondPrice, MULTI_ASSET.keyRate, MULTI_ASSET.modified, MULTI_ASSET.duration, MULTI_ASSET.discount,
+      MULTI_ASSET.cip, MULTI_ASSET.basis, MULTI_ASSET.swapSpread, MULTI_ASSET.decomposition, MULTI_ASSET.impliedGrowth,
+      RISK.var, RISK.esIntegral, RISK.garchPQ, RISK.covariance, RISK.ks),
+    exhibits: x(PM, 'keyRateLadder', 'curveShifts', 'cashflowComb', 'sleeveBalance', 'studentT', 'bootstrap', 'fxForward', 'addsRemovals', 'supplyGap', 'valuationStack'),
+  },
+  'fund:dps': {
+    formulas: f(PM, RISK.portfolioReturn, PASSIVE.tracking, PASSIVE.strips, MULTI_ASSET.duration, RISK.var, RISK.esIntegral,
+      RISK.garchPQ, RISK.ks, RISK.covariance),
+    exhibits: x(PM, 'allocationBlocks', 'tracking', 'maturitySlide', 'hedgePair', 'factorTilt', 'termStructure', 'strips', 'studentT'),
+  },
+  'fund:pir': {
+    formulas: f(PM, PIR.benchmark, PIR.active, PIR.weight, PIR.debt, PIR.ccc, PIR.cet1, RISK.var, RISK.esIntegral, RISK.ks),
+    exhibits: x(PM, 'pirNest', 'sizeTiers', 'weightRule', 'benchmarkBlend', 'cashCycle', 'capitalBar', 'debtDynamics', 'bootstrap'),
+  },
 };
