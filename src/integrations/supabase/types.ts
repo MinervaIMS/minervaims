@@ -322,6 +322,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "alumni_calls_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       alumni_contacts: {
@@ -1093,6 +1100,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "editorial_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_send_log: {
@@ -1182,6 +1196,124 @@ export type Database = {
         }
         Relationships: []
       }
+      event_alumni: {
+        Row: {
+          alumni_id: string | null
+          company: string | null
+          created_at: string
+          event_id: string
+          former_division: Database["public"]["Enums"]["org_division"] | null
+          former_role: string | null
+          headline: string | null
+          id: string
+          legacy_participant_id: string | null
+          name: string
+          position: string | null
+          sort_order: number
+        }
+        Insert: {
+          alumni_id?: string | null
+          company?: string | null
+          created_at?: string
+          event_id: string
+          former_division?: Database["public"]["Enums"]["org_division"] | null
+          former_role?: string | null
+          headline?: string | null
+          id?: string
+          legacy_participant_id?: string | null
+          name: string
+          position?: string | null
+          sort_order?: number
+        }
+        Update: {
+          alumni_id?: string | null
+          company?: string | null
+          created_at?: string
+          event_id?: string
+          former_division?: Database["public"]["Enums"]["org_division"] | null
+          former_role?: string | null
+          headline?: string | null
+          id?: string
+          legacy_participant_id?: string | null
+          name?: string
+          position?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_alumni_alumni_id_fkey"
+            columns: ["alumni_id"]
+            isOneToOne: false
+            referencedRelation: "alumni"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_alumni_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_alumni_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_alumni_calls: {
+        Row: {
+          added_by_name: string | null
+          created_at: string
+          created_by: string | null
+          event_id: string
+          legacy_call_id: string | null
+          notes: string | null
+          responsible_person: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          added_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          legacy_call_id?: string | null
+          notes?: string | null
+          responsible_person?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          added_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          legacy_call_id?: string | null
+          notes?: string | null
+          responsible_person?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_alumni_calls_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_alumni_calls_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_join_links: {
         Row: {
           event_id: string
@@ -1204,6 +1336,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: true
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_join_links_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1287,6 +1426,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_registrations_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -1320,6 +1466,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reminder_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1378,6 +1531,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_waitlist_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       events: {
@@ -1387,6 +1547,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           date: string
+          date_tbc: boolean
           description: string | null
           division: Database["public"]["Enums"]["org_division"] | null
           end_at: string | null
@@ -1414,6 +1575,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date: string
+          date_tbc?: boolean
           description?: string | null
           division?: Database["public"]["Enums"]["org_division"] | null
           end_at?: string | null
@@ -1441,6 +1603,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date?: string
+          date_tbc?: boolean
           description?: string | null
           division?: Database["public"]["Enums"]["org_division"] | null
           end_at?: string | null
@@ -1471,6 +1634,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      events_step91_description_backup: {
+        Row: {
+          description: string | null
+          event_id: string
+          saved_at: string
+        }
+        Insert: {
+          description?: string | null
+          event_id: string
+          saved_at?: string
+        }
+        Update: {
+          description?: string | null
+          event_id?: string
+          saved_at?: string
+        }
+        Relationships: []
       }
       exam_sessions: {
         Row: {
@@ -2846,6 +3027,47 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "website_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_events: {
+        Row: {
+          aod_day_id: string | null
+          capacity: number | null
+          date: string | null
+          description: string | null
+          division: Database["public"]["Enums"]["org_division"] | null
+          end_at: string | null
+          event_type: string | null
+          guest: string[] | null
+          id: string | null
+          in_archive: boolean | null
+          is_past: boolean | null
+          listing_order: number | null
+          moderator: string | null
+          online: boolean | null
+          place: string | null
+          poster_url: string | null
+          registration_audience: string | null
+          registration_enabled: boolean | null
+          show_on_website: boolean | null
+          start_at: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_aod_day_id_fkey"
+            columns: ["aod_day_id"]
+            isOneToOne: true
+            referencedRelation: "aod_days"
             referencedColumns: ["id"]
           },
         ]
