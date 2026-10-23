@@ -69,8 +69,6 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = true
   [functions.key-numbers]
     verify_jwt = true
-  [functions.macro-monitor]
-    verify_jwt = true
   [functions.report-file]
     verify_jwt = false
   [functions.internal-forms]

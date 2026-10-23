@@ -5,14 +5,18 @@ import { fundDatasetSchema, fundSchema } from '@/lib/seo/structured-data';
 import { FundPerformanceChart } from '@/components/shared/FundPerformanceChart';
 import { useParams, Navigate } from 'react-router-dom';
 import { PageIntroduction, PageLoader } from '@/components/shared';
-import { HeroMarketBackground } from '@/components/home/HeroMarketBackground';
-import type { SceneKey } from '@/components/home/market-scene/content';
 import { Fund, fundLabels, closedFunds } from '@/lib/types';
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { formatFundValue, listFundYears } from '@/lib/funds-api';
+import { useImagePreload } from '@/hooks/useImagePreload';
+import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 
 // Background images for funds
+import longShortBgAsset from '@/assets/MIMS_Long_Short_Fund.webp.asset.json';
+import multiAssetBgAsset from '@/assets/MIMS_Multi_Asset_Fund.webp.asset.json';
+import pirBgAsset from '@/assets/mims-pir-fund.webp.asset.json';
+import dpsBgAsset from '@/assets/MIMS_Diversified_Passive_Fund.webp.asset.json';
 import { NumbersSection } from '@/components/numbers/NumbersSection';
 import { FUND_CONTENT } from '@/lib/public-content';
 import { FundTrackRecord } from '@/components/funds/FundTrackRecord';
@@ -40,6 +44,14 @@ interface FundYearRow {
 
 const fundContent = FUND_CONTENT;
 
+// Background images mapping
+const fundBackgrounds: Record<Fund, string> = {
+  'multi-asset': multiAssetBgAsset.url,
+  'long-short': longShortBgAsset.url,
+  'dps': dpsBgAsset.url,
+  'pir': pirBgAsset.url,
+};
+
 const FundDetail = () => {
   const { fund } = useParams<{ fund: string }>();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
@@ -50,6 +62,16 @@ const FundDetail = () => {
   const [perfRows, setPerfRows] = useState<FundYearRow[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
+  // Get the background image for the current fund
+  const backgroundImage = fund && fundLabels[fund as Fund] 
+    ? fundBackgrounds[fund as Fund] 
+    : '';
+  
+    // The dark wash over the hero is a SECOND downloaded image, not a gradient
+  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
+  // the page opening on the bright, unshaded picture and darkening a moment
+  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
+  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage, HERO_OVERLAY_URL] : []);
 
   useEffect(() => {
     if (fund && fundLabels[fund as Fund]) {
@@ -117,10 +139,7 @@ const FundDetail = () => {
     return <Navigate to="/" replace />;
   }
 
-  // The loader waits for the page's data only. The top of the page is a
-  // moving scene drawn from the fund's latest reports (Step 93B): nothing
-  // is downloaded for it, and the page never waits for it.
-  if (isDataLoading) {
+  if (isDataLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 
@@ -148,16 +167,16 @@ const FundDetail = () => {
         structuredData={[fundSchema(fundKey), recordShown && entry ? fundDatasetSchema(fundKey, entry, content.title) : null]}
       />
       {/* First Section: Title and Subtitle with Background */}
-      {/* The title over the fund's own scene: its formulas and exhibits,
-          from its latest reports (up to seven), passing above and below the title
-          (Step 93B; market-scene/content.ts). */}
-      <div data-page-hero className="relative overflow-hidden" style={{ backgroundColor: '#030209' }}>
-        <HeroMarketBackground scene={`fund:${fundKey}` as SceneKey} form="band" />
+      <div data-page-hero className="relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center" 
+          style={{ backgroundImage: `url(${backgroundImage})` }} 
+        />
+        <div className="absolute inset-0 hero-overlay" />
         <div className="relative z-10">
           <PageIntroduction
             title={content.title}
             transparentBackground
-            keepout
           />
         </div>
       </div>

@@ -4,9 +4,10 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import fullLogoColor from '@/assets/full_logo_color.svg.asset.json';
-import { ACTIVE_FUND_LABELS, type ActiveFund } from '@/lib/funds-api';
-import { monthIndex, type FundLinesSnapshot } from '@/lib/fund-lines';
-import { embeddedFundLines, loadFundLines } from '@/lib/fund-lines-api';
+import {
+  ACTIVE_FUND_LABELS, listFundYears, parseFundNumber,
+  type ActiveFund, type FundYear,
+} from '@/lib/funds-api';
 import { fundShortLabels } from '@/lib/types';
 
 // =====================================================================
@@ -38,14 +39,10 @@ import { fundShortLabels } from '@/lib/types';
 // large soft watermark are all borrowed from the PayoffLab surface, so a
 // Minerva chart reads the same wherever it appears.
 //
-// THE LINE IS THE OFFICIAL ONE (Step 93B). Every point is the cumulative
-// return the database computes for that month (public.fund_track_record,
-// `monthly[].itd`), so "since inception" on the chart is the fund table's
-// ITD and nothing here compounds a monthly return. A shorter window is
-// the same line seen from its first month: each point divided by that
-// month's level. The build embeds the lines in the page, so the chart
-// has its figures from the first render; a page without them reads the
-// records once. Publishing a month extends the chart.
+// Everything is derived from `fund_performance_years`, the table the
+// workspace maintains, so publishing a month extends the chart. A month
+// with no value is skipped rather than read as zero, so a gap in the
+// record never flattens the line.
 // =====================================================================
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -89,16 +86,24 @@ interface Observation {
   order: number;
   year: number;
   month: number;
-  /** The official cumulative return from inception to the month's end, in %. */
-  itd: number;
+  /** Growth factor for that month (1.02 for +2%). */
+  factor: number;
 }
 
-/** One fund's official line, oldest month first. */
-function observations(lines: FundLinesSnapshot, fund: ActiveFund): Observation[] {
-  return (lines.lines[fund]?.points ?? []).map(([month, itd]) => {
-    const order = monthIndex(month);
-    return { order, year: Math.floor(order / 12), month: order % 12, itd };
-  });
+/** Every published month of one fund, oldest first. */
+function observations(rows: FundYear[], fund: ActiveFund): Observation[] {
+  const out: Observation[] = [];
+  rows
+    .filter((r) => r.fund === fund)
+    .sort((a, b) => a.year - b.year)
+    .forEach((row) => {
+      row.months.forEach((raw, i) => {
+        const pct = parseFundNumber(raw ?? '');
+        if (pct === null) return;
+        out.push({ order: row.year * 12 + i, year: row.year, month: i, factor: 1 + pct / 100 });
+      });
+    });
+  return out;
 }
 
 function formatDate(o: { year: number; month: number }): string {
@@ -171,8 +176,7 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   // would restart the draw-in animation continuously.
   const fundList = useMemo(() => fundsKey.split(',') as ActiveFund[], [fundsKey]);
 
-  // The embedded lines when the page has them, so the first render is final.
-  const [rows, setRows] = useState<FundLinesSnapshot | null>(() => embeddedFundLines());
+  const [rows, setRows] = useState<FundYear[] | null>(null);
   const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
   /** An explicit window, in `order` units. Set by the date range control. */
   const [custom, setCustom] = useState<{ from: number; to: number } | null>(null);
@@ -189,11 +193,15 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   useEffect(() => { setCustom(null); setHidden([]); }, [fundsKey]);
 
   useEffect(() => {
-    if (rows) return;
     let active = true;
-    loadFundLines().then((data) => { if (active) setRows(data); });
+    listFundYears()
+      .then((data) => { if (active) setRows(data); })
+      .catch((error) => {
+        console.error('Error loading fund performance:', error);
+        if (active) setRows([]);
+      });
     return () => { active = false; };
-  }, [rows]);
+  }, []);
 
   // The lines draw themselves in the first time the chart is reached, and
   // never again. A reader who has asked for reduced motion gets the final
@@ -265,10 +273,9 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
   }, [bounds, period, custom]);
 
   /**
-   * The chart's rows. Each fund is seen from the start of the window, so
-   * the headline figure is the return over the period on screen rather
-   * than since inception: every point of the official line divided by
-   * the level at the window's start.
+   * The chart's rows. Each fund is rebased so the first month IN THE
+   * WINDOW reads 0%, which is what makes the headline figure the return
+   * over the period on screen rather than since inception.
    */
   const { data, headline, lastDate, available } = useMemo(() => {
     if (!viewWindow) return { data: [] as Row[], headline: {} as Record<string, number>, lastDate: '', available: new Set<PeriodKey>() };
@@ -284,9 +291,6 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
       // on the chart is the ITD of the fund table, to the decimal (Step 93).
       // Any other window is anchored, as before, on its first month.
       const fromInception = inWindow.length > 0 && record.length > 0 && inWindow[0].order === record[0].order;
-      // The level the window is seen from: zero before the first month, or
-      // the official cumulative return at the window's first month.
-      const base = fromInception || !inWindow.length ? 0 : inWindow[0].itd;
       if (fromInception) {
         const anchor = inWindow[0].order - 1;
         const year = Math.floor(anchor / 12);
@@ -299,8 +303,11 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
         row[fund] = 0;
         byOrder.set(anchor, row);
       }
-      inWindow.forEach((o) => {
-        const value = Number((((1 + o.itd / 100) / (1 + base / 100) - 1) * 100).toFixed(2));
+      let nav = 1;
+      inWindow.forEach((o, i) => {
+        // The first month of the window anchors the rebase at zero.
+        if (i > 0 || fromInception) nav *= o.factor;
+        const value = Number(((nav - 1) * 100).toFixed(2));
         const row = byOrder.get(o.order) ?? {
           order: o.order,
           label: `${MONTHS_SHORT[o.month]} ${String(o.year).slice(2)}`,

@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { keyNumbersPlugin } from "./vite.key-numbers";
-import { fundLinesPlugin } from "./vite.fund-lines";
 import { staticPagesPlugin } from "./vite.static-pages";
 
 // https://vitejs.dev/config/
@@ -19,8 +18,6 @@ export default defineConfig(({ mode }) => {
     mode === "development" && componentTagger(),
     // The key numbers, embedded in the page at build time (Step 92).
     keyNumbersPlugin({ url: env.VITE_SUPABASE_URL ?? "", anonKey: env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "", root: __dirname }),
-    // The funds' official lines, embedded for the hero and the charts (Step 93B).
-    fundLinesPlugin({ url: env.VITE_SUPABASE_URL ?? "", anonKey: env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "" }),
     // The reports, the archive, the funds, the divisions and the track
     // record as static HTML, with their data files (Step 93).
     staticPagesPlugin({ url: env.VITE_SUPABASE_URL ?? "", anonKey: env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "", root: __dirname }),
