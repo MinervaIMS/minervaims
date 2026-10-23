@@ -2,9 +2,11 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSPrope
 import { perfMode } from '@/lib/perf';
 import { loadMarketScene } from './market-scene/load';
 import type { Obstacle } from './market-scene/engine';
+import type { SceneKey } from './market-scene/content';
 
 // =====================================================================
-// HeroMarketBackground: the moving ground behind the homepage logo.
+// HeroMarketBackground: the moving ground behind the homepage logo, and
+// (Step 93B) behind the title of every division and fund page.
 // ---------------------------------------------------------------------
 // It replaces the photograph that used to sit here, and it was built
 // around one requirement before any other: IT MUST NOT MAKE THE HOMEPAGE
@@ -35,12 +37,18 @@ import type { Obstacle } from './market-scene/engine';
 //      applications button stay the brightest things in the frame. Static
 //      gradients, so it costs one paint, not a paint per frame.
 //
-// THE SCENE LAYS ITSELF OUT AROUND THE PAGE. The logo and the button are
-// marked `data-hero-keepout` in Index.tsx; the scene measures them, and
-// the header, and keeps its legible pieces in the space between. That is
-// what lets one composition work on a phone and on a 27-inch monitor,
-// with and without the applications button (which can appear after the
-// hero has painted, and moves the logo up when it does).
+// THE SCENE LAYS ITSELF OUT AROUND THE PAGE. The logo, the button and the
+// ticker are marked `data-hero-keepout` in Index.tsx, a page's title in
+// PageIntroduction; the scene measures them, and the header, and keeps
+// its legible pieces in the space between. That is what lets one
+// composition work on a phone and on a 27-inch monitor, with and without
+// the applications button (which can appear after the hero has painted,
+// and moves the logo up when it does).
+//
+// TWO FORMS. `hero`: the homepage, the market desk with the funds' record
+// and the market monitor. `band`: the top of a division or fund page, the
+// page's own formulas and exhibits from its latest reports, passing
+// above and below the title. Each page's material is in market-scene/content.ts.
 //
 // WHO GETS WHAT. Everyone gets layers 1 and 3. A capable browser gets the
 // scene in motion. A reader who has asked for reduced motion, and the
@@ -61,11 +69,13 @@ const LATTICE = 'radial-gradient(circle at center, rgba(160, 145, 214, 0.17) 0.7
 const LATTICE_MASK = 'radial-gradient(ellipse 80% 75% at 50% 45%, #000 35%, transparent 100%)';
 
 const SHADE = [
-  // The calm around the logo, in the ground's own colour: the scene is
-  // quieter there, not covered. Centred on the logo itself, and sized to
-  // it, because the logo moves: it rises when the applications button
-  // appears beneath it, and it is a different size at each breakpoint.
-  'radial-gradient(ellipse var(--calm-rx) var(--calm-ry) at var(--calm-x) var(--calm-y), rgba(5, 3, 16, 0.66) 0%, rgba(5, 3, 16, 0.4) 55%, rgba(5, 3, 16, 0) 100%)',
+  // The calm around the logo or the title, in the ground's own colour: the
+  // scene is quieter there, not covered. Centred on it and sized to it,
+  // because it moves: the logo rises when the applications button appears
+  // beneath it, and both are a different size at each breakpoint. A step
+  // deeper than before (Step 93B), so the logo stays clear and well
+  // defined against the busier scene.
+  'radial-gradient(ellipse var(--calm-rx) var(--calm-ry) at var(--calm-x) var(--calm-y), rgba(5, 3, 16, 0.74) 0%, rgba(5, 3, 16, 0.46) 55%, rgba(5, 3, 16, 0) 100%)',
   // The edges fall away, as they do through a lens.
   'radial-gradient(ellipse 115% 100% at 50% 45%, rgba(3, 2, 9, 0) 58%, rgba(3, 2, 9, 0.62) 100%)',
   // Under the header, and a touch at the foot, above the white band.
@@ -81,11 +91,11 @@ const CALM_DEFAULT = {
 } as CSSProperties;
 
 /**
- * The header, the logo and the applications button, relative to the
- * background's own box. The logo and the button carry
- * `data-hero-keepout` in the page; the header is the site's fixed one,
- * counted by its height because it is fixed to the top of the viewport
- * and the hero starts at the top of the page.
+ * The header, the logo or title, the applications button and the ticker,
+ * relative to the background's own box. Each carries `data-hero-keepout`
+ * in the page; the header is the site's fixed one, counted by its height
+ * because it is fixed to the top of the viewport and the hero starts at
+ * the top of the page.
  */
 function measureHero(root: HTMLElement): Obstacle[] {
   const base = root.getBoundingClientRect();
@@ -106,15 +116,22 @@ function measureHero(root: HTMLElement): Obstacle[] {
   return out;
 }
 
-/** The box holding the logo and the button: it resizes when they move. */
+/** The box holding the logo and the button, or the title: it resizes when they move. */
 function heroContent(root: HTMLElement): Element[] {
-  const logo = root.parentElement?.querySelector('[data-hero-keepout="logo"]');
-  return logo?.parentElement ? [logo.parentElement] : [];
+  const anchor = root.parentElement?.querySelector('[data-hero-keepout="logo"], [data-hero-keepout="title"]');
+  return anchor?.parentElement ? [anchor.parentElement] : [];
 }
 
 type Mode = 'motion' | 'still';
 
-export function HeroMarketBackground() {
+interface Props {
+  /** Whose material: the homepage's, or a division's or fund's. */
+  scene?: SceneKey;
+  /** The homepage hero, or the band at the top of a page. */
+  form?: 'hero' | 'band';
+}
+
+export function HeroMarketBackground({ scene = 'home', form = 'hero' }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const shadeRef = useRef<HTMLDivElement | null>(null);
   const [mode, setMode] = useState<Mode | null>(null);
@@ -168,21 +185,28 @@ export function HeroMarketBackground() {
     const shade = shadeRef.current;
     if (!root || !shade) return;
     const place = () => {
-      const logo = measureHero(root).find((o) => o.kind === 'logo');
-      if (!logo) return;
-      const w = logo.right - logo.left;
-      const h = logo.bottom - logo.top;
-      shade.style.setProperty('--calm-x', `${Math.round((logo.left + logo.right) / 2)}px`);
-      shade.style.setProperty('--calm-y', `${Math.round((logo.top + logo.bottom) / 2)}px`);
-      shade.style.setProperty('--calm-rx', `${Math.round(w * 0.78)}px`);
-      shade.style.setProperty('--calm-ry', `${Math.round(h * 0.72)}px`);
+      const anchor = measureHero(root).find((o) => o.kind === (form === 'band' ? 'title' : 'logo'));
+      if (!anchor) return;
+      const w = anchor.right - anchor.left;
+      const h = anchor.bottom - anchor.top;
+      shade.style.setProperty('--calm-x', `${Math.round((anchor.left + anchor.right) / 2)}px`);
+      shade.style.setProperty('--calm-y', `${Math.round((anchor.top + anchor.bottom) / 2)}px`);
+      // A title is a wide, short block: its calm is wider than it is tall.
+      shade.style.setProperty('--calm-rx', `${Math.round(w * (form === 'band' ? 0.7 : 0.78))}px`);
+      shade.style.setProperty('--calm-ry', `${Math.round(h * (form === 'band' ? 1.3 : 0.72))}px`);
     };
     place();
     const ro = new ResizeObserver(place);
     ro.observe(root);
     heroContent(root).forEach((el) => ro.observe(el));
     return () => ro.disconnect();
-  }, []);
+  }, [form]);
+
+  // Another page's scene (one division to the next, without leaving the
+  // page component) fades in on its own first frame, like the first did.
+  useEffect(() => {
+    setPainted(false);
+  }, [scene]);
 
   const onPainted = useCallback(() => setPainted(true), []);
   const obstacles = useCallback(() => (rootRef.current ? measureHero(rootRef.current) : []), []);
@@ -206,7 +230,7 @@ export function HeroMarketBackground() {
             className={`absolute inset-0 transition-opacity ease-out ${mode === 'motion' ? 'duration-[1400ms]' : 'duration-500'}`}
             style={{ opacity: painted ? 1 : 0 }}
           >
-            <MarketScene key={mode} animate={mode === 'motion'} onPainted={onPainted} obstacles={obstacles} watch={watch} />
+            <MarketScene key={`${scene}:${mode}`} scene={scene} form={form} animate={mode === 'motion'} onPainted={onPainted} obstacles={obstacles} watch={watch} />
           </div>
         </Suspense>
       )}

@@ -253,6 +253,7 @@ export const NOT_WORKSPACE: Record<string, string> = {
   'checkin-qr': 'Draws the QR code of a ticket; reads only.',
   'event-ics': 'The public "Add to calendar" file; reads only.',
   'key-numbers': 'The scheduled page counter and recomputation of the key numbers (Step 92); called by the database, no person involved.',
+  'macro-monitor': 'The monthly refresh of the market figures from the ECB, Eurostat and BIS (Step 93B); called by the database, no person involved.',
   'handle-email-suppression': 'Called by the email provider for bounces and complaints, not by a person in the workspace.',
   'handle-email-unsubscribe': 'The public unsubscribe link in emails; no workspace account involved.',
   'preview-transactional-email': 'Renders an email preview; reads only.',

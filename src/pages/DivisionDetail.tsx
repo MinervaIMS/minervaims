@@ -7,15 +7,8 @@ import { PageIntroduction, PageLoader } from '@/components/shared';
 import { Division, divisionLabels, Fund, fundLabels, activeFunds, closedFunds } from '@/lib/types';
 import { ReportsSection, archiveFilesToReports, ArchiveFileRow } from '@/components/shared/ReportsSection';
 import { supabase } from '@/integrations/supabase/client';
-import { useImagePreload } from '@/hooks/useImagePreload';
-import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
-
-// Background images for each division
-import equityBgAsset from '@/assets/MIMS_Equity_Research.webp.asset.json';
-import investmentBgAsset from '@/assets/mims-investment-research.webp.asset.json';
-import macroBgAsset from '@/assets/MIMS_Macro_Research.webp.asset.json';
-import portfolioBgAsset from '@/assets/MIMS_Portfolio_Management.webp.asset.json';
-import quantBgAsset from '@/assets/mims-quant-research.webp.asset.json';
+import { HeroMarketBackground } from '@/components/home/HeroMarketBackground';
+import type { SceneKey } from '@/components/home/market-scene/content';
 import { NumbersSection } from '@/components/numbers/NumbersSection';
 import { DIVISION_CONTENT, FUND_DESCRIPTIONS } from '@/lib/public-content';
 import { DivisionWork, type DivisionPageRow } from '@/components/divisions/DivisionWork';
@@ -35,15 +28,6 @@ export interface DivisionPageData {
 
 const divisionContent = DIVISION_CONTENT;
 
-// Background images mapping
-const divisionBackgrounds: Record<Division, string> = {
-  equity: equityBgAsset.url,
-  investment: investmentBgAsset.url,
-  macro: macroBgAsset.url,
-  portfolio: portfolioBgAsset.url,
-  quant: quantBgAsset.url,
-};
-
 const fundDescriptions = FUND_DESCRIPTIONS;
 
 const DivisionDetail = () => {
@@ -54,16 +38,6 @@ const DivisionDetail = () => {
   const [flagship, setFlagship] = useState<ArchiveFile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   
-  // Get the background image for the current division
-  const backgroundImage = division && divisionLabels[division as Division] 
-    ? divisionBackgrounds[division as Division] 
-    : '';
-  
-    // The dark wash over the hero is a SECOND downloaded image, not a gradient
-  // (see lib/hero-overlay.ts). Preloading it with the photograph is what stops
-  // the page opening on the bright, unshaded picture and darkening a moment
-  // later. Both `.hero-overlay` and `.page-intro-overlay` use this same asset.
-  const imagesLoaded = useImagePreload(backgroundImage ? [backgroundImage, HERO_OVERLAY_URL] : []);
 
   useEffect(() => {
     if (division && divisionLabels[division as Division]) {
@@ -124,7 +98,10 @@ const DivisionDetail = () => {
     return <Navigate to="/divisions" replace />;
   }
 
-  if (isDataLoading || !imagesLoaded) {
+  // The loader waits for the page's data only. The top of the page is a
+  // moving scene drawn from the division's latest reports (Step 93B):
+  // nothing is downloaded for it, and the page never waits for it.
+  if (isDataLoading) {
     return <PageLoader />;
   }
 
@@ -155,17 +132,16 @@ const DivisionDetail = () => {
           { name: content.title, path: `/divisions/${divisionKey}` },
         ]}
       />
-      {/* First Section: Title and Subtitle with Background */}
-      <div data-page-hero className="relative">
-        <div 
-          className="absolute inset-0 bg-cover bg-center" 
-          style={{ backgroundImage: `url(${backgroundImage})` }} 
-        />
-        <div className="absolute inset-0 hero-overlay" />
+      {/* First Section: the title over the division's own scene: its
+          formulas and exhibits, from its latest seven reports, passing
+          above and below the title (Step 93B; market-scene/content.ts). */}
+      <div data-page-hero className="relative overflow-hidden" style={{ backgroundColor: '#030209' }}>
+        <HeroMarketBackground scene={`division:${divisionKey}` as SceneKey} form="band" />
         <div className="relative z-10">
           <PageIntroduction
             title={content.title}
             transparentBackground
+            keepout
           />
         </div>
       </div>
