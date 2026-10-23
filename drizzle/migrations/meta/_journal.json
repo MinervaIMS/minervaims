@@ -50,6 +50,13 @@
       "when": 1792770644329,
       "tag": "0006_public_reports_fast_author_links",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792798314923,
+      "tag": "0007_official_fund_monthly_line",
+      "breakpoints": true
     }
   ]
 }
