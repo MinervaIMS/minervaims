@@ -29,8 +29,8 @@ export interface Permissions {
   hasAnyAccess: boolean;
   isFullAccess: boolean;
 
-  /** Resource-level view check, backed by the access matrix. */
-  can: (resource: string) => boolean;
+  /** Resource-level check, backed by the access matrix: view unless a level is asked for. */
+  can: (resource: string, level?: 'view' | 'edit' | 'manage') => boolean;
 }
 
 export const usePermissions = (): Permissions => {
@@ -63,7 +63,8 @@ export const usePermissions = (): Permissions => {
       allowedDivisions: isFullAccess ? null : coreDivisions && coreDivisions.length > 0 ? coreDivisions : null,
       hasAnyAccess: isStaff,
       isFullAccess,
-      can: (resource: string) => access.canView(resource),
+      can: (resource: string, level: 'view' | 'edit' | 'manage' = 'view') =>
+        level === 'manage' ? access.canManage(resource) : level === 'edit' ? access.canEdit(resource) : access.canView(resource),
     };
   }, [access]);
 };

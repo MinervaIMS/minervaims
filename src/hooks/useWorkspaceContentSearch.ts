@@ -169,13 +169,14 @@ function buildSources(): Source[] {
       label: 'Event archive',
       run: async (q) => {
         const { data } = await allTokens(
-          sb.from('events').select('id, title, date, place, event_type'),
+          sb.from('events').select('id, title, date, place, event_type, date_tbc'),
           q, ['title', 'place', 'moderator'],
         ).order('date', { ascending: false }).limit(PER_SOURCE);
         return (data ?? []).map((e: Record<string, string>) => ({
           id: `event:${e.id}`,
           label: e.title,
-          detail: [e.date ? new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null, e.place]
+          // An alumni call still to be confirmed has only a provisional date (Step 91).
+          detail: [(e as unknown as { date_tbc?: boolean }).date_tbc ? 'Date to be confirmed' : e.date ? new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null, e.place]
             .filter(Boolean).join(' · '),
           source: 'Event archive',
           resource: 'events-archive' as ResourceKey,

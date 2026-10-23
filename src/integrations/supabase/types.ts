@@ -1182,6 +1182,110 @@ export type Database = {
         }
         Relationships: []
       }
+      event_alumni: {
+        Row: {
+          alumni_id: string | null
+          company: string | null
+          created_at: string
+          event_id: string
+          former_division: Database["public"]["Enums"]["org_division"] | null
+          former_role: string | null
+          headline: string | null
+          id: string
+          legacy_participant_id: string | null
+          name: string
+          position: string | null
+          sort_order: number
+        }
+        Insert: {
+          alumni_id?: string | null
+          company?: string | null
+          created_at?: string
+          event_id: string
+          former_division?: Database["public"]["Enums"]["org_division"] | null
+          former_role?: string | null
+          headline?: string | null
+          id?: string
+          legacy_participant_id?: string | null
+          name: string
+          position?: string | null
+          sort_order?: number
+        }
+        Update: {
+          alumni_id?: string | null
+          company?: string | null
+          created_at?: string
+          event_id?: string
+          former_division?: Database["public"]["Enums"]["org_division"] | null
+          former_role?: string | null
+          headline?: string | null
+          id?: string
+          legacy_participant_id?: string | null
+          name?: string
+          position?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_alumni_alumni_id_fkey"
+            columns: ["alumni_id"]
+            isOneToOne: false
+            referencedRelation: "alumni"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_alumni_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_alumni_calls: {
+        Row: {
+          added_by_name: string | null
+          created_at: string
+          created_by: string | null
+          event_id: string
+          legacy_call_id: string | null
+          notes: string | null
+          responsible_person: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          added_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          legacy_call_id?: string | null
+          notes?: string | null
+          responsible_person?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          added_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          legacy_call_id?: string | null
+          notes?: string | null
+          responsible_person?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_alumni_calls_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_join_links: {
         Row: {
           event_id: string
@@ -1387,6 +1491,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           date: string
+          date_tbc: boolean
           description: string | null
           division: Database["public"]["Enums"]["org_division"] | null
           end_at: string | null
@@ -1414,6 +1519,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date: string
+          date_tbc?: boolean
           description?: string | null
           division?: Database["public"]["Enums"]["org_division"] | null
           end_at?: string | null
@@ -1441,6 +1547,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date?: string
+          date_tbc?: boolean
           description?: string | null
           division?: Database["public"]["Enums"]["org_division"] | null
           end_at?: string | null
@@ -2849,6 +2956,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      website_events: {
+        Row: {
+          aod_day_id: string | null
+          capacity: number | null
+          date: string | null
+          description: string | null
+          division: Database["public"]["Enums"]["org_division"] | null
+          end_at: string | null
+          event_type: string | null
+          guest: string[] | null
+          id: string | null
+          in_archive: boolean | null
+          is_past: boolean | null
+          listing_order: number | null
+          moderator: string | null
+          online: boolean | null
+          place: string | null
+          poster_url: string | null
+          registration_audience: string | null
+          registration_enabled: boolean | null
+          show_on_website: boolean | null
+          start_at: string | null
+          title: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {

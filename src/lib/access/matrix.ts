@@ -103,7 +103,7 @@ export const DEFAULT_MATRIX: Partial<Record<AppRole, RoleGrants>> = {
   // Exactly the Media & Communication Analyst's access, plus the whole of
   // Operations > Forms, which the Operations Analyst runs.
   operations_analyst: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view', 'events-on-display': 'view', 'events-mine': 'view', 'events-attendance': 'manage', 'smm-editorial': 'manage', 'smm-ig': 'manage', 'smm-li': 'manage', 'smm-graphics': 'manage', 'smm-other': 'manage', 'smm-brand': 'view', 'smm-ads': 'view', 'people-members': 'view', 'people-alumni': 'view', 'career-cv': 'view', 'career-cl': 'view', 'career-linkedin': 'view', 'career-gpa': 'view', 'career-brainteasers': 'view', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
-  head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-on-display': 'manage', 'events-mine': 'view', 'people-members': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view', 'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
+  head_of_operations: { 'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view', 'calendar': 'manage', 'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage', 'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'events-mine': 'view', 'people-members': 'manage', 'people-alumni': 'view', 'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view', 'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage', 'website-pages': 'view', 'website-readings': 'view', 'website-testimonials': 'manage', 'website-history': 'manage', 'website-faqs': 'manage', 'ops-newsletter': 'view', 'ops-auto-emails': 'view', 'career-cv': 'manage', 'career-cl': 'manage', 'career-linkedin': 'manage', 'career-gpa': 'view', 'career-brainteasers': 'manage', 'career-smart': 'view', 'career-gmat': 'view', 'career-ib': 'view', 'ops-forms': 'manage' },
   // =================================================================
   // THE ADVISOR SEES EVERYTHING AND CHANGES NOTHING.
   // -----------------------------------------------------------------
@@ -156,7 +156,10 @@ export type SpecialRule =
   | 'attendance_semester_close'
   // My Profile: a former member among the alumni can download a certificate
   // of the last semester they served (membership-certificate).
-  | 'alumni_certificate';
+  | 'alumni_certificate'
+  // Alumni calls are events (Step 91): those who plan them without full
+  // Create Event create and change alumni calls only.
+  | 'alumni_calls_only';
 
 export interface SpecialEntry {
   rule: SpecialRule;
@@ -202,6 +205,12 @@ export const SPECIAL_RULES: SpecialEntry[] = [
     resource: 'my-role',
     roles: ['alumni'],
     label: 'Can download a certificate of membership for the last semester they served as a member. It reads "was a member" and stays valid while they are listed among the alumni.',
+  },
+  {
+    rule: 'alumni_calls_only',
+    resource: 'events-create',
+    roles: ['head_of_asset_management', 'head_of_division'],
+    label: 'Create Event opens on alumni calls only: they create alumni calls there and change or delete them in Event Archive, where every other event stays read-only. An alumni call is an event like any other, with no separate page.',
   },
 ];
 

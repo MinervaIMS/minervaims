@@ -51,7 +51,11 @@ export default function EventRegister() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await sb.from('events').select('*').eq('id', id).maybeSingle();
+        let { data } = await sb.from('events').select('*').eq('id', id).maybeSingle();
+        // A visitor reads an alumni call from the public view, which leaves
+        // its date and time out: they are internal (Step 91). The
+        // confirmation email carries them to whoever registers.
+        if (!data) ({ data } = await sb.from('website_events').select('*').eq('id', id).maybeSingle());
         setEvent((data as EventRow) ?? null);
         if (data && id) setPlaces(await eventPlaces(id));
       } finally { setLoading(false); }
@@ -148,6 +152,9 @@ export default function EventRegister() {
 
   const membersOnly = event.registration_audience === 'members';
   const when = formatEventWhen(event);
+  // An alumni call's date and time are internal (Step 91): a member sees
+  // them; anybody else, signed in or not, finds them in the confirmation.
+  const showWhen = !!event.date && (event.event_type !== 'alumni_call' || memberRegistering);
   const left = places ? Math.max(0, places.capacity - places.taken) : null;
   const full = left === 0;
 
@@ -160,7 +167,7 @@ export default function EventRegister() {
         <h1 className="font-serif text-2xl sm:text-3xl text-accent text-balance">{event.title}</h1>
       </div>
       <div className="font-body text-sm text-muted-foreground space-y-2 mb-5 max-w-[470px] mx-auto">
-        <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{when}</div>
+        <div className="flex items-start gap-2.5"><CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />{showWhen ? when : 'The date and the time are in your confirmation email'}</div>
         {event.place && <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 shrink-0 mt-0.5" />{isOnlineEvent(event) ? 'Online: the link to join is in your confirmation email' : event.place}</div>}
         {event.guest && event.guest.length > 0 && <div className="flex items-start gap-2.5"><Users className="h-4 w-4 shrink-0 mt-0.5" />{event.guest.join(', ')}</div>}
         {left !== null && (

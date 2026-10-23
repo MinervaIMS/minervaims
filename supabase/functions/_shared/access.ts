@@ -190,7 +190,7 @@ export const MATRIX: Record<string, Grants> = {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage',
     'applications-screening': 'manage', 'applications-interview-calendar': 'manage', 'applications-joiners': 'view',
     'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage',
-    'events-archive': 'manage', 'events-on-display': 'manage', 'events-mine': 'view',
+    'events-archive': 'manage', 'events-alumni-calls': 'manage', 'events-on-display': 'manage', 'events-mine': 'view',
     'people-members': 'manage', 'people-alumni': 'view',
     'smm-editorial': 'view', 'smm-brand': 'view', 'smm-ads': 'view',
     'ops-fee': 'manage', 'ops-treasury': 'manage', 'ops-external': 'manage', 'ops-docs': 'manage',

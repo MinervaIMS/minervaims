@@ -113,7 +113,8 @@ export default function EditorialCalendar() {
   const statusCount = (s: EditorialStatus) => monthItems.filter((i) => i.status === s).length;
   const eventsByDay = useMemo(() => {
     const m: Record<string, EventRow[]> = {};
-    for (const e of events) { if (e.aod_day_id) continue; const d = eventDay(e); if (d) (m[d] ??= []).push(e); }
+    // An alumni call still to be confirmed has no day yet (Step 91).
+    for (const e of events) { if (e.aod_day_id || e.date_tbc) continue; const d = eventDay(e); if (d) (m[d] ??= []).push(e); }
     return m;
   }, [events]);
 

@@ -359,11 +359,19 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'events-create', section: 'Events', label: 'Create event',
-    purpose: 'Create a new event of any type (meeting, aperitivo, guest event, online call and more) with schedule, place and poster.',
+    purpose: 'Create a new event of any type (meeting, aperitivo, guest event, online call, alumni call and more) with schedule, place and poster.',
     view: ['Read the event form and see what an event needs before it can be created.'],
-    manage: ['Create events; they appear on the Calendar and in the Event archive, and on the public website if you choose.'],
+    manage: [
+      'Create events; they appear on the Calendar and in the Event archive, and on the public website if you choose.',
+      'Create alumni calls: the alumni taking part, where the call stands, who is responsible, and the internal notes.',
+      'The Heads of Division and the Head of Asset Management create alumni calls only: the page opens for them on that type.',
+    ],
     topics: [
-      { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, association-wide gathering). Alumni calls are not created here: they have their own subsection under Events. Internal types default to staying off the public website; you can change that per event in the Event archive.' },
+      { id: 'types', title: 'Event types', body: 'The type describes what the event is (internal meeting, division event, guest event, alumni call, association-wide gathering). An alumni call is created here like any other event, with the same poster, online or in person, meeting link, registration, places, reminders and website switch; it has no separate page. Internal types default to staying off the public website; you can change that per event in the Event archive.' },
+      { id: 'alumni-call', title: 'Alumni calls: the alumni', body: 'Choose the type Alumni call. Who organises it is a research division or the Board, and the title follows it ("Alumni Call: Macro Research") until you type your own. Add two to five alumni: search the alumni directory by name or company and click a result, or, for somebody not in it, type the name and press Add by hand. For each, the current position and company, and the role and division they had at Minerva, write the line the website prints after their name ("Equity Research Analyst at Goldman Sachs, former Analyst in Equity Research"); the line under each alumnus shows it as you type. To word it yourself, fill in Introduced on the website as. The status, the responsible person and the internal notes are seen in the workspace only.', requires: 'manage' },
+      { id: 'alumni-status', title: 'Where a call stands', body: 'Planned (an idea, alumni not asked yet), Invited (the alumni have been asked), Accepted (they said yes), Completed (it took place), Declined (it will not happen). The status is internal and is changed in the call\'s window in Event archive as the call moves on. A declined call stays in the archive as a record; delete it there if it should not.', requires: 'manage' },
+      { id: 'alumni-date', title: 'Date to be confirmed', body: 'An alumni call can be saved before its date is known: switch on Date to be confirmed. It is then a plan. It is kept in Event archive (filter by Alumni call) and nowhere else: not in the Calendar, the Dashboard or Attendance, not on the website, and it takes no registrations and needs no meeting link yet. When the date is fixed, open the call in Event archive, switch Date to be confirmed off and set the start (and, online, the link): from then on it is an event like any other.', requires: 'manage' },
+      { id: 'alumni-internal', title: 'What the website shows of an alumni call', body: 'The date, the time and the meeting link of an alumni call are internal. On the public Events page and in the Alumni Calls carousel of the Alumni page, a call that is listed shows its poster, title, alumni and description, without a date, a time or a link; the registration page says that the date and the time are in the confirmation email. Keep them out of the description too. A poster may of course carry them printed on it: that is the poster\'s choice. People who register receive the date, the time and the link in their emails, as for any event.' },
       { id: 'archive-visibility', title: 'Archive and website visibility', body: 'Every event is recorded in the Event archive. When creating it you choose only whether it is also listed on the public Events page: meetings and online calls start unlisted, every other type starts listed. You can change it at any time, per event, from the Event archive.' },
       { id: 'poster', title: 'Posters', body: 'A poster makes the event stand out in the archive and on the website. JPG, PNG or PDF up to 10 MB; any aspect ratio is accepted.' },
       { id: 'rome-time', title: 'Start and end are Rome time', body: 'Type the start and the end as they are on the clock in Milan, even if you are abroad: the event is then shown everywhere as, for example, 6:30 pm to 8:00 pm CEST, and the emails to registered people say the same.', requires: 'manage' },
@@ -417,22 +425,14 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     key: 'events-archive', section: 'Events', label: 'Event archive',
-    purpose: 'Every event of every type, with poster, type and website visibility. The single historical record of the association\'s events.',
-    view: ['Browse and search all past and upcoming events.'],
-    manage: ['Edit or delete events and toggle whether each one appears on the public website.'],
+    purpose: 'Every event of every type, alumni calls included, with poster, type and website visibility. The single historical record of the association\'s events.',
+    view: ['Browse and search all past and upcoming events.', 'Open an alumni call to see its alumni and where it stands.'],
+    manage: ['Edit or delete events and toggle whether each one appears on the public website.', 'Open an alumni call in its own window to plan it: status, alumni, responsible person, notes, and the date once it is fixed.'],
     warnings: ['The website toggle takes effect immediately on the public Events page.'],
     topics: [
       { id: 'website-toggle', title: 'The Public website switch', body: 'The switch on each row decides one thing: whether the event is listed on the public Events page of minervaims.org. "Listed" means anybody can see it there; "Not listed" means it is visible only inside the workspace. It never removes the event from this archive, the Calendar or Attendance, and it takes effect immediately. Meetings and online calls start unlisted; every other type starts listed. On the website, an event without a poster is shown with the full Minerva logo and the line "Events: a core part of the Minerva experience".', requires: 'manage' },
-      { id: 'filters', title: 'The type filter', body: 'The type menu offers only the types the archive actually contains, so every option in it returns something. A type the association has never run does not appear, and appears the moment the first event of that type is created. Alumni calls are created in Events, Alumni calls and reach this archive automatically once they are published.' },
-    ],
-  },
-  {
-    key: 'events-alumni-calls', section: 'Events', label: 'Alumni calls',
-    purpose: 'Organise calls between current members and groups of two to five alumni, searched from the alumni directory.',
-    view: ['See planned and past calls.'],
-    manage: ['Create and edit calls; invite alumni by name or company.'],
-    topics: [
-      { id: 'search', title: 'Inviting alumni', body: 'Type a name or a company in the search box and click a result to invite that alumnus. Only people in the alumni directory can be invited, which is what guarantees the poster and the workspace name a real alumnus; add anybody missing in People, Alumni first. Their current employer is not typed here and not stored on the call: it is read from the alumni register whenever the call is shown, so a call from two years ago names where the person works today.', requires: 'manage' },
+      { id: 'filters', title: 'The type filter', body: 'The type menu offers only the types the archive actually contains, so every option in it returns something. A type the association has never run does not appear, and appears the moment the first event of that type is created. The old Alumni Calls address opens this page with the filter set to Alumni call.' },
+      { id: 'alumni-window', title: 'An alumni call\'s window', body: 'Pressing the pencil on an alumni call opens its own window instead of the general one: everything an event has (title, who organises it, the time or Date to be confirmed, online or in person and the link, description, poster, registration and places, the website switch) together with what only a call has (the alumni, the status, the responsible person and the internal notes). The line under each call in the list shows its status, and "Date to be confirmed" in place of a date for a call still being planned. The Heads of Division and the Head of Asset Management can open and change alumni calls here even though the rest of the archive is read-only for them; others who can read the archive open a call with the eye to read it. Every call planned on the old Alumni Calls page is here, with its alumni, poster and status.' },
     ],
   },
   {

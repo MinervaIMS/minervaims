@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
+import type { AlumniCallStatus, AlumniGuest } from '@/lib/alumni-call';
 
 export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'association_on_display' | 'other';
 export type RegistrationAudience = 'members' | 'members_external' | 'public';
@@ -31,9 +32,10 @@ export const DEFAULT_ARCHIVED_TYPES: EventType[] = ['online_call', 'guest', 'alu
 // =====================================================================
 export const WEBSITE_HIDDEN_TYPES: EventType[] = ['meeting', 'online_call'];
 export const listedOnWebsiteByDefault = (type: EventType): boolean => !WEBSITE_HIDDEN_TYPES.includes(type);
-// Types that can be created from Events > Create. Alumni calls are excluded:
-// they are created only through Events > Alumni Calls.
-export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_event', 'online_call', 'guest', 'association_wide', 'other'];
+// Types that can be created from Events > Create. Since Step 91 an alumni
+// call is created here like any other event (Events > Alumni Calls is gone);
+// Association on Display days are still opened from their own page.
+export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_event', 'online_call', 'guest', 'alumni_call', 'association_wide', 'other'];
 
 export interface EventRow {
   id: string;
@@ -63,6 +65,12 @@ export interface EventRow {
   reminders_paused?: boolean;
   /** Number of places; null or absent for no limit (the default). */
   capacity?: number | null;
+  /**
+   * An alumni call whose date is still to be confirmed (Step 91). Its `date`
+   * is provisional and shown to nobody; it is off the website and kept out
+   * of calendars, the Dashboard, Attendance and every count.
+   */
+  date_tbc?: boolean;
   created_at: string;
 }
 
@@ -213,8 +221,55 @@ export async function myEventWaitlistIds(userId?: string | null): Promise<Set<st
   }
 }
 
-export function saveEvent(session: Session | null, event: EventInput) {
-  return invoke('admin-events', session, { action: event.id ? 'update' : 'create', event });
+export function saveEvent(session: Session | null, event: EventInput, alumni?: AlumniCallInput) {
+  return invoke('admin-events', session, { action: event.id ? 'update' : 'create', event, ...(alumni ? { alumni } : {}) });
+}
+
+// =====================================================================
+// ALUMNI CALLS ARE EVENTS (Step 91).
+// ---------------------------------------------------------------------
+// An alumni call is an event of type `alumni_call`. Beside it, readable
+// by staff only, are where it stands and who is responsible
+// (`event_alumni_calls`) and the alumni taking part (`event_alumni`). They
+// are sent with the event (`saveEvent(..., alumni)`), and the event's
+// public guest list is written from them by the server, with the rules in
+// src/lib/alumni-call.ts.
+// =====================================================================
+export interface AlumniCallInput {
+  status: AlumniCallStatus;
+  responsible_person?: string | null;
+  notes?: string | null;
+  /** Saved before the date is known: off the website, no registrations. */
+  date_tbc?: boolean;
+  participants: AlumniGuest[];
+}
+
+export interface AlumniCallPlan {
+  event_id: string;
+  status: AlumniCallStatus;
+  responsible_person: string | null;
+  notes: string | null;
+  /** Who added it. */
+  added_by_name: string | null;
+  participants: AlumniGuest[];
+}
+
+/** The planning of these alumni call events (or of all), by event id. */
+export async function listAlumniCallPlans(eventIds?: string[]): Promise<Record<string, AlumniCallPlan>> {
+  if (eventIds && eventIds.length === 0) return {};
+  let plans = sb.from('event_alumni_calls').select('event_id, status, responsible_person, notes, added_by_name');
+  let guests = sb.from('event_alumni').select('event_id, alumni_id, name, company, position, former_role, former_division, headline, sort_order').order('sort_order', { ascending: true });
+  if (eventIds) { plans = plans.in('event_id', eventIds); guests = guests.in('event_id', eventIds); }
+  const [{ data: p, error: pErr }, { data: g, error: gErr }] = await Promise.all([plans, guests]);
+  if (pErr) throw new Error(pErr.message);
+  if (gErr) throw new Error(gErr.message);
+  const out: Record<string, AlumniCallPlan> = {};
+  for (const row of (p || []) as Omit<AlumniCallPlan, 'participants'>[]) out[row.event_id] = { ...row, participants: [] };
+  for (const row of (g || []) as (AlumniGuest & { event_id: string })[]) {
+    const { event_id, ...guest } = row;
+    (out[event_id] ??= { event_id, status: 'planned', responsible_person: null, notes: null, added_by_name: null, participants: [] }).participants.push(guest);
+  }
+  return out;
 }
 // =====================================================================
 // AN ONLINE EVENT'S MEETING LINK IS PRIVATE (migration 20261005100000).

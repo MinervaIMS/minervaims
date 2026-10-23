@@ -33,7 +33,6 @@ export interface Place { section: string; subsection: string }
 /** Where each function's writes belong, in the workspace's own words. */
 export const PLACE: Record<string, Place> = {
   'admin-alumni': { section: 'People', subsection: 'Alumni' },
-  'admin-alumni-calls': { section: 'Events', subsection: 'Alumni Calls' },
   'admin-aod': { section: 'Events', subsection: 'Association On Display' },
   'admin-applications': { section: 'Recruiting', subsection: 'Candidates Screening' },
   'admin-auto-emails': { section: 'Operations', subsection: 'Automatic Emails' },
@@ -198,7 +197,6 @@ export const MUTATES: Record<string, string> = {
  */
 export const READS: Record<string, string[]> = {
   'admin-alumni': [],
-  'admin-alumni-calls': ['list'],
   'admin-aod': ['list'],
   'admin-applications': ['get', 'list'],
   'admin-auto-emails': ['list', 'sign'],

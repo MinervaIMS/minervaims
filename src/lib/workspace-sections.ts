@@ -50,7 +50,7 @@ export const SECTIONS: WorkspaceSectionMap[] = [
   { section: 'Events', items: [
     { key: 'events-mine', label: 'My events' }, { key: 'events-create', label: 'Create event' }, { key: 'events-forms', label: 'Registration forms' },
     { key: 'events-attendance', label: 'Attendance' }, { key: 'events-archive', label: 'Event archive' },
-    { key: 'events-alumni-calls', label: 'Alumni calls' }, { key: 'events-on-display', label: 'Association on Display' } ] },
+    { key: 'events-alumni-calls', label: 'Alumni calls (planned in Create Event and Event Archive)' }, { key: 'events-on-display', label: 'Association on Display' } ] },
   { section: 'People', items: [
     { key: 'people-members', label: 'Members' }, { key: 'people-alumni', label: 'Alumni' },
     { key: 'people-invites', label: 'Invites' } ] },

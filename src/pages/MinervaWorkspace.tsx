@@ -16,13 +16,15 @@ import {
   Calendar as CalendarIcon, FileBarChart2, Users as UsersIcon,
   CalendarDays, ClipboardList, Image as ImageIcon, Globe,
   Settings as SettingsIcon, PanelLeftClose, PanelLeftOpen, User as UserIcon,
-  Presentation, BarChart3, LayoutTemplate, Info, HelpCircle, Star,
+  Presentation, BarChart3, LayoutTemplate, Info, HelpCircle, Star, Eye,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { EVENT_TYPE_LABELS, fetchJoinLinks, type EventType } from '@/lib/events-api';
+import { EVENT_TYPE_LABELS, fetchJoinLinks, listAlumniCallPlans, type AlumniCallPlan, type EventRow, type EventType } from '@/lib/events-api';
+import { AlumniCallDialog } from '@/components/admin/events/AlumniCallDialog';
+import { ALUMNI_CALL_STATUS_LABELS } from '@/lib/alumni-call';
 import ContactPrompt from '@/components/admin/ContactPrompt';
 import { PageLoader } from '@/components/shared/PageLoader';
 import WorkspaceDashboard from '@/components/admin/WorkspaceDashboard';
@@ -70,7 +72,6 @@ const FundsPerformances = lazy(() => import('@/components/admin/FundsPerformance
 const EventCreate = lazy(() => import('@/components/admin/EventCreate'));
 const EventForms = lazy(() => import('@/components/admin/EventForms'));
 const EventAttendance = lazy(() => import('@/components/admin/EventAttendance'));
-const AlumniCalls = lazy(() => import('@/components/admin/AlumniCalls'));
 const AssociationOnDisplay = lazy(() => import('@/components/admin/AssociationOnDisplay'));
 const MyEvents = lazy(() => import('@/components/admin/events/MyEvents'));
 const WorkspaceCalendar = lazy(() => import('@/components/admin/WorkspaceCalendar'));
@@ -150,7 +151,6 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'events-forms': () => import('@/components/admin/EventForms'),
   'events-attendance': () => import('@/components/admin/EventAttendance'),
   // 'events-archive' is drawn inline by this file and has no chunk to warm.
-  'events-alumni-calls': () => import('@/components/admin/AlumniCalls'),
   'events-on-display': () => import('@/components/admin/AssociationOnDisplay'),
   'events-mine': () => import('@/components/admin/events/MyEvents'),
   'people-members': () => import('@/components/admin/MembersManagement'),
@@ -292,6 +292,9 @@ interface DbEvent {
   in_archive?: boolean | null;
   /** Set on the event an Association on Display day carries. */
   aod_day_id?: string | null;
+  /** An alumni call whose date is still to be confirmed (Step 91). */
+  date_tbc?: boolean | null;
+  capacity?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -402,6 +405,16 @@ const MinervaWorkspace = () => {
   );
   const activeSectionKey = resolution.status === 'ok' ? resolution.sectionKey : null;
   const activeSubKey = resolution.status === 'ok' ? resolution.subKey : null;
+  // Event Archive can open filtered by type (`?type=alumni_call`, which is
+  // where the old Alumni Calls address leads).
+  const requestedEventType = useMemo(() => new URLSearchParams(location.search).get('type'), [location.search]);
+  useEffect(() => {
+    if (activeSubKey === 'events-archive' && requestedEventType && requestedEventType in EVENT_TYPE_LABELS) {
+      setEventsTypeFilter(requestedEventType as EventType);
+    }
+  }, [activeSubKey, requestedEventType]);
+  // Who may change alumni calls: whoever creates events, and those who plan them.
+  const canEditAlumniCalls = access.canManage('events-alumni-calls') || access.canManage('events-create');
 
   // A PAGE WITH TABS (Social Templates) keeps its tab in the address,
   // `?tab=instagram`, so a tab can be linked to and the back button
@@ -469,6 +482,8 @@ const MinervaWorkspace = () => {
         else {
           const rest = new URLSearchParams(location.search);
           rest.delete('tab');
+          // A renamed page may open filtered (Alumni Calls: the archive on alumni calls).
+          if (resolution.query) new URLSearchParams(resolution.query).forEach((v, k) => { if (!rest.has(k)) rest.set(k, v); });
           query = rest.toString() ? `?${rest.toString()}` : '';
         }
         navigate(`${canonical}${query}`, { replace: true });
@@ -618,6 +633,9 @@ const MinervaWorkspace = () => {
   const [eventsWebsiteFilter, setEventsWebsiteFilter] = useState<'all' | 'on' | 'off'>('all');
   const [togglingWebsite, setTogglingWebsite] = useState<string | null>(null);
   const EVENTS_PER_PAGE = 15;
+  // Alumni calls (Step 91): their planning, and the call open in its own window.
+  const [alumniPlans, setAlumniPlans] = useState<Record<string, AlumniCallPlan>>({});
+  const [alumniOpen, setAlumniOpen] = useState<DbEvent | null>(null);
 
   // Session expiry
   useEffect(() => {
@@ -677,6 +695,9 @@ const MinervaWorkspace = () => {
       const { data, error } = await supabase.from('events').select('*').order('date', { ascending: false });
       if (error) throw error;
       setEvents(data || []);
+      // Where each alumni call stands, for its line in the archive.
+      const callIds = ((data || []) as DbEvent[]).filter((e) => e.event_type === 'alumni_call').map((e) => e.id);
+      listAlumniCallPlans(callIds).then(setAlumniPlans).catch(() => setAlumniPlans({}));
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({ title: 'Error', description: 'Failed to fetch events', variant: 'destructive' });
@@ -1145,8 +1166,6 @@ const MinervaWorkspace = () => {
         return <EventForms />;
       case 'events-attendance':
         return <EventAttendance />;
-      case 'events-alumni-calls':
-        return <AlumniCalls />;
       case 'events-on-display':
         return <AssociationOnDisplay />;
       case 'events-mine':
@@ -1246,6 +1265,12 @@ const MinervaWorkspace = () => {
 
   const renderEventsManagement = () => (
     <div>
+      <AlumniCallDialog
+        event={alumniOpen as unknown as EventRow | null}
+        canEdit={canEditAlumniCalls && isDesktop}
+        onOpenChange={(o) => { if (!o) setAlumniOpen(null); }}
+        onSaved={fetchEvents}
+      />
       <WorkspacePageHeader
         title="Events Archive"
         description="Every event of every type. The Public website switch on each one decides whether it is listed on the public Events page."
@@ -1436,7 +1461,10 @@ const MinervaWorkspace = () => {
                     </div>
                     <h3 className="font-serif text-lg text-foreground truncate">{event.title}</h3>
                     <div className="text-xs text-muted-foreground">
-                      {formatEventWhen(event, { weekday: false })} · {event.place}
+                      {event.date_tbc ? 'Date to be confirmed' : formatEventWhen(event, { weekday: false })} · {event.place}
+                      {event.event_type === 'alumni_call' && alumniPlans[event.id] && (
+                        <> · <span className="text-foreground">{ALUMNI_CALL_STATUS_LABELS[alumniPlans[event.id].status]}</span></>
+                      )}
                     </div>
                     {(event.moderator || (event.guest && event.guest.length > 0)) && (
                       <div className="text-xs text-muted-foreground mt-1 truncate">
@@ -1485,6 +1513,18 @@ const MinervaWorkspace = () => {
                       >
                         Managed in Association on Display
                       </button>
+                    ) : event.event_type === 'alumni_call' ? (
+                      /* An alumni call opens in its own window, with its alumni
+                         and where it stands. Those who plan calls may change
+                         it even where the archive is read-only for them. */
+                      canEditAlumniCalls ? (
+                        <span data-ro-allow className="flex items-center gap-2">
+                          <Button variant="outline" size="icon" onClick={() => setAlumniOpen(event)} aria-label={`Open ${event.title}`}><Edit className="h-4 w-4" /></Button>
+                          <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)} aria-label={`Delete ${event.title}`}><Trash2 className="h-4 w-4" /></Button>
+                        </span>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setAlumniOpen(event)} aria-label={`Open ${event.title}`}><Eye className="h-4 w-4" /></Button>
+                      )
                     ) : (
                       <>
                         <Button variant="outline" size="icon" onClick={() => openEditDialog(event)}><Edit className="h-4 w-4" /></Button>

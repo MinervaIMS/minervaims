@@ -119,7 +119,8 @@ export default function EventAttendance() {
   useEffect(() => {
     (async () => {
       try {
-        const evs = await listEvents();
+        // An alumni call still to be confirmed has no day, so nothing to attend yet (Step 91).
+        const evs = (await listEvents()).filter((e) => !e.date_tbc);
         setEvents(evs);
         // Open on the event happening now or coming up soonest, not on the
         // one furthest in the future (the list is newest first).

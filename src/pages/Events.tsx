@@ -24,7 +24,14 @@ import { EventPosterPlaceholder } from '@/components/shared/EventPosterPlacehold
 interface DbEvent {
   id: string;
   title: string;
-  date: string;
+  /**
+   * Empty for an alumni call: its date, time and meeting link are internal
+   * (Step 91), and `website_events` does not hand them out. `is_past` and
+   * `listing_order` place it among the others without them.
+   */
+  date: string | null;
+  is_past?: boolean | null;
+  listing_order?: number | null;
   place: string;
   moderator?: string | null;
   guest?: string[] | null;
@@ -45,7 +52,8 @@ interface DbEvent {
  */
 interface UpcomingEvent {
   title: string;
-  date: string;
+  /** Empty for an alumni call: its date and time are internal (Step 91). */
+  date: string | null;
   doors?: string | null;
   place: string;
   description?: string | null;
@@ -89,11 +97,13 @@ const Events = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        // `website_events`, not `events`: the same rows, with the date and
+        // time of an alumni call left out (they are internal).
         const { data, error } = await supabase
-          .from("events")
+          .from("website_events")
           .select("*")
           .eq("show_on_website", true)
-          .order("date", { ascending: false });
+          .order("listing_order", { ascending: true });
         if (error) {
           console.error("Error fetching events:", error);
           return;
@@ -112,13 +122,19 @@ const Events = () => {
   // the "Upcoming" band (data connection only; the layout is unchanged).
   const upcomingEvent = useMemo<UpcomingEvent | null>(() => {
     const now = Date.now();
+    // An alumni call has no public date (Step 91): `is_past` says it is
+    // still to come, and `listing_order` (newest first, worked out from the
+    // real dates) says where it falls, so it can still be "the next one".
+    const upcoming = (e: DbEvent) => e.registration_enabled === true
+      && (e.date ? new Date(e.start_at || e.date).getTime() >= now : e.is_past === false);
+    const when = (e: DbEvent) => (e.date ? new Date(e.start_at || e.date).getTime() : Infinity);
     const next = events
-      .filter((e) => e.registration_enabled && new Date(e.start_at || e.date).getTime() >= now)
-      .sort((a, b) => new Date(a.start_at || a.date).getTime() - new Date(b.start_at || b.date).getTime())[0];
+      .filter(upcoming)
+      .sort((a, b) => (a.listing_order != null && b.listing_order != null ? b.listing_order - a.listing_order : when(a) - when(b)))[0];
     if (!next) return null;
     return {
       title: next.title,
-      date: next.start_at || next.date,
+      date: next.date ? next.start_at || next.date : null,
       place: publicPlace(next),
       description: next.description ?? null,
       photoUrl: next.poster_url ?? null,
@@ -131,8 +147,10 @@ const Events = () => {
   const pastEvents = useMemo(() => {
     const now = Date.now();
     return events
-      .filter((e) => new Date(e.date).getTime() < now)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // An alumni call has no public date: the list says whether it has
+      // happened and where it falls, and that is all.
+      .filter((e) => (e.date ? new Date(e.date).getTime() < now : !!e.is_past))
+      .sort((a, b) => (a.listing_order ?? 0) - (b.listing_order ?? 0));
   }, [events]);
 
   // ===================================================================
@@ -167,7 +185,7 @@ const Events = () => {
 
   const availableYears = useMemo(() => {
     const years = new Set<number>();
-    for (const e of pastEvents) years.add(new Date(e.date).getFullYear());
+    for (const e of pastEvents) if (e.date) years.add(new Date(e.date).getFullYear());
     return Array.from(years).sort((a, b) => b - a);
   }, [pastEvents]);
 
@@ -175,7 +193,7 @@ const Events = () => {
     const q = searchQuery.trim().toLowerCase();
     return pastEvents.filter((e) => {
       if (typeFilter !== "all" && e.event_type !== typeFilter) return false;
-      if (yearFilter !== "all" && new Date(e.date).getFullYear().toString() !== yearFilter) return false;
+      if (yearFilter !== "all" && (!e.date || new Date(e.date).getFullYear().toString() !== yearFilter)) return false;
       if (!q) return true;
       // The words a visitor would actually remember: the title, where it
       // was, who spoke and what it was about.
@@ -203,8 +221,10 @@ const Events = () => {
   // reader has typed. It is capped so that a decade of events does not
   // put a hundred kilobytes of JSON in the head of the page.
   // ===================================================================
+  // An event with no public date (an alumni call) is left out: an Event
+  // without a start date is not a valid one for search engines.
   const eventsJsonLd = useMemo(() => eventListSchema(
-    pastEvents.slice(0, 30).map((e) => ({
+    pastEvents.filter((e): e is DbEvent & { date: string } => !!e.date).slice(0, 30).map((e) => ({
       id: e.id,
       title: e.title,
       date: e.start_at || e.date,
@@ -521,7 +541,7 @@ const Events = () => {
 /* ------------------------------ Upcoming band ------------------------------ */
 
 function UpcomingBand({ event }: { event: UpcomingEvent }) {
-  const time = formatTime(event.date);
+  const time = event.date ? formatTime(event.date) : null;
   const state = event.registrationState ?? (event.registrationUrl ? "open" : "soon");
 
   const stateLabel =
@@ -554,11 +574,13 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
       </div>
 
       <div className="p-6 md:p-8 flex flex-col">
-        <div className="font-body text-xs tracking-[0.18em] uppercase text-muted-foreground mb-3">
-          {formatLongDateUpper(event.date)}
-          {time && <span> &middot; {time}</span>}
-          {event.doors && <span> &middot; DOORS {event.doors}</span>}
-        </div>
+        {event.date && (
+          <div className="font-body text-xs tracking-[0.18em] uppercase text-muted-foreground mb-3">
+            {formatLongDateUpper(event.date)}
+            {time && <span> &middot; {time}</span>}
+            {event.doors && <span> &middot; DOORS {event.doors}</span>}
+          </div>
+        )}
 
         <h3 className="font-serif text-2xl md:text-3xl text-accent mb-3">
           {event.title}
@@ -645,11 +667,16 @@ function PastEventRow({
       {/* Info column */}
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-xs tracking-[0.12em] uppercase text-muted-foreground mb-3">
-          <span className="inline-flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
-            {formatLongDateUpper(event.date)}
-          </span>
-          <span aria-hidden="true" className="text-separator">|</span>
+          {/* No date for an alumni call: it is internal (Step 91). */}
+          {event.date && (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                {formatLongDateUpper(event.date)}
+              </span>
+              <span aria-hidden="true" className="text-separator">|</span>
+            </>
+          )}
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             {publicPlace(event)}
@@ -801,9 +828,11 @@ function PosterLightbox({
           />
         )}
         <div className="mt-4 text-center max-w-[90vw]">
-          <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
-            {formatLongDateUpper(current.date)}
-          </div>
+          {current.date && (
+            <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
+              {formatLongDateUpper(current.date)}
+            </div>
+          )}
           <div className="font-serif text-base md:text-lg text-background">
             {current.title}
           </div>

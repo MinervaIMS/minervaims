@@ -90,14 +90,13 @@ let cache: { key: string; data: CalendarData } | null = null;
 // who could still owe the fee after its first deadline.
 // =====================================================================
 async function fetchCalendarData(userId: string | null, feeExempt: boolean): Promise<CalendarData> {
-  const [events, registered, waiting, entries, exams, aodRes, callsRes, settingsRes, feeRes, meRes] = await Promise.all([
+  const [events, registered, waiting, entries, exams, aodRes, settingsRes, feeRes, meRes] = await Promise.all([
     listEvents(),
     myEventRegistrationIds(userId),
     myEventWaitlistIds(userId),
     listCalendarEntries().catch(() => [] as CalendarEntry[]),
     listExamSessions().catch(() => [] as ExamSession[]),
     sb.from('aod_days').select('id, event_date'),
-    sb.from('alumni_calls').select('planned_date, division'),
     sb.from('application_settings').select('start_date, end_date, semester_label').limit(1).maybeSingle(),
     // Membership fee: association-wide, never an advisor's.
     feeExempt ? Promise.resolve({ data: null }) : sb.from('fee_periods').select('*').eq('closed', false).order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -106,20 +105,18 @@ async function fetchCalendarData(userId: string | null, feeExempt: boolean): Pro
   const out: CalItem[] = [];
   // An Association on Display day also has an event (for attendance); the
   // day is drawn from `aod_days`, so its event is skipped here.
+  // An alumni call is an event of its own type since Step 91, drawn once,
+  // in the alumni calls colour; one whose date is still to be confirmed has
+  // no day to sit on and is left out until it has one.
   for (const e of events) {
-    if (e.aod_day_id) continue;
+    if (e.aod_day_id || e.date_tbc) continue;
     const d = eventDay(e);
-    if (d) out.push({ key: `e-${e.id}`, date: d, kind: 'event', title: e.title, sort: e.start_at || `${d}T00:00`, event: e });
+    if (d) out.push({ key: `e-${e.id}`, date: d, kind: e.event_type === 'alumni_call' ? 'alumni' : 'event', title: e.title, sort: e.start_at || `${d}T00:00`, event: e });
   }
   for (const c of entries) out.push({ key: `c-${c.id}`, date: c.entry_date.slice(0, 10), kind: 'custom', title: c.title, sort: `${c.entry_date.slice(0, 10)}T00:01`, entry: c });
   for (const a of ((aodRes as { data: unknown }).data || []) as { id?: string; event_date: string }[]) {
     out.push({ key: `a-${a.id ?? a.event_date}`, date: a.event_date, kind: 'aod', title: 'Association on Display', sort: `${a.event_date}T00:02` });
   }
-  // Alumni calls are labelled by the ORGANISING DIVISION: a call can invite
-  // several alumni, and a single alumnus name may be empty.
-  (((callsRes as { data: unknown }).data || []) as { planned_date: string | null; division: OrgDivision | null }[]).forEach((c, i) => {
-    if (c.planned_date) out.push({ key: `l-${i}`, date: c.planned_date.slice(0, 10), kind: 'alumni', title: c.division ? `Alumni call: ${divisionLabels[c.division]}` : 'Alumni call', sort: `${c.planned_date}T00:03` });
-  });
   const settings = (settingsRes as { data: { start_date?: string; end_date?: string; semester_label?: string } | null }).data;
   if (settings?.start_date) out.push({ key: 'app-open', date: settings.start_date.slice(0, 10), kind: 'application', title: 'Applications open', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.start_date.slice(0, 10)}T00:04` });
   if (settings?.end_date) out.push({ key: 'app-close', date: settings.end_date.slice(0, 10), kind: 'application', title: 'Applications close', note: `Recruiting for ${settings.semester_label}`, sort: `${settings.end_date.slice(0, 10)}T00:04` });
