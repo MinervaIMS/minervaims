@@ -11,7 +11,7 @@
 //   x_1  x^2  x_{t+1}^{*}      scripts, single token or braced group
 //   \frac{a}{b}                 stacked fraction on the maths axis
 //   \sqrt{x}                    radical with its overbar
-//   \hat{x}  \bar{x}  \tilde{x} accents
+//   \hat{x}  \bar{x}            accents
 //   \op{ln}                     upright text (operators, abbreviations)
 //   \left( ... \right)          taller delimiters
 //   \,                          thin space; a plain space is a medium one
@@ -32,7 +32,7 @@ type Node =
   | { t: 'scr'; b: Node; sub?: Node; sup?: Node }
   | { t: 'frac'; n: Node; d: Node }
   | { t: 'sqrt'; b: Node }
-  | { t: 'acc'; b: Node; k: 'hat' | 'bar' | 'tilde' }
+  | { t: 'acc'; b: Node; k: 'hat' | 'bar' }
   | { t: 'sp'; em: number };
 
 export interface Box {
@@ -104,8 +104,6 @@ function parse(src: string): Node {
           return { t: 'acc', b: arg(), k: 'hat' };
         case 'bar':
           return { t: 'acc', b: arg(), k: 'bar' };
-        case 'tilde':
-          return { t: 'acc', b: arg(), k: 'tilde' };
         case 'left':
         case 'right': {
           const s = src[i];
@@ -277,11 +275,6 @@ function layout(n: Node, size: number, c: CanvasRenderingContext2D): Box {
             ctx.moveTo(cx - size * 0.16, top + size * 0.02);
             ctx.lineTo(cx, top - size * 0.09);
             ctx.lineTo(cx + size * 0.16, top + size * 0.02);
-          } else if (n.k === 'tilde') {
-            // One period of a wave, as wide as a hat.
-            ctx.moveTo(cx - size * 0.17, top);
-            ctx.bezierCurveTo(cx - size * 0.09, top - size * 0.1, cx - size * 0.02, top + size * 0.04, cx, top - size * 0.03);
-            ctx.bezierCurveTo(cx + size * 0.02, top - size * 0.1, cx + size * 0.09, top + size * 0.04, cx + size * 0.17, top - size * 0.06);
           } else {
             ctx.moveTo(x + size * 0.06, top);
             ctx.lineTo(x + b.w + size * 0.02, top);

@@ -16,8 +16,8 @@ import { describeKeyNumber } from "@/lib/key-numbers";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HeroMarketBackground } from "@/components/home/HeroMarketBackground";
-import { loadFundLines } from "@/lib/fund-lines-api";
-import { MarketTicker } from "@/components/home/MarketTicker";
+import { loadMarketScene } from "@/components/home/market-scene/load";
+import { loadFundSeries } from "@/components/home/market-scene/fund-series";
 import { supabase } from "@/integrations/supabase/client";
 import { ApplicationsOpenLabel } from "@/components/shared/ApplicationsOpenLabel";
 import { HIGH_FETCH_PRIORITY } from '@/lib/fetch-priority';
@@ -53,15 +53,17 @@ const Index = () => {
   // left on the critical path is the one the reader actually looks at.
   const imagesLoaded = useImagePreload([logoWhite]);
 
-  // The funds' official lines are asked for NOW, alongside the page's
-  // data: the performance chart further down draws them too (one read,
-  // shared, and none at all when the build embedded them in the page).
-  // The moving scene's script is NOT fetched here: it would compete with
-  // the logo the loader waits for, and the logo is the page's LCP. The
-  // background asks for it itself once the hero has painted (two frames
-  // and an idle moment; HeroMarketBackground), and nothing waits on it.
+  // The moving scene's script is fetched NOW, alongside the page's data,
+  // so it is already here when the hero mounts; so are the funds' records
+  // its chart line is drawn from, which the performance chart further
+  // down reads anyway (the two requests are one: see fund-series.ts).
+  // Fetched, not waited for: nothing is drawn until the hero has painted,
+  // and the loader never waits on either.
   useEffect(() => {
-    void loadFundLines();
+    loadMarketScene().catch(() => {
+      // The CSS ground stands in; there is nothing to recover.
+    });
+    void loadFundSeries();
   }, []);
 
 
@@ -131,10 +133,6 @@ const Index = () => {
           className="relative flex-1 flex items-center justify-center text-center px-6 pt-20 pb-20 md:pt-24 md:pb-24"
         >
           <HeroMarketBackground />
-          {/* The figures the scene draws, as page text: the funds' returns
-              since inception and the official market monitor, each with
-              its date, from the key numbers registry (Step 93B). */}
-          <MarketTicker />
           <div className="relative z-10">
             {/* THE PAGE HAS A HEADING NOW.
                 The homepage's title is a logotype, which is right for the
@@ -149,14 +147,10 @@ const Index = () => {
             {/* `data-hero-keepout` marks what the moving background lays
                 itself out around: it measures these two and keeps its
                 legible pieces clear of them. */}
-            {/* A soft dark halo under the close shadow (Step 93B), so the
-                logo stays clear and well defined over the moving scene. A
-                filter on a static image: painted once, never per frame. */}
             <img
               src={logoWhite}
               alt="Minerva Investment Management Society"
-              className="h-48 md:h-64 lg:h-80 w-auto mx-auto"
-              style={{ filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 28px rgba(3, 2, 9, 0.8))' }}
+              className="h-48 md:h-64 lg:h-80 w-auto mx-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
               data-hero-keepout="logo"
               {...HIGH_FETCH_PRIORITY}
             />

@@ -19,5 +19,5 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "vite.key-numbers.ts", "vite.fund-lines.ts", "vite.static-pages.ts"]
+  "include": ["vite.config.ts", "vite.key-numbers.ts", "vite.static-pages.ts"]
 }
