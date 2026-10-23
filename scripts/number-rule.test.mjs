@@ -1,10 +1,14 @@
 // =====================================================================
 // THE NUMBER RULE, TESTED (Step 92; AGENTS.md).
 // ---------------------------------------------------------------------
-// A number on the public website shows its final value from the first
-// frame: no count-up, no zero placeholder, no value swapped for another.
+// A number on the public website has its final value in the page text
+// from the first frame: the text never counts up, never shows a zero
+// placeholder, and is never swapped for another value. The homepage and
+// /join hero figures still count up for people (Step 93): the moving
+// digits are drawn by an aria-hidden overlay from a data attribute, never
+// written to the text, which holds the final "250+" throughout.
 // This test fails if public code animates the TEXT of a number, if the
-// shared formatter changes what a figure looks like, or if a page is
+// shared formatters change what a figure looks like, or if a page is
 // given a figure the registry does not define.
 //
 //   node --test scripts/number-rule.test.mjs
@@ -80,9 +84,34 @@ test('figures are exact, in British format, the same everywhere', () => {
   assert.equal(kn.formatAsOf('2026-10-22'), '22 October 2026');
 });
 
-test('no figure is ever rounded down or given a "+"', () => {
+test('the exact formatter never rounds down or adds a "+"', () => {
   assert.equal(kn.formatKeyNumber(fig(253, 'integer')), '253');
   assert.ok(!kn.formatKeyNumber(fig(253, 'integer')).includes('+'));
+});
+
+test('hero figures read as the ten below with a "+", and exactly under ten', () => {
+  assert.equal(kn.formatHeroFigure(fig(253, 'integer')), '250+');
+  assert.equal(kn.formatHeroFigure(fig(160, 'integer')), '160+');
+  assert.equal(kn.formatHeroFigure(fig(1234, 'integer')), '1,230+');
+  assert.equal(kn.formatHeroFigure(fig(7, 'integer')), '7');
+  assert.equal(kn.formatHeroFigure(fig(12.5, 'percent', 1)), '12.5%');
+  assert.equal(kn.heroTarget(fig(253, 'integer')), 250);
+  assert.equal(kn.heroTarget(fig(7, 'integer')), null);
+});
+
+test('the hero count-up writes only to an aria-hidden attribute, never to the text', () => {
+  const src = readFileSync(join(ROOT, 'src/components/numbers/HeroFigure.tsx'), 'utf8');
+  assert.match(src, /<span className="kn-count-text">\{text\}<\/span>/, 'the final text is the figure text');
+  assert.match(src, /className="kn-count-face" aria-hidden="true"/, 'the moving digits are aria-hidden');
+  assert.match(src, /face\.dataset\.count = /, 'the moving digits go to data-count');
+  assert.doesNotMatch(src, /\.(textContent|innerText|innerHTML|nodeValue)\s*=/, 'nothing writes page text');
+  assert.doesNotMatch(src, /useState/, 'no React state for the moving value');
+  const css = readFileSync(join(ROOT, 'src/components/numbers/numbers.css'), 'utf8');
+  assert.match(css, /content: attr\(data-count\)/, 'drawn as generated content');
+  assert.match(css, /prefers-reduced-motion: reduce[\s\S]*kn-count-face \{ display: none; \}/, 'off under reduced motion');
+  for (const p of ['src/pages/Index.tsx', 'src/components/join/JoinFigures.tsx']) {
+    assert.match(readFileSync(join(ROOT, p), 'utf8'), /<HeroFigure figure=/, `${p} uses HeroFigure`);
+  }
 });
 
 test('every page placement names a defined figure, and every page has a heading', () => {

@@ -284,11 +284,29 @@ export function FundPerformanceChart({ funds, title = 'Fund Performance', captio
     const head: Record<string, number> = {};
 
     shown.forEach((fund) => {
-      const inWindow = (series.get(fund) ?? []).filter((o) => o.order >= viewWindow.from && o.order <= viewWindow.to);
+      const record = series.get(fund) ?? [];
+      const inWindow = record.filter((o) => o.order >= viewWindow.from && o.order <= viewWindow.to);
+      // A window that reaches back to the fund's first month starts BEFORE
+      // it, at zero, so that month's return counts too: "since inception"
+      // on the chart is the ITD of the fund table, to the decimal (Step 93).
+      // Any other window is anchored, as before, on its first month.
+      const fromInception = inWindow.length > 0 && record.length > 0 && inWindow[0].order === record[0].order;
+      if (fromInception) {
+        const anchor = inWindow[0].order - 1;
+        const year = Math.floor(anchor / 12);
+        const month = anchor - year * 12;
+        const row = byOrder.get(anchor) ?? {
+          order: anchor,
+          label: `${MONTHS_SHORT[month]} ${String(year).slice(2)}`,
+          date: formatDate({ year, month }),
+        };
+        row[fund] = 0;
+        byOrder.set(anchor, row);
+      }
       let nav = 1;
       inWindow.forEach((o, i) => {
         // The first month of the window anchors the rebase at zero.
-        if (i > 0) nav *= o.factor;
+        if (i > 0 || fromInception) nav *= o.factor;
         const value = Number(((nav - 1) * 100).toFixed(2));
         const row = byOrder.get(o.order) ?? {
           order: o.order,

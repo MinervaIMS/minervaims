@@ -26,7 +26,7 @@
 /** Every `key` in GUIDE. Kept in step by the check in workspace-guide.ts. */
 export const GUIDE_KEYS: ReadonlySet<string> = new Set([
   'my-role', 'dashboard', 'welcome', 'calendar',
-  'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds',
+  'reports-upload', 'reports-archive', 'reports-templates', 'reports-funds', 'reports-divisions',
   'applications-website', 'applications-screening', 'applications-interview-calendar',
   'applications-joiners', 'applications-form',
   'events-mine', 'events-create', 'events-forms', 'events-attendance', 'events-archive',

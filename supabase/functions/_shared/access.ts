@@ -83,7 +83,7 @@ export const MATRIX: Record<string, Grants> = {
   president: FULL,
   vice_president: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'manage',
-    'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage',
+    'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage',
     'applications-website': 'manage', 'applications-screening': 'manage', 'applications-interview-calendar': 'manage',
     'applications-joiners': 'view', 'applications-form': 'manage',
     'events-create': 'manage', 'events-forms': 'manage', 'events-attendance': 'manage', 'events-archive': 'manage',
@@ -102,7 +102,7 @@ export const MATRIX: Record<string, Grants> = {
   },
   head_of_asset_management: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
-    'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage',
+    'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage',
     'applications-screening': 'manage', 'applications-interview-calendar': 'manage',
     'applications-joiners': 'view', 'applications-form': 'manage',
     'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'events-mine': 'view',
@@ -115,7 +115,7 @@ export const MATRIX: Record<string, Grants> = {
   },
   head_of_division: {
     'my-role': 'manage', 'dashboard': 'view', 'welcome': 'view', 'calendar': 'view',
-    'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage',
+    'reports-upload': 'manage', 'reports-archive': 'manage', 'reports-templates': 'manage', 'reports-funds': 'manage', 'reports-divisions': 'manage',
     'applications-screening': 'manage', 'applications-interview-calendar': 'manage',
     'applications-joiners': 'view', 'applications-form': 'manage',
     'events-attendance': 'view', 'events-archive': 'view', 'events-alumni-calls': 'manage', 'events-on-display': 'view', 'events-mine': 'view',

@@ -105,6 +105,7 @@ export const NAV: NavSection[] = [
       { key: 'reports-archive', slug: 'archive', label: 'Report Archive', allowed: (p) => p.can('reports-archive') },
       { key: 'reports-templates', slug: 'templates', label: 'Templates & Repositories', allowed: (p) => p.can('reports-templates') },
       { key: 'reports-funds', slug: 'fund-performances', label: 'Fund Performances', allowed: (p) => p.can('reports-funds') },
+      { key: 'reports-divisions', slug: 'division-pages', label: 'Division Pages', allowed: (p) => p.can('reports-divisions') },
     ],
   },
   {

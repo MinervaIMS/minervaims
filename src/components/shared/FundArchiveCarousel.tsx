@@ -10,6 +10,7 @@ const ITEM_WIDTH = 320; // Consistent width for all items
 
 interface ArchiveFile {
   id: string;
+  slug: string | null;
   title: string;
   file_url: string;
   date: string;
@@ -39,7 +40,7 @@ export function FundArchiveCarousel({ fund, files: propFiles }: FundArchiveCarou
     try {
       const { data, error } = await supabase
         .from('archive_files')
-        .select('id, title, file_url, date, fund')
+        .select('*')
         .eq('fund', fund)
         // Public surface: published reports only, and never a deleted one.
         .eq('status', 'published')
@@ -95,7 +96,7 @@ export function FundArchiveCarousel({ fund, files: propFiles }: FundArchiveCarou
         {files.map((file) => (
           <Link
             key={file.id}
-            to={`/archive?fileId=${file.id}`}
+            to={file.slug ? `/archive/${file.slug}` : `/archive?fileId=${file.id}`}
             className="flex-shrink-0 group cursor-pointer snap-start"
             style={{ width: `${ITEM_WIDTH}px` }}
           >

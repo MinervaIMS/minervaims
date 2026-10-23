@@ -69,6 +69,7 @@ const CandidateOffer = lazy(() => import('@/components/admin/CandidateOffer'));
 const ReportUpload = lazy(() => import('@/components/admin/ReportUpload'));
 const ResourceManager = lazy(() => import('@/components/admin/ResourceManager'));
 const FundsPerformances = lazy(() => import('@/components/admin/FundsPerformances'));
+const DivisionPagesEditor = lazy(() => import('@/components/admin/DivisionPagesEditor'));
 const EventCreate = lazy(() => import('@/components/admin/EventCreate'));
 const EventForms = lazy(() => import('@/components/admin/EventForms'));
 const EventAttendance = lazy(() => import('@/components/admin/EventAttendance'));
@@ -138,6 +139,7 @@ const SUBSECTION_CHUNK: Record<string, () => Promise<unknown>> = {
   'reports-archive': () => import('@/components/admin/FileManagement'),
   'reports-templates': () => import('@/components/admin/ResourceManager'),
   'reports-funds': () => import('@/components/admin/FundsPerformances'),
+  'reports-divisions': () => import('@/components/admin/DivisionPagesEditor'),
   'applications-website': () => import('@/components/admin/ApplicationSettings'),
   'applications-screening': () => import('@/components/admin/CandidatesManagement'),
   'applications-interview-calendar': () => import('@/components/admin/InterviewCalendar'),
@@ -1154,6 +1156,8 @@ const MinervaWorkspace = () => {
         />;
       case 'reports-funds':
         return <FundsPerformances />;
+      case 'reports-divisions':
+        return <DivisionPagesEditor />;
       case 'people-members':
         return <MembersManagement />;
       case 'people-alumni':

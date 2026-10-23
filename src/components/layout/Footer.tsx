@@ -71,6 +71,7 @@ const exploreLinks = [
   { label: 'Readings', href: '/readings' },
   { label: 'Partnerships', href: '/partnerships' },
   { label: 'Numbers', href: '/numbers' },
+  { label: 'Track Record', href: '/track-record' },
 ];
 
 const divisionLinks = [

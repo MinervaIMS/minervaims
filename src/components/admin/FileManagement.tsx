@@ -21,6 +21,12 @@ import { WorkspacePageHeader } from '@/components/admin/WorkspacePageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccess } from '@/hooks/useAccess';
 import { logActivity } from '@/lib/activity-log';
+import { Checkbox } from '@/components/ui/checkbox';
+import { REPORT_TYPES, REPORT_TYPE_LABELS, DEFAULT_REPORT_TYPE, type ReportAuthor, type ReportType } from '@/lib/report-meta';
+import { AuthorsEditor } from '@/components/admin/archive/AuthorsEditor';
+import { TagsInput } from '@/components/admin/archive/TagsInput';
+import { ArchiveDetailsPanel, isMissing, type MissingKind } from '@/components/admin/archive/ArchiveDetailsPanel';
+import { BulkEditDialog } from '@/components/admin/archive/BulkEditDialog';
 interface ArchiveFile {
   id: string;
   title: string;
@@ -35,6 +41,13 @@ interface ArchiveFile {
   deleted_at?: string | null;
   created_at: string;
   updated_at: string;
+  // Step 93: the permanent address (made by the database, fixed once
+  // published), the type, the tags and the authors.
+  slug?: string | null;
+  slug_locked?: boolean;
+  report_type?: string | null;
+  tags?: string[];
+  authors?: ReportAuthor[];
 }
 
 // =====================================================================
@@ -97,6 +110,10 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [downloadAllProgress, setDownloadAllProgress] = useState({ current: 0, total: 0 });
+  // Step 93: the "missing details" filter, the selection for bulk editing.
+  const [missingFilter, setMissingFilter] = useState<MissingKind | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const ITEMS_PER_PAGE = 15;
   
   // If user has restricted divisions, default form to first allowed division
@@ -109,6 +126,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
     date: '',
     division: defaultDivision,
     fund: '' as Fund | '',
+    report_type: '' as ReportType | '',
+    tags: [] as string[],
+    authors: [] as ReportAuthor[],
   });
   const { toast } = useToast();
   const { session } = useAuth();
@@ -173,7 +193,8 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setFiles(data || []);
+      // `authors` arrives as JSON; it is always a list of names and roles.
+      setFiles((data || []).map((row) => ({ ...row, authors: Array.isArray(row.authors) ? (row.authors as unknown as ReportAuthor[]) : [] })) as ArchiveFile[]);
     } catch (error) {
       console.error('Error fetching files:', error);
       toast({
@@ -262,13 +283,24 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         const query = searchQuery.toLowerCase();
         const matchesTitle = file.title.toLowerCase().includes(query);
         const matchesDescription = file.description?.toLowerCase().includes(query) || false;
-        if (!matchesTitle && !matchesDescription) return false;
+        const matchesTag = (file.tags || []).some((t) => t.toLowerCase().includes(query));
+        const matchesAuthor = (file.authors || []).some((a) => a.name.toLowerCase().includes(query));
+        if (!matchesTitle && !matchesDescription && !matchesTag && !matchesAuthor) return false;
       }
+      // "Missing details": the reports without authors, a summary or a type.
+      if (missingFilter && !isMissing(file, missingFilter)) return false;
       return true;
     });
     // Newest first, and only that. The archive is a record, so its order is
     // the record's own; nothing is pinned above it.
-  }, [files, divisionFilter, fundFilter, statusFilter, yearFilter, searchQuery, allowedDivisions]);
+  }, [files, divisionFilter, fundFilter, statusFilter, yearFilter, searchQuery, allowedDivisions, missingFilter]);
+
+  // The live reports this person can see, for the "missing details" counts.
+  const liveInScope = useMemo(
+    () => files.filter((f) => !f.deleted_at && (!allowedDivisions || allowedDivisions.includes(f.division as Division))),
+    [files, allowedDivisions],
+  );
+  const canEdit = access.canManage('reports-archive');
 
   const fileYears = useMemo(() => {
     let relevantFiles = files.filter((f) => !f.deleted_at);
@@ -287,7 +319,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [divisionFilter, fundFilter, statusFilter, yearFilter, searchQuery]);
+  }, [divisionFilter, fundFilter, statusFilter, yearFilter, searchQuery, missingFilter]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -334,6 +366,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       date: '',
       division: defaultDivision,
       fund: '',
+      report_type: '',
+      tags: [],
+      authors: [],
     });
     setEditingFile(null);
     setUploadProgress(0);
@@ -348,6 +383,9 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       date: file.date,
       division: file.division as Division,
       fund: (file.fund as Fund) || '',
+      report_type: (file.report_type as ReportType) || '',
+      tags: file.tags || [],
+      authors: file.authors || [],
     });
     setIsDialogOpen(true);
   };
@@ -534,6 +572,10 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       date: formData.date,
       division: formData.division,
       fund: formData.division === 'portfolio' ? formData.fund : null,
+      // Step 93. An empty type is filled from the division by the database.
+      report_type: formData.report_type || null,
+      tags: formData.tags,
+      authors: formData.authors,
       ...(editingFile && { id: editingFile.id }),
     };
 
@@ -566,6 +608,11 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
       }
 
       toast({ title: "Success", description: `File ${editingFile ? 'updated' : 'created'} successfully` });
+      // The PDF's own details follow the save; when they cannot be written
+      // the report is still saved, and the reason is said.
+      if (data?.pdf_metadata && data.pdf_metadata.ok === false) {
+        toast({ title: 'Saved, but the PDF\'s details were not updated', description: data.pdf_metadata.reason, variant: 'destructive' });
+      }
       fetchFiles();
     } catch (error) {
       console.error('Submit error:', error);
@@ -808,6 +855,45 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                 </div>
               </div>
 
+              {/* Step 93: the report's permanent address, its type, its tags
+                  and its authors. */}
+              {editingFile?.slug && (
+                <div className="space-y-1">
+                  <Label className="font-body">Address</Label>
+                  <p className="font-body text-sm break-all">minervaims.org/archive/{editingFile.slug}</p>
+                  <p className="font-body text-xs text-muted-foreground">
+                    {editingFile.slug_locked
+                      ? 'Fixed: the report has been published, so its address never changes, even if the title does.'
+                      : 'Made from the title and the year. It follows the title until the report is first published, then never changes.'}
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="report-type" className="font-body">Type</Label>
+                <select
+                  id="report-type"
+                  value={formData.report_type}
+                  onChange={(e) => setFormData({ ...formData, report_type: e.target.value as ReportType | '' })}
+                  className="font-body bg-background border border-separator px-3 h-10 w-full"
+                >
+                  <option value="">
+                    {formData.division ? `From the division (${REPORT_TYPE_LABELS[DEFAULT_REPORT_TYPE[formData.division as Division]]})` : 'From the division'}
+                  </option>
+                  {REPORT_TYPES.map((t) => <option key={t} value={t}>{REPORT_TYPE_LABELS[t]}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="report-tags" className="font-body">Tags</Label>
+                <TagsInput id="report-tags" value={formData.tags} onChange={(tags) => setFormData({ ...formData, tags })} />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-body">Authors</Label>
+                <AuthorsEditor value={formData.authors} onChange={(authors) => setFormData({ ...formData, authors })} />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="description" className="font-body">Description (optional)</Label>
                 <Textarea
@@ -851,6 +937,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
 
 
 
+      {/* Missing details and the PDFs' own details (Step 93). */}
+      {canEdit && (
+        <ArchiveDetailsPanel
+          files={liveInScope}
+          missing={missingFilter}
+          onMissing={setMissingFilter}
+          canWrite={canEdit}
+          session={session}
+          onWritten={fetchFiles}
+        />
+      )}
+
       {/* Filters follow the standard filter format: flat corners, body font,
           no labels above the fields. */}
       <div className="mb-8 pb-6 border-b border-separator">
@@ -860,7 +958,7 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by title or description"
+              placeholder="Search by title, summary, tag or author"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="font-body w-full pl-10 pr-3 h-10 border border-separator bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
@@ -934,11 +1032,38 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
         </div>
       </div>
 
-      {/* Results count */}
-      <p className="font-body text-small text-muted-foreground mb-6">
-        Showing {paginatedFiles.length} of {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
-        {totalPages > 1 && ` (page ${currentPage} of ${totalPages})`}
-      </p>
+      {/* Results count, and the selection for editing several at once. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <p className="font-body text-small text-muted-foreground">
+          Showing {paginatedFiles.length} of {filteredFiles.length} {filteredFiles.length === 1 ? 'report' : 'reports'}
+          {totalPages > 1 && ` (page ${currentPage} of ${totalPages})`}
+        </p>
+        {canEdit && filteredFiles.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 font-body text-small">
+            <button
+              type="button"
+              className="text-primary underline underline-offset-4"
+              onClick={() => setSelected(new Set(filteredFiles.map((f) => f.id)))}
+            >
+              Select all {filteredFiles.length}
+            </button>
+            {selected.size > 0 && (
+              <>
+                <span className="text-muted-foreground">{selected.size} selected</span>
+                <Button size="sm" className="font-body" onClick={() => setBulkOpen(true)}>Edit selected</Button>
+                <button type="button" className="text-primary underline underline-offset-4" onClick={() => setSelected(new Set())}>Clear</button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      <BulkEditDialog
+        ids={[...selected]}
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        session={session}
+        onDone={() => { setSelected(new Set()); fetchFiles(); }}
+      />
 
       {/* Files List - matching Archive page UI */}
       {files.length === 0 ? (
@@ -961,6 +1086,18 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
             {paginatedFiles.map((file, index) => (
               <article key={file.id} className={`md:py-6 ${index !== paginatedFiles.length - 1 ? 'md:border-b md:border-separator' : ''}`}>
                 <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
+                  {canEdit && (
+                    <Checkbox
+                      className="md:mt-1"
+                      checked={selected.has(file.id)}
+                      onCheckedChange={(v) => setSelected((prev) => {
+                        const next = new Set(prev);
+                        if (v) next.add(file.id); else next.delete(file.id);
+                        return next;
+                      })}
+                      aria-label={`Select ${file.title}`}
+                    />
+                  )}
                   {/* PDF Preview Thumbnail - A4 aspect ratio */}
                   <div className="flex-shrink-0">
                     <PdfThumbnail
@@ -1024,6 +1161,22 @@ const FileManagement = ({ allowedDivisions }: FileManagementProps) => {
                           </button>
                         )}
                       </div>
+                    )}
+                    {/* Step 93: type, authors, tags and the permanent address. */}
+                    <p className="font-body text-xs text-muted-foreground mt-1.5">
+                      {file.report_type ? REPORT_TYPE_LABELS[file.report_type as ReportType] : 'No type'}
+                      {' · '}
+                      {file.authors?.length ? `${file.authors.length} ${file.authors.length === 1 ? 'author' : 'authors'}` : 'No authors'}
+                      {file.tags?.length ? ` · ${file.tags.join(', ')}` : ''}
+                    </p>
+                    {file.slug && (
+                      <p className="font-body text-xs mt-0.5 break-all">
+                        {file.status === 'published' ? (
+                          <a href={`/archive/${file.slug}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">/archive/{file.slug}</a>
+                        ) : (
+                          <span className="text-muted-foreground">/archive/{file.slug}</span>
+                        )}
+                      </p>
                     )}
                     <div className="mt-1.5 md:mt-3">
                       <button

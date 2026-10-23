@@ -98,6 +98,23 @@ export function formatKeyNumber(n: Pick<KeyNumber, 'value' | 'format' | 'decimal
   return `${n.prefix ?? ''}${body}${n.suffix ?? ''}`;
 }
 
+/**
+ * The hero form of a count: rounded down to the ten below, with a "+",
+ * as the homepage and /join have always shown it (253 reads "250+").
+ * Under ten, or for anything that is not a plain count, it is the exact
+ * figure. It is only ever used by `HeroFigure`; every other place shows
+ * the exact figure from `formatKeyNumber`.
+ */
+export function heroTarget(n: Pick<KeyNumber, 'value' | 'format'>): number | null {
+  if (n.format !== 'integer' || !Number.isFinite(n.value) || n.value < 10) return null;
+  return Math.floor(n.value / 10) * 10;
+}
+
+export function formatHeroFigure(n: Pick<KeyNumber, 'value' | 'format' | 'decimals' | 'prefix' | 'suffix'>): string {
+  const target = heroTarget(n);
+  return target === null ? formatKeyNumber(n) : `${groupFormat(0).format(target)}+`;
+}
+
 /** "22 October 2026". */
 export function formatAsOf(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
@@ -137,6 +154,7 @@ export const STATS_SECTION_TITLES: Record<string, string> = {
   readings: 'Readings in numbers',
   join: 'Join in numbers',
   partnerships: 'Partnerships in numbers',
+  'track-record': 'The track record in numbers',
 };
 
 /** A line under some headings, saying what kind of figures follow. */

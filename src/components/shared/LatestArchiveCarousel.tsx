@@ -10,6 +10,7 @@ const ITEM_WIDTH = 320; // Consistent width for all items
 
 interface ArchiveFile {
   id: string;
+  slug: string | null;
   title: string;
   file_url: string;
   date: string;
@@ -38,7 +39,7 @@ export function LatestArchiveCarousel({ files: propFiles }: LatestArchiveCarouse
     try {
       const { data, error } = await supabase
         .from('archive_files')
-        .select('id, title, file_url, date, division')
+        .select('*')
         // Public surface: published reports only, and never a deleted one.
         .eq('status', 'published')
         .is('deleted_at', null)
@@ -89,7 +90,7 @@ export function LatestArchiveCarousel({ files: propFiles }: LatestArchiveCarouse
         {files.map((file) => (
           <Link
             key={file.id}
-            to={`/archive?fileId=${file.id}`}
+            to={file.slug ? `/archive/${file.slug}` : `/archive?fileId=${file.id}`}
             className="flex-shrink-0 group cursor-pointer snap-start"
             style={{ width: `${ITEM_WIDTH}px` }}
           >

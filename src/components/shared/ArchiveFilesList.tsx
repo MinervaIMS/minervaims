@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Division, Fund, divisionLabels, fundLabels } from '@/lib/types';
 import { Download, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { PdfThumbnail } from './PdfThumbnail';
@@ -14,6 +15,7 @@ interface ArchiveFile {
   date: string;
   division: string;
   fund: string | null;
+  slug?: string | null;
 }
 
 interface ArchiveFilesListProps {
@@ -121,7 +123,13 @@ export function ArchiveFilesList({ files, showDivision = false, highlightedFileI
                   )}
                 </time>
                 <h3 className="font-serif text-base leading-snug md:text-subheading mt-1.5 md:mt-2 mb-1.5 md:mb-2">
-                  {file.title}
+                  {/* The title leads to the report's own page (Step 93):
+                      its authors, its citation and its related reports. */}
+                  {file.slug ? (
+                    <Link to={`/archive/${file.slug}`} className="hover:text-accent hover:underline underline-offset-4">
+                      {file.title}
+                    </Link>
+                  ) : file.title}
                 </h3>
                 {file.description && (
                   <div>

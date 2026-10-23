@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Seo } from '@/components/shared/Seo';
 import { reportListSchema } from '@/lib/seo/structured-data';
 import { ClearFilters } from "@/components/shared/ClearFilters";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageIntroduction, PageLoader } from "@/components/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Division, Fund, divisionLabels, fundLabels, activeFunds, closedFunds } from "@/lib/types";
@@ -30,6 +30,8 @@ interface ArchiveFile {
   date: string;
   division: string;
   fund: string | null;
+  /** The report's permanent address (Step 93). */
+  slug?: string | null;
 }
 
 const ITEMS_PER_PAGE = 15;
@@ -37,6 +39,7 @@ const ITEMS_PER_PAGE = 15;
 const Archive = () => {
   const archiveBg = archiveBgAsset.url;
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [files, setFiles] = useState<ArchiveFile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,6 +211,16 @@ const Archive = () => {
     if (fileIdFromUrl && files.length > 0 && !hasScrolledToFile.current) {
       // Find the file in the unfiltered list
       const fileIndex = files.findIndex((f) => f.id === fileIdFromUrl);
+      // OLD LINKS KEEP WORKING (Step 93). "/archive?fileId=<id>" was the
+      // only way to point at one report; every report now has its own
+      // page, so such a link goes straight there. (The static /archive
+      // page does the same before the app has even loaded.)
+      const slug = fileIndex !== -1 ? files[fileIndex].slug : null;
+      if (slug) {
+        hasScrolledToFile.current = true;
+        navigate(`/archive/${slug}`, { replace: true });
+        return;
+      }
       if (fileIndex !== -1) {
         // Calculate which page the file is on
         const targetPage = Math.floor(fileIndex / ITEMS_PER_PAGE) + 1;

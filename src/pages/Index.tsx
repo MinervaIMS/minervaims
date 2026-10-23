@@ -10,7 +10,7 @@ import { PageLoader } from "@/components/shared";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { FundPerformanceChart } from "@/components/shared/FundPerformanceChart";
 import { useKeyNumber } from "@/hooks/useKeyNumbers";
-import { KeyFigureValue } from "@/components/numbers/KeyFigureValue";
+import { HeroFigure } from "@/components/numbers/HeroFigure";
 import { NumbersSection } from "@/components/numbers/NumbersSection";
 import { describeKeyNumber } from "@/lib/key-numbers";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
@@ -27,15 +27,16 @@ interface ArchiveFile extends ArchiveFileRow {
 }
 
 /**
- * THE THREE HERO FIGURES FOLLOW THE NUMBER RULE (Step 92).
+ * THE THREE HERO FIGURES (Step 92, revised in Step 93).
  *
- * They used to count up from zero over 3.2 seconds, rounded down to tens
- * with a "+", and the page held its loader until they arrived. A reader
- * that took its snapshot early, or never waited, recorded 0, 50 or 120.
- * They are now the exact figures of the key numbers registry, embedded in
- * the page by the build, so the first frame already shows the final value,
- * the same value every other page and every machine-readable file shows.
- * The definition and the as-of date are the tooltip.
+ * People see them as they always have: counting up over 3.2 seconds to
+ * the figure rounded down to its ten, with a "+". The page text of each
+ * figure is that final "250+" from the first frame, and the moving digits
+ * are drawn over it without ever becoming text (see HeroFigure), so a
+ * crawler or an assistant reading the page at any moment records the
+ * final value. The values come from the key numbers registry, embedded in
+ * the page by the build, so nothing waits for a request. The definition
+ * and the as-of date are the tooltip.
  */
 const Index = () => {
   const reportsFigure = useKeyNumber('reports_published');
@@ -74,7 +75,7 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('archive_files')
-        .select('id, title, description, file_url, date, division, fund')
+        .select('*')
         // Public surface: published reports only, and never a deleted one.
         .eq('status', 'published')
         .is('deleted_at', null)
@@ -206,7 +207,7 @@ const Index = () => {
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
               >
                 <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
-                  <KeyFigureValue figure={reportsFigure} />
+                  <HeroFigure figure={reportsFigure} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
               </Link>
@@ -216,7 +217,7 @@ const Index = () => {
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
               >
                 <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
-                  <KeyFigureValue figure={membersFigure} />
+                  <HeroFigure figure={membersFigure} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
               </Link>
@@ -226,7 +227,7 @@ const Index = () => {
                 className="text-center py-4 md:py-6 hover:opacity-80 transition-opacity"
               >
                 <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
-                  <KeyFigureValue figure={alumniFigure} />
+                  <HeroFigure figure={alumniFigure} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
               </Link>

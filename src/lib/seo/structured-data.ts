@@ -24,6 +24,9 @@ import {
   absoluteUrl, DEFAULT_OG_IMAGE,
 } from './site';
 import { DIVISION_META, FUND_META } from './routes';
+import { REPORT_TYPE_LABELS, reportDivisionLabel, reportFundLabel, SOCIETY, type ReportType } from '../report-meta';
+import type { PublicReport } from '../reports-public';
+import { VIRTUAL_PORTFOLIO_STATEMENT, type FundEntry } from '../fund-record';
 
 /** A loose JSON-LD node. Deliberately not modelled: schema.org is large. */
 export type JsonLd = Record<string, unknown>;
@@ -247,6 +250,81 @@ export function reportListSchema(reports: ReportInput[], listName: string): Json
         isAccessibleForFree: true,
       },
     })),
+  };
+}
+
+/**
+ * ONE REPORT, ON ITS OWN PAGE (Step 93).
+ *
+ * A quantitative paper is a `ScholarlyArticle`; every other report is a
+ * `Report`. Each author is a Person with the role printed on the cover,
+ * and, when the website lists them, the address of their entry. The PDF
+ * is the encoding, with its real size of pages kept out: schema.org has
+ * no page count for an article, and an invented field is worse than none.
+ */
+export function reportSchema(r: PublicReport, url: string): JsonLd {
+  const type = r.report_type === 'quant_paper' ? 'ScholarlyArticle' : 'Report';
+  const authors = (r.authors || []).map((a) => ({
+    '@type': 'Person',
+    name: a.name,
+    ...(a.role ? { jobTitle: a.role } : {}),
+    ...(a.link ? { url: absoluteUrl(a.link) } : {}),
+    affiliation: { '@id': ORGANIZATION_ID },
+  }));
+  const keywords = [...(r.tags || []), reportDivisionLabel(r.division), reportFundLabel(r.fund)].filter(Boolean);
+  return {
+    '@type': type,
+    '@id': `${url}#report`,
+    url,
+    mainEntityOfPage: url,
+    headline: r.title.length > 110 ? `${r.title.slice(0, 107).trimEnd()}...` : r.title,
+    name: r.title,
+    datePublished: r.date,
+    ...(r.updated_at ? { dateModified: r.updated_at.slice(0, 10) } : {}),
+    ...(r.description ? { abstract: r.description, description: r.description } : {}),
+    genre: REPORT_TYPE_LABELS[r.report_type as ReportType] ?? 'Report',
+    ...(keywords.length ? { keywords: keywords.join(', ') } : {}),
+    inLanguage: 'en',
+    image: absoluteUrl(DEFAULT_OG_IMAGE),
+    author: authors.length ? authors : { '@id': ORGANIZATION_ID },
+    publisher: { '@id': ORGANIZATION_ID },
+    sourceOrganization: {
+      '@type': 'Organization',
+      name: reportDivisionLabel(r.division),
+      url: absoluteUrl(`/divisions/${r.division}`),
+      parentOrganization: { '@id': ORGANIZATION_ID },
+    },
+    isAccessibleForFree: true,
+    isPartOf: { '@type': 'CollectionPage', name: `Research archive of the ${SOCIETY}`, url: absoluteUrl('/archive') },
+    encoding: { '@type': 'MediaObject', encodingFormat: 'application/pdf', contentUrl: r.file_url },
+  };
+}
+
+/**
+ * A fund's monthly returns, as a Dataset with its two downloads (Step 93):
+ * the CSV of the typed returns and the JSON of every derived figure.
+ */
+export function fundDatasetSchema(fund: string, entry: FundEntry, label: string): JsonLd | null {
+  const r = entry.record;
+  if (!r || r.months_count < 1) return null;
+  return {
+    '@type': 'Dataset',
+    '@id': `${absoluteUrl(`/funds/${fund}`)}#dataset`,
+    name: `${label}: monthly returns`,
+    description: `Monthly returns of the ${label} of the ${SOCIETY}, with the statistics derived from them (cumulative and annualised return, volatility, Sharpe ratio on the €STR, maximum drawdown, best and worst month). ${VIRTUAL_PORTFOLIO_STATEMENT}`,
+    url: absoluteUrl(`/funds/${fund}`),
+    creator: { '@id': ORGANIZATION_ID },
+    publisher: { '@id': ORGANIZATION_ID },
+    isAccessibleForFree: true,
+    inLanguage: 'en',
+    ...(r.first_month && r.last_month ? { temporalCoverage: `${r.first_month}/${r.last_month}` } : {}),
+    variableMeasured: ['Monthly return (%)', 'Year-to-date return (%)', 'Inception-to-date return (%)', 'Annualised volatility (%)', 'Sharpe ratio'],
+    measurementTechnique: 'Simulated net asset value of a virtual (paper) portfolio, net, in EUR',
+    ...(entry.profile?.updated_at ? { dateModified: entry.profile.updated_at.slice(0, 10) } : {}),
+    distribution: [
+      { '@type': 'DataDownload', encodingFormat: 'text/csv', contentUrl: absoluteUrl(`/data/funds-${fund}.csv`) },
+      { '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: absoluteUrl('/data/funds.json') },
+    ],
   };
 }
 

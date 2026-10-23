@@ -1,17 +1,15 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useKeyNumbers } from '@/hooks/useKeyNumbers';
-import { KeyFigureValue } from '@/components/numbers/KeyFigureValue';
+import { HeroFigure } from '@/components/numbers/HeroFigure';
 import { describeKeyNumber } from '@/lib/key-numbers';
 
 /**
- * The figures line, from the key numbers registry (Step 92).
- *
- * THE NUMBER RULE: each figure's text is its exact, final value from the
- * first frame (the build embeds the registry in the page), the same value
- * the homepage, the stats sections and the machine-readable files show.
- * No count-up, no "+", no placeholder that becomes a number. The
- * definition and the as-of date are the tooltip.
+ * The figures line, from the key numbers registry (Step 92, revised in
+ * Step 93): the same hero figures as the homepage. People see each one
+ * count up to its value rounded down to the ten, with a "+"; the page text
+ * is that final "250+" from the first frame and never changes (see
+ * HeroFigure). The definition and the as-of date are the tooltip.
  *
  * `tone="dark"` is the variant used on the black hero stage, where the numbers
  * are set in white for contrast.
@@ -58,7 +56,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
                 : 'text-[2rem] text-primary sm:text-5xl md:text-hero'
             }`}
           >
-            <KeyFigureValue figure={item.figure} />
+            <HeroFigure figure={item.figure} />
           </p>
           <p
             className={`font-body mt-2 uppercase leading-tight tracking-wider ${

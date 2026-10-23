@@ -322,13 +322,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "alumni_calls_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       alumni_contacts: {
@@ -730,6 +723,14 @@ export type Database = {
           id: string
           is_favourite: boolean
           page_count: number | null
+          authors: Json
+          pdf_metadata: Json | null
+          pdf_metadata_at: string | null
+          pdf_original_path: string | null
+          report_type: string | null
+          slug: string | null
+          slug_locked: boolean
+          tags: string[]
           project: string | null
           status: string
           title: string
@@ -747,6 +748,14 @@ export type Database = {
           id?: string
           is_favourite?: boolean
           page_count?: number | null
+          authors?: Json
+          pdf_metadata?: Json | null
+          pdf_metadata_at?: string | null
+          pdf_original_path?: string | null
+          report_type?: string | null
+          slug?: string | null
+          slug_locked?: boolean
+          tags?: string[]
           project?: string | null
           status?: string
           title: string
@@ -764,6 +773,14 @@ export type Database = {
           id?: string
           is_favourite?: boolean
           page_count?: number | null
+          authors?: Json
+          pdf_metadata?: Json | null
+          pdf_metadata_at?: string | null
+          pdf_original_path?: string | null
+          report_type?: string | null
+          slug?: string | null
+          slug_locked?: boolean
+          tags?: string[]
           project?: string | null
           status?: string
           title?: string
@@ -1100,13 +1117,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "editorial_items_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       email_send_log: {
@@ -1254,13 +1264,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_alumni_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       event_alumni_calls: {
@@ -1305,13 +1308,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_alumni_calls_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: true
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       event_join_links: {
@@ -1336,13 +1332,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: true
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_join_links_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: true
-            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1426,13 +1415,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "event_registrations_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -1466,13 +1448,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reminder_log_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1531,14 +1506,37 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_waitlist_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      division_pages: {
+        Row: {
+          division: string
+          flagship_ids: string[]
+          review: string
+          standards: string
+          tools: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          division: string
+          flagship_ids?: string[]
+          review?: string
+          standards?: string
+          tools?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          division?: string
+          flagship_ids?: string[]
+          review?: string
+          standards?: string
+          tools?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       events: {
         Row: {
@@ -1634,24 +1632,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      events_step91_description_backup: {
-        Row: {
-          description: string | null
-          event_id: string
-          saved_at: string
-        }
-        Insert: {
-          description?: string | null
-          event_id: string
-          saved_at?: string
-        }
-        Update: {
-          description?: string | null
-          event_id?: string
-          saved_at?: string
-        }
-        Relationships: []
       }
       exam_sessions: {
         Row: {
@@ -1773,6 +1753,108 @@ export type Database = {
           vol?: string
           year?: number
           ytd?: string
+        }
+        Relationships: []
+      }
+      fund_profiles: {
+        Row: {
+          closing_reason: string
+          end_date: string | null
+          fund: string
+          inception_date: string | null
+          methodology: string
+          positions_as_of: string | null
+          positions_count: number | null
+          rebalancing_policy: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          closing_reason?: string
+          end_date?: string | null
+          fund: string
+          inception_date?: string | null
+          methodology?: string
+          positions_as_of?: string | null
+          positions_count?: number | null
+          rebalancing_policy?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          closing_reason?: string
+          end_date?: string | null
+          fund?: string
+          inception_date?: string | null
+          methodology?: string
+          positions_as_of?: string | null
+          positions_count?: number | null
+          rebalancing_policy?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      fund_reference_meta: {
+        Row: {
+          currency: string
+          kind: string
+          label: string
+          position: number
+          series: string
+          updated_at: string
+          updated_by: string | null
+          variant: string
+        }
+        Insert: {
+          currency?: string
+          kind: string
+          label: string
+          position?: number
+          series: string
+          updated_at?: string
+          updated_by?: string | null
+          variant?: string
+        }
+        Update: {
+          currency?: string
+          kind?: string
+          label?: string
+          position?: number
+          series?: string
+          updated_at?: string
+          updated_by?: string | null
+          variant?: string
+        }
+        Relationships: []
+      }
+      fund_reference_series: {
+        Row: {
+          as_of: string | null
+          month: string
+          series: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          value: number
+        }
+        Insert: {
+          as_of?: string | null
+          month: string
+          series: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          value: number
+        }
+        Update: {
+          as_of?: string | null
+          month?: string
+          series?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
         }
         Relationships: []
       }
@@ -3029,13 +3111,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       website_events: {
@@ -3062,15 +3137,7 @@ export type Database = {
           start_at: string | null
           title: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "events_aod_day_id_fkey"
-            columns: ["aod_day_id"]
-            isOneToOne: true
-            referencedRelation: "aod_days"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
@@ -3277,10 +3344,13 @@ export type Database = {
         }[]
       }
       public_alumni_directory: { Args: never; Returns: Json }
+      public_fund_track_records: { Args: never; Returns: Json }
       public_alumni_filter_count: {
         Args: { p_city?: string; p_company?: string; p_job_area?: string }
         Returns: number
       }
+      public_reports: { Args: { p_slug?: string }; Returns: Json }
+      public_track_record: { Args: never; Returns: Json }
       public_testimonial_companies: {
         Args: never
         Returns: {

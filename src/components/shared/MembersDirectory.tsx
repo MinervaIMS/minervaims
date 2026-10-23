@@ -21,7 +21,15 @@ interface MembersDirectoryProps {
   initialDivisionFilter?: Division;
   /** Told which team is on screen, so the page can mirror it elsewhere. */
   onActiveTabChange?: (tab: string) => void;
+  /**
+   * A member to open on (`/people/members?person=<id>`, the link a report
+   * page gives its authors, Step 93): their team's tab is selected and
+   * their card is brought into view and outlined for a moment.
+   */
+  focusId?: string | null;
 }
+
+const FOCUS_RING = ['ring-2', 'ring-primary', 'ring-offset-2'];
 
 type TabKey = 'executive' | Division | 'media-ops';
 
@@ -88,7 +96,7 @@ const isLeadership = (m: TeamMember) =>
 const getInitials = (m: TeamMember) =>
   `${m.name?.charAt(0) ?? ''}${m.surname?.charAt(0) ?? ''}`.toUpperCase();
 
-export function MembersDirectory({ members, initialDivisionFilter, onActiveTabChange }: MembersDirectoryProps) {
+export function MembersDirectory({ members, initialDivisionFilter, onActiveTabChange, focusId }: MembersDirectoryProps) {
   const [active, setActive] = useState<TabKey>(initialDivisionFilter ?? 'executive');
 
   useEffect(() => {
@@ -146,6 +154,27 @@ export function MembersDirectory({ members, initialDivisionFilter, onActiveTabCh
     mediaOps.sort(sortMembers);
     return { executive, byDivision, mediaOps };
   }, [members]);
+
+  // Open on the team of the member a link points at, once.
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focusId || focused.current) return;
+    const has = (list: TeamMember[]) => list.some((m) => m.id === focusId);
+    const tab: TabKey | undefined = has(grouped.executive) ? 'executive'
+      : (Object.keys(grouped.byDivision) as Division[]).find((d) => has(grouped.byDivision[d]))
+        ?? (has(grouped.mediaOps) ? 'media-ops' : undefined);
+    if (!tab) return;
+    focused.current = true;
+    setActive(tab);
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`person-${focusId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add(...FOCUS_RING);
+      window.setTimeout(() => el.classList.remove(...FOCUS_RING), 3000);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [focusId, grouped]);
 
   const currentMembers: TeamMember[] =
     active === 'executive'
@@ -259,7 +288,7 @@ function FeatureGrid({ members }: { members: TeamMember[] }) {
 
 function FeatureCard({ member }: { member: TeamMember }) {
   return (
-    <article className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]">
+    <article id={`person-${member.id}`} className="group bg-muted p-[1.1rem] flex flex-col transition-colors duration-300 ease-out hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]">
       <div className="w-full aspect-square bg-background flex items-center justify-center overflow-hidden transition-transform duration-300 ease-out group-hover:-translate-y-[6px] group-focus-within:-translate-y-[6px]">
         {member.photoUrl ? (
           <img
@@ -357,6 +386,7 @@ function CompactCard({
   const isLead = variant === 'leadership';
   return (
     <article
+      id={`person-${member.id}`}
       className={[
         'group transition-colors duration-300 ease-out',
         'bg-muted hover:bg-[#ece9f4] focus-within:bg-[#ece9f4]',

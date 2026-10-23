@@ -24,6 +24,7 @@ const Sitemap = () => {
         { label: 'Readings', href: '/readings' },
         { label: 'Partnerships', href: '/partnerships' },
         { label: 'Minerva In Numbers', href: '/numbers' },
+        { label: 'Track Record', href: '/track-record' },
         { label: 'Contacts', href: '/contacts' },
       ],
     },
