@@ -43,6 +43,13 @@
       "when": 1792746294056,
       "tag": "0005_alumni_calls_into_events",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792770644329,
+      "tag": "0006_public_reports_fast_author_links",
+      "breakpoints": true
     }
   ]
 }
