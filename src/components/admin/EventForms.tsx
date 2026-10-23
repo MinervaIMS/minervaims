@@ -104,7 +104,8 @@ export default function EventForms() {
 
   const load = async () => {
     setLoading(true);
-    try { setEvents(await listEvents()); }
+    // An alumni call still to be confirmed cannot open registration yet (Step 91).
+    try { setEvents((await listEvents()).filter((e) => !e.date_tbc)); }
     catch (e) { toast({ title: 'Failed to load', description: e instanceof Error ? e.message : undefined, variant: 'destructive' }); }
     finally { setLoading(false); }
     loadReminders();

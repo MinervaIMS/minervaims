@@ -252,6 +252,22 @@ export const COMMON_TASKS: ManualTask[] = [
     caution: 'The templates are for Minerva members only: do not forward them or publish them.',
   },
   {
+    id: 'alumni-call',
+    title: 'Plan and run an alumni call',
+    requires: 'events-alumni-calls',
+    level: 'manage',
+    steps: [
+      'In Events, Create Event, choose the type Alumni call (the Heads of Division and the Head of Asset Management see only this type).',
+      'Choose who organises it, a research division or the Board; the title follows unless you type your own.',
+      'Add two to five alumni: search the alumni directory by name or company, or type somebody who is not in it and press Add by hand. Fill in their current position and company, and their role and division at Minerva; the line under each shows how the website will introduce them.',
+      'Set the status (Planned, Invited, Accepted), the responsible person and any internal notes.',
+      'If the date is not fixed yet, switch on Date to be confirmed: the call is saved as a plan, off the website and out of the Calendar. Otherwise set the start, and the meeting link for an online call.',
+      'Add the poster, open registration if members should register, and choose whether it is listed on the website. Create the alumni call.',
+      'As the call moves on, open it from Events, Event Archive (filter by Alumni call) and update it: the status, the alumni, and the date once it is fixed. After the call, mark it Completed and take its attendance in Events, Attendance (from the Teams report, for an online call).',
+    ],
+    caution: 'The date, the time and the meeting link of an alumni call are internal: the website lists the call without them. Keep them out of the description.',
+  },
+  {
     id: 'teams-attendance',
     title: 'Record an online event\'s attendance from Teams',
     requires: 'events-attendance',
@@ -663,6 +679,8 @@ export const ROLE_BRIEFS: Partial<Record<AppRole, string>> = {
 export interface GlossaryTerm { term: string; definition: string; requires?: string }
 
 export const GLOSSARY: GlossaryTerm[] = [
+  { term: 'Alumni call', definition: 'An event of its own type, created in Events, Create Event: an online or in-person meeting between members and two to five alumni, organised by a division or the Board. Beside the event it keeps where it stands (planned, invited, accepted, completed, declined), the responsible person and internal notes. Its date, time and link are internal and never shown on the website.' },
+  { term: 'Date to be confirmed', definition: 'An alumni call saved before its date is known. It is a plan: kept in Event Archive only, off the website, out of the Calendar, the Dashboard, Attendance and every count, and without registrations until the date is set.' },
   { term: 'Subsection', definition: 'One page of the workspace. The navigation is sections holding subsections, and access is granted per subsection, not per section.' },
   { term: 'Interact only', definition: 'You can open the page, read all of it and use the actions that change nothing for anybody else: search, filter, sort, open a record, download, register yourself. Everything that would change something is faded and inert.' },
   { term: 'Full interact', definition: 'Interact only, plus creating, editing, deleting and publishing on that page.' },
@@ -826,7 +844,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Any item opens a panel with its details and what you can do: register, join the waiting list, add it to your own calendar or cancel. Roles that edit the calendar also find Edit details there, and add their own entries with Add entry or the + on a day.",
       "No event can be scheduled during an exam session break or on an Italian public holiday. Both are shaded, and the restriction is enforced by the database, so it holds however the entry is created.",
     ],
-    related: ['events-create', 'events-on-display', 'events-alumni-calls'],
+    related: ['events-create', 'events-on-display', 'events-archive'],
   },
   'smm-editorial': {
     detail: [
@@ -922,7 +940,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "The complete alumni directory: every former member, with graduation year, current company, job area and city.",
       "The public website shows only the first hundred entries. This register always holds them all, and every place an alumnus's employer appears, including on alumni calls, reads it live from here rather than from a copy.",
     ],
-    related: ['events-alumni-calls', 'people-members'],
+    related: ['events-create', 'people-members'],
   },
   'events-attendance': {
     detail: [
@@ -975,7 +993,8 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
     detail: [
       "Where a new event is set up: its type, its date, its place, its description and whether registration is open.",
       "Attach a registration form from Events, Registration forms when the event needs to ask registrants something specific. Registrations feed straight into Attendance.",
-      "Alumni calls are created in Events, Alumni calls, not here. Every event appears in the Event archive; whether it is also listed on the public website is chosen when it is created (internal meetings and online calls start unlisted) and can be changed from the archive.",
+      "Alumni calls are created here too, as the type Alumni call: who organises it (a research division or the Board), the two to five alumni taking part (from the alumni directory, or typed by hand) with their current position and company and their role at Minerva, where the call stands, the responsible person and internal notes. A call whose date is not fixed yet can be saved with Date to be confirmed. The Heads of Division and the Head of Asset Management create alumni calls only.",
+      "Every event appears in the Event archive; whether it is also listed on the public website is chosen when it is created (internal meetings and online calls start unlisted) and can be changed from the archive. An alumni call listed on the website appears without its date, its time or its link, which are internal.",
       "Start and end are typed on Rome's clock, wherever you are, and every page and email then shows them the same way, as 6:30 pm to 8:00 pm CEST.",
     ],
     related: ['events-forms', 'events-attendance', 'events-archive'],
@@ -983,6 +1002,7 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
   'events-archive': {
     detail: [
       "Every event of every type, including internal meetings, alumni calls and each Association on Display day.",
+      "An alumni call opens in its own window, with its alumni, its status, the responsible person and the notes, beside everything any event has. The line under each call shows its status, or Date to be confirmed. The Heads of Division and the Head of Asset Management can change alumni calls here, while every other event stays read-only for them. The old Alumni Calls address opens this page filtered to alumni calls.",
       "The Public website switch on each row decides whether that event is listed on the public Events page: Listed means anybody visiting the website sees it, Not listed means it stays in the workspace only. It changes nothing else: registration, reminders and attendance work the same either way. On the public website, an event without a poster shows the full Minerva logo instead. Deleting an event is permanent; Association on Display days are managed from their own page.",
       "The filter offers only the event types the archive actually contains, so every option leads somewhere.",
     ],
@@ -1004,13 +1024,6 @@ export const PAGE_DETAIL: Record<string, PageDetail> = {
       "Senior roles open and close a day. Everybody else registers and de-registers themselves, up to 24 hours before it.",
     ],
     related: ['calendar', 'events-create'],
-  },
-  'events-alumni-calls': {
-    detail: [
-      "Each alumni call groups two to five alumni, organised by a division on a date.",
-      "Alumni are verified against the alumni directory and the organiser is recorded automatically. A call with a poster and a date is published on the public site.",
-    ],
-    related: ['people-alumni', 'calendar'],
   },
   'reports-upload': {
     detail: [

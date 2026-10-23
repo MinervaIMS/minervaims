@@ -73,6 +73,8 @@ export interface EventRow {
   registration_enabled?: boolean | null;
   start_at?: string | null;
   end_at?: string | null;
+  /** An alumni call whose date is still to be confirmed (Step 91). */
+  date_tbc?: boolean;
 }
 
 export interface AvatarRow { name: string; surname: string; photo_url: string | null }
@@ -238,7 +240,7 @@ export function useDashboardData(): DashboardData {
           .order('year', { ascending: true })),
         safe<EventRow[]>(() => supabase
           .from('events')
-          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled, start_at, end_at')
+          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled, start_at, end_at, date_tbc')
           // Association on Display is read from `aod_days` just below; the
           // event each day carries for attendance is not a second event.
           .is('aod_day_id', null)
@@ -288,7 +290,8 @@ export function useDashboardData(): DashboardData {
           };
         })
         : null);
-      setEvents(evs);
+      // An alumni call whose date is still to be confirmed has no day yet (Step 91).
+      setEvents(evs ? evs.filter((e) => !e.date_tbc) : evs);
       setAod(aodDays);
       setFee(feePeriod);
       setAlumniClasses(classes);

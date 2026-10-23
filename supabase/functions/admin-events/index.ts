@@ -1,6 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
+import { allows } from '../_shared/access.ts'
+import {
+  ALUMNI_CALL_STATUSES, ALUMNI_CALL_MIN, ALUMNI_CALL_MAX, ALUMNI_CALL_ORGANISERS, ALUMNI_FORMER_DIVISIONS,
+  alumnusGuestLine,
+} from '../_shared/alumni-call.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -123,6 +128,52 @@ function extraEventCols(v: Record<string, unknown>) {
 
 const ActionSchema = z.enum(['create', 'update', 'delete', 'join-links'])
 
+// =====================================================================
+// AN ALUMNI CALL IS AN EVENT, WITH ITS PLANNING BESIDE IT (Step 91).
+// ---------------------------------------------------------------------
+// Created here like any event, with `alumni` beside `event`: the alumni
+// taking part (from the directory, or typed by hand), where the call
+// stands, who is responsible and the internal notes. The event's public
+// guest list is written from the alumni (_shared/alumni-call.ts), and the
+// planning goes to `event_alumni_calls` and `event_alumni`, which only
+// staff can read.
+//
+// A call can be saved before its date is known: `date_tbc`. It then
+// carries a provisional date nobody sees, stays off the website, takes no
+// registrations and needs no meeting link yet; the database holds it to
+// that (migration 20261022120000).
+//
+// Who: everybody who can create events, and also the Heads of Division
+// and the Head of Asset Management, who plan the calls but create no other
+// kind of event (`events-alumni-calls` in the access matrix).
+// =====================================================================
+const AlumniGuestSchema = z.object({
+  alumni_id: z.string().uuid().nullable().optional(),
+  name: z.string().trim().min(1, 'Each alumnus needs a name').max(200, 'Name too long'),
+  company: z.string().trim().max(200, 'Company too long').nullable().optional(),
+  position: z.string().trim().max(200, 'Position too long').nullable().optional(),
+  former_role: z.string().trim().max(200, 'Former role too long').nullable().optional(),
+  former_division: z.enum(ALUMNI_FORMER_DIVISIONS).nullable().optional(),
+  headline: z.string().trim().max(300, 'Introduction too long').nullable().optional(),
+})
+const AlumniCallSchema = z.object({
+  status: z.enum(ALUMNI_CALL_STATUSES).default('planned'),
+  responsible_person: z.string().trim().max(200, 'Responsible person too long').nullable().optional(),
+  notes: z.string().trim().max(2000, 'Notes too long').nullable().optional(),
+  date_tbc: z.boolean().optional(),
+  participants: z.array(AlumniGuestSchema)
+    .min(ALUMNI_CALL_MIN, `An alumni call needs at least ${ALUMNI_CALL_MIN} alumni.`)
+    .max(ALUMNI_CALL_MAX, `An alumni call can have at most ${ALUMNI_CALL_MAX} alumni.`),
+})
+type AlumniCallInput = z.infer<typeof AlumniCallSchema>
+
+const ALUMNI_TYPE_CHANGE = 'An alumni call stays an alumni call, and no other event can become one: create a new event instead.'
+const TBC_OFF_WEBSITE = 'This alumni call has no date yet, so it stays off the website and cannot take registrations. Set its date first.'
+const ALUMNI_ONLY = 'Your role can create and change alumni calls only.'
+
+/** Today on Rome's clock: the provisional date of a call still to be confirmed. */
+const romeToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' })
+
 const DeleteEventSchema = z.object({
   id: z.string().uuid('Invalid event ID')
 })
@@ -237,8 +288,14 @@ Deno.serve(audited('admin-events', async (req, audit) => {
     audit.actor(user, userRoleNames)
     const hasEventAccess = isAdminEmail || 
       userRoleNames.some(r => eventAccessRoles.includes(r))
+    // Alumni calls follow the access matrix: whoever has full Create Event,
+    // and those who plan the calls (Heads of Division, Head of Asset
+    // Management, the Vice President). The Head of Media keeps view only.
+    const canAlumniCalls =
+      allows(userRoleNames, user.email, 'events-alumni-calls', 'manage') ||
+      allows(userRoleNames, user.email, 'events-create', 'manage')
 
-    if (!hasEventAccess) {
+    if (!hasEventAccess && !canAlumniCalls) {
       return new Response(
         JSON.stringify({ error: 'Access denied' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -279,6 +336,51 @@ Deno.serve(audited('admin-events', async (req, audit) => {
     audit.request(action, body as Record<string, unknown>)
     const event = (body as { event?: unknown }).event
 
+    const bad = (error: string, status = 400) => new Response(
+      JSON.stringify({ error }),
+      { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+    /** The alumni and planning sent beside an alumni call, checked. */
+    const readAlumni = async (organiser: string | null | undefined): Promise<{ value: AlumniCallInput } | { error: string }> => {
+      const parsed = AlumniCallSchema.safeParse((body as { alumni?: unknown }).alumni)
+      if (!parsed.success) return { error: parsed.error.issues[0]?.message || 'Check the alumni of this call.' }
+      if (!organiser || !(ALUMNI_CALL_ORGANISERS as readonly string[]).includes(organiser)) {
+        return { error: 'Choose who organises this call: a division or the Board.' }
+      }
+      // An alumnus picked from the directory must still be in it; somebody
+      // typed by hand is taken as written.
+      const ids = parsed.data.participants.map((p) => p.alumni_id).filter((x): x is string => !!x)
+      if (ids.length) {
+        const { data: found } = await supabase.from('alumni').select('id').in('id', ids)
+        const known = new Set(((found || []) as { id: string }[]).map((r) => r.id))
+        const gone = parsed.data.participants.find((p) => p.alumni_id && !known.has(p.alumni_id))
+        if (gone) return { error: `"${gone.name}" is no longer in the alumni directory. Choose them again, or type them in by hand.` }
+      }
+      return { value: parsed.data }
+    }
+    /** Where the call stands and who takes part, beside its event. */
+    const writeAlumniPlan = async (eventId: string, a: AlumniCallInput): Promise<string | null> => {
+      const plan = { status: a.status, responsible_person: a.responsible_person || null, notes: a.notes || null }
+      const { data: existing } = await supabase.from('event_alumni_calls').select('event_id').eq('event_id', eventId).maybeSingle()
+      if (existing) {
+        const { error } = await supabase.from('event_alumni_calls').update(plan).eq('event_id', eventId)
+        if (error) return error.message
+      } else {
+        const addedBy = (await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.email || null
+        const { error } = await supabase.from('event_alumni_calls').insert({ event_id: eventId, ...plan, added_by_name: addedBy, created_by: user.id })
+        if (error) return error.message
+      }
+      const { error: delErr } = await supabase.from('event_alumni').delete().eq('event_id', eventId)
+      if (delErr) return delErr.message
+      const { error: insErr } = await supabase.from('event_alumni').insert(a.participants.map((p, i) => ({
+        event_id: eventId, alumni_id: p.alumni_id ?? null, name: p.name,
+        company: p.company || null, position: p.position || null,
+        former_role: p.former_role || null, former_division: p.former_division ?? null,
+        headline: p.headline || null, sort_order: i,
+      })))
+      return insErr ? insErr.message : null
+    }
+
     console.log('Admin events action:', action)
 
     switch (action) {
@@ -296,18 +398,25 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
 
         const validatedEvent = eventResult.data
-        const createPlace = placeProblem(validatedEvent.online ?? false, validatedEvent.place)
+        const isAlumniCall = validatedEvent.event_type === 'alumni_call'
+        if (isAlumniCall ? !canAlumniCalls : !hasEventAccess) {
+          return bad(isAlumniCall ? 'Your role cannot create alumni calls.' : ALUMNI_ONLY, 403)
+        }
+        let alumni: AlumniCallInput | null = null
+        if (isAlumniCall) {
+          const read = await readAlumni(validatedEvent.division)
+          if ('error' in read) return bad(read.error)
+          alumni = read.value
+        }
+        // A call whose date is still to be confirmed may not have its
+        // meeting link yet either; every other online event needs one now.
+        const tbc = !!alumni?.date_tbc
+        const createOnline = validatedEvent.online ?? false
+        const hasLink = MEETING_LINK_RE.test(validatedEvent.place.trim())
+        const createPlace = tbc && createOnline && !hasLink ? null : placeProblem(createOnline, validatedEvent.place)
         if (createPlace) {
           return new Response(
             JSON.stringify({ error: createPlace }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-        // Alumni calls are created ONLY through Events > Alumni Calls, which
-        // owns their planning workflow; this endpoint refuses to create one.
-        if (validatedEvent.event_type === 'alumni_call') {
-          return new Response(
-            JSON.stringify({ error: 'Alumni calls are created from Events > Alumni Calls, not from Create Event.' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
@@ -320,19 +429,23 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-        const createLink = (validatedEvent.online ?? false) ? validatedEvent.place.trim() : null
+        const createLink = createOnline && hasLink ? validatedEvent.place.trim() : null
         const { data, error } = await supabase
           .from('events')
           .insert({
             title: validatedEvent.title,
-            date: validatedEvent.date,
+            // A call still to be confirmed gets today as a provisional date
+            // that nobody sees (date_tbc keeps it out of every listing).
+            date: tbc ? romeToday() : validatedEvent.date,
             // The link is kept apart; the public place says "Online".
-            place: createLink ? 'Online' : validatedEvent.place,
+            place: createLink || (tbc && createOnline) ? 'Online' : validatedEvent.place,
             moderator: validatedEvent.moderator || null,
-            guest: validatedEvent.guest || null,
+            // An alumni call's guest list is written from its alumni.
+            guest: alumni ? alumni.participants.map(alumnusGuestLine) : (validatedEvent.guest || null),
             description: validatedEvent.description || null,
             poster_url: validatedEvent.poster_url || null,
             ...extraEventCols(validatedEvent),
+            ...(tbc ? { date_tbc: true, start_at: null, end_at: null, show_on_website: false, registration_enabled: false } : {}),
             created_by: user.id,
           })
           .select()
@@ -358,6 +471,16 @@ Deno.serve(audited('admin-events', async (req, audit) => {
               JSON.stringify({ error: 'The meeting link could not be saved, so the event was not created. Please try again.' }),
               { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
+          }
+        }
+
+        if (alumni) {
+          const planError = await writeAlumniPlan(data.id, alumni)
+          if (planError) {
+            // A call without its alumni is not left half made.
+            console.error('Save alumni call plan error:', planError)
+            await supabase.from('events').delete().eq('id', data.id)
+            return bad('The alumni of this call could not be saved, so the call was not created. Please try again.', 500)
           }
         }
 
@@ -399,7 +522,23 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // on it like on any other event and nothing else can drift.
         // =================================================================
         const { data: linked } = await supabase
-          .from('events').select('id, aod_day_id, online, place').eq('id', validatedEvent.id).maybeSingle()
+          .from('events').select('id, aod_day_id, online, place, event_type, date_tbc, date').eq('id', validatedEvent.id).maybeSingle()
+        const wasAlumni = linked?.event_type === 'alumni_call'
+        const isAlumni = (validatedEvent.event_type ?? 'other') === 'alumni_call'
+        if (linked && wasAlumni !== isAlumni) return bad(ALUMNI_TYPE_CHANGE)
+        if (isAlumni ? !canAlumniCalls : !hasEventAccess) {
+          return bad(isAlumni ? 'Your role cannot change alumni calls.' : ALUMNI_ONLY, 403)
+        }
+        // The alumni and planning come with the call's own editor; the
+        // archive's website switch sends the event alone and leaves them.
+        let alumni: AlumniCallInput | null = null
+        if (isAlumni && (body as { alumni?: unknown }).alumni !== undefined) {
+          const read = await readAlumni(validatedEvent.division)
+          if ('error' in read) return bad(read.error)
+          alumni = read.value
+        }
+        const tbc = isAlumni && (alumni ? !!alumni.date_tbc : !!linked?.date_tbc)
+        if (tbc && !alumni && (validatedEvent.show_on_website || validatedEvent.registration_enabled)) return bad(TBC_OFF_WEBSITE)
         const { data: savedLink } = await supabase
           .from('event_join_links').select('url').eq('event_id', validatedEvent.id).maybeSingle()
         const nowOnline = validatedEvent.online ?? false
@@ -417,6 +556,8 @@ Deno.serve(audited('admin-events', async (req, audit) => {
               storePlace = 'Online' // the link already saved stays
             } else if (wasOnline && incoming === (linked?.place ?? '').trim()) {
               // An older online event with no link, its place untouched.
+            } else if (tbc) {
+              storePlace = 'Online' // an alumni call with no date yet: the link comes with the date
             } else {
               return new Response(
                 JSON.stringify({ error: LINK_NEEDED }),
@@ -435,6 +576,9 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             if (savedLink) storeLink = null
           }
         }
+        // Fixing the date of a call that had none: an online call now needs
+        // its link, like any online event.
+        if (linked?.date_tbc && !tbc && nowOnline && !storeLink && !savedLink?.url) return bad(LINK_NEEDED)
         if (linked?.aod_day_id) {
           const { data, error } = await supabase
             .from('events')
@@ -473,10 +617,15 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             date: validatedEvent.date,
             place: storePlace,
             moderator: validatedEvent.moderator || null,
-            guest: validatedEvent.guest || null,
+            guest: alumni ? alumni.participants.map(alumnusGuestLine) : (validatedEvent.guest || null),
             description: validatedEvent.description || null,
             poster_url: validatedEvent.poster_url || null,
             ...extraEventCols(validatedEvent),
+            ...(isAlumni
+              ? tbc
+                ? { date_tbc: true, date: linked?.date_tbc && linked.date ? linked.date : romeToday(), start_at: null, end_at: null, show_on_website: false, registration_enabled: false }
+                : { date_tbc: false }
+              : {}),
           })
           .eq('id', validatedEvent.id)
           .select()
@@ -491,6 +640,14 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
 
         if (storeLink === null) await supabase.from('event_join_links').delete().eq('event_id', validatedEvent.id)
+
+        if (alumni) {
+          const planError = await writeAlumniPlan(validatedEvent.id, alumni)
+          if (planError) {
+            console.error('Save alumni call plan error:', planError)
+            return bad('The call was saved, but its alumni and planning could not be. Please save it again.', 500)
+          }
+        }
 
         // Log activity
         audit.subject(validatedEvent.title, data.id);
@@ -508,6 +665,11 @@ Deno.serve(audited('admin-events', async (req, audit) => {
       case 'join-links': {
         const ids = (body as { ids?: unknown }).ids
         let q = supabase.from('event_join_links').select('event_id, url')
+        // Somebody who plans alumni calls only reads the links of alumni calls.
+        if (!hasEventAccess) {
+          const { data: calls } = await supabase.from('events').select('id').eq('event_type', 'alumni_call')
+          q = q.in('event_id', ((calls || []) as { id: string }[]).map((c) => c.id))
+        }
         if (Array.isArray(ids)) {
           const valid = ids.filter((x): x is string => typeof x === 'string' && /^[0-9a-f-]{36}$/i.test(x)).slice(0, 500)
           if (!valid.length) {
@@ -547,9 +709,12 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // Get event name before deleting for logging
         const { data: existingEvent } = await supabase
           .from('events')
-          .select('title, aod_day_id')
+          .select('title, aod_day_id, event_type')
           .eq('id', deleteResult.data.id)
           .maybeSingle();
+        if (existingEvent?.event_type === 'alumni_call' ? !canAlumniCalls : !hasEventAccess) {
+          return bad(existingEvent?.event_type === 'alumni_call' ? 'Your role cannot delete alumni calls.' : ALUMNI_ONLY, 403)
+        }
 
         // Deleting it here would take the day's attendance with it and leave
         // the day without an event; the day itself is deleted where it was

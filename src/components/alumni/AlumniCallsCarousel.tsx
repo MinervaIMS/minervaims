@@ -12,11 +12,11 @@ import { supabase } from '@/integrations/supabase/client';
 // the network is alive, and each already has the artefact that shows it:
 // the poster, with the names, the roles and the date on it.
 //
-// IT READS `events`, NOT `alumni_calls`. A call is planned in the
-// workspace and, once it has a poster and a date, mirrored into `events`
-// as an event of type `alumni_call`. So this page reads the same public
-// table the Events page reads, under the same row-level security, and
-// the internal planning tracker is never exposed.
+// IT READS `website_events`. Since Step 91 an alumni call is an event of
+// type `alumni_call`, created from Events like any other, and its date,
+// time and meeting link are internal: the public view hands out the call
+// without them, and this carousel shows the poster, the title and the
+// alumni. The planning (status, notes) is never exposed.
 //
 // ---------------------------------------------------------------------
 // IT SCROLLS LIKE THE HOMEPAGE, BECAUSE IT IS THE SAME KIND OF OBJECT.
@@ -50,7 +50,6 @@ import { supabase } from '@/integrations/supabase/client';
 interface AlumniCallEvent {
   id: string;
   title: string;
-  date: string;
   poster_url: string | null;
   guest: string[] | null;
   description: string | null;
@@ -58,10 +57,6 @@ interface AlumniCallEvent {
 
 /** How many calls the carousel shows. The five most recent. */
 const MAX_CALLS = 5;
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 export function AlumniCallsCarousel() {
   const [calls, setCalls] = useState<AlumniCallEvent[]>([]);
@@ -77,12 +72,13 @@ export function AlumniCallsCarousel() {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
-        .from('events')
-        .select('id, title, date, poster_url, guest, description')
+        .from('website_events')
+        .select('id, title, poster_url, guest, description')
         .eq('event_type', 'alumni_call')
         .eq('show_on_website', true)
         .not('poster_url', 'is', null)
-        .order('date', { ascending: false })
+        // Newest first, without knowing the dates.
+        .order('listing_order', { ascending: true })
         .limit(MAX_CALLS);
       if (cancelled) return;
       // A failure here must not take the Alumni page down with it: the
@@ -210,10 +206,7 @@ export function AlumniCallsCarousel() {
                 />
               </button>
               <div className="mt-3">
-                <div className="font-body text-xs tracking-[0.12em] uppercase text-muted-foreground">
-                  {formatDate(call.date)}
-                </div>
-                <h3 className="font-serif text-lg text-foreground mt-1">{call.title}</h3>
+                <h3 className="font-serif text-lg text-foreground">{call.title}</h3>
                 {call.guest && call.guest.length > 0 && (
                   <p className="font-body text-sm text-muted-foreground mt-1">
                     {/* The names only: the roles are on the poster above, and
@@ -332,9 +325,6 @@ function PosterLightbox({
           className="block max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain"
         />
         <div className="mt-4 text-center max-w-[90vw]">
-          <div className="font-body text-xs tracking-[0.18em] uppercase text-background/80 mb-1">
-            {formatDate(current.date)}
-          </div>
           <div className="font-serif text-base md:text-lg text-background">{current.title}</div>
         </div>
       </div>

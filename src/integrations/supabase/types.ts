@@ -322,13 +322,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "alumni_calls_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       alumni_contacts: {
@@ -1100,13 +1093,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "editorial_items_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       email_send_log: {
@@ -1254,13 +1240,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_alumni_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       event_alumni_calls: {
@@ -1305,13 +1284,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_alumni_calls_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: true
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       event_join_links: {
@@ -1336,13 +1308,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: true
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_join_links_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: true
-            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1426,13 +1391,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "event_registrations_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -1466,13 +1424,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reminder_log_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1529,13 +1480,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_waitlist_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1634,24 +1578,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      events_step91_description_backup: {
-        Row: {
-          description: string | null
-          event_id: string
-          saved_at: string
-        }
-        Insert: {
-          description?: string | null
-          event_id: string
-          saved_at?: string
-        }
-        Update: {
-          description?: string | null
-          event_id?: string
-          saved_at?: string
-        }
-        Relationships: []
       }
       exam_sessions: {
         Row: {
@@ -3029,13 +2955,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "website_events"
-            referencedColumns: ["id"]
-          },
         ]
       }
       website_events: {
@@ -3062,15 +2981,7 @@ export type Database = {
           start_at: string | null
           title: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "events_aod_day_id_fkey"
-            columns: ["aod_day_id"]
-            isOneToOne: true
-            referencedRelation: "aod_days"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {

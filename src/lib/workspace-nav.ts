@@ -123,11 +123,11 @@ export const NAV: NavSection[] = [
     key: 'events', slug: 'events', label: 'Events', Icon: Presentation,
     subItems: [
       { key: 'events-mine', slug: 'my-events', label: 'My Events', allowed: (p) => p.can('events-mine') },
-      { key: 'events-create', slug: 'create', label: 'Create Event', allowed: (p) => p.can('events-create') },
+      // Alumni calls are created here (Step 91): whoever plans them sees the page, on that one type.
+      { key: 'events-create', slug: 'create', label: 'Create Event', allowed: (p) => p.can('events-create') || p.can('events-alumni-calls', 'manage') },
       { key: 'events-forms', slug: 'registration-forms', label: 'Registration Forms', allowed: (p) => p.can('events-forms') },
       { key: 'events-attendance', slug: 'attendance', label: 'Attendance', allowed: (p) => p.can('events-attendance') },
       { key: 'events-archive', slug: 'archive', label: 'Event Archive', allowed: (p) => p.can('events-archive') },
-      { key: 'events-alumni-calls', slug: 'alumni-calls', label: 'Alumni Calls', allowed: (p) => p.can('events-alumni-calls') },
       { key: 'events-on-display', slug: 'association-on-display', label: 'Association On Display', allowed: (p) => p.can('events-on-display') },
     ],
   },
@@ -229,12 +229,15 @@ export const MERGED_SUBSECTIONS: Record<string, MergedSubsection> = {
  * Design System on its own; its address still opens Social Templates, and
  * the workspace sends `?tab=design-system` on to the Design System page.
  */
-const RENAMED_PAGES: { sectionKey: string; slug: string; key: string }[] = [
+const RENAMED_PAGES: { sectionKey: string; slug: string; key: string; query?: string }[] = [
   { sectionKey: 'smm', slug: 'brand-and-social', key: 'smm-social' },
   // Step 84 called it Social Template, singular.
   { sectionKey: 'smm', slug: 'social-template', key: 'smm-social' },
   // Internal Forms became Forms when forms opened to guests (Step 89).
   { sectionKey: 'operations', slug: 'internal-forms', key: 'ops-forms' },
+  // Alumni Calls became a type of event (Step 91): its address opens the
+  // Event Archive showing alumni calls only.
+  { sectionKey: 'events', slug: 'alumni-calls', key: 'events-archive', query: 'type=alumni_call' },
 ];
 
 /** The tabs of a merged page, in order: `{ tab, resource }`. */
@@ -414,7 +417,7 @@ export function parseWorkspaceUrl(pathname: string): { sectionSlug: string | nul
 export type WorkspaceResolution =
   /** The viewer may open this, and here is what to render. `tab` is set
    *  when an old address named what is now a tab of a merged page. */
-  | { status: 'ok'; sectionKey: string; subKey: string | null; tab?: string }
+  | { status: 'ok'; sectionKey: string; subKey: string | null; tab?: string; query?: string }
   /** It exists, but not for this role. `label` names it, for the notice. */
   | { status: 'forbidden'; label: string }
   /** No such section or subsection, for anybody. */
@@ -447,7 +450,7 @@ export function resolveWorkspaceTarget(
     // A page's address from before it was renamed.
     const renamed = RENAMED_PAGES.find((r) => r.sectionKey === section.key && r.slug === subSlug);
     const renamedPage = renamed ? section.subItems.find((si) => si.key === renamed.key) : undefined;
-    if (renamedPage) return { status: 'ok', sectionKey: section.key, subKey: renamedPage.key };
+    if (renamedPage) return { status: 'ok', sectionKey: section.key, subKey: renamedPage.key, ...(renamed?.query ? { query: renamed.query } : {}) };
     if (renamed) {
       const label = ALL_SECTIONS.find((s) => s.key === section.key)?.subItems.find((si) => si.key === renamed.key)?.label ?? subSlug;
       return { status: 'forbidden', label: `${section.label} / ${label}` };
