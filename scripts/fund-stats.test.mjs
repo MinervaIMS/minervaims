@@ -7,7 +7,8 @@
 // volatility and Sharpe ratio; the cumulative and annualised return and
 // volatility; the Sharpe ratio on the €STR; the maximum drawdown with its
 // peak, trough and recovery; the share of positive months; the best and
-// worst month; beta and correlation to each market reference) is computed
+// worst month; the cumulative return at the end of every month, the line
+// the charts draw (Step 93B); beta and correlation to each market reference) is computed
 // by ONE database function, public.fund_track_record. This test computes
 // all of them again, here, from the typed monthly returns alone, with
 // none of the database's code, and fails on any difference.
@@ -128,6 +129,8 @@ function recompute(fund, inputs) {
   return {
     months_count: n,
     first_month: months[0].key,
+    // The line: each month's cumulative return from a value of 1 before the first month.
+    monthly: months.map((x, i) => ({ month: x.key, value: x.r * 100, itd: (path[i] - 1) * 100 })),
     last_month: months[n - 1].key,
     years,
     itd: (g - 1) * 100,
@@ -177,6 +180,17 @@ function compareRecord(fund, db, mine, { withInputs }) {
     close(d.vol, y.vol, `${fund} ${y.year} volatility`);
     if (withInputs) close(d.sharpe, y.sharpe, `${fund} ${y.year} Sharpe`);
   });
+  // The line the charts draw, month by month. A build made before the Step
+  // 93B migration has no `itd` in its file; once it has, every month must agree.
+  assert.equal(db.monthly.length, mine.monthly.length, `${fund}: months in the line`);
+  const withLine = withInputs || db.monthly.some((m) => 'itd' in m);
+  mine.monthly.forEach((m, i) => {
+    const d = db.monthly[i];
+    assert.equal(d.month, m.month, `${fund}: line month ${i + 1}`);
+    close(d.value, m.value, `${fund} ${m.month} return`);
+    if (withLine) close(d.itd, m.itd, `${fund} ${m.month} cumulative return`);
+  });
+  if (withLine) close(db.monthly[db.monthly.length - 1].itd, db.itd, `${fund}: the line ends at the cumulative return`);
   close(db.itd, mine.itd, `${fund} cumulative return`);
   close(db.ann_return, mine.ann_return, `${fund} annualised return`);
   close(db.ann_vol, mine.ann_vol, `${fund} annualised volatility`);

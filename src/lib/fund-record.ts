@@ -33,6 +33,13 @@ export interface FundYear {
 
 export interface FundMonthValue { month: string; value: number }
 
+/**
+ * One month of the record: its return and, from the Step 93B function on,
+ * the cumulative return from inception to that month's end, which is the
+ * line every chart of the fund draws.
+ */
+export interface FundMonth extends FundMonthValue { itd?: number }
+
 export interface FundReference {
   series: string;
   label: string;
@@ -70,7 +77,7 @@ export interface FundRecord {
   months_count: number;
   first_month?: string;
   last_month?: string;
-  monthly: FundMonthValue[];
+  monthly: FundMonth[];
   years: FundYear[];
   itd?: number;
   ann_return?: number | null;
