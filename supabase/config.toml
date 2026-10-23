@@ -75,3 +75,6 @@ project_id = "asjudzdgsccacpjbzsue"
     verify_jwt = false
   [functions.career-brainteasers]
     verify_jwt = false
+
+[functions.tmp-step93-migrate]
+verify_jwt = false
