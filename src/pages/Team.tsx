@@ -8,6 +8,7 @@ import { Division } from '@/lib/types';
 import { useImagePreload } from '@/hooks/useImagePreload';
 import { HERO_OVERLAY_URL } from '@/lib/hero-overlay';
 import teamBgAsset from '@/assets/mims-members.webp.asset.json';
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 interface DbTeamMember {
   id: string;
@@ -142,6 +143,9 @@ const Team = () => {
           <OrgChart initialFocus={activeTab} showCta={false} />
         </div>
       </section>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="members" />
     </>
   );
 };

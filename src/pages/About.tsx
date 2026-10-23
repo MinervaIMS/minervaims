@@ -7,6 +7,7 @@ import { LibraryPreview } from "@/components/shared/LibraryPreview";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import aboutBgAsset from "@/assets/mims-about-us.webp.asset.json";
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 /**
  * What We Do, as three labelled blocks.
@@ -157,6 +158,9 @@ const About = () => {
           <OrgChart />
         </div>
       </section>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="about" />
     </>
   );
 };

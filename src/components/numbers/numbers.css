@@ -1,0 +1,33 @@
+/* =====================================================================
+   The key numbers' only motion (Step 92, the number rule).
+   ---------------------------------------------------------------------
+   The characters of a figure are its final value from the first frame.
+   When a stats section comes into view they rise into place: transform
+   and opacity only, so the text never changes and nothing around it
+   moves. Under reduced motion there is no movement at all.
+   ===================================================================== */
+.kn-ch { display: inline-block; }
+[data-kn-reveal="go"] .kn-ch {
+  animation: kn-rise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--kn-i, 0) * 40ms);
+}
+@keyframes kn-rise {
+  from { transform: translateY(0.38em); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-kn-reveal="go"] .kn-ch { animation: none; }
+}
+/* The definitions disclosure: the marker is the underlined word. */
+.kn-defs > summary { list-style: none; cursor: pointer; }
+.kn-defs > summary::-webkit-details-marker { display: none; }
+
+/* The thin rules between figures, as on /join. Each figure draws a 1px
+   line to its right and below; the grid's frame clips the ones that fall
+   outside it, so only the lines BETWEEN figures show, whatever the number
+   of columns at each width. */
+.kn-rules { overflow: hidden; }
+/* One pixel wider and taller than the frame, so the outermost rules fall
+   wholly outside it even when the frame's width is fractional. */
+.kn-rules > dl { margin-right: -1px; margin-bottom: -1px; }
+.kn-rules > dl > div { box-shadow: 1px 0 0 0 var(--kn-rule), 0 1px 0 0 var(--kn-rule); }

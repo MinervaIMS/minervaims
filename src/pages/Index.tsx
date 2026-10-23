@@ -9,8 +9,10 @@ import { WorkspaceSection } from "@/components/shared/WorkspaceSection";
 import { PageLoader } from "@/components/shared";
 import DivisionScrollStack from "@/components/shared/DivisionScrollStack";
 import { FundPerformanceChart } from "@/components/shared/FundPerformanceChart";
-import { useKeyFigures } from "@/hooks/useKeyFigures";
-import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { useKeyNumber } from "@/hooks/useKeyNumbers";
+import { KeyFigureValue } from "@/components/numbers/KeyFigureValue";
+import { NumbersSection } from "@/components/numbers/NumbersSection";
+import { describeKeyNumber } from "@/lib/key-numbers";
 import { useApplicationSettings } from "@/hooks/useApplicationSettings";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HeroMarketBackground } from "@/components/home/HeroMarketBackground";
@@ -25,49 +27,20 @@ interface ArchiveFile extends ArchiveFileRow {
 }
 
 /**
- * One of the three key figures.
+ * THE THREE HERO FIGURES FOLLOW THE NUMBER RULE (Step 92).
  *
- * TWO THINGS USED TO PRODUCE A ZERO ON THE HOMEPAGE.
- *
- * The count-up only runs against a real value, but the component was
- * called with `isLoading={false}` regardless, so from the first paint
- * until the figures arrived - and FOREVER if the request failed - the
- * page announced "0+ Research Reports". It now takes the hook's real
- * loading state, and treats a zero as "not here yet" in its own right,
- * because zero is never a true answer for any of these three.
- *
- * A SPAN, NOT A `<Skeleton>`, WHICH IS A DIV. The placeholder stands
- * inside the `<p>` that carries the numeral's typography, and a `<div>`
- * is not valid inside a `<p>`: the parser closes the paragraph early and
- * lets the placeholder out of it, so during loading the figure's box sat
- * outside the type context it is measured against. It is a span carrying
- * the same pulse `Skeleton` uses. (The same fault was fixed on /join; see
- * JoinFigures.)
- *
- * IT IS SIZED IN `em`, so it tracks the type it stands in for at every
- * breakpoint by itself. A fixed height would have to be restated for each
- * of the three sizes the numeral takes - 2.25rem on a phone, 3rem, 4rem -
- * and would move the line the moment any of them changed. One line box
- * high and about four digits wide, whatever those happen to be.
+ * They used to count up from zero over 3.2 seconds, rounded down to tens
+ * with a "+", and the page held its loader until they arrived. A reader
+ * that took its snapshot early, or never waited, recorded 0, 50 or 120.
+ * They are now the exact figures of the key numbers registry, embedded in
+ * the page by the build, so the first frame already shows the final value,
+ * the same value every other page and every machine-readable file shows.
+ * The definition and the as-of date are the tooltip.
  */
-const AnimatedFigure = ({ value, isLoading }: { value: number; isLoading: boolean }) => {
-  const animatedValue = useAnimatedCounter(value, 3200, !isLoading && value > 0);
-
-  if (isLoading || value <= 0) {
-    return (
-      <span
-        aria-hidden="true"
-        className="mx-auto block animate-pulse rounded-md bg-muted"
-        style={{ height: '1.2em', width: '2.2em' }}
-      />
-    );
-  }
-
-  return <>{animatedValue}+</>;
-};
-
 const Index = () => {
-  const { counts, isLoading: isKeyFiguresLoading } = useKeyFigures();
+  const reportsFigure = useKeyNumber('reports_published');
+  const membersFigure = useKeyNumber('active_members');
+  const alumniFigure = useKeyNumber('alumni');
   const { settings: appSettings } = useApplicationSettings();
   const [carouselFiles, setCarouselFiles] = useState<ArchiveFile[]>([]);
   const [isCarouselLoading, setIsCarouselLoading] = useState(true);
@@ -132,7 +105,8 @@ const Index = () => {
   // strand anybody: the preload hook gives up after its own cap and reports
   // ready regardless. This is the site's existing loader, unchanged; no new
   // loading system is introduced.
-  if (isKeyFiguresLoading || isCarouselLoading || !imagesLoaded) {
+  // The figures no longer hold the page: they are in it from the start.
+  if (isCarouselLoading || !imagesLoaded) {
     return <PageLoader />;
   }
 
@@ -228,25 +202,31 @@ const Index = () => {
             <div className="grid grid-cols-3 items-start gap-2 md:gap-12">
               <Link
                 to="/archive"
+                title={reportsFigure ? describeKeyNumber(reportsFigure) : undefined}
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
               >
                 <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
-                  <AnimatedFigure value={counts.reports} isLoading={isKeyFiguresLoading} />
+                  <KeyFigureValue figure={reportsFigure} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Research Reports</p>
               </Link>
               <Link
                 to="/people/members"
+                title={membersFigure ? describeKeyNumber(membersFigure) : undefined}
                 className="text-center py-4 md:py-6 border-r border-separator last:border-r-0 hover:opacity-80 transition-opacity"
               >
                 <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
-                  <AnimatedFigure value={counts.members} isLoading={isKeyFiguresLoading} />
+                  <KeyFigureValue figure={membersFigure} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Active Members</p>
               </Link>
-              <Link to="/people/alumni" className="text-center py-4 md:py-6 hover:opacity-80 transition-opacity">
+              <Link
+                to="/people/alumni"
+                title={alumniFigure ? describeKeyNumber(alumniFigure) : undefined}
+                className="text-center py-4 md:py-6 hover:opacity-80 transition-opacity"
+              >
                 <p className="font-serif text-[clamp(1.95rem,9.6vw,2.25rem)] sm:text-5xl md:text-hero text-primary mb-1 md:mb-2 whitespace-nowrap">
-                  <AnimatedFigure value={counts.alumni} isLoading={isKeyFiguresLoading} />
+                  <KeyFigureValue figure={alumniFigure} />
                 </p>
                 <p className="font-body text-[0.65rem] sm:text-xs md:text-body text-muted-foreground uppercase tracking-wider">Alumni Network</p>
               </Link>
@@ -314,6 +294,9 @@ const Index = () => {
           already read what Minerva does and is now wondering how it is
           actually operated. */}
       <WorkspaceSection />
+
+      {/* Minerva in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="home" />
     </>
   );
 };

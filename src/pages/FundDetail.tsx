@@ -17,6 +17,7 @@ import longShortBgAsset from '@/assets/MIMS_Long_Short_Fund.webp.asset.json';
 import multiAssetBgAsset from '@/assets/MIMS_Multi_Asset_Fund.webp.asset.json';
 import pirBgAsset from '@/assets/mims-pir-fund.webp.asset.json';
 import dpsBgAsset from '@/assets/MIMS_Diversified_Passive_Fund.webp.asset.json';
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 interface ArchiveFile extends ArchiveFileRow {
   id: string;
@@ -312,6 +313,9 @@ const FundDetail = () => {
         reports={archiveFilesToReports(files)}
         useRealCover
       />
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey={`fund-${fundKey}`} />
     </>
   );
 };

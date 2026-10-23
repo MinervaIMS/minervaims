@@ -26,7 +26,7 @@ const CATS: Category[] = [
   { key: 'preferences', name: 'Preferences',
     desc: 'Allow the website to remember choices you make (such as language or region) and provide enhanced, personalised features.' },
   { key: 'analytics',   name: 'Analytics',
-    desc: 'Help us understand how visitors interact with the website by collecting and reporting information anonymously.' },
+    desc: 'Let Microsoft Clarity record how visitors use the public pages (usage statistics, heatmaps and recordings of visits, with typed text masked) so we can improve the website. Never in the Workspace.' },
   { key: 'media',       name: 'External Media',
     desc: 'Allow embedded content from third-party platforms (such as social media) to load on the page.' },
 ];

@@ -10,6 +10,7 @@ import { Search, ChevronDown } from 'lucide-react';
 import readingsBgAsset from '@/assets/mims-readings.webp.asset.json';
 import { readingTypeLabels, type Reading, type ReadingType } from '@/components/readings/types';
 import { workspacePath } from '@/lib/workspace-nav';
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 // The bookcase (and its GSAP choreography) loads in its own chunk so the
 // page's first paint stays light.
@@ -181,6 +182,9 @@ const Readings = () => {
           </p>
         </div>
       </section>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="readings" />
     </>
   );
 };

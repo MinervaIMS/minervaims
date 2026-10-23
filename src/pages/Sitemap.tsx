@@ -23,6 +23,7 @@ const Sitemap = () => {
         { label: 'Archive', href: '/archive' },
         { label: 'Readings', href: '/readings' },
         { label: 'Partnerships', href: '/partnerships' },
+        { label: 'Minerva In Numbers', href: '/numbers' },
         { label: 'Contacts', href: '/contacts' },
       ],
     },

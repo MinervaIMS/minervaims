@@ -52,8 +52,8 @@ import { useToast } from '@/hooks/use-toast';
 //   Events, the report archive, the readings, the partnerships and the
 //   application page.
 //
-// Nothing is added and nothing is dropped: every one of the ten routes
-// below is one of the ten that were there before.
+// Step 92 added Minerva in Numbers to Explore, where Join Us was, and
+// moved Join Us to The Society: joining is a way into the society itself.
 // =====================================================================
 
 const societyLinks = [
@@ -62,6 +62,7 @@ const societyLinks = [
   { label: 'Alumni', href: '/people/alumni' },
   { label: 'Society Statute', href: '/statute' },
   { label: 'Contacts', href: '/contacts' },
+  { label: 'Join Us', href: '/join' },
 ];
 
 const exploreLinks = [
@@ -69,7 +70,7 @@ const exploreLinks = [
   { label: 'Report Archive', href: '/archive' },
   { label: 'Readings', href: '/readings' },
   { label: 'Partnerships', href: '/partnerships' },
-  { label: 'Join Us', href: '/join' },
+  { label: 'Numbers', href: '/numbers' },
 ];
 
 const divisionLinks = [
@@ -190,7 +191,7 @@ export function Footer() {
             <p className="font-body text-body text-background/80 mb-5 whitespace-pre-line">
               Sign up for our email list to receive updates on upcoming events and activities.{"\n\n"}
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="text-left">
+            <form data-clarity-mask="True" onSubmit={handleNewsletterSubmit} className="text-left">
               <div className="flex w-full">
                 <input
                   id="newsletter-email"

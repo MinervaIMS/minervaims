@@ -1,63 +1,29 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useKeyFigures } from '@/hooks/useKeyFigures';
-import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+import { useKeyNumbers } from '@/hooks/useKeyNumbers';
+import { KeyFigureValue } from '@/components/numbers/KeyFigureValue';
+import { describeKeyNumber } from '@/lib/key-numbers';
 
 /**
- * The figures line, using the homepage implementation: the count-up only runs
- * against a real value, a skeleton holds the space until then, and the "+"
- * suffix only ever appears next to a real number. No figure is hardcoded and
- * nothing renders "0+".
+ * The figures line, from the key numbers registry (Step 92).
+ *
+ * THE NUMBER RULE: each figure's text is its exact, final value from the
+ * first frame (the build embeds the registry in the page), the same value
+ * the homepage, the stats sections and the machine-readable files show.
+ * No count-up, no "+", no placeholder that becomes a number. The
+ * definition and the as-of date are the tooltip.
  *
  * `tone="dark"` is the variant used on the black hero stage, where the numbers
  * are set in white for contrast.
  */
-const AnimatedFigure = ({
-  value,
-  isLoading,
-  dark,
-}: {
-  value: number;
-  isLoading: boolean;
-  dark: boolean;
-}) => {
-  const animatedValue = useAnimatedCounter(value, 3200, !isLoading && value > 0);
-
-  if (isLoading || value <= 0) {
-    // Sized to the type it stands in for, so the count-up arriving does not
-    // move the line: the figure is set at leading-none, so its box is exactly
-    // its font size, 1.875rem small and 4rem from md up.
-    //
-    // A SPAN, NOT A <Skeleton>, WHICH IS A DIV. This stands inside the <p>
-    // that carries the numeral's typography, and a <div> is not allowed
-    // inside a <p>: the parser closed the paragraph early and let the
-    // placeholder out of it, so during loading the figure's box sat outside
-    // the type context it is measured against - inside an <a> that then held
-    // three block children instead of two. The classes below are exactly
-    // what `Skeleton` renders, and `cn` is used for the same reason it uses
-    // it: `bg-white/15` has to REPLACE `bg-muted`, not merely follow it.
-    return (
-      <span
-        aria-hidden="true"
-        className={cn(
-          'mx-auto block h-8 w-20 animate-pulse rounded-md bg-muted md:h-16 md:w-24',
-          dark && 'bg-white/15',
-        )}
-      />
-    );
-  }
-
-  return <>{animatedValue}+</>;
-};
-
 export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
-  const { counts, isLoading } = useKeyFigures();
+  const snap = useKeyNumbers();
   const dark = tone === 'dark';
 
   const items = [
-    { to: '/people/members', value: counts.members, label: 'Active Members' },
-    { to: '/archive', value: counts.reports, label: 'Published Reports' },
-    { to: '/people/alumni', value: counts.alumni, label: 'ALUMNI NETWORK' },
+    { to: '/people/members', figure: snap?.numbers.active_members ?? null, label: 'Active Members' },
+    { to: '/archive', figure: snap?.numbers.reports_published ?? null, label: 'Published Reports' },
+    { to: '/people/alumni', figure: snap?.numbers.alumni ?? null, label: 'ALUMNI NETWORK' },
   ];
 
   return (
@@ -66,6 +32,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
         <Link
           key={item.label}
           to={item.to}
+          title={item.figure ? describeKeyNumber(item.figure) : undefined}
           className={`px-1 py-3 text-center transition-opacity hover:opacity-80 md:py-5 ${
             i < items.length - 1
               ? dark
@@ -91,7 +58,7 @@ export function JoinFigures({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
                 : 'text-[2rem] text-primary sm:text-5xl md:text-hero'
             }`}
           >
-            <AnimatedFigure value={item.value} isLoading={isLoading} dark={dark} />
+            <KeyFigureValue figure={item.figure} />
           </p>
           <p
             className={`font-body mt-2 uppercase leading-tight tracking-wider ${

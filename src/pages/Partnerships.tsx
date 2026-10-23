@@ -4,6 +4,7 @@ import { PageIntroduction, PageLoader } from "@/components/shared";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { HERO_OVERLAY_URL } from "@/lib/hero-overlay";
 import milanBgAsset from "@/assets/MIMS_Milan_Background-v2.webp.asset.json";
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 interface Format {
   title: string;
@@ -288,6 +289,9 @@ const Partnerships = () => {
           </div>
         </div>
       </section>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="partnerships" />
     </>
   );
 };

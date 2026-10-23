@@ -16,6 +16,7 @@ import {
   JOIN_STATUS_COPY,
   JOIN_WRITTEN,
 } from '@/lib/join-content';
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 // Note on splitting: the heavy things on this page are the particle canvas and
 // the five cinemagraphs, and both are deferred at the point of use (DotField is
@@ -203,6 +204,9 @@ const Join = () => {
 
       {/* FAQs */}
       <JoinFaq />
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="join" />
 
     </>
   );

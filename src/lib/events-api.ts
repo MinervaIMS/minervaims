@@ -8,7 +8,7 @@ import { invokeFunction } from '@/lib/errors';
 import type { OrgDivision } from '@/lib/roles';
 import type { AlumniCallStatus, AlumniGuest } from '@/lib/alumni-call';
 
-export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'association_wide' | 'association_on_display' | 'other';
+export type EventType = 'meeting' | 'aperitivo' | 'division_event' | 'online_call' | 'guest' | 'alumni_call' | 'company_visit' | 'association_wide' | 'association_on_display' | 'other';
 export type RegistrationAudience = 'members' | 'members_external' | 'public';
 
 // Event types for which choosing an organising division is mandatory.
@@ -34,8 +34,9 @@ export const WEBSITE_HIDDEN_TYPES: EventType[] = ['meeting', 'online_call'];
 export const listedOnWebsiteByDefault = (type: EventType): boolean => !WEBSITE_HIDDEN_TYPES.includes(type);
 // Types that can be created from Events > Create. Since Step 91 an alumni
 // call is created here like any other event (Events > Alumni Calls is gone);
-// Association on Display days are still opened from their own page.
-export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_event', 'online_call', 'guest', 'alumni_call', 'association_wide', 'other'];
+// Association on Display days are still opened from their own page. A
+// company visit (Step 92) is counted in the key numbers on the website.
+export const CREATABLE_TYPES: EventType[] = ['meeting', 'aperitivo', 'division_event', 'online_call', 'guest', 'alumni_call', 'company_visit', 'association_wide', 'other'];
 
 export interface EventRow {
   id: string;
@@ -178,7 +179,7 @@ export const MEMBER_MATCH_NOTE: Record<MemberMatch, string> = {
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   meeting: 'Internal meeting', aperitivo: 'Aperitivo', division_event: 'Division event',
-  online_call: 'Online call', guest: 'Guest event', alumni_call: 'Alumni call',
+  online_call: 'Online call', guest: 'Guest event', alumni_call: 'Alumni call', company_visit: 'Company visit',
   association_wide: 'Association-wide', association_on_display: 'Association on Display', other: 'Other',
 };
 export const AUDIENCE_LABELS: Record<RegistrationAudience, string> = {

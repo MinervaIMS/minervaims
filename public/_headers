@@ -1,0 +1,3 @@
+# Step 92 hosting probe: does the host honour a _headers file?
+/__probe/*
+  X-Mims-Probe: headers-file-honoured

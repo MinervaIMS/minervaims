@@ -19,6 +19,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { NumbersSection } from '@/components/numbers/NumbersSection';
 
 // =====================================================================
 // Public alumni page. The full directory is a privilege of the workspace
@@ -516,6 +517,9 @@ const Alumni = () => {
           </p>
         </div>
       </div>
+
+      {/* <Page> in numbers: the last section before the footer (Step 92). */}
+      <NumbersSection pageKey="alumni" />
     </div>
   );
 };

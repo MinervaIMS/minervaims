@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { CookieConsent } from "@/components/cookies";
+import { ClarityBridge } from "@/components/analytics/ClarityBridge";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SessionWarningModal } from "@/components/shared/SessionWarningModal";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
@@ -44,6 +45,7 @@ const Statute = lazy(() => import("./pages/Statute"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const Contacts = lazy(() => import("./pages/Contacts"));
 const Partnerships = lazy(() => import("./pages/Partnerships"));
+const Numbers = lazy(() => import("./pages/Numbers"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -163,6 +165,7 @@ const App = () => {
                 <Route path="/sitemap" element={<Suspense fallback={<PageLoader />}><Sitemap /></Suspense>} />
                 <Route path="/contacts" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="contacts"><Contacts /></PageVisibilityGate></Suspense>} />
                 <Route path="/partnerships" element={<Suspense fallback={<PageLoader />}><PageVisibilityGate pageKey="partnerships"><Partnerships /></PageVisibilityGate></Suspense>} />
+                <Route path="/numbers" element={<Suspense fallback={<PageLoader />}><Numbers /></Suspense>} />
                 <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
                 <Route path="/verify" element={<Suspense fallback={<PageLoader />}><VerifyCertificate /></Suspense>} />
                 <Route path="/verify/:code" element={<Suspense fallback={<PageLoader />}><VerifyCertificate /></Suspense>} />
@@ -203,6 +206,8 @@ const App = () => {
               </Route>
             </Routes>
             <CookieConsent />
+            {/* Microsoft Clarity: public pages, only with Analytics consent (Step 92). */}
+            <ClarityBridge />
             <SessionWarningModal warningThresholdMinutes={2} />
           </BrowserRouter>
         </AuthProvider>
