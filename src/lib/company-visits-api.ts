@@ -22,7 +22,8 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeFunction } from '@/lib/errors';
-import { downloadBlob, safeFileName } from '@/lib/file-download';
+import { downloadBlob } from '@/lib/file-download';
+import { companyVisitCvZipName } from '@/lib/company-visit-download-name';
 import { formatDay, formatTime } from '@/lib/event-time';
 import type { OrgDivision } from '@/lib/roles';
 
@@ -210,7 +211,7 @@ export async function downloadInvitedCvs(session: Session | null, eventId: strin
     try { message = ((await res.json()) as { error?: string }).error || message; } catch { /* not JSON */ }
     throw new Error(message);
   }
-  downloadBlob(await res.blob(), `${safeFileName(title, 'Company visit')} - invited CVs.zip`);
+  downloadBlob(await res.blob(), companyVisitCvZipName(title));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
