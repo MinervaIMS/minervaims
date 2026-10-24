@@ -3,7 +3,6 @@ import { audited } from '../_shared/activity.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { allows } from '../_shared/access.ts';
 import { readJsonObject, type LooseBody } from '../_shared/request-body.ts';
-import { estrMonthly, lastCompleteMonth } from '../_shared/ecb.ts';
 
 // =====================================================================
 // admin-funds: fund performance matrix for the simulated funds.
@@ -19,9 +18,8 @@ import { estrMonthly, lastCompleteMonth } from '../_shared/ecb.ts';
 // overwritten) but no longer shown.
 //
 // Also here: each fund's profile (inception, end, rebalancing, method,
-// positions), and the market references the PM team types. The €STR
-// fills itself from the ECB every morning (key-numbers `fill-estr`,
-// Step 93B); `import-estr` does the same at once, from Fund Performances.
+// positions), and the market references and €STR the PM team types, or,
+// for the €STR, fills from the ECB with `import-estr`.
 // =====================================================================
 
 const corsHeaders = {
@@ -66,8 +64,61 @@ const ReferenceSchema = z.object({
 });
 const ReferenceDeleteSchema = z.object({ series: z.enum(SERIES), months: z.array(monthKey).min(1).max(600) });
 
-// The €STR comes from the ECB through _shared/ecb.ts, which key-numbers
-// also uses to fill it by itself every morning (Step 93B).
+// =====================================================================
+// THE €STR, FROM THE ECB.
+// ---------------------------------------------------------------------
+// The Sharpe ratio's risk-free rate is the euro short-term rate. The
+// ECB publishes it every business day since 2 October 2019 (series
+// EST.B.EU000A2X2A25.WT, the volume-weighted trimmed mean rate); each
+// month's value here is the average of that month's daily rates.
+// Before October 2019 there was no €STR: the ECB's own bridge is
+// "EONIA = €STR + 8.5 basis points", so those months use the EONIA
+// monthly average (FM.M.U2.EUR.4F.MM.EONIA.HSTA) minus 8.5 basis points,
+// and say so in their source. Only complete months are filled, and only
+// months with no value yet: a value the PM team typed is never replaced.
+// =====================================================================
+const ECB = 'https://data-api.ecb.europa.eu/service/data';
+const ESTR_KEY = 'EST/B.EU000A2X2A25.WT';
+const EONIA_KEY = 'FM/M.U2.EUR.4F.MM.EONIA.HSTA';
+const ESTR_SOURCE = 'ECB Data Portal, €STR (EST.B.EU000A2X2A25.WT), monthly average of daily rates';
+const EONIA_SOURCE = 'ECB Data Portal, EONIA monthly average (FM.M.U2.EUR.4F.MM.EONIA.HSTA) minus 8.5 basis points';
+
+/** TIME_PERIOD and OBS_VALUE of an ECB csvdata response. */
+function ecbRows(csv: string): { period: string; value: number }[] {
+  const lines = csv.split(/\r?\n/).filter((l) => l.trim());
+  if (!lines.length) return [];
+  // Quoted cells (the series titles) can hold commas of their own.
+  const split = (l: string) => {
+    const cells: string[] = [];
+    let cell = '';
+    let quoted = false;
+    for (let i = 0; i < l.length; i++) {
+      const ch = l[i];
+      if (quoted) {
+        if (ch === '"' && l[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') quoted = false; else cell += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ',') { cells.push(cell); cell = ''; } else cell += ch;
+    }
+    cells.push(cell);
+    return cells;
+  };
+  const head = split(lines[0]);
+  const t = head.indexOf('TIME_PERIOD');
+  const v = head.indexOf('OBS_VALUE');
+  if (t < 0 || v < 0) throw new Error('it answered in an unexpected format');
+  return lines.slice(1).map(split)
+    .filter((c) => c[t] && c[v] !== undefined && c[v].trim() !== '')
+    .map((c) => ({ period: c[t], value: Number(c[v]) }))
+    .filter((r) => Number.isFinite(r.value));
+}
+
+async function ecbFetch(key: string, start: string, end: string): Promise<string> {
+  const url = `${ECB}/${key}?format=csvdata&startPeriod=${start}&endPeriod=${end}`;
+  const res = await fetch(url, { headers: { Accept: 'text/csv' } });
+  if (res.status === 404) return '';
+  if (!res.ok) throw new Error(`it answered ${res.status}`);
+  return await res.text();
+}
 
 // =====================================================================
 // READING THE FIGURES AND PUBLISHING THEM ARE TWO QUESTIONS.
@@ -187,20 +238,40 @@ Deno.serve(audited('admin-funds', async (req, audit) => {
     }
 
     if (action === 'import-estr') {
-      // From the first year of fund returns to the last complete month
-      // (complete from the 4th of the next month: see _shared/ecb.ts).
+      // From the month before the first fund return to the last complete month.
       const { data: years, error: yErr } = await supabase.from('fund_performance_years').select('year');
       if (yErr) throw yErr;
+      const first = Math.min(...(years || []).map((y: { year: number }) => y.year), new Date().getUTCFullYear());
       const now = new Date();
-      const first = Math.min(...(years || []).map((y: { year: number }) => y.year), now.getUTCFullYear());
-      const { month: endMonth, lastDay } = lastCompleteMonth(now);
+      const lastComplete = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+      const endMonth = lastComplete.toISOString().slice(0, 7);
+      // Its real last day: the ECB refuses a date such as 30 February.
+      const endDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)).toISOString().slice(0, 10);
       const startMonth = `${first}-01`;
 
-      let monthly: Map<string, { value: number; source: string }>;
+      const monthly = new Map<string, { value: number; source: string }>();
+      let daily: { period: string; value: number }[];
+      let eonia: { period: string; value: number }[] = [];
       try {
-        monthly = await estrMonthly(startMonth, endMonth, lastDay);
+        // €STR, daily (averaged by month below); before October 2019, EONIA.
+        daily = ecbRows(await ecbFetch(ESTR_KEY, `${startMonth}-01`, endDay));
+        if (startMonth < '2019-10') eonia = ecbRows(await ecbFetch(EONIA_KEY, startMonth, '2019-09'));
       } catch (e) {
         return json({ error: `The ECB Data Portal could not be read (${(e as Error)?.message || e}). Nothing was changed; try again later, or type the rates in.` }, 502);
+      }
+      const sums = new Map<string, { s: number; n: number }>();
+      for (const d of daily) {
+        const m = d.period.slice(0, 7);
+        if (m > endMonth) continue;
+        const acc = sums.get(m) || { s: 0, n: 0 };
+        acc.s += d.value; acc.n += 1;
+        sums.set(m, acc);
+      }
+      for (const [m, a] of sums) monthly.set(m, { value: Math.round((a.s / a.n) * 1e4) / 1e4, source: ESTR_SOURCE });
+      // Before October 2019: EONIA minus 8.5 basis points.
+      for (const e of eonia) {
+        const m = e.period.slice(0, 7);
+        if (m < '2019-10' && !monthly.has(m)) monthly.set(m, { value: Math.round((e.value - 0.085) * 1e4) / 1e4, source: EONIA_SOURCE });
       }
       if (!monthly.size) return json({ error: 'The ECB returned no rates for these months. Try again later, or type them in.' }, 502);
 
@@ -214,9 +285,6 @@ Deno.serve(audited('admin-funds', async (req, audit) => {
       if (rows.length) {
         const { error } = await supabase.from('fund_reference_series').upsert(rows, { onConflict: 'series,month', ignoreDuplicates: true });
         if (error) throw error;
-        // The Sharpe ratios on the website follow at once.
-        const { error: kErr } = await supabase.rpc('refresh_key_numbers');
-        if (kErr) console.error('refresh_key_numbers', kErr.message);
       }
       audit.subject('Reference: estr', null);
       audit.note({ filled: rows.length, kept: monthly.size - rows.length, from: startMonth, to: endMonth });

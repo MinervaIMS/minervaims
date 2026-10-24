@@ -60,7 +60,7 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
 
     if (action === 'status') {
       const { data: events, error } = await supabase.from('events')
-        .select('id, date, start_at, registration_enabled, reminders_paused, reminders_paused_at, reminders_paused_by, aod_day_id, event_type, interest_closes_at')
+        .select('id, date, start_at, registration_enabled, reminders_paused, reminders_paused_at, reminders_paused_by, aod_day_id')
         .is('aod_day_id', null);
       if (error) throw error;
       const { data: logRows } = await supabase.from('event_reminder_log').select('event_id, stage, sent_at, recipients');
@@ -95,7 +95,6 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
       const reminders = (events || []).map((e: {
         id: string; date: string | null; start_at: string | null; registration_enabled: boolean;
         reminders_paused: boolean; reminders_paused_at: string | null; reminders_paused_by: string | null;
-        event_type: string | null; interest_closes_at: string | null;
       }) => ({
         event_id: e.id,
         paused: !!e.reminders_paused,
@@ -103,7 +102,6 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
         paused_by: e.reminders_paused_by ? (names.get(e.reminders_paused_by) || null) : null,
         stages: reminderSchedule(eventDay(e.start_at, e.date), byEvent.get(e.id) || [], {
           paused: !!e.reminders_paused, registrationEnabled: !!e.registration_enabled,
-          selection: e.event_type === 'company_visit' && !!e.interest_closes_at,
         }),
         thank_you: thankYouSchedule(eventDay(e.start_at, e.date), byEvent.get(e.id) || [], {
           attendanceTaken: attended.has(e.id), today,
@@ -116,7 +114,7 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
 
     const eventId = optionalTextOf(body, 'event_id');
     if (!eventId) return json({ error: 'Choose an event.' }, 400);
-    const { data: ev } = await supabase.from('events').select('id, aod_day_id, event_type, interest_closes_at').eq('id', eventId).maybeSingle();
+    const { data: ev } = await supabase.from('events').select('id, aod_day_id').eq('id', eventId).maybeSingle();
     if (!ev) return json({ error: 'This event no longer exists. Reload the page.' }, 404);
     if (ev.aod_day_id) return json({ error: 'Association on Display days have no registration reminders.' }, 400);
 
@@ -138,20 +136,11 @@ Deno.serve(audited('admin-event-reminders', async (req, audit) => {
       // The registration emails: confirmation, waiting list, a place that
       // opened up, cancellation. All four at once, with sample links, built
       // exactly as the real ones (send_event_notice_tests).
-      // A company visit that selects its participants (Step 93B) sends its
-      // own four instead: interest received, invitation, not this time, a
-      // place has opened up (company_visit_notice_tests).
       if (body.stage === 'notices') {
         const startedAtN = new Date(Date.now() - 1000).toISOString();
-        const selection = ev.event_type === 'company_visit' && !!ev.interest_closes_at;
-        const { error } = selection
-          ? await supabase.rpc('company_visit_notice_tests', { p_to: to, p_event_id: eventId })
-          : await supabase.rpc('send_event_notice_tests', { p_to: to, p_event_id: eventId });
+        const { error } = await supabase.rpc('send_event_notice_tests', { p_to: to, p_event_id: eventId });
         if (error) throw error;
-        const keys: Record<string, string> = selection ? {
-          received: 'company_visit_interest_received', invited: 'company_visit_invited',
-          not_selected: 'company_visit_not_selected', spot_opened: 'company_visit_spot_opened',
-        } : {
+        const keys: Record<string, string> = {
           confirmation: 'event_registration_confirmation', waitlist_joined: 'event_waitlist_joined',
           waitlist_promoted: 'event_waitlist_promoted', cancelled: 'event_registration_cancelled',
         };

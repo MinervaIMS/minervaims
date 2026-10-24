@@ -2,7 +2,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { audited } from '../_shared/activity.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 import { allows } from '../_shared/access.ts'
-import { removeEventCvs } from '../_shared/event-cvs.ts'
 import {
   ALUMNI_CALL_STATUSES, ALUMNI_CALL_MIN, ALUMNI_CALL_MAX, ALUMNI_CALL_ORGANISERS, ALUMNI_FORMER_DIVISIONS,
   alumnusGuestLine,
@@ -68,9 +67,7 @@ const EventSchema = z.object({
   show_on_website: z.boolean().optional(),
   in_archive: z.boolean().optional(),
   // The number of places; null for no limit (the default).
-  capacity: z.number().int('Places must be a whole number').min(1, 'At least one place').max(10000, 'Too many places').nullable().optional(),
-  // A company visit only: when its interest form closes (Step 93B).
-  interest_closes_at: z.string().max(40).refine((v) => !isNaN(Date.parse(v)), 'The closing date is not a valid date').nullable().optional(),
+  capacity: z.number().int('Places must be a whole number').min(1, 'At least one place').max(10000, 'Too many places').nullable().optional()
 })
 
 // =====================================================================
@@ -173,34 +170,6 @@ type AlumniCallInput = z.infer<typeof AlumniCallSchema>
 const ALUMNI_TYPE_CHANGE = 'An alumni call stays an alumni call, and no other event can become one: create a new event instead.'
 const TBC_OFF_WEBSITE = 'This alumni call has no date yet, so it stays off the website and cannot take registrations. Set its date first.'
 const ALUMNI_ONLY = 'Your role can create and change alumni calls only.'
-
-// =====================================================================
-// A COMPANY VISIT SELECTS ITS PARTICIPANTS (Step 93B).
-// ---------------------------------------------------------------------
-// A company visit with registration has a closing date
-// (`interest_closes_at`): until then members and alumni register their
-// interest with their CV, and the President and the Vice President choose
-// who goes (company-visits). The date is set when the visit is created
-// (a week before it at the latest is the suggestion), and must fall
-// before the visit starts. Like the places, it is written only when sent,
-// so a page that saves an event without knowing about it (the archive's
-// website switch) leaves it as it is. A company visit created before this
-// step, with registration and no closing date, keeps taking registrations
-// as before. A visit somebody has already shown interest in keeps
-// selecting: it cannot lose its closing date or stop being a company visit.
-// =====================================================================
-const CLOSES_NEEDED = 'A company visit with registration selects its participants: set when the interest form closes (a week before the visit at the latest).'
-function closingProblem(v: { event_type?: string; date: string; start_at?: string | null }, closes: string, stored: string | null): string | null {
-  if ((v.event_type ?? 'other') !== 'company_visit') return 'Only a company visit has an interest form with a closing date.'
-  const t = Date.parse(closes)
-  if (isNaN(t)) return 'The closing date is not a valid date.'
-  const unchanged = stored !== null && Date.parse(stored) === t
-  if (!unchanged && t <= Date.now()) return 'The interest form must close in the future.'
-  if (v.start_at ? t >= Date.parse(v.start_at) : new Date(t).toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }) >= v.date) {
-    return 'The interest form must close before the visit starts.'
-  }
-  return null
-}
 
 /** Today on Rome's clock: the provisional date of a call still to be confirmed. */
 const romeToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' })
@@ -460,13 +429,6 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
-        // A company visit with registration selects its participants.
-        const createCloses = validatedEvent.interest_closes_at ?? null
-        if (validatedEvent.event_type === 'company_visit' && validatedEvent.registration_enabled && !createCloses) return bad(CLOSES_NEEDED)
-        if (createCloses) {
-          const problem = closingProblem(validatedEvent, createCloses, null)
-          if (problem) return bad(problem)
-        }
         const createLink = createOnline && hasLink ? validatedEvent.place.trim() : null
         const { data, error } = await supabase
           .from('events')
@@ -483,7 +445,6 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             description: validatedEvent.description || null,
             poster_url: validatedEvent.poster_url || null,
             ...extraEventCols(validatedEvent),
-            interest_closes_at: createCloses,
             ...(tbc ? { date_tbc: true, start_at: null, end_at: null, show_on_website: false, registration_enabled: false } : {}),
             created_by: user.id,
           })
@@ -561,7 +522,7 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // on it like on any other event and nothing else can drift.
         // =================================================================
         const { data: linked } = await supabase
-          .from('events').select('id, aod_day_id, online, place, event_type, date_tbc, date, registration_enabled, interest_closes_at').eq('id', validatedEvent.id).maybeSingle()
+          .from('events').select('id, aod_day_id, online, place, event_type, date_tbc, date').eq('id', validatedEvent.id).maybeSingle()
         const wasAlumni = linked?.event_type === 'alumni_call'
         const isAlumni = (validatedEvent.event_type ?? 'other') === 'alumni_call'
         if (linked && wasAlumni !== isAlumni) return bad(ALUMNI_TYPE_CHANGE)
@@ -578,27 +539,6 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         }
         const tbc = isAlumni && (alumni ? !!alumni.date_tbc : !!linked?.date_tbc)
         if (tbc && !alumni && (validatedEvent.show_on_website || validatedEvent.registration_enabled)) return bad(TBC_OFF_WEBSITE)
-        // The interest form of a company visit (Step 93B).
-        const storedCloses: string | null = linked?.interest_closes_at ?? null
-        const sentCloses = validatedEvent.interest_closes_at
-        const isVisit = (validatedEvent.event_type ?? 'other') === 'company_visit'
-        let nextCloses: string | null = sentCloses !== undefined ? sentCloses : storedCloses
-        if (!isVisit && nextCloses) {
-          if (sentCloses) return bad('Only a company visit has an interest form with a closing date.')
-          nextCloses = null
-        }
-        if (storedCloses && !nextCloses && !linked?.aod_day_id) {
-          const { count } = await supabase.from('event_interest').select('id', { count: 'exact', head: true }).eq('event_id', validatedEvent.id)
-          if (count) {
-            return bad(`${count} ${count === 1 ? 'person has' : 'people have'} registered their interest in this visit, so it stays a company visit that selects its participants.`)
-          }
-        }
-        if (isVisit && validatedEvent.registration_enabled && !nextCloses
-          && (!linked?.registration_enabled || linked?.event_type !== 'company_visit')) return bad(CLOSES_NEEDED)
-        if (nextCloses) {
-          const problem = closingProblem(validatedEvent, nextCloses, storedCloses)
-          if (problem) return bad(problem)
-        }
         const { data: savedLink } = await supabase
           .from('event_join_links').select('url').eq('event_id', validatedEvent.id).maybeSingle()
         const nowOnline = validatedEvent.online ?? false
@@ -681,7 +621,6 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             description: validatedEvent.description || null,
             poster_url: validatedEvent.poster_url || null,
             ...extraEventCols(validatedEvent),
-            ...(nextCloses !== storedCloses ? { interest_closes_at: nextCloses } : {}),
             ...(isAlumni
               ? tbc
                 ? { date_tbc: true, date: linked?.date_tbc && linked.date ? linked.date : romeToday(), start_at: null, end_at: null, show_on_website: false, registration_enabled: false }
@@ -770,7 +709,7 @@ Deno.serve(audited('admin-events', async (req, audit) => {
         // Get event name before deleting for logging
         const { data: existingEvent } = await supabase
           .from('events')
-          .select('title, aod_day_id, event_type, interest_closes_at')
+          .select('title, aod_day_id, event_type')
           .eq('id', deleteResult.data.id)
           .maybeSingle();
         if (existingEvent?.event_type === 'alumni_call' ? !canAlumniCalls : !hasEventAccess) {
@@ -798,17 +737,6 @@ Deno.serve(audited('admin-events', async (req, audit) => {
             JSON.stringify({ error: 'Failed to delete event' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
-        }
-
-        // The CVs given for a company visit go with it (the interest rows
-        // went with the event). Should storage fail, the daily clean-up
-        // removes the folder of a visit that no longer exists.
-        if (existingEvent?.event_type === 'company_visit') {
-          try {
-            await removeEventCvs(supabase, deleteResult.data.id)
-          } catch (e) {
-            console.error('Remove company visit CVs error:', e)
-          }
         }
 
         // Log activity

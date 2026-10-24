@@ -18,11 +18,10 @@ import { friendlyError } from '@/lib/errors';
 import { formatDay, formatTime, romeYmd } from '@/lib/event-time';
 import { currentSemester } from '@/lib/semester';
 import {
-  AUDIENCE_LABELS, cancelMyRegistration, myEvents, registerForEvent,
-  type MyEventsData, type MyHistoryStatus, type MyOpenEvent, eventTypeLabel
+  AUDIENCE_LABELS, EVENT_TYPE_LABELS, cancelMyRegistration, myEvents, registerForEvent,
+  type MyEventsData, type MyHistoryStatus, type MyOpenEvent,
 } from '@/lib/events-api';
 import { AttendanceStatus } from './attendance-status';
-import { formatClosing, interestOpen } from '@/lib/company-visits-api';
 
 // =====================================================================
 // Events > My events: one member's own record of the semester's events.
@@ -46,20 +45,7 @@ const OPS_EMAIL = 'as.minerva@unibocconi.it';
 
 type Filter = 'all' | 'attended' | 'missed';
 
-/** Where a member's interest in a company visit stands (Step 93B). */
-function InterestBadge({ state }: { state: NonNullable<MyOpenEvent['interest']> }) {
-  const map = {
-    received: { cls: 'border-accent/30 bg-accent/5 text-accent', text: 'Interest received' },
-    invited: { cls: 'border-emerald-600/40 bg-emerald-50 text-emerald-800', text: 'Invited' },
-    not_selected: { cls: 'border-separator bg-muted/40 text-foreground', text: 'Reserve' },
-    withdrawn: { cls: 'border-separator bg-muted/40 text-muted-foreground', text: 'Withdrawn' },
-  } as const;
-  const m = map[state];
-  return <span className={`inline-flex h-6 shrink-0 items-center border px-2 font-body text-[12px] ${m.cls}`}>{m.text}</span>;
-}
-
 function placesLeft(e: MyOpenEvent): string {
-  if (e.selection) return e.capacity ? `${e.capacity} places, by selection` : 'By selection';
   if (!e.capacity) return '';
   const left = Math.max(0, e.capacity - e.taken);
   return left > 0 ? `${left} of ${e.capacity} places left` : `Full${e.waiting ? `, ${e.waiting} waiting` : ''}`;
@@ -127,10 +113,7 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
   const shown = history.filter((h) => filter === 'all' || (filter === 'attended' ? h.status === 'attended' : h.status !== 'attended'));
   const upcoming = data?.upcoming ?? [];
   const mine = upcoming.filter((u) => u.status !== 'none');
-  // A company visit that selects (Step 93B) stays in "to join" while its
-  // form is open, or once the member has registered their interest.
-  const toJoin = upcoming.filter((u) => u.status === 'none'
-    && (!u.selection || !!u.interest || interestOpen({ registration_enabled: true, interest_closes_at: u.interest_closes_at })));
+  const toJoin = upcoming.filter((u) => u.status === 'none');
 
   if (!data && !failed) return <div className="h-full"><WorkspaceLoader /></div>;
 
@@ -164,11 +147,9 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                     <div className="min-w-0 flex-1">
                       <p className="text-[12px] uppercase tracking-wider text-accent">{formatDay(e.start_at || e.date)}{e.start_at ? ` · ${formatTime(e.start_at)}` : ''}</p>
                       <p className="font-serif text-[18px] leading-snug text-foreground">{e.title}</p>
-                      <p className="text-[13px] text-muted-foreground">{[eventTypeLabel(e.event_type), e.place].filter(Boolean).join(' · ')}</p>
+                      <p className="text-[13px] text-muted-foreground">{[EVENT_TYPE_LABELS[e.event_type], e.place].filter(Boolean).join(' · ')}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-                        {e.selection && e.status === 'registered'
-                          ? <InterestBadge state="invited" />
-                          : <RegBadge state={e.status === 'registered' ? 'registered' : 'waiting'} />}
+                        <RegBadge state={e.status === 'registered' ? 'registered' : 'waiting'} />
                         {e.join_url && <JoinMeetingLink url={e.join_url} variant="button" />}
                         {e.online && e.status === 'registered' && !e.join_url && (
                           <span className="text-[13px] text-muted-foreground">The link to join will be in your emails and here once the organisers add it.</span>
@@ -176,17 +157,10 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                       </div>
                     </div>
                     <div className="w-full pl-[3.75rem] sm:w-auto sm:shrink-0 sm:pl-0">
-                      {e.selection ? (
-                        // Invited by the organisers: no self-service cancelling.
-                        <p className="max-w-[16rem] text-[13px] text-muted-foreground">
-                          Can&rsquo;t come? Write to <a data-ro className="text-accent underline" href={`mailto:${OPS_EMAIL}?subject=${encodeURIComponent(`Company visit: ${e.title}`)}`}>{OPS_EMAIL}</a> at once, so your place can go to another member.
-                        </p>
-                      ) : (
                       <Button data-ro variant="outline" size="sm" className="w-full sm:w-auto" disabled={busyId === e.id} onClick={() => setConfirmCancel(e)}>
                         {busyId === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         {e.status === 'registered' ? "Can't make it" : 'Leave the waiting list'}
                       </Button>
-                      )}
                     </div>
                   </li>
                 ))}
@@ -202,31 +176,10 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                       <p className="text-[12px] uppercase tracking-wider text-accent">{formatDay(e.start_at || e.date)}{e.start_at ? ` · ${formatTime(e.start_at)}` : ''}</p>
                       <p className="font-serif text-[18px] leading-snug text-foreground">{e.title}</p>
                       <p className="text-[13px] text-muted-foreground">
-                        {[eventTypeLabel(e.event_type), e.place, e.selection ? 'Members and alumni' : AUDIENCE_LABELS[e.audience], placesLeft(e)].filter(Boolean).join(' · ')}
+                        {[EVENT_TYPE_LABELS[e.event_type], e.place, AUDIENCE_LABELS[e.audience], placesLeft(e)].filter(Boolean).join(' · ')}
                       </p>
-                      {e.selection && (
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          {e.interest && <InterestBadge state={e.interest} />}
-                          <span className="text-[13px] text-muted-foreground">
-                            {e.interest === 'not_selected'
-                              ? 'Not this time: if a place opens up, you will be emailed.'
-                              : e.interest === 'withdrawn'
-                                ? 'You told the organisers you cannot come.'
-                                : e.interest === 'received'
-                                  ? `The decision comes by email after the form closes${e.interest_closes_at ? ` on ${formatClosing(e.interest_closes_at)}` : ''}.`
-                                  : `Register your interest with your CV by ${formatClosing(e.interest_closes_at)}.`}
-                          </span>
-                        </div>
-                      )}
                     </div>
                     <div className="w-full pl-[3.75rem] sm:w-auto sm:shrink-0 sm:pl-0">
-                      {e.selection ? (
-                        !e.interest || (e.interest === 'received' && interestOpen({ registration_enabled: true, interest_closes_at: e.interest_closes_at })) ? (
-                          <Button data-ro size="sm" className="w-full sm:w-auto" variant={e.interest ? 'outline' : 'solid'} asChild>
-                            <a href={`/events/${e.id}/register`} target="_blank" rel="noopener noreferrer">{e.interest ? 'See or replace my CV' : 'Register your interest'}</a>
-                          </Button>
-                        ) : null
-                      ) : (
                       <Button
                         data-ro size="sm" className="w-full sm:w-auto"
                         variant={e.capacity && e.taken >= e.capacity ? 'outline' : 'solid'}
@@ -236,7 +189,6 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
                         {busyId === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         {e.capacity && e.taken >= e.capacity ? 'Join the waiting list' : 'Register'}
                       </Button>
-                      )}
                     </div>
                   </li>
                 ))}
@@ -250,7 +202,6 @@ export default function MyEvents({ onNavigate }: { onNavigate?: (section: string
             {toJoin.length > 0 && (
               <p className="text-[13px] text-muted-foreground">
                 One click registers you with your account: the confirmation email follows at once, with your entry code, or the link to join for an online event.
-                {toJoin.some((e) => e.selection) && ' A company visit selects its participants instead: you register your interest with your CV, and everyone is told the decision at the same time.'}
               </p>
             )}
           </section>

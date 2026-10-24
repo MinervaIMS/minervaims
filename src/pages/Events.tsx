@@ -10,7 +10,7 @@ import { PageIntroduction, PageLoader } from "@/components/shared";
 import { PdfThumbnail } from "@/components/shared/PdfThumbnail";
 import { Input } from "@/components/ui/input";
 import { ClearFilters } from "@/components/shared/ClearFilters";
-import { eventTypeLabel } from "@/lib/events-api";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/events-api";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -42,8 +42,6 @@ interface DbEvent {
   registration_enabled?: boolean | null;
   /** Conference, workshop, alumni call and so on. Drives the type filter. */
   event_type?: string | null;
-  /** A company visit that selects its participants: when its interest form closes (Step 93B). */
-  interest_closes_at?: string | null;
 }
 
 /**
@@ -64,8 +62,6 @@ interface UpcomingEvent {
   isFlagship?: boolean;
   registrationUrl?: string | null;
   registrationState?: "open" | "soon" | "closed";
-  /** "Register", or "Register your interest" for a visit that selects its participants. */
-  registrationLabel?: string;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -145,7 +141,6 @@ const Events = () => {
       photoUrl: next.poster_url ?? null,
       registrationUrl: `/events/${next.id}/register`,
       registrationState: 'open',
-      registrationLabel: next.event_type === 'company_visit' && next.interest_closes_at ? 'Register your interest' : 'Register',
     };
   }, [events]);
 
@@ -185,7 +180,7 @@ const Events = () => {
     const seen = new Set<string>();
     for (const e of pastEvents) if (e.event_type) seen.add(e.event_type);
     return Array.from(seen)
-      .map((t) => ({ value: t, label: eventTypeLabel(t) }))
+      .map((t) => ({ value: t, label: EVENT_TYPE_LABELS[t as EventType] ?? t }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [pastEvents]);
 
@@ -616,7 +611,7 @@ function UpcomingBand({ event }: { event: UpcomingEvent }) {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center font-serif uppercase tracking-wider text-sm px-5 py-2 border border-accent text-accent hover:bg-accent hover:text-background transition-colors"
             >
-              {event.registrationLabel ?? "Register"}
+              Register
             </a>
           )}
         </div>

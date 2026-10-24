@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { isSelectionVisit, interestOpen } from '@/lib/company-visits-api';
 import { CalendarDays, Flag, GraduationCap, Megaphone, Users } from 'lucide-react';
 import type { EventRow, EventPlaces } from '@/lib/events-api';
 import type { CalendarEntry } from '@/lib/calendar-api';
@@ -117,10 +116,6 @@ export function regState(e: EventRow, registered: Set<string>, waiting: Set<stri
   if (isOver(e)) return 'past';
   if (!e.registration_enabled || e.aod_day_id) return 'none';
   if (hasStarted(e)) return 'started';
-  // A company visit that selects (Step 93B): open while its interest form
-  // is, never "full" (its places are given by selection), and nothing to
-  // do once the form has closed.
-  if (isSelectionVisit(e)) return interestOpen(e) ? 'open' : 'none';
   if (places && places.capacity && places.taken >= places.capacity) return 'full';
   return 'open';
 }

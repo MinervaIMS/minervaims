@@ -10,10 +10,7 @@
 //   - a stage is due on the event day (Rome) minus 14, 7 or 3 days;
 //   - it can still go out the following day if its own day was missed,
 //     and never after that;
-//   - a stopped event, or one whose form is closed, sends nothing;
-//   - a company visit that selects its participants (Step 93B) has no
-//     "register now" stages: members register their interest instead,
-//     and only the reminder to those invited goes out.
+//   - a stopped event, or one whose form is closed, sends nothing.
 //
 // Mirrored for display by `ReminderStageStatus` in src/lib/events-api.ts.
 // =====================================================================
@@ -77,12 +74,11 @@ export interface ReminderLogRow { stage: string; sent_at: string; recipients: nu
 export function reminderSchedule(
   day: string | null,
   log: ReminderLogRow[],
-  opts: { paused: boolean; registrationEnabled: boolean; today?: string; selection?: boolean },
+  opts: { paused: boolean; registrationEnabled: boolean; today?: string },
 ): ReminderStageStatus[] {
   if (!day) return [];
   const today = opts.today ?? romeToday();
-  const stages = opts.selection ? REMINDER_STAGES.filter((s) => s.stage === '24h_attending') : REMINDER_STAGES;
-  return stages.map(({ stage, days, label }) => {
+  return REMINDER_STAGES.map(({ stage, days, label }) => {
     const dueOn = addDays(day, -days);
     const sent = log.find((l) => l.stage === stage);
     let state: ReminderState;

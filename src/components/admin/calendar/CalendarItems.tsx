@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Check, CircleCheck, Hourglass, Loader2, Lock, Mail, QrCode, BellRing, MousePointerClick, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { monthShort, weekdayShort } from '@/lib/calendar-dates';
-import { eventTypeLabel } from '@/lib/events-api';
+import { EVENT_TYPE_LABELS } from '@/lib/events-api';
 import { CATEGORY, categoryOf, isBoardOnly, itemTime, type CalItem, type RegState } from './calendar-model';
 
 // =====================================================================
@@ -94,7 +94,7 @@ export function AgendaRow({ item, state, placesText, onOpen, action }: {
   const cat = CATEGORY[categoryOf(item)];
   const time = itemTime(item);
   const meta = [
-    item.event ? eventTypeLabel(item.event.event_type) : cat.label,
+    item.event ? EVENT_TYPE_LABELS[item.event.event_type] : cat.label,
     item.event?.place || item.entry?.location || item.note || '',
     placesText || '',
   ].filter(Boolean);
@@ -129,10 +129,8 @@ export function AgendaRow({ item, state, placesText, onOpen, action }: {
 }
 
 /** The Register / Join the waiting list button, sized for a row or a card. */
-export function RegisterButton({ state, busy, onClick, size = 'sm', className = '', selection = false }: {
+export function RegisterButton({ state, busy, onClick, size = 'sm', className = '' }: {
   state: RegState; busy: boolean; onClick: () => void; size?: 'sm' | 'default'; className?: string;
-  /** A company visit that selects its participants: the interest form, not a registration. */
-  selection?: boolean;
 }) {
   if (state !== 'open' && state !== 'full') return null;
   return (
@@ -142,7 +140,7 @@ export function RegisterButton({ state, busy, onClick, size = 'sm', className = 
       className={`font-body ${className}`}
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-      {selection ? 'Register your interest' : state === 'open' ? 'Register' : 'Join the waiting list'}
+      {state === 'open' ? 'Register' : 'Join the waiting list'}
     </Button>
   );
 }

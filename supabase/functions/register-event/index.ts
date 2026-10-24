@@ -11,11 +11,6 @@ import { readJsonObject, textOf, optionalTextOf, UNREADABLE_BODY } from '../_sha
 //             event id (the workspace Calendar). Frees the place, which the
 //             database gives at once to the first person waiting
 //             (promote_event_waitlist, migration 20260929090000).
-// A company visit that selects its participants (Step 93B: event_type
-// company_visit with interest_closes_at) takes no registrations here:
-// members register their interest with their CV (company-visits), and an
-// invited member who cannot come writes to the organisers, so neither the
-// form nor "Can't make it" works for it.
 // Every email goes through public.send_event_notice, which builds it with
 // the person's own ticket, "Add to calendar" and cancel links.
 //
@@ -53,11 +48,6 @@ function isValidEmail(e: string | null | undefined): e is string {
 }
 
 const TOKEN_RE = /^[a-f0-9]{32}$/;
-const CONTACT = 'as.minerva@unibocconi.it';
-
-/** A company visit that selects its participants (Step 93B). */
-const selects = (ev: { event_type?: string | null; interest_closes_at?: string | null }) =>
-  ev.event_type === 'company_visit' && !!ev.interest_closes_at;
 
 /** Has the event begun (or, for an all-day event, is its day over)? */
 function hasStarted(ev: { start_at: string | null; date: string | null }): boolean {
@@ -154,7 +144,7 @@ Deno.serve(audited('register-event', async (req, audit) => {
       if (!reg && !wait) return json({ kind: 'gone' });
       const evId = (reg ?? wait)!.event_id;
       const { data: ev } = await supabase.from('events')
-        .select('id, title, date, start_at, end_at, place, online, aod_day_id, event_type, interest_closes_at').eq('id', evId).maybeSingle();
+        .select('id, title, date, start_at, end_at, place, online, aod_day_id').eq('id', evId).maybeSingle();
       if (!ev) return json({ kind: 'gone' });
       audit.subject(ev.title, ev.id);
       const event = { id: ev.id, title: ev.title, date: ev.date, start_at: ev.start_at, end_at: ev.end_at, place: ev.place, online: ev.online };
@@ -168,19 +158,10 @@ Deno.serve(audited('register-event', async (req, audit) => {
       const name = (reg ?? wait)!.name;
 
       if (action === 'lookup') {
-        return json({
-          kind: reg ? 'registration' : 'waitlist', event, name, attended: !!reg?.attended, started, position,
-          ...(selects(ev) ? { selection: true, contact: CONTACT } : {}),
-        });
+        return json({ kind: reg ? 'registration' : 'waitlist', event, name, attended: !!reg?.attended, started, position });
       }
       // Cancelling.
       if (ev.aod_day_id) return json({ error: 'Association on Display is managed from its own page in the workspace.' }, 409);
-      if (selects(ev)) {
-        return json({
-          error: `Your place at this company visit was offered to you by the organisers. If you cannot come, please write to ${CONTACT} as soon as possible, so that it can go to another member.`,
-          selection: true, contact: CONTACT,
-        }, 409);
-      }
       if (reg?.attended) return json({ error: 'You have already been checked in at this event.' }, 409);
       if (started) return json({ error: 'This event has already started, so there is nothing to cancel.' }, 409);
       if (reg) {
@@ -206,13 +187,10 @@ Deno.serve(audited('register-event', async (req, audit) => {
     if (!eventId) return json({ error: 'Missing event' }, 400);
 
     const { data: ev } = await supabase.from('events')
-      .select('registration_enabled, registration_audience, title, date, start_at, end_at, place, online, description, event_type, interest_closes_at')
+      .select('registration_enabled, registration_audience, title, date, start_at, end_at, place, online, description')
       .eq('id', eventId).maybeSingle();
     if (!ev || !ev.registration_enabled) return json({ error: 'Registration is not open for this event.' }, 403);
     audit.subject(ev.title, eventId);
-    if (selects(ev)) {
-      return json({ error: 'The participants of this company visit are selected: register your interest with your CV on the visit\'s page instead.', selection: true }, 409);
-    }
 
 
     const audience = ev.registration_audience as string;

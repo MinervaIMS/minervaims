@@ -67,12 +67,6 @@ export interface EventRow {
   /** Number of places; null or absent for no limit (the default). */
   capacity?: number | null;
   /**
-   * A company visit only: when its interest form closes (Step 93B). Set,
-   * the visit selects its participants instead of taking registrations;
-   * see src/lib/company-visits-api.ts.
-   */
-  interest_closes_at?: string | null;
-  /**
    * An alumni call whose date is still to be confirmed (Step 91). Its `date`
    * is provisional and shown to nobody; it is off the website and kept out
    * of calendars, the Dashboard, Attendance and every count.
@@ -101,8 +95,6 @@ export interface EventInput {
   in_archive?: boolean;
   /** Sent only when set in the form: absent keeps the event's limit as it is. */
   capacity?: number | null;
-  /** A company visit's closing date; like `capacity`, absent keeps it as it is. */
-  interest_closes_at?: string | null;
 }
 
 export interface EventRegistration {
@@ -190,21 +182,6 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   online_call: 'Online call', guest: 'Guest event', alumni_call: 'Alumni call', company_visit: 'Company visit',
   association_wide: 'Association-wide', association_on_display: 'Association on Display', other: 'Other',
 };
-/**
- * A type's name in words, whatever is stored. Older rows carry types the
- * forms no longer offer ("assembly", "guest_event"), and the filters used
- * to show those raw keys; they read as words now.
- */
-const LEGACY_TYPE_LABELS: Record<string, string> = {
-  assembly: 'General assembly', guest_event: 'Guest event', conference: 'Conference', workshop: 'Workshop',
-};
-export function eventTypeLabel(type: string | null | undefined): string {
-  if (!type) return 'Other';
-  const known = (EVENT_TYPE_LABELS as Record<string, string>)[type] ?? LEGACY_TYPE_LABELS[type];
-  if (known) return known;
-  const words = type.replace(/[_-]+/g, ' ').trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Other';
-}
 export const AUDIENCE_LABELS: Record<RegistrationAudience, string> = {
   members: 'Members only', members_external: 'Members & other students', public: 'Public',
 };
@@ -395,10 +372,6 @@ export interface MyOpenEvent {
   status: 'registered' | 'waitlisted' | 'none';
   /** The meeting link, for an online event the member holds a place at. */
   join_url: string | null;
-  /** A company visit that selects its participants (Step 93B), when its form closes, and the member's interest in it. */
-  selection?: boolean;
-  interest_closes_at?: string | null;
-  interest?: 'received' | 'invited' | 'not_selected' | 'withdrawn' | null;
 }
 export interface MyEventsData {
   from: string; to: string;
@@ -434,9 +407,6 @@ export interface CancelLookup {
   attended?: boolean;
   started?: boolean;
   position?: number | null;
-  /** A company visit that selects its participants (Step 93B): no self-service cancelling, write to `contact`. */
-  selection?: boolean;
-  contact?: string;
 }
 
 export function lookupCancelLink(token: string): Promise<CancelLookup> {

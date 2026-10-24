@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { isSelectionVisit } from '@/lib/company-visits-api';
 import { isMeetingLink, meetingLinkProblem } from '@/lib/event-place';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +20,7 @@ import { HelpDot } from '@/components/admin/help/HelpSystem';
 import { romeWall, romeWallToIso, zoneOnDate } from '@/lib/event-time';
 import {
   listEvents, registerForEvent, fetchJoinLinks, myEventRegistrations, myEventRegistrationIds, myEventWaitlistIds, cancelMyRegistration, saveEvent, eventPlaces,
-  type EventRow, type EventPlaces, eventTypeLabel
+  EVENT_TYPE_LABELS, type EventRow, type EventPlaces,
 } from '@/lib/events-api';
 import {
   listCalendarEntries, saveCalendarEntry, deleteCalendarEntry, CALENDAR_ENTRY_LABELS,
@@ -279,8 +278,6 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
   };
 
   const doRegister = async (ev: EventRow) => {
-    // A company visit that selects (Step 93B): its interest form, with the CV.
-    if (isSelectionVisit(ev)) { window.open(`/events/${ev.id}/register`, '_blank', 'noopener'); return; }
     setBusyId(ev.id);
     try {
       const res = await registerForEvent(session, { event_id: ev.id }) as { waitlisted?: boolean; position?: number | null };
@@ -549,7 +546,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                   key={it.key} item={it} state={st}
                   placesText={it.event ? placesLine(places[it.event.id]) : ''}
                   onOpen={() => setDetail(it)}
-                  action={it.event && st ? <RegisterButton state={st} busy={busyId === it.event.id} onClick={() => doRegister(it.event!)} selection={isSelectionVisit(it.event)} /> : undefined}
+                  action={it.event && st ? <RegisterButton state={st} busy={busyId === it.event.id} onClick={() => doRegister(it.event!)} /> : undefined}
                 />
               );
             })}
@@ -759,7 +756,7 @@ export default function WorkspaceCalendar({ onNavigate }: { onNavigate?: (sectio
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Times are Rome time ({zoneOnDate(eventForm.date || new Date().toISOString())}). Leave them empty for an all-day event. {eventTypeLabel(eventForm.event.event_type)}
+                Times are Rome time ({zoneOnDate(eventForm.date || new Date().toISOString())}). Leave them empty for an all-day event. {EVENT_TYPE_LABELS[eventForm.event.event_type]}
                 {eventForm.event.registration_enabled ? ' · registration is open for this event' : ''}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">

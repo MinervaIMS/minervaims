@@ -32,9 +32,8 @@ import { REPORT_FUND_LABELS } from '@/lib/report-meta';
 //   Profiles         inception and, for a closed fund, end date and the
 //                    reason; rebalancing, method and number of positions.
 //   References       the market indices (net total return, EUR) and the
-//                    €STR, typed month by month; the €STR fills itself
-//                    from the ECB every morning (Step 93B), and can be
-//                    filled at once from here. Nothing is scraped.
+//                    €STR, typed month by month or, for the €STR, filled
+//                    from the ECB. Nothing is scraped.
 // =====================================================================
 
 const FUNDS: RecordedFund[] = ['long-short', 'multi-asset', 'dps', 'pir'];
@@ -420,9 +419,9 @@ function ReferencesTab({ onChanged }: { onChanged: () => void }) {
       <section className="border border-separator p-4 space-y-3">
         <h2 className="font-serif text-xl text-accent">€STR from the ECB</h2>
         <p className="text-sm text-muted-foreground">
-          Filled automatically: every morning the workspace adds the last complete month (from the 4th of the next month) with the average of the ECB&apos;s daily €STR, and the Sharpe ratios on the website follow. Before October 2019 it uses the EONIA less 8.5 basis points, as the ECB converts it. A month already recorded, or typed here, is never replaced. The button fills any missing month at once.
+          Fills every month that has no value yet with the average of the ECB&apos;s daily €STR; before October 2019, the EONIA less 8.5 basis points, as the ECB converts it. A month already recorded is never replaced.
         </p>
-        <Button onClick={fromEcb} disabled={importing}>{importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Reading the ECB</> : 'Fill the €STR from the ECB now'}</Button>
+        <Button onClick={fromEcb} disabled={importing}>{importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Reading the ECB</> : 'Fill the €STR from the ECB'}</Button>
       </section>
 
       <section className="border border-separator p-4 space-y-3">

@@ -14,9 +14,6 @@ import { LegalLayout, LegalSectionBlock, type LegalSection } from '@/components/
 // the same release. Step 89 (October 2026) added the forms answered by
 // guests outside the Society (section 4, 5, 9 and 15) and the recording of
 // online attendance from the meeting's attendance report (section 4).
-// Step 93B (23 October 2026, wording approved by the Society) added
-// company visits: the CV given with an interest, the selection, the CVs
-// a host may receive, and their deletion (sections 4, 5, 13 and 15).
 // =====================================================================
 
 const sections: LegalSection[] = [
@@ -48,7 +45,7 @@ const PrivacyPolicy = () => (
     <LegalLayout
       title="Privacy Policy"
       description="How we collect, use and protect personal data, in line with the GDPR and Italian data protection law."
-      lastUpdated="October 23rd, 2026"
+      lastUpdated="October 22nd, 2026"
       currentId="privacy"
       sections={sections}
     >
@@ -118,13 +115,6 @@ const PrivacyPolicy = () => (
             members, a record of the thank-you email sent the day after the event. For an online event, attendance
             can be recorded from the attendance report of the video-call service used for the meeting (such as
             Microsoft Teams): the name and email address shown in the call, and the fact that you joined.
-          </li>
-          <li>
-            <strong>Company visits:</strong> members and alumni who register their interest in a company visit give
-            their curriculum vitae. We record the request, the decision (invited, or not selected this time and kept
-            as a reserve), the emails sent about it and whether you attended. Participants are selected solely on
-            their active participation in the Society's activities and their demonstrated interest in the topic of
-            the visit, as shown by the Society's own records; the CV plays no part in the selection.
           </li>
           <li>
             <strong>Members:</strong> identification and contact details, division and role, membership status and
@@ -197,12 +187,6 @@ const PrivacyPolicy = () => (
             and safely, article 6(1)(f). <strong>Thank-you email to guests who attended:</strong> legitimate interest
             in thanking participants and keeping them informed about the association's activities, article 6(1)(f);
             it is sent once, and you can object at any time.
-          </li>
-          <li>
-            <strong>Company visits</strong> (receiving expressions of interest, selecting participants and, where the
-            host company asks for it, sending it the CVs of the members invited): performance of the association
-            relationship at your request, article 6(1)(b), and legitimate interest in organising visits fairly and
-            meeting the host's conditions of access, article 6(1)(f).
           </li>
           <li>
             <strong>Forms</strong> (orders, sign-ups and expressions of interest the Society collects from its
@@ -499,18 +483,10 @@ const PrivacyPolicy = () => (
             of University spaces or benefits).
           </li>
           <li>
-            <strong>Host companies of a company visit,</strong> only when the host asks for it and only the CVs of the
-            members invited to that visit, so that it can prepare the visit and admit them; the host then processes
-            them under its own privacy notice. The CVs of members not selected are never shared.
-          </li>
-          <li>
             <strong>Authorities,</strong> where disclosure is required by law.
           </li>
         </ul>
-        <p>
-          We do not sell personal data and we do not share it with advertisers, sponsors or partners, except the CVs a
-          host company asks for as described above.
-        </p>
+        <p>We do not sell personal data and we do not share it with advertisers, sponsors or partners.</p>
       </LegalSectionBlock>
 
       <LegalSectionBlock id="transfers" number="14" title="International Transfers">
@@ -564,11 +540,6 @@ const PrivacyPolicy = () => (
             <strong>Event registrations and attendance:</strong> twelve months after the event, unless connected to
             accounting records; aggregate figures (such as the number of attendees) are kept without names. The
             check-in code and the time of check-in are deleted together with the registration.
-          </li>
-          <li>
-            <strong>Company visits:</strong> the CVs are deleted automatically six months after the visit; the record
-            of who asked to take part and of the decision is kept with the event's registrations and attendance, for
-            twelve months after the event.
           </li>
           <li>
             <strong>Certificates of membership:</strong> for as long as the member's Workspace account exists, so

@@ -86,8 +86,6 @@ const DEFAULT_PREVIEW_DATA: Record<string, string> = {
   calendar_block: emailCalendarBlock(PREVIEW_SUPABASE_URL, 'sample'),
   cancel_block: emailCancelBlock('sample', 'sample', 'registration'),
   waitlist_position: '3',
-  // When a company visit's interest form closes (Step 93B).
-  closes_at: 'Friday 6 November 2026, 11:59 pm CET',
   // The receipt of an internal form, as a member who ordered sees it.
   form_title: RECEIPT_SAMPLE.form_title,
   submitted_on: RECEIPT_SAMPLE.submitted_on,

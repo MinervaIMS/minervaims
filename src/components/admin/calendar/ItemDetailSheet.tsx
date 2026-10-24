@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { isSelectionVisit, formatClosing, SELECTION_STATEMENT, FORFEIT_STATEMENT, VISIT_CONTACT } from '@/lib/company-visits-api';
 import { CalendarClock, CircleCheck, Clock, ExternalLink, Hourglass, Loader2, MapPin, Pencil, Settings2, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { AddToCalendar } from '@/components/shared/AddToCalendar';
-import { AUDIENCE_LABELS, type EventPlaces, eventTypeLabel } from '@/lib/events-api';
+import { AUDIENCE_LABELS, EVENT_TYPE_LABELS, type EventPlaces } from '@/lib/events-api';
 import { CALENDAR_ENTRY_LABELS } from '@/lib/calendar-api';
 import { divisionLabels } from '@/lib/roles';
 import { formatEventWhen } from '@/lib/event-time';
@@ -63,8 +62,6 @@ export function ItemDetailSheet({
   const open = !!item;
   const cat = item ? CATEGORY[categoryOf(item)] : null;
   const e = item?.event;
-  // A company visit that selects its participants (Step 93B).
-  const selection = isSelectionVisit(e);
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -77,7 +74,7 @@ export function ItemDetailSheet({
             <SheetHeader className="space-y-2 border-b border-separator px-6 pb-5 pt-6 text-left">
               <div className="flex flex-wrap items-center gap-2 pr-8">
                 <span className={`inline-flex h-6 items-center gap-1.5 px-2 text-[12px] ${cat.chip}`}>
-                  {cat.icon('h-3.5 w-3.5')}{e ? eventTypeLabel(e.event_type) : item.entry ? CALENDAR_ENTRY_LABELS[item.entry.entry_type] : cat.label}
+                  {cat.icon('h-3.5 w-3.5')}{e ? EVENT_TYPE_LABELS[e.event_type] : item.entry ? CALENDAR_ENTRY_LABELS[item.entry.entry_type] : cat.label}
                 </span>
                 {isBoardOnly(item) && <span className="border border-separator px-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Board only</span>}
                 {e?.division && <span className="text-[12px] text-muted-foreground">{divisionLabels[e.division]}</span>}
@@ -121,16 +118,7 @@ export function ItemDetailSheet({
               {/* ---- Where you stand, and what to do ------------------- */}
               {e && state && (
                 <section aria-label="Registration" className="space-y-4">
-                  {state === 'open' && selection && (
-                    <div className="border border-accent/30 bg-accent/[0.04] p-4">
-                      <p className="font-medium text-foreground">Places are given by selection</p>
-                      <p className="mt-1 text-[14px] text-muted-foreground">
-                        Register your interest with your CV by {formatClosing(e.interest_closes_at)}. {SELECTION_STATEMENT}
-                      </p>
-                      <RegisterButton state={state} busy={busy} onClick={onRegister} size="default" className="mt-3 w-full" selection />
-                    </div>
-                  )}
-                  {state === 'open' && !selection && (
+                  {state === 'open' && (
                     <div className="border border-accent/30 bg-accent/[0.04] p-4">
                       <p className="font-medium text-foreground">Registration is open</p>
                       <p className="mt-1 text-[14px] text-muted-foreground">Registering takes one click. Your confirmation, with your entry code, arrives by email.</p>
@@ -146,19 +134,13 @@ export function ItemDetailSheet({
                   )}
                   {state === 'registered' && (
                     <div className="border border-emerald-600/40 bg-emerald-50 p-4">
-                      <p className="flex items-center gap-2 font-medium text-emerald-900"><CircleCheck className="h-5 w-5" />{selection ? 'You are invited' : 'You are registered'}</p>
-                      <p className="mt-1 text-[14px] text-emerald-900/80">
-                        {selection
-                          ? <>Your entry code is in your invitation and comes again the day before. {FORFEIT_STATEMENT} If you cannot come, write to <a data-ro className="underline" href={`mailto:${VISIT_CONTACT}`}>{VISIT_CONTACT}</a> at once.</>
-                          : 'Your entry code is in your confirmation email and comes again in the reminder the day before.'}
-                      </p>
+                      <p className="flex items-center gap-2 font-medium text-emerald-900"><CircleCheck className="h-5 w-5" />You are registered</p>
+                      <p className="mt-1 text-[14px] text-emerald-900/80">Your entry code is in your confirmation email and comes again in the reminder the day before.</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <AddToCalendar eventId={e.id} />
-                        {!selection && (
                         <Button data-ro variant="outline" size="sm" onClick={onCancel} disabled={cancelling} className="font-body">
                           {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : null}Can't make it? Cancel
                         </Button>
-                        )}
                       </div>
                     </div>
                   )}

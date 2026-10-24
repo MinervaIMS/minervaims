@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { isSelectionVisit, interestOpen } from '@/lib/company-visits-api';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { currentSemester, previousSemester, semesterOf, type Semester } from '@/lib/semester';
@@ -123,8 +122,6 @@ export interface LatestUpdate {
   myStatus?: 'registered' | 'waitlisted' | null;
   /** The meeting link: only for an online event the reader holds a place at. */
   joinUrl?: string | null;
-  /** A company visit that selects its participants (Step 93B): its form is an interest form. */
-  selection?: boolean;
 }
 
 export interface DashboardData {
@@ -243,7 +240,7 @@ export function useDashboardData(): DashboardData {
           .order('year', { ascending: true })),
         safe<EventRow[]>(() => supabase
           .from('events')
-          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled, start_at, end_at, date_tbc, interest_closes_at')
+          .select('id, title, description, date, place, poster_url, event_type, show_on_website, registration_enabled, start_at, end_at, date_tbc')
           // Association on Display is read from `aod_days` just below; the
           // event each day carries for attendance is not a second event.
           .is('aod_day_id', null)
@@ -501,9 +498,7 @@ export function useDashboardData(): DashboardData {
         // Shown in place of the poster when there is none; not repeated
         // when it is already the detail line (an event with no place).
         description: event.place ? event.description : null,
-        // A company visit that selects is open while its interest form is.
-        registrationOpen: isSelectionVisit(event) ? interestOpen(event) : !!event.registration_enabled,
-        selection: isSelectionVisit(event),
+        registrationOpen: !!event.registration_enabled,
         myStatus: myRegs.get(event.id)?.status ?? null,
         joinUrl: myRegs.get(event.id)?.join_url ?? null,
       };
