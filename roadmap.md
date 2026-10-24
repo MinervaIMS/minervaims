@@ -12,3 +12,5 @@
 - [ ] Complete role-specific live checks: requires approved sessions for President, member, alumnus, Operations, and advisor accounts.
 - [x] Apply Step 93B V2: 44 files copied unchanged, migration run via a short-lived helper (deleted), all 8 checks pass, 9 functions deployed, both daily jobs tested (200, expected bodies), all rule tests pass.
 - [ ] Publish Step 93B (package step 5) and run live checks (package step 6): waiting on the user's go-ahead to publish.
+- [ ] Remove Riccardo Colombo's Sella interest entry and verify the list.
+- [ ] Show the company-visit CV ZIP button and use CV_<event name>.zip; verify filename and privacy limits.
